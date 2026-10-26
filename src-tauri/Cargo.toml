@@ -1,0 +1,84 @@
+[package]
+name = "project-achievers"
+version = "0.1.0"
+description = "Achievement Hunter Community App"
+authors = ["Project Achievers Team"]
+license = "MIT"
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [
+  "macros",
+  "image",
+  "tray-icon",
+  "global-shortcut",
+  "dialog",
+  "notification",
+  "updater",
+  "store",
+  "opener",
+  "fs",
+  "shell",
+  "clipboard",
+  "process",
+  "http",
+  "websocket",
+] }
+tauri-plugin-store = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-notification = "2"
+tauri-plugin-global-shortcut = "2"
+tauri-plugin-updater = "2"
+tauri-plugin-opener = "2"
+tauri-plugin-clipboard-manager = "2"
+tauri-plugin-shell = "2"
+tauri-plugin-fs = "2"
+tauri-plugin-http = "2"
+tauri-plugin-process = "2"
+tauri-plugin-websocket = "2"
+
+# Database
+sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "sqlite", "chrono", "uuid", "migrate", "json"] }
+tokio = { version = "1", features = ["full"] }
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1", features = ["serde", "v4", "v7"] }
+
+# Crypto
+aes-gcm = "0.10"
+aead = "0.5"
+rand = "0.8"
+zeroize = "1"
+argon2 = "0.5"
+
+# HTTP Client
+reqwest = { version = "0.12", features = ["json", "rustls-tls", "cookies", "gzip", "brotli"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_with = "3"
+
+# Error handling
+anyhow = "1"
+thiserror = "1"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+
+# Config
+config = "0.14"
+directories = "5"
+
+# Async
+futures = "0.3"
+
+[profile.release]
+strip = true
+lto = true
+codegen-units = 1
+panic = "abort"
+
+[workspace]
+members = []

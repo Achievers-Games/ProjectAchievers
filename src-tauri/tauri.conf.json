@@ -1,0 +1,80 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Project Achievers",
+  "version": "0.1.0",
+  "identifier": "com.projectachievers.app",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:3000",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../out"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Project Achievers",
+        "width": 1280,
+        "height": 800,
+        "minWidth": 1024,
+        "minHeight": 720,
+        "center": true,
+        "resizable": true,
+        "fullscreen": false,
+        "decorations": true,
+        "transparent": false,
+        "visible": true,
+        "theme": "default"
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self' data: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https:; font-src 'self' data: https:; connect-src 'self' https: wss:;"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "windows": {
+      "wix": {
+        "language": "en-US",
+        "template": "wix/main.wxs"
+      },
+      "nsis": {
+        "installerIcon": "icons/icon.ico",
+        "headerBitmap": "icons/nsis-header.bmp"
+      }
+    },
+    "macOS": {
+      "entitlements": "entitlements.plist",
+      "exceptionDomain": "localhost",
+      "frameworks": [],
+      "providerShortName": "Project Achievers",
+      "signingIdentity": "-"
+    },
+    "linux": {
+      "deb": {
+        "depends": ["libwebkit2gtk-4.1-0", "libayatana-appindicator3-1", "librsvg2-common"]
+      },
+      "appimage": {
+        "bundleMediaFramework": true
+      }
+    }
+  },
+  "plugins": {
+    "store": {
+      "path": "project-achievers-store.bin"
+    },
+    "updater": {
+      "pubkey": "",
+      "endpoints": ["https://github.com/your-org/project-achievers/releases/latest/download/latest.json"],
+      "dialog": true,
+      "active": false
+    }
+  }
+}

@@ -1,0 +1,206 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 13% 96%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 221 83% 53%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 210 40% 96%;
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 221 83% 53%;
+
+    --radius: 0.75rem;
+
+    --trophy-platinum: 203 89% 53%;
+    --trophy-gold: 45 93% 47%;
+    --trophy-silver: 210 10% 60%;
+    --trophy-bronze: 20 83% 50%;
+
+    --platform-steam: 214 100% 50%;
+    --platform-playstation: 340 83% 58%;
+    --platform-xbox: 201 98% 42%;
+  }
+
+  .dark {
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 47% 11%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 221 83% 53%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 217 33% 17%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 221 83% 53%;
+
+    --trophy-platinum: 203 89% 53%;
+    --trophy-gold: 45 93% 47%;
+    --trophy-silver: 210 10% 60%;
+    --trophy-bronze: 20 83% 50%;
+
+    --platform-steam: 214 100% 50%;
+    --platform-playstation: 340 83% 58%;
+    --platform-xbox: 201 98% 42%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-white/20 dark:border-slate-700/50;
+  }
+
+  .trophy-platinum {
+    @apply text-hsl(var(--trophy-platinum));
+  }
+  .trophy-gold {
+    @apply text-hsl(var(--trophy-gold));
+  }
+  .trophy-silver {
+    @apply text-hsl(var(--trophy-silver));
+  }
+  .trophy-bronze {
+    @apply text-hsl(var(--trophy-bronze));
+  }
+
+  .badge-platinum {
+    @apply bg-hsl(var(--trophy-platinum))/10 text-hsl(var(--trophy-platinum)) border-hsl(var(--trophy-platinum))/20;
+  }
+  .badge-gold {
+    @apply bg-hsl(var(--trophy-gold))/10 text-hsl(var(--trophy-gold)) border-hsl(var(--trophy-gold))/20;
+  }
+  .badge-silver {
+    @apply bg-hsl(var(--trophy-silver))/10 text-hsl(var(--trophy-silver)) border-hsl(var(--trophy-silver))/20;
+  }
+  .badge-bronze {
+    @apply bg-hsl(var(--trophy-bronze))/10 text-hsl(var(--trophy-bronze)) border-hsl(var(--trophy-bronze))/20;
+  }
+
+  .platform-steam {
+    @apply bg-hsl(var(--platform-steam))/10 text-hsl(var(--platform-steam)) border-hsl(var(--platform-steam))/20;
+  }
+  .platform-playstation {
+    @apply bg-hsl(var(--platform-playstation))/10 text-hsl(var(--platform-playstation)) border-hsl(var(--platform-playstation))/20;
+  }
+
+  .achievement-card {
+    @apply group relative bg-card rounded-lg border border-border p-4 transition-all duration-200 hover:border-primary/50 hover:shadow-glow;
+  }
+  .achievement-card.hidden {
+    @apply opacity-50 grayscale;
+  }
+  .achievement-card.unlocked {
+    @apply border-primary/30 bg-primary/5;
+  }
+  .achievement-card.locked {
+    @apply opacity-60;
+  }
+
+  .progress-ring {
+    @apply relative w-12 h-12;
+  }
+
+  .glass-card {
+    @apply bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm border border-white/30 dark:border-slate-700/30 rounded-xl;
+  }
+
+  .guide-tabs {
+    @apply flex border-b border-border -mb-px;
+  }
+
+  .guide-tab {
+    @apply px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary border-b-2 border-transparent;
+  }
+  .guide-tab.active {
+    @apply text-primary border-b-primary;
+  }
+
+  .comment-thread {
+    @apply border-l-2 border-border pl-4 ml-2;
+  }
+
+  .reaction-badge {
+    @apply inline-flex items-center gap-1 px-2 py-1 rounded-full bg-secondary text-secondary-foreground text-xs border border-border hover:bg-primary hover:text-primary-foreground transition-colors;
+  }
+
+  .skeleton-text {
+    @apply animate-pulse rounded bg-secondary;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-border rounded-full hover:bg-muted-foreground/30 transition-colors;
+}
+
+/* Focus styles */
+*:focus-visible {
+  @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+}
+
+/* Selection */
+::selection {
+  @apply bg-primary/30 text-primary-foreground;
+}
