@@ -115,17 +115,18 @@
       await loadAuth();
 
       const warnings = result.steam.errors.length;
+      const gameLabel = result.total_games > 1 ? 'jeux' : 'jeu';
       if (result.total_games === 0 && warnings > 0) {
         toast.error('Synchronisation impossible', result.steam.errors[0]);
       } else if (warnings > 0) {
         toast.success(
           'Synchronisation partielle',
-          `${result.total_games} jeux · ${result.total_achievements} succès · ${warnings} avertissement(s)`,
+          `${result.total_games} ${gameLabel} · ${result.total_achievements} succès · ${warnings} avertissement${warnings === 1 ? '' : 's'}`,
         );
       } else {
         toast.success(
           'Synchronisation terminée',
-          `${result.total_games} jeux · ${result.total_achievements} succès importés`,
+          `${result.total_games} ${gameLabel} · ${result.total_achievements} succès importés`,
         );
       }
     } catch (e) {
@@ -195,6 +196,7 @@
               disabled={linking}
             />
           </div>
+          <p class="search-hint">Pseudo personnalisé, URL Steam ou SteamID64.</p>
         </div>
       {/if}
     </div>
@@ -434,6 +436,12 @@
   .search-mini input:focus {
     outline: none;
     border-color: hsl(var(--primary) / 40%);
+  }
+
+  .search-hint {
+    margin: 0.35rem 0 0 0.9rem;
+    font-size: 0.6875rem;
+    color: hsl(var(--muted-foreground) / 80%);
   }
 
   .candidate {

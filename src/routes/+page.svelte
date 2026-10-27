@@ -124,7 +124,9 @@
     <div class="section-head">
       <div>
         <h2 class="section-title">Ta bibliothèque</h2>
-        <p class="section-sub">{formatNumber(stats.totalGames)} jeux découverts</p>
+        <p class="section-sub">
+          {formatNumber(stats.totalGames)} {stats.totalGames > 1 ? 'jeux découverts' : 'jeu découvert'}
+        </p>
       </div>
       <a href="/games" class="see-all">
         Tout voir

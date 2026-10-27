@@ -82,7 +82,10 @@
         <div>
           <p class="eyebrow">Collection</p>
           <h1>Bibliothèque</h1>
-          <p class="sub">{games?.length ?? 0} jeux découverts</p>
+          <p class="sub">
+            {games?.length ?? 0}
+            {(games?.length ?? 0) > 1 ? 'jeux découverts' : 'jeu découvert'}
+          </p>
         </div>
         {#if !authLoaded || hasLinkedAccount}
           <button class="btn-glossy" onclick={handleSync} disabled={syncing}>

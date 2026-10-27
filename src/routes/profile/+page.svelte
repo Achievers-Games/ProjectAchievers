@@ -108,7 +108,7 @@
         <p class="account-name">{steam.platform_username ?? 'Compte Steam'}</p>
         <p class="account-sub">Dernière synchro · {steam.last_synced_at ? new Date(steam.last_synced_at).toLocaleDateString('fr-FR') : 'jamais'}</p>
       {:else}
-        <p class="account-sub">Liez votre compte pour importer vos succès Steam.</p>
+        <p class="account-sub">Lie ton compte pour importer tes succès Steam.</p>
       {/if}
     </div>
 
