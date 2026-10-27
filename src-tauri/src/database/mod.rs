@@ -2,7 +2,7 @@ use sqlx::{sqlite::SqlitePoolOptions, Row, SqlitePool};
 use tauri::Manager;
 use std::path::PathBuf;
 use anyhow::Result;
-use tracing::{info, error};
+use tracing::info;
 
 pub struct Database {
     pub pool: SqlitePool,

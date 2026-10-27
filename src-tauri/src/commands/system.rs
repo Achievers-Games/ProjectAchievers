@@ -4,7 +4,6 @@ use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, Code};
 use tauri_plugin_opener::OpenerExt;
 use serde::{Deserialize, Serialize};
 use std::fs;
-use image::GenericImageView;
 
 #[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct AppVersion {

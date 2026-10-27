@@ -20,7 +20,6 @@ use tauri_specta::{collect_commands, Builder};
 use database::Database;
 use tauri::Manager;
 
-#[cfg_attr(feature = "mobile", tauri::mobile_entry_point)]
 pub fn run() {
   // Specta builder: registers commands + exports TS bindings in debug builds.
   let builder = Builder::<tauri::Wry>::new()

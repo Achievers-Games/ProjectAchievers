@@ -719,8 +719,16 @@ export type SteamGlobalAchievement_Serialize = {
 	percent: number | null,
 };
 
+/**
+ *  Key is loaded from the environment (`STEAM_API_KEY`) at runtime, not
+ *  embedded in source. See `.env` example in `src-tauri/`.
+ */
 export type SteamOwnedGame = SteamOwnedGame_Serialize | SteamOwnedGame_Deserialize;
 
+/**
+ *  Key is loaded from the environment (`STEAM_API_KEY`) at runtime, not
+ *  embedded in source. See `.env` example in `src-tauri/`.
+ */
 export type SteamOwnedGame_Deserialize = {
 	appid?: number,
 	name?: string,
@@ -733,6 +741,10 @@ export type SteamOwnedGame_Deserialize = {
 	has_community_visible_stats?: boolean,
 };
 
+/**
+ *  Key is loaded from the environment (`STEAM_API_KEY`) at runtime, not
+ *  embedded in source. See `.env` example in `src-tauri/`.
+ */
 export type SteamOwnedGame_Serialize = {
 	appid: number,
 	name: string,

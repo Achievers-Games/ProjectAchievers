@@ -4,5 +4,6 @@
 )]
 
 fn main() {
+  let _ = dotenvy::from_path(".env").or_else(|_| dotenvy::from_path("src-tauri/.env"));
   project_achievers::run();
 }

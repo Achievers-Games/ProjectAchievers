@@ -1,11 +1,10 @@
 use crate::{
     database::Database,
-    error::{AppError, AppResult, TauriResult},
+    error::{AppError, AppResult},
 };
 use serde::{Deserialize, Serialize};
 use sqlx::Row;
 use tauri::State;
-use chrono::Utc;
 
 #[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct SyncStatus {
@@ -139,8 +138,8 @@ pub async fn get_sync_status(
 #[tauri::command]
 #[specta::specta]
 pub async fn trigger_background_sync(
-    db: State<'_, Database>,
-    crypto: State<'_, crate::crypto::Crypto>,
+    _db: State<'_, Database>,
+    _crypto: State<'_, crate::crypto::Crypto>,
 ) -> AppResult<()> {
     // This would spawn a background task in a real implementation
     // For now, just return success
@@ -206,7 +205,7 @@ pub async fn force_sync_game(
     db: State<'_, Database>,
     crypto: State<'_, crate::crypto::Crypto>,
 ) -> AppResult<SyncResult> {
-    let user_id = get_current_user_id(&db).await?;
+    let _user_id = get_current_user_id(&db).await?;
 
     // Get game platform
     let game = sqlx::query("SELECT platform, steam_app_id, psn_title_id FROM games WHERE id = ?")

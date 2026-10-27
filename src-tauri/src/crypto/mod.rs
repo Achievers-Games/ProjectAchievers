@@ -6,14 +6,13 @@ use argon2::{
     password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
     Argon2,
 };
-use directories::ProjectDirs;
 use getrandom::getrandom;
 use std::path::PathBuf;
 use tauri::Manager;
 use zeroize::Zeroize;
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
 use crate::error::{CryptoError, AppResult};
-use tracing::{info, error};
+use tracing::info;
 
 #[derive(Clone)]
 pub struct Crypto {

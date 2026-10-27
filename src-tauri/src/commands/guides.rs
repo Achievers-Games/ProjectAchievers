@@ -1,6 +1,6 @@
 use crate::{
     database::Database,
-    error::{AppError, AppResult, TauriResult},
+    error::{AppError, AppResult},
 };
 use serde::{Deserialize, Serialize};
 use sqlx::Row;
@@ -395,7 +395,7 @@ Keep it concise but comprehensive. Use formatting for readability."#,
     )
 }
 
-async fn call_ai_model(prompt: &str) -> AppResult<String> {
+async fn call_ai_model(_prompt: &str) -> AppResult<String> {
     // In a real implementation, this would call a local LLM (llama.cpp) or an API
     // For now, return a template response
 

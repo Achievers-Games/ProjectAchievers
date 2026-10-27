@@ -1,7 +1,7 @@
 use crate::{
     crypto::Crypto,
     database::Database,
-    error::{AppError, AppResult, TauriResult},
+    error::{AppError, AppResult},
 };
 use serde::{Deserialize, Serialize};
 use sqlx::Row;
@@ -76,7 +76,7 @@ pub async fn psn_get_trophy_titles(
     .fetch_optional(&db.pool)
     .await?;
 
-    let (psn_id, encrypted_npsso) = row
+    let (_psn_id, encrypted_npsso) = row
         .and_then(|r| {
             let id: Option<String> = r.get("platform_user_id");
             let token: Option<String> = r.get("encrypted_access_token");
@@ -84,8 +84,8 @@ pub async fn psn_get_trophy_titles(
         })
         .ok_or_else(|| anyhow::anyhow!("PSN account not linked"))?;
 
-    let npsso = crypto.decrypt(&encrypted_npsso)?;
-    let client = Client::new();
+    let _npsso = crypto.decrypt(&encrypted_npsso)?;
+    let _client = Client::new();
 
     // Use PSN API (limited access)
     // Note: This requires proper PSN API access which is not publicly available
@@ -97,7 +97,7 @@ pub async fn psn_get_trophy_titles(
 #[tauri::command]
 #[specta::specta]
 pub async fn psn_get_trophy_groups(
-    np_communication_id: String,
+    _np_communication_id: String,
     db: State<'_, Database>,
     crypto: State<'_, Crypto>,
 ) -> AppResult<Vec<PsnTrophyGroup>> {
@@ -114,7 +114,7 @@ pub async fn psn_get_trophy_groups(
         .and_then(|r| r.get::<Option<String>, _>("encrypted_access_token"))
         .ok_or_else(|| anyhow::anyhow!("PSN account not linked"))?;
 
-    let npsso = crypto.decrypt(&encrypted_npsso)?;
+    let _npsso = crypto.decrypt(&encrypted_npsso)?;
 
     // This would call the PSN API
     Err(anyhow::anyhow!("PSN trophy groups API not publicly available").into())
@@ -124,8 +124,8 @@ pub async fn psn_get_trophy_groups(
 #[tauri::command]
 #[specta::specta]
 pub async fn psn_get_trophies(
-    np_communication_id: String,
-    trophy_group_id: String,
+    _np_communication_id: String,
+    _trophy_group_id: String,
     db: State<'_, Database>,
     crypto: State<'_, Crypto>,
 ) -> AppResult<Vec<PsnTrophy>> {
@@ -142,7 +142,7 @@ pub async fn psn_get_trophies(
         .and_then(|r| r.get::<Option<String>, _>("encrypted_access_token"))
         .ok_or_else(|| anyhow::anyhow!("PSN account not linked"))?;
 
-    let npsso = crypto.decrypt(&encrypted_npsso)?;
+    let _npsso = crypto.decrypt(&encrypted_npsso)?;
 
     // This would call the PSN API
     Err(anyhow::anyhow!("PSN trophies API not publicly available").into())
@@ -153,7 +153,7 @@ pub async fn psn_get_trophies(
 #[specta::specta]
 pub async fn psn_sync_user_data(
     db: State<'_, Database>,
-    crypto: State<'_, Crypto>,
+    _crypto: State<'_, Crypto>,
 ) -> AppResult<PsnSyncResult> {
     let user_id = get_current_user_id(&db).await?;
 
@@ -199,7 +199,7 @@ pub struct PsnSyncResult {
 #[specta::specta]
 pub async fn psn_import_from_psnprofiles(
     psnprofiles_username: String,
-    db: State<'_, Database>,
+    _db: State<'_, Database>,
 ) -> AppResult<PsnImportResult> {
     let client = Client::new();
     let url = format!("https://psnprofiles.com/api/profile/{}", psnprofiles_username);
@@ -208,7 +208,7 @@ pub async fn psn_import_from_psnprofiles(
 
     match response {
         Ok(resp) if resp.status().is_success() => {
-            let data: serde_json::Value = resp.json().await?;
+            let _data: serde_json::Value = resp.json().await?;
             // Parse PSNProfiles data and import
             // This is a simplified version
             Ok(PsnImportResult {

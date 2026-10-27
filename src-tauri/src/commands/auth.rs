@@ -1,7 +1,6 @@
 use crate::{
-    crypto::Crypto,
     database::Database,
-    error::{AppError, AppResult, TauriResult},
+    error::{AppError, AppResult},
 };
 use serde::{Deserialize, Serialize};
 use sqlx::Row;

@@ -1,13 +1,12 @@
 use crate::{
-    crypto::Crypto,
     database::Database,
-    error::{AppError, AppResult, TauriResult},
+    error::AppResult,
 };
 use serde::{Deserialize, Deserializer, Serialize};
 use sqlx::Row;
 use tauri::State;
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use reqwest::Client;
 
 const STEAM_API_BASE: &str = "https://api.steampowered.com";
@@ -355,8 +354,8 @@ pub async fn steam_get_game_schema(
 #[specta::specta]
 pub async fn steam_get_global_achievement_percentages(
     app_id: u32,
-    db: State<'_, Database>,
-    crypto: State<'_, crate::crypto::Crypto>,
+    _db: State<'_, Database>,
+    _crypto: State<'_, crate::crypto::Crypto>,
 ) -> AppResult<Vec<SteamGlobalAchievement>> {
     let client = Client::new();
 
@@ -395,12 +394,12 @@ pub async fn steam_sync_user_data(
     .fetch_optional(&db.pool)
     .await?;
 
-    let steam_id = row
+    let _steam_id = row
         .and_then(|r| r.get::<Option<String>, _>("platform_user_id"))
         .ok_or_else(|| anyhow::anyhow!("Steam account not linked"))?;
 
-    let api_key = api_key.unwrap_or_default();
-    let client = Client::new();
+    let _api_key = api_key.unwrap_or_default();
+    let _client = Client::new();
 
     // Update sync status
     sqlx::query(
