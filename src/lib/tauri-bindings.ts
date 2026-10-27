@@ -19,9 +19,9 @@ export const commands = {
 	/**  Get player achievements for a specific game */
 	steamGetPlayerAchievements: (appId: number) => typedError<SteamPlayerAchievement_Serialize[], AppError>(__TAURI_INVOKE("steam_get_player_achievements", { appId })),
 	/**  Get game schema (achievement definitions) */
-	steamGetGameSchema: (appId: number) => typedError<SteamGameSchema, AppError>(__TAURI_INVOKE("steam_get_game_schema", { appId })),
+	steamGetGameSchema: (appId: number) => typedError<SteamGameSchema_Serialize, AppError>(__TAURI_INVOKE("steam_get_game_schema", { appId })),
 	/**  Get global achievement percentages for a game */
-	steamGetGlobalAchievementPercentages: (appId: number) => typedError<SteamGlobalAchievement[], AppError>(__TAURI_INVOKE("steam_get_global_achievement_percentages", { appId })),
+	steamGetGlobalAchievementPercentages: (appId: number) => typedError<SteamGlobalAchievement_Serialize[], AppError>(__TAURI_INVOKE("steam_get_global_achievement_percentages", { appId })),
 	/**  Sync all Steam data for the current user */
 	steamSyncUserData: () => typedError<SteamSyncResult, AppError>(__TAURI_INVOKE("steam_sync_user_data")),
 	/**
@@ -638,7 +638,22 @@ export type ReactionRequest = {
 	reaction_type: string,
 };
 
-export type SteamAchievementDefinition = {
+export type SteamAchievementDefinition = SteamAchievementDefinition_Serialize | SteamAchievementDefinition_Deserialize;
+
+export type SteamAchievementDefinition_Deserialize = {
+	name?: string,
+	defaultvalue?: number,
+	hidden?: number,
+	description?: string,
+	icon?: string,
+	icongray?: string,
+} & ({
+	displayname?: string,
+} & {
+	displayName?: string,
+});
+
+export type SteamAchievementDefinition_Serialize = {
 	name: string,
 	defaultvalue: number,
 	displayname: string,
@@ -660,17 +675,46 @@ export type SteamAuthRequest_Serialize = {
 	api_key: string | null,
 };
 
-export type SteamAvailableGameStats = {
-	achievements: SteamAchievementDefinition[],
+export type SteamAvailableGameStats = SteamAvailableGameStats_Serialize | SteamAvailableGameStats_Deserialize;
+
+export type SteamAvailableGameStats_Deserialize = {
+	achievements?: SteamAchievementDefinition_Deserialize[],
 };
 
-export type SteamGameSchema = {
+export type SteamAvailableGameStats_Serialize = {
+	achievements: SteamAchievementDefinition_Serialize[],
+};
+
+export type SteamGameSchema = SteamGameSchema_Serialize | SteamGameSchema_Deserialize;
+
+export type SteamGameSchema_Deserialize = ({
+	game_name?: string,
+} & {
+	gameName?: string,
+}) & ({
+	game_version?: string,
+} & {
+	gameVersion?: string,
+}) & ({
+	available_game_stats?: SteamAvailableGameStats_Deserialize,
+} & {
+	availableGameStats?: SteamAvailableGameStats_Deserialize,
+});
+
+export type SteamGameSchema_Serialize = {
 	game_name: string,
 	game_version: string,
-	available_game_stats: SteamAvailableGameStats,
+	available_game_stats: SteamAvailableGameStats_Serialize,
 };
 
-export type SteamGlobalAchievement = {
+export type SteamGlobalAchievement = SteamGlobalAchievement_Serialize | SteamGlobalAchievement_Deserialize;
+
+export type SteamGlobalAchievement_Deserialize = {
+	name: string,
+	percent: number | null,
+};
+
+export type SteamGlobalAchievement_Serialize = {
 	name: string,
 	percent: number | null,
 };
@@ -678,15 +722,15 @@ export type SteamGlobalAchievement = {
 export type SteamOwnedGame = SteamOwnedGame_Serialize | SteamOwnedGame_Deserialize;
 
 export type SteamOwnedGame_Deserialize = {
-	appid: number,
-	name: string,
+	appid?: number,
+	name?: string,
 	playtime_forever?: number | null,
 	playtime_windows_forever?: number | null,
 	playtime_mac_forever?: number | null,
 	playtime_linux_forever?: number | null,
-	img_icon_url: string,
-	img_logo_url: string,
-	has_community_visible_stats: boolean,
+	img_icon_url?: string | null,
+	img_logo_url?: string | null,
+	has_community_visible_stats?: boolean,
 };
 
 export type SteamOwnedGame_Serialize = {
@@ -696,8 +740,8 @@ export type SteamOwnedGame_Serialize = {
 	playtime_windows_forever: number | null,
 	playtime_mac_forever: number | null,
 	playtime_linux_forever: number | null,
-	img_icon_url: string,
-	img_logo_url: string,
+	img_icon_url: string | null,
+	img_logo_url: string | null,
 	has_community_visible_stats: boolean,
 };
 

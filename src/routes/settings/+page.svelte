@@ -65,6 +65,21 @@
   const steam = $derived(auth?.linked_accounts.find((a) => a.platform === 'steam'));
   const psn = $derived(auth?.linked_accounts.find((a) => a.platform === 'psn'));
 
+  function syncLabel(status: string): string {
+    switch (status) {
+      case 'pending':
+        return 'à synchroniser';
+      case 'syncing':
+        return 'synchronisation…';
+      case 'completed':
+        return 'synchronisé';
+      case 'failed':
+        return 'échec de la synchronisation';
+      default:
+        return status;
+    }
+  }
+
   async function handleLink(profile: SteamResolvedProfile) {
     linking = true;
     try {
@@ -98,11 +113,23 @@
     try {
       const result = await tauriApi.syncAllPlatforms();
       await loadAuth();
-      toast.success(
-        'Synchronisation terminée',
-        `${result.total_games} jeux · ${result.total_achievements} succès importés`,
-      );
+
+      const warnings = result.steam.errors.length;
+      if (result.total_games === 0 && warnings > 0) {
+        toast.error('Synchronisation impossible', result.steam.errors[0]);
+      } else if (warnings > 0) {
+        toast.success(
+          'Synchronisation partielle',
+          `${result.total_games} jeux · ${result.total_achievements} succès · ${warnings} avertissement(s)`,
+        );
+      } else {
+        toast.success(
+          'Synchronisation terminée',
+          `${result.total_games} jeux · ${result.total_achievements} succès importés`,
+        );
+      }
     } catch (e) {
+      await loadAuth();
       toast.error('Échec de la synchronisation', e instanceof Error ? e.message : String(e));
     } finally {
       syncing = false;
@@ -133,11 +160,14 @@
           <p class="name">Steam</p>
           <p class="sub">
             {#if steam}
-              {steam.platform_username ?? 'Compte Steam'} · {steam.sync_status === 'completed' ? 'synchronisé' : steam.sync_status}
+              {steam.platform_username ?? 'Compte Steam'} · {syncLabel(steam.sync_status)}
             {:else}
               Importe tes succès Steam
             {/if}
           </p>
+          {#if steam?.sync_error}
+            <p class="sync-error" title={steam.sync_error}>{steam.sync_error}</p>
+          {/if}
         </div>
       </div>
 
@@ -326,6 +356,16 @@
   .sub {
     font-size: 0.72rem;
     color: hsl(var(--muted-foreground));
+  }
+
+  .sync-error {
+    max-width: 28rem;
+    margin-top: 0.2rem;
+    overflow: hidden;
+    font-size: 0.68rem;
+    color: hsl(0 84% 67%);
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .btn-outline {

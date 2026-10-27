@@ -11,8 +11,8 @@
 
 <a href="/games/{game.slug}" class="dynamic-card shimmer-sweep reveal">
   <div class="cover">
-    {#if game.cover_url}
-      <img src={game.cover_url} alt={game.name} class="img" />
+    {#if game.header_url ?? game.cover_url}
+      <img src={game.header_url ?? game.cover_url} alt={game.name} class="img" />
     {:else}
       <div class="img-bg">
         <span class="ico">🏆</span>

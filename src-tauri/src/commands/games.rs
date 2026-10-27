@@ -107,52 +107,6 @@ pub async fn get_games(
 
     let mut query = String::from(
         r#"
-        SELECT g.*,
-            COUNT(ua.id) as unlocked_count,
-            MAX(ua.unlocked_at) as last_unlocked_at,
-            CASE WHEN MAX(CASE WHEN a.is_platinum = 1 THEN 1 ELSE 0 END) = 1 THEN 1 ELSE 0 END as platinum_unlocked
-        FROM games g
-        LEFT JOIN achievements a ON a.game_id = g.id
-        LEFT JOIN user_achievements ua ON ua.achievement_id = a.id AND ua.user_id = ?
-        WHERE 1=1
-        "#
-    );
-
-    let mut params: Vec<Box<dyn sqlx::Encode<'_, sqlx::Sqlite> + Send + Sync>> = vec![Box::new(user_id.clone())];
-
-    if let Some(p) = &platform {
-        query.push_str(" AND g.platform = ?");
-        params.push(Box::new(p.clone()));
-    }
-
-    if let Some(g) = &genre {
-        query.push_str(" AND g.genres_json LIKE ?");
-        params.push(Box::new(format!("%{}%", g)));
-    }
-
-    if let Some(s) = &search {
-        query.push_str(" AND (g.name LIKE ? OR g.slug LIKE ?)");
-        params.push(Box::new(format!("%{}%", s)));
-        params.push(Box::new(format!("%{}%", s)));
-    }
-
-    query.push_str(" GROUP BY g.id ORDER BY g.name ASC");
-
-    if let Some(l) = limit {
-        query.push_str(" LIMIT ?");
-        params.push(Box::new(l));
-    }
-
-    if let Some(o) = offset {
-        query.push_str(" OFFSET ?");
-        params.push(Box::new(o));
-    }
-
-    // Note: This is a simplified version. In reality, you'd use query_as with proper binding
-    // For now, we'll use a simpler approach
-
-    let games = sqlx::query(
-        r#"
         SELECT g.id, g.name, g.slug, g.cover_url, g.header_url, g.platform, g.total_achievements,
                g.release_date, g.genres_json, g.developers_json, g.publishers_json,
                COUNT(ua.id) as unlocked_count,
@@ -162,11 +116,54 @@ pub async fn get_games(
         LEFT JOIN achievements a ON a.game_id = g.id
         LEFT JOIN user_achievements ua ON ua.achievement_id = a.id AND ua.user_id = ?
         WHERE 1=1
-        "#
-    )
-    .bind(&user_id)
-    .fetch_all(&db.pool)
-    .await?;
+        "#,
+    );
+
+    if platform.is_some() {
+        query.push_str(" AND g.platform = ?");
+    }
+
+    if genre.is_some() {
+        query.push_str(" AND g.genres_json LIKE ?");
+    }
+
+    if search.is_some() {
+        query.push_str(" AND (g.name LIKE ? OR g.slug LIKE ?)");
+    }
+
+    query.push_str(" GROUP BY g.id ORDER BY g.name ASC");
+
+    if limit.is_some() {
+        query.push_str(" LIMIT ?");
+    }
+
+    if offset.is_some() {
+        if limit.is_none() {
+            query.push_str(" LIMIT -1");
+        }
+        query.push_str(" OFFSET ?");
+    }
+
+    let mut request = sqlx::query(&query).bind(&user_id);
+
+    if let Some(p) = &platform {
+        request = request.bind(p.as_str());
+    }
+    if let Some(g) = &genre {
+        request = request.bind(format!("%{g}%"));
+    }
+    if let Some(s) = &search {
+        let pattern = format!("%{s}%");
+        request = request.bind(pattern.clone()).bind(pattern);
+    }
+    if let Some(l) = limit {
+        request = request.bind(l);
+    }
+    if let Some(o) = offset {
+        request = request.bind(o);
+    }
+
+    let games = request.fetch_all(&db.pool).await?;
 
     let mut results = Vec::new();
     for row in games {
