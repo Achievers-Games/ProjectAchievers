@@ -7,10 +7,12 @@ use argon2::{
     Argon2,
 };
 use directories::ProjectDirs;
+use getrandom::getrandom;
 use std::path::PathBuf;
 use tauri::Manager;
 use zeroize::Zeroize;
-use anyhow::Result;
+use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
+use crate::error::{CryptoError, AppResult};
 use tracing::{info, error};
 
 #[derive(Clone)]
@@ -20,7 +22,7 @@ pub struct Crypto {
 }
 
 impl Crypto {
-    pub fn new(app_handle: &tauri::AppHandle) -> Result<Self> {
+    pub fn new(app_handle: &tauri::AppHandle) -> AppResult<Self> {
         let master_key = Self::derive_or_create_master_key(app_handle)?;
         Ok(Self {
             master_key,
@@ -28,7 +30,45 @@ impl Crypto {
         })
     }
 
-    fn derive_or_create_master_key(app_handle: &tauri::AppHandle) -> Result<[u8; 32]> {
+    /// Preference file path inside the app data directory (`<name>.pref.enc`).
+    fn preference_path(&self, name: &str) -> AppResult<PathBuf> {
+        let dir = self
+            .app_handle
+            .path()
+            .app_data_dir()
+            .map_err(|e| CryptoError::KeyDerivation(format!("Failed to get app data dir: {}", e)))?;
+        std::fs::create_dir_all(&dir)?;
+        Ok(dir.join(format!("{}.pref.enc", name)))
+    }
+
+    /// Saves a secret preference (e.g. the Steam API key) encrypted with the master key.
+    pub fn save_preference(&self, name: &str, value: &str) -> AppResult<()> {
+        let encrypted = self.encrypt(value)?;
+        std::fs::write(self.preference_path(name)?, encrypted)?;
+        info!("Saved encrypted preference '{}'", name);
+        Ok(())
+    }
+
+    /// Loads and decrypts a secret preference. Returns `None` when not set.
+    pub fn load_preference(&self, name: &str) -> AppResult<Option<String>> {
+        let path = self.preference_path(name)?;
+        if !path.exists() {
+            return Ok(None);
+        }
+        let encrypted = std::fs::read_to_string(path)?;
+        Ok(Some(self.decrypt(encrypted.trim())?))
+    }
+
+    /// Deletes a secret preference from disk.
+    pub fn clear_preference(&self, name: &str) -> AppResult<()> {
+        let path = self.preference_path(name)?;
+        if path.exists() {
+            std::fs::remove_file(path)?;
+        }
+        Ok(())
+    }
+
+    fn derive_or_create_master_key(app_handle: &tauri::AppHandle) -> AppResult<[u8; 32]> {
         let key_path = Self::get_key_path(app_handle)?;
 
         if key_path.exists() {
@@ -39,7 +79,7 @@ impl Crypto {
         } else {
             // Generate new master key
             let mut key = [0u8; 32];
-            getrandom::fill(&mut key)?;
+            getrandom(&mut key).map_err(|e| CryptoError::KeyDerivation(format!("Failed to generate random key: {}", e)))?;
 
             // Encrypt and store
             let encrypted = Self::encrypt_master_key(&key)?;
@@ -50,17 +90,17 @@ impl Crypto {
         }
     }
 
-    fn get_key_path(app_handle: &tauri::AppHandle) -> Result<PathBuf> {
+    fn get_key_path(app_handle: &tauri::AppHandle) -> AppResult<PathBuf> {
         let app_data_dir = app_handle
             .path()
             .app_data_dir()
-            .map_err(|e| anyhow::anyhow!("Failed to get app data dir: {}", e))?;
+            .map_err(|e| CryptoError::KeyDerivation(format!("Failed to get app data dir: {}", e)))?;
 
         std::fs::create_dir_all(&app_data_dir)?;
         Ok(app_data_dir.join("master.key"))
     }
 
-    fn encrypt_master_key(key: &[u8; 32]) -> Result<Vec<u8>> {
+    fn encrypt_master_key(key: &[u8; 32]) -> AppResult<Vec<u8>> {
         // Use a fixed salt for the master key encryption (derived from device)
         // In production, this should use platform-specific secure storage
         let salt = SaltString::generate(&mut OsRng);
@@ -68,11 +108,14 @@ impl Crypto {
 
         // For now, use a simple approach - in production use DPAPI/Keychain
         let password = Self::get_device_password()?;
-        let hash = argon2.hash_password(password.as_bytes(), &salt)?;
+        let hash = argon2.hash_password(password.as_bytes(), &salt)
+            .map_err(|e| CryptoError::PasswordHashing(e.to_string()))?;
 
-        let cipher = Aes256Gcm::new_from_slice(hash.hash.unwrap().as_bytes())?;
+        let cipher = Aes256Gcm::new_from_slice(hash.hash.unwrap().as_bytes())
+            .map_err(|e| CryptoError::Encryption(e.to_string()))?;
         let nonce = Aes256Gcm::generate_nonce(&mut OsRng);
-        let ciphertext = cipher.encrypt(&nonce, key.as_ref())?;
+        let ciphertext = cipher.encrypt(&nonce, key.as_ref())
+            .map_err(|e| CryptoError::Encryption(e.to_string()))?;
 
         let mut result = Vec::new();
         result.extend_from_slice(salt.as_str().as_bytes());
@@ -82,25 +125,30 @@ impl Crypto {
         Ok(result)
     }
 
-    fn decrypt_master_key(encrypted: &[u8]) -> Result<[u8; 32]> {
-        let salt_str = std::str::from_utf8(&encrypted[..22])?;
-        let salt = SaltString::from_b64(salt_str)?;
+    fn decrypt_master_key(encrypted: &[u8]) -> AppResult<[u8; 32]> {
+        let salt_str = std::str::from_utf8(&encrypted[..22])
+            .map_err(|e| CryptoError::Decryption(e.to_string()))?;
+        let salt = SaltString::from_b64(salt_str)
+            .map_err(|e| CryptoError::Decryption(e.to_string()))?;
         let nonce = Nonce::from_slice(&encrypted[22..34]);
         let ciphertext = &encrypted[34..];
 
         let password = Self::get_device_password()?;
         let argon2 = Argon2::default();
-        let hash = argon2.hash_password(password.as_bytes(), &salt)?;
+        let hash = argon2.hash_password(password.as_bytes(), &salt)
+            .map_err(|e| CryptoError::PasswordHashing(e.to_string()))?;
 
-        let cipher = Aes256Gcm::new_from_slice(hash.hash.unwrap().as_bytes())?;
-        let plaintext = cipher.decrypt(nonce, ciphertext)?;
+        let cipher = Aes256Gcm::new_from_slice(hash.hash.unwrap().as_bytes())
+            .map_err(|e| CryptoError::Decryption(e.to_string()))?;
+        let plaintext = cipher.decrypt(nonce, ciphertext)
+            .map_err(|e| CryptoError::Decryption(e.to_string()))?;
 
         let mut key = [0u8; 32];
         key.copy_from_slice(&plaintext);
         Ok(key)
     }
 
-    fn get_device_password() -> Result<String> {
+    fn get_device_password() -> AppResult<String> {
         // In production, use platform-specific secure storage:
         // Windows: DPAPI (CryptProtectData)
         // macOS: Keychain
@@ -109,9 +157,26 @@ impl Crypto {
         use std::process::Command;
 
         #[cfg(target_os = "windows")]
-        let output = Command::new("wmic")
-            .args(["csproduct", "get", "UUID"])
-            .output()?;
+        {
+            // `wmic` was removed on modern Windows; read MachineGuid from the registry instead.
+            let output = Command::new("reg")
+                .args(["query", r"HKLM\SOFTWARE\Microsoft\Cryptography", "/v", "MachineGuid"])
+                .output()?;
+
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            let guid = stdout
+                .lines()
+                .find_map(|line| {
+                    let tokens: Vec<&str> = line.split_whitespace().collect();
+                    if tokens.len() >= 3 && tokens[0].eq_ignore_ascii_case("MachineGuid") {
+                        Some(tokens[2].to_string())
+                    } else {
+                        None
+                    }
+                })
+                .unwrap_or_default();
+            Ok(format!("project-achievers-{}", guid))
+        }
 
         #[cfg(target_os = "macos")]
         let output = Command::new("ioreg")
@@ -123,42 +188,53 @@ impl Crypto {
             .args(["/etc/machine-id"])
             .output()?;
 
-        let machine_id = String::from_utf8_lossy(&output.stdout).trim().to_string();
-        Ok(format!("project-achievers-{}", machine_id))
+        #[cfg(not(target_os = "windows"))]
+        {
+            let machine_id = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            Ok(format!("project-achievers-{}", machine_id))
+        }
     }
 
-    pub fn encrypt(&self, plaintext: &str) -> Result<String> {
-        let cipher = Aes256Gcm::new_from_slice(&self.master_key)?;
+    pub fn encrypt(&self, plaintext: &str) -> AppResult<String> {
+        let cipher = Aes256Gcm::new_from_slice(&self.master_key)
+            .map_err(|e| CryptoError::Encryption(e.to_string()))?;
         let nonce = Aes256Gcm::generate_nonce(&mut OsRng);
-        let ciphertext = cipher.encrypt(&nonce, plaintext.as_bytes())?;
+        let ciphertext = cipher.encrypt(&nonce, plaintext.as_bytes())
+            .map_err(|e| CryptoError::Encryption(e.to_string()))?;
 
         let mut result = Vec::new();
         result.extend_from_slice(&nonce);
         result.extend_from_slice(&ciphertext);
 
-        Ok(base64::encode(result))
+        Ok(BASE64.encode(result))
     }
 
-    pub fn decrypt(&self, encrypted: &str) -> Result<String> {
-        let data = base64::decode(encrypted)?;
+    pub fn decrypt(&self, encrypted: &str) -> AppResult<String> {
+        let data = BASE64.decode(encrypted)
+            .map_err(|e| CryptoError::Decryption(e.to_string()))?;
         let nonce = Nonce::from_slice(&data[..12]);
         let ciphertext = &data[12..];
 
-        let cipher = Aes256Gcm::new_from_slice(&self.master_key)?;
-        let plaintext = cipher.decrypt(nonce, ciphertext)?;
+        let cipher = Aes256Gcm::new_from_slice(&self.master_key)
+            .map_err(|e| CryptoError::Decryption(e.to_string()))?;
+        let plaintext = cipher.decrypt(nonce, ciphertext)
+            .map_err(|e| CryptoError::Decryption(e.to_string()))?;
 
-        Ok(String::from_utf8(plaintext)?)
+        Ok(String::from_utf8(plaintext)
+            .map_err(|e| CryptoError::Decryption(e.to_string()))?)
     }
 
-    pub fn hash_password(&self, password: &str) -> Result<String> {
+    pub fn hash_password(&self, password: &str) -> AppResult<String> {
         let salt = SaltString::generate(&mut OsRng);
         let argon2 = Argon2::default();
-        let hash = argon2.hash_password(password.as_bytes(), &salt)?;
+        let hash = argon2.hash_password(password.as_bytes(), &salt)
+            .map_err(|e| CryptoError::PasswordHashing(e.to_string()))?;
         Ok(hash.to_string())
     }
 
-    pub fn verify_password(&self, password: &str, hash: &str) -> Result<bool> {
-        let parsed_hash = PasswordHash::new(hash)?;
+    pub fn verify_password(&self, password: &str, hash: &str) -> AppResult<bool> {
+        let parsed_hash = PasswordHash::new(hash)
+            .map_err(|e| CryptoError::PasswordHashing(e.to_string()))?;
         let argon2 = Argon2::default();
         Ok(argon2.verify_password(password.as_bytes(), &parsed_hash).is_ok())
     }

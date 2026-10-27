@@ -11,21 +11,8 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 tauri = { version = "2", features = [
-  "macros",
   "image",
   "tray-icon",
-  "global-shortcut",
-  "dialog",
-  "notification",
-  "updater",
-  "store",
-  "opener",
-  "fs",
-  "shell",
-  "clipboard",
-  "process",
-  "http",
-  "websocket",
 ] }
 tauri-plugin-store = "2"
 tauri-plugin-dialog = "2"
@@ -55,6 +42,7 @@ argon2 = "0.5"
 
 # HTTP Client
 reqwest = { version = "0.12", features = ["json", "rustls-tls", "cookies", "gzip", "brotli"] }
+url = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 serde_with = "3"
@@ -63,6 +51,11 @@ serde_with = "3"
 anyhow = "1"
 thiserror = "1"
 
+# Type generation (TS bindings)
+specta = { version = "=2.0.0-rc.26", features = ["derive", "function"] }
+specta-typescript = "0.0.13"
+tauri-specta = { version = "=2.0.0-rc.26", features = ["typescript"] }
+
 # Logging
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
@@ -70,6 +63,13 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 # Config
 config = "0.14"
 directories = "5"
+
+# Crypto / Random
+getrandom = { version = "0.2", features = ["js"] }
+base64 = "0.22"
+
+# Image processing
+image = "0.25"
 
 # Async
 futures = "0.3"

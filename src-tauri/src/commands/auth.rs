@@ -1,15 +1,15 @@
 use crate::{
     crypto::Crypto,
     database::Database,
-    error::{AppError, AppResult},
+    error::{AppError, AppResult, TauriResult},
 };
 use serde::{Deserialize, Serialize};
 use sqlx::Row;
 use tauri::State;
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct LinkedAccount {
     pub id: String,
     pub platform: String,
@@ -21,7 +21,7 @@ pub struct LinkedAccount {
     pub sync_error: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct AuthStatus {
     pub is_authenticated: bool,
     pub user_id: Option<String>,
@@ -29,23 +29,24 @@ pub struct AuthStatus {
     pub linked_accounts: Vec<LinkedAccount>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct SteamAuthRequest {
     pub steam_id: String,
     pub api_key: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct PsnAuthRequest {
     pub npsso: String,
 }
 
 /// Authenticate with Steam using Steam ID and optional API key
 #[tauri::command]
+#[specta::specta]
 pub async fn authenticate_steam(
     request: SteamAuthRequest,
     db: State<'_, Database>,
-    crypto: State<'_, Crypto>,
+    crypto: State<'_, crate::crypto::Crypto>,
 ) -> AppResult<LinkedAccount> {
     // Validate Steam ID format (64-bit Steam ID)
     if request.steam_id.len() != 17 || !request.steam_id.chars().all(|c| c.is_ascii_digit()) {
@@ -54,7 +55,11 @@ pub async fn authenticate_steam(
 
     // Verify the Steam ID works by calling GetPlayerSummaries
     let client = reqwest::Client::new();
-    let api_key = request.api_key.as_deref().unwrap_or(""); // In production, use a configured API key
+    // API key provided inline, or fall back to the user's stored (encrypted) key.
+    let api_key = match &request.api_key {
+        Some(k) if !k.is_empty() => k.clone(),
+        _ => crate::commands::steam::DEV_STEAM_API_KEY.to_string(),
+    };
     let url = format!(
         "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/?key={}&steamids={}",
         api_key, request.steam_id
@@ -64,7 +69,7 @@ pub async fn authenticate_steam(
     let data: serde_json::Value = response.json().await?;
 
     let player = data["response"]["players"][0].as_object()
-        .ok_or_else(|| AppError::SteamApi("Steam ID not found".to_string()))?;
+        .ok_or_else(|| AppError::NotFound("Steam ID not found".to_string()))?;
 
     let persona_name = player["personaname"].as_str().unwrap_or("Unknown").to_string();
     let avatar_url = player["avatarfull"].as_str().map(|s| s.to_string());
@@ -119,10 +124,11 @@ pub async fn authenticate_steam(
 
 /// Authenticate with PSN using NPSSO token
 #[tauri::command]
+#[specta::specta]
 pub async fn authenticate_psn(
     request: PsnAuthRequest,
     db: State<'_, Database>,
-    crypto: State<'_, Crypto>,
+    crypto: State<'_, crate::crypto::Crypto>,
 ) -> AppResult<LinkedAccount> {
     // Validate NPSSO token format
     if request.npsso.is_empty() {
@@ -145,13 +151,16 @@ pub async fn authenticate_psn(
         Ok(resp) if resp.status().is_success() => {
             let data: serde_json::Value = resp.json().await?;
             let profile = data["data"]["me"]["profile"].as_object().ok_or_else(|| {
-                AppError::PsnApi("Invalid PSN response".to_string())
+                anyhow::anyhow!("Invalid PSN response")
             })?;
-            (
-                profile["onlineId"].as_str().unwrap_or("").to_string(),
-                profile["onlineId"].as_str().unwrap_or("Unknown").to_string(),
-                profile["avatarUrls"]?.as_array().and_then(|a| a[0]["url"].as_str()).map(|s| s.to_string()),
-            )
+            let psn_id = profile["onlineId"].as_str().unwrap_or("").to_string();
+            let psn_username = profile["onlineId"].as_str().unwrap_or("Unknown").to_string();
+            let avatar_url = profile["avatarUrls"]
+                .as_array()
+                .and_then(|a| a.first())
+                .and_then(|v| v["url"].as_str())
+                .map(|s| s.to_string());
+            (psn_id, psn_username, avatar_url)
         }
         _ => {
             // Fallback: use PSNProfiles API or manual entry
@@ -204,6 +213,7 @@ pub async fn authenticate_psn(
 
 /// Get all linked accounts for the current user
 #[tauri::command]
+#[specta::specta]
 pub async fn get_linked_accounts(
     db: State<'_, Database>,
 ) -> AppResult<Vec<LinkedAccount>> {
@@ -239,6 +249,7 @@ pub async fn get_linked_accounts(
 
 /// Unlink a platform account
 #[tauri::command]
+#[specta::specta]
 pub async fn unlink_account(
     account_id: String,
     db: State<'_, Database>,
@@ -254,7 +265,7 @@ pub async fn unlink_account(
     .await?;
 
     if result.rows_affected() == 0 {
-        return Err(AppError::NotFound("Account not found".to_string()));
+        return Err(anyhow::anyhow!("Account not found").into());
     }
 
     Ok(())
@@ -262,6 +273,7 @@ pub async fn unlink_account(
 
 /// Get authentication status
 #[tauri::command]
+#[specta::specta]
 pub async fn get_auth_status(
     db: State<'_, Database>,
 ) -> AppResult<AuthStatus> {
@@ -327,7 +339,7 @@ async fn get_current_user_id(db: &Database) -> AppResult<String> {
     let row = sqlx::query("SELECT id FROM users LIMIT 1")
         .fetch_optional(&db.pool)
         .await?
-        .ok_or_else(|| AppError::Unauthorized("No user found. Please link an account first.".to_string()))?;
+        .ok_or_else(|| AppError::Internal("No user found. Please link an account first.".to_string()))?;
 
     Ok(row.get("id"))
 }

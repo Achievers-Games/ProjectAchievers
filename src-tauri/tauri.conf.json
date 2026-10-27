@@ -5,9 +5,9 @@
   "identifier": "com.projectachievers.app",
   "build": {
     "beforeDevCommand": "npm run dev",
-    "devUrl": "http://localhost:3000",
+    "devUrl": "http://localhost:5173",
     "beforeBuildCommand": "npm run build",
-    "frontendDist": "../out"
+    "frontendDist": "../dist"
   },
   "app": {
     "windows": [
@@ -22,8 +22,7 @@
         "fullscreen": false,
         "decorations": true,
         "transparent": false,
-        "visible": true,
-        "theme": "default"
+        "visible": true
       }
     ],
     "security": {
@@ -36,40 +35,10 @@
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
-      "icons/128x128@2x.png",
-      "icons/icon.icns",
-      "icons/icon.ico"
-    ],
-    "windows": {
-      "wix": {
-        "language": "en-US",
-        "template": "wix/main.wxs"
-      },
-      "nsis": {
-        "installerIcon": "icons/icon.ico",
-        "headerBitmap": "icons/nsis-header.bmp"
-      }
-    },
-    "macOS": {
-      "entitlements": "entitlements.plist",
-      "exceptionDomain": "localhost",
-      "frameworks": [],
-      "providerShortName": "Project Achievers",
-      "signingIdentity": "-"
-    },
-    "linux": {
-      "deb": {
-        "depends": ["libwebkit2gtk-4.1-0", "libayatana-appindicator3-1", "librsvg2-common"]
-      },
-      "appimage": {
-        "bundleMediaFramework": true
-      }
-    }
+      "icons/128x128@2x.png"
+    ]
   },
   "plugins": {
-    "store": {
-      "path": "project-achievers-store.bin"
-    },
     "updater": {
       "pubkey": "",
       "endpoints": ["https://github.com/your-org/project-achievers/releases/latest/download/latest.json"],

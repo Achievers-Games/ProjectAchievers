@@ -1,7 +1,7 @@
 use crate::{
     crypto::Crypto,
     database::Database,
-    error::{AppError, AppResult},
+    error::{AppError, AppResult, TauriResult},
 };
 use serde::{Deserialize, Serialize};
 use sqlx::Row;
@@ -11,7 +11,7 @@ use chrono::Utc;
 use reqwest::Client;
 
 /// PSN trophy title (game)
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct PsnTrophyTitle {
     pub np_communication_id: String,
     pub trophy_title_name: String,
@@ -25,7 +25,7 @@ pub struct PsnTrophyTitle {
 }
 
 /// PSN trophy group
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct PsnTrophyGroup {
     pub trophy_group_id: String,
     pub trophy_group_name: String,
@@ -36,7 +36,7 @@ pub struct PsnTrophyGroup {
 }
 
 /// PSN trophy
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct PsnTrophy {
     pub trophy_id: String,
     pub trophy_hidden: bool,
@@ -51,7 +51,7 @@ pub struct PsnTrophy {
 }
 
 /// PSN defined trophies summary
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct PsnDefinedTrophies {
     pub platinum: i32,
     pub gold: i32,
@@ -61,6 +61,7 @@ pub struct PsnDefinedTrophies {
 
 /// Get trophy titles (games) for the current user
 #[tauri::command]
+#[specta::specta]
 pub async fn psn_get_trophy_titles(
     db: State<'_, Database>,
     crypto: State<'_, Crypto>,
@@ -81,7 +82,7 @@ pub async fn psn_get_trophy_titles(
             let token: Option<String> = r.get("encrypted_access_token");
             id.zip(token)
         })
-        .ok_or_else(|| AppError::NotFound("PSN account not linked".to_string()))?;
+        .ok_or_else(|| anyhow::anyhow!("PSN account not linked"))?;
 
     let npsso = crypto.decrypt(&encrypted_npsso)?;
     let client = Client::new();
@@ -89,13 +90,12 @@ pub async fn psn_get_trophy_titles(
     // Use PSN API (limited access)
     // Note: This requires proper PSN API access which is not publicly available
     // For MVP, we'll return an informative error
-    Err(AppError::PlatformNotSupported(
-        "PSN trophy API requires official Sony partnership. For now, use PSNProfiles.com import or manual entry. See: https://github.com/ProjectAchievers/docs#psn-integration".to_string()
-    ))
+    Err(anyhow::anyhow!("PSN trophy API requires official Sony partnership. For now, use PSNProfiles.com import or manual entry. See: https://github.com/ProjectAchievers/docs#psn-integration").into())
 }
 
 /// Get trophy groups for a specific title
 #[tauri::command]
+#[specta::specta]
 pub async fn psn_get_trophy_groups(
     np_communication_id: String,
     db: State<'_, Database>,
@@ -112,18 +112,17 @@ pub async fn psn_get_trophy_groups(
 
     let encrypted_npsso = row
         .and_then(|r| r.get::<Option<String>, _>("encrypted_access_token"))
-        .ok_or_else(|| AppError::NotFound("PSN account not linked".to_string()))?;
+        .ok_or_else(|| anyhow::anyhow!("PSN account not linked"))?;
 
     let npsso = crypto.decrypt(&encrypted_npsso)?;
 
     // This would call the PSN API
-    Err(AppError::PlatformNotSupported(
-        "PSN trophy groups API not publicly available".to_string()
-    ))
+    Err(anyhow::anyhow!("PSN trophy groups API not publicly available").into())
 }
 
 /// Get trophies for a specific group
 #[tauri::command]
+#[specta::specta]
 pub async fn psn_get_trophies(
     np_communication_id: String,
     trophy_group_id: String,
@@ -141,18 +140,17 @@ pub async fn psn_get_trophies(
 
     let encrypted_npsso = row
         .and_then(|r| r.get::<Option<String>, _>("encrypted_access_token"))
-        .ok_or_else(|| AppError::NotFound("PSN account not linked".to_string()))?;
+        .ok_or_else(|| anyhow::anyhow!("PSN account not linked"))?;
 
     let npsso = crypto.decrypt(&encrypted_npsso)?;
 
     // This would call the PSN API
-    Err(AppError::PlatformNotSupported(
-        "PSN trophies API not publicly available".to_string()
-    ))
+    Err(anyhow::anyhow!("PSN trophies API not publicly available").into())
 }
 
 /// Sync PSN data (placeholder - shows the structure)
 #[tauri::command]
+#[specta::specta]
 pub async fn psn_sync_user_data(
     db: State<'_, Database>,
     crypto: State<'_, Crypto>,
@@ -184,20 +182,21 @@ pub async fn psn_sync_user_data(
 
     Ok(PsnSyncResult {
         synced_games: 0,
-        synced_trophies: 0,
-        message: "PSN sync requires official API access. Use PSNProfiles import feature instead.".to_string(),
+        synced_achievements: 0,
+        errors: vec!["PSN sync requires official API access. Use PSNProfiles import feature instead.".to_string()],
     })
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct PsnSyncResult {
     pub synced_games: u32,
-    pub synced_trophies: u32,
-    pub message: String,
+    pub synced_achievements: u32,
+    pub errors: Vec<String>,
 }
 
 /// Import PSN data from PSNProfiles.com (community API)
 #[tauri::command]
+#[specta::specta]
 pub async fn psn_import_from_psnprofiles(
     psnprofiles_username: String,
     db: State<'_, Database>,
@@ -238,7 +237,7 @@ pub async fn psn_import_from_psnprofiles(
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct PsnImportResult {
     pub success: bool,
     pub games_imported: u32,
@@ -248,6 +247,7 @@ pub struct PsnImportResult {
 
 /// Manual trophy entry for PSN
 #[tauri::command]
+#[specta::specta]
 pub async fn psn_add_manual_trophy(
     game_name: String,
     trophy_name: String,
@@ -355,7 +355,7 @@ async fn get_current_user_id(db: &Database) -> AppResult<String> {
     let row = sqlx::query("SELECT id FROM users LIMIT 1")
         .fetch_optional(&db.pool)
         .await?
-        .ok_or_else(|| AppError::Unauthorized("No user found".to_string()))?;
+        .ok_or_else(|| AppError::Internal("No user found".to_string()))?;
 
     Ok(row.get("id"))
 }

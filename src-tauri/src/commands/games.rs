@@ -1,13 +1,13 @@
 use crate::{
     database::Database,
-    error::{AppError, AppResult},
+    error::{AppError, AppResult, TauriResult},
 };
 use serde::{Deserialize, Serialize};
 use sqlx::Row;
 use tauri::State;
 use uuid::Uuid;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct GameListItem {
     pub id: String,
     pub name: String,
@@ -21,7 +21,7 @@ pub struct GameListItem {
     pub user_progress: Option<UserGameProgress>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct UserGameProgress {
     pub unlocked_count: i32,
     pub total_count: i32,
@@ -30,7 +30,7 @@ pub struct UserGameProgress {
     pub last_unlocked_at: Option<i64>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct GameDetail {
     pub id: String,
     pub name: String,
@@ -51,7 +51,7 @@ pub struct GameDetail {
     pub achievements: Vec<AchievementWithProgress>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct AchievementWithProgress {
     pub id: String,
     pub platform_achievement_id: String,
@@ -69,7 +69,7 @@ pub struct AchievementWithProgress {
     pub rarity_at_unlock: Option<f64>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct GameSearchResult {
     pub id: String,
     pub name: String,
@@ -81,6 +81,7 @@ pub struct GameSearchResult {
 
 /// Get all games with optional filters
 #[tauri::command]
+#[specta::specta]
 pub async fn get_games(
     platform: Option<String>,
     genre: Option<String>,
@@ -161,7 +162,7 @@ pub async fn get_games(
         let completion = if total > 0 { (unlocked as f32 / total as f32) * 100.0 } else { 0.0 };
 
         let genres: Vec<String> = serde_json::from_str(
-            row.get::<Option<String>, _>("genres_json").unwrap_or_default().as_deref().unwrap_or("[]")
+            row.get::<Option<String>, _>("genres_json").as_deref().unwrap_or("[]")
         ).unwrap_or_default();
 
         results.push(GameListItem {
@@ -189,6 +190,7 @@ pub async fn get_games(
 
 /// Get detailed game info with achievements
 #[tauri::command]
+#[specta::specta]
 pub async fn get_game_detail(
     game_id: String,
     db: State<'_, Database>,
@@ -202,18 +204,18 @@ pub async fn get_game_detail(
     .bind(&game_id)
     .fetch_optional(&db.pool)
     .await?
-    .ok_or_else(|| AppError::NotFound("Game not found".to_string()))?;
+    .ok_or_else(|| anyhow::anyhow!("Game not found"))?;
 
     let genres: Vec<String> = serde_json::from_str(
-        game_row.get::<Option<String>, _>("genres_json").unwrap_or_default().as_deref().unwrap_or("[]")
+        game_row.get::<Option<String>, _>("genres_json").as_deref().unwrap_or("[]")
     ).unwrap_or_default();
 
     let developers: Vec<String> = serde_json::from_str(
-        game_row.get::<Option<String>, _>("developers_json").unwrap_or_default().as_deref().unwrap_or("[]")
+        game_row.get::<Option<String>, _>("developers_json").as_deref().unwrap_or("[]")
     ).unwrap_or_default();
 
     let publishers: Vec<String> = serde_json::from_str(
-        game_row.get::<Option<String>, _>("publishers_json").unwrap_or_default().as_deref().unwrap_or("[]")
+        game_row.get::<Option<String>, _>("publishers_json").as_deref().unwrap_or("[]")
     ).unwrap_or_default();
 
     // Get achievements with user progress
@@ -297,6 +299,7 @@ pub async fn get_game_detail(
 
 /// Search games by name
 #[tauri::command]
+#[specta::specta]
 pub async fn search_games(
     query: String,
     limit: Option<i32>,
@@ -342,6 +345,7 @@ pub async fn search_games(
 
 /// Get user's progress for a specific game
 #[tauri::command]
+#[specta::specta]
 pub async fn get_user_game_progress(
     game_id: String,
     db: State<'_, Database>,
@@ -382,7 +386,7 @@ async fn get_current_user_id(db: &Database) -> AppResult<String> {
     let row = sqlx::query("SELECT id FROM users LIMIT 1")
         .fetch_optional(&db.pool)
         .await?
-        .ok_or_else(|| AppError::Unauthorized("No user found".to_string()))?;
+        .ok_or_else(|| AppError::Internal("No user found".to_string()))?;
 
     Ok(row.get("id"))
 }

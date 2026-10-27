@@ -1,0 +1,293 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light theme (rarely used — app is dark-first) */
+    --background: 240 9% 96%;
+    --foreground: 240 10% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 10%;
+
+    --primary: 18 89% 55%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 240 9% 94%;
+    --secondary-foreground: 240 10% 14%;
+
+    --muted: 240 9% 92%;
+    --muted-foreground: 240 6% 40%;
+
+    --accent: 45 93% 47%;
+    --accent-foreground: 240 10% 8%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 240 9% 88%;
+    --input: 240 9% 88%;
+    --ring: 18 89% 55%;
+
+    --radius: 1rem;
+
+    --trophy-platinum: 203 89% 53%;
+    --trophy-gold: 45 93% 47%;
+    --trophy-silver: 210 10% 60%;
+    --trophy-bronze: 20 83% 50%;
+
+    --platform-steam: 214 100% 56%;
+    --platform-playstation: 340 83% 62%;
+    --platform-xbox: 201 98% 46%;
+  }
+
+  .dark {
+    /* Kyara-inspired: warm near-black with ember accents */
+    --background: 255 15% 6%;          /* #0d0c11 */
+    --foreground: 40 25% 94%;          /* warm off-white */
+
+    --card: 250 14% 9%;                /* dark panel */
+    --card-foreground: 40 25% 94%;
+
+    --popover: 250 14% 10%;
+    --popover-foreground: 40 25% 94%;
+
+    --primary: 15 92% 56%;             /* ember orange-red */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 250 12% 14%;
+    --secondary-foreground: 40 20% 88%;
+
+    --muted: 250 12% 15%;
+    --muted-foreground: 245 10% 62%;
+
+    --accent: 42 95% 55%;              /* gold */
+    --accent-foreground: 255 15% 8%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 250 12% 18%;
+    --input: 250 12% 18%;
+    --ring: 15 92% 56%;
+
+    --trophy-platinum: 203 89% 60%;
+    --trophy-gold: 45 95% 55%;
+    --trophy-silver: 210 12% 68%;
+    --trophy-bronze: 20 83% 55%;
+
+    --platform-steam: 214 100% 60%;
+    --platform-playstation: 340 83% 65%;
+    --platform-xbox: 201 98% 50%;
+
+    --glow-ember: 15 92% 56%;
+    --glow-gold: 42 95% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-white/20 dark:border-slate-700/50;
+  }
+
+  .trophy-platinum {
+    @apply text-trophy-platinum;
+  }
+  .trophy-gold {
+    @apply text-trophy-gold;
+  }
+  .trophy-silver {
+    @apply text-trophy-silver;
+  }
+  .trophy-bronze {
+    @apply text-trophy-bronze;
+  }
+
+  .badge-platinum {
+    @apply bg-trophy-platinum/10 text-trophy-platinum border-trophy-platinum/20;
+  }
+  .badge-gold {
+    @apply bg-trophy-gold/10 text-trophy-gold border-trophy-gold/20;
+  }
+  .badge-silver {
+    @apply bg-trophy-silver/10 text-trophy-silver border-trophy-silver/20;
+  }
+  .badge-bronze {
+    @apply bg-trophy-bronze/10 text-trophy-bronze border-trophy-bronze/20;
+  }
+
+  .platform-steam {
+    @apply bg-platform-steam/10 text-platform-steam border-platform-steam/20;
+  }
+  .platform-playstation {
+    @apply bg-platform-playstation/10 text-platform-playstation border-platform-playstation/20;
+  }
+
+  .achievement-card {
+    @apply relative bg-card rounded-lg border border-border p-4 transition-all duration-200 hover:border-primary/50 hover:shadow-glow;
+  }
+  .achievement-card.hidden {
+    @apply opacity-50 grayscale;
+  }
+  .achievement-card.unlocked {
+    @apply border-primary/30 bg-primary/5;
+  }
+  .achievement-card.locked {
+    @apply opacity-60;
+  }
+
+  .progress-ring {
+    @apply relative w-12 h-12;
+  }
+
+  .glass-card {
+    @apply bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm border border-white/30 dark:border-slate-700/30 rounded-xl;
+  }
+
+  .guide-tabs {
+    @apply flex border-b border-border -mb-px;
+  }
+
+  .guide-tab {
+    @apply px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary border-b-2 border-transparent;
+  }
+  .guide-tab.active {
+    @apply text-primary border-b-primary;
+  }
+
+  .comment-thread {
+    @apply border-l-2 border-border pl-4 ml-2;
+  }
+
+  .reaction-badge {
+    @apply inline-flex items-center gap-1 px-2 py-1 rounded-full bg-secondary text-secondary-foreground text-xs border border-border hover:bg-primary hover:text-primary-foreground transition-colors;
+  }
+
+  .skeleton-text {
+    @apply animate-pulse rounded bg-secondary;
+  }
+}
+
+@layer utilities {
+  /* ===== Kyara-inspired dynamic pieces ===== */
+
+  /* Big gradient numeral, like Kyara's stat highlights */
+  .stat-numeral {
+    @apply font-extrabold tracking-tight;
+    background-image: linear-gradient(
+      120deg,
+      hsl(var(--glow-gold)) 0%,
+      hsl(var(--glow-ember)) 55%,
+      hsl(0 70% 55%) 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Stat / content card with soft inner gradient & hover lift */
+  .dynamic-card {
+    @apply relative overflow-hidden rounded-2xl border border-border/80
+      bg-gradient-to-b from-card to-card/60
+      transition-all duration-300 ease-out
+      hover:-translate-y-1 hover:border-primary/40;
+    box-shadow: 0 1px 0 0 rgb(255 255 255 / 4%) inset, 0 8px 24px -12px rgb(0 0 0 / 60%);
+  }
+  .dynamic-card:hover {
+    box-shadow:
+      0 1px 0 0 rgb(255 255 255 / 6%) inset,
+      0 18px 40px -16px hsl(var(--glow-ember) / 35%),
+      0 0 0 1px hsl(var(--glow-ember) / 15%);
+  }
+
+  /* Glossy primary button sheen */
+  .btn-glossy {
+    @apply relative overflow-hidden font-semibold rounded-full
+      shadow-[0_8px_24px_-8px_hsl(var(--primary)/60%)]
+      active:translate-y-px;
+  }
+  .btn-glossy::after {
+    content: "";
+    @apply pointer-events-none absolute inset-0 rounded-[inherit]
+      bg-gradient-to-b from-white/25 via-transparent to-black/10;
+  }
+
+  /* Ambient background blobs */
+  .ambient-blob {
+    @apply pointer-events-none fixed rounded-full blur-3xl opacity-60;
+    background: radial-gradient(
+      closest-side,
+      hsl(var(--glow-ember) / 18%),
+      transparent 70%
+    );
+  }
+
+  /* Shimmer sweep used on covers */
+  .shimmer-sweep::before {
+    content: "";
+    @apply pointer-events-none absolute inset-0 z-10
+      bg-gradient-to-r from-transparent via-white/10 to-transparent
+      opacity-0 group-hover:opacity-100
+      transition-opacity duration-500;
+    background-size: 200% 100%;
+    animation: shimmer-slide 1.2s ease-out infinite;
+  }
+  @keyframes shimmer-slide {
+    from { background-position: 200% 0; }
+    to { background-position: -200% 0; }
+  }
+
+  /* Reveal-on-load animation */
+  .reveal {
+    animation: reveal-up 0.45s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  }
+  .reveal-delay-1 { animation-delay: 60ms; }
+  .reveal-delay-2 { animation-delay: 120ms; }
+  .reveal-delay-3 { animation-delay: 180ms; }
+  @keyframes reveal-up {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-border rounded-full hover:bg-muted-foreground/30 transition-colors;
+}
+
+/* Focus styles */
+*:focus-visible {
+  @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+}
+
+/* Selection */
+::selection {
+  @apply bg-primary/30 text-primary-foreground;
+}

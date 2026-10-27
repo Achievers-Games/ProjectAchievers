@@ -1,8 +1,7 @@
-'use client';
-
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import { AchievementWithProgress } from '@/lib/tauri';
-import { getTrophyColor, getTrophyIcon } from '@/lib/utils';
+import { getTrophyIcon } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 
 interface AchievementCardProps {
@@ -15,7 +14,7 @@ export function AchievementCard({ achievement, className }: AchievementCardProps
 
   return (
     <Link
-      href={`/dashboard/achievements/${achievement.id}`}
+      to={`/achievements/${achievement.id}`}
       className={cn(
         'achievement-card group flex items-center gap-4 cursor-pointer',
         achievement.unlocked ? 'unlocked border-primary/30 bg-primary/5' : 'locked',
@@ -31,12 +30,12 @@ export function AchievementCard({ achievement, className }: AchievementCardProps
         />
         {achievement.hidden && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg">
-            <span className="text-muted-foreground">👁️</span>
+            <span className="text-muted-foreground">???</span>
           </div>
         )}
         {achievement.unlocked && (
           <div className="absolute -right-1 -bottom-1 w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold shadow-md">
-            ✓
+            ?
           </div>
         )}
       </div>
@@ -57,7 +56,7 @@ export function AchievementCard({ achievement, className }: AchievementCardProps
         </p>
         <div className="flex items-center gap-2 mt-1">
           <span className="text-[10px] font-mono text-muted-foreground">
-            {achievement.global_rarity.toFixed(1)}% joueurs
+            {(achievement.global_rarity ?? 0).toFixed(1)}% joueurs
           </span>
           <span className="text-[10px] font-mono text-muted-foreground">
             {achievement.points} pts
@@ -71,8 +70,4 @@ export function AchievementCard({ achievement, className }: AchievementCardProps
       )}
     </Link>
   );
-}
-
-function cn(...classes: (string | undefined | null | boolean)[]): string {
-  return classes.filter(Boolean).join(' ');
 }

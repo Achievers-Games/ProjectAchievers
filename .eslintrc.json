@@ -1,19 +1,18 @@
 {
+  "root": true,
+  "env": { "browser": true, "es2021": true },
+  "parser": "@typescript-eslint/parser",
   "extends": [
-    "next/core-web-vitals",
     "plugin:@typescript-eslint/recommended",
     "plugin:react-hooks/recommended",
     "prettier"
   ],
   "rules": {
     "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
-    "react/no-unescaped-entities": "off",
-    "@next/next/no-img-element": "off"
+    "@typescript-eslint/no-explicit-any": "off"
   },
   "plugins": ["@typescript-eslint", "react-hooks"],
   "settings": {
-    "react": {
-      "version": "18"
-    }
+    "react": { "version": "18" }
   }
 }

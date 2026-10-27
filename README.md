@@ -17,7 +17,7 @@ Application de bureau communautaire pour les chasseurs de succès (achievements/
 
 | Couche | Technologie |
 |--------|-------------|
-| Frontend | Next.js 14 (App Router), React 18, TypeScript |
+| Frontend | Vite 7 + React 18, TypeScript |
 | Bureau | Tauri v2 (Rust) |
 | UI | shadcn/ui, Tailwind CSS |
 | Base de données | SQLite (sqlx) |
@@ -64,12 +64,17 @@ npm run tauri:build
 
 ```
 project-achievers/
-├── src/                          # Frontend Next.js
-│   ├── app/                      # App Router pages
-│   ├── components/               # Composants React
-│   ├── lib/                      # Utilitaires et types Tauri
-│   ├── hooks/                    # Hooks personnalisés
-│   └── stores/                   # Stores Zustand
+├── index.html                     # Point d'entrée (Vite)
+├── vite.config.ts / vitest.config.ts
+├── src/                           # Frontend Vite + React
+│   ├── main.tsx                   # Bootstrap (thème, router, react-query)
+│   ├── App.tsx                    # Routes (react-router, HashRouter)
+│   ├── routes/                    # Pages (dashboard, games, achievements…)
+│   ├── components/                # Composants React (layout, ui, …)
+│   ├── hooks/                     # Hooks personnalisés (useSync, useDebouncedValue)
+│   ├── lib/                       # Utilitaires et client Tauri typé
+│   ├── stores/                    # Stores Zustand (à venir)
+│   └── test/                      # Setup Vitest
 ├── src-tauri/                    # Backend Rust (Tauri)
 │   ├── src/
 │   │   ├── commands/             # Commandes Tauri (IPC)

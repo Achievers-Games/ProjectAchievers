@@ -1,310 +1,124 @@
-import { invoke } from '@tauri-apps/api/core';
+// Frontend IPC layer.
+//
+// Types and command bindings are GENERATED from the Rust code by
+// tauri-specta (any debug build regenerates src/lib/tauri-bindings.ts).
+// Only the thin aliases and listen helpers below are maintained by hand.
+
 import { listen } from '@tauri-apps/api/event';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
+import {
+  commands,
+  type AIGuideRequest_Deserialize,
+  type AchievementGuide_Serialize,
+  type AchievementWithProgress_Serialize,
+  type AuthStatus_Serialize,
+  type Comment_Serialize,
+  type CreateCommentRequest_Deserialize,
+  type CreateGuideRequest_Deserialize,
+  type GameDetail_Serialize,
+  type GameListItem_Serialize,
+  type LinkedAccount_Serialize,
+  type ReactionRequest,
+  type SteamAuthRequest_Deserialize,
+  type SteamGameSchema,
+  type SteamOwnedGame_Serialize,
+  type SteamPlayerAchievement_Serialize,
+  type SyncAllResult,
+  type SyncHistoryEntry_Serialize,
+  type SyncResult,
+  type SyncStatus_Serialize,
+  type UpdateCommentRequest,
+  type UpdateGuideRequest_Deserialize,
+  type UpdateInfo_Serialize,
+  type AppVersion,
+  type UserGameProgress_Serialize,
+} from './tauri-bindings';
 
-// Types matching Rust structs
-export interface LinkedAccount {
-  id: string;
-  platform: string;
-  platform_user_id: string;
-  platform_username: string | null;
-  avatar_url: string | null;
-  last_synced_at: number | null;
-  sync_status: string;
-  sync_error: string | null;
+export { commands };
+
+// tauri-specta wraps every command result as { status: "ok", data } |
+// { status: "error", error }. We unwrap back to the plain invoke() shape:
+// Promise resolving with data, rejecting with the AppError payload.
+type UnwrapOk<R> = R extends { status: 'ok'; data: infer D } ? D : never;
+
+async function unwrap<R extends { status: 'ok' | 'error' }>(
+  p: Promise<R>,
+): Promise<R extends { status: 'ok'; data: infer D } ? D : never> {
+  const result: { status: 'ok' | 'error'; error?: unknown; data?: unknown } = await p;
+  if (result.status === 'error') {
+    throw result.error;
+  }
+  return result.data as UnwrapOk<R>;
 }
 
-export interface AuthStatus {
-  is_authenticated: boolean;
-  user_id: string | null;
-  username: string | null;
-  linked_accounts: LinkedAccount[];
-}
+// Hand-written aliases so components keep the original type names.
+export type {
+  SteamGameSchema,
+  UpdateCommentRequest,
+  ReactionRequest,
+  AppVersion,
+  SyncResult,
+  SyncAllResult,
+};
+export type LinkedAccount = LinkedAccount_Serialize;
+export type AuthStatus = AuthStatus_Serialize;
+export type SteamOwnedGame = SteamOwnedGame_Serialize;
+export type SteamPlayerAchievement = SteamPlayerAchievement_Serialize;
+export type GameListItem = GameListItem_Serialize;
+export type UserGameProgress = UserGameProgress_Serialize;
+export type AchievementWithProgress = AchievementWithProgress_Serialize;
+export type GameDetail = GameDetail_Serialize;
+export type AchievementGuide = AchievementGuide_Serialize;
+export type CreateGuideRequest = CreateGuideRequest_Deserialize;
+export type UpdateGuideRequest = UpdateGuideRequest_Deserialize;
+export type AIGuideRequest = AIGuideRequest_Deserialize;
+export type Comment = Comment_Serialize;
+export type CreateCommentRequest = CreateCommentRequest_Deserialize;
+export type SyncStatus = SyncStatus_Serialize;
+export type SyncHistoryEntry = SyncHistoryEntry_Serialize;
+export type UpdateInfo = UpdateInfo_Serialize;
 
-export interface SteamAuthRequest {
-  steam_id: string;
-  api_key?: string;
-}
+export type { SteamResolvedProfile } from './tauri-bindings';
 
-export interface PsnAuthRequest {
-  npsso: string;
-}
-
-export interface SteamOwnedGame {
-  appid: number;
-  name: string;
-  playtime_forever: number | null;
-  img_icon_url: string;
-  img_logo_url: string;
-  has_community_visible_stats: boolean;
-}
-
-export interface SteamPlayerAchievement {
-  apiname: string;
-  achieved: number;
-  unlocktime: number | null;
-}
-
-export interface SteamAchievementDefinition {
-  name: string;
-  displayname: string;
-  description: string;
-  icon: string;
-  icongray: string;
-  hidden: number;
-}
-
-export interface SteamGameSchema {
-  game_name: string;
-  game_version: string;
-  available_game_stats: {
-    achievements: SteamAchievementDefinition[];
-  };
-}
-
-export interface SteamGlobalAchievement {
-  name: string;
-  percent: number;
-}
-
-export interface SyncResult {
-  synced_games: number;
-  synced_achievements: number;
-  errors: string[];
-}
-
-export interface SyncAllResult {
-  steam: SyncResult;
-  psn: SyncResult;
-  total_games: number;
-  total_achievements: number;
-  duration_ms: number;
-}
-
-export interface SyncStatus {
-  platform: string;
-  last_synced_at: number | null;
-  sync_status: string;
-  sync_error: string | null;
-  games_synced: number;
-  achievements_synced: number;
-}
-
-export interface GameListItem {
-  id: string;
-  name: string;
-  slug: string;
-  cover_url: string | null;
-  header_url: string | null;
-  platform: string;
-  total_achievements: number;
-  release_date: number | null;
-  genres: string[];
-  user_progress: UserGameProgress | null;
-}
-
-export interface UserGameProgress {
-  unlocked_count: number;
-  total_count: number;
-  completion_percentage: number;
-  platinum_unlocked: boolean;
-  last_unlocked_at: number | null;
-}
-
-export interface AchievementWithProgress {
-  id: string;
-  platform_achievement_id: string;
-  name: string;
-  description: string;
-  icon_url: string | null;
-  icon_gray_url: string | null;
-  hidden: boolean;
-  trophy_type: string | null;
-  global_rarity: number;
-  points: number;
-  is_platinum: boolean;
-  unlocked: boolean;
-  unlocked_at: number | null;
-  rarity_at_unlock: number | null;
-}
-
-export interface GameDetail {
-  id: string;
-  name: string;
-  slug: string;
-  cover_url: string | null;
-  header_url: string | null;
-  platform: string;
-  steam_app_id: number | null;
-  psn_title_id: string | null;
-  total_achievements: number;
-  platinum_achievement_id: string | null;
-  release_date: number | null;
-  genres: string[];
-  developers: string[];
-  publishers: string[];
-  description: string | null;
-  user_progress: UserGameProgress | null;
-  achievements: AchievementWithProgress[];
-}
-
-export interface GameSearchResult {
-  id: string;
-  name: string;
-  slug: string;
-  cover_url: string | null;
-  platform: string;
-  total_achievements: number;
-}
-
-export interface AchievementGuide {
-  id: string;
-  achievement_id: string;
-  author_id: string;
-  author_username: string;
-  author_avatar: string | null;
-  content_md: string;
-  content_type: string;
-  video_url: string | null;
-  images: string[];
-  ai_generated: boolean;
-  ai_model: string | null;
-  version: number;
-  parent_guide_id: string | null;
-  status: string;
-  verified: boolean;
-  verified_by: string | null;
-  verified_at: number | null;
-  upvotes: number;
-  downvotes: number;
-  user_vote: string | null;
-  created_at: number;
-  updated_at: number;
-}
-
-export interface CreateGuideRequest {
-  achievement_id: string;
-  content_md: string;
-  content_type: string;
-  video_url: string | null;
-  images: string[];
-}
-
-export interface UpdateGuideRequest {
-  guide_id: string;
-  content_md?: string;
-  video_url?: string | null;
-  images?: string[] | null;
-  status?: string | null;
-}
-
-export interface AIGuideRequest {
-  achievement_id: string;
-  game_name: string;
-  achievement_name: string;
-  achievement_description: string;
-  trophy_type: string | null;
-  known_requirements: string | null;
-}
-
-export interface VoteResult {
-  upvotes: number;
-  downvotes: number;
-  user_vote: string | null;
-}
-
-export interface Comment {
-  id: string;
-  achievement_id: string;
-  user_id: string;
-  username: string;
-  avatar_url: string | null;
-  content_md: string;
-  parent_id: string | null;
-  depth: number;
-  reactions: CommentReactions;
-  user_reaction: string | null;
-  reply_count: number;
-  is_deleted: boolean;
-  created_at: number;
-  updated_at: number;
-  replies: Comment[] | null;
-}
-
-export interface CommentReactions {
-  helpful: number;
-  funny: number;
-  thanks: number;
-  heart: number;
-}
-
-export interface CreateCommentRequest {
-  achievement_id: string;
-  content_md: string;
-  parent_id: string | null;
-}
-
-export interface UpdateCommentRequest {
-  comment_id: string;
-  content_md: string;
-}
-
-export interface ReactionRequest {
-  comment_id: string;
-  reaction_type: string;
-}
-
-export interface AppVersion {
-  version: string;
-  app_name: string;
-}
-
-export interface UpdateInfo {
-  available: boolean;
-  version: string | null;
-  notes: string | null;
-  date: string | null;
-}
-
-// Tauri invoke helpers with proper typing
+// Thin helpers kept for convenience (matching the original call sites).
 export const tauriApi = {
   // Auth
-  authenticateSteam: (request: SteamAuthRequest) =>
-    invoke<LinkedAccount>('authenticate_steam', { request }),
-  authenticatePsn: (request: PsnAuthRequest) =>
-    invoke<LinkedAccount>('authenticate_psn', { request }),
-  getLinkedAccounts: () => invoke<LinkedAccount[]>('get_linked_accounts'),
-  unlinkAccount: (accountId: string) =>
-    invoke('unlink_account', { account_id: accountId }),
-  getAuthStatus: () => invoke<AuthStatus>('get_auth_status'),
+  authenticateSteam: (request: SteamAuthRequest_Deserialize) =>
+    unwrap(commands.authenticateSteam(request)),
+  authenticatePsn: (request: { npsso: string }) => unwrap(commands.authenticatePsn(request)),
+  getLinkedAccounts: () => unwrap(commands.getLinkedAccounts()),
+  unlinkAccount: (accountId: string) => unwrap(commands.unlinkAccount(accountId)),
+  getAuthStatus: () => unwrap(commands.getAuthStatus()),
 
   // Steam
-  steamGetOwnedGames: () => invoke<SteamOwnedGame[]>('steam_get_owned_games'),
-  steamGetPlayerAchievements: (appId: number) =>
-    invoke<SteamPlayerAchievement[]>('steam_get_player_achievements', { app_id: appId }),
-  steamGetGameSchema: (appId: number) =>
-    invoke<SteamGameSchema>('steam_get_game_schema', { app_id: appId }),
+  steamGetOwnedGames: () => unwrap(commands.steamGetOwnedGames()),
+  steamGetPlayerAchievements: (appId: number) => unwrap(commands.steamGetPlayerAchievements(appId)),
+  steamGetGameSchema: (appId: number) => unwrap(commands.steamGetGameSchema(appId)),
   steamGetGlobalAchievementPercentages: (appId: number) =>
-    invoke<SteamGlobalAchievement[]>('steam_get_global_achievement_percentages', { app_id: appId }),
-  steamSyncUserData: () => invoke<SyncResult>('steam_sync_user_data'),
+    unwrap(commands.steamGetGlobalAchievementPercentages(appId)),
+  steamSyncUserData: () => unwrap(commands.steamSyncUserData()),
+  steamResolveVanity: (profile: string) => unwrap(commands.steamResolveVanity(profile)),
 
   // PSN
-  psnGetTrophyTitles: () => invoke<any[]>('psn_get_trophy_titles'),
+  psnGetTrophyTitles: () => unwrap(commands.psnGetTrophyTitles()),
   psnGetTrophyGroups: (npCommunicationId: string) =>
-    invoke<any[]>('psn_get_trophy_groups', { np_communication_id: npCommunicationId }),
+    unwrap(commands.psnGetTrophyGroups(npCommunicationId)),
   psnGetTrophies: (npCommunicationId: string, trophyGroupId: string) =>
-    invoke<any[]>('psn_get_trophies', { np_communication_id: npCommunicationId, trophy_group_id: trophyGroupId }),
-  psnSyncUserData: () => invoke<any>('psn_sync_user_data'),
+    unwrap(commands.psnGetTrophies(npCommunicationId, trophyGroupId)),
+  psnSyncUserData: () => unwrap(commands.psnSyncUserData()),
   psnImportFromPsnprofiles: (username: string) =>
-    invoke<any>('psn_import_from_psnprofiles', { psnprofiles_username: username }),
-  psnAddManualTrophy: (data: {
-    game_name: string;
-    trophy_name: string;
-    trophy_type: string;
-    description: string;
-    earned: boolean;
-    earned_date: string | null;
-  }) => invoke<string>('psn_add_manual_trophy', data),
+    unwrap(commands.psnImportFromPsnprofiles(username)),
+  psnAddManualTrophy: (
+    gameName: string,
+    trophyName: string,
+    trophyType: string,
+    description: string,
+    earned: boolean,
+    earnedDate: string | null,
+  ) =>
+    unwrap(
+      commands.psnAddManualTrophy(gameName, trophyName, trophyType, description, earned, earnedDate),
+    ),
 
   // Games
   getGames: (params?: {
@@ -313,57 +127,57 @@ export const tauriApi = {
     search?: string;
     limit?: number;
     offset?: number;
-  }) => invoke<GameListItem[]>('get_games', params ?? {}),
-  getGameDetail: (gameId: string) =>
-    invoke<GameDetail>('get_game_detail', { game_id: gameId }),
+  }) =>
+    unwrap(
+      commands.getGames(
+        params?.platform ?? null,
+        params?.genre ?? null,
+        params?.search ?? null,
+        params?.limit ?? null,
+        params?.offset ?? null,
+      ),
+    ),
+  getGameDetail: (gameId: string) => unwrap(commands.getGameDetail(gameId)),
   searchGames: (query: string, limit?: number) =>
-    invoke<GameSearchResult[]>('search_games', { query, limit }),
-  getUserGameProgress: (gameId: string) =>
-    invoke<UserGameProgress>('get_user_game_progress', { game_id: gameId }),
+    unwrap(commands.searchGames(query, limit ?? null)),
+  getUserGameProgress: (gameId: string) => unwrap(commands.getUserGameProgress(gameId)),
 
   // Guides
   getAchievementGuides: (achievementId: string) =>
-    invoke<AchievementGuide[]>('get_achievement_guides', { achievement_id: achievementId }),
-  createGuide: (request: CreateGuideRequest) =>
-    invoke<AchievementGuide>('create_guide', { request }),
-  updateGuide: (request: UpdateGuideRequest) =>
-    invoke<AchievementGuide>('update_guide', { request }),
-  deleteGuide: (guideId: string) =>
-    invoke('delete_guide', { guide_id: guideId }),
+    unwrap(commands.getAchievementGuides(achievementId)),
+  createGuide: async (request: CreateGuideRequest_Deserialize) =>
+    unwrap(commands.createGuide(request)),
+  updateGuide: async (request: UpdateGuideRequest_Deserialize) =>
+    unwrap(commands.updateGuide(request)),
+  deleteGuide: (guideId: string) => unwrap(commands.deleteGuide(guideId)),
   voteGuide: (guideId: string, voteType: 'up' | 'down') =>
-    invoke<VoteResult>('vote_guide', { guide_id: guideId, vote_type: voteType }),
-  generateAiGuide: (request: AIGuideRequest) =>
-    invoke<AchievementGuide>('generate_ai_guide', { request }),
+    unwrap(commands.voteGuide(guideId, voteType)),
+  generateAiGuide: (request: AIGuideRequest_Deserialize) => unwrap(commands.generateAiGuide(request)),
 
   // Comments
   getComments: (achievementId: string, limit?: number, offset?: number) =>
-    invoke<Comment[]>('get_comments', { achievement_id: achievementId, limit, offset }),
-  createComment: (request: CreateCommentRequest) =>
-    invoke<Comment>('create_comment', { request }),
-  updateComment: (request: UpdateCommentRequest) =>
-    invoke<Comment>('update_comment', { request }),
-  deleteComment: (commentId: string) =>
-    invoke('delete_comment', { comment_id: commentId }),
-  reactToComment: (request: ReactionRequest) =>
-    invoke<CommentReactions>('react_to_comment', { request }),
+    unwrap(commands.getComments(achievementId, limit ?? null, offset ?? null)),
+  createComment: (request: CreateCommentRequest_Deserialize) =>
+    unwrap(commands.createComment(request)),
+  updateComment: (request: UpdateCommentRequest) => unwrap(commands.updateComment(request)),
+  deleteComment: (commentId: string) => unwrap(commands.deleteComment(commentId)),
+  reactToComment: (request: ReactionRequest) => unwrap(commands.reactToComment(request)),
 
   // Sync
-  syncAllPlatforms: () => invoke<SyncAllResult>('sync_all_platforms'),
-  getSyncStatus: () => invoke<SyncStatus[]>('get_sync_status'),
-  triggerBackgroundSync: () => invoke('trigger_background_sync'),
-  getSyncHistory: (limit?: number) =>
-    invoke<any[]>('get_sync_history', { limit }),
-  forceSyncGame: (gameId: string) =>
-    invoke<SyncResult>('force_sync_game', { game_id: gameId }),
+  syncAllPlatforms: () => unwrap(commands.syncAllPlatforms()),
+  getSyncStatus: () => unwrap(commands.getSyncStatus()),
+  triggerBackgroundSync: () => unwrap(commands.triggerBackgroundSync()),
+  getSyncHistory: (limit?: number) => unwrap(commands.getSyncHistory(limit ?? null)),
+  forceSyncGame: (gameId: string) => unwrap(commands.forceSyncGame(gameId)),
 
   // System
-  getAppVersion: () => invoke<AppVersion>('get_app_version'),
-  openExternalUrl: (url: string) => invoke('open_external_url', { url }),
-  showInFolder: (path: string) => invoke('show_in_folder', { path }),
-  checkForUpdates: () => invoke<UpdateInfo>('check_for_updates'),
-  installUpdate: () => invoke('install_update'),
-  minimizeToTray: () => invoke('minimize_to_tray'),
-  showWindow: () => invoke('show_window'),
+  getAppVersion: () => unwrap(commands.getAppVersion()),
+  openExternalUrl: (url: string) => unwrap(commands.openExternalUrl(url)),
+  showInFolder: (path: string) => unwrap(commands.showInFolder(path)),
+  checkForUpdates: () => unwrap(commands.checkForUpdates()),
+  installUpdate: () => unwrap(commands.installUpdate()),
+  minimizeToTray: () => unwrap(commands.minimizeToTray()),
+  showWindow: () => unwrap(commands.showWindow()),
 
   // Listen for events
   listenToTraySync: (callback: () => void) => {

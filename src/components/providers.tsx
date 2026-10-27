@@ -1,7 +1,6 @@
-'use client';
-
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { tauriApi, type LinkedAccount } from '@/lib/tauri';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -27,10 +26,9 @@ interface AuthContextType {
   isAuthenticated: boolean;
   userId: string | null;
   username: string | null;
-  linkedAccounts: any[];
+  linkedAccounts: LinkedAccount[];
   loading: boolean;
-  login: () => void;
-  logout: () => void;
+  refresh: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -39,45 +37,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [username, setUsername] = useState<string | null>(null);
-  const [linkedAccounts, setLinkedAccounts] = useState<any[]>([]);
+  const [linkedAccounts, setLinkedAccounts] = useState<LinkedAccount[]>([]);
   const [loading, setLoading] = useState(true);
+  const [reload, setReload] = useState(0);
 
   useEffect(() => {
-    checkAuth();
-  }, []);
+    let cancelled = false;
+    (async () => {
+      try {
+        const status = await tauriApi.getAuthStatus();
+        if (cancelled) return;
+        setIsAuthenticated(status.is_authenticated);
+        setUserId(status.user_id);
+        setUsername(status.username);
+        setLinkedAccounts(status.linked_accounts ?? []);
+      } catch {
+        if (cancelled) return;
+        setIsAuthenticated(false);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [reload]);
 
-  const checkAuth = async () => {
-    try {
-      const status = await window.__TAURI__.invoke('get_auth_status');
-      setIsAuthenticated(status.isAuthenticated);
-      setUserId(status.user_id ?? null);
-      setUsername(status.username ?? null);
-      setLinkedAccounts(status.linked_accounts ?? []);
-    } catch {
-      setIsAuthenticated(false);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const login = () => {
-    // Trigger OAuth flow via Tauri
-    window.__TAURI__.invoke('authenticate_steam', { steam_id: '', api_key: undefined });
-  };
-
-  const logout = () => {
-    setIsAuthenticated(false);
-    setUserId(null);
-    setUsername(null);
-    setLinkedAccounts([]);
-  };
-
-  if (!AuthContext.Provider) {
-    return children;
-  }
+  const refresh = () => setReload((n) => n + 1);
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, userId, username, linkedAccounts, loading, login, logout }}>
+    <AuthContext.Provider
+      value={{ isAuthenticated, userId, username, linkedAccounts, loading, refresh }}
+    >
       {children}
     </AuthContext.Provider>
   );

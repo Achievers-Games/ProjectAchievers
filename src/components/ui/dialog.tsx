@@ -1,5 +1,3 @@
-'use client';
-
 import * as React from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { cn } from '@/lib/utils';
@@ -24,30 +22,36 @@ const DialogContent = React.forwardRef<
         className
       )}
       {...props}
-    />
+    >
+      {children}
+    </DialogPrimitive.Content>
   </DialogPortal>
 ));
 DialogContent.displayName = DialogPrimitive.Content.displayName;
 
 const DialogHeader = React.forwardRef<
-  React.ElementRef<typeof DialogPrimitive.Header>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Header>
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
-  <DialogPrimitive.Header ref={ref} className={cn('flex flex-col space-y-2 text-center sm:text-left', className)} {...props} />
+  <div
+    ref={ref}
+    className={cn('flex flex-col space-y-2 text-center sm:text-left', className)}
+    {...props}
+  />
 ));
-DialogHeader.displayName = DialogPrimitive.Header.displayName;
+DialogHeader.displayName = 'DialogHeader';
 
 const DialogFooter = React.forwardRef<
-  React.ElementRef<typeof DialogPrimitive.Footer>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Footer>
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
-  <DialogPrimitive.Footer
+  <div
     ref={ref}
     className={cn('flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2', className)}
     {...props}
   />
 ));
-DialogFooter.displayName = DialogPrimitive.Footer.displayName;
+DialogFooter.displayName = 'DialogFooter';
 
 const DialogTitle = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Title>,

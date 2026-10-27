@@ -1,7 +1,6 @@
-use sqlx::{sqlite::SqlitePoolOptions, SqlitePool, Row};
+use sqlx::{sqlite::SqlitePoolOptions, SqlitePool};
 use tauri::Manager;
 use std::path::PathBuf;
-use directories::ProjectDirs;
 use anyhow::Result;
 use tracing::{info, error};
 
@@ -10,7 +9,7 @@ pub struct Database {
 }
 
 impl Database {
-    pub fn new(app_handle: &tauri::AppHandle) -> Result<Self> {
+    pub async fn new(app_handle: &tauri::AppHandle) -> Result<Self> {
         let db_path = Self::get_db_path(app_handle)?;
 
         // Ensure parent directory exists
@@ -26,7 +25,7 @@ impl Database {
             .connect_lazy(&database_url)?;
 
         let db = Self { pool };
-        db.run_migrations()?;
+        db.run_migrations().await?;
 
         Ok(db)
     }
@@ -41,9 +40,9 @@ impl Database {
         Ok(app_data_dir.join("project-achievers.db"))
     }
 
-    fn run_migrations(&self) -> Result<()> {
+    async fn run_migrations(&self) -> Result<()> {
         // Run embedded migrations
-        sqlx::migrate!("./migrations").run(&self.pool)?;
+        sqlx::migrate!("./migrations").run(&self.pool).await?;
         info!("Database migrations completed");
         Ok(())
     }

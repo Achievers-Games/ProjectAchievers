@@ -1,13 +1,13 @@
 use crate::{
     database::Database,
-    error::{AppError, AppResult},
+    error::{AppError, AppResult, TauriResult},
 };
 use serde::{Deserialize, Serialize};
 use sqlx::Row;
 use tauri::State;
 use chrono::Utc;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct SyncStatus {
     pub platform: String,
     pub last_synced_at: Option<i64>,
@@ -17,7 +17,7 @@ pub struct SyncStatus {
     pub achievements_synced: i32,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct SyncAllResult {
     pub steam: SyncResult,
     pub psn: SyncResult,
@@ -26,7 +26,7 @@ pub struct SyncAllResult {
     pub duration_ms: i64,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct SyncResult {
     pub synced_games: u32,
     pub synced_achievements: u32,
@@ -35,6 +35,7 @@ pub struct SyncResult {
 
 /// Sync all platforms for the current user
 #[tauri::command]
+#[specta::specta]
 pub async fn sync_all_platforms(
     db: State<'_, Database>,
     crypto: State<'_, crate::crypto::Crypto>,
@@ -64,27 +65,40 @@ pub async fn sync_all_platforms(
 
     // Sync Steam if linked
     if platforms.iter().any(|r| r.get::<String, _>("platform") == "steam") {
-        steam_result = crate::commands::steam::steam_sync_user_data(db.clone(), crypto.clone()).await?;
+        let steam_res = crate::commands::steam::steam_sync_user_data(db.clone(), crypto.clone()).await?;
+        steam_result = SyncResult {
+            synced_games: steam_res.synced_games,
+            synced_achievements: steam_res.synced_achievements,
+            errors: steam_res.errors,
+        };
     }
 
     // Sync PSN if linked
     if platforms.iter().any(|r| r.get::<String, _>("platform") == "psn") {
-        psn_result = crate::commands::psn::psn_sync_user_data(db.clone(), crypto.clone()).await?;
+        let psn_res = crate::commands::psn::psn_sync_user_data(db.clone(), crypto.clone()).await?;
+        psn_result = SyncResult {
+            synced_games: psn_res.synced_games,
+            synced_achievements: psn_res.synced_achievements,
+            errors: psn_res.errors,
+        };
     }
 
+    let total_games = steam_result.synced_games + psn_result.synced_games;
+    let total_achievements = steam_result.synced_achievements + psn_result.synced_achievements;
     let duration = start.elapsed().as_millis() as i64;
 
     Ok(SyncAllResult {
         steam: steam_result,
         psn: psn_result,
-        total_games: (steam_result.synced_games + psn_result.synced_games) as i32,
-        total_achievements: (steam_result.synced_achievements + psn_result.synced_achievements) as i32,
+        total_games: total_games as i32,
+        total_achievements: total_achievements as i32,
         duration_ms: duration,
     })
 }
 
 /// Get sync status for all linked platforms
 #[tauri::command]
+#[specta::specta]
 pub async fn get_sync_status(
     db: State<'_, Database>,
 ) -> AppResult<Vec<SyncStatus>> {
@@ -123,6 +137,7 @@ pub async fn get_sync_status(
 
 /// Trigger background sync (non-blocking)
 #[tauri::command]
+#[specta::specta]
 pub async fn trigger_background_sync(
     db: State<'_, Database>,
     crypto: State<'_, crate::crypto::Crypto>,
@@ -134,6 +149,7 @@ pub async fn trigger_background_sync(
 
 /// Get sync history
 #[tauri::command]
+#[specta::specta]
 pub async fn get_sync_history(
     limit: Option<i32>,
     db: State<'_, Database>,
@@ -172,7 +188,7 @@ pub async fn get_sync_history(
     Ok(history)
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct SyncHistoryEntry {
     pub platform: String,
     pub synced_at: i64,
@@ -184,6 +200,7 @@ pub struct SyncHistoryEntry {
 
 /// Force re-sync for a specific game
 #[tauri::command]
+#[specta::specta]
 pub async fn force_sync_game(
     game_id: String,
     db: State<'_, Database>,
@@ -196,7 +213,7 @@ pub async fn force_sync_game(
         .bind(&game_id)
         .fetch_optional(&db.pool)
         .await?
-        .ok_or_else(|| AppError::NotFound("Game not found".to_string()))?;
+        .ok_or_else(|| AppError::Internal("Game not found".to_string()))?;
 
     let platform: String = game.get("platform");
 
@@ -214,9 +231,9 @@ pub async fn force_sync_game(
         }
         "psn" => {
             // PSN sync would go here
-            Err(AppError::PlatformNotSupported("PSN sync not available".to_string()))
+            Err(AppError::Internal("PSN sync not available".to_string()))
         }
-        _ => Err(AppError::PlatformNotSupported("Unknown platform".to_string())),
+        _ => Err(AppError::Internal("Unknown platform".to_string())),
     }
 }
 
@@ -224,7 +241,7 @@ async fn get_current_user_id(db: &Database) -> AppResult<String> {
     let row = sqlx::query("SELECT id FROM users LIMIT 1")
         .fetch_optional(&db.pool)
         .await?
-        .ok_or_else(|| AppError::Unauthorized("No user found".to_string()))?;
+        .ok_or_else(|| AppError::Internal("No user found".to_string()))?;
 
     Ok(row.get("id"))
 }

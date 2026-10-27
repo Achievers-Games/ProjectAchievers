@@ -1,13 +1,21 @@
 use thiserror::Error;
-use tauri::Runtime;
+use serde::Serialize;
+use specta::Type;
 
-#[derive(Error, Debug)]
+/// Application-wide error type.
+///
+/// All variants carry serializable payloads (strings / plain numbers) so the
+/// enum can derive both `Serialize` (for the Tauri IPC boundary) and
+/// `specta::Type` (for the generated TypeScript bindings). Foreign error types
+/// (sqlx, reqwest, std::io, ...) are converted at construction time via the
+/// `From` impls below.
+#[derive(Error, Debug, Serialize, PartialEq, Type)]
 pub enum AppError {
     #[error("Database error: {0}")]
-    Database(#[from] sqlx::Error),
+    Database(String),
 
     #[error("Crypto error: {0}")]
-    Crypto(#[from] crate::crypto::CryptoError),
+    Crypto(String),
 
     #[error("Steam API error: {0}")]
     SteamApi(String),
@@ -16,13 +24,13 @@ pub enum AppError {
     PsnApi(String),
 
     #[error("HTTP error: {0}")]
-    Http(#[from] reqwest::Error),
+    Http(String),
 
     #[error("Serialization error: {0}")]
-    Serialization(#[from] serde_json::Error),
+    Serialization(String),
 
     #[error("IO error: {0}")]
-    Io(#[from] std::io::Error),
+    Io(String),
 
     #[error("Not found: {0}")]
     NotFound(String),
@@ -42,14 +50,58 @@ pub enum AppError {
     #[error("Sync error: {0}")]
     Sync(String),
 
-    #[error("Tauri error: {0}")]
-    Tauri(#[from] tauri::Error),
-
-    #[error("Anyhow error: {0}")]
-    Anyhow(#[from] anyhow::Error),
+    #[error("Internal error: {0}")]
+    Internal(String),
 }
 
+// Type alias for internal use
 pub type AppResult<T> = Result<T, AppError>;
+
+// Type alias for Tauri commands - uses tauri::Error which implements IpcResponse
+pub type TauriResult<T> = Result<T, tauri::Error>;
+
+// Manual From impls (converting foreign errors into string-carrying variants)
+impl From<sqlx::Error> for AppError {
+    fn from(err: sqlx::Error) -> Self {
+        Self::Database(err.to_string())
+    }
+}
+
+impl From<CryptoError> for AppError {
+    fn from(err: CryptoError) -> Self {
+        Self::Crypto(err.to_string())
+    }
+}
+
+impl From<reqwest::Error> for AppError {
+    fn from(err: reqwest::Error) -> Self {
+        Self::Http(err.to_string())
+    }
+}
+
+impl From<serde_json::Error> for AppError {
+    fn from(err: serde_json::Error) -> Self {
+        Self::Serialization(err.to_string())
+    }
+}
+
+impl From<std::io::Error> for AppError {
+    fn from(err: std::io::Error) -> Self {
+        Self::Io(err.to_string())
+    }
+}
+
+impl From<tauri::Error> for AppError {
+    fn from(err: tauri::Error) -> Self {
+        Self::Internal(err.to_string())
+    }
+}
+
+impl From<anyhow::Error> for AppError {
+    fn from(err: anyhow::Error) -> Self {
+        Self::Internal(err.to_string())
+    }
+}
 
 // Custom error for crypto
 #[derive(Error, Debug)]
@@ -70,20 +122,31 @@ pub enum CryptoError {
     PasswordHashing(String),
 }
 
-impl From<CryptoError> for AppError {
-    fn from(err: CryptoError) -> Self {
-        AppError::Crypto(err)
-    }
-}
-
-// Tauri command error conversion
-impl<R: Runtime> From<AppError> for tauri::Error<R> {
-    fn from(err: AppError) -> Self {
-        tauri::Error::from(err.to_string())
-    }
-}
-
 // Helper to convert anyhow::Error to AppError
 pub fn anyhow_to_app_error(err: anyhow::Error) -> AppError {
-    AppError::Anyhow(err)
+    AppError::Internal(err.to_string())
+}
+
+// Implement From<AppError> for tauri::Error to support Tauri v2 command return types
+impl From<AppError> for tauri::Error {
+    fn from(err: AppError) -> Self {
+        tauri::Error::Anyhow(anyhow::anyhow!(err))
+    }
+}
+
+// Helper function to convert any error to tauri::Error for command return types
+pub fn into_tauri_error<E: std::error::Error + Send + Sync + 'static>(err: E) -> tauri::Error {
+    tauri::Error::Anyhow(anyhow::anyhow!(err.to_string()))
+}
+
+impl From<tauri_plugin_opener::Error> for AppError {
+    fn from(err: tauri_plugin_opener::Error) -> Self {
+        Self::Internal(err.to_string())
+    }
+}
+
+impl From<tauri_plugin_global_shortcut::Error> for AppError {
+    fn from(err: tauri_plugin_global_shortcut::Error) -> Self {
+        Self::Internal(err.to_string())
+    }
 }

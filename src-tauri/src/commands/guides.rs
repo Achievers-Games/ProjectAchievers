@@ -1,6 +1,6 @@
 use crate::{
     database::Database,
-    error::{AppError, AppResult},
+    error::{AppError, AppResult, TauriResult},
 };
 use serde::{Deserialize, Serialize};
 use sqlx::Row;
@@ -8,7 +8,7 @@ use tauri::State;
 use uuid::Uuid;
 use chrono::Utc;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct AchievementGuide {
     pub id: String,
     pub achievement_id: String,
@@ -34,7 +34,7 @@ pub struct AchievementGuide {
     pub updated_at: i64,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct CreateGuideRequest {
     pub achievement_id: String,
     pub content_md: String,
@@ -43,7 +43,7 @@ pub struct CreateGuideRequest {
     pub images: Vec<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct UpdateGuideRequest {
     pub guide_id: String,
     pub content_md: Option<String>,
@@ -52,7 +52,7 @@ pub struct UpdateGuideRequest {
     pub status: Option<String>, // 'draft', 'published', 'archived'
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct AIGuideRequest {
     pub achievement_id: String,
     pub game_name: String,
@@ -64,6 +64,7 @@ pub struct AIGuideRequest {
 
 /// Get all guides for an achievement
 #[tauri::command]
+#[specta::specta]
 pub async fn get_achievement_guides(
     achievement_id: String,
     db: State<'_, Database>,
@@ -102,7 +103,7 @@ pub async fn get_achievement_guides(
         };
 
         let images: Vec<String> = serde_json::from_str(
-            row.get::<Option<String>, _>("images_json").unwrap_or_default().as_deref().unwrap_or("[]")
+            row.get::<Option<String>, _>("images_json").as_deref().unwrap_or("[]")
         ).unwrap_or_default();
 
         guides.push(AchievementGuide {
@@ -136,6 +137,7 @@ pub async fn get_achievement_guides(
 
 /// Create a new community guide
 #[tauri::command]
+#[specta::specta]
 pub async fn create_guide(
     request: CreateGuideRequest,
     db: State<'_, Database>,
@@ -163,11 +165,12 @@ pub async fn create_guide(
     .await?;
 
     // Return the created guide
-    get_guide_by_id(&db, &guide_id, user_id.as_deref()).await
+    get_guide_by_id(&db, &guide_id, Some(user_id.as_str())).await
 }
 
 /// Update an existing guide (creates new version)
 #[tauri::command]
+#[specta::specta]
 pub async fn update_guide(
     request: UpdateGuideRequest,
     db: State<'_, Database>,
@@ -179,15 +182,15 @@ pub async fn update_guide(
         .bind(&request.guide_id)
         .fetch_optional(&db.pool)
         .await?
-        .ok_or_else(|| AppError::NotFound("Guide not found".to_string()))?;
+        .ok_or_else(|| anyhow::anyhow!("Guide not found"))?;
 
     // Check ownership
     let author_id: String = current.get("author_id");
     if author_id != user_id {
-        return Err(AppError::Unauthorized("You can only edit your own guides".to_string()));
+        return Err(anyhow::anyhow!("You can only edit your own guides").into());
     }
 
-    let new_version: i32 = current.get("version") + 1;
+    let new_version: i32 = current.get::<i32, _>("version") + 1;
     let now = Utc::now().timestamp_millis();
 
     // Create new version
@@ -196,7 +199,7 @@ pub async fn update_guide(
     let video_url = request.video_url.or_else(|| current.get("video_url"));
     let images = request.images.unwrap_or_else(|| {
         serde_json::from_str(
-            current.get::<Option<String>, _>("images_json").unwrap_or_default().as_deref().unwrap_or("[]")
+            current.get::<Option<String>, _>("images_json").as_deref().unwrap_or("[]")
         ).unwrap_or_default()
     });
     let status = request.status.unwrap_or_else(|| current.get("status"));
@@ -231,6 +234,7 @@ pub async fn update_guide(
 
 /// Delete a guide
 #[tauri::command]
+#[specta::specta]
 pub async fn delete_guide(
     guide_id: String,
     db: State<'_, Database>,
@@ -241,11 +245,11 @@ pub async fn delete_guide(
         .bind(&guide_id)
         .fetch_optional(&db.pool)
         .await?
-        .ok_or_else(|| AppError::NotFound("Guide not found".to_string()))?;
+        .ok_or_else(|| anyhow::anyhow!("Guide not found"))?;
 
     let author_id: String = row.get("author_id");
     if author_id != user_id {
-        return Err(AppError::Unauthorized("You can only delete your own guides".to_string()));
+        return Err(anyhow::anyhow!("You can only delete your own guides").into());
     }
 
     sqlx::query("DELETE FROM achievement_guides WHERE id = ?")
@@ -258,6 +262,7 @@ pub async fn delete_guide(
 
 /// Vote on a guide
 #[tauri::command]
+#[specta::specta]
 pub async fn vote_guide(
     guide_id: String,
     vote_type: String, // 'up' or 'down'
@@ -266,7 +271,7 @@ pub async fn vote_guide(
     let user_id = get_current_user_id(&db).await?;
 
     if vote_type != "up" && vote_type != "down" {
-        return Err(AppError::Validation("Vote type must be 'up' or 'down'".to_string()));
+        return Err(anyhow::anyhow!("Vote type must be 'up' or 'down'").into());
     }
 
     // Check if guide exists
@@ -277,7 +282,7 @@ pub async fn vote_guide(
         .is_some();
 
     if !guide_exists {
-        return Err(AppError::NotFound("Guide not found".to_string()));
+        return Err(anyhow::anyhow!("Guide not found").into());
     }
 
     // Upsert vote
@@ -311,7 +316,7 @@ pub async fn vote_guide(
     })
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct VoteResult {
     pub upvotes: i64,
     pub downvotes: i64,
@@ -320,6 +325,7 @@ pub struct VoteResult {
 
 /// Generate AI guide for an achievement
 #[tauri::command]
+#[specta::specta]
 pub async fn generate_ai_guide(
     request: AIGuideRequest,
     db: State<'_, Database>,
@@ -436,7 +442,7 @@ async fn get_guide_by_id(db: &Database, guide_id: &str, user_id: Option<&str>) -
     .bind(guide_id)
     .fetch_optional(&db.pool)
     .await?
-    .ok_or_else(|| AppError::NotFound("Guide not found".to_string()))?;
+    .ok_or_else(|| anyhow::anyhow!("Guide not found"))?;
 
     let user_vote = if let Some(uid) = user_id {
         sqlx::query("SELECT vote_type FROM guide_votes WHERE guide_id = ? AND user_id = ?")
@@ -450,7 +456,7 @@ async fn get_guide_by_id(db: &Database, guide_id: &str, user_id: Option<&str>) -
     };
 
     let images: Vec<String> = serde_json::from_str(
-        row.get::<Option<String>, _>("images_json").unwrap_or_default().as_deref().unwrap_or("[]")
+        row.get::<Option<String>, _>("images_json").as_deref().unwrap_or("[]")
     ).unwrap_or_default();
 
     Ok(AchievementGuide {
@@ -483,7 +489,7 @@ async fn get_current_user_id(db: &Database) -> AppResult<String> {
     let row = sqlx::query("SELECT id FROM users LIMIT 1")
         .fetch_optional(&db.pool)
         .await?
-        .ok_or_else(|| AppError::Unauthorized("No user found".to_string()))?;
+        .ok_or_else(|| AppError::Internal("No user found".to_string()))?;
 
     Ok(row.get("id"))
 }

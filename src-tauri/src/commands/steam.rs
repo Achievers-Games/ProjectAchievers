@@ -1,7 +1,7 @@
 use crate::{
     crypto::Crypto,
     database::Database,
-    error::{AppError, AppResult},
+    error::{AppError, AppResult, TauriResult},
 };
 use serde::{Deserialize, Serialize};
 use sqlx::Row;
@@ -12,7 +12,11 @@ use reqwest::Client;
 
 const STEAM_API_BASE: &str = "https://api.steampowered.com";
 
-#[derive(Debug, Serialize, Deserialize)]
+/// Embedded development Steam Web API key (kept out of the frontend; the
+/// browser never sees this — only Rust code does).
+pub const DEV_STEAM_API_KEY: &str = "C0D216991C74969305AA04D7C8F21774";
+
+#[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct SteamOwnedGame {
     pub appid: u32,
     pub name: String,
@@ -25,26 +29,26 @@ pub struct SteamOwnedGame {
     pub has_community_visible_stats: bool,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct SteamPlayerAchievement {
     pub apiname: String,
     pub achieved: i32,
     pub unlocktime: Option<i64>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct SteamGameSchema {
     pub game_name: String,
     pub game_version: String,
     pub available_game_stats: SteamAvailableGameStats,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct SteamAvailableGameStats {
     pub achievements: Vec<SteamAchievementDefinition>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct SteamAchievementDefinition {
     pub name: String,
     pub defaultvalue: i32,
@@ -55,23 +59,28 @@ pub struct SteamAchievementDefinition {
     pub icongray: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct SteamGlobalAchievementPercentages {
     pub achievementpercentages: SteamAchievementPercentages,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct SteamAchievementPercentages {
     pub achievements: Vec<SteamGlobalAchievement>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct SteamGlobalAchievement {
     pub name: String,
     pub percent: f64,
 }
 
-async fn get_steam_api_key(db: &Database, user_id: &str) -> AppResult<Option<String>> {
+async fn get_steam_api_key(
+    db: &Database,
+    user_id: &str,
+    crypto: &crate::crypto::Crypto,
+) -> AppResult<Option<String>> {
+    // 1. A key decrypted from the linked Steam account takes priority.
     let row = sqlx::query(
         "SELECT encrypted_access_token FROM platform_accounts WHERE user_id = ? AND platform = 'steam'"
     )
@@ -82,22 +91,122 @@ async fn get_steam_api_key(db: &Database, user_id: &str) -> AppResult<Option<Str
     if let Some(row) = row {
         let encrypted: Option<String> = row.get("encrypted_access_token");
         if let Some(enc) = encrypted {
-            // In a real implementation, we'd decrypt using the crypto module
-            // For now, return None to indicate we need a configured API key
-            return Ok(None);
+            let plaintext = crypto.decrypt(&enc)?;
+            if !plaintext.is_empty() {
+                return Ok(Some(plaintext));
+            }
+        }
+    }
+
+    // 2. Fallback: the embedded development key (hidden from the frontend).
+    Ok(Some(DEV_STEAM_API_KEY.to_string()))
+}
+
+#[derive(Debug, Serialize, Deserialize, specta::Type)]
+pub struct SteamResolvedProfile {
+    pub steamid: String,
+    pub personaname: String,
+    pub avatar: String,
+    pub profileurl: String,
+}
+
+/// Resolves a profile identifier to a Steam user.
+///
+/// Accepts:
+/// - a vanity profile name (`kyara` from steamcommunity.com/id/kyara)
+/// - a full profile URL (steamcommunity.com/id/kyara or /profiles/<steamid>)
+/// - a raw 17-digit SteamID64
+///
+/// Returns `None` when nothing was found (vanity names are exact matches).
+#[tauri::command]
+#[specta::specta]
+pub async fn steam_resolve_vanity(profile: String) -> AppResult<Option<SteamResolvedProfile>> {
+    let input = profile.trim();
+    if input.is_empty() {
+        return Ok(None);
+    }
+
+    // Pasted profiles often lack the scheme; add it so Url::parse succeeds.
+    let normalized = if input.contains("steamcommunity.com/") && !input.contains("://") {
+        format!("https://{input}")
+    } else {
+        input.to_string()
+    };
+
+    // Normalize the input into a SteamID64 or a vanity name.
+    let mut steamid: Option<String> = None;
+    let mut vanity: Option<String> = None;
+
+    if let Ok(parsed) = url::Url::parse(&normalized) {
+        let path = parsed.path().trim_matches('/');
+        if let Some(rest) = path.strip_prefix("profiles/") {
+            steamid = Some(rest.trim_matches('/').to_string());
+        } else if let Some(rest) = path.strip_prefix("id/") {
+            vanity = Some(rest.trim_matches('/').to_string());
+        }
+    }
+
+    if steamid.is_none() && vanity.is_none() {
+        if input.len() == 17 && input.chars().all(|c| c.is_ascii_digit()) {
+            steamid = Some(input.to_string());
+        } else {
+            vanity = Some(input.to_string());
+        }
+    }
+
+    // Raw SteamID: skip resolution, we already have it.
+    if let Some(id) = steamid {
+        return fetch_steam_profile(&id).await;
+    }
+
+    // Vanity name: exact-match resolution.
+    let client = Client::new();
+    let url = format!(
+        "{}/ISteamUser/ResolveVanityURL/v1/?key={}&vanityurl={}",
+        STEAM_API_BASE, DEV_STEAM_API_KEY, vanity.unwrap_or_default()
+    );
+    let data: serde_json::Value = client.get(&url).send().await?.json().await?;
+
+    if data["response"]["success"].as_i64().unwrap_or(0) == 1 {
+        let id = data["response"]["steamid"].as_str().unwrap_or_default().to_string();
+        if !id.is_empty() {
+            return fetch_steam_profile(&id).await;
         }
     }
     Ok(None)
 }
 
+/// Fetches persona name + avatar for a SteamID64.
+async fn fetch_steam_profile(steamid: &str) -> AppResult<Option<SteamResolvedProfile>> {
+    let client = Client::new();
+    let url = format!(
+        "{}/ISteamUser/GetPlayerSummaries/v2/?key={}&steamids={}",
+        STEAM_API_BASE, DEV_STEAM_API_KEY, steamid
+    );
+    let data: serde_json::Value = client.get(&url).send().await?.json().await?;
+    let player = &data["response"]["players"][0];
+
+    if player["steamid"].is_null() {
+        return Ok(None);
+    }
+
+    Ok(Some(SteamResolvedProfile {
+        steamid: player["steamid"].as_str().unwrap_or(steamid).to_string(),
+        personaname: player["personaname"].as_str().unwrap_or("Steam").to_string(),
+        avatar: player["avatarfull"].as_str().unwrap_or_default().to_string(),
+        profileurl: player["profileurl"].as_str().unwrap_or_default().to_string(),
+    }))
+}
+
 /// Get owned games for the current user
 #[tauri::command]
+#[specta::specta]
 pub async fn steam_get_owned_games(
     db: State<'_, Database>,
-    crypto: State<'_, Crypto>,
+    crypto: State<'_, crate::crypto::Crypto>,
 ) -> AppResult<Vec<SteamOwnedGame>> {
     let user_id = get_current_user_id(&db).await?;
-    let api_key = get_steam_api_key(&db, &user_id).await?;
+    let api_key = get_steam_api_key(&db, &user_id, &crypto).await?;
 
     // Get Steam ID from platform_accounts
     let row = sqlx::query(
@@ -109,10 +218,10 @@ pub async fn steam_get_owned_games(
 
     let steam_id = row
         .and_then(|r| r.get::<Option<String>, _>("platform_user_id"))
-        .ok_or_else(|| AppError::NotFound("Steam account not linked".to_string()))?;
+        .ok_or_else(|| anyhow::anyhow!("Steam account not linked"))?;
 
     let client = Client::new();
-    let api_key = api_key.unwrap_or_else(|| std::env::var("STEAM_API_KEY").unwrap_or_default());
+    let api_key = api_key.unwrap_or_default();
 
     let url = format!(
         "{}/IPlayerService/GetOwnedGames/v1/?key={}&steamid={}&format=json&include_appinfo=1&include_played_free_games=1",
@@ -134,13 +243,14 @@ pub async fn steam_get_owned_games(
 
 /// Get player achievements for a specific game
 #[tauri::command]
+#[specta::specta]
 pub async fn steam_get_player_achievements(
     app_id: u32,
     db: State<'_, Database>,
-    crypto: State<'_, Crypto>,
+    crypto: State<'_, crate::crypto::Crypto>,
 ) -> AppResult<Vec<SteamPlayerAchievement>> {
     let user_id = get_current_user_id(&db).await?;
-    let api_key = get_steam_api_key(&db, &user_id).await?;
+    let api_key = get_steam_api_key(&db, &user_id, &crypto).await?;
 
     let row = sqlx::query(
         "SELECT platform_user_id FROM platform_accounts WHERE user_id = ? AND platform = 'steam'"
@@ -151,10 +261,10 @@ pub async fn steam_get_player_achievements(
 
     let steam_id = row
         .and_then(|r| r.get::<Option<String>, _>("platform_user_id"))
-        .ok_or_else(|| AppError::NotFound("Steam account not linked".to_string()))?;
+        .ok_or_else(|| anyhow::anyhow!("Steam account not linked"))?;
 
     let client = Client::new();
-    let api_key = api_key.unwrap_or_else(|| std::env::var("STEAM_API_KEY").unwrap_or_default());
+    let api_key = api_key.unwrap_or_default();
 
     let url = format!(
         "{}/ISteamUserStats/GetPlayerAchievements/v1/?key={}&steamid={}&appid={}&format=json",
@@ -176,16 +286,17 @@ pub async fn steam_get_player_achievements(
 
 /// Get game schema (achievement definitions)
 #[tauri::command]
+#[specta::specta]
 pub async fn steam_get_game_schema(
     app_id: u32,
     db: State<'_, Database>,
-    crypto: State<'_, Crypto>,
+    crypto: State<'_, crate::crypto::Crypto>,
 ) -> AppResult<SteamGameSchema> {
     let user_id = get_current_user_id(&db).await?;
-    let api_key = get_steam_api_key(&db, &user_id).await?;
+    let api_key = get_steam_api_key(&db, &user_id, &crypto).await?;
 
     let client = Client::new();
-    let api_key = api_key.unwrap_or_else(|| std::env::var("STEAM_API_KEY").unwrap_or_default());
+    let api_key = api_key.unwrap_or_default();
 
     let url = format!(
         "{}/ISteamUserStats/GetSchemaForGame/v2/?key={}&appid={}&format=json",
@@ -196,17 +307,18 @@ pub async fn steam_get_game_schema(
     let data: serde_json::Value = response.json().await?;
 
     let schema: SteamGameSchema = serde_json::from_value(data["game"].clone())
-        .map_err(|e| AppError::SteamApi(format!("Failed to parse schema: {}", e)))?;
+        .map_err(|e| anyhow::anyhow!("Failed to parse schema: {}", e))?;
 
     Ok(schema)
 }
 
 /// Get global achievement percentages for a game
 #[tauri::command]
+#[specta::specta]
 pub async fn steam_get_global_achievement_percentages(
     app_id: u32,
     db: State<'_, Database>,
-    crypto: State<'_, Crypto>,
+    crypto: State<'_, crate::crypto::Crypto>,
 ) -> AppResult<Vec<SteamGlobalAchievement>> {
     let client = Client::new();
 
@@ -230,12 +342,13 @@ pub async fn steam_get_global_achievement_percentages(
 
 /// Sync all Steam data for the current user
 #[tauri::command]
+#[specta::specta]
 pub async fn steam_sync_user_data(
     db: State<'_, Database>,
-    crypto: State<'_, Crypto>,
-) -> AppResult<SyncResult> {
+    crypto: State<'_, crate::crypto::Crypto>,
+) -> AppResult<SteamSyncResult> {
     let user_id = get_current_user_id(&db).await?;
-    let api_key = get_steam_api_key(&db, &user_id).await?;
+    let api_key = get_steam_api_key(&db, &user_id, &crypto).await?;
 
     let row = sqlx::query(
         "SELECT platform_user_id FROM platform_accounts WHERE user_id = ? AND platform = 'steam'"
@@ -246,9 +359,9 @@ pub async fn steam_sync_user_data(
 
     let steam_id = row
         .and_then(|r| r.get::<Option<String>, _>("platform_user_id"))
-        .ok_or_else(|| AppError::NotFound("Steam account not linked".to_string()))?;
+        .ok_or_else(|| anyhow::anyhow!("Steam account not linked"))?;
 
-    let api_key = api_key.unwrap_or_else(|| std::env::var("STEAM_API_KEY").unwrap_or_default());
+    let api_key = api_key.unwrap_or_default();
     let client = Client::new();
 
     // Update sync status
@@ -324,15 +437,15 @@ pub async fn steam_sync_user_data(
     .execute(&db.pool)
     .await?;
 
-    Ok(SyncResult {
+    Ok(SteamSyncResult {
         synced_games,
         synced_achievements,
         errors,
     })
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct SyncResult {
+#[derive(Debug, Serialize, Deserialize, specta::Type)]
+pub struct SteamSyncResult {
     pub synced_games: u32,
     pub synced_achievements: u32,
     pub errors: Vec<String>,
@@ -437,7 +550,7 @@ async fn upsert_user_achievement(
         .await?;
 
     let achievement_id = if let Some(row) = ach_row {
-        row.get("id")
+        row.get::<String, _>("id")
     } else {
         return Ok(()); // Achievement not in our DB yet
     };
@@ -489,7 +602,7 @@ async fn get_current_user_id(db: &Database) -> AppResult<String> {
     let row = sqlx::query("SELECT id FROM users LIMIT 1")
         .fetch_optional(&db.pool)
         .await?
-        .ok_or_else(|| AppError::Unauthorized("No user found".to_string()))?;
+        .ok_or_else(|| anyhow::anyhow!("No user found"))?;
 
     Ok(row.get("id"))
 }

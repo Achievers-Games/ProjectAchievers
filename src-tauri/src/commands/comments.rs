@@ -1,6 +1,6 @@
 use crate::{
     database::Database,
-    error::{AppError, AppResult},
+    error::{AppError, AppResult, TauriResult},
 };
 use serde::{Deserialize, Serialize};
 use sqlx::Row;
@@ -8,7 +8,7 @@ use tauri::State;
 use uuid::Uuid;
 use chrono::Utc;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct Comment {
     pub id: String,
     pub achievement_id: String,
@@ -27,7 +27,7 @@ pub struct Comment {
     pub replies: Option<Vec<Comment>>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default, specta::Type)]
 pub struct CommentReactions {
     pub helpful: i32,
     pub funny: i32,
@@ -35,20 +35,20 @@ pub struct CommentReactions {
     pub heart: i32,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct CreateCommentRequest {
     pub achievement_id: String,
     pub content_md: String,
     pub parent_id: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct UpdateCommentRequest {
     pub comment_id: String,
     pub content_md: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct ReactionRequest {
     pub comment_id: String,
     pub reaction_type: String, // 'helpful', 'funny', 'thanks', 'heart'
@@ -56,6 +56,7 @@ pub struct ReactionRequest {
 
 /// Get comments for an achievement (threaded)
 #[tauri::command]
+#[specta::specta]
 pub async fn get_comments(
     achievement_id: String,
     limit: Option<i32>,
@@ -156,7 +157,7 @@ async fn build_comment(
 
         let mut reply_comments = Vec::new();
         for r in reply_rows {
-            reply_comments.push(build_comment(db, &r, user_id, depth + 1).await?);
+            reply_comments.push(Box::pin(build_comment(db, &r, user_id, depth + 1)).await?);
         }
         Some(reply_comments)
     } else {
@@ -184,6 +185,7 @@ async fn build_comment(
 
 /// Create a new comment
 #[tauri::command]
+#[specta::specta]
 pub async fn create_comment(
     request: CreateCommentRequest,
     db: State<'_, Database>,
@@ -200,12 +202,12 @@ pub async fn create_comment(
             .await?;
 
         if parent.is_none() {
-            return Err(AppError::NotFound("Parent comment not found".to_string()));
+            return Err(anyhow::anyhow!("Parent comment not found").into());
         }
 
         let parent_depth: i32 = parent.unwrap().get("depth");
         if parent_depth >= 3 {
-            return Err(AppError::Validation("Maximum reply depth reached".to_string()));
+            return Err(anyhow::anyhow!("Maximum reply depth reached").into());
         }
     }
 
@@ -232,6 +234,7 @@ pub async fn create_comment(
 
 /// Update a comment
 #[tauri::command]
+#[specta::specta]
 pub async fn update_comment(
     request: UpdateCommentRequest,
     db: State<'_, Database>,
@@ -242,11 +245,11 @@ pub async fn update_comment(
         .bind(&request.comment_id)
         .fetch_optional(&db.pool)
         .await?
-        .ok_or_else(|| AppError::NotFound("Comment not found".to_string()))?;
+        .ok_or_else(|| anyhow::anyhow!("Comment not found"))?;
 
     let author_id: String = row.get("user_id");
     if author_id != user_id {
-        return Err(AppError::Unauthorized("You can only edit your own comments".to_string()));
+        return Err(anyhow::anyhow!("You can only edit your own comments").into());
     }
 
     let now = Utc::now().timestamp_millis();
@@ -264,6 +267,7 @@ pub async fn update_comment(
 
 /// Delete a comment (soft delete)
 #[tauri::command]
+#[specta::specta]
 pub async fn delete_comment(
     comment_id: String,
     db: State<'_, Database>,
@@ -274,11 +278,11 @@ pub async fn delete_comment(
         .bind(&comment_id)
         .fetch_optional(&db.pool)
         .await?
-        .ok_or_else(|| AppError::NotFound("Comment not found".to_string()))?;
+        .ok_or_else(|| anyhow::anyhow!("Comment not found"))?;
 
     let author_id: String = row.get("user_id");
     if author_id != user_id {
-        return Err(AppError::Unauthorized("You can only delete your own comments".to_string()));
+        return Err(anyhow::anyhow!("You can only delete your own comments").into());
     }
 
     sqlx::query("UPDATE comments SET is_deleted = TRUE, updated_at = ? WHERE id = ?")
@@ -292,6 +296,7 @@ pub async fn delete_comment(
 
 /// React to a comment
 #[tauri::command]
+#[specta::specta]
 pub async fn react_to_comment(
     request: ReactionRequest,
     db: State<'_, Database>,
@@ -300,7 +305,7 @@ pub async fn react_to_comment(
 
     let valid_reactions = ["helpful", "funny", "thanks", "heart"];
     if !valid_reactions.contains(&request.reaction_type.as_str()) {
-        return Err(AppError::Validation("Invalid reaction type".to_string()));
+        return Err(anyhow::anyhow!("Invalid reaction type").into());
     }
 
     // Check comment exists
@@ -311,7 +316,7 @@ pub async fn react_to_comment(
         .is_some();
 
     if !comment_exists {
-        return Err(AppError::NotFound("Comment not found".to_string()));
+        return Err(anyhow::anyhow!("Comment not found").into());
     }
 
     // Toggle reaction (add if not exists, remove if same, change if different)
@@ -403,7 +408,7 @@ async fn get_comment_by_id(db: &Database, comment_id: &str, user_id: Option<&str
     .bind(comment_id)
     .fetch_optional(&db.pool)
     .await?
-    .ok_or_else(|| AppError::NotFound("Comment not found".to_string()))?;
+    .ok_or_else(|| AppError::Internal("Comment not found".to_string()))?;
 
     build_comment(db, &row, &user_id.map(|s| s.to_string()), 0).await
 }
@@ -412,7 +417,7 @@ async fn get_current_user_id(db: &Database) -> AppResult<String> {
     let row = sqlx::query("SELECT id FROM users LIMIT 1")
         .fetch_optional(&db.pool)
         .await?
-        .ok_or_else(|| AppError::Unauthorized("No user found".to_string()))?;
+        .ok_or_else(|| AppError::Internal("No user found".to_string()))?;
 
     Ok(row.get("id"))
 }
