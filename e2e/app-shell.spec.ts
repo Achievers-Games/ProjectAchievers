@@ -5,21 +5,30 @@ test.describe('Application shell', () => {
     await page.goto('/');
 
     await expect(page.locator('header')).toBeVisible();
+    await expect(page.locator('header')).toContainText('Chasse aux succès');
   });
 
-  test('sidebar is visible and navigation works', async ({ page }) => {
+  test('sidebar navigation works', async ({ page }) => {
     await page.goto('/');
 
     const sidebar = page.locator('aside');
     await expect(sidebar).toBeVisible();
 
-    // Navigate to the library page
     await sidebar.locator('a', { hasText: 'Bibliothèque' }).click();
+    await expect(page).toHaveURL(/\/games$/);
     await expect(page.locator('h1')).toContainText('Bibliothèque');
   });
 
+  test('community page exposes the activity feed and leaderboard', async ({ page }) => {
+    await page.goto('/community');
+
+    await expect(page.locator('h1')).toContainText('chasseurs');
+    await expect(page.getByText('En direct')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Classement' })).toBeVisible({ timeout: 15_000 });
+  });
+
   test('library shows a search input and platform filters', async ({ page }) => {
-    await page.goto('/#/games');
+    await page.goto('/games');
 
     await expect(page.locator('input[placeholder="Rechercher un jeu…"]')).toBeVisible();
     await expect(page.locator('button', { hasText: 'Tous' })).toBeVisible();
@@ -27,15 +36,32 @@ test.describe('Application shell', () => {
     await expect(page.locator('button', { hasText: 'PlayStation' })).toBeVisible();
   });
 
-  test('login page shows the Steam linking form', async ({ page }) => {
-    await page.goto('/#/login');
+  test('settings page shows the Steam linking form', async ({ page }) => {
+    await page.goto('/settings');
 
-    await expect(page.locator('input[placeholder="ID Steam (17 chiffres)"]')).toBeVisible();
+    await expect(page.locator('input[placeholder="Pseudo Steam…"]')).toBeVisible();
+    await expect(page.getByText('Comptes liés')).toBeVisible();
   });
 
-  test('unknown route redirects to the dashboard', async ({ page }) => {
-    await page.goto('/#/unknown-route');
+  test('profile page shows the hunter identity block', async ({ page }) => {
+    await page.goto('/profile');
+
+    await expect(page.locator('h1')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Vitrine' })).toBeVisible();
+  });
+
+  test('unknown route still renders the app shell', async ({ page }) => {
+    await page.goto('/route-inconnue');
 
     await expect(page.locator('header')).toBeVisible();
+    await expect(page.getByText('404')).toBeVisible();
+  });
+
+  test('unknown achievement shows the not-found state', async ({ page }) => {
+    await page.goto('/achievements/inconnu');
+
+    await expect(page.locator('h1, h2')).toContainText('Succès introuvable', {
+      timeout: 15_000,
+    });
   });
 });

@@ -51,6 +51,8 @@ export const commands = {
 	getGames: (platform: string | null, genre: string | null, search: string | null, limit: number | null, offset: number | null) => typedError<GameListItem_Serialize[], AppError>(__TAURI_INVOKE("get_games", { platform, genre, search, limit, offset })),
 	/**  Get detailed game info with achievements */
 	getGameDetail: (gameId: string) => typedError<GameDetail_Serialize, AppError>(__TAURI_INVOKE("get_game_detail", { gameId })),
+	/**  Get a single achievement with its game context and social counters. */
+	getAchievementDetail: (achievementId: string) => typedError<AchievementDetail_Serialize, AppError>(__TAURI_INVOKE("get_achievement_detail", { achievementId })),
 	/**  Search games by name */
 	searchGames: (query: string, limit: number | null) => typedError<GameSearchResult_Serialize[], AppError>(__TAURI_INVOKE("search_games", { query, limit })),
 	/**  Get user's progress for a specific game */
@@ -87,6 +89,10 @@ export const commands = {
 	getSyncHistory: (limit: number | null) => typedError<SyncHistoryEntry_Serialize[], AppError>(__TAURI_INVOKE("get_sync_history", { limit })),
 	/**  Force re-sync for a specific game */
 	forceSyncGame: (gameId: string) => typedError<SyncResult, AppError>(__TAURI_INVOKE("force_sync_game", { gameId })),
+	/**  Flux d'activité : derniers succès débloqués par la communauté. */
+	getCommunityFeed: (limit: number | null) => typedError<FeedItem_Serialize[], AppError>(__TAURI_INVOKE("get_community_feed", { limit })),
+	/**  Classement des chasseurs, par points et succès débloqués. */
+	getLeaderboard: (limit: number | null) => typedError<LeaderboardEntry_Serialize[], AppError>(__TAURI_INVOKE("get_leaderboard", { limit })),
 	/**  Show path in folder */
 	showInFolder: (path: string) => typedError<null, AppError>(__TAURI_INVOKE("show_in_folder", { path })),
 	/**  Open an external URL in the default browser */
@@ -122,6 +128,32 @@ export type AIGuideRequest_Serialize = {
 	achievement_description: string,
 	trophy_type: string | null,
 	known_requirements: string | null,
+};
+
+export type AchievementDetail = AchievementDetail_Serialize | AchievementDetail_Deserialize;
+
+export type AchievementDetail_Deserialize = {
+	achievement: AchievementWithProgress_Deserialize,
+	game_id: string,
+	game_name: string,
+	game_slug: string,
+	game_cover_url?: string | null,
+	game_header_url?: string | null,
+	game_platform: string,
+	guide_count: number,
+	comment_count: number,
+};
+
+export type AchievementDetail_Serialize = {
+	achievement: AchievementWithProgress_Serialize,
+	game_id: string,
+	game_name: string,
+	game_slug: string,
+	game_cover_url: string | null,
+	game_header_url: string | null,
+	game_platform: string,
+	guide_count: number,
+	comment_count: number,
 };
 
 export type AchievementGuide = AchievementGuide_Serialize | AchievementGuide_Deserialize;
@@ -323,6 +355,41 @@ export type CreateGuideRequest_Serialize = {
 	images: string[],
 };
 
+/**  Une entrée du flux d'activité communautaire : un succès débloqué récemment. */
+export type FeedItem = FeedItem_Serialize | FeedItem_Deserialize;
+
+/**  Une entrée du flux d'activité communautaire : un succès débloqué récemment. */
+export type FeedItem_Deserialize = {
+	id: string,
+	achievement_id: string,
+	username: string,
+	avatar_url?: string | null,
+	game_name: string,
+	game_slug: string,
+	game_cover_url?: string | null,
+	achievement_name: string,
+	achievement_icon_url?: string | null,
+	trophy_type?: string | null,
+	unlocked_at: number,
+	rarity?: number | null,
+};
+
+/**  Une entrée du flux d'activité communautaire : un succès débloqué récemment. */
+export type FeedItem_Serialize = {
+	id: string,
+	achievement_id: string,
+	username: string,
+	avatar_url: string | null,
+	game_name: string,
+	game_slug: string,
+	game_cover_url: string | null,
+	achievement_name: string,
+	achievement_icon_url: string | null,
+	trophy_type: string | null,
+	unlocked_at: number,
+	rarity: number | null,
+};
+
 export type GameDetail = GameDetail_Serialize | GameDetail_Deserialize;
 
 export type GameDetail_Deserialize = {
@@ -411,6 +478,27 @@ export type GameSearchResult_Serialize = {
 	cover_url: string | null,
 	platform: string,
 	total_achievements: number,
+};
+
+/**  Entrée du classement des chasseurs de succès. */
+export type LeaderboardEntry = LeaderboardEntry_Serialize | LeaderboardEntry_Deserialize;
+
+/**  Entrée du classement des chasseurs de succès. */
+export type LeaderboardEntry_Deserialize = {
+	username: string,
+	avatar_url?: string | null,
+	unlocked: number,
+	platinums: number,
+	points: number,
+};
+
+/**  Entrée du classement des chasseurs de succès. */
+export type LeaderboardEntry_Serialize = {
+	username: string,
+	avatar_url: string | null,
+	unlocked: number,
+	platinums: number,
+	points: number,
 };
 
 export type LinkedAccount = LinkedAccount_Serialize | LinkedAccount_Deserialize;

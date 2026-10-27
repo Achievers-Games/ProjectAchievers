@@ -70,6 +70,19 @@ pub struct AchievementWithProgress {
 }
 
 #[derive(Debug, Serialize, Deserialize, specta::Type)]
+pub struct AchievementDetail {
+    pub achievement: AchievementWithProgress,
+    pub game_id: String,
+    pub game_name: String,
+    pub game_slug: String,
+    pub game_cover_url: Option<String>,
+    pub game_header_url: Option<String>,
+    pub game_platform: String,
+    pub guide_count: i32,
+    pub comment_count: i32,
+}
+
+#[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct GameSearchResult {
     pub id: String,
     pub name: String,
@@ -294,6 +307,68 @@ pub async fn get_game_detail(
             last_unlocked_at,
         }),
         achievements,
+    })
+}
+
+/// Get a single achievement with its game context and social counters.
+#[tauri::command]
+#[specta::specta]
+pub async fn get_achievement_detail(
+    achievement_id: String,
+    db: State<'_, Database>,
+) -> AppResult<AchievementDetail> {
+    let user_id = get_current_user_id(&db).await?;
+
+    let row = sqlx::query(
+        r#"
+        SELECT a.*, ua.unlocked_at, ua.rarity_at_unlock,
+               g.name AS game_name, g.slug AS game_slug,
+               g.cover_url AS game_cover_url, g.header_url AS game_header_url,
+               g.platform AS game_platform,
+               (SELECT COUNT(*) FROM achievement_guides ag
+                 WHERE ag.achievement_id = a.id AND ag.status = 'published') AS guide_count,
+               (SELECT COUNT(*) FROM comments c
+                 WHERE c.achievement_id = a.id AND c.is_deleted = 0
+                   AND c.parent_id IS NULL) AS comment_count
+        FROM achievements a
+        JOIN games g ON g.id = a.game_id
+        LEFT JOIN user_achievements ua ON ua.achievement_id = a.id AND ua.user_id = ?
+        WHERE a.id = ?
+        "#,
+    )
+    .bind(&user_id)
+    .bind(&achievement_id)
+    .fetch_optional(&db.pool)
+    .await?
+    .ok_or_else(|| anyhow::anyhow!("Achievement not found"))?;
+
+    let achievement = AchievementWithProgress {
+        id: row.get("id"),
+        platform_achievement_id: row.get("platform_achievement_id"),
+        name: row.get("name"),
+        description: row.get("description"),
+        icon_url: row.get("icon_url"),
+        icon_gray_url: row.get("icon_gray_url"),
+        hidden: row.get("hidden"),
+        trophy_type: row.get("trophy_type"),
+        global_rarity: row.get("global_rarity"),
+        points: row.get("points"),
+        is_platinum: row.get("is_platinum"),
+        unlocked: row.get::<Option<i64>, _>("unlocked_at").is_some(),
+        unlocked_at: row.get("unlocked_at"),
+        rarity_at_unlock: row.get("rarity_at_unlock"),
+    };
+
+    Ok(AchievementDetail {
+        achievement,
+        game_id: row.get("game_id"),
+        game_name: row.get("game_name"),
+        game_slug: row.get("game_slug"),
+        game_cover_url: row.get("game_cover_url"),
+        game_header_url: row.get("game_header_url"),
+        game_platform: row.get("game_platform"),
+        guide_count: row.get::<i64, _>("guide_count") as i32,
+        comment_count: row.get::<i64, _>("comment_count") as i32,
     })
 }
 

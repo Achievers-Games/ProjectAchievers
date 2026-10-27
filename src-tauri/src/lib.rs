@@ -10,6 +10,7 @@ use crate::commands::{
   games::*,
   guides::*,
   comments::*,
+  community::*,
   sync::*,
   system,
   system::{show_in_folder, open_external_url, check_for_updates, install_update, get_app_version, minimize_to_tray, show_window},
@@ -49,6 +50,7 @@ pub fn run() {
       // Games commands
       get_games,
       get_game_detail,
+      get_achievement_detail,
       search_games,
       get_user_game_progress,
       // Guides commands
@@ -70,6 +72,9 @@ pub fn run() {
       trigger_background_sync,
       get_sync_history,
       force_sync_game,
+      // Community commands
+      get_community_feed,
+      get_leaderboard,
       // System commands
       show_in_folder,
       open_external_url,

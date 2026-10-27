@@ -1,10 +1,10 @@
 import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
+import { sveltekit } from '@sveltejs/kit/vite';
 import path from 'node:path';
 
 // Tauri expects a fixed port and no TTY clearing during `tauri dev`.
 export default defineConfig({
-  plugins: [react()],
+  plugins: [sveltekit()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

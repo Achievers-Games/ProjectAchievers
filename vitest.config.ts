@@ -1,9 +1,9 @@
-import react from '@vitejs/plugin-react';
+import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { defineConfig } from 'vitest/config';
 import path from 'node:path';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [svelte({ hot: false })],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -12,8 +12,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
-    setupFiles: ['./src/test/setup.ts'],
-    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    include: ['src/**/*.{test,spec}.{ts,svelte}'],
     exclude: ['node_modules', 'dist', 'src-tauri'],
   },
 });

@@ -5,18 +5,20 @@
 // Only the thin aliases and listen helpers below are maintained by hand.
 
 import { listen } from '@tauri-apps/api/event';
-import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import {
   commands,
   type AIGuideRequest_Deserialize,
+  type AchievementDetail_Serialize,
   type AchievementGuide_Serialize,
   type AchievementWithProgress_Serialize,
   type AuthStatus_Serialize,
   type Comment_Serialize,
   type CreateCommentRequest_Deserialize,
   type CreateGuideRequest_Deserialize,
+  type FeedItem_Serialize,
   type GameDetail_Serialize,
   type GameListItem_Serialize,
+  type LeaderboardEntry_Serialize,
   type LinkedAccount_Serialize,
   type ReactionRequest,
   type SteamAuthRequest_Deserialize,
@@ -68,6 +70,7 @@ export type GameListItem = GameListItem_Serialize;
 export type UserGameProgress = UserGameProgress_Serialize;
 export type AchievementWithProgress = AchievementWithProgress_Serialize;
 export type GameDetail = GameDetail_Serialize;
+export type AchievementDetail = AchievementDetail_Serialize;
 export type AchievementGuide = AchievementGuide_Serialize;
 export type CreateGuideRequest = CreateGuideRequest_Deserialize;
 export type UpdateGuideRequest = UpdateGuideRequest_Deserialize;
@@ -77,8 +80,11 @@ export type CreateCommentRequest = CreateCommentRequest_Deserialize;
 export type SyncStatus = SyncStatus_Serialize;
 export type SyncHistoryEntry = SyncHistoryEntry_Serialize;
 export type UpdateInfo = UpdateInfo_Serialize;
+export type FeedItem = FeedItem_Serialize;
+export type LeaderboardEntry = LeaderboardEntry_Serialize;
 
 export type { SteamResolvedProfile } from './tauri-bindings';
+export type { CommentReactions } from './tauri-bindings';
 
 // Thin helpers kept for convenience (matching the original call sites).
 export const tauriApi = {
@@ -138,6 +144,8 @@ export const tauriApi = {
       ),
     ),
   getGameDetail: (gameId: string) => unwrap(commands.getGameDetail(gameId)),
+  getAchievementDetail: (achievementId: string) =>
+    unwrap(commands.getAchievementDetail(achievementId)),
   searchGames: (query: string, limit?: number) =>
     unwrap(commands.searchGames(query, limit ?? null)),
   getUserGameProgress: (gameId: string) => unwrap(commands.getUserGameProgress(gameId)),
@@ -170,6 +178,10 @@ export const tauriApi = {
   getSyncHistory: (limit?: number) => unwrap(commands.getSyncHistory(limit ?? null)),
   forceSyncGame: (gameId: string) => unwrap(commands.forceSyncGame(gameId)),
 
+  // Communauté
+  getCommunityFeed: (limit?: number) => unwrap(commands.getCommunityFeed(limit ?? null)),
+  getLeaderboard: (limit?: number) => unwrap(commands.getLeaderboard(limit ?? null)),
+
   // System
   getAppVersion: () => unwrap(commands.getAppVersion()),
   openExternalUrl: (url: string) => unwrap(commands.openExternalUrl(url)),
@@ -187,6 +199,4 @@ export const tauriApi = {
     return listen('global-shortcut-show', () => callback());
   },
 };
-
-// Window reference
-export const mainWindow = WebviewWindow.getByLabel('main');
+// fin du module IPC

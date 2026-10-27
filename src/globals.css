@@ -43,6 +43,9 @@
     --platform-steam: 214 100% 56%;
     --platform-playstation: 340 83% 62%;
     --platform-xbox: 201 98% 46%;
+
+    --glow-ember: 18 89% 55%;
+    --glow-gold: 45 93% 47%;
   }
 
   .dark {

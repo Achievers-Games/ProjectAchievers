@@ -190,6 +190,10 @@ pub async fn create_comment(
     request: CreateCommentRequest,
     db: State<'_, Database>,
 ) -> AppResult<Comment> {
+    if request.content_md.trim().is_empty() {
+        return Err(anyhow::anyhow!("Comment cannot be empty").into());
+    }
+
     let user_id = get_current_user_id(&db).await?;
     let comment_id = Uuid::new_v4().to_string();
     let now = Utc::now().timestamp_millis();

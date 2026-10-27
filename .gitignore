@@ -9,6 +9,14 @@ out/
 build/
 dist/
 
+# SvelteKit
+.svelte-kit/
+vite.config.ts.timestamp-*
+
+# Tests
+test-results/
+playwright-report/
+
 # Tauri
 src-tauri/target/
 src-tauri/gen/

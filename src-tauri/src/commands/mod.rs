@@ -4,5 +4,6 @@ pub mod psn;
 pub mod games;
 pub mod guides;
 pub mod comments;
+pub mod community;
 pub mod sync;
 pub mod system;

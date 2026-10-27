@@ -316,6 +316,27 @@ async fn get_or_create_user(db: &Database, username: &str) -> AppResult<String> 
         return Ok(row.get("id"));
     }
 
+    // Reuse the local first-launch profile instead of leaving an orphan hunter
+    // behind in the leaderboard.
+    let orphan = sqlx::query(
+        "SELECT u.id FROM users u \
+         WHERE NOT EXISTS (SELECT 1 FROM platform_accounts pa WHERE pa.user_id = u.id) \
+         LIMIT 1",
+    )
+    .fetch_optional(&db.pool)
+    .await?;
+
+    if let Some(row) = orphan {
+        let user_id: String = row.get("id");
+        sqlx::query("UPDATE users SET username = ?, updated_at = ? WHERE id = ?")
+            .bind(username)
+            .bind(Utc::now().timestamp_millis())
+            .bind(&user_id)
+            .execute(&db.pool)
+            .await?;
+        return Ok(user_id);
+    }
+
     // Create new user
     let user_id = Uuid::new_v4().to_string();
     let now = Utc::now().timestamp_millis();
