@@ -1,19 +1,23 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { tauriApi, type GameListItem } from '@/lib/tauri';
+  import { tauriApi, type AuthStatus, type GameListItem } from '@/lib/tauri';
   import { formatNumber } from '@/lib/utils';
   import { toast } from '@/lib/stores/toast';
   import GameCard from '@/lib/games/GameCard.svelte';
 
   let games = $state<GameListItem[] | null>(null);
-  let authStatus = $state<{ username: string | null } | null>(null);
+  let authStatus = $state<AuthStatus | null>(null);
   let syncing = $state(false);
 
   onMount(async () => {
     const [g, a] = await Promise.allSettled([tauriApi.getGames(), tauriApi.getAuthStatus()]);
     if (g.status === 'fulfilled') games = g.value;
-    if (a.status === 'fulfilled') authStatus = a.value as any;
+    if (a.status === 'fulfilled') authStatus = a.value;
   });
+
+  const hasLinkedAccount = $derived(
+    (authStatus?.linked_accounts?.length ?? 0) > 0,
+  );
 
   async function handleSync() {
     syncing = true;
@@ -75,10 +79,17 @@
       </div>
 
       <div class="hero-actions">
-        <button class="btn-glossy" onclick={handleSync} disabled={syncing}>
-          <svg class:spin={syncing} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 0 1 15.5-6.3L21 8M21 3v5h-5M21 12a9 9 0 0 1-15.5 6.3L3 16M3 21v-5h5" /></svg>
-          {syncing ? 'Synchronisation…' : 'Synchroniser'}
-        </button>
+        {#if hasLinkedAccount}
+          <button class="btn-glossy" onclick={handleSync} disabled={syncing}>
+            <svg class:spin={syncing} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 0 1 15.5-6.3L21 8M21 3v5h-5M21 12a9 9 0 0 1-15.5 6.3L3 16M3 21v-5h5" /></svg>
+            {syncing ? 'Synchronisation…' : 'Synchroniser'}
+          </button>
+        {:else}
+          <a class="btn-glossy" href="/settings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 7h3a5 5 0 0 1 0 10h-3M9 17H6a5 5 0 0 1 0-10h3M8 12h8" /></svg>
+            Lier un compte
+          </a>
+        {/if}
         <a href="/games" class="ghost-link">
           Explorer la bibliothèque
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
@@ -136,7 +147,7 @@
     {:else if games.length === 0}
       <div class="empty">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M8.2 6h7.6M6 4h12v11a12 12 0 0 1-12 0z" /></svg>
-        <p>Aucun jeu trouvé. Liez votre compte Steam pour commencer.</p>
+        <p>Aucun jeu trouvé. Lie ton compte Steam pour commencer.</p>
         <a class="btn-glossy" href="/settings">Lier Steam</a>
       </div>
     {:else}
@@ -284,6 +295,7 @@
     color: hsl(var(--primary-foreground));
     cursor: pointer;
     font-size: 0.875rem;
+    white-space: nowrap;
   }
 
   .hero-actions .btn-glossy:disabled {
@@ -319,6 +331,7 @@
     font-weight: 600;
     color: hsl(var(--muted-foreground));
     transition: all 0.2s ease;
+    white-space: nowrap;
   }
 
   .ghost-link:hover {

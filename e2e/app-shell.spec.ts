@@ -30,7 +30,7 @@ test.describe('Application shell', () => {
   test('library shows a search input and platform filters', async ({ page }) => {
     await page.goto('/games');
 
-    await expect(page.locator('input[placeholder="Rechercher un jeu…"]')).toBeVisible();
+    await expect(page.locator('.filters input[type="search"]')).toBeVisible();
     await expect(page.locator('button', { hasText: 'Tous' })).toBeVisible();
     await expect(page.locator('button', { hasText: 'Steam' })).toBeVisible();
     await expect(page.locator('button', { hasText: 'PlayStation' })).toBeVisible();

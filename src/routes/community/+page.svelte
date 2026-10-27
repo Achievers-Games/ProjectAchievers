@@ -87,7 +87,7 @@
         <div class="empty dynamic-card">
           <div class="empty-ico">🏆</div>
           <h3>Aucune activité pour l'instant</h3>
-          <p>Liez un compte Steam puis synchronisez pour voir apparaître vos succès ici.</p>
+          <p>Lie un compte Steam puis synchronise pour voir apparaître tes succès ici.</p>
           <a href="/settings" class="btn-glossy">Lier un compte</a>
         </div>
       {:else}

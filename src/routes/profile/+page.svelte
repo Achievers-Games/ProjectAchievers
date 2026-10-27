@@ -51,10 +51,15 @@
       <div class="who">
         <div class="name-row">
           <h1>{auth?.username ?? 'Chasseur'}</h1>
-          {#if auth?.is_authenticated}
+          {#if steam || psn}
             <span class="verified-pill">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 12 2 2 4-4" /><circle cx="12" cy="12" r="9" /></svg>
-              Vérifié
+              Compte lié
+            </span>
+          {:else}
+            <span class="verified-pill local">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+              Profil local
             </span>
           {/if}
         </div>
@@ -135,7 +140,7 @@
 
     {#if showcase.length === 0}
       <div class="empty dynamic-card">
-        <p>Aucun jeu complété pour l'instant. Votre vitrine se remplira au fil des succès.</p>
+        <p>Aucun jeu complété pour l'instant. Ta vitrine se remplira au fil des succès.</p>
         <a href="/games" class="btn-ghost">Explorer la bibliothèque</a>
       </div>
     {:else}
@@ -275,6 +280,12 @@
   .verified-pill svg {
     width: 0.75rem;
     height: 0.75rem;
+  }
+
+  .verified-pill.local {
+    border-color: hsl(var(--border));
+    background: hsl(var(--secondary));
+    color: hsl(var(--muted-foreground));
   }
 
   .tagline {

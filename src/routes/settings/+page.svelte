@@ -1,20 +1,26 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { tauriApi, type AuthStatus, type SteamResolvedProfile } from '@/lib/tauri';
+  import { tauriApi, type AuthStatus, type AppVersion, type SteamResolvedProfile } from '@/lib/tauri';
   import { toast } from '@/lib/stores/toast';
   import { theme, setTheme } from '@/lib/stores/theme';
 
   let auth = $state<AuthStatus | null>(null);
+  let appVersion = $state<AppVersion | null>(null);
   let query = $state('');
   let lastSearched = $state('');
   let candidate = $state<SteamResolvedProfile | null>(null);
   let searching = $state(false);
   let linking = $state(false);
   let unlinking = $state(false);
+  let syncing = $state(false);
   let searchTimer: ReturnType<typeof setTimeout> | null = null;
 
   onMount(() => {
     void loadAuth();
+    void tauriApi
+      .getAppVersion()
+      .then((version) => (appVersion = version))
+      .catch(() => (appVersion = null));
   });
 
   async function loadAuth() {
@@ -86,6 +92,22 @@
       unlinking = false;
     }
   }
+
+  async function handleSync() {
+    syncing = true;
+    try {
+      const result = await tauriApi.syncAllPlatforms();
+      await loadAuth();
+      toast.success(
+        'Synchronisation terminée',
+        `${result.total_games} jeux · ${result.total_achievements} succès importés`,
+      );
+    } catch (e) {
+      toast.error('Échec de la synchronisation', e instanceof Error ? e.message : String(e));
+    } finally {
+      syncing = false;
+    }
+  }
 </script>
 
 <svelte:head><title>Paramètres — Project Achievers</title></svelte:head>
@@ -120,13 +142,28 @@
       </div>
 
       {#if steam}
-        <button class="btn-outline" onclick={() => handleUnlink(steam.id)} disabled={unlinking}>
-          {unlinking ? 'Dissociation…' : 'Dissocier'}
-        </button>
+        <div class="account-actions">
+          <button class="btn-outline primary" onclick={handleSync} disabled={syncing || unlinking}>
+            {syncing ? 'Synchronisation…' : 'Synchroniser'}
+          </button>
+          <button
+            class="btn-outline"
+            onclick={() => handleUnlink(steam.id)}
+            disabled={unlinking || syncing}
+          >
+            {unlinking ? 'Dissociation…' : 'Dissocier'}
+          </button>
+        </div>
       {:else}
         <div class="link-form">
           <div class="search-mini">
-            <input type="search" placeholder="Pseudo Steam…" bind:value={query} disabled={linking} />
+            <input
+              type="search"
+              placeholder="Pseudo Steam…"
+              aria-label="Pseudo Steam à lier"
+              bind:value={query}
+              disabled={linking}
+            />
           </div>
         </div>
       {/if}
@@ -194,13 +231,10 @@
       <h2>À propos</h2>
     </div>
     <p class="about">
-      <b>Project Achievers</b> v0.2.0 — la communauté des chasseurs de succès.
-      Suis tes jeux, partage tes guides et compare ta collection.
+      <b>Project Achievers</b> v{appVersion?.version ?? '0.1.0'} — la communauté des chasseurs de
+      succès. Suis tes jeux, partage tes guides et compare ta collection.
     </p>
-    <div class="links">
-      <a class="btn-outline" href="https://github.com/ProjectAchievers" target="_blank" rel="noopener noreferrer">GitHub</a>
-      <a class="btn-outline" href="https://github.com/ProjectAchievers/issues" target="_blank" rel="noopener noreferrer">Signaler un bug</a>
-    </div>
+    <p class="local-note">Tes données restent stockées sur cet appareil.</p>
   </section>
 </div>
 
@@ -308,6 +342,19 @@
     text-decoration: none;
     display: inline-flex;
     align-items: center;
+  }
+
+  .account-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: flex-end;
+  }
+
+  .btn-outline.primary {
+    border-color: hsl(var(--primary) / 40%);
+    background: hsl(var(--primary) / 12%);
+    color: hsl(var(--primary));
   }
 
   .btn-outline:hover:not(:disabled) {
@@ -443,9 +490,9 @@
     color: hsl(var(--foreground));
   }
 
-  .links {
-    display: flex;
-    gap: 0.5rem;
-    margin-top: 0.85rem;
+  .local-note {
+    margin-top: 0.6rem;
+    font-size: 0.72rem;
+    color: hsl(var(--muted-foreground) / 80%);
   }
 </style>

@@ -1,4 +1,7 @@
 <script lang="ts">
+  import { afterNavigate } from '$app/navigation';
+  import { page } from '$app/state';
+  import { onMount } from 'svelte';
   import { tauriApi, type GameListItem } from '@/lib/tauri';
   import { toast } from '@/lib/stores/toast';
   import GameCard from '@/lib/games/GameCard.svelte';
@@ -12,9 +15,27 @@
   ];
 
   let games = $state<GameListItem[] | null>(null);
-  let localSearch = $state('');
+  let localSearch = $state(page.url.searchParams.get('search') ?? '');
   let localPlatform = $state<PlatformFilter>('all');
   let syncing = $state(false);
+  let authLoaded = $state(false);
+  let hasLinkedAccount = $state(false);
+
+  onMount(async () => {
+    try {
+      const auth = await tauriApi.getAuthStatus();
+      hasLinkedAccount = auth.linked_accounts.length > 0;
+    } catch {
+      hasLinkedAccount = false;
+    } finally {
+      authLoaded = true;
+    }
+  });
+
+  // La recherche globale de l'en-tête arrive via ?search=…
+  afterNavigate(() => {
+    localSearch = page.url.searchParams.get('search') ?? '';
+  });
 
   let searchTimer: ReturnType<typeof setTimeout> | null = null;
   $effect(() => {
@@ -63,10 +84,17 @@
           <h1>Bibliothèque</h1>
           <p class="sub">{games?.length ?? 0} jeux découverts</p>
         </div>
-        <button class="btn-glossy" onclick={handleSync} disabled={syncing}>
-          <svg class:spin={syncing} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 0 1 15.5-6.3L21 8M21 3v5h-5M21 12a9 9 0 0 1-15.5 6.3L3 16M3 21v-5h5" /></svg>
-          {syncing ? 'Synchronisation…' : 'Synchroniser'}
-        </button>
+        {#if !authLoaded || hasLinkedAccount}
+          <button class="btn-glossy" onclick={handleSync} disabled={syncing}>
+            <svg class:spin={syncing} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 0 1 15.5-6.3L21 8M21 3v5h-5M21 12a9 9 0 0 1-15.5 6.3L3 16M3 21v-5h5" /></svg>
+            {syncing ? 'Synchronisation…' : 'Synchroniser'}
+          </button>
+        {:else}
+          <a class="btn-glossy" href="/settings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 7h3a5 5 0 0 1 0 10h-3M9 17H6a5 5 0 0 1 0-10h3M8 12h8" /></svg>
+            Lier Steam
+          </a>
+        {/if}
       </div>
     </div>
   </div>
@@ -106,7 +134,7 @@
     <div class="empty dynamic-card">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 12h4m-2-2v4M15 11h.01M18 13h.01M17.32 5H6.68a4 4 0 0 0-3.98 3.59A17.9 17.9 0 0 0 2.25 12c0 2 .19 4 .53 5.8A4 4 0 0 0 6.68 21h8.64a4 4 0 0 0 3.98-3.6c.35-1.86.53-3.96.53-5.81 0-2-.18-3.94-.53-5.81A4 4 0 0 0 17.32 5z" /></svg>
       <h3>Aucun jeu trouvé</h3>
-      <p>Liez votre compte Steam pour importer votre bibliothèque.</p>
+      <p>Lie ton compte Steam pour importer ta bibliothèque.</p>
       <a class="btn-glossy" href="/settings">Lier Steam</a>
     </div>
   {:else}
@@ -202,6 +230,7 @@
     cursor: pointer;
     font-size: 0.875rem;
     font-weight: 600;
+    white-space: nowrap;
   }
 
   .btn-glossy:disabled {

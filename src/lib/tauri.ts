@@ -18,6 +18,7 @@ import {
   type FeedItem_Serialize,
   type GameDetail_Serialize,
   type GameListItem_Serialize,
+  type GameSearchResult_Serialize,
   type LeaderboardEntry_Serialize,
   type LinkedAccount_Serialize,
   type ReactionRequest,
@@ -67,6 +68,7 @@ export type AuthStatus = AuthStatus_Serialize;
 export type SteamOwnedGame = SteamOwnedGame_Serialize;
 export type SteamPlayerAchievement = SteamPlayerAchievement_Serialize;
 export type GameListItem = GameListItem_Serialize;
+export type GameSearchResult = GameSearchResult_Serialize;
 export type UserGameProgress = UserGameProgress_Serialize;
 export type AchievementWithProgress = AchievementWithProgress_Serialize;
 export type GameDetail = GameDetail_Serialize;

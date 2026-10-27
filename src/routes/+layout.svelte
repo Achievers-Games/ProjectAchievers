@@ -2,9 +2,11 @@
   import '../globals.css';
   import { onMount } from 'svelte';
   import type { Snippet } from 'svelte';
+  import { goto } from '$app/navigation';
   import Sidebar from '@/lib/layout/Sidebar.svelte';
   import { toasts, type Toast } from '@/lib/stores/toast';
   import { initTheme } from '@/lib/stores/theme';
+  import { tauriApi, type GameSearchResult } from '@/lib/tauri';
 
   let { children }: { children: Snippet } = $props();
 
@@ -12,6 +14,64 @@
 
   let sidebarOpen = $state(false);
   let globalSearch = $state('');
+  let results = $state<GameSearchResult[]>([]);
+  let searchOpen = $state(false);
+  let searching = $state(false);
+  let searchTimer: ReturnType<typeof setTimeout> | null = null;
+
+  $effect(() => {
+    const query = globalSearch.trim();
+    if (searchTimer) clearTimeout(searchTimer);
+
+    if (query.length < 2) {
+      results = [];
+      searching = false;
+      return;
+    }
+
+    searching = true;
+    searchTimer = setTimeout(async () => {
+      try {
+        const matches = await tauriApi.searchGames(query, 6);
+        if (globalSearch.trim() === query) results = matches;
+      } catch {
+        results = [];
+      } finally {
+        if (globalSearch.trim() === query) searching = false;
+      }
+    }, 250);
+
+    return () => {
+      if (searchTimer) clearTimeout(searchTimer);
+    };
+  });
+
+  function submitSearch(event?: SubmitEvent) {
+    event?.preventDefault();
+    const query = globalSearch.trim();
+    if (!query) return;
+    searchOpen = false;
+    goto(`/games?search=${encodeURIComponent(query)}`);
+  }
+
+  function openGame(game: GameSearchResult) {
+    searchOpen = false;
+    globalSearch = '';
+    goto(`/games/${game.slug}`);
+  }
+
+  function closeOnFocusOut(event: FocusEvent) {
+    const next = event.relatedTarget as Node | null;
+    if (next && (event.currentTarget as HTMLElement).contains(next)) return;
+    searchOpen = false;
+  }
+
+  function platformLabel(platform: string): string {
+    if (platform === 'steam') return 'Steam';
+    if (platform === 'psn') return 'PlayStation';
+    if (platform === 'xbox') return 'Xbox';
+    return 'Multi-plateforme';
+  }
 
   const kindIcon: Record<Toast['kind'], string> = {
     success: 'M20 6 9 17l-5-5',
@@ -41,13 +101,49 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
       </button>
 
-      <div class="searchbeam">
+      <form class="searchbeam" role="search" onsubmit={submitSearch} onfocusout={closeOnFocusOut}>
         <svg class="search-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
         <input
           type="search"
-          placeholder="Rechercher un jeu, un succès…"
-          bind:value={globalSearch} />
-      </div>
+          placeholder="Rechercher un jeu…"
+          aria-label="Rechercher un jeu"
+          autocomplete="off"
+          bind:value={globalSearch}
+          onfocus={() => (searchOpen = true)}
+          onkeydown={(event) => {
+            if (event.key === 'Escape') {
+              searchOpen = false;
+              globalSearch = '';
+            }
+          }} />
+
+        {#if searchOpen && globalSearch.trim().length >= 2}
+          <div class="search-results">
+            {#if searching}
+              <p class="search-note">Recherche…</p>
+            {:else if results.length === 0}
+              <p class="search-note">Aucun jeu pour « {globalSearch.trim()} ».</p>
+            {:else}
+              {#each results as game (game.id)}
+                <button type="button" class="search-hit" onclick={() => openGame(game)}>
+                  {#if game.cover_url}
+                    <img src={game.cover_url} alt="" />
+                  {:else}
+                    <span class="hit-fallback">🎮</span>
+                  {/if}
+                  <span class="hit-info">
+                    <strong>{game.name}</strong>
+                    <small>{platformLabel(game.platform)} · {game.total_achievements} succès</small>
+                  </span>
+                </button>
+              {/each}
+              <button type="button" class="search-all" onclick={() => submitSearch()}>
+                Voir tous les résultats
+              </button>
+            {/if}
+          </div>
+        {/if}
+      </form>
 
       <div class="eyebrow-badge">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v1.5M12 19.5V21M4.9 4.9l1.1 1.1M18 18l1.1 1.1M2.8 12h1.5M19.7 12h1.5M4.9 19.1 6 18M18 6l1.1-1.1M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8" /></svg>
@@ -202,6 +298,89 @@
 
   .searchbeam input:focus {
     border-color: hsl(var(--primary) / 40%);
+  }
+
+  .search-results {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    right: 0;
+    left: 0;
+    z-index: 60;
+    overflow: hidden;
+    padding: 0.35rem;
+    border: 1px solid hsl(var(--border));
+    border-radius: 0.9rem;
+    background: hsl(var(--card));
+    box-shadow: 0 18px 40px -16px rgb(0 0 0 / 60%);
+  }
+
+  .search-note {
+    padding: 0.6rem 0.65rem;
+    font-size: 0.78rem;
+    color: hsl(var(--muted-foreground));
+  }
+
+  .search-hit {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    width: 100%;
+    padding: 0.45rem 0.5rem;
+    border-radius: 0.6rem;
+    text-align: left;
+    transition: background 0.12s ease;
+  }
+
+  .search-hit:hover,
+  .search-hit:focus-visible {
+    background: hsl(var(--secondary));
+  }
+
+  .search-hit img,
+  .hit-fallback {
+    display: grid;
+    place-items: center;
+    width: 1.75rem;
+    height: 2.35rem;
+    flex-shrink: 0;
+    object-fit: cover;
+    border-radius: 0.3rem;
+    background: hsl(var(--secondary));
+    font-size: 0.9rem;
+  }
+
+  .hit-info {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+  }
+
+  .hit-info strong {
+    overflow: hidden;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .hit-info small {
+    font-size: 0.65rem;
+    color: hsl(var(--muted-foreground));
+  }
+
+  .search-all {
+    width: 100%;
+    margin-top: 0.25rem;
+    padding: 0.5rem;
+    border-top: 1px solid hsl(var(--border));
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: hsl(var(--primary));
+  }
+
+  .search-all:hover,
+  .search-all:focus-visible {
+    background: hsl(var(--secondary));
   }
 
   .eyebrow-badge {
