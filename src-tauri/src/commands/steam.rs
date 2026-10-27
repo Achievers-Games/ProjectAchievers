@@ -12,10 +12,8 @@ use reqwest::Client;
 
 const STEAM_API_BASE: &str = "https://api.steampowered.com";
 
-/// Embedded development Steam Web API key (kept out of the frontend; the
-/// browser never sees this — only Rust code does).
-pub const DEV_STEAM_API_KEY: &str = "C0D216991C74969305AA04D7C8F21774";
-
+/// Key is loaded from the environment (`STEAM_API_KEY`) at runtime, not
+/// embedded in source. See `.env` example in `src-tauri/`.
 #[derive(Debug, Default, Serialize, Deserialize, specta::Type)]
 #[serde(default)]
 pub struct SteamOwnedGame {
@@ -127,8 +125,8 @@ async fn get_steam_api_key(
         }
     }
 
-    // 2. Fallback: the embedded development key (hidden from the frontend).
-    Ok(Some(DEV_STEAM_API_KEY.to_string()))
+    // Fallback / runtime load: read from environment (see `.env` / env-var).
+    Ok(std::env::var("STEAM_API_KEY").ok())
 }
 
 #[derive(Debug, Serialize, Deserialize, specta::Type)]
@@ -192,7 +190,7 @@ pub async fn steam_resolve_vanity(profile: String) -> AppResult<Option<SteamReso
     let client = Client::new();
     let url = format!(
         "{}/ISteamUser/ResolveVanityURL/v1/?key={}&vanityurl={}",
-        STEAM_API_BASE, DEV_STEAM_API_KEY, vanity.unwrap_or_default()
+        STEAM_API_BASE, std::env::var("STEAM_API_KEY").unwrap_or_default(), vanity.unwrap_or_default()
     );
     let data: serde_json::Value = client.get(&url).send().await?.json().await?;
 
@@ -210,7 +208,7 @@ async fn fetch_steam_profile(steamid: &str) -> AppResult<Option<SteamResolvedPro
     let client = Client::new();
     let url = format!(
         "{}/ISteamUser/GetPlayerSummaries/v2/?key={}&steamids={}",
-        STEAM_API_BASE, DEV_STEAM_API_KEY, steamid
+        STEAM_API_BASE, std::env::var("STEAM_API_KEY").unwrap_or_default(), steamid
     );
     let data: serde_json::Value = client.get(&url).send().await?.json().await?;
     let player = &data["response"]["players"][0];

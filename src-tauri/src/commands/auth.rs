@@ -58,7 +58,7 @@ pub async fn authenticate_steam(
     // API key provided inline, or fall back to the user's stored (encrypted) key.
     let api_key = match &request.api_key {
         Some(k) if !k.is_empty() => k.clone(),
-        _ => crate::commands::steam::DEV_STEAM_API_KEY.to_string(),
+        _ => std::env::var("STEAM_API_KEY").unwrap_or_default(),
     };
     let url = format!(
         "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/?key={}&steamids={}",
