@@ -1,11 +1,12 @@
 /**
- * Svelte action: FLIP animation for grid layouts on resize.
+ * Svelte action: FLIP animation for grid layouts on window resize.
  *
- * Polling-based detection: we check element positions every animation frame.
- * When positions change between two frames, we FLIP (First, Last, Invert, Play):
- *   1. OLD positions (from previous frame) and NEW positions (current frame)
- *   2. Apply inverse transform = translate(old - new) to each child
- *   3. Force layout, then zero the transform → children animate to new positions
+ * Polling-based detection finds position changes between frames.
+ * Then uses the FLIP (First, Last, Invert, Play) technique:
+ *   1. Apply inverse transform with `transition: none` (element jumps to old spot)
+ *   2. Force reflow
+ *   3. Use setTimeout to let browser paint, then enable transition + clear transform
+ *   4. Element smoothly animates to its new position
  *
  * Usage: `<div class="grid" use:gridFlip>`
  */
@@ -30,8 +31,9 @@ export function gridFlip(node: HTMLElement) {
 			return;
 		}
 
-		const moved: { el: HTMLElement; dx: number; dy: number }[] = [];
+		const moved: HTMLElement[] = [];
 
+		// Step 1: Disable transitions, apply inverse transform
 		children().forEach((el, i) => {
 			const oldRect = oldRects[i];
 			const newRect = newRects[i];
@@ -42,9 +44,9 @@ export function gridFlip(node: HTMLElement) {
 
 			if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
 				el.style.willChange = 'transform';
+				el.style.transition = 'none';
 				el.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
-				el.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.4, 0.25, 1)';
-				moved.push({ el, dx, dy });
+				moved.push(el);
 			}
 		});
 
@@ -53,33 +55,36 @@ export function gridFlip(node: HTMLElement) {
 			return;
 		}
 
-		// Force synchronous layout so the inverse transforms "stick"
+		// Step 2: Force synchronous reflow
 		void document.body.offsetHeight;
 
-		// Next frame: clear transforms → children animate to their final positions
-		rafId = requestAnimationFrame(() => {
-			moved.forEach(({ el }) => {
+		// Step 3: Let browser paint the inverse-transformed state, THEN
+		// enable transition and clear transform to trigger the animation.
+		// setTimeout(0) runs as a new task, allowing a paint between here
+		// and the callback.
+		setTimeout(() => {
+			moved.forEach((el) => {
+				el.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.4, 0.25, 1)';
 				el.style.transform = 'translate3d(0, 0, 0)';
 			});
 
-			// After transition completes: cleanup + restart polling
+			// Cleanup after transition completes
 			setTimeout(() => {
-				moved.forEach(({ el }) => {
+				moved.forEach((el) => {
 					el.style.transition = '';
 					el.style.transform = '';
 					el.style.willChange = '';
 				});
 				prevRects = getRects();
 				animating = false;
-				// Restart the polling loop
 				rafId = requestAnimationFrame(loop);
 			}, 400);
-		});
+		}, 0);
 	}
 
 	let running = false;
 	function loop() {
-		if (running) return; // safety: prevent re-entry
+		if (running) return;
 		running = true;
 
 		const current = getRects();
