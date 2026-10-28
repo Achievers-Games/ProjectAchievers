@@ -7,10 +7,14 @@
   import { toasts, type Toast } from '@/lib/stores/toast';
   import { initTheme } from '@/lib/stores/theme';
   import { tauriApi, type GameSearchResult } from '@/lib/tauri';
+  import { auth as authStore } from '@/lib/stores/auth';
 
   let { children }: { children: Snippet } = $props();
 
   onMount(initTheme);
+  onMount(() => {
+    void authStore.init();
+  });
 
   let sidebarOpen = $state(false);
   let globalSearch = $state('');

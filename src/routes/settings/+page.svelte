@@ -130,6 +130,8 @@
         return;
       }
       toast.success(provider === 'steam' ? 'Compte Steam lié' : 'Compte Discord lié');
+      // Create a JWT session so subsequent requests are authenticated
+      await authStore.createSession();
       await loadAuth();
     } finally {
       oauthLoading = null;
@@ -146,6 +148,7 @@
     try {
       await tauriApi.authenticatePsn({ npsso: psnInput.trim() });
       toast.success('Compte PSN lié');
+      await authStore.createSession();
       psnInput = '';
       await loadAuth();
     } catch (e) {
