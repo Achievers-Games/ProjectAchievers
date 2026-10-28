@@ -1,11 +1,11 @@
 /**
- * Svelte action: FLIP animation for grid layouts on resize.
+ * Svelte action: FLIP animation for grid layouts on window resize.
  *
- * Technique standard:
- *   1. On resize start → capture every child's rect (BEFORE layout shift)
+ * Technique FLIP (First, Last, Invert, Play):
+ *   1. On resize → capture every child's rect (BEFORE browser reflows)
  *   2. requestAnimationFrame → browser has reflowed, capture NEW rects
- *   3. For each child, apply inverse transform to "undo" the move
- *   4. Next frame → zero the transform, children animate to their new spots
+ *   3. For each child, apply inverse transform to "undo" the layout move
+ *   4. Next frame → clear transforms, children animate to their new spots
  *
  * Usage: `<div class="grid" use:gridFlip>`
  */
@@ -14,35 +14,29 @@ export function gridFlip(node: HTMLElement) {
 		Array.from(node.children) as HTMLElement[];
 
 	let prevRects: DOMRect[] = [];
-	let resizeObserver: ResizeObserver | null = null;
 	let rafId: number | null = null;
-	let running = false;
+	let animating = false;
 
-	function cachePositions() {
-		prevRects = children().map((el) => el.getBoundingClientRect());
+	function getRects() {
+		return children().map((el) => el.getBoundingClientRect());
 	}
 
-	function flush() {
-		if (rafId) cancelAnimationFrame(rafId);
-		rafId = null;
-		running = false;
+	function cachePositions() {
+		prevRects = getRects();
 	}
 
 	function flip() {
-		if (running) return; // skip if already in-flight
-		running = true;
-
 		const oldRects = prevRects;
-		if (oldRects.length === 0) {
-			running = false;
+		if (oldRects.length === 0) return;
+
+		const newRects = getRects();
+		if (oldRects.length !== newRects.length) {
+			cachePositions();
 			return;
 		}
 
-		// Read new positions AFTER layout reflow
-		const newRects = children().map((el) => el.getBoundingClientRect());
-
-		// Apply inverse transform so each child sits at its OLD spot
 		const moved: { el: HTMLElement; dx: number; dy: number }[] = [];
+
 		children().forEach((el, i) => {
 			const oldRect = oldRects[i];
 			const newRect = newRects[i];
@@ -61,56 +55,69 @@ export function gridFlip(node: HTMLElement) {
 
 		if (moved.length === 0) {
 			cachePositions();
-			flush();
+			animating = false;
 			return;
 		}
 
-		// Force a synchronised layout to make the above transforms "stick"
+		// Force synchronous layout to "stick" the transforms
 		void document.body.offsetHeight;
 
-		// Next frame: clear transforms so children animate to new positions
+		// Next frame: remove transforms → children fly to their new positions
 		rafId = requestAnimationFrame(() => {
 			moved.forEach(({ el }) => {
 				el.style.transform = 'translate3d(0, 0, 0)';
 			});
 
-			// Clean up after transition completes
 			setTimeout(() => {
-				children().forEach((el) => {
-					el.style.transform = '';
+				moved.forEach(({ el }) => {
 					el.style.transition = '';
+					el.style.transform = '';
 					el.style.willChange = '';
 				});
 				cachePositions();
-				running = false;
+				animating = false;
 			}, 400);
 		});
 	}
 
-	// ResizeObserver triggers when grid container size changes
-	if (typeof ResizeObserver !== 'undefined') {
-		resizeObserver = new ResizeObserver(() => {
-			if (!running) cachePositions();
-			rafId = requestAnimationFrame(flip);
+	// Listen on window resize: fires BEFORE browser reflows
+	// so getBoundingClientRect() returns OLD positions here.
+	function onResize() {
+		if (animating) return;
+
+		// Capture OLD positions synchronously (layout not yet shifted)
+		cachePositions();
+
+		// Schedule FLIP for next animation frame (after reflow)
+		rafId = requestAnimationFrame(() => {
+			flip();
 		});
-		resizeObserver.observe(node);
 	}
 
-	// Fallback for SSR / older browsers: window resize listener
-	if (typeof window !== 'undefined' && !resizeObserver) {
-		const onResize = () => {
-			if (!running) cachePositions();
-			rafId = requestAnimationFrame(flip);
-		};
-		window.addEventListener('resize', onResize, { passive: true });
+	window.addEventListener('resize', onResize, { passive: true });
+
+	// Also use ResizeObserver as a fallback for container-size changes
+	// (e.g. sidebar collapse, split-view, etc.)
+	let ro: ResizeObserver | null = null;
+	if (typeof ResizeObserver !== 'undefined') {
+		ro = new ResizeObserver(() => {
+			if (animating) return;
+			cachePositions();
+			rafId = requestAnimationFrame(() => {
+				// Slight delay so the browser finalises layout
+				requestAnimationFrame(() => flip());
+			});
+		});
+		ro.observe(node);
 	}
 
-	// Initial capture
+	// Initial positions
 	cachePositions();
 
 	return {
 		destroy() {
-			resizeObserver?.disconnect();
+			window.removeEventListener('resize', onResize);
+			ro?.disconnect();
 			if (rafId) cancelAnimationFrame(rafId);
 		},
 	};
