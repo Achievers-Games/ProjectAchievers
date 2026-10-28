@@ -1,0 +1,15 @@
+[
+  {
+    "identifier": "main",
+    "name": "main",
+    "windows": ["main"],
+    "permissions": [
+      "core:default",
+      "core:event:allow-listen",
+      "core:event:allow-emit",
+      "core:app:allow-register-listener",
+      "shell:default",
+      "opener:default"
+    ]
+  }
+]
