@@ -42,6 +42,7 @@ zeroize = "1"
 argon2 = "0.5"
 sha2 = "0.10"
 base64 = "0.22"
+jsonwebtoken = "9"
 
 # HTTP Client
 reqwest = { version = "0.12", features = ["json", "native-tls", "cookies", "gzip", "brotli"] }

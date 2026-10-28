@@ -8,6 +8,7 @@ use crate::commands::{
   auth_steam_oauth::*,
   auth_discord_oauth::*,
   oauth_flow::*,
+  session::*,
   steam::*,
   psn::*,
   games::*,
@@ -48,6 +49,13 @@ pub fn run() {
       discord_revoke,
       // Provider-agnostic OAuth flow (loopback redirect)
       oauth_begin,
+      // Session commands
+      create_session,
+      validate_session,
+      refresh_session,
+      revoke_session,
+      revoke_other_sessions,
+      get_sessions,
       // Steam commands
       steam_get_owned_games,
       steam_get_player_achievements,

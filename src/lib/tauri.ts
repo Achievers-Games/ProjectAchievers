@@ -22,6 +22,9 @@ import {
   type LeaderboardEntry_Serialize,
   type LinkedAccount_Serialize,
   type ReactionRequest,
+  type RefreshResult as RefreshResultType,
+  type SessionInfo as SessionInfoType,
+  type SessionTokens as SessionTokensType,
   type SteamAuthRequest_Deserialize,
   type SteamGameSchema,
   type SteamOwnedGame_Serialize,
@@ -84,6 +87,9 @@ export type SyncHistoryEntry = SyncHistoryEntry_Serialize;
 export type UpdateInfo = UpdateInfo_Serialize;
 export type FeedItem = FeedItem_Serialize;
 export type LeaderboardEntry = LeaderboardEntry_Serialize;
+export type SessionInfo = SessionInfoType;
+export type SessionTokens = SessionTokensType;
+export type RefreshResult = RefreshResultType;
 
 export type { SteamResolvedProfile } from './tauri-bindings';
 export type { CommentReactions } from './tauri-bindings';
@@ -115,6 +121,14 @@ export const tauriApi = {
 
   // OAuth 2.0 — provider-agnostic loopback flow
   oauthBegin: (provider: 'steam' | 'discord') => unwrap(commands.oauthBegin(provider)),
+
+  // Session / JWT
+  createSession: (userAgent?: string | null) => unwrap(commands.createSession(userAgent ?? null)),
+  validateSession: (accessToken: string) => unwrap(commands.validateSession(accessToken)),
+  refreshSession: (refreshToken: string) => unwrap(commands.refreshSession(refreshToken)),
+  revokeSession: (sessionId: string) => unwrap(commands.revokeSession(sessionId)),
+  revokeOtherSessions: (currentSessionId: string) => unwrap(commands.revokeOtherSessions(currentSessionId)),
+  getSessions: () => unwrap(commands.getSessions()),
 
   // Steam
   steamGetOwnedGames: () => unwrap(commands.steamGetOwnedGames()),

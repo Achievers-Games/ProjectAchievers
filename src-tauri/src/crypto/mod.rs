@@ -7,12 +7,15 @@ use argon2::{
     Argon2,
 };
 use getrandom::getrandom;
+use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, TokenData, Validation};
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tauri::Manager;
 use zeroize::Zeroize;
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
 use crate::error::{CryptoError, AppResult};
 use tracing::info;
+use chrono::{DateTime, Utc};
 
 #[derive(Clone)]
 pub struct Crypto {
@@ -239,8 +242,80 @@ impl Crypto {
     }
 }
 
-impl Drop for Crypto {
-    fn drop(&mut self) {
-        self.master_key.zeroize();
+#[derive(Debug, Serialize, Deserialize)]
+pub struct JwtClaims {
+    pub sub: String,        // user_id
+    pub sid: String,        // session_id
+    pub iat: i64,           // issued at
+    pub exp: i64,           // expires at
+    pub token_type: String, // "access" | "refresh"
+}
+
+impl Crypto {
+    /// Creates a JWT access token (short-lived, ~15 min)
+    pub fn create_access_token(&self, user_id: &str, session_id: &str) -> AppResult<String> {
+        let now = Utc::now().timestamp();
+        let claims = JwtClaims {
+            sub: user_id.to_string(),
+            sid: session_id.to_string(),
+            iat: now,
+            exp: now + 15 * 60, // 15 minutes
+            token_type: "access".to_string(),
+        };
+        let encoding_key = EncodingKey::from_secret(&self.master_key);
+        let token = encode(&Header::new(Algorithm::HS256), &claims, &encoding_key)
+            .map_err(|e| CryptoError::Encryption(e.to_string()))?;
+        Ok(token)
+    }
+
+    /// Creates a JWT refresh token (long-lived, ~30 days)
+    pub fn create_refresh_token(&self, user_id: &str, session_id: &str) -> AppResult<String> {
+        let now = Utc::now().timestamp();
+        let claims = JwtClaims {
+            sub: user_id.to_string(),
+            sid: session_id.to_string(),
+            iat: now,
+            exp: now + 30 * 24 * 60 * 60, // 30 days
+            token_type: "refresh".to_string(),
+        };
+        let encoding_key = EncodingKey::from_secret(&self.master_key);
+        let token = encode(&Header::new(Algorithm::HS256), &claims, &encoding_key)
+            .map_err(|e| CryptoError::Encryption(e.to_string()))?;
+        Ok(token)
+    }
+
+    /// Validates a JWT token and returns the claims if valid
+    pub fn validate_token(&self, token: &str) -> AppResult<JwtClaims> {
+        let decoding_key = DecodingKey::from_secret(&self.master_key);
+        let mut validation = Validation::new(Algorithm::HS256);
+        validation.validate_exp = true;
+        let token_data: TokenData<JwtClaims> = decode(token, &decoding_key, &validation)
+            .map_err(|e| CryptoError::Decryption(e.to_string()))?;
+        Ok(token_data.claims)
+    }
+
+    /// Validates an access token specifically
+    pub fn validate_access_token(&self, token: &str) -> AppResult<JwtClaims> {
+        let claims = self.validate_token(token)?;
+        if claims.token_type != "access" {
+            return Err(CryptoError::Decryption("Invalid token type: expected access".into()).into());
+        }
+        Ok(claims)
+    }
+
+    /// Validates a refresh token specifically
+    pub fn validate_refresh_token(&self, token: &str) -> AppResult<JwtClaims> {
+        let claims = self.validate_token(token)?;
+        if claims.token_type != "refresh" {
+            return Err(CryptoError::Decryption("Invalid token type: expected refresh".into()).into());
+        }
+        Ok(claims)
+    }
+
+    /// Extracts token expiry as DateTime<Utc>
+    pub fn token_expiry(&self, token: &str) -> AppResult<DateTime<Utc>> {
+        let claims = self.validate_token(token)?;
+        DateTime::from_timestamp(claims.exp, 0)
+            .ok_or_else(|| CryptoError::Decryption("Invalid expiry timestamp".into()).into())
     }
 }

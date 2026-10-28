@@ -40,6 +40,18 @@ export const commands = {
 	 *  to the frontend through the `oauth-callback` event.
 	 */
 	oauthBegin: (provider: string) => typedError<OAuthBeginResponse, AppError>(__TAURI_INVOKE("oauth_begin", { provider })),
+	/**  Creates a new user session and returns JWT tokens */
+	createSession: (userAgent: string | null) => typedError<SessionTokens, AppError>(__TAURI_INVOKE("create_session", { userAgent })),
+	/**  Validates an access token and returns session info */
+	validateSession: (accessToken: string) => typedError<SessionInfo_Serialize, AppError>(__TAURI_INVOKE("validate_session", { accessToken })),
+	/**  Refreshes an access token using a refresh token */
+	refreshSession: (refreshToken: string) => typedError<RefreshResult, AppError>(__TAURI_INVOKE("refresh_session", { refreshToken })),
+	/**  Revokes (deletes) a session */
+	revokeSession: (sessionId: string) => typedError<null, AppError>(__TAURI_INVOKE("revoke_session", { sessionId })),
+	/**  Revokes all sessions for the current user except the current one */
+	revokeOtherSessions: (currentSessionId: string) => typedError<number, AppError>(__TAURI_INVOKE("revoke_other_sessions", { currentSessionId })),
+	/**  Gets all active sessions for the current user */
+	getSessions: () => typedError<SessionInfo_Serialize[], AppError>(__TAURI_INVOKE("get_sessions")),
 	/**  Get owned games for the current user */
 	steamGetOwnedGames: () => typedError<SteamOwnedGame_Serialize[], AppError>(__TAURI_INVOKE("steam_get_owned_games")),
 	/**  Get player achievements for a specific game */
@@ -745,6 +757,39 @@ export type PsnTrophy_Serialize = {
 export type ReactionRequest = {
 	comment_id: string,
 	reaction_type: string,
+};
+
+export type RefreshResult = {
+	access_token: string,
+	access_expires_at: number,
+};
+
+export type SessionInfo = SessionInfo_Serialize | SessionInfo_Deserialize;
+
+export type SessionInfo_Deserialize = {
+	session_id: string,
+	user_id: string,
+	created_at: number,
+	last_used_at?: number | null,
+	expires_at: number,
+	user_agent?: string | null,
+};
+
+export type SessionInfo_Serialize = {
+	session_id: string,
+	user_id: string,
+	created_at: number,
+	last_used_at: number | null,
+	expires_at: number,
+	user_agent: string | null,
+};
+
+export type SessionTokens = {
+	access_token: string,
+	refresh_token: string,
+	access_expires_at: number,
+	refresh_expires_at: number,
+	session_id: string,
 };
 
 export type SteamAchievementDefinition = SteamAchievementDefinition_Serialize | SteamAchievementDefinition_Deserialize;

@@ -355,44 +355,6 @@ impl Database {
 
     // ─── User Sessions ───
 
-    /// Create a new user session
-    pub async fn create_session(
-        &self,
-        user_id: &str,
-        token_hash: &str,
-        refresh_token_hash: Option<String>,
-        expires_at: i64,
-        refresh_expires_at: Option<i64>,
-        user_agent: Option<String>,
-        ip_hash: Option<String>,
-    ) -> Result<String> {
-        let session_id = Uuid::new_v4().to_string();
-        let now = Utc::now().timestamp_millis();
-
-        sqlx::query(
-            r#"
-            INSERT INTO user_sessions (
-                id, user_id, token_hash, refresh_token_hash,
-                expires_at, refresh_expires_at, created_at, last_used_at,
-                user_agent, ip_hash
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            "#,
-        )
-        .bind(Uuid::new_v4().to_string())
-        .bind(user_id)
-        .bind(token_hash)
-        .bind(refresh_token_hash)
-        .bind(expires_at)
-        .bind(refresh_expires_at)
-        .bind(now)
-        .bind(now)
-        .bind(user_agent)
-        .bind(ip_hash)
-        .execute(&self.pool)
-        .await?;
-        Ok(session_id)
-    }
-
     /// Get session by token hash
     pub async fn get_session_by_token_hash(&self, token_hash: &str) -> Result<Option<UserSession>> {
         let row = sqlx::query("SELECT * FROM user_sessions WHERE token_hash = ?")
@@ -435,12 +397,25 @@ impl Database {
         }))
     }
 
+    /// Update session access token hash and expiry
+    pub async fn update_session_token(&self, session_id: &str, token_hash: String, expires_at: i64) -> Result<()> {
+        sqlx::query(
+            "UPDATE user_sessions SET token_hash = ?, expires_at = ? WHERE id = ?"
+        )
+        .bind(token_hash)
+        .bind(expires_at)
+        .bind(session_id)
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
     /// Update session last used timestamp
-    pub async fn update_session_last_used(&self, session_id: &str) -> Result<()> {
+    pub async fn update_session_last_used(&self, session_id: &str, last_used_at: i64) -> Result<()> {
         sqlx::query(
             "UPDATE user_sessions SET last_used_at = ? WHERE id = ?"
         )
-        .bind(Utc::now().timestamp_millis())
+        .bind(last_used_at)
         .bind(session_id)
         .execute(&self.pool)
         .await?;
@@ -475,7 +450,95 @@ impl Database {
         Ok(result.rows_affected())
     }
 
-    /// Get user by email (for local auth fallback)
+    /// Get session by ID
+    pub async fn get_session(&self, session_id: &str) -> Result<Option<UserSession>> {
+        let row = sqlx::query("SELECT * FROM user_sessions WHERE id = ?")
+            .bind(session_id)
+            .fetch_optional(&self.pool)
+            .await?;
+
+        Ok(row.map(|row| UserSession {
+            id: row.get("id"),
+            user_id: row.get("user_id"),
+            token_hash: row.get("token_hash"),
+            refresh_token_hash: row.get("refresh_token_hash"),
+            expires_at: row.get("expires_at"),
+            refresh_expires_at: row.get("refresh_expires_at"),
+            created_at: row.get("created_at"),
+            last_used_at: row.get("last_used_at"),
+            user_agent: row.get("user_agent"),
+            ip_hash: row.get("ip_hash"),
+        }))
+    }
+
+    /// Get all sessions for a user
+    pub async fn get_user_sessions(&self, user_id: &str) -> Result<Vec<UserSession>> {
+        let rows = sqlx::query("SELECT * FROM user_sessions WHERE user_id = ? ORDER BY created_at DESC")
+            .bind(user_id)
+            .fetch_all(&self.pool)
+            .await?;
+
+        Ok(rows.into_iter().map(|row| UserSession {
+            id: row.get("id"),
+            user_id: row.get("user_id"),
+            token_hash: row.get("token_hash"),
+            refresh_token_hash: row.get("refresh_token_hash"),
+            expires_at: row.get("expires_at"),
+            refresh_expires_at: row.get("refresh_expires_at"),
+            created_at: row.get("created_at"),
+            last_used_at: row.get("last_used_at"),
+            user_agent: row.get("user_agent"),
+            ip_hash: row.get("ip_hash"),
+        }).collect())
+    }
+
+    /// Delete a specific session
+    pub async fn delete_session(&self, session_id: &str) -> Result<()> {
+        sqlx::query("DELETE FROM user_sessions WHERE id = ?")
+            .bind(session_id)
+            .execute(&self.pool)
+            .await?;
+        Ok(())
+    }
+
+    /// Delete all other sessions for a user except the current one
+    pub async fn delete_other_sessions(&self, user_id: &str, current_session_id: &str) -> Result<u64> {
+        let result = sqlx::query("DELETE FROM user_sessions WHERE user_id = ? AND id != ?")
+            .bind(user_id)
+            .bind(current_session_id)
+            .execute(&self.pool)
+            .await?;
+        Ok(result.rows_affected())
+    }
+
+    /// Create a new user session
+    pub async fn create_session(
+        &self,
+        session: &UserSession,
+    ) -> Result<()> {
+        sqlx::query(
+            r#"
+            INSERT INTO user_sessions (
+                id, user_id, token_hash, refresh_token_hash,
+                expires_at, refresh_expires_at, created_at, last_used_at,
+                user_agent, ip_hash
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            "#,
+        )
+        .bind(&session.id)
+        .bind(&session.user_id)
+        .bind(&session.token_hash)
+        .bind(&session.refresh_token_hash)
+        .bind(session.expires_at)
+        .bind(session.refresh_expires_at)
+        .bind(session.created_at)
+        .bind(session.last_used_at)
+        .bind(&session.user_agent)
+        .bind(&session.ip_hash)
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
     pub async fn get_user_by_email(&self, email: &str) -> Result<Option<(String, String)>> {
         let row = sqlx::query("SELECT id, password_hash FROM users WHERE email = ?")
             .bind(email)
