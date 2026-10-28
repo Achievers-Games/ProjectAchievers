@@ -71,3 +71,13 @@ coverage/
 *.pem
 .vercel
 .netlify
+
+# Dev / smoke-test artifacts
+build-msvc.bat
+check-vite.mjs
+debug-page.mjs
+smoke-test.mjs
+final-test.*
+ui-*.png
+ui-*.jpg
+ui-*.bmp

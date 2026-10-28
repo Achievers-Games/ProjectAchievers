@@ -1,8 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { tauriApi, runOAuth, type AuthStatus, type AppVersion, type SteamResolvedProfile } from '@/lib/tauri';
+  import { tauriApi, runOAuth, type AuthStatus, type AppVersion, type SteamResolvedProfile, type SessionInfo } from '@/lib/tauri';
   import { toast } from '@/lib/stores/toast';
   import { theme, setTheme } from '@/lib/stores/theme';
+  import { auth as authStore } from '@/lib/stores/auth';
 
   let auth = $state<AuthStatus | null>(null);
   let appVersion = $state<AppVersion | null>(null);
@@ -14,10 +15,16 @@
   let unlinking = $state(false);
   let syncing = $state(false);
   let oauthLoading = $state<'steam' | 'discord' | null>(null);
+  let psnLoading = $state(false);
+  let psnInput = $state('');
+  let sessionsLoading = $state(false);
+  let sessions = $state<SessionInfo[]>([]);
+  let currentSessionId = $state<string | null>(null);
   let searchTimer: ReturnType<typeof setTimeout> | null = null;
 
   onMount(() => {
     void loadAuth();
+    void loadSessions();
     void tauriApi
       .getAppVersion()
       .then((version) => (appVersion = version))
@@ -127,6 +134,82 @@
     } finally {
       oauthLoading = null;
     }
+  }
+
+  async function handlePsnLink() {
+    if (psnLoading) return;
+    if (!psnInput.trim()) {
+      toast.error('PSN', 'Le token NPSSO est requis.');
+      return;
+    }
+    psnLoading = true;
+    try {
+      await tauriApi.authenticatePsn({ npsso: psnInput.trim() });
+      toast.success('Compte PSN lié');
+      psnInput = '';
+      await loadAuth();
+    } catch (e) {
+      toast.error('Échec de la liaison PSN', e instanceof Error ? e.message : String(e));
+    } finally {
+      psnLoading = false;
+    }
+  }
+
+  async function loadSessions() {
+    sessionsLoading = true;
+    try {
+      const result = await tauriApi.getSessions();
+      sessions = result;
+      // Try to get the current session ID from the auth store
+      currentSessionId = $authStore.sessionId;
+    } catch {
+      sessions = [];
+    } finally {
+      sessionsLoading = false;
+    }
+  }
+
+  async function handleRevokeSession(sessionId: string, isCurrent: boolean) {
+    try {
+      if (isCurrent) {
+        await tauriApi.revokeSession(sessionId);
+        toast.success('Déconnexion du compte');
+        // Clear auth store
+        await authStore.logout(true);
+      } else {
+        await tauriApi.revokeSession(sessionId);
+        toast.success('Session révoquée');
+      }
+      await loadSessions();
+    } catch (e) {
+      toast.error('Échec de la révocation', e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  async function handleRevokeAll() {
+    if (!currentSessionId) return;
+    try {
+      const count = await tauriApi.revokeOtherSessions(currentSessionId);
+      toast.success(
+        `${count} session${count > 1 ? 's' : ''} révoquée${count > 1 ? 's' : ''}`,
+        'Toutes les autres sessions ont été déconnectées.',
+      );
+      await loadSessions();
+    } catch (e) {
+      toast.error('Échec de la déconnexion', e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  function formatSessionDate(ts: number | null | undefined): string {
+    if (!ts) return 'Inconnue';
+    const d = new Date(ts);
+    // Use a short, locale-aware format
+    return d.toLocaleDateString('fr-FR', {
+      day: 'numeric',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   }
 
   async function handleSync() {
@@ -287,14 +370,34 @@
         <div>
           <p class="name">PlayStation Network</p>
           <p class="sub">
-            {psn ? (psn.platform_username ?? 'Compte PSN') : 'Import manuel via PSNProfiles (API non publique)'}
+            {psn ? (psn.platform_username ?? 'Compte PSN') : 'Import manuel via token NPSSO'}
           </p>
         </div>
       </div>
       {#if psn}
-        <span class="badge-ok">Connecté</span>
+        <div class="account-actions">
+          <button class="btn-outline" onclick={() => handleUnlink(psn.id)} disabled={unlinking}>
+            {unlinking ? 'Dissociation…' : 'Dissocier'}
+          </button>
+        </div>
       {:else}
-        <button class="btn-outline" disabled>Bientôt disponible</button>
+        <div class="link-form psn-form">
+          <input
+            type="text"
+            placeholder="Token NPSSO"
+            aria-label="Token NPSSO PSN"
+            bind:value={psnInput}
+            disabled={psnLoading}
+            class="psn-input"
+          />
+          <button
+            class="btn-outline primary psn-link-btn"
+            onclick={handlePsnLink}
+            disabled={psnLoading || !psnInput.trim()}
+          >
+            {psnLoading ? 'Connexion…' : 'Lier'}
+          </button>
+        </div>
       {/if}
     </div>
   </section>
@@ -329,6 +432,62 @@
       succès. Suis tes jeux, partage tes guides et compare ta collection.
     </p>
     <p class="local-note">Tes données restent stockées sur cet appareil.</p>
+  </section>
+
+  <!-- Sessions actives -->
+  <section class="dynamic-card block">
+    <div class="block-head">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
+      <h2>Sessions actives</h2>
+    </div>
+    {#if sessionsLoading}
+      <p class="sync-state">Chargement des sessions…</p>
+    {:else if sessions.length === 0}
+      <p class="sync-state">Aucune session active.</p>
+    {:else}
+      <ul class="session-list">
+        {#each sessions as session (session.session_id)}
+          {@const isCurrent = session.session_id === currentSessionId}
+          <li class="session-item">
+            <div class="session-info">
+              <div class="session-name">
+                {isCurrent ? 'Cette session' : session.user_agent ?? 'Session inconnue'}
+              </div>
+              <div class="session-meta">
+                Créée le {formatSessionDate(session.created_at)}
+                {#if session.last_used_at}
+                  · Dernière activité : {formatSessionDate(session.last_used_at)}
+                {/if}
+                · Expire le {formatSessionDate(session.expires_at)}
+              </div>
+            </div>
+            <div class="session-actions">
+              {#if isCurrent}
+                <span class="badge-current">Active</span>
+                <button
+                  class="btn-outline danger"
+                  onclick={() => handleRevokeSession(session.session_id, true)}
+                >
+                  Se déconnecter
+                </button>
+              {:else}
+                <button
+                  class="btn-outline danger"
+                  onclick={() => handleRevokeSession(session.session_id, false)}
+                >
+                  Révoquer
+                </button>
+              {/if}
+            </div>
+          </li>
+        {/each}
+      </ul>
+      {#if sessions.length > 1}
+        <button class="btn-outline danger revoke-all" onclick={handleRevokeAll}>
+          Déconnecter toutes les autres sessions
+        </button>
+      {/if}
+    {/if}
   </section>
 </div>
 
@@ -480,18 +639,34 @@
     cursor: default;
   }
 
-  .badge-ok {
-    padding: 0.2rem 0.6rem;
-    border-radius: 9999px;
-    background: hsl(142 71% 45% / 12%);
-    color: hsl(142 71% 55%);
-    font-size: 0.7rem;
-    font-weight: 600;
+  .search-state {
+    margin: 0.35rem 0 0.75rem;
+    font-size: 0.75rem;
+    color: hsl(var(--muted-foreground));
   }
 
   .link-form {
     flex: 1;
     max-width: 18rem;
+  }
+
+  .psn-form {
+    gap: 0.4rem;
+  }
+
+  .psn-input {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border-radius: 9999px;
+    border: 1px solid hsl(var(--border) / 70%);
+    background: hsl(var(--secondary) / 50%);
+    color: hsl(var(--foreground));
+    font-size: 0.8125rem;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  .psn-link-btn {
+    flex-shrink: 0;
   }
 
   .search-mini input {
@@ -613,5 +788,77 @@
     margin-top: 0.6rem;
     font-size: 0.72rem;
     color: hsl(var(--muted-foreground) / 80%);
+  }
+
+  .session-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .session-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75rem 0.9rem;
+    border: 1px solid hsl(var(--border) / 60%);
+    border-radius: 0.75rem;
+    background: hsl(var(--secondary) / 30%);
+  }
+
+  .session-info {
+    flex: 1;
+  }
+
+  .session-name {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: hsl(var(--foreground));
+  }
+
+  .session-meta {
+    margin-top: 0.25rem;
+    font-size: 0.6875rem;
+    color: hsl(var(--muted-foreground));
+  }
+
+  .session-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .badge-current {
+    padding: 0.15rem 0.55rem;
+    border-radius: 9999px;
+    background: hsl(142 71% 45% / 12%);
+    color: hsl(142 71% 55%);
+    font-size: 0.65rem;
+    font-weight: 600;
+  }
+
+  .btn-outline.danger {
+    border-color: hsl(0 60% 70% / 40%);
+    color: hsl(0 60% 70%);
+  }
+
+  .btn-outline.danger:hover:not(:disabled) {
+    border-color: hsl(0 60% 70%);
+    color: hsl(0 0% 100%);
+  }
+
+  .revoke-all {
+    margin-top: 0.75rem;
+    width: 100%;
+  }
+
+  .sync-state {
+    margin: 0.5rem 0;
+    font-size: 0.8125rem;
+    color: hsl(var(--muted-foreground));
   }
 </style>

@@ -36,13 +36,18 @@ test.describe('Application shell', () => {
     await expect(page.locator('button', { hasText: 'PlayStation' })).toBeVisible();
   });
 
-  test('settings page shows the Steam linking form', async ({ page }) => {
+  test('settings page shows linked accounts, OAuth, and PSN form', async ({ page }) => {
     await page.goto('/settings');
 
     await expect(page.locator('input[placeholder="Pseudo Steam…"]')).toBeVisible();
     await expect(page.getByText('Comptes liés')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Connexion OAuth Steam' })).toBeVisible();
     await expect(page.getByText('Discord', { exact: true })).toBeVisible();
+    // PSN form with NPSSO input
+    await expect(page.locator('input[placeholder="Token NPSSO"]')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Lier' })).toBeVisible();
+    // Sessions section
+    await expect(page.getByText('Sessions actives', { exact: true })).toBeVisible();
   });
 
   test('profile page shows the hunter identity block', async ({ page }) => {
