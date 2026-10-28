@@ -112,7 +112,7 @@
     <section class="reveal">
       <h2 class="section-title">Presse-boutons</h2>
       <p class="section-sub">Tu es tout proche du platine.</p>
-      <div class="grid grid-3">
+      <div class="grid">
         {#each nearComplete as game (game.id)}
           <GameCard {game} />
         {/each}
@@ -136,7 +136,7 @@
     </div>
 
     {#if games === null}
-      <div class="grid grid-3">
+      <div class="grid">
         {#each { length: 6 } as _, i (i)}
           <div class="card-skeleton">
             <div class="skeleton-block"></div>
@@ -154,7 +154,7 @@
         <button class="btn-glossy" onclick={() => openAuthModal()}>Lier Steam</button>
       </div>
     {:else}
-      <div class="grid grid-3">
+      <div class="grid">
         {#each games as game (game.id)}
           <GameCard {game} />
         {/each}
@@ -437,22 +437,7 @@
   .grid {
     display: grid;
     gap: 1rem;
-  }
-
-  .grid-3 {
-    grid-template-columns: 1fr;
-  }
-
-  @media (min-width: 640px) {
-    .grid-3 {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-  }
-
-  @media (min-width: 1024px) {
-    .grid-3 {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   }
 
   /* Skeleton */
