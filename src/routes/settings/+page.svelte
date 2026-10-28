@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { tauriApi, type AuthStatus, type AppVersion, type SteamResolvedProfile } from '@/lib/tauri';
+  import { tauriApi, runOAuth, type AuthStatus, type AppVersion, type SteamResolvedProfile } from '@/lib/tauri';
   import { toast } from '@/lib/stores/toast';
   import { theme, setTheme } from '@/lib/stores/theme';
 
@@ -13,6 +13,7 @@
   let linking = $state(false);
   let unlinking = $state(false);
   let syncing = $state(false);
+  let oauthLoading = $state<'steam' | 'discord' | null>(null);
   let searchTimer: ReturnType<typeof setTimeout> | null = null;
 
   onMount(() => {
@@ -64,6 +65,7 @@
   );
   const steam = $derived(auth?.linked_accounts.find((a) => a.platform === 'steam'));
   const psn = $derived(auth?.linked_accounts.find((a) => a.platform === 'psn'));
+  const discord = $derived(auth?.linked_accounts.find((a) => a.platform === 'discord'));
 
   function syncLabel(status: string): string {
     switch (status) {
@@ -105,6 +107,25 @@
       toast.error('Échec de la dissociation', e instanceof Error ? e.message : String(e));
     } finally {
       unlinking = false;
+    }
+  }
+
+  async function handleOAuth(provider: 'steam' | 'discord') {
+    if (oauthLoading) return;
+    oauthLoading = provider;
+    try {
+      const result = await runOAuth(provider);
+      if (!result.success) {
+        toast.error(
+          provider === 'steam' ? 'Connexion Steam échouée' : 'Connexion Discord échouée',
+          result.error,
+        );
+        return;
+      }
+      toast.success(provider === 'steam' ? 'Compte Steam lié' : 'Compte Discord lié');
+      await loadAuth();
+    } finally {
+      oauthLoading = null;
     }
   }
 
@@ -197,6 +218,13 @@
             />
           </div>
           <p class="search-hint">Pseudo personnalisé, URL Steam ou SteamID64.</p>
+          <button
+            class="btn-outline oauth-inline"
+            onclick={() => handleOAuth('steam')}
+            disabled={oauthLoading !== null}
+          >
+            {oauthLoading === 'steam' ? 'Connexion…' : 'Connexion OAuth Steam'}
+          </button>
         </div>
       {/if}
     </div>
@@ -217,6 +245,40 @@
         <p class="search-state">Aucun profil Steam trouvé pour « {query.trim()} ».</p>
       {/if}
     {/if}
+
+    <!-- Discord -->
+    <div class="account-row">
+      <div class="account-info">
+        <span class="dot discord"></span>
+        <div>
+          <p class="name">Discord</p>
+          <p class="sub">
+            {discord
+              ? (discord.platform_username ?? 'Compte Discord')
+              : 'Partage tes succès et retrouve la communauté'}
+          </p>
+        </div>
+      </div>
+      {#if discord}
+        <div class="account-actions">
+          <button
+            class="btn-outline"
+            onclick={() => handleUnlink(discord.id)}
+            disabled={unlinking || oauthLoading !== null}
+          >
+            {unlinking ? 'Dissociation…' : 'Dissocier'}
+          </button>
+        </div>
+      {:else}
+        <button
+          class="btn-outline primary"
+          onclick={() => handleOAuth('discord')}
+          disabled={oauthLoading !== null}
+        >
+          {oauthLoading === 'discord' ? 'Connexion…' : 'Connecter Discord'}
+        </button>
+      {/if}
+    </div>
 
     <!-- PSN -->
     <div class="account-row">
@@ -348,6 +410,15 @@
   .dot.psn {
     background: hsl(340 83% 65%);
     box-shadow: 0 0 12px hsl(340 83% 65% / 60%);
+  }
+
+  .dot.discord {
+    background: hsl(235 86% 65%);
+    box-shadow: 0 0 12px hsl(235 86% 65% / 60%);
+  }
+
+  .oauth-inline {
+    margin: 0.6rem 0 0 0.9rem;
   }
 
   .name {

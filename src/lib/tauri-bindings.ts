@@ -14,6 +14,32 @@ export const commands = {
 	unlinkAccount: (accountId: string) => typedError<null, AppError>(__TAURI_INVOKE("unlink_account", { accountId })),
 	/**  Get authentication status */
 	getAuthStatus: () => typedError<AuthStatus_Serialize, AppError>(__TAURI_INVOKE("get_auth_status")),
+	/**  Génère l'URL d'autorisation Steam OAuth 2.0 */
+	steamOauthUrl: (state: string) => typedError<string, AppError>(__TAURI_INVOKE("steam_oauth_url", { state })),
+	/**  Callback Steam OAuth 2.0 - échange le code contre les tokens et lie le compte */
+	steamOauthCallback: (code: string, state: string) => typedError<AuthResult_Serialize, AppError>(__TAURI_INVOKE("steam_oauth_callback", { code, state })),
+	/**  Récupère l'URL d'autorisation pour lier un compte Steam (depuis settings) */
+	steamOauthLinkUrl: (state: string) => typedError<string, AppError>(__TAURI_INVOKE("steam_oauth_link_url", { state })),
+	/**  Rafraîchit le token d'accès Steam */
+	steamRefreshToken: () => typedError<null, AppError>(__TAURI_INVOKE("steam_refresh_token")),
+	/**  Déconnecte (révoque) le compte Steam */
+	steamRevoke: () => typedError<null, AppError>(__TAURI_INVOKE("steam_revoke")),
+	/**  Génère l'URL d'autorisation Discord OAuth 2.0 avec PKCE */
+	discordOauthUrl: () => typedError<DiscordAuthUrlResponse, AppError>(__TAURI_INVOKE("discord_oauth_url")),
+	/**  Callback Discord OAuth 2.0 avec PKCE */
+	discordOauthCallback: (code: string, state: string) => typedError<AuthResult_Serialize, AppError>(__TAURI_INVOKE("discord_oauth_callback", { code, state })),
+	/**  Rafraîchit le token d'accès Discord */
+	discordRefreshToken: () => typedError<null, AppError>(__TAURI_INVOKE("discord_refresh_token")),
+	/**  Déconnecte (révoque) le compte Discord */
+	discordRevoke: () => typedError<null, AppError>(__TAURI_INVOKE("discord_revoke")),
+	/**
+	 *  Start an OAuth 2.0 authorization using a local loopback redirect URI.
+	 * 
+	 *  Binds an ephemeral port on 127.0.0.1, returns the provider authorize URL,
+	 *  then waits (up to 5 minutes) for the browser redirect. The result is sent
+	 *  to the frontend through the `oauth-callback` event.
+	 */
+	oauthBegin: (provider: string) => typedError<OAuthBeginResponse, AppError>(__TAURI_INVOKE("oauth_begin", { provider })),
 	/**  Get owned games for the current user */
 	steamGetOwnedGames: () => typedError<SteamOwnedGame_Serialize[], AppError>(__TAURI_INVOKE("steam_get_owned_games")),
 	/**  Get player achievements for a specific game */
@@ -262,6 +288,25 @@ export type AppVersion = {
 	app_name: string,
 };
 
+/**  Result of an OAuth authentication flow */
+export type AuthResult = AuthResult_Serialize | AuthResult_Deserialize;
+
+/**  Result of an OAuth authentication flow */
+export type AuthResult_Deserialize = {
+	success: boolean,
+	user_id: string,
+	is_new_user: boolean,
+	linked_account?: OAuthAccount_Deserialize | null,
+};
+
+/**  Result of an OAuth authentication flow */
+export type AuthResult_Serialize = {
+	success: boolean,
+	user_id: string,
+	is_new_user: boolean,
+	linked_account: OAuthAccount_Serialize | null,
+};
+
 export type AuthStatus = AuthStatus_Serialize | AuthStatus_Deserialize;
 
 export type AuthStatus_Deserialize = {
@@ -353,6 +398,12 @@ export type CreateGuideRequest_Serialize = {
 	content_type: string,
 	video_url: string | null,
 	images: string[],
+};
+
+export type DiscordAuthUrlResponse = {
+	url: string,
+	state: string,
+	code_verifier: string,
 };
 
 /**  Une entrée du flux d'activité communautaire : un succès débloqué récemment. */
@@ -523,6 +574,64 @@ export type LinkedAccount_Serialize = {
 	last_synced_at: number | null,
 	sync_status: string,
 	sync_error: string | null,
+};
+
+export type OAuthAccount = OAuthAccount_Serialize | OAuthAccount_Deserialize;
+
+export type OAuthAccount_Deserialize = {
+	id: string,
+	user_id: string,
+	provider: string,
+	provider_user_id: string,
+	access_token_enc?: string | null,
+	refresh_token_enc?: string | null,
+	id_token_enc?: string | null,
+	token_expires_at?: number | null,
+	refresh_expires_at?: number | null,
+	scope?: string | null,
+	token_type?: string | null,
+	email?: string | null,
+	username?: string | null,
+	display_name?: string | null,
+	avatar_url?: string | null,
+	profile_url?: string | null,
+	country_code?: string | null,
+	is_primary: boolean,
+	linked_at: number,
+	last_synced_at?: number | null,
+	sync_status: string,
+	sync_error?: string | null,
+};
+
+export type OAuthAccount_Serialize = {
+	id: string,
+	user_id: string,
+	provider: string,
+	provider_user_id: string,
+	access_token_enc: string | null,
+	refresh_token_enc: string | null,
+	id_token_enc: string | null,
+	token_expires_at: number | null,
+	refresh_expires_at: number | null,
+	scope: string | null,
+	token_type: string | null,
+	email: string | null,
+	username: string | null,
+	display_name: string | null,
+	avatar_url: string | null,
+	profile_url: string | null,
+	country_code: string | null,
+	is_primary: boolean,
+	linked_at: number,
+	last_synced_at: number | null,
+	sync_status: string,
+	sync_error: string | null,
+};
+
+export type OAuthBeginResponse = {
+	provider: string,
+	url: string,
+	state: string,
 };
 
 export type PsnAuthRequest = {

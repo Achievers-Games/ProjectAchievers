@@ -1,5 +1,5 @@
 use thiserror::Error;
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 use specta::Type;
 
 /// Application-wide error type.
@@ -57,6 +57,15 @@ pub enum AppError {
 // Type alias for internal use
 pub type AppResult<T> = Result<T, AppError>;
 
+/// Result of an OAuth authentication flow
+#[derive(Debug, Serialize, Deserialize, specta::Type)]
+pub struct AuthResult {
+    pub success: bool,
+    pub user_id: String,
+    pub is_new_user: bool,
+    pub linked_account: Option<crate::database::OAuthAccount>,
+}
+
 // Type alias for Tauri commands - uses tauri::Error which implements IpcResponse
 pub type TauriResult<T> = Result<T, tauri::Error>;
 
@@ -100,6 +109,12 @@ impl From<tauri::Error> for AppError {
 impl From<anyhow::Error> for AppError {
     fn from(err: anyhow::Error) -> Self {
         Self::Internal(err.to_string())
+    }
+}
+
+impl From<std::env::VarError> for AppError {
+    fn from(err: std::env::VarError) -> Self {
+        Self::Internal(format!("Environment variable error: {}", err))
     }
 }
 

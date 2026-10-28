@@ -25,6 +25,7 @@ tauri.conf.json.backup
 
 # Environment
 .env
+src-tauri/.env
 .env.local
 .env.development.local
 .env.test.local

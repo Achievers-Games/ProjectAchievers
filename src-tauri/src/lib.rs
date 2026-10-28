@@ -5,6 +5,9 @@ pub mod error;
 
 use crate::commands::{
   auth::*,
+  auth_steam_oauth::*,
+  auth_discord_oauth::*,
+  oauth_flow::*,
   steam::*,
   psn::*,
   games::*,
@@ -32,6 +35,19 @@ pub fn run() {
       get_linked_accounts,
       unlink_account,
       get_auth_status,
+      // Steam OAuth 2.0 commands
+      steam_oauth_url,
+      steam_oauth_callback,
+      steam_oauth_link_url,
+      steam_refresh_token,
+      steam_revoke,
+      // Discord OAuth 2.0 commands
+      discord_oauth_url,
+      discord_oauth_callback,
+      discord_refresh_token,
+      discord_revoke,
+      // Provider-agnostic OAuth flow (loopback redirect)
+      oauth_begin,
       // Steam commands
       steam_get_owned_games,
       steam_get_player_achievements,
@@ -84,7 +100,6 @@ pub fn run() {
       show_window,
     ]);
 
-  #[cfg(debug_assertions)]
   builder
     .export(Typescript::default(), "../src/lib/tauri-bindings.ts")
     .expect("failed to export TS bindings");
@@ -114,6 +129,9 @@ pub fn run() {
       // Initialize crypto
       let crypto = crypto::Crypto::new(handle).expect("Failed to initialize crypto");
       app.manage(crypto);
+
+      // In-memory store for in-flight OAuth authorizations
+      app.manage(OAuthManager::default());
 
       // Setup system tray
       system::setup_tray(handle)?;

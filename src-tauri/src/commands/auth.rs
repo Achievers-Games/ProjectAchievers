@@ -255,19 +255,51 @@ pub async fn unlink_account(
 ) -> AppResult<()> {
     let user_id = get_current_user_id(&db).await?;
 
-    let result = sqlx::query(
-        "DELETE FROM platform_accounts WHERE id = ? AND user_id = ?"
+    // Find the platform first so the matching OAuth record is removed too.
+    let platform = sqlx::query(
+        "SELECT platform FROM platform_accounts WHERE id = ? AND user_id = ?"
     )
     .bind(&account_id)
     .bind(&user_id)
-    .execute(&db.pool)
-    .await?;
+    .fetch_optional(&db.pool)
+    .await?
+    .map(|row| row.get::<String, _>("platform"));
 
-    if result.rows_affected() == 0 {
-        return Err(anyhow::anyhow!("Account not found").into());
+    if let Some(platform) = platform {
+        sqlx::query("DELETE FROM platform_accounts WHERE id = ? AND user_id = ?")
+            .bind(&account_id)
+            .bind(&user_id)
+            .execute(&db.pool)
+            .await?;
+
+        // Best-effort: drop the OAuth link that mirrors this platform account.
+        let _ = sqlx::query("DELETE FROM oauth_accounts WHERE user_id = ? AND provider = ?")
+            .bind(&user_id)
+            .bind(&platform)
+            .execute(&db.pool)
+            .await;
+
+        return Ok(());
     }
 
-    Ok(())
+    // Fallback for OAuth-only accounts that were never mirrored.
+    let provider = sqlx::query("SELECT provider FROM oauth_accounts WHERE id = ? AND user_id = ?")
+        .bind(&account_id)
+        .bind(&user_id)
+        .fetch_optional(&db.pool)
+        .await?
+        .map(|row| row.get::<String, _>("provider"));
+
+    if let Some(provider) = provider {
+        sqlx::query("DELETE FROM oauth_accounts WHERE user_id = ? AND provider = ?")
+            .bind(&user_id)
+            .bind(&provider)
+            .execute(&db.pool)
+            .await?;
+        return Ok(());
+    }
+
+    Err(anyhow::anyhow!("Account not found").into())
 }
 
 /// Get authentication status

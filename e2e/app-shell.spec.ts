@@ -41,6 +41,8 @@ test.describe('Application shell', () => {
 
     await expect(page.locator('input[placeholder="Pseudo Steam…"]')).toBeVisible();
     await expect(page.getByText('Comptes liés')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Connexion OAuth Steam' })).toBeVisible();
+    await expect(page.getByText('Discord', { exact: true })).toBeVisible();
   });
 
   test('profile page shows the hunter identity block', async ({ page }) => {

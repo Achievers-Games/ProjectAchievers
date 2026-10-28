@@ -98,6 +98,24 @@ export const tauriApi = {
   unlinkAccount: (accountId: string) => unwrap(commands.unlinkAccount(accountId)),
   getAuthStatus: () => unwrap(commands.getAuthStatus()),
 
+  // OAuth 2.0 — Steam
+  steamOauthUrl: (state: string) => unwrap(commands.steamOauthUrl(state)),
+  steamOauthCallback: (code: string, state: string) =>
+    unwrap(commands.steamOauthCallback(code, state)),
+  steamOauthLinkUrl: (state: string) => unwrap(commands.steamOauthLinkUrl(state)),
+  steamRefreshToken: () => unwrap(commands.steamRefreshToken()),
+  steamRevoke: () => unwrap(commands.steamRevoke()),
+
+  // OAuth 2.0 — Discord (PKCE)
+  discordOauthUrl: () => unwrap(commands.discordOauthUrl()),
+  discordOauthCallback: (code: string, state: string) =>
+    unwrap(commands.discordOauthCallback(code, state)),
+  discordRefreshToken: () => unwrap(commands.discordRefreshToken()),
+  discordRevoke: () => unwrap(commands.discordRevoke()),
+
+  // OAuth 2.0 — provider-agnostic loopback flow
+  oauthBegin: (provider: 'steam' | 'discord') => unwrap(commands.oauthBegin(provider)),
+
   // Steam
   steamGetOwnedGames: () => unwrap(commands.steamGetOwnedGames()),
   steamGetPlayerAchievements: (appId: number) => unwrap(commands.steamGetPlayerAchievements(appId)),
@@ -200,5 +218,84 @@ export const tauriApi = {
   listenToGlobalShortcutShow: (callback: () => void) => {
     return listen('global-shortcut-show', () => callback());
   },
+  listenToOAuthCallback: (callback: (payload: OAuthCallbackPayload) => void) => {
+    return listen<OAuthCallbackPayload>('oauth-callback', (event) => callback(event.payload));
+  },
 };
+
+export interface OAuthCallbackPayload {
+  provider: string;
+  code: string | null;
+  state: string;
+  error: string | null;
+  error_description: string | null;
+}
+
+/**
+ * Run a full OAuth 2.0 authorization:
+ *  1. start the loopback listener (Rust) and get the provider URL
+ *  2. open the URL in the system browser
+ *  3. wait for the `oauth-callback` event
+ *  4. exchange the code for tokens through the provider callback command
+ */
+export async function runOAuth(
+  provider: 'steam' | 'discord',
+): Promise<{ success: boolean; error?: string }> {
+  const listeners: { stop: (() => void) | null } = { stop: null };
+  let resolveCallback!: (payload: OAuthCallbackPayload) => void;
+  let rejectCallback!: (error: unknown) => void;
+
+  const callbackPromise = new Promise<OAuthCallbackPayload>((resolve, reject) => {
+    resolveCallback = resolve;
+    rejectCallback = reject;
+  });
+
+  const timeout = setTimeout(() => {
+    rejectCallback(new Error("Délai d'attente OAuth dépassé (5 minutes)."));
+  }, 5 * 60 * 1000);
+
+  const registration = tauriApi
+    .listenToOAuthCallback((payload) => {
+      if (payload.provider !== provider) return;
+      clearTimeout(timeout);
+      resolveCallback(payload);
+    })
+    .then((stop) => {
+      listeners.stop = stop;
+    });
+
+  try {
+    // Make sure the event listener is registered before the browser flow starts.
+    await registration;
+    const begin = await tauriApi.oauthBegin(provider);
+    await tauriApi.openExternalUrl(begin.url);
+
+    const payload = await callbackPromise;
+    if (payload.error) {
+      return {
+        success: false,
+        error: payload.error_description ?? payload.error,
+      };
+    }
+    if (!payload.code) {
+      return { success: false, error: "Aucun code d'autorisation reçu." };
+    }
+
+    if (provider === 'steam') {
+      await tauriApi.steamOauthCallback(payload.code, payload.state);
+    } else {
+      await tauriApi.discordOauthCallback(payload.code, payload.state);
+    }
+
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  } finally {
+    clearTimeout(timeout);
+    listeners.stop?.();
+  }
+}
 // fin du module IPC

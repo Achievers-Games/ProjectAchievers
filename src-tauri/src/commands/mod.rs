@@ -1,4 +1,7 @@
 pub mod auth;
+pub mod auth_steam_oauth;
+pub mod auth_discord_oauth;
+pub mod oauth_flow;
 pub mod steam;
 pub mod psn;
 pub mod games;
