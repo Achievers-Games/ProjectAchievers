@@ -4,6 +4,7 @@
   import { formatNumber } from '@/lib/utils';
   import { toast } from '@/lib/stores/toast';
   import { openAuthModal } from '@/lib/stores/authModal';
+  import { gridFlip } from '@/lib/actions/flip';
   import GameCard from '@/lib/games/GameCard.svelte';
 
   let games = $state<GameListItem[] | null>(null);
@@ -112,7 +113,7 @@
     <section class="reveal">
       <h2 class="section-title">Presse-boutons</h2>
       <p class="section-sub">Tu es tout proche du platine.</p>
-      <div class="grid">
+      <div class="grid" use:gridFlip>
         {#each nearComplete as game (game.id)}
           <GameCard {game} />
         {/each}
@@ -136,7 +137,7 @@
     </div>
 
     {#if games === null}
-      <div class="grid">
+      <div class="grid" use:gridFlip>
         {#each { length: 6 } as _, i (i)}
           <div class="card-skeleton">
             <div class="skeleton-block"></div>
@@ -154,7 +155,7 @@
         <button class="btn-glossy" onclick={() => openAuthModal()}>Lier Steam</button>
       </div>
     {:else}
-      <div class="grid">
+      <div class="grid" use:gridFlip>
         {#each games as game (game.id)}
           <GameCard {game} />
         {/each}

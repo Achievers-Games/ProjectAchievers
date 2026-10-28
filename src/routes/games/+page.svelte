@@ -4,6 +4,7 @@
   import { onMount } from 'svelte';
   import { tauriApi, type GameListItem } from '@/lib/tauri';
   import { toast } from '@/lib/stores/toast';
+  import { gridFlip } from '@/lib/actions/flip';
   import GameCard from '@/lib/games/GameCard.svelte';
 
   type PlatformFilter = 'all' | 'steam' | 'psn';
@@ -122,7 +123,7 @@
 
   <!-- Contenu -->
   {#if games === null}
-    <div class="grid">
+    <div class="grid" use:gridFlip>
       {#each { length: 8 } as _, i (i)}
         <div class="card-skeleton">
           <div class="skeleton-block"></div>
@@ -141,7 +142,7 @@
       <a class="btn-glossy" href="/settings">Lier Steam</a>
     </div>
   {:else}
-    <div class="grid">
+    <div class="grid" use:gridFlip>
       {#each games as game (game.id)}
         <GameCard {game} />
       {/each}
