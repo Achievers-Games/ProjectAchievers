@@ -8,6 +8,8 @@
   import { initTheme } from '@/lib/stores/theme';
   import { tauriApi, type GameSearchResult } from '@/lib/tauri';
   import { auth as authStore } from '@/lib/stores/auth';
+  import { authModalOpen } from '@/lib/stores/authModal';
+  import AuthModal from '@/lib/components/AuthModal.svelte';
 
   let { children }: { children: Snippet } = $props();
 
@@ -172,6 +174,10 @@
       </div>
     {/each}
   </div>
+
+  {#if $authModalOpen}
+    <AuthModal />
+  {/if}
 </div>
 
 <style>

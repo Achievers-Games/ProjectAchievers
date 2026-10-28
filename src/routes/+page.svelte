@@ -3,6 +3,7 @@
   import { tauriApi, type AuthStatus, type GameListItem } from '@/lib/tauri';
   import { formatNumber } from '@/lib/utils';
   import { toast } from '@/lib/stores/toast';
+  import { openAuthModal } from '@/lib/stores/authModal';
   import GameCard from '@/lib/games/GameCard.svelte';
 
   let games = $state<GameListItem[] | null>(null);
@@ -85,10 +86,10 @@
             {syncing ? 'Synchronisation…' : 'Synchroniser'}
           </button>
         {:else}
-          <a class="btn-glossy" href="/settings">
+          <button class="btn-glossy" onclick={() => openAuthModal()}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 7h3a5 5 0 0 1 0 10h-3M9 17H6a5 5 0 0 1 0-10h3M8 12h8" /></svg>
             Lier un compte
-          </a>
+          </button>
         {/if}
         <a href="/games" class="ghost-link">
           Explorer la bibliothèque
@@ -150,7 +151,7 @@
       <div class="empty">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M8.2 6h7.6M6 4h12v11a12 12 0 0 1-12 0z" /></svg>
         <p>Aucun jeu trouvé. Lie ton compte Steam pour commencer.</p>
-        <a class="btn-glossy" href="/settings">Lier Steam</a>
+        <button class="btn-glossy" onclick={() => openAuthModal()}>Lier Steam</button>
       </div>
     {:else}
       <div class="grid grid-3">

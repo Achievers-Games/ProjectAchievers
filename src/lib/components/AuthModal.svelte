@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { goto } from '$app/navigation';
+  import { auth as authStore } from '@/lib/stores/auth';
+  import { closeAuthModal } from '@/lib/stores/authModal';
   import { tauriApi, runOAuth } from '@/lib/tauri';
   import { toast } from '@/lib/stores/toast';
   import OAuthButton from './OAuthButton.svelte';
@@ -20,7 +21,8 @@
         return;
       }
       toast.success('Compte Steam lié');
-      goto('/settings');
+      await authStore.createSession();
+      closeAuthModal();
     } finally {
       loading = false;
     }
@@ -36,7 +38,8 @@
         return;
       }
       toast.success('Compte Discord lié');
-      goto('/settings');
+      await authStore.createSession();
+      closeAuthModal();
     } finally {
       loading = false;
     }
@@ -52,7 +55,9 @@
     try {
       await tauriApi.authenticatePsn({ npsso: psnNpsso });
       toast.success('Compte PSN lié');
-      goto('/settings');
+      await authStore.createSession();
+      psnNpsso = '';
+      closeAuthModal();
     } catch (e) {
       toast.error('Erreur PSN', e instanceof Error ? e.message : String(e));
     } finally {
@@ -66,12 +71,12 @@
     type="button"
     class="modal-backdrop"
     aria-label="Fermer la fenêtre"
-    on:click={() => goto('/settings')}
+    on:click={closeAuthModal}
   ></button>
   <div class="modal-content">
     <header class="modal-header">
       <h2>Lier un compte</h2>
-      <button class="close-btn" on:click={() => goto('/settings')} aria-label="Fermer">
+      <button class="close-btn" on:click={closeAuthModal} aria-label="Fermer">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M18 6 6 18M6 6l12 12" />
         </svg>

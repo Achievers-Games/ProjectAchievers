@@ -11,7 +11,6 @@ use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, 
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tauri::Manager;
-use zeroize::Zeroize;
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
 use crate::error::{CryptoError, AppResult};
 use tracing::info;

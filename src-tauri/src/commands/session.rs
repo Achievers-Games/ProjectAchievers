@@ -5,7 +5,6 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 use specta::Type;
-use sqlx::Row;
 use tauri::State;
 use uuid::Uuid;
 use chrono::Utc;
