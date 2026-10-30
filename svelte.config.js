@@ -1,20 +1,26 @@
-// SvelteKit config — architecture Kyara.games :
-// rendu statique pour Tauri (fallback SPA), polices et tokens dans app.html.
-import adapter from '@sveltejs/adapter-static';
+import adapter from '@sveltejs/adapter-node';
+import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
+  preprocess: vitePreprocess(),
   kit: {
-    alias: {
-      '@': 'src',
+    adapter: adapter(),
+    alias: { '@': 'src' },
+    csp: {
+      mode: 'auto',
+      directives: {
+        'default-src': ['self'],
+        'script-src': ['self'],
+        'style-src': ['self', 'unsafe-inline'],
+        'img-src': ['self', 'data:', 'https:'],
+        'font-src': ['self'],
+        'connect-src': ['self'],
+        'frame-ancestors': ['none'],
+        'base-uri': ['self'],
+        'form-action': ['self', 'https://steamcommunity.com', 'https://discord.com', 'https://login.microsoftonline.com'],
+      },
     },
-    adapter: adapter({
-      pages: 'dist',
-      assets: 'dist',
-      fallback: 'index.html', // mode SPA : Tauri charge dist/index.html
-      precompress: false,
-      strict: false,
-    }),
   },
 };
 

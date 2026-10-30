@@ -1,0 +1,64 @@
+import type { Cookies } from '@sveltejs/kit';
+import { db } from './db';
+import { randomToken, sha256 } from './crypto';
+
+export const SESSION_COOKIE = 'pa_session';
+const SESSION_DAYS = 30;
+const DAY = 24 * 60 * 60 * 1000;
+const RENEW_THRESHOLD = 15 * DAY;
+
+export type SessionUser = NonNullable<Awaited<ReturnType<typeof validateSession>>>;
+
+function setCookie(cookies: Cookies, token: string, expires: Date) {
+  cookies.set(SESSION_COOKIE, token, {
+    path: '/',
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    expires,
+  });
+}
+
+export async function createSession(cookies: Cookies, userId: string, userAgent?: string | null) {
+  const token = randomToken();
+  const expiresAt = new Date(Date.now() + SESSION_DAYS * DAY);
+  await db.session.create({
+    data: { id: sha256(token), userId, expiresAt, userAgent: userAgent?.slice(0, 255) },
+  });
+  setCookie(cookies, token, expiresAt);
+}
+
+export async function validateSession(cookies: Cookies) {
+  const token = cookies.get(SESSION_COOKIE);
+  if (!token) return null;
+
+  const id = sha256(token);
+  const session = await db.session.findUnique({
+    where: { id },
+    select: {
+      expiresAt: true,
+      user: { select: { id: true, handle: true, displayName: true, avatarUrl: true, role: true } },
+    },
+  });
+
+  if (!session || session.expiresAt.getTime() < Date.now()) {
+    if (session) await db.session.delete({ where: { id } }).catch(() => {});
+    cookies.delete(SESSION_COOKIE, { path: '/' });
+    return null;
+  }
+
+  // Session glissante : prolongée quand il reste moins de 15 jours.
+  if (session.expiresAt.getTime() - Date.now() < RENEW_THRESHOLD) {
+    const expiresAt = new Date(Date.now() + SESSION_DAYS * DAY);
+    await db.session.update({ where: { id }, data: { expiresAt, lastUsedAt: new Date() } });
+    setCookie(cookies, token, expiresAt);
+  }
+
+  return { ...session.user, sessionId: id };
+}
+
+export async function destroySession(cookies: Cookies) {
+  const token = cookies.get(SESSION_COOKIE);
+  if (token) await db.session.deleteMany({ where: { id: sha256(token) } });
+  cookies.delete(SESSION_COOKIE, { path: '/' });
+}

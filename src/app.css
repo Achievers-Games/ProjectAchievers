@@ -1,0 +1,127 @@
+@import '@fontsource-variable/inter';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root,
+[data-theme='dark'] {
+  --bg: 15 17 19;
+  --surface: 22 25 28;
+  --raised: 30 34 38;
+  --line: 44 49 54;
+  --ink: 232 234 236;
+  --muted: 158 165 172;
+  --accent: 79 179 165;
+  --on-accent: 10 22 20;
+  --danger: 232 110 100;
+  --success: 92 190 130;
+  --platinum: 150 196 226;
+  --gold: 222 178 76;
+  --silver: 176 184 192;
+  --bronze: 200 136 92;
+  color-scheme: dark;
+}
+
+[data-theme='light'] {
+  --bg: 247 247 245;
+  --surface: 255 255 255;
+  --raised: 239 239 236;
+  --line: 224 224 220;
+  --ink: 22 25 28;
+  --muted: 88 95 102;
+  --accent: 15 118 110;
+  --on-accent: 255 255 255;
+  --danger: 185 50 40;
+  --success: 22 120 70;
+  --platinum: 40 110 150;
+  --gold: 140 100 10;
+  --silver: 95 104 112;
+  --bronze: 140 80 40;
+  color-scheme: light;
+}
+
+@layer base {
+  html {
+    @apply bg-bg text-ink antialiased;
+    font-feature-settings: 'cv11', 'ss03';
+  }
+  body {
+    @apply min-h-dvh font-sans text-[15px] leading-6;
+  }
+  h1 {
+    @apply text-2xl font-semibold tracking-tight;
+  }
+  h2 {
+    @apply text-base font-semibold;
+  }
+  :focus-visible {
+    @apply outline outline-2 outline-offset-2 outline-accent;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded border border-line bg-surface px-3 text-sm font-medium transition-colors hover:bg-raised disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply border-transparent bg-accent text-on-accent hover:bg-accent/90;
+  }
+  .btn-ghost {
+    @apply border-transparent bg-transparent text-muted hover:text-ink;
+  }
+  .btn-danger {
+    @apply border-danger/40 text-danger hover:bg-danger/10;
+  }
+  .input {
+    @apply h-9 w-full rounded border border-line bg-surface px-3 text-sm placeholder:text-muted;
+  }
+  .card {
+    @apply rounded-md border border-line bg-surface;
+  }
+  .label {
+    @apply text-xs font-medium text-muted;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+  .prose-user {
+    @apply space-y-2 text-sm leading-6;
+  }
+  .prose-user a {
+    @apply text-accent underline;
+  }
+  .prose-user code {
+    @apply rounded bg-raised px-1 py-0.5 text-[13px];
+  }
+  .prose-user pre {
+    @apply overflow-x-auto rounded bg-raised p-3;
+  }
+  .prose-user ul {
+    @apply list-disc pl-5;
+  }
+  .prose-user ol {
+    @apply list-decimal pl-5;
+  }
+  .prose-user blockquote {
+    @apply border-l-2 border-line pl-3 text-muted;
+  }
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 140ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after,
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

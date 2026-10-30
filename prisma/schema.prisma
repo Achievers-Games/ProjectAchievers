@@ -1,0 +1,292 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Provider {
+  STEAM
+  DISCORD
+  PSN
+  XBOX
+}
+
+enum Platform {
+  STEAM
+  PSN
+  XBOX
+}
+
+enum TrophyType {
+  PLATINUM
+  GOLD
+  SILVER
+  BRONZE
+  ACHIEVEMENT
+}
+
+enum SyncStatus {
+  IDLE
+  QUEUED
+  SYNCING
+  COMPLETED
+  FAILED
+  NEEDS_RELINK
+}
+
+enum Role {
+  USER
+  MODERATOR
+  ADMIN
+}
+
+enum ContentStatus {
+  PUBLISHED
+  HIDDEN
+  DELETED
+}
+
+enum ReactionType {
+  HELPFUL
+  THANKS
+  FUNNY
+}
+
+enum ReportTarget {
+  GUIDE
+  COMMENT
+}
+
+// ── Comptes ────────────────────────────────────────────────────────────
+
+model User {
+  id          String   @id @default(cuid())
+  handle      String   @unique
+  displayName String
+  avatarUrl   String?
+  isPublic    Boolean  @default(true)
+  role        Role     @default(USER)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  accounts     LinkedAccount[]
+  sessions     Session[]
+  games        UserGame[]
+  achievements UserAchievement[]
+  guides       Guide[]
+  guideVotes   GuideVote[]
+  comments     Comment[]
+  reactions    CommentReaction[]
+  reports      Report[]
+  syncRuns     SyncRun[]
+}
+
+/// L'identifiant est le SHA-256 du jeton du cookie : une fuite de la base
+/// ne permet pas de rejouer une session.
+model Session {
+  id         String   @id
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt  DateTime
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  lastUsedAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model LinkedAccount {
+  id              String     @id @default(cuid())
+  userId          String
+  user            User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider        Provider
+  providerUserId  String
+  displayName     String
+  avatarUrl       String?
+  profileUrl      String?
+  accessTokenEnc  String?
+  refreshTokenEnc String?
+  tokenExpiresAt  DateTime?
+  syncStatus      SyncStatus @default(IDLE)
+  syncError       String?
+  lastSyncedAt    DateTime?
+  linkedAt        DateTime   @default(now())
+
+  @@unique([provider, providerUserId])
+  @@unique([userId, provider])
+}
+
+/// Vérification de propriété d'un identifiant PSN par un code à placer dans
+/// la bio du profil.
+model PsnVerification {
+  userId    String   @id
+  onlineId  String
+  accountId String
+  code      String
+  expiresAt DateTime
+}
+
+// ── Catalogue ──────────────────────────────────────────────────────────
+
+model Game {
+  id                String    @id @default(cuid())
+  platform          Platform
+  platformGameId    String
+  name              String
+  slug              String    @unique
+  coverUrl          String?
+  headerUrl         String?
+  totalAchievements Int       @default(0)
+  schemaSyncedAt    DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  achievements Achievement[]
+  players      UserGame[]
+
+  @@unique([platform, platformGameId])
+  @@index([name])
+}
+
+model Achievement {
+  id                    String     @id @default(cuid())
+  gameId                String
+  game                  Game       @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  platformAchievementId String
+  name                  String
+  description           String     @default("")
+  iconUrl               String?
+  iconLockedUrl         String?
+  hidden                Boolean    @default(false)
+  trophyType            TrophyType @default(ACHIEVEMENT)
+  globalRarity          Float?
+  points                Int        @default(10)
+
+  unlocks  UserAchievement[]
+  guides   Guide[]
+  comments Comment[]
+
+  @@unique([gameId, platformAchievementId])
+  @@index([gameId])
+}
+
+model UserGame {
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gameId          String
+  game            Game      @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  unlockedCount   Int       @default(0)
+  totalCount      Int       @default(0)
+  completion      Float     @default(0)
+  platinum        Boolean   @default(false)
+  playtimeMinutes Int       @default(0)
+  lastPlayedAt    DateTime?
+  lastUnlockedAt  DateTime?
+  updatedAt       DateTime  @updatedAt
+
+  @@id([userId, gameId])
+  @@index([userId, lastUnlockedAt])
+}
+
+model UserAchievement {
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievementId String
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  unlockedAt    DateTime
+
+  @@id([userId, achievementId])
+  @@index([unlockedAt])
+  @@index([achievementId])
+}
+
+model SyncRun {
+  id           String     @id @default(cuid())
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider     Provider
+  status       SyncStatus @default(QUEUED)
+  games        Int        @default(0)
+  achievements Int        @default(0)
+  error        String?
+  startedAt    DateTime   @default(now())
+  finishedAt   DateTime?
+
+  @@index([userId, startedAt])
+}
+
+// ── Communauté ─────────────────────────────────────────────────────────
+
+model Guide {
+  id            String        @id @default(cuid())
+  achievementId String
+  achievement   Achievement   @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  authorId      String
+  author        User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  contentMd     String
+  status        ContentStatus @default(PUBLISHED)
+  score         Int           @default(0)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  votes GuideVote[]
+
+  @@index([achievementId, score])
+}
+
+model GuideVote {
+  guideId String
+  guide   Guide  @relation(fields: [guideId], references: [id], onDelete: Cascade)
+  userId  String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  value   Int
+
+  @@id([guideId, userId])
+}
+
+model Comment {
+  id            String        @id @default(cuid())
+  achievementId String
+  achievement   Achievement   @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  authorId      String
+  author        User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parentId      String?
+  parent        Comment?      @relation("Replies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies       Comment[]     @relation("Replies")
+  contentMd     String
+  status        ContentStatus @default(PUBLISHED)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  reactions CommentReaction[]
+
+  @@index([achievementId, createdAt])
+}
+
+model CommentReaction {
+  commentId String
+  comment   Comment      @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      ReactionType
+
+  @@id([commentId, userId])
+}
+
+model Report {
+  id         String       @id @default(cuid())
+  reporterId String
+  reporter   User         @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+  targetType ReportTarget
+  targetId   String
+  reason     String
+  resolvedAt DateTime?
+  createdAt  DateTime     @default(now())
+
+  @@unique([reporterId, targetType, targetId])
+  @@index([resolvedAt])
+}

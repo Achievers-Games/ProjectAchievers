@@ -1,0 +1,5 @@
+User-agent: *
+Disallow: /compte
+Disallow: /moderation
+Disallow: /auth/
+Disallow: /api/

@@ -1,0 +1,103 @@
+import type { Provider } from '@prisma/client';
+import { db } from './db';
+import { encrypt } from './crypto';
+import { slugify } from '$lib/slug';
+
+export interface Identity {
+  provider: Provider;
+  providerUserId: string;
+  displayName: string;
+  avatarUrl?: string | null;
+  profileUrl?: string | null;
+  accessToken?: string;
+  refreshToken?: string | null;
+  tokenExpiresAt?: Date | null;
+}
+
+export type LinkResult =
+  | { ok: true; userId: string; created: boolean }
+  | { ok: false; reason: 'already_linked' | 'provider_taken' };
+
+function accountData(identity: Identity) {
+  return {
+    displayName: identity.displayName,
+    avatarUrl: identity.avatarUrl,
+    profileUrl: identity.profileUrl,
+    accessTokenEnc: identity.accessToken ? encrypt(identity.accessToken) : null,
+    refreshTokenEnc: identity.refreshToken ? encrypt(identity.refreshToken) : null,
+    tokenExpiresAt: identity.tokenExpiresAt ?? null,
+  };
+}
+
+async function uniqueHandle(name: string): Promise<string> {
+  const base = slugify(name).slice(0, 24) || 'chasseur';
+  for (let suffix = 1; suffix < 1000; suffix++) {
+    const handle = suffix === 1 ? base : `${base}-${suffix}`;
+    if (!(await db.user.findUnique({ where: { handle }, select: { id: true } }))) return handle;
+  }
+  throw new Error('Impossible de générer un identifiant unique');
+}
+
+/**
+ * Rattache une identité vérifiée par un fournisseur.
+ *
+ * Seul le couple fournisseur + identifiant fournisseur désigne un utilisateur.
+ * Un pseudo ou un e-mail ne sert jamais à retrouver un compte : deux personnes
+ * peuvent choisir le même nom.
+ */
+export async function resolveIdentity(
+  identity: Identity,
+  currentUserId: string | null,
+): Promise<LinkResult> {
+  const where = {
+    provider_providerUserId: {
+      provider: identity.provider,
+      providerUserId: identity.providerUserId,
+    },
+  };
+  const existing = await db.linkedAccount.findUnique({ where });
+
+  if (existing) {
+    if (currentUserId && existing.userId !== currentUserId) {
+      return { ok: false, reason: 'already_linked' };
+    }
+    await db.linkedAccount.update({
+      where,
+      data: { ...accountData(identity), syncError: null, syncStatus: 'IDLE' },
+    });
+    return { ok: true, userId: existing.userId, created: false };
+  }
+
+  if (currentUserId) {
+    const sameProvider = await db.linkedAccount.findUnique({
+      where: { userId_provider: { userId: currentUserId, provider: identity.provider } },
+    });
+    if (sameProvider) return { ok: false, reason: 'provider_taken' };
+
+    await db.linkedAccount.create({
+      data: {
+        ...accountData(identity),
+        userId: currentUserId,
+        provider: identity.provider,
+        providerUserId: identity.providerUserId,
+      },
+    });
+    return { ok: true, userId: currentUserId, created: false };
+  }
+
+  const user = await db.user.create({
+    data: {
+      handle: await uniqueHandle(identity.displayName),
+      displayName: identity.displayName,
+      avatarUrl: identity.avatarUrl,
+      accounts: {
+        create: {
+          ...accountData(identity),
+          provider: identity.provider,
+          providerUserId: identity.providerUserId,
+        },
+      },
+    },
+  });
+  return { ok: true, userId: user.id, created: true };
+}
