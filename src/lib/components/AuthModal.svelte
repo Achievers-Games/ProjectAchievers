@@ -23,6 +23,11 @@
       toast.success('Compte Steam lié');
       await authStore.createSession();
       closeAuthModal();
+    } catch (e) {
+      toast.error(
+        'Connexion Steam échouée',
+        e instanceof Error ? e.message : String(e),
+      );
     } finally {
       loading = false;
     }
@@ -40,6 +45,11 @@
       toast.success('Compte Discord lié');
       await authStore.createSession();
       closeAuthModal();
+    } catch (e) {
+      toast.error(
+        'Connexion Discord échouée',
+        e instanceof Error ? e.message : String(e),
+      );
     } finally {
       loading = false;
     }
@@ -117,9 +127,9 @@
       {#if provider === 'steam'}
         <div class="provider-panel">
           <p class="provider-desc">Connecte ton compte Steam pour importer tes succès et ta bibliothèque.</p>
-          <OAuthButton 
+          <OAuthButton
             provider="steam"
-            on:click={handleSteamLogin}
+            onclick={handleSteamLogin}
             loading={loading}
           />
         </div>
@@ -128,7 +138,7 @@
           <p class="provider-desc">Connecte Discord pour voir tes amis, serveurs et partager tes succès.</p>
           <OAuthButton
             provider="discord"
-            on:click={handleDiscordLogin}
+            onclick={handleDiscordLogin}
             loading={loading}
           />
         </div>
@@ -148,7 +158,7 @@
           </div>
           <OAuthButton
             provider="psn"
-            on:click={handlePsnLogin}
+            onclick={handlePsnLogin}
             loading={loading}
             disabled={!psnNpsso.trim()}
           />

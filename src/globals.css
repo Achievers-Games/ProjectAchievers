@@ -146,50 +146,14 @@
     @apply bg-platform-playstation/10 text-platform-playstation border-platform-playstation/20;
   }
 
-  .achievement-card {
-    @apply relative bg-card rounded-lg border border-border p-4 transition-all duration-200 hover:border-primary/50 hover:shadow-glow;
-  }
-  .achievement-card.hidden {
-    @apply opacity-50 grayscale;
-  }
-  .achievement-card.unlocked {
-    @apply border-primary/30 bg-primary/5;
-  }
-  .achievement-card.locked {
-    @apply opacity-60;
-  }
-
-  .progress-ring {
-    @apply relative w-12 h-12;
-  }
-
   .glass-card {
     @apply bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm border border-white/30 dark:border-slate-700/30 rounded-xl;
   }
-
-  .guide-tabs {
-    @apply flex border-b border-border -mb-px;
-  }
-
-  .guide-tab {
-    @apply px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary border-b-2 border-transparent;
-  }
-  .guide-tab.active {
-    @apply text-primary border-b-primary;
-  }
-
-  .comment-thread {
-    @apply border-l-2 border-border pl-4 ml-2;
-  }
-
-  .reaction-badge {
-    @apply inline-flex items-center gap-1 px-2 py-1 rounded-full bg-secondary text-secondary-foreground text-xs border border-border hover:bg-primary hover:text-primary-foreground transition-colors;
-  }
-
-  .skeleton-text {
-    @apply animate-pulse rounded bg-secondary;
-  }
 }
+
+/* @layer components classes (.achievement-card, .progress-ring, .guide-tabs,
+   .guide-tab, .comment-thread, .reaction-badge) removed — dead code replaced
+   by component-scoped <style> blocks. */
 
 @layer utilities {
   /* ===== Kyara-inspired dynamic pieces ===== */
@@ -245,7 +209,8 @@
     );
   }
 
-  /* Shimmer sweep used on covers */
+  /* Shimmer sweep used on covers — activated on parent hover.
+     NOTE: the parent element must carry the `group` class for group-hover to work. */
   .shimmer-sweep::before {
     content: "";
     @apply pointer-events-none absolute inset-0 z-10
@@ -260,7 +225,10 @@
     to { background-position: -200% 0; }
   }
 
-  /* Reveal-on-load animation */
+  /* Reveal-on-load animation.
+     Applied to sections, headers, stat cards — NOT grid cards.
+     Grid cards use Svelte's in:fade transition (see GameCard.svelte) to
+     avoid CSS transform conflicts. */
   .reveal {
     animation: reveal-up 0.45s cubic-bezier(0.2, 0.7, 0.3, 1) both;
   }
@@ -294,3 +262,8 @@
 ::selection {
   @apply bg-primary/30 text-primary-foreground;
 }
+
+/* ===== Grid Card Animations ===== */
+/* Grid cards use Svelte's in:fade transition (via revealDelay prop) for
+   staggered appearance on initial load. The .reveal CSS class is NOT used
+   on grid cards to avoid transform conflicts with in:fade. */

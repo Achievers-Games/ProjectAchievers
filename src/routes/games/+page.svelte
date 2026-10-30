@@ -4,7 +4,7 @@
   import { onMount } from 'svelte';
   import { tauriApi, type GameListItem } from '@/lib/tauri';
   import { toast } from '@/lib/stores/toast';
-  import { gridFlip } from '@/lib/actions/flip';
+  import { fade } from 'svelte/transition';
   import GameCard from '@/lib/games/GameCard.svelte';
 
   type PlatformFilter = 'all' | 'steam' | 'psn';
@@ -52,11 +52,19 @@
   });
 
   async function load(platform: PlatformFilter, search: string) {
-    const data = await tauriApi.getGames({
-      platform: platform === 'all' ? undefined : platform,
-      search: search || undefined,
-    });
-    games = data;
+    try {
+      const data = await tauriApi.getGames({
+        platform: platform === 'all' ? undefined : platform,
+        search: search || undefined,
+      });
+      games = data;
+    } catch (e) {
+      toast.error(
+        'Impossible de charger les jeux',
+        e instanceof Error ? e.message : String(e),
+      );
+      games = [];
+    }
   }
 
   async function handleSync() {
@@ -123,9 +131,9 @@
 
   <!-- Contenu -->
   {#if games === null}
-    <div class="grid" use:gridFlip>
+    <div class="grid">
       {#each { length: 8 } as _, i (i)}
-        <div class="card-skeleton">
+        <div class="card-skeleton" in:fade={{ duration: 300, delay: i * 30 }}>
           <div class="skeleton-block"></div>
           <div class="skeleton-lines">
             <div class="skeleton-text w-3-4"></div>
@@ -142,9 +150,9 @@
       <a class="btn-glossy" href="/settings">Lier Steam</a>
     </div>
   {:else}
-    <div class="grid" use:gridFlip>
-      {#each games as game (game.id)}
-        <GameCard {game} />
+    <div class="grid">
+      {#each games as game, i (game.id)}
+        <GameCard {game} revealDelay={i * 30} />
       {/each}
     </div>
   {/if}

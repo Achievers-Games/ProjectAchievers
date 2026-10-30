@@ -82,6 +82,7 @@
   const kindIcon: Record<Toast['kind'], string> = {
     success: 'M20 6 9 17l-5-5',
     error: 'M18 6 6 18M6 6l12 12',
+    warning: 'M12 9v4m0 4h.01M12 5a7 7 0 1 0 0 14A7 7 0 0 0 12 5z',
   };
 </script>
 
@@ -470,6 +471,10 @@
 
   .toast.error svg {
     color: hsl(0 84% 60%);
+  }
+
+  .toast.warning svg {
+    color: hsl(45 93% 53%);
   }
 
   .toast-msg {

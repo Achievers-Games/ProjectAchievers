@@ -1,15 +1,16 @@
 <script lang="ts">
+  import { fade } from 'svelte/transition';
   import { relativeDate, platformColor } from '@/lib/games/gameMeta';
   import type { GameListItem } from '@/lib/tauri';
 
-  let { game }: { game: GameListItem } = $props();
+  let { game, revealDelay = 0 }: { game: GameListItem; revealDelay?: number } = $props();
 
   const completion = $derived(game.user_progress?.completion_percentage ?? 0);
   const hasPlatinum = $derived(game.user_progress?.platinum_unlocked ?? false);
   const isComplete = $derived(completion >= 100);
 </script>
 
-<a href="/games/{game.slug}" class="dynamic-card shimmer-sweep reveal">
+<a href="/games/{game.slug}" class="dynamic-card shimmer-sweep group" in:fade={{ duration: 300, delay: revealDelay }}>
   <div class="cover">
     {#if game.header_url ?? game.cover_url}
       <img src={game.header_url ?? game.cover_url} alt={game.name} class="img" />

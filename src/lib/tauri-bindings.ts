@@ -14,16 +14,12 @@ export const commands = {
 	unlinkAccount: (accountId: string) => typedError<null, AppError>(__TAURI_INVOKE("unlink_account", { accountId })),
 	/**  Get authentication status */
 	getAuthStatus: () => typedError<AuthStatus_Serialize, AppError>(__TAURI_INVOKE("get_auth_status")),
-	/**  Génère l'URL d'autorisation Steam OAuth 2.0 */
-	steamOauthUrl: (state: string) => typedError<string, AppError>(__TAURI_INVOKE("steam_oauth_url", { state })),
-	/**  Callback Steam OAuth 2.0 - échange le code contre les tokens et lie le compte */
-	steamOauthCallback: (code: string, state: string) => typedError<AuthResult_Serialize, AppError>(__TAURI_INVOKE("steam_oauth_callback", { code, state })),
+	/**  Génère l'URL d'autorisation Steam OpenID 2.0 */
+	steamOpenidUrl: (state: string) => typedError<string, AppError>(__TAURI_INVOKE("steam_openid_url", { state })),
+	/**  Callback Steam OpenID 2.0 - vérifie la réponse OpenID et lie le compte */
+	steamOpenidCallback: (openidParams: SteamOpenIdParams_Deserialize, state: string) => typedError<AuthResult_Serialize, AppError>(__TAURI_INVOKE("steam_openid_callback", { openidParams, state })),
 	/**  Récupère l'URL d'autorisation pour lier un compte Steam (depuis settings) */
-	steamOauthLinkUrl: (state: string) => typedError<string, AppError>(__TAURI_INVOKE("steam_oauth_link_url", { state })),
-	/**  Rafraîchit le token d'accès Steam */
-	steamRefreshToken: () => typedError<null, AppError>(__TAURI_INVOKE("steam_refresh_token")),
-	/**  Déconnecte (révoque) le compte Steam */
-	steamRevoke: () => typedError<null, AppError>(__TAURI_INVOKE("steam_revoke")),
+	steamOpenidLinkUrl: (state: string) => typedError<string, AppError>(__TAURI_INVOKE("steam_openid_link_url", { state })),
 	/**  Génère l'URL d'autorisation Discord OAuth 2.0 avec PKCE */
 	discordOauthUrl: () => typedError<DiscordAuthUrlResponse, AppError>(__TAURI_INVOKE("discord_oauth_url")),
 	/**  Callback Discord OAuth 2.0 avec PKCE */
@@ -33,7 +29,7 @@ export const commands = {
 	/**  Déconnecte (révoque) le compte Discord */
 	discordRevoke: () => typedError<null, AppError>(__TAURI_INVOKE("discord_revoke")),
 	/**
-	 *  Start an OAuth 2.0 authorization using a local loopback redirect URI.
+	 *  Start an OAuth 2.0 / OpenID authorization using a local loopback redirect URI.
 	 * 
 	 *  Binds an ephemeral port on 127.0.0.1, returns the provider authorize URL,
 	 *  then waits (up to 5 minutes) for the browser redirect. The result is sent
@@ -871,6 +867,37 @@ export type SteamGlobalAchievement_Deserialize = {
 export type SteamGlobalAchievement_Serialize = {
 	name: string,
 	percent: number | null,
+};
+
+/**  Steam OpenID response parameters */
+export type SteamOpenIdParams = SteamOpenIdParams_Serialize | SteamOpenIdParams_Deserialize;
+
+/**  Steam OpenID response parameters */
+export type SteamOpenIdParams_Deserialize = {
+	"openid.ns"?: string | null,
+	"openid.mode"?: string | null,
+	"openid.op_endpoint"?: string | null,
+	"openid.claimed_id"?: string | null,
+	"openid.identity"?: string | null,
+	"openid.return_to"?: string | null,
+	"openid.response_nonce"?: string | null,
+	"openid.assoc_handle"?: string | null,
+	"openid.signed"?: string | null,
+	"openid.sig"?: string | null,
+};
+
+/**  Steam OpenID response parameters */
+export type SteamOpenIdParams_Serialize = {
+	"openid.ns": string | null,
+	"openid.mode": string | null,
+	"openid.op_endpoint": string | null,
+	"openid.claimed_id": string | null,
+	"openid.identity": string | null,
+	"openid.return_to": string | null,
+	"openid.response_nonce": string | null,
+	"openid.assoc_handle": string | null,
+	"openid.signed": string | null,
+	"openid.sig": string | null,
 };
 
 /**

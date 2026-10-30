@@ -5,7 +5,7 @@ pub mod error;
 
 use crate::commands::{
   auth::*,
-  auth_steam_oauth::*,
+  auth_steam_openid::*,
   auth_discord_oauth::*,
   oauth_flow::*,
   session::*,
@@ -36,12 +36,10 @@ pub fn run() {
       get_linked_accounts,
       unlink_account,
       get_auth_status,
-      // Steam OAuth 2.0 commands
-      steam_oauth_url,
-      steam_oauth_callback,
-      steam_oauth_link_url,
-      steam_refresh_token,
-      steam_revoke,
+      // Steam OpenID 2.0 commands
+      steam_openid_url,
+      steam_openid_callback,
+      steam_openid_link_url,
       // Discord OAuth 2.0 commands
       discord_oauth_url,
       discord_oauth_callback,

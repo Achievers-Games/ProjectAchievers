@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FLIP Test — Grid Placement</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #1a1a2e;
+      color: #eee;
+      padding: 2rem;
+      font-family: sans-serif;
+    }
+    .grid {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    }
+    .card {
+      aspect-ratio: 5/7;
+      background: linear-gradient(135deg, #16213e, #0f3460);
+      border-radius: 1.25rem;
+      border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 8px 24px -12px rgba(0,0,0,0.4);
+      display: flex;
+      align-items: flex-end;
+      padding: 1rem;
+      /* FLIP transition properties */
+      transition-property: transform, opacity, box-shadow;
+      transition-duration: 0.4s;
+      transition-timing-function: cubic-bezier(0.25, 0.4, 0.25, 1);
+      will-change: transform;
+      /* Reveal animation — conflicts with FLIP if captured mid-animation */
+      animation: reveal-up 0.45s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+    }
+    @keyframes reveal-up {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    h3 { font-size: 1.2rem; font-weight: 600; }
+    .controls {
+      margin-bottom: 1rem;
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+    button {
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      border: 1px solid #4a90d9;
+      background: #2a5298;
+      color: white;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    button:hover { background: #3a62a8; }
+    #status { font-size: 0.8rem; color: #888; }
+  </style>
+</head>
+<body>
+  <div class="controls">
+    <button onclick="addCard()">Add Card</button>
+    <button onclick="removeCard()">Remove Card</button>
+    <button onclick="resizeGrid()">Toggle Grid Size</button>
+    <span id="count">12 cards</span>
+    <span id="status"></span>
+  </div>
+  <div class="grid" id="grid"></div>
+
+  <script>
+    // Replicates the fixed flip.ts logic
+    const grid = document.getElementById('grid');
+    let cardCount = 12;
+
+    function createCard(id) {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.textContent = `Card ${id}`;
+      return card;
+    }
+
+    function renderCards() {
+      grid.innerHTML = '';
+      for (let i = 0; i < cardCount; i++) {
+        grid.appendChild(createCard(i + 1));
+      }
+      initFlip();
+    }
+
+    // ===== FLIP Logic (mirrors src/lib/actions/flip.ts) =====
+    let firstRects = [];
+    let timers = new Set();
+    let isFlipping = false;
+    let initialized = false;
+    let resizeObserver = null;
+    let mutationObserver = null;
+    let flipDebounce = null;
+
+    const SETTLE_MS = 550;      // Wait for .reveal (450ms) + buffer
+    const TRANSITION_MS = 400;  // Match CSS transition-duration
+    const DEBOUNCE_MS = 15;
+
+    function getChildren() { return Array.from(grid.children); }
+    function getRects() {
+      return getChildren().map(el => el.getBoundingClientRect());
+    }
+
+    function schedule(cb, delay) {
+      const t = setTimeout(() => {
+        timers.delete(t);
+        cb();
+      }, delay);
+      timers.add(t);
+      return t;
+    }
+
+    function invert(el, dx, dy) {
+      el.style.setProperty('transform', `translate3d(${dx}px, ${dy}px, 0)`, 'important');
+      el.style.setProperty('transition', 'none', 'important');
+      el.style.setProperty('animation-play-state', 'paused', 'important');
+    }
+
+    function play(el) {
+      el.style.removeProperty('transition');
+      el.style.removeProperty('animation-play-state');
+      el.style.setProperty('transform', 'translate3d(0, 0, 0)', 'important');
+    }
+
+    function cleanup(el) {
+      el.style.removeProperty('transform');
+      el.style.removeProperty('transition');
+      el.style.removeProperty('animation-play-state');
+    }
+
+    const captureBaseline = () => {
+      firstRects = getRects();
+      initialized = true;
+      document.getElementById('status').textContent = 'Baseline captured ✓';
+    };
+
+    function flip() {
+      const oldRects = firstRects;
+      const newRects = getRects();
+
+      if (!initialized || oldRects.length === 0 || oldRects.length !== newRects.length || isFlipping) {
+        firstRects = newRects;
+        return;
+      }
+
+      const movements = [];
+      getChildren().forEach((el, i) => {
+        const dx = oldRects[i].left - newRects[i].left;
+        const dy = oldRects[i].top - newRects[i].top;
+        if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
+          movements.push({ el, dx, dy });
+        }
+      });
+
+      if (movements.length === 0) {
+        firstRects = newRects;
+        return;
+      }
+
+      isFlipping = true;
+
+      movements.forEach(({ el, dx, dy }) => invert(el, dx, dy));
+      void grid.offsetHeight;
+
+      schedule(() => {
+        movements.forEach(({ el }) => play(el));
+        schedule(() => {
+          movements.forEach(m => cleanup(m.el));
+          firstRects = getRects();
+          isFlipping = false;
+          document.getElementById('status').textContent = 'FLIP complete ✓';
+        }, TRANSITION_MS + 50);
+      }, 0);
+    }
+
+    const scheduleFlip = () => {
+      if (isFlipping || !initialized) return;
+      if (flipDebounce) clearTimeout(flipDebounce);
+      flipDebounce = setTimeout(() => {
+        flipDebounce = null;
+        flip();
+      }, DEBOUNCE_MS);
+    };
+
+    function initFlip() {
+      isFlipping = false;
+      initialized = false;
+      firstRects = [];
+      timers.forEach(clearTimeout);
+      timers.clear();
+      if (flipDebounce) clearTimeout(flipDebounce);
+
+      schedule(captureBaseline, SETTLE_MS);
+
+      // ResizeObserver: catches container size changes
+      resizeObserver = new ResizeObserver(scheduleFlip);
+      resizeObserver.observe(grid);
+
+      // MutationObserver: catches child changes (refreshes baseline)
+      mutationObserver = new MutationObserver(() => {
+        if (isFlipping) return;
+        if (!initialized) {
+          schedule(captureBaseline, SETTLE_MS);
+          return;
+        }
+        schedule(captureBaseline, SETTLE_MS);
+      });
+      mutationObserver.observe(grid, { childList: true, subtree: false });
+
+      document.getElementById('status').textContent = 'Waiting for reveal...';
+    }
+
+    // Controls
+    function addCard() {
+      cardCount = Math.min(cardCount + 3, 24);
+      document.getElementById('count').textContent = `${cardCount} cards`;
+      renderCards();
+    }
+
+    function removeCard() {
+      cardCount = Math.max(cardCount - 3, 4);
+      document.getElementById('count').textContent = `${cardCount} cards`;
+      renderCards();
+    }
+
+    function resizeGrid() {
+      const cur = grid.style.getProperty('--card-min');
+      if (cur) {
+        grid.style.removeProperty('--card-min');
+      } else {
+        grid.style.setProperty('--card-min', '300px');
+      }
+    }
+
+    grid.style.gridTemplateColumns = 'repeat(auto-fit, minmax(var(--card-min, 260px), 1fr))';
+    renderCards();
+  </script>
+</body>
+</html>

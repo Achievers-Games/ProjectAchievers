@@ -36,35 +36,6 @@ export function formatNumber(num: number): string {
   return num.toString();
 }
 
-export function getTrophyColor(type: string | null): string {
-  switch (type) {
-    case 'platinum': return 'trophy-platinum';
-    case 'gold': return 'trophy-gold';
-    case 'silver': return 'trophy-silver';
-    case 'bronze': return 'trophy-bronze';
-    default: return 'text-muted-foreground';
-  }
-}
-
-export function getPlatformColor(platform: string): string {
-  switch (platform) {
-    case 'steam': return 'platform-steam';
-    case 'psn': return 'platform-playstation';
-    case 'xbox': return 'platform-xbox';
-    default: return 'text-muted-foreground';
-  }
-}
-
-export function getTrophyIcon(type: string | null): string {
-  switch (type) {
-    case 'platinum': return '🏆';
-    case 'gold': return '🥇';
-    case 'silver': return '🥈';
-    case 'bronze': return '🥉';
-    default: return '⭐';
-  }
-}
-
 export function slugify(text: string): string {
   return text
     .toLowerCase()

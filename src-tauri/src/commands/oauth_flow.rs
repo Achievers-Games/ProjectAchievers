@@ -7,8 +7,8 @@ use std::time::Duration;
 use tauri::{AppHandle, Emitter, State};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
+use urlencoding::encode;
 
-const STEAM_AUTHORIZE: &str = "https://steamcommunity.com/oauth2/authorize";
 const DISCORD_AUTHORIZE: &str = "https://discord.com/oauth2/authorize";
 
 /// Pending OAuth authorization, kept in memory until the loopback callback
@@ -72,9 +72,12 @@ pub struct OAuthCallbackEvent {
     pub state: String,
     pub error: Option<String>,
     pub error_description: Option<String>,
+    // For Steam OpenID - contains all openid.* parameters
+    #[serde(rename = "openidParams")]
+    pub openid_params: Option<std::collections::HashMap<String, String>>,
 }
 
-/// Start an OAuth 2.0 authorization using a local loopback redirect URI.
+/// Start an OAuth 2.0 / OpenID authorization using a local loopback redirect URI.
 ///
 /// Binds an ephemeral port on 127.0.0.1, returns the provider authorize URL,
 /// then waits (up to 5 minutes) for the browser redirect. The result is sent
@@ -87,20 +90,13 @@ pub async fn oauth_begin(
     provider: String,
 ) -> AppResult<OAuthBeginResponse> {
     let provider = provider.to_lowercase();
-    let (client_id, scopes) = match provider.as_str() {
-        "steam" => (
-            std::env::var("STEAM_CLIENT_ID")
-                .map_err(|_| AppError::Internal("STEAM_CLIENT_ID not configured".into()))?,
-            std::env::var("STEAM_SCOPES").unwrap_or_else(|_| "openid profile email".into()),
-        ),
-        "discord" => (
-            std::env::var("DISCORD_CLIENT_ID")
-                .map_err(|_| AppError::Internal("DISCORD_CLIENT_ID not configured".into()))?,
-            std::env::var("DISCORD_SCOPES").unwrap_or_else(|_| "identify email".into()),
-        ),
+
+    // Validate provider
+    match provider.as_str() {
+        "steam" | "discord" => {}
         other => {
             return Err(AppError::Validation(format!(
-                "Unsupported OAuth provider: {other}"
+                "Unsupported provider: {other}"
             )))
         }
     };
@@ -130,16 +126,27 @@ pub async fn oauth_begin(
         None
     };
 
+    // Build provider-specific authorization URL
     let url = match provider.as_str() {
-        "steam" => format!(
-            "{}?client_id={}&redirect_uri={}&response_type=code&scope={}&state={}",
-            STEAM_AUTHORIZE,
-            urlencoding::encode(&client_id),
-            urlencoding::encode(&redirect_uri),
-            urlencoding::encode(&scopes),
-            urlencoding::encode(&state),
-        ),
+        "steam" => {
+            // Steam uses OpenID 2.0, not OAuth2
+            let realm = std::env::var("STEAM_OPENID_REALM")
+                .map_err(|_| AppError::Internal("STEAM_OPENID_REALM not configured".into()))?;
+            let return_to = std::env::var("STEAM_OPENID_RETURN_TO")
+                .map_err(|_| AppError::Internal("STEAM_OPENID_RETURN_TO not configured".into()))?;
+
+            format!(
+                "https://steamcommunity.com/openid/login?openid.ns=http://specs.openid.net/auth/2.0&openid.mode=checkid_setup&openid.return_to={}&openid.realm={}&openid.claimed_id=http://specs.openid.net/auth/2.0/identifier_select&openid.identity=http://specs.openid.net/auth/2.0/identifier_select&openid.state={}",
+                encode(&return_to),
+                encode(&realm),
+                encode(&state)
+            )
+        }
         "discord" => {
+            let client_id = std::env::var("DISCORD_CLIENT_ID")
+                .map_err(|_| AppError::Internal("DISCORD_CLIENT_ID not configured".into()))?;
+            let scopes = std::env::var("DISCORD_SCOPES").unwrap_or_else(|_| "identify email".into());
+
             let challenge = generate_pkce_challenge(
                 code_verifier
                     .as_deref()
@@ -148,11 +155,11 @@ pub async fn oauth_begin(
             format!(
                 "{}?client_id={}&redirect_uri={}&response_type=code&scope={}&state={}&code_challenge={}&code_challenge_method=S256",
                 DISCORD_AUTHORIZE,
-                urlencoding::encode(&client_id),
-                urlencoding::encode(&redirect_uri),
-                urlencoding::encode(&scopes),
-                urlencoding::encode(&state),
-                urlencoding::encode(&challenge),
+                encode(&client_id),
+                encode(&redirect_uri),
+                encode(&scopes),
+                encode(&state),
+                encode(&challenge),
             )
         }
         _ => unreachable!("provider validated above"),
@@ -179,6 +186,7 @@ pub async fn oauth_begin(
             state: state_for_task,
             error: None,
             error_description: None,
+            openid_params: None,
         };
 
         match accepted {
@@ -193,6 +201,8 @@ pub async fn oauth_begin(
                     .unwrap_or("/");
 
                 if let Ok(parsed) = url::Url::parse(&format!("http://127.0.0.1{path}")) {
+                    let mut openid_params: Option<std::collections::HashMap<String, String>> = None;
+
                     for (key, value) in parsed.query_pairs() {
                         match key.as_ref() {
                             "code" => event.code = Some(value.into_owned()),
@@ -201,7 +211,24 @@ pub async fn oauth_begin(
                             "error_description" => {
                                 event.error_description = Some(value.into_owned())
                             }
-                            _ => {}
+                            _ => {
+                                // Capture all openid.* parameters for Steam OpenID
+                                if key.starts_with("openid.") {
+                                    if openid_params.is_none() {
+                                        openid_params = Some(std::collections::HashMap::new());
+                                    }
+                                    if let Some(ref mut map) = openid_params {
+                                        map.insert(key.into_owned(), value.into_owned());
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Store OpenID parameters if present (for Steam)
+                    if let Some(map) = openid_params {
+                        if !map.is_empty() {
+                            event.openid_params = Some(map);
                         }
                     }
                 }

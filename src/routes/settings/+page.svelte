@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { tauriApi, runOAuth, type AuthStatus, type AppVersion, type SteamResolvedProfile, type SessionInfo } from '@/lib/tauri';
+  import { tauriApi, runOAuth, type AuthStatus, type AuthStatus_Serialize, type LinkedAccount_Serialize, type AppVersion, type SteamResolvedProfile, type SessionInfo } from '@/lib/tauri';
   import { toast } from '@/lib/stores/toast';
   import { theme, setTheme } from '@/lib/stores/theme';
   import { auth as authStore } from '@/lib/stores/auth';
@@ -25,11 +25,48 @@
   onMount(() => {
     void loadAuth();
     void loadSessions();
+    void checkOAuthRedirect();
     void tauriApi
       .getAppVersion()
       .then((version) => (appVersion = version))
       .catch(() => (appVersion = null));
   });
+
+  /**
+   * Check URL query params for OAuth redirect results.
+   * The backend redirects back here with ?steam_connected=true or ?discord_connected=true
+   * (or ?error=... on failure).
+   */
+  async function checkOAuthRedirect() {
+    const params = new URLSearchParams(window.location.search);
+
+    if (params.has('steam_connected')) {
+      toast.success('Compte Steam lié', 'Connexion réussie.');
+      // Clear the query param from URL
+      window.history.replaceState({}, document.title, '/settings');
+      await authStore.createSession();
+      await loadAuth();
+    }
+
+    if (params.has('discord_connected')) {
+      toast.success('Compte Discord lié', 'Connexion réussie.');
+      window.history.replaceState({}, document.title, '/settings');
+      await authStore.createSession();
+      await loadAuth();
+    }
+
+    const error = params.get('error');
+    if (error) {
+      const errorMsg =
+        error === 'steam_auth_failed'
+          ? 'Échec de l\'authentification Steam.'
+          : error === 'discord_auth_failed'
+            ? 'Échec de l\'authentification Discord.'
+            : error;
+      toast.error('Connexion échouée', errorMsg);
+      window.history.replaceState({}, document.title, '/settings');
+    }
+  }
 
   async function loadAuth() {
     try {
@@ -133,6 +170,11 @@
       // Create a JWT session so subsequent requests are authenticated
       await authStore.createSession();
       await loadAuth();
+    } catch (e) {
+      toast.error(
+        provider === 'steam' ? 'Connexion Steam échouée' : 'Connexion Discord échouée',
+        e instanceof Error ? e.message : String(e),
+      );
     } finally {
       oauthLoading = null;
     }

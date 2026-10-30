@@ -4,7 +4,7 @@
   import { formatNumber } from '@/lib/utils';
   import { toast } from '@/lib/stores/toast';
   import { openAuthModal } from '@/lib/stores/authModal';
-  import { gridFlip } from '@/lib/actions/flip';
+  import { fade } from 'svelte/transition';
   import GameCard from '@/lib/games/GameCard.svelte';
 
   let games = $state<GameListItem[] | null>(null);
@@ -113,9 +113,9 @@
     <section class="reveal">
       <h2 class="section-title">Presse-boutons</h2>
       <p class="section-sub">Tu es tout proche du platine.</p>
-      <div class="grid" use:gridFlip>
-        {#each nearComplete as game (game.id)}
-          <GameCard {game} />
+      <div class="grid">
+        {#each nearComplete as game, i (game.id)}
+          <GameCard {game} revealDelay={i * 30} />
         {/each}
       </div>
     </section>
@@ -137,9 +137,9 @@
     </div>
 
     {#if games === null}
-      <div class="grid" use:gridFlip>
+      <div class="grid">
         {#each { length: 6 } as _, i (i)}
-          <div class="card-skeleton">
+          <div class="card-skeleton" in:fade={{ duration: 300, delay: i * 30 }}>
             <div class="skeleton-block"></div>
             <div class="skeleton-lines">
               <div class="skeleton-text w-3-4"></div>
@@ -155,9 +155,9 @@
         <button class="btn-glossy" onclick={() => openAuthModal()}>Lier Steam</button>
       </div>
     {:else}
-      <div class="grid" use:gridFlip>
-        {#each games as game (game.id)}
-          <GameCard {game} />
+      <div class="grid">
+        {#each games as game, i (game.id)}
+          <GameCard {game} revealDelay={i * 30} />
         {/each}
       </div>
     {/if}
