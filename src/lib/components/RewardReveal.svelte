@@ -6,7 +6,9 @@
 
   const MAX_CARDS = 10;
   const FIRST_FLIP = 500;
-  const NEXT_FLIP = 320;
+  const FLIP_DURATION = 640;
+  /** Chaque carte démarre quand la précédente est à mi-retournement. */
+  const NEXT_FLIP = FLIP_DURATION / 2;
   const PARTICLES = 14;
 
   let dialog = $state<HTMLDialogElement>();
@@ -65,7 +67,7 @@
         {cards.length > 1 ? `${cards.length} cartes 100 % obtenues !` : 'Carte 100 % obtenue !'}
       </p>
 
-      <div class="reward-grid" style:--columns={columns} inert>
+      <div class="reward-grid" style:--columns={columns} style:--flip="{FLIP_DURATION}ms" inert>
         {#each cards as card, index (card.game.slug)}
           <div class="reward-scene">
             {#if index < flipped}
