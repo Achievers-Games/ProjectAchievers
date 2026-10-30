@@ -16,7 +16,8 @@ export interface Identity {
 
 export type LinkResult =
   | { ok: true; userId: string; created: boolean }
-  | { ok: false; reason: 'already_linked' | 'provider_taken' };
+  | { ok: false; reason: 'already_linked'; ownerId: string }
+  | { ok: false; reason: 'provider_taken' };
 
 function accountData(identity: Identity) {
   return {
@@ -59,7 +60,7 @@ export async function resolveIdentity(
 
   if (existing) {
     if (currentUserId && existing.userId !== currentUserId) {
-      return { ok: false, reason: 'already_linked' };
+      return { ok: false, reason: 'already_linked', ownerId: existing.userId };
     }
     await db.linkedAccount.update({
       where,

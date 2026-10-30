@@ -5,13 +5,13 @@ synchronise automatiquement, avec profils publics, comparaison, classement, guid
 
 ## Stack
 
-| Couche | Choix |
-| --- | --- |
-| Application | SvelteKit 2, Svelte 5, `adapter-node` |
-| Base de données | PostgreSQL, Prisma |
+| Couche          | Choix                                                     |
+| --------------- | --------------------------------------------------------- |
+| Application     | SvelteKit 2, Svelte 5, `adapter-node`                     |
+| Base de données | PostgreSQL, Prisma                                        |
 | Synchronisation | File de tâches pg-boss, progression en Server-Sent Events |
-| Style | Tailwind, tokens CSS dans `src/app.css` |
-| Tests | Vitest (intégration sur Postgres réel), Playwright |
+| Style           | Tailwind, tokens CSS dans `src/app.css`                   |
+| Tests           | Vitest (intégration sur Postgres réel), Playwright        |
 
 ## Démarrer
 
@@ -50,14 +50,19 @@ de développement partage la file de tâches et prendrait les tâches des tests.
 
 Un fournisseur sans configuration est simplement masqué ou indiqué comme non activé.
 
-| Compte | Connexion | Configuration | Redirection à déclarer |
-| --- | --- | --- | --- |
-| Steam | OpenID | `STEAM_API_KEY` | aucune |
-| Discord | OAuth 2 + PKCE | `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` | `{ORIGIN}/auth/discord/callback` |
-| Xbox | Microsoft Entra + PKCE | `XBOX_CLIENT_ID`, `XBOX_CLIENT_SECRET` | `{ORIGIN}/auth/xbox/callback` |
-| PlayStation | Identifiant PSN + code dans la bio | `PSN_SERVICE_NPSSO` | aucune |
+| Compte      | Connexion                          | Configuration                                | Redirection à déclarer           |
+| ----------- | ---------------------------------- | -------------------------------------------- | -------------------------------- |
+| Steam       | OpenID                             | `STEAM_API_KEY`                              | aucune                           |
+| Discord     | OAuth 2 + PKCE                     | `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` | `{ORIGIN}/auth/discord/callback` |
+| Google      | OpenID Connect + PKCE              | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`   | `{ORIGIN}/auth/google/callback`  |
+| Xbox        | Microsoft Entra + PKCE             | `XBOX_CLIENT_ID`, `XBOX_CLIENT_SECRET`       | `{ORIGIN}/auth/xbox/callback`    |
+| PlayStation | Identifiant PSN + code dans la bio | `PSN_SERVICE_NPSSO`                          | aucune                           |
 
 Les comptes se synchronisent à la liaison, puis automatiquement toutes les 24 heures.
+
+**Un profil, plusieurs comptes** : chaque compte lié ouvre le même profil. Lier un compte qui
+appartient déjà à un autre profil propose de fusionner les deux, après confirmation. Un e-mail ou un
+pseudo identique ne rattache jamais rien automatiquement.
 
 **PlayStation** : Sony n'a pas d'API publique. Le site passe par l'API non officielle via `psn-api`
 et un compte de service dédié, jamais par le NPSSO d'un joueur. Le joueur prouve qu'il possède le

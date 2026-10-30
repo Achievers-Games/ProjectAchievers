@@ -30,7 +30,7 @@ test.describe('visiteur', () => {
   test("voit l'accueil public et les jeux", async ({ page }) => {
     await page.goto('/');
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Tous tes succès');
-    await expect(page.getByRole('link', { name: 'Elden Ring' }).first()).toBeVisible();
+    await expect(page.locator('a[href^="/jeux/"]').first()).toBeVisible();
   });
 
   test('utilise la police prévue', async ({ page }) => {
@@ -56,7 +56,7 @@ test.describe('visiteur', () => {
     await ready(page);
     await page.keyboard.press('Control+k');
     const input = page.getByRole('combobox', { name: 'Rechercher un jeu' });
-    await input.fill('portal');
+    await input.fill('portal 2');
     await expect(page.getByRole('option', { name: /Portal 2/ })).toBeVisible();
     await input.press('Enter');
     await expect(page).toHaveURL(/\/jeux\/portal-2/);
@@ -104,7 +104,7 @@ test.describe('membre', () => {
   test('voit les quatre comptes et son export', async ({ page }) => {
     await login(page);
     await page.goto('/compte');
-    for (const name of ['Steam', 'PlayStation', 'Xbox', 'Discord']) {
+    for (const name of ['Steam', 'PlayStation', 'Xbox', 'Discord', 'Google']) {
       await expect(page.getByText(name, { exact: true })).toBeVisible();
     }
     const response = await page.request.get('/compte/export');

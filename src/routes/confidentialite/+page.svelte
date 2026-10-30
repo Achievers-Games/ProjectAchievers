@@ -9,7 +9,9 @@
 
   <h2 class="pt-4">Données traitées</h2>
   <ul>
-    <li>Identifiant, pseudo et avatar de tes comptes Steam, Discord, PlayStation et Xbox.</li>
+    <li>
+      Identifiant, pseudo et avatar de tes comptes Steam, Discord, Google, PlayStation et Xbox.
+    </li>
     <li>Ta bibliothèque, ta progression et tes succès.</li>
     <li>Tes guides, commentaires, votes et signalements.</li>
     <li>Tes sessions : date d'utilisation et navigateur.</li>

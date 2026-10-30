@@ -26,7 +26,11 @@ const USERS = [
   { handle: 'marco', displayName: 'Marco', share: 0.35, role: 'USER' as const },
 ];
 
-const slug = (name: string) => name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-$/, '');
+const slug = (name: string) =>
+  name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/-$/, '');
 
 async function main() {
   const users = [];

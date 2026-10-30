@@ -12,6 +12,7 @@ enum Provider {
   DISCORD
   PSN
   XBOX
+  GOOGLE
 }
 
 enum Platform {

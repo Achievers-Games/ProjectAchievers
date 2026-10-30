@@ -5,6 +5,7 @@ export const PROVIDER_LABELS: Record<Provider, string> = {
   DISCORD: 'Discord',
   PSN: 'PlayStation',
   XBOX: 'Xbox',
+  GOOGLE: 'Google',
 };
 
 export const PLATFORM_LABELS: Record<Platform, string> = {

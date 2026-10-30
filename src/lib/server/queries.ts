@@ -147,7 +147,7 @@ export async function userProfile(handle: string, viewerId: string | null) {
       isPublic: true,
       createdAt: true,
       accounts: {
-        where: { provider: { not: 'DISCORD' } },
+        where: { provider: { notIn: ['DISCORD', 'GOOGLE'] } },
         select: { provider: true, displayName: true, profileUrl: true },
       },
     },

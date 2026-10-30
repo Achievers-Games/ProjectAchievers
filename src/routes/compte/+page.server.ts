@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type { Provider } from '@prisma/client';
 import { resolveIdentity } from '$lib/server/accounts';
 import { db } from '$lib/server/db';
+import { clearMerge, mergePreview, mergeUsers, readMerge, saveMerge } from '$lib/server/merge';
 import { availableProviders } from '$lib/server/providers';
 import { bioContainsCode, findPsnProfile, newPsnCode } from '$lib/server/providers/psn';
 import { destroySession } from '$lib/server/session';
@@ -10,11 +11,16 @@ import { enqueueSync } from '$lib/server/sync/queue';
 import type { Actions, PageServerLoad } from './$types';
 
 const NOTICES: Record<string, string> = {
-  already_linked: 'Ce compte est déjà rattaché à un autre profil.',
   provider_taken: 'Un compte de ce type est déjà lié. Dissocie-le pour en lier un autre.',
 };
 
-const LOGIN_PROVIDERS: Provider[] = ['STEAM', 'DISCORD', 'XBOX'];
+const MERGE_ERRORS = {
+  stale: 'Cette demande de fusion n’est plus valable. Lie le compte à nouveau.',
+  sync_running: 'Une synchronisation est en cours. Réessaie quand elle sera terminée.',
+  provider_conflict: 'Les deux profils ont un compte du même type. Dissocie-le avant de fusionner.',
+};
+
+const LOGIN_PROVIDERS: Provider[] = ['STEAM', 'DISCORD', 'XBOX', 'GOOGLE'];
 const PSN_CODE_LIFETIME = 30 * 60 * 1000;
 
 function requireUser(locals: App.Locals) {
@@ -22,10 +28,11 @@ function requireUser(locals: App.Locals) {
   return locals.user;
 }
 
-export const load: PageServerLoad = async ({ locals, url }) => {
+export const load: PageServerLoad = async ({ locals, url, cookies }) => {
   const user = requireUser(locals);
+  const pendingMerge = readMerge(cookies, user.id);
 
-  const [profile, accounts, sessions, psn] = await Promise.all([
+  const [profile, accounts, sessions, psn, merge] = await Promise.all([
     db.user.findUniqueOrThrow({ where: { id: user.id }, select: { isPublic: true } }),
     db.linkedAccount.findMany({
       where: { userId: user.id },
@@ -45,10 +52,12 @@ export const load: PageServerLoad = async ({ locals, url }) => {
       select: { id: true, userAgent: true, createdAt: true, lastUsedAt: true },
     }),
     db.psnVerification.findUnique({ where: { userId: user.id } }),
+    pendingMerge ? mergePreview(pendingMerge) : null,
   ]);
 
   return {
     profile,
+    merge,
     accounts,
     sessions: sessions.map((s) => ({ ...s, current: s.id === user.sessionId })),
     providers: availableProviders(),
@@ -63,7 +72,7 @@ const onlineId = z
   .trim()
   .regex(/^[a-zA-Z][a-zA-Z0-9_-]{2,15}$/, "Cet identifiant PSN n'est pas valide.");
 
-const providerSchema = z.enum(['STEAM', 'PSN', 'XBOX', 'DISCORD']);
+const providerSchema = z.enum(['STEAM', 'PSN', 'XBOX', 'DISCORD', 'GOOGLE']);
 
 export const actions: Actions = {
   sync: async ({ request, locals }) => {
@@ -90,7 +99,7 @@ export const actions: Actions = {
     );
     if (!remainingLogin) {
       return fail(409, {
-        error: 'Garde au moins un compte Steam, Discord ou Xbox : il sert à te connecter.',
+        error: 'Garde au moins un compte Steam, Discord, Xbox ou Google : il sert à te connecter.',
       });
     }
 
@@ -98,7 +107,7 @@ export const actions: Actions = {
       await tx.linkedAccount.delete({
         where: { userId_provider: { userId: user.id, provider: provider.data } },
       });
-      if (provider.data !== 'DISCORD') {
+      if (provider.data !== 'DISCORD' && provider.data !== 'GOOGLE') {
         const platform = provider.data;
         await tx.userAchievement.deleteMany({
           where: { userId: user.id, achievement: { game: { platform } } },
@@ -107,6 +116,24 @@ export const actions: Actions = {
       }
     });
     return { success: 'Compte dissocié, ses données ont été retirées de ton profil.' };
+  },
+
+  merge: async ({ locals, cookies }) => {
+    const user = requireUser(locals);
+    const pending = readMerge(cookies, user.id);
+    if (!pending) return fail(410, { error: MERGE_ERRORS.stale });
+
+    const failure = await mergeUsers(pending);
+    if (failure === 'sync_running' || failure === 'provider_conflict') {
+      return fail(409, { error: MERGE_ERRORS[failure] });
+    }
+    clearMerge(cookies);
+    if (failure) return fail(410, { error: MERGE_ERRORS[failure] });
+    return { success: 'Profils fusionnés. Tous tes comptes ouvrent maintenant ce profil.' };
+  },
+
+  mergeCancel: async ({ cookies }) => {
+    clearMerge(cookies);
   },
 
   visibility: async ({ request, locals }) => {
@@ -171,7 +198,7 @@ export const actions: Actions = {
     });
   },
 
-  psnConfirm: async ({ locals }) => {
+  psnConfirm: async ({ locals, cookies }) => {
     const user = requireUser(locals);
     const pending = await db.psnVerification.findUnique({ where: { userId: user.id } });
     if (!pending || pending.expiresAt < new Date()) {
@@ -204,9 +231,21 @@ export const actions: Actions = {
       },
       user.id,
     );
-    if (!result.ok) return fail(409, { error: NOTICES[result.reason] });
+    if (!result.ok && result.reason === 'provider_taken') {
+      return fail(409, { error: NOTICES[result.reason] });
+    }
 
     await db.psnVerification.delete({ where: { userId: user.id } });
+    if (!result.ok) {
+      saveMerge(cookies, {
+        sourceId: result.ownerId,
+        targetId: user.id,
+        provider: 'PSN',
+        providerUserId: profile.accountId,
+      });
+      return { success: 'Ce compte PlayStation appartient à un autre de tes profils.' };
+    }
+
     await enqueueSync(user.id, 'PSN');
     return { success: 'Compte PlayStation lié. Tu peux retirer le code de ta bio.' };
   },

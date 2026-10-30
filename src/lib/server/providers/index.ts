@@ -3,12 +3,13 @@ import type { Provider } from '@prisma/client';
 import { decrypt, encrypt } from '../crypto';
 import { env } from '../env';
 
-export type OAuthProvider = 'steam' | 'discord' | 'xbox';
+export type OAuthProvider = 'steam' | 'discord' | 'xbox' | 'google';
 
 export const OAUTH_PROVIDERS: Record<OAuthProvider, Provider> = {
   steam: 'STEAM',
   discord: 'DISCORD',
   xbox: 'XBOX',
+  google: 'GOOGLE',
 };
 
 export function availableProviders(): Record<Provider, boolean> {
@@ -18,6 +19,7 @@ export function availableProviders(): Record<Provider, boolean> {
     DISCORD: Boolean(e.DISCORD_CLIENT_ID && e.DISCORD_CLIENT_SECRET),
     XBOX: Boolean(e.XBOX_CLIENT_ID && e.XBOX_CLIENT_SECRET),
     PSN: Boolean(e.PSN_SERVICE_NPSSO),
+    GOOGLE: Boolean(e.GOOGLE_CLIENT_ID && e.GOOGLE_CLIENT_SECRET),
   };
 }
 

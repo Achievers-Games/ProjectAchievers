@@ -1,7 +1,9 @@
 import { error, redirect } from '@sveltejs/kit';
 import { resolveIdentity, type Identity } from '$lib/server/accounts';
+import { saveMerge } from '$lib/server/merge';
 import { OAUTH_PROVIDERS, takeFlow, type OAuthProvider } from '$lib/server/providers';
 import { exchangeDiscordCode } from '$lib/server/providers/discord';
+import { exchangeGoogleCode } from '$lib/server/providers/google';
 import { fetchSteamIdentity, verifySteamResponse } from '$lib/server/providers/steam';
 import { exchangeXboxCode } from '$lib/server/providers/xbox';
 import { createSession } from '$lib/server/session';
@@ -19,9 +21,9 @@ async function identityFrom(
   }
   const code = query.get('code');
   if (!code || !verifier) return null;
-  return provider === 'discord'
-    ? exchangeDiscordCode(code, verifier)
-    : exchangeXboxCode(code, verifier);
+  if (provider === 'discord') return exchangeDiscordCode(code, verifier);
+  if (provider === 'google') return exchangeGoogleCode(code, verifier);
+  return exchangeXboxCode(code, verifier);
 }
 
 export const GET: RequestHandler = async ({ params, url, cookies, locals, request }) => {
@@ -42,7 +44,16 @@ export const GET: RequestHandler = async ({ params, url, cookies, locals, reques
   if (!identity) redirect(303, '/connexion?erreur=refuse');
 
   const result = await resolveIdentity(identity, locals.user?.id ?? null);
-  if (!result.ok) redirect(303, `/compte?erreur=${result.reason}`);
+  if (!result.ok) {
+    if (result.reason === 'provider_taken') redirect(303, `/compte?erreur=${result.reason}`);
+    saveMerge(cookies, {
+      sourceId: result.ownerId,
+      targetId: locals.user?.id ?? '',
+      provider: identity.provider,
+      providerUserId: identity.providerUserId,
+    });
+    redirect(303, '/compte');
+  }
 
   if (!locals.user) await createSession(cookies, result.userId, request.headers.get('user-agent'));
   await enqueueSync(result.userId, identity.provider);

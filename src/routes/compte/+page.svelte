@@ -4,7 +4,7 @@
   import type { Provider, SyncStatus } from '@prisma/client';
   import ProviderIcon from '$lib/components/ProviderIcon.svelte';
   import Progress from '$lib/components/Progress.svelte';
-  import { formatRelative, PROVIDER_LABELS } from '$lib/labels';
+  import { formatRelative, plural, PROVIDER_LABELS } from '$lib/labels';
   import { syncState } from '$lib/stores/sync';
   import { toast } from '$lib/stores/toast';
 
@@ -12,17 +12,20 @@
 
   let confirmation = $state('');
 
-  const PROVIDERS: Provider[] = ['STEAM', 'PSN', 'XBOX', 'DISCORD'];
+  const PROVIDERS: Provider[] = ['STEAM', 'PSN', 'XBOX', 'DISCORD', 'GOOGLE'];
   const OAUTH: Partial<Record<Provider, string>> = {
     STEAM: 'steam',
     DISCORD: 'discord',
     XBOX: 'xbox',
+    GOOGLE: 'google',
   };
+  const LOGIN_ONLY: Provider[] = ['DISCORD', 'GOOGLE'];
   const DESCRIPTIONS: Record<Provider, string> = {
     STEAM: 'Bibliothèque et succès',
     PSN: 'Trophées publics',
     XBOX: 'Succès et Gamerscore',
     DISCORD: 'Connexion et identité',
+    GOOGLE: 'Connexion et identité',
   };
   const STATUS: Record<SyncStatus, string> = {
     IDLE: 'En attente',
@@ -66,6 +69,45 @@
     <p role="alert" class="card px-3 py-2 text-sm text-danger">{data.notice}</p>
   {/if}
 
+  {#if data.merge}
+    <section class="card space-y-3 p-4" data-testid="fusion">
+      <div class="space-y-1">
+        <h2>Fusionner tes profils</h2>
+        <p class="text-sm text-muted">
+          Ce compte appartient déjà au profil <strong>{data.merge.displayName}</strong>
+          (@{data.merge.handle}) : {data.merge.providers.map((p) => PROVIDER_LABELS[p]).join(', ')}, {plural(
+            data.merge.games,
+            'jeu',
+            'jeux',
+          )},
+          {plural(data.merge.guides, 'guide')}, {plural(data.merge.comments, 'commentaire')}.
+        </p>
+      </div>
+      {#if data.merge.conflicts.length}
+        <p role="alert" class="text-sm text-danger">
+          Les deux profils ont un compte {data.merge.conflicts
+            .map((p) => PROVIDER_LABELS[p])
+            .join(', ')}. Dissocie-le de ce profil avant de fusionner.
+        </p>
+      {:else}
+        <p class="text-sm">
+          Tout sera rattaché au profil actuel, puis @{data.merge.handle} sera supprimé. Cette action est
+          définitive.
+        </p>
+      {/if}
+      <div class="flex gap-2">
+        {#if !data.merge.conflicts.length}
+          <form method="POST" action="?/merge" use:enhance={submit}>
+            <button class="btn btn-primary">Fusionner</button>
+          </form>
+        {/if}
+        <form method="POST" action="?/mergeCancel" use:enhance={submit}>
+          <button class="btn btn-ghost">Annuler</button>
+        </form>
+      </div>
+    </section>
+  {/if}
+
   <section class="space-y-3">
     <h2>Comptes liés</h2>
     <ul class="card divide-y divide-line">
@@ -83,7 +125,7 @@
               <p class="truncate text-xs text-muted">
                 {#if account}
                   {account.displayName}
-                  {#if provider !== 'DISCORD' && status}· {STATUS[status]}{/if}
+                  {#if !LOGIN_ONLY.includes(provider) && status}· {STATUS[status]}{/if}
                   {#if account.lastSyncedAt && status === 'COMPLETED'}
                     · {formatRelative(account.lastSyncedAt)}
                   {/if}
@@ -104,7 +146,7 @@
                 >
                   Reconnecter
                 </a>
-              {:else if provider !== 'DISCORD'}
+              {:else if !LOGIN_ONLY.includes(provider)}
                 <form method="POST" action="?/sync" use:enhance={submit}>
                   <input type="hidden" name="provider" value={provider} />
                   <button class="btn" disabled={status === 'SYNCING' || status === 'QUEUED'}>

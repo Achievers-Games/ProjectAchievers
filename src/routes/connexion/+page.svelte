@@ -7,6 +7,7 @@
     { id: 'steam', provider: 'STEAM', label: 'Continuer avec Steam' },
     { id: 'discord', provider: 'DISCORD', label: 'Continuer avec Discord' },
     { id: 'xbox', provider: 'XBOX', label: 'Continuer avec Xbox' },
+    { id: 'google', provider: 'GOOGLE', label: 'Continuer avec Google' },
   ] as const);
   const none = $derived(options.every((o) => !data.providers[o.provider]));
 </script>
@@ -16,7 +17,9 @@
 <div class="mx-auto max-w-sm space-y-6 py-10">
   <div class="space-y-1">
     <h1>Connexion</h1>
-    <p class="text-sm text-muted">Pas de mot de passe : ton compte de jeu suffit.</p>
+    <p class="text-sm text-muted">
+      Pas de mot de passe. Tous les comptes que tu lies ouvrent le même profil.
+    </p>
   </div>
 
   {#if data.error}
