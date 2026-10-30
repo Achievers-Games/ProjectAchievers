@@ -28,6 +28,15 @@ function clientAddress(event: RequestEvent): string {
 }
 
 export const handle: Handle = async ({ event, resolve }) => {
+  // Les cookies et le contrôle d'origine ne valent que pour l'adresse officielle du site.
+  const origin = new URL(env().ORIGIN);
+  if (event.request.headers.get('host') === `www.${origin.host}`) {
+    return new Response(null, {
+      status: 301,
+      headers: { Location: `${origin.origin}${event.url.pathname}${event.url.search}` },
+    });
+  }
+
   const path = event.url.pathname;
   const limit = limitFor(event.request, path);
   if (limit !== null) {

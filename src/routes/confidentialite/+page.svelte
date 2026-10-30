@@ -2,9 +2,9 @@
 
 <article class="prose-user mx-auto max-w-2xl">
   <h1>Confidentialité</h1>
-  <p class="text-muted">
-    Ce texte décrit le fonctionnement du site. Il doit être complété par l'identité de l'éditeur et
-    relu avant toute mise en ligne publique.
+  <p>
+    Project Achievers est un site indépendant. Pour toute question sur tes données :
+    <a href="mailto:gamefeelstudio@gmail.com">gamefeelstudio@gmail.com</a>.
   </p>
 
   <h2 class="pt-4">Données traitées</h2>
