@@ -1,0 +1,34 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: achievers
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?à définir dans .env}
+      POSTGRES_DB: achievers
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U achievers']
+      interval: 5s
+      retries: 10
+
+  site:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - '3000:3000'
+    environment:
+      DATABASE_URL: postgresql://achievers:${POSTGRES_PASSWORD}@db:5432/achievers
+      ORIGIN: ${ORIGIN:?URL publique du site}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?32 octets en hexadécimal}
+      STEAM_API_KEY: ${STEAM_API_KEY:-}
+      DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID:-}
+      DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET:-}
+      XBOX_CLIENT_ID: ${XBOX_CLIENT_ID:-}
+      XBOX_CLIENT_SECRET: ${XBOX_CLIENT_SECRET:-}
+      PSN_SERVICE_NPSSO: ${PSN_SERVICE_NPSSO:-}
+
+volumes:
+  pgdata:

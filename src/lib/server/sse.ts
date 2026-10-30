@@ -8,6 +8,8 @@ export function eventStream<T>(
   const stream = new ReadableStream<string>({
     start(controller) {
       const send = (event: T) => controller.enqueue(`data: ${JSON.stringify(event)}\n\n`);
+      // Premier octet immédiat : sans lui, les en-têtes attendent le premier événement.
+      controller.enqueue(': ok\n\n');
       const unsubscribe = subscribe(send);
       // Commentaire périodique : garde la connexion ouverte à travers les proxys.
       const heartbeat = setInterval(() => controller.enqueue(': ping\n\n'), 25_000);

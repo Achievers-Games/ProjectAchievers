@@ -1,96 +1,99 @@
 # Project Achievers
 
-Application de bureau communautaire pour les chasseurs de succès (achievements/trophées) de jeux vidéo.
+Site web communautaire pour les chasseurs de succès : la progression Steam, PlayStation et Xbox se
+synchronise automatiquement, avec profils publics, comparaison, classement, guides et discussions.
 
-## Fonctionnalités
+## Stack
 
-- **Liaison de comptes** : Steam (OAuth), PlayStation (NPSSO, import manuel PSNProfiles)
-- **Bibliothèque de jeux** : Liste complète avec filtres et recherche
-- **Détail des succès** : Progression, rareté globale, statut déverrouillé
-- **Guides** : Guides générés par IA + guides communautaires avec système de vote
-- **Commentaires** : Section commentaires sous chaque succès avec réactions (imbriqués)
-- **Recommandations** : Jeux recommandés basés sur vos succès et platiniums
-- **Profil** : Vue d'ensemble de vos succès, platiniums, guides créés
-- **Application de bureau** : Tauri + Next.js, disponible sur Windows, macOS, Linux
+| Couche | Choix |
+| --- | --- |
+| Application | SvelteKit 2, Svelte 5, `adapter-node` |
+| Base de données | PostgreSQL, Prisma |
+| Synchronisation | File de tâches pg-boss, progression en Server-Sent Events |
+| Style | Tailwind, tokens CSS dans `src/app.css` |
+| Tests | Vitest (intégration sur Postgres réel), Playwright |
 
-## Stack technique
+## Démarrer
 
-| Couche | Technologie |
-|--------|-------------|
-| Frontend | Vite 7 + React 18, TypeScript |
-| Bureau | Tauri v2 (Rust) |
-| UI | shadcn/ui, Tailwind CSS |
-| Base de données | SQLite (sqlx) |
-| État | TanStack Query, Zustand |
-| Design | Inspiration kyara.games + PSTHC |
-
-## Développement
-
-### Prérequis
-
-- Node.js 20+
-- Rust 1.75+
-- Tauri CLI (`cargo install tauri-cli`)
-
-### Installation
+Node 20 ou plus est requis. Copie `.env.example` vers `.env`, génère `ENCRYPTION_KEY`, puis :
 
 ```bash
-# Cloner le repo
-git clone https://github.com/ProjectAchievers/project-achievers.git
-cd project-achievers
-
-# Installer les dépendances
 npm install
-
-# Lancer en mode développement
-npm run tauri:dev
-
-# Construire pour la production
-npm run tauri:build
+npm run dev:db
 ```
 
-### Scripts disponibles
+Dans un second terminal :
 
-| Script | Description |
-|--------|-------------|
-| `npm run dev` | Lance Next.js en mode dev |
-| `npm run tauri:dev` | Lance l'app Tauri en mode dev |
-| `npm run tauri:build` | Construit les installeurs de production |
-| `npm run build` | Construit le frontend Next.js |
-| `npm run lint` | Lance ESLint |
-| `npm run test` | Lance les tests Vitest |
-
-## Structure du projet
-
-```
-project-achievers/
-├── index.html                     # Point d'entrée (Vite)
-├── vite.config.ts / vitest.config.ts
-├── src/                           # Frontend Vite + React
-│   ├── main.tsx                   # Bootstrap (thème, router, react-query)
-│   ├── App.tsx                    # Routes (react-router, HashRouter)
-│   ├── routes/                    # Pages (dashboard, games, achievements…)
-│   ├── components/                # Composants React (layout, ui, …)
-│   ├── hooks/                     # Hooks personnalisés (useSync, useDebouncedValue)
-│   ├── lib/                       # Utilitaires et client Tauri typé
-│   ├── stores/                    # Stores Zustand (à venir)
-│   └── test/                      # Setup Vitest
-├── src-tauri/                    # Backend Rust (Tauri)
-│   ├── src/
-│   │   ├── commands/             # Commandes Tauri (IPC)
-│   │   ├── database/             # SQLite et migrations
-│   │   └── crypto/               # Chiffrement des tokens
-│   ├── migrations/               # Migrations SQL
-│   └── Cargo.toml
-├── .github/workflows/            # CI/CD (GitHub Actions)
-└── package.json
+```bash
+npx prisma migrate deploy
+npm run db:seed
+npm run dev
 ```
 
-## Limites connues
+`npm run dev:db` lance un PostgreSQL local sans Docker, sur le port 5433. Le site est sur
+<http://localhost:5173>, avec une connexion de démonstration sur `/connexion`. Elle n'existe qu'en
+développement.
 
-- **PSN** : Sony ne propose pas d'API publique pour les trophées. L'intégration PSN est limitée (affichage uniquement ou import manuel via PSNProfiles).
-- **Steam** : Nécessite une clé API Steam Web pour accéder aux données utilisateur.
+## Vérifier
 
-## Licence
+```bash
+npm run check
+npm run lint
+npm test
+npm run test:e2e
+```
 
-MIT
+Les tests d'intégration ont besoin de Postgres. Arrête `npm run dev` pendant `npm test` : un serveur
+de développement partage la file de tâches et prendrait les tâches des tests.
+
+## Comptes de jeu
+
+Un fournisseur sans configuration est simplement masqué ou indiqué comme non activé.
+
+| Compte | Connexion | Configuration | Redirection à déclarer |
+| --- | --- | --- | --- |
+| Steam | OpenID | `STEAM_API_KEY` | aucune |
+| Discord | OAuth 2 + PKCE | `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` | `{ORIGIN}/auth/discord/callback` |
+| Xbox | Microsoft Entra + PKCE | `XBOX_CLIENT_ID`, `XBOX_CLIENT_SECRET` | `{ORIGIN}/auth/xbox/callback` |
+| PlayStation | Identifiant PSN + code dans la bio | `PSN_SERVICE_NPSSO` | aucune |
+
+Les comptes se synchronisent à la liaison, puis automatiquement toutes les 24 heures.
+
+**PlayStation** : Sony n'a pas d'API publique. Le site passe par l'API non officielle via `psn-api`
+et un compte de service dédié, jamais par le NPSSO d'un joueur. Le joueur prouve qu'il possède le
+profil avec un code temporaire dans sa bio. Ses trophées doivent être publics. Le NPSSO du compte de
+service expire et doit être renouvelé à la main.
+
+**Xbox** : l'application Entra doit accepter les comptes Microsoft personnels. Microsoft peut exiger
+une approbation pour l'accès à Xbox Live.
+
+## Déployer
+
+```bash
+docker compose up -d --build
+```
+
+`docker-compose.yml` lit `POSTGRES_PASSWORD`, `ORIGIN`, `ENCRYPTION_KEY` et les clés des fournisseurs.
+Les migrations s'appliquent au démarrage. Le serveur écoute sur le port 3000 et doit rester derrière
+un proxy HTTPS. S'il est le seul proxy devant le site, définis aussi `ADDRESS_HEADER=X-Forwarded-For`
+et `XFF_DEPTH=1` pour que les limites de débit voient la vraie adresse des visiteurs.
+
+Le site tourne en **un seul processus** : limites de débit et événements temps réel vivent en mémoire.
+
+Avant une ouverture publique :
+
+- complète `src/routes/confidentialite` avec l'identité de l'éditeur ;
+- prévois des sauvegardes de la base ;
+- donne le rôle `MODERATOR` ou `ADMIN` à un compte, dans la table `User`, pour accéder à `/moderation`.
+
+## Structure
+
+```
+prisma/                    Schéma et migrations
+src/hooks.server.ts        Sessions, limites de débit, en-têtes, démarrage des tâches
+src/lib/server/providers/  Authentification Steam, Discord, Xbox, PSN
+src/lib/server/sync/       Synchronisation par plateforme et file de tâches
+src/lib/server/queries.ts  Lectures partagées entre les pages
+src/routes/                Pages et points d'accès
+e2e/                       Tests Playwright
+```

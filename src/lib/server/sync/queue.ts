@@ -128,6 +128,10 @@ export async function runSync({ userId, provider }: SyncJob) {
 }
 
 async function sweep() {
+  const now = new Date();
+  await db.session.deleteMany({ where: { expiresAt: { lt: now } } });
+  await db.psnVerification.deleteMany({ where: { expiresAt: { lt: now } } });
+
   const accounts = await db.linkedAccount.findMany({
     where: {
       provider: { in: ['STEAM', 'PSN', 'XBOX'] },
