@@ -50,12 +50,13 @@
             ? `${plural(gained, 'nouveau succès', 'nouveaux succès')} sur ${PROVIDER_LABELS[event.provider]} !`
             : `${PROVIDER_LABELS[event.provider]} est à jour.`,
         );
-        if (event.moreRewards) {
-          toast(
-            `Et ${plural(event.moreRewards, 'autre carte', 'autres cartes')} dans ta collection.`,
-          );
+        if (event.rewards?.length) {
+          const cards = event.rewards;
+          rewards.update((pending) => ({
+            cards: [...pending.cards, ...cards],
+            more: pending.more + (event.moreRewards ?? 0),
+          }));
         }
-        if (event.rewards?.length) rewards.update((list) => [...list, ...(event.rewards ?? [])]);
         void invalidateAll();
       } else if (event.status === 'FAILED' || event.status === 'NEEDS_RELINK') {
         toast(event.error ?? 'La synchronisation a échoué.', 'error');

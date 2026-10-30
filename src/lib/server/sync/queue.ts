@@ -15,7 +15,7 @@ import type { ProviderSync } from './types';
 const SYNC_QUEUE = 'sync-account';
 const SWEEP_QUEUE = 'sync-sweep';
 const STALE_AFTER = 24 * 60 * 60 * 1000;
-const MAX_REWARDS = 12;
+const MAX_REWARDS = 10;
 /** Au-delà, la carte est ancienne : lier un compte ne doit pas inonder le fil en direct. */
 const LIVE_CARD_MAX_AGE = 48 * 60 * 60 * 1000;
 

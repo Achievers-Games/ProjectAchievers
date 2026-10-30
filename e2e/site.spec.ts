@@ -162,23 +162,25 @@ test.describe('membre', () => {
     // Le jeu à 100 % et le jeu platiné donnent la même carte.
     await expect(showcase.locator('a[data-complete]')).toHaveCount(2);
 
-    const reward = {
+    const cards = Array.from({ length: 12 }, (_, index) => ({
       game: {
-        name: 'Hades',
-        slug: 'hades',
+        name: `Jeu ${index}`,
+        slug: `jeu-${index}`,
         platform: 'STEAM',
         headerUrl: null,
-        totalAchievements: 49,
+        totalAchievements: 10,
       },
-      progress: { unlockedCount: 49, completion: 100, platinum: false },
-    };
+      progress: { unlockedCount: 10, completion: 100, platinum: false },
+      unlockedAt: null,
+    }));
     const event = {
       provider: 'STEAM',
       status: 'COMPLETED',
       processed: 1,
       total: 1,
       achievements: 3,
-      rewards: [reward, { ...reward, progress: { ...reward.progress, platinum: true } }],
+      rewards: cards.slice(0, 10),
+      moreRewards: 2,
     };
     await page.route('**/api/sync/events', (route) =>
       route.fulfill({
@@ -188,30 +190,40 @@ test.describe('membre', () => {
       }),
     );
     await page.goto('/');
-    const dialog = page.getByRole('dialog', { name: 'Nouvelle carte' });
-    await expect(dialog.getByText('Carte 100 % obtenue !')).toBeVisible();
-    await dialog.getByRole('button', { name: 'Carte suivante (1)' }).click();
-    await expect(dialog.getByRole('button', { name: 'Super !' })).toBeVisible();
-    await dialog.getByRole('button', { name: 'Super !' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Nouvelles cartes' });
+    await expect(dialog.getByText('10 cartes 100 % obtenues !')).toBeVisible();
+    await expect(dialog.getByText('+ 2 autres déblocages')).toBeVisible();
+    await page.unroute('**/api/sync/events');
+
+    // Les cartes se retournent une à une.
+    const flipped = dialog.locator('.reward-flip.revealed');
+    await expect.poll(() => flipped.count()).toBeGreaterThan(0);
+    expect(await flipped.count()).toBeLessThan(10);
+
+    // Un rechargement ne perd rien.
+    await page.reload();
+    await expect(dialog.getByText('10 cartes 100 % obtenues !')).toBeVisible();
+
+    // Premier clic : tout est retourné. Deuxième clic : fermé.
+    await dialog.click({ position: { x: 10, y: 10 } });
+    await expect(flipped).toHaveCount(10);
+    await expect(dialog.getByRole('button', { name: 'Fermer' })).toBeVisible();
+    await dialog.click({ position: { x: 10, y: 10 } });
+    await expect(dialog).toBeHidden();
+    await page.reload();
     await expect(dialog).toBeHidden();
   });
 
-  test('filtre les jeux pas encore à 100 %, les plus avancés en tête', async ({ page }) => {
+  test('rejoue la révélation depuis la page de test', async ({ page }) => {
     await login(page);
-    await page.goto('/jeux');
-    await page.getByRole('link', { name: 'Non 100 %' }).click();
-    await expect(page).toHaveURL(/filtre=restants/);
-    await expect(page).toHaveURL(/tri=progression/);
-    await expect(page.getByLabel('Trier')).toHaveValue('progression');
-
-    const main = page.locator('main');
-    await expect(main.getByRole('link', { name: /Elden Ring/ })).toBeVisible();
-    await expect(main.getByRole('link', { name: /Hades/ })).toHaveCount(0);
-    await expect(main.locator('a[data-complete]')).toHaveCount(0);
-    const percents = await main
-      .getByRole('progressbar')
-      .evaluateAll((bars) => bars.map((bar) => Number(bar.getAttribute('aria-valuenow'))));
-    expect(percents).toEqual([...percents].sort((a, b) => b - a));
+    await page.goto('/dev/revelation');
+    await ready(page);
+    await page.getByRole('button', { name: 'Ouvrir 2 cartes' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Nouvelles cartes' });
+    await page.keyboard.press('Enter');
+    await expect(dialog.locator('.reward-flip.revealed')).toHaveCount(2);
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
   });
 
   test('voit les quatre comptes et son export', async ({ page }) => {

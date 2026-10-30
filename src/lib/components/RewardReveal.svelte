@@ -1,80 +1,96 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import GameCard from './GameCard.svelte';
-  import { rewards } from '$lib/stores/sync';
+  import { plural } from '$lib/labels';
+  import { NO_REWARDS, persistRewards, rewards } from '$lib/stores/sync';
 
-  const REVEAL_DELAY = 650;
-  const PARTICLES = 32;
+  const MAX_CARDS = 10;
+  const FIRST_FLIP = 500;
+  const NEXT_FLIP = 320;
+  const PARTICLES = 14;
 
   let dialog = $state<HTMLDialogElement>();
-  let revealed = $state(false);
+  let flipped = $state(0);
 
-  const current = $derived($rewards[0]);
-  const remaining = $derived($rewards.length - 1);
+  const cards = $derived($rewards.cards.slice(0, MAX_CARDS));
+  const hidden = $derived($rewards.cards.length - cards.length + $rewards.more);
+  const finished = $derived(flipped >= cards.length);
+  const columns = $derived(cards.length <= 3 ? cards.length : Math.ceil(cards.length / 2));
 
   const particles = Array.from({ length: PARTICLES }, (_, index) => ({
     angle: (index / PARTICLES) * 360,
-    distance: 130 + (index % 5) * 34,
-    delay: (index % 4) * 30,
+    distance: 70 + (index % 4) * 26,
   }));
 
+  onMount(persistRewards);
+
   $effect(() => {
-    if (current && !dialog?.open) dialog?.showModal();
-    if (!current && dialog?.open) dialog.close();
+    if (cards.length && !dialog?.open) dialog?.showModal();
+    if (!cards.length && dialog?.open) dialog.close();
   });
 
-  // Chaque carte arrive de dos, puis se retourne.
+  // Les cartes se retournent une à une.
   $effect(() => {
-    if (!current) return;
-    revealed = false;
-    const timer = setTimeout(() => (revealed = true), REVEAL_DELAY);
+    if (!cards.length) flipped = 0;
+    if (finished) return;
+    const timer = setTimeout(() => (flipped += 1), flipped === 0 ? FIRST_FLIP : NEXT_FLIP);
     return () => clearTimeout(timer);
   });
 
-  const next = () => rewards.update((list) => list.slice(1));
+  /** Un premier clic montre tout, le suivant ferme. */
+  function advance() {
+    if (finished) rewards.set(NO_REWARDS);
+    else flipped = cards.length;
+  }
 </script>
 
+<!-- Le bouton donne l'équivalent au clavier : Entrée et Échap font la même chose que le clic. -->
 <dialog
   bind:this={dialog}
-  onclose={() => rewards.set([])}
-  aria-label="Nouvelle carte"
+  onclick={advance}
+  oncancel={(event) => {
+    event.preventDefault();
+    advance();
+  }}
+  onclose={(event) => {
+    // Seule une action du joueur termine la révélation.
+    if (cards.length) event.currentTarget.showModal();
+  }}
+  aria-label="Nouvelles cartes"
   class="reward-dialog"
 >
-  {#if current}
-    <div class="reward-stage" class:revealed>
-      <p class="reward-title">Carte 100 % obtenue !</p>
+  {#if cards.length}
+    <div class="reward-stage">
+      <p class="reward-title">
+        {cards.length > 1 ? `${cards.length} cartes 100 % obtenues !` : 'Carte 100 % obtenue !'}
+      </p>
 
-      <div class="reward-scene">
-        {#if revealed}
-          <div class="reward-burst" aria-hidden="true">
-            {#each particles as particle (particle.angle)}
-              <span
-                style:--angle="{particle.angle}deg"
-                style:--distance="{particle.distance}px"
-                style:animation-delay="{particle.delay}ms"
-              ></span>
-            {/each}
+      <div class="reward-grid" style:--columns={columns} inert>
+        {#each cards as card, index (card.game.slug)}
+          <div class="reward-scene">
+            {#if index < flipped}
+              <div class="reward-burst" aria-hidden="true">
+                {#each particles as particle (particle.angle)}
+                  <span style:--angle="{particle.angle}deg" style:--distance="{particle.distance}px"
+                  ></span>
+                {/each}
+              </div>
+            {/if}
+            <div class="reward-flip" class:revealed={index < flipped}>
+              <div class="reward-back" aria-hidden="true">Achievers</div>
+              <div class="reward-front">
+                <GameCard game={card.game} progress={card.progress} />
+              </div>
+            </div>
           </div>
-        {/if}
-
-        <div class="reward-flip">
-          <div class="reward-back" aria-hidden="true">Achievers</div>
-          <div class="reward-front">
-            {#key current.game.slug}
-              <GameCard game={current.game} progress={current.progress} />
-            {/key}
-          </div>
-        </div>
+        {/each}
       </div>
 
-      <div class="flex items-center gap-2">
-        {#if remaining > 0}
-          <button type="button" class="btn btn-primary" onclick={next}>
-            Carte suivante ({remaining})
-          </button>
-        {:else}
-          <button type="button" class="btn btn-primary" onclick={next}>Super !</button>
-        {/if}
-      </div>
+      {#if hidden > 0}
+        <p class="reward-more">+ {plural(hidden, 'autre déblocage', 'autres déblocages')}</p>
+      {/if}
+
+      <button type="button" class="btn btn-primary">{finished ? 'Fermer' : 'Passer'}</button>
     </div>
   {/if}
 </dialog>
