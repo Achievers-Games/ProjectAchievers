@@ -51,6 +51,35 @@ test.describe('visiteur', () => {
     await expect(page.getByLabel('Filtrer par nom')).toHaveValue('hades');
   });
 
+  test('charge la suite des jeux au défilement et la retrouve au retour', async ({ page }) => {
+    await page.goto('/jeux');
+    await ready(page);
+    const cards = page.locator('main a[href^="/jeux/"]');
+    await expect(cards).toHaveCount(36);
+    await expect(page.getByRole('link', { name: 'Suivant' })).toHaveCount(0);
+
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await expect.poll(() => cards.count()).toBeGreaterThan(36);
+    const loaded = await cards.count();
+    const hrefs = await cards.evaluateAll((links) => links.map((a) => a.getAttribute('href')));
+    expect(new Set(hrefs).size).toBe(hrefs.length);
+
+    await cards.last().click();
+    await expect(page).toHaveURL(/\/jeux\/.+/);
+    await page.goBack();
+    await expect.poll(() => cards.count()).toBeGreaterThanOrEqual(loaded);
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+  });
+
+  test('sans JavaScript, ouvre une page suivante par lien', async ({ browser }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
+    await page.goto('/jeux');
+    await page.getByRole('link', { name: 'Afficher plus' }).click();
+    await expect(page).toHaveURL(/page=2/);
+    await context.close();
+  });
+
   test('cherche un jeu au clavier avec Ctrl K', async ({ page }) => {
     await page.goto('/');
     await ready(page);
@@ -127,7 +156,7 @@ test.describe('membre', () => {
     await expect(page.getByLabel('Nom affiché')).toHaveValue('Nouveau nom');
 
     await ready(page);
-    await page.getByLabel('Identifiant').fill('a_b');
+    await page.getByLabel('Identifiant', { exact: true }).fill('a_b');
     await save.click();
     await expect(page.getByText('Ton identifiant doit faire')).toBeVisible();
 

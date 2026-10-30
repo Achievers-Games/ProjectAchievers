@@ -6,6 +6,7 @@ import { db } from './db';
 import { mergeUsers } from './merge';
 import { enqueueSync, runSync, startWorkers } from './sync/queue';
 import { onSync, type SyncEvent } from './sync/events';
+import { steamImages } from './sync/steam';
 import { saveAchievements, saveProgress, upsertGame } from './sync/store';
 
 const PREFIX = 'zz-test';
@@ -403,6 +404,91 @@ describe('synchronisation Steam', () => {
 
     const urls = fetchMock.mock.calls.map(([url]) => String(url));
     expect(urls.some((u) => u.includes('GetPlayerAchievements'))).toBe(false);
+  });
+
+  it('demande à la boutique l’image des jeux récents', async () => {
+    const image = 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/42/abc.jpg';
+    vi.stubGlobal('fetch', async (input: string | URL) =>
+      String(input).includes('appdetails')
+        ? new Response(JSON.stringify({ 42: { data: { header_image: image } } }))
+        : new Response(null, { status: 404 }),
+    );
+    expect(await steamImages(42)).toEqual({ coverUrl: image, headerUrl: image });
+
+    vi.stubGlobal('fetch', async () => new Response(null, { status: 200 }));
+    expect((await steamImages(42)).headerUrl).toContain('/42/header.jpg');
+  });
+
+  it('accepte un texte hors de l’alphabet latin', async () => {
+    const game = await upsertGame({
+      platform: 'STEAM',
+      platformGameId: `${PREFIX}-${Math.random()}`,
+      name: `${PREFIX} ゲーム 🎮`,
+    });
+    await saveAchievements(game.id, [
+      {
+        platformAchievementId: '0',
+        name: 'Достижение �',
+        description: '成就',
+        hidden: false,
+        trophyType: 'ACHIEVEMENT',
+      },
+    ]);
+    const saved = await db.achievement.findFirstOrThrow({ where: { gameId: game.id } });
+    expect(saved.name).toBe('Достижение �');
+  });
+
+  it('continue quand un seul jeu est illisible', async () => {
+    const appid = 999002;
+    const api = steamApi({
+      response: {
+        games: [
+          ...ownedGames.response.games,
+          { ...ownedGames.response.games[0], appid, name: `${PREFIX} cassé` },
+        ],
+      },
+    });
+    vi.stubGlobal('fetch', async (input: string | URL) =>
+      String(input).includes('GetSchemaForGame') && String(input).includes(`appid=${appid}`)
+        ? new Response('pas du json')
+        : api(input),
+    );
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const userId = await steamUser();
+
+    await runSync({ userId, provider: 'STEAM' });
+
+    const account = await db.linkedAccount.findFirstOrThrow({ where: { userId } });
+    expect(account.syncStatus).toBe('COMPLETED');
+    expect(await db.userGame.count({ where: { userId } })).toBe(1);
+    expect(error).toHaveBeenCalledOnce();
+    error.mockRestore();
+  });
+
+  it('n’émet plus de progression après un échec', async () => {
+    vi.stubGlobal('fetch', async (input: string | URL) =>
+      String(input).includes('GetOwnedGames')
+        ? new Response(
+            JSON.stringify({
+              response: {
+                games: Array.from({ length: 12 }, (_, i) => ({
+                  ...ownedGames.response.games[0],
+                  appid: 999100 + i,
+                })),
+              },
+            }),
+          )
+        : new Response(null, { status: 403 }),
+    );
+    const userId = await steamUser();
+    const events: SyncEvent[] = [];
+    const stop = onSync(userId, (event) => events.push(event));
+
+    await runSync({ userId, provider: 'STEAM' });
+    stop();
+
+    expect(events.at(-1)?.status).toBe('FAILED');
+    expect(events.filter((e) => e.processed > 0)).toEqual([]);
   });
 
   it('explique clairement un profil privé', async () => {

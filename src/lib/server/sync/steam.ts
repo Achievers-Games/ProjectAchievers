@@ -6,6 +6,7 @@ import type { ProviderSync } from './types';
 
 const API = 'https://api.steampowered.com';
 const CDN = 'https://cdn.cloudflare.steamstatic.com/steam/apps';
+const STORE = 'https://store.steampowered.com/api/appdetails';
 const SCHEMA_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
 const CONCURRENCY = 4;
 
@@ -49,6 +50,32 @@ export async function fetchOwnedGames(steamId: string): Promise<OwnedGame[]> {
     );
   }
   return data.response.games;
+}
+
+/**
+ * Les jeux récents n'ont plus d'image à l'adresse classique : seule la boutique
+ * connaît leur adresse, qui contient une empreinte propre à chaque jeu.
+ */
+export async function steamImages(appId: string | number) {
+  const classic = {
+    coverUrl: `${CDN}/${appId}/library_600x900.jpg`,
+    headerUrl: `${CDN}/${appId}/header.jpg`,
+  };
+  try {
+    const signal = AbortSignal.timeout(10_000);
+    const head = await fetch(classic.headerUrl, { method: 'HEAD', signal });
+    if (head.status !== 404) return classic;
+
+    const response = await fetchRetry(`${STORE}?appids=${appId}&filters=basic`);
+    const data = (await response.json()) as Record<
+      string,
+      { data?: { header_image?: string } } | undefined
+    >;
+    const image = data[appId]?.data?.header_image;
+    return image ? { coverUrl: image, headerUrl: image } : classic;
+  } catch {
+    return classic;
+  }
 }
 
 export const mapSchema = (
@@ -131,6 +158,7 @@ export const syncSteam: ProviderSync = async ({ userId, account, report, onUnloc
 
   let processed = 0;
   let achievements = 0;
+  let failed = 0;
 
   await mapLimit(owned, CONCURRENCY, async (owned_game) => {
     const appId = String(owned_game.appid);
@@ -143,33 +171,42 @@ export const syncSteam: ProviderSync = async ({ userId, account, report, onUnloc
     const unchanged = lastPlayed.has(appId) && known?.getTime() === playedAt?.getTime();
 
     if (!unchanged) {
-      const game = await upsertGame({
-        platform: 'STEAM',
-        platformGameId: appId,
-        name: owned_game.name,
-        coverUrl: `${CDN}/${appId}/library_600x900.jpg`,
-        headerUrl: `${CDN}/${appId}/header.jpg`,
-      });
+      try {
+        const game = await upsertGame({
+          platform: 'STEAM',
+          platformGameId: appId,
+          name: owned_game.name,
+          ...(await steamImages(appId)),
+        });
 
-      const stale =
-        !game.schemaSyncedAt || Date.now() - game.schemaSyncedAt.getTime() > SCHEMA_MAX_AGE;
-      if (stale) {
-        const schema = await fetchSchema(owned_game.appid);
-        if (schema) await saveAchievements(game.id, schema);
+        const stale =
+          !game.schemaSyncedAt || Date.now() - game.schemaSyncedAt.getTime() > SCHEMA_MAX_AGE;
+        if (stale) {
+          const schema = await fetchSchema(owned_game.appid);
+          if (schema) await saveAchievements(game.id, schema);
+        }
+
+        const unlocks = await fetchUnlocks(steamId, owned_game.appid);
+        const gained = await saveProgress(userId, game.id, unlocks, {
+          playtimeMinutes: owned_game.playtime_forever ?? 0,
+          lastPlayedAt: playedAt,
+        });
+        achievements += gained;
+        if (gained > 0) onUnlocked(game, gained);
+      } catch (error) {
+        if (error instanceof SyncError) throw error;
+        // Un jeu illisible ne coûte pas toute la bibliothèque : il sera repris au prochain passage.
+        console.error(`Synchronisation Steam du jeu ${appId} :`, error);
+        failed += 1;
       }
-
-      const unlocks = await fetchUnlocks(steamId, owned_game.appid);
-      const gained = await saveProgress(userId, game.id, unlocks, {
-        playtimeMinutes: owned_game.playtime_forever ?? 0,
-        lastPlayedAt: playedAt,
-      });
-      achievements += gained;
-      if (gained > 0) onUnlocked(game, gained);
     }
 
     processed += 1;
     report(processed, owned.length, owned_game.name);
   });
 
-  return { games: processed, achievements };
+  if (failed > 0 && failed === owned.length) {
+    throw new Error('Aucun jeu Steam n’a pu être synchronisé');
+  }
+  return { games: processed - failed, achievements };
 };

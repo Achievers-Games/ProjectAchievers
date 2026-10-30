@@ -10,6 +10,8 @@ const pg = new EmbeddedPostgres({
   password: 'achievers',
   port: 5433,
   persistent: true,
+  // Sans cela, Windows impose WIN1252 et refuse les noms de jeux en caractères non latins.
+  initdbFlags: ['--encoding=UTF8', '--locale=C'],
   onLog: () => {},
 });
 

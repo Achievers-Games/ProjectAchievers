@@ -10,20 +10,35 @@ export class SyncError extends Error {
   }
 }
 
-/** Exécute `task` sur chaque élément, avec au plus `limit` tâches simultanées. */
+/**
+ * Exécute `task` sur chaque élément, avec au plus `limit` tâches simultanées.
+ *
+ * Une erreur arrête la distribution, et les tâches en cours sont attendues avant de
+ * la relancer : aucune ne doit publier de progression après l'échec.
+ */
 export async function mapLimit<T>(
   items: T[],
   limit: number,
   task: (item: T, index: number) => Promise<void>,
 ) {
   let next = 0;
+  let stopped = false;
   const worker = async () => {
-    while (next < items.length) {
+    while (!stopped && next < items.length) {
       const index = next++;
-      await task(items[index] as T, index);
+      try {
+        await task(items[index] as T, index);
+      } catch (error) {
+        stopped = true;
+        throw error;
+      }
     }
   };
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  const results = await Promise.allSettled(
+    Array.from({ length: Math.min(limit, items.length) }, worker),
+  );
+  const failure = results.find((r): r is PromiseRejectedResult => r.status === 'rejected');
+  if (failure) throw failure.reason;
 }
 
 /** `fetch` avec nouvelles tentatives sur 429 et 5xx, en respectant `Retry-After`. */

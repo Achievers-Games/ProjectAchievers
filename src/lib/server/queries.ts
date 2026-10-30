@@ -17,12 +17,15 @@ export async function listGames(filters: GameFilters, viewerId: string | null) {
     ...(filters.platform && { platform: filters.platform }),
     ...(filters.ownerId && { players: { some: { userId: filters.ownerId } } }),
   };
-  const orderBy: Prisma.GameOrderByWithRelationInput =
+  // L'identifiant départage les égalités : sans lui, un jeu pourrait passer d'une page à l'autre.
+  const orderBy: Prisma.GameOrderByWithRelationInput[] = [
     filters.sort === 'succes'
       ? { totalAchievements: 'desc' }
       : filters.sort === 'recent'
         ? { updatedAt: 'desc' }
-        : { name: 'asc' };
+        : { name: 'asc' },
+    { id: 'asc' },
+  ];
 
   const select = {
     id: true,
@@ -39,7 +42,7 @@ export async function listGames(filters: GameFilters, viewerId: string | null) {
     const [rows, total] = await Promise.all([
       db.userGame.findMany({
         where: { userId: filters.ownerId, game: where },
-        orderBy: [{ completion: 'desc' }, { lastUnlockedAt: 'desc' }],
+        orderBy: [{ completion: 'desc' }, { lastUnlockedAt: 'desc' }, { gameId: 'asc' }],
         take: PAGE_SIZE,
         skip: (filters.page - 1) * PAGE_SIZE,
         select: { game: { select } },

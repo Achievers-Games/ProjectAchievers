@@ -1,4 +1,9 @@
+import 'dotenv/config';
 import { defineConfig, devices } from '@playwright/test';
+
+const baseURL = 'http://localhost:5174';
+const database = new URL(process.env.DATABASE_URL ?? '');
+database.pathname = '/achievers_e2e';
 
 export default defineConfig({
   testDir: './e2e',
@@ -7,14 +12,15 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? 'github' : 'list',
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL,
     trace: 'on-first-retry',
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:5173',
-    reuseExistingServer: !process.env.CI,
+    command: 'npm run dev -- --port 5174 --strictPort',
+    url: baseURL,
+    reuseExistingServer: false,
     timeout: 60_000,
+    env: { DATABASE_URL: database.href, ORIGIN: baseURL, DEV_LOGIN: '1' },
   },
 });

@@ -105,6 +105,21 @@ async function main() {
       });
     }
   }
+
+  // Assez de jeux pour remplir plusieurs pages de la liste.
+  for (let i = 1; i <= 50; i++) {
+    const name = `Jeu de démonstration ${i}`;
+    await db.game.upsert({
+      where: { platform_platformGameId: { platform: 'STEAM', platformGameId: `demo-${i}` } },
+      update: {},
+      create: {
+        platform: 'STEAM',
+        platformGameId: `demo-${i}`,
+        name,
+        slug: `jeu-de-demonstration-${i}`,
+      },
+    });
+  }
 }
 
 await main();

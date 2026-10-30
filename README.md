@@ -26,13 +26,11 @@ Dans un second terminal :
 
 ```bash
 npx prisma migrate deploy
-npm run db:seed
 npm run dev
 ```
 
 `npm run dev:db` lance un PostgreSQL local sans Docker, sur le port 5433. Le site est sur
-<http://localhost:5173>, avec une connexion de démonstration sur `/connexion`. Elle n'existe qu'en
-développement.
+<http://localhost:5173>.
 
 ## Vérifier
 
@@ -43,7 +41,9 @@ npm test
 npm run test:e2e
 ```
 
-Les tests d'intégration ont besoin de Postgres. Arrête `npm run dev` pendant `npm test` : un serveur
+`npm run test:e2e` recrée une base séparée, `achievers_e2e`, avec les données de démonstration : ta
+base de développement ne contient que de vraies données. Les tests d'intégration ont besoin de
+Postgres. Arrête `npm run dev` pendant `npm test` : un serveur
 de développement partage la file de tâches et prendrait les tâches des tests.
 
 ## Comptes de jeu
