@@ -134,8 +134,8 @@ test.describe('membre', () => {
     await login(page);
     await page.goto('/u/demo');
     const showcase = page.getByRole('region', { name: 'Vitrine' });
-    await expect(showcase.locator('[data-tier="platine"]').first()).toBeVisible();
-    await expect(showcase.locator('[data-tier="complet"]').first()).toBeVisible();
+    // Le jeu à 100 % et le jeu platiné donnent la même carte.
+    await expect(showcase.locator('a[data-complete]')).toHaveCount(2);
 
     const reward = {
       game: {
@@ -166,9 +166,27 @@ test.describe('membre', () => {
     const dialog = page.getByRole('dialog', { name: 'Nouvelle carte' });
     await expect(dialog.getByText('Carte 100 % obtenue !')).toBeVisible();
     await dialog.getByRole('button', { name: 'Carte suivante (1)' }).click();
-    await expect(dialog.getByText('Carte Platine obtenue !')).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'Super !' })).toBeVisible();
     await dialog.getByRole('button', { name: 'Super !' }).click();
     await expect(dialog).toBeHidden();
+  });
+
+  test('filtre les jeux pas encore à 100 %, les plus avancés en tête', async ({ page }) => {
+    await login(page);
+    await page.goto('/jeux');
+    await page.getByRole('link', { name: 'Non 100 %' }).click();
+    await expect(page).toHaveURL(/filtre=restants/);
+    await expect(page).toHaveURL(/tri=progression/);
+    await expect(page.getByLabel('Trier')).toHaveValue('progression');
+
+    const main = page.locator('main');
+    await expect(main.getByRole('link', { name: /Elden Ring/ })).toBeVisible();
+    await expect(main.getByRole('link', { name: /Hades/ })).toHaveCount(0);
+    await expect(main.locator('a[data-complete]')).toHaveCount(0);
+    const percents = await main
+      .getByRole('progressbar')
+      .evaluateAll((bars) => bars.map((bar) => Number(bar.getAttribute('aria-valuenow'))));
+    expect(percents).toEqual([...percents].sort((a, b) => b - a));
   });
 
   test('voit les quatre comptes et son export', async ({ page }) => {

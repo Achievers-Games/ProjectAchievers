@@ -1,7 +1,6 @@
 <script lang="ts">
   import GameCard from './GameCard.svelte';
   import { rewards } from '$lib/stores/sync';
-  import { tierOf } from '$lib/tiers';
 
   const REVEAL_DELAY = 650;
   const PARTICLES = 32;
@@ -10,7 +9,6 @@
   let revealed = $state(false);
 
   const current = $derived($rewards[0]);
-  const tier = $derived(tierOf(current?.progress));
   const remaining = $derived($rewards.length - 1);
 
   const particles = Array.from({ length: PARTICLES }, (_, index) => ({
@@ -42,10 +40,8 @@
   class="reward-dialog"
 >
   {#if current}
-    <div class="reward-stage" data-tier={tier} class:revealed>
-      <p class="reward-title">
-        {tier === 'platine' ? 'Carte Platine obtenue !' : 'Carte 100 % obtenue !'}
-      </p>
+    <div class="reward-stage" class:revealed>
+      <p class="reward-title">Carte 100 % obtenue !</p>
 
       <div class="reward-scene">
         {#if revealed}

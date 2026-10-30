@@ -4,7 +4,7 @@ import { db } from '../db';
 import { env } from '../env';
 import { availableProviders } from '../providers';
 import { RARE_CARD } from '../queries';
-import { tierOf, type Reward } from '$lib/tiers';
+import type { Reward } from '$lib/collection';
 import { SyncError } from './errors';
 import { publishSync, publishUnlock } from './events';
 import { syncPsn } from './psn';
@@ -82,12 +82,9 @@ async function rareCards(userId: string) {
   );
 }
 
-/** Cartes apparues ou montées en rareté depuis `before`, les plus rares d'abord. */
+/** Cartes apparues depuis `before`. */
 function newRewards(before: Map<string, Reward>, after: Map<string, Reward>) {
-  return [...after]
-    .filter(([id, card]) => tierOf(before.get(id)?.progress) !== tierOf(card.progress))
-    .map(([, card]) => card)
-    .sort((a, b) => Number(b.progress.platinum) - Number(a.progress.platinum));
+  return [...after].filter(([id]) => !before.has(id)).map(([, card]) => card);
 }
 
 export async function runSync({ userId, provider }: SyncJob) {

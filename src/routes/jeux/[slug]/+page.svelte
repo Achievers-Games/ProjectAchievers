@@ -1,16 +1,16 @@
 <script lang="ts">
   import { Lock } from '@lucide/svelte';
+  import CompleteBadge from '$lib/components/CompleteBadge.svelte';
   import Progress from '$lib/components/Progress.svelte';
-  import TierBadge from '$lib/components/TierBadge.svelte';
   import TrophyBadge from '$lib/components/TrophyBadge.svelte';
   import { tilt } from '$lib/actions/tilt';
   import { formatDate, PLATFORM_LABELS, plural } from '$lib/labels';
-  import { tierOf } from '$lib/tiers';
+  import { isComplete } from '$lib/collection';
 
   let { data } = $props();
 
   type Filter = 'tous' | 'obtenus' | 'restants';
-  const tier = $derived(tierOf(data.progress));
+  const complete = $derived(isComplete(data.progress));
   let filter = $state<Filter>('tous');
   let sort = $state<'rarete' | 'nom'>('rarete');
 
@@ -51,13 +51,13 @@
     {#if data.game.headerUrl}
       <div
         use:tilt
-        data-tier={tier}
+        data-complete={complete || undefined}
         class="game-card relative w-full shrink-0 self-start overflow-hidden rounded-md sm:w-72"
       >
         <img src={data.game.headerUrl} alt="" class="w-full" />
-        {#if tier}
+        {#if complete}
           <span class="foil" aria-hidden="true"></span>
-          <span class="absolute right-2 top-2"><TierBadge {tier} /></span>
+          <span class="absolute right-2 top-2"><CompleteBadge /></span>
         {/if}
       </div>
     {/if}
@@ -73,7 +73,7 @@
       </p>
       {#if data.progress}
         <div class="max-w-sm space-y-1 pt-2">
-          <Progress value={data.progress.completion} {tier} />
+          <Progress value={data.progress.completion} {complete} />
           <p class="tabular text-sm text-muted">
             {data.progress.unlockedCount} / {data.progress.totalCount} · {Math.round(
               data.progress.completion,

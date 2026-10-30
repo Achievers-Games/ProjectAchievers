@@ -1,11 +1,9 @@
 <script lang="ts">
-  import type { Tier } from '$lib/tiers';
-
   let {
     value,
     label = 'Progression',
-    tier = null,
-  }: { value: number; label?: string; tier?: Tier | null } = $props();
+    complete = false,
+  }: { value: number; label?: string; complete?: boolean } = $props();
   const percent = $derived(Math.min(100, Math.max(0, value)));
 </script>
 
@@ -17,5 +15,9 @@
   aria-valuemax={100}
   aria-valuenow={Math.round(percent)}
 >
-  <div class="progress-fill h-full rounded-full" data-tier={tier} style:width="{percent}%"></div>
+  <div
+    class="progress-fill h-full rounded-full"
+    data-complete={complete || undefined}
+    style:width="{percent}%"
+  ></div>
 </div>

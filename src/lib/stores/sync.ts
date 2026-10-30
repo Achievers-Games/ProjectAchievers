@@ -1,6 +1,6 @@
 import { writable } from 'svelte/store';
 import type { Provider, SyncStatus } from '@prisma/client';
-import type { Reward } from '$lib/tiers';
+import type { Reward } from '$lib/collection';
 
 export interface SyncProgress {
   provider: Provider;

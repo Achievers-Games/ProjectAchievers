@@ -9,13 +9,23 @@ interface GameFilters {
   sort: 'nom' | 'recent' | 'progression' | 'succes';
   page: number;
   ownerId?: string;
+  /** Avec `ownerId` : seulement les jeux à succès qui ne sont pas encore à 100 %. */
+  unfinished?: boolean;
 }
 
 export async function listGames(filters: GameFilters, viewerId: string | null) {
   const where: Prisma.GameWhereInput = {
     ...(filters.q && { name: { contains: filters.q, mode: 'insensitive' } }),
     ...(filters.platform && { platform: filters.platform }),
-    ...(filters.ownerId && { players: { some: { userId: filters.ownerId } } }),
+    ...(filters.ownerId && {
+      players: {
+        some: {
+          userId: filters.ownerId,
+          ...(filters.unfinished && { completion: { lt: 100 }, platinum: false }),
+        },
+      },
+    }),
+    ...(filters.unfinished && { totalAchievements: { gt: 0 } }),
   };
   // L'identifiant départage les égalités : sans lui, un jeu pourrait passer d'une page à l'autre.
   const orderBy: Prisma.GameOrderByWithRelationInput[] = [
@@ -42,7 +52,11 @@ export async function listGames(filters: GameFilters, viewerId: string | null) {
     const [rows, total] = await Promise.all([
       db.userGame.findMany({
         where: { userId: filters.ownerId, game: where },
-        orderBy: [{ completion: 'desc' }, { lastUnlockedAt: 'desc' }, { gameId: 'asc' }],
+        orderBy: [
+          { completion: 'desc' },
+          { lastUnlockedAt: { sort: 'desc', nulls: 'last' } },
+          { gameId: 'asc' },
+        ],
         take: PAGE_SIZE,
         skip: (filters.page - 1) * PAGE_SIZE,
         select: { game: { select } },
@@ -102,7 +116,7 @@ const profileGameSelect = {
   },
 } satisfies Prisma.UserGameSelect;
 
-/** Les cartes de collection : 100 % ou trophée platine. */
+/** Les jeux terminés : 100 % des succès ou trophée platine, c'est la même carte. */
 export const RARE_CARD = {
   OR: [{ platinum: true }, { completion: { gte: 100 } }],
 } satisfies Prisma.UserGameWhereInput;
@@ -127,10 +141,9 @@ export async function dashboard(userId: string) {
 }
 
 export async function userStats(userId: string) {
-  const [games, perfect, platinums, totals] = await Promise.all([
+  const [games, completed, totals] = await Promise.all([
     db.userGame.count({ where: { userId } }),
-    db.userGame.count({ where: { userId, platinum: false, completion: { gte: 100 } } }),
-    db.userGame.count({ where: { userId, platinum: true } }),
+    db.userGame.count({ where: { userId, ...RARE_CARD } }),
     db.$queryRaw<{ unlocked: bigint; points: bigint | null }[]>`
       SELECT count(*) AS unlocked, sum(a.points) AS points
       FROM "UserAchievement" ua
@@ -139,8 +152,7 @@ export async function userStats(userId: string) {
   ]);
   return {
     games,
-    perfect,
-    platinums,
+    completed,
     unlocked: Number(totals[0]?.unlocked ?? 0),
     points: Number(totals[0]?.points ?? 0),
   };
@@ -168,7 +180,7 @@ export async function userProfile(handle: string, viewerId: string | null) {
     userStats(user.id),
     db.userGame.findMany({
       where: { userId: user.id, ...RARE_CARD },
-      orderBy: [{ platinum: 'desc' }, { lastUnlockedAt: { sort: 'desc', nulls: 'last' } }],
+      orderBy: [{ lastUnlockedAt: { sort: 'desc', nulls: 'last' } }],
       take: 8,
       select: profileGameSelect,
     }),

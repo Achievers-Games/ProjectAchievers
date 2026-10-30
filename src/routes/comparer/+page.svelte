@@ -8,8 +8,7 @@
 
   const rows = $derived([
     { label: 'Succès', left: data.leftStats.unlocked, right: data.rightStats.unlocked },
-    { label: 'Cartes 100 %', left: data.leftStats.perfect, right: data.rightStats.perfect },
-    { label: 'Cartes Platine', left: data.leftStats.platinums, right: data.rightStats.platinums },
+    { label: 'Cartes 100 %', left: data.leftStats.completed, right: data.rightStats.completed },
     { label: 'Points', left: data.leftStats.points, right: data.rightStats.points },
   ]);
 </script>

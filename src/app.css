@@ -124,12 +124,6 @@
 
 /* ── Collection ─────────────────────────────────────────────────────── */
 
-@property --foil-angle {
-  syntax: '<angle>';
-  inherits: false;
-  initial-value: 0deg;
-}
-
 .hero-title {
   @apply text-4xl font-extrabold sm:text-5xl;
   background: linear-gradient(
@@ -146,38 +140,27 @@
 .stat-value {
   @apply text-2xl font-bold;
 }
-.stat-value[data-tier='complet'] {
+.stat-value[data-complete] {
   @apply text-gold;
 }
-.stat-value[data-tier='platine'] {
-  @apply text-platinum;
-}
-
 .progress-fill {
   background-image: linear-gradient(90deg, rgb(var(--accent)), rgb(var(--accent-2)));
   transition: width 400ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-.progress-fill[data-tier='complet'] {
+.progress-fill[data-complete] {
   background-image: linear-gradient(90deg, #b8860b, #ffe08a, #d9a520);
 }
-.progress-fill[data-tier='platine'] {
-  background-image: linear-gradient(90deg, #7dd3fc, #c4b5fd, #f9a8d4, #86efac);
-}
-
-.tier-badge {
-  @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold;
+.complete-badge {
+  @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-extrabold;
   white-space: nowrap;
-  box-shadow: 0 2px 8px rgb(0 0 0 / 0.4);
+  box-shadow:
+    0 2px 10px rgb(0 0 0 / 0.5),
+    0 0 12px rgb(247 196 72 / 0.7);
 }
-.tier-badge[data-tier='complet'] {
+.complete-badge {
   color: #3d2a00;
   background: linear-gradient(120deg, #ffe08a, #e0ac28, #fff1bf);
 }
-.tier-badge[data-tier='platine'] {
-  color: #17132e;
-  background: linear-gradient(120deg, #a5f3fc, #c4b5fd, #fbcfe8, #bbf7d0);
-}
-
 .game-card {
   --rx: 0deg;
   --ry: 0deg;
@@ -196,79 +179,84 @@
   box-shadow: 0 10px 26px rgb(0 0 0 / 0.35);
 }
 
-.game-card[data-tier] {
-  border: 2px solid transparent;
+.game-card[data-complete] {
+  border: 3px solid transparent;
   background:
-    linear-gradient(rgb(var(--surface)), rgb(var(--surface))) padding-box,
+    linear-gradient(160deg, rgb(92 66 12), rgb(38 28 8)) padding-box,
     var(--frame) border-box;
   transform: perspective(700px) rotateX(var(--rx)) rotateY(var(--ry));
 }
-.game-card[data-tier]:hover {
+.game-card[data-complete]:hover {
   transform: perspective(700px) rotateX(var(--rx)) rotateY(var(--ry)) scale(1.03);
   border-color: transparent;
   z-index: 1;
 }
 
-.game-card[data-tier='complet'] {
+.game-card[data-complete] {
   --frame: linear-gradient(135deg, #fff1bf, #d9a520 30%, #fff6d5 50%, #b8860b 75%, #ffe08a);
-  box-shadow: 0 0 14px rgb(247 196 72 / 0.28);
+  box-shadow:
+    0 0 0 1px rgb(247 196 72 / 0.35),
+    0 0 26px rgb(247 196 72 / 0.5);
 }
-.game-card[data-tier='complet']:hover {
-  box-shadow: 0 0 30px rgb(247 196 72 / 0.55);
+.game-card[data-complete]:hover {
+  box-shadow:
+    0 0 0 1px rgb(247 196 72 / 0.6),
+    0 0 44px rgb(247 196 72 / 0.8);
+}
+.game-card[data-complete] h3 {
+  color: #ffe08a;
+  font-weight: 700;
+}
+.game-card[data-complete] p {
+  color: rgb(255 236 180 / 0.8);
 }
 
-.game-card[data-tier='platine'] {
-  --frame: conic-gradient(
-    from var(--foil-angle),
-    #7dd3fc,
-    #c4b5fd,
-    #f9a8d4,
-    #fde68a,
-    #86efac,
-    #7dd3fc
-  );
-  box-shadow: 0 0 20px rgb(170 180 255 / 0.4);
-  animation: foil-spin 5s linear infinite;
+/* Les jeux en cours s'effacent un peu : les cartes dorées ressortent dans une liste. */
+.game-card[data-owned]:not([data-complete]) img {
+  filter: saturate(0.55) brightness(0.72);
+  transition: filter 180ms;
 }
-.game-card[data-tier='platine']:hover {
-  box-shadow:
-    0 0 34px rgb(170 180 255 / 0.65),
-    0 0 60px rgb(249 168 212 / 0.3);
+.game-card[data-owned]:not([data-complete]):hover img {
+  filter: none;
 }
 
 .foil {
   position: absolute;
   inset: 0;
+  overflow: hidden;
   pointer-events: none;
   mix-blend-mode: color-dodge;
 }
-[data-tier='complet'] > div > .foil,
-[data-tier='complet'] > .foil {
+/* Reflet qui balaie la carte en continu, même sans la survoler. */
+.foil::before {
+  content: '';
+  position: absolute;
+  inset: -20% auto -20% 0;
+  width: 45%;
+  background: linear-gradient(
+    105deg,
+    transparent,
+    rgb(255 225 150 / 0.9) 45%,
+    rgb(255 255 240) 50%,
+    rgb(255 225 150 / 0.9) 55%,
+    transparent
+  );
+  animation: foil-sweep 3.4s ease-in-out infinite;
+}
+[data-complete] > div > .foil,
+[data-complete] > .foil {
   opacity: 0.5;
   background: linear-gradient(
     115deg,
-    transparent 30%,
+    transparent calc(var(--mx) - 26%),
     rgb(255 220 130 / 0.75) calc(var(--mx) - 6%),
     rgb(255 250 225 / 0.95) var(--mx),
     rgb(255 220 130 / 0.75) calc(var(--mx) + 6%),
-    transparent 75%
+    transparent calc(var(--mx) + 26%)
   );
 }
-[data-tier='platine'] > div > .foil,
-[data-tier='platine'] > .foil {
-  opacity: 0.75;
-  background:
-    radial-gradient(circle at var(--mx) var(--my), rgb(255 255 255 / 0.65), transparent 42%),
-    repeating-linear-gradient(
-      calc(110deg + var(--ry) * 4),
-      rgb(125 211 252 / 0.5) 0 8%,
-      rgb(196 181 253 / 0.5) 8% 16%,
-      rgb(249 168 212 / 0.5) 16% 24%,
-      rgb(134 239 172 / 0.5) 24% 32%
-    );
-}
-[data-tier='platine'] > div > .foil::after,
-[data-tier='platine'] > .foil::after {
+[data-complete] > div > .foil::after,
+[data-complete] > .foil::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -280,9 +268,13 @@
   animation: twinkle 2.2s ease-in-out infinite;
 }
 
-@keyframes foil-spin {
+@keyframes foil-sweep {
+  from {
+    transform: translateX(-130%);
+  }
+  55%,
   to {
-    --foil-angle: 360deg;
+    transform: translateX(260%);
   }
 }
 @keyframes twinkle {
@@ -317,11 +309,8 @@
 .reward-stage.revealed .reward-title {
   opacity: 1;
 }
-.reward-stage[data-tier='complet'] .reward-title {
+.reward-stage[data-complete] .reward-title {
   @apply text-gold;
-}
-.reward-stage[data-tier='platine'] .reward-title {
-  @apply text-platinum;
 }
 .reward-scene {
   position: relative;
@@ -368,13 +357,6 @@
 .reward-burst span:nth-child(3n) {
   background: #fff;
 }
-.reward-stage[data-tier='platine'] .reward-burst span:nth-child(3n + 1) {
-  background: #7dd3fc;
-}
-.reward-stage[data-tier='platine'] .reward-burst span:nth-child(3n + 2) {
-  background: #f9a8d4;
-}
-
 @keyframes reward-arrive {
   from {
     opacity: 0;
@@ -408,8 +390,15 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
-  .game-card[data-tier],
-  .game-card[data-tier]:hover {
+  .game-card[data-complete],
+  .game-card[data-complete]:hover {
     transform: none;
+  }
+  .foil::before,
+  .foil::after {
+    animation: none !important;
+  }
+  .foil::before {
+    display: none;
   }
 }

@@ -66,12 +66,16 @@
   });
 
   onNavigate((navigation) => {
-    if (!document.startViewTransition) return;
+    // Le retour arrière n'attend pas : une transition en cours pourrait le bloquer.
+    if (!document.startViewTransition || navigation.type === 'popstate') return;
     return new Promise((resolve) => {
-      document.startViewTransition(async () => {
+      const transition = document.startViewTransition(async () => {
         resolve();
-        await navigation.complete;
+        await navigation.complete.catch(() => {});
       });
+      // Une navigation plus récente annule la transition : ce n'est pas une erreur.
+      transition.ready.catch(() => {});
+      transition.finished.catch(() => {});
     });
   });
 </script>

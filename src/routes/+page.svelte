@@ -9,10 +9,10 @@
   const stats = $derived(
     data.home
       ? [
-          { label: 'Jeux', value: data.home.stats.games, tier: null },
-          { label: 'Succès', value: data.home.stats.unlocked, tier: null },
-          { label: 'Cartes 100 %', value: data.home.stats.perfect, tier: 'complet' },
-          { label: 'Cartes Platine', value: data.home.stats.platinums, tier: 'platine' },
+          { label: 'Jeux', value: data.home.stats.games },
+          { label: 'Succès', value: data.home.stats.unlocked },
+          { label: 'Cartes 100 %', value: data.home.stats.completed, gold: true },
+          { label: 'Points', value: data.home.stats.points },
         ]
       : [],
   );
@@ -34,7 +34,9 @@
       {#each stats as stat (stat.label)}
         <div class="p-4">
           <dt class="label">{stat.label}</dt>
-          <dd class="stat-value tabular mt-1" data-tier={stat.tier}>{formatNumber(stat.value)}</dd>
+          <dd class="stat-value tabular mt-1" data-complete={stat.gold}>
+            {formatNumber(stat.value)}
+          </dd>
         </div>
       {/each}
     </dl>
@@ -67,7 +69,7 @@
       <h1 class="hero-title">Collectionne tes jeux terminés.</h1>
       <p class="text-muted">
         Connecte tes comptes : ta progression Steam, PlayStation et Xbox se synchronise toute seule.
-        Chaque jeu à 100 % devient une carte en or, chaque platine une carte holographique.
+        Chaque jeu terminé à 100 % devient une carte en or à collectionner.
       </p>
       <div class="flex flex-wrap items-center gap-3">
         <a href="/connexion" class="btn btn-primary">Commencer</a>

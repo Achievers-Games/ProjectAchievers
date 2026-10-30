@@ -7,24 +7,33 @@ const query = z.object({
   tri: z.enum(['nom', 'recent', 'progression', 'succes']).catch('nom'),
   page: z.coerce.number().int().min(1).max(10_000).catch(1),
   vue: z.enum(['grille', 'liste']).catch('grille'),
-  miens: z.literal('1').optional().catch(undefined),
+  filtre: z.enum(['miens', 'restants']).optional().catch(undefined),
 });
 
 /** Lecture commune à la page Jeux et au chargement au défilement. */
 export async function gamesFromUrl(url: URL, user: App.Locals['user']) {
   const params = query.parse(Object.fromEntries(url.searchParams));
-  const mine = Boolean(params.miens && user);
+  const mine = Boolean(params.filtre && user);
+  const unfinished = mine && params.filtre === 'restants';
+  // La progression n'existe que pour les jeux du joueur.
+  const tri = params.tri === 'progression' && !mine ? 'nom' : params.tri;
 
   const { games, total } = await listGames(
     {
       q: params.q || undefined,
       platform: params.plateforme,
-      sort: params.tri === 'progression' && !mine ? 'nom' : params.tri,
+      sort: tri,
       page: params.page,
       ownerId: mine ? user?.id : undefined,
+      unfinished,
     },
     user?.id ?? null,
   );
 
-  return { games, total, params: { ...params, mine }, pages: Math.ceil(total / PAGE_SIZE) };
+  return {
+    games,
+    total,
+    params: { ...params, tri, mine, filtre: mine ? params.filtre : undefined },
+    pages: Math.ceil(total / PAGE_SIZE),
+  };
 }

@@ -13,10 +13,10 @@
   const profile = $derived(data.profile);
   const isMe = $derived(data.user?.id === profile.user.id);
   const stats = $derived([
-    { label: 'Jeux', value: profile.stats.games, tier: null },
-    { label: 'Succès', value: profile.stats.unlocked, tier: null },
-    { label: 'Cartes 100 %', value: profile.stats.perfect, tier: 'complet' },
-    { label: 'Cartes Platine', value: profile.stats.platinums, tier: 'platine' },
+    { label: 'Jeux', value: profile.stats.games },
+    { label: 'Succès', value: profile.stats.unlocked },
+    { label: 'Cartes 100 %', value: profile.stats.completed, gold: true },
+    { label: 'Points', value: profile.stats.points },
   ]);
 
   async function share() {
@@ -29,8 +29,8 @@
   <title>{profile.user.displayName} — Project Achievers</title>
   <meta
     name="description"
-    content="{formatNumber(profile.stats.unlocked)} succès et {profile.stats.perfect +
-      profile.stats.platinums} cartes de collection."
+    content="{formatNumber(profile.stats.unlocked)} succès et {profile.stats
+      .completed} cartes de collection."
   />
   <meta property="og:title" content="{profile.user.displayName} sur Project Achievers" />
   <meta
@@ -79,7 +79,9 @@
     {#each stats as stat (stat.label)}
       <div class="p-4">
         <dt class="label">{stat.label}</dt>
-        <dd class="stat-value tabular mt-1" data-tier={stat.tier}>{formatNumber(stat.value)}</dd>
+        <dd class="stat-value tabular mt-1" data-complete={stat.gold}>
+          {formatNumber(stat.value)}
+        </dd>
       </div>
     {/each}
   </dl>

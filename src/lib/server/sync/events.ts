@@ -1,6 +1,6 @@
 import { EventEmitter } from 'node:events';
 import type { Provider, SyncStatus } from '@prisma/client';
-import type { Reward } from '$lib/tiers';
+import type { Reward } from '$lib/collection';
 
 export interface SyncEvent {
   provider: Provider;

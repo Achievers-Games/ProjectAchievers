@@ -105,6 +105,18 @@
     timer = setTimeout(() => apply({ q: value || null }), 200);
   }
 
+  const collections = [
+    { value: null, label: 'Tous' },
+    { value: 'miens', label: 'Mes jeux' },
+    { value: 'restants', label: 'Non 100 %' },
+  ];
+
+  /** « Non 100 % » sert à voir ce qui est presque fini : les plus avancés passent devant. */
+  function collectionHref(filtre: string | null) {
+    if (filtre === 'restants') return hrefWith({ filtre, tri: 'progression' });
+    return hrefWith({ filtre, tri: filtre ? data.params.tri : null });
+  }
+
   const platforms = [
     { value: null, label: 'Toutes' },
     { value: 'STEAM', label: 'Steam' },
@@ -147,14 +159,20 @@
     </div>
 
     {#if data.user}
-      <label class="flex items-center gap-2 text-sm">
-        <input
-          type="checkbox"
-          checked={data.params.mine}
-          onchange={(event) => apply({ miens: event.currentTarget.checked ? '1' : null })}
-        />
-        Mes jeux
-      </label>
+      <div class="flex rounded border border-line" role="group" aria-label="Collection">
+        {#each collections as item (item.label)}
+          <a
+            href={collectionHref(item.value)}
+            data-sveltekit-noscroll
+            aria-current={(data.params.filtre ?? null) === item.value ? 'true' : undefined}
+            class="px-3 py-1.5 text-sm transition-colors"
+            class:bg-raised={(data.params.filtre ?? null) === item.value}
+            class:text-muted={(data.params.filtre ?? null) !== item.value}
+          >
+            {item.label}
+          </a>
+        {/each}
+      </div>
     {/if}
 
     <div class="ml-auto flex items-center gap-2">
@@ -167,7 +185,7 @@
         <option value="nom">Nom</option>
         <option value="succes">Nombre de succès</option>
         <option value="recent">Mis à jour</option>
-        {#if data.params.mine}<option value="progression">Progression</option>{/if}
+        {#if data.params.mine}<option value="progression">Progression (%)</option>{/if}
       </select>
       <a
         href={hrefWith({ vue: data.params.vue === 'grille' ? 'liste' : null })}
