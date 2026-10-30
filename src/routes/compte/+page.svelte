@@ -2,6 +2,7 @@
   import { enhance } from '$app/forms';
   import type { SubmitFunction } from '@sveltejs/kit';
   import type { Provider, SyncStatus } from '@prisma/client';
+  import Avatar from '$lib/components/Avatar.svelte';
   import ProviderIcon from '$lib/components/ProviderIcon.svelte';
   import Progress from '$lib/components/Progress.svelte';
   import { formatRelative, plural, PROVIDER_LABELS } from '$lib/labels';
@@ -38,16 +39,26 @@
 
   const accounts = $derived(new Map(data.accounts.map((a) => [a.provider, a])));
   const hasPsnSlot = $derived(!accounts.has('PSN') && data.providers.PSN);
+  const avatars = $derived([
+    ...new Map(
+      data.accounts
+        .filter((a) => a.avatarUrl)
+        .map((a) => [a.avatarUrl, PROVIDER_LABELS[a.provider]]),
+    ),
+  ]);
 
-  const submit: SubmitFunction = () => {
-    return async ({ result, update }) => {
-      await update({ reset: result.type === 'success' });
-      if (result.type === 'failure')
-        toast(String(result.data?.error ?? 'Action impossible.'), 'error');
-      else if (result.type === 'success' && result.data?.success)
-        toast(String(result.data.success));
+  const submitWith =
+    (keepValues: boolean): SubmitFunction =>
+    () => {
+      return async ({ result, update }) => {
+        await update({ reset: !keepValues && result.type === 'success' });
+        if (result.type === 'failure')
+          toast(String(result.data?.error ?? 'Action impossible.'), 'error');
+        else if (result.type === 'success' && result.data?.success)
+          toast(String(result.data.success));
+      };
     };
-  };
+  const submit = submitWith(false);
 
   const applyTheme: SubmitFunction = ({ formData }) => {
     document.documentElement.dataset.theme = String(formData.get('theme'));
@@ -62,7 +73,8 @@
 
   {#if data.welcome}
     <p class="card px-3 py-2 text-sm">
-      Bienvenue ! Ta synchronisation démarre. Tu peux lier d'autres comptes ci-dessous.
+      Bienvenue ! Ta synchronisation démarre. Ton nom vient de ton compte : tu peux le changer
+      ci-dessous, et lier d'autres comptes.
     </p>
   {/if}
   {#if data.notice}
@@ -107,6 +119,74 @@
       </div>
     </section>
   {/if}
+
+  <section class="space-y-3">
+    <h2>Profil</h2>
+    <form
+      method="POST"
+      action="?/profile"
+      use:enhance={submitWith(true)}
+      class="card space-y-4 p-4"
+    >
+      <div class="space-y-1">
+        <label for="displayName" class="label block">Nom affiché</label>
+        <input
+          id="displayName"
+          name="displayName"
+          value={data.profile.displayName}
+          required
+          minlength="2"
+          maxlength="32"
+          autocomplete="off"
+          class="input max-w-xs"
+        />
+      </div>
+
+      <div class="space-y-1">
+        <label for="handle" class="label block">Identifiant</label>
+        <input
+          id="handle"
+          name="handle"
+          value={data.profile.handle}
+          required
+          minlength="3"
+          maxlength="24"
+          autocomplete="off"
+          spellcheck="false"
+          class="input max-w-xs"
+        />
+        <p class="text-xs text-muted">
+          Ton profil est à l'adresse /u/{data.profile.handle}. En le changeant, les anciens liens ne
+          fonctionneront plus.
+        </p>
+      </div>
+
+      <fieldset class="space-y-2">
+        <legend class="label">Avatar</legend>
+        <div class="flex flex-wrap gap-4">
+          {#each avatars as [url, label] (url)}
+            <label class="flex items-center gap-2 text-sm">
+              <input
+                type="radio"
+                name="avatarUrl"
+                value={url}
+                checked={data.profile.avatarUrl === url}
+              />
+              <Avatar name={data.profile.displayName} src={url} size={28} />
+              {label}
+            </label>
+          {/each}
+          <label class="flex items-center gap-2 text-sm">
+            <input type="radio" name="avatarUrl" value="" checked={!data.profile.avatarUrl} />
+            <Avatar name={data.profile.displayName} size={28} />
+            Initiale
+          </label>
+        </div>
+      </fieldset>
+
+      <button class="btn btn-primary">Enregistrer</button>
+    </form>
+  </section>
 
   <section class="space-y-3">
     <h2>Comptes liés</h2>

@@ -112,6 +112,32 @@ test.describe('membre', () => {
     expect(await response.text()).not.toContain('accessTokenEnc');
   });
 
+  test('change son nom affiché et voit les erreurs', async ({ page }) => {
+    await login(page);
+    await page.goto('/compte');
+    await ready(page);
+    const name = page.getByLabel('Nom affiché');
+    const original = await name.inputValue();
+    const save = page.getByRole('button', { name: 'Enregistrer' });
+
+    await name.fill('Nouveau nom');
+    await save.click();
+    await expect(page.getByText('Profil enregistré.')).toBeVisible();
+    await page.reload();
+    await expect(page.getByLabel('Nom affiché')).toHaveValue('Nouveau nom');
+
+    await ready(page);
+    await page.getByLabel('Identifiant').fill('a_b');
+    await save.click();
+    await expect(page.getByText('Ton identifiant doit faire')).toBeVisible();
+
+    await page.reload();
+    await ready(page);
+    await page.getByLabel('Nom affiché').fill(original);
+    await save.click();
+    await expect(page.getByText('Profil enregistré.')).toBeVisible();
+  });
+
   test('change de thème sans rechargement', async ({ page }) => {
     await login(page);
     await page.goto('/compte');

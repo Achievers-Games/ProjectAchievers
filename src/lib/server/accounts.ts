@@ -1,7 +1,57 @@
-import type { Provider } from '@prisma/client';
+import { Prisma, type Provider } from '@prisma/client';
+import { z } from 'zod';
 import { db } from './db';
 import { encrypt } from './crypto';
 import { slugify } from '$lib/slug';
+
+export const profileSchema = z.object({
+  displayName: z
+    .string()
+    .trim()
+    .min(2, 'Ton nom doit faire au moins 2 caractères.')
+    .max(32, 'Ton nom doit faire au plus 32 caractères.')
+    .regex(/^[^\p{C}]+$/u, 'Ton nom contient des caractères non autorisés.'),
+  handle: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .regex(
+      /^[a-z0-9](?:[a-z0-9-]{1,22})[a-z0-9]$/,
+      'Ton identifiant doit faire 3 à 24 caractères : lettres, chiffres et tirets.',
+    ),
+  avatarUrl: z.string(),
+});
+
+/** Le nom et l'identifiant restent ceux choisis ici : une reconnexion ne les écrase pas. */
+export async function updateProfile(
+  userId: string,
+  input: z.infer<typeof profileSchema>,
+): Promise<'handle_taken' | 'avatar_unknown' | null> {
+  // Seule l'image d'un compte lié est acceptée : aucune adresse libre n'atteint les profils publics.
+  if (input.avatarUrl) {
+    const owned = await db.linkedAccount.count({
+      where: { userId, avatarUrl: input.avatarUrl },
+    });
+    if (!owned) return 'avatar_unknown';
+  }
+
+  try {
+    await db.user.update({
+      where: { id: userId },
+      data: {
+        displayName: input.displayName,
+        handle: input.handle,
+        avatarUrl: input.avatarUrl || null,
+      },
+    });
+    return null;
+  } catch (cause) {
+    if (cause instanceof Prisma.PrismaClientKnownRequestError && cause.code === 'P2002') {
+      return 'handle_taken';
+    }
+    throw cause;
+  }
+}
 
 export interface Identity {
   provider: Provider;

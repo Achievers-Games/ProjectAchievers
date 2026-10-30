@@ -1,7 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { z } from 'zod';
 import type { Provider } from '@prisma/client';
-import { resolveIdentity } from '$lib/server/accounts';
+import { profileSchema, resolveIdentity, updateProfile } from '$lib/server/accounts';
 import { db } from '$lib/server/db';
 import { clearMerge, mergePreview, mergeUsers, readMerge, saveMerge } from '$lib/server/merge';
 import { availableProviders } from '$lib/server/providers';
@@ -20,6 +20,11 @@ const MERGE_ERRORS = {
   provider_conflict: 'Les deux profils ont un compte du même type. Dissocie-le avant de fusionner.',
 };
 
+const PROFILE_ERRORS = {
+  handle_taken: 'Cet identifiant est déjà pris.',
+  avatar_unknown: 'Cette image ne vient pas de tes comptes liés.',
+};
+
 const LOGIN_PROVIDERS: Provider[] = ['STEAM', 'DISCORD', 'XBOX', 'GOOGLE'];
 const PSN_CODE_LIFETIME = 30 * 60 * 1000;
 
@@ -33,7 +38,10 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
   const pendingMerge = readMerge(cookies, user.id);
 
   const [profile, accounts, sessions, psn, merge] = await Promise.all([
-    db.user.findUniqueOrThrow({ where: { id: user.id }, select: { isPublic: true } }),
+    db.user.findUniqueOrThrow({
+      where: { id: user.id },
+      select: { displayName: true, handle: true, avatarUrl: true, isPublic: true },
+    }),
     db.linkedAccount.findMany({
       where: { userId: user.id },
       select: {
@@ -75,6 +83,21 @@ const onlineId = z
 const providerSchema = z.enum(['STEAM', 'PSN', 'XBOX', 'DISCORD', 'GOOGLE']);
 
 export const actions: Actions = {
+  profile: async ({ request, locals }) => {
+    const user = requireUser(locals);
+    const form = await request.formData();
+    const parsed = profileSchema.safeParse({
+      displayName: form.get('displayName'),
+      handle: form.get('handle'),
+      avatarUrl: form.get('avatarUrl') ?? '',
+    });
+    if (!parsed.success) return fail(400, { error: parsed.error.issues[0]?.message });
+
+    const failure = await updateProfile(user.id, parsed.data);
+    if (failure) return fail(409, { error: PROFILE_ERRORS[failure] });
+    return { success: 'Profil enregistré.' };
+  },
+
   sync: async ({ request, locals }) => {
     const user = requireUser(locals);
     const provider = providerSchema.safeParse((await request.formData()).get('provider'));

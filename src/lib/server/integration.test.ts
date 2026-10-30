@@ -1,7 +1,7 @@
 // Tests sur un vrai PostgreSQL : `npm run dev:db` ou le service de la CI.
 import 'dotenv/config';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import { resolveIdentity, type Identity } from './accounts';
+import { profileSchema, resolveIdentity, updateProfile, type Identity } from './accounts';
 import { db } from './db';
 import { mergeUsers } from './merge';
 import { enqueueSync, runSync, startWorkers } from './sync/queue';
@@ -81,6 +81,72 @@ describe('rattachement des comptes', () => {
     });
     expect(row.accessTokenEnc).toBeTruthy();
     expect(row.accessTokenEnc).not.toContain('jeton-en-clair');
+  });
+});
+
+describe('modification du profil', () => {
+  const handle = () => `${PREFIX}-${Math.random().toString(36).slice(2, 8)}`;
+
+  async function profile(overrides: Partial<Identity> = {}) {
+    const created = await resolveIdentity(identity(overrides), null);
+    if (!created.ok) throw new Error('création attendue');
+    return created.userId;
+  }
+
+  it('garde le nom choisi après une reconnexion', async () => {
+    const id = identity({ displayName: `${PREFIX} Prénom Nom`, avatarUrl: 'https://a.test/1.png' });
+    const created = await resolveIdentity(id, null);
+    if (!created.ok) throw new Error('création attendue');
+
+    const newHandle = handle();
+    expect(
+      await updateProfile(created.userId, {
+        displayName: 'Pseudo',
+        handle: newHandle,
+        avatarUrl: 'https://a.test/1.png',
+      }),
+    ).toBeNull();
+    await resolveIdentity(id, null);
+
+    expect(await db.user.findUniqueOrThrow({ where: { id: created.userId } })).toMatchObject({
+      displayName: 'Pseudo',
+      handle: newHandle,
+    });
+  });
+
+  it('refuse un identifiant déjà pris', async () => {
+    const first = await profile();
+    const second = await profile();
+    const { handle: taken } = await db.user.findUniqueOrThrow({ where: { id: first } });
+    expect(
+      await updateProfile(second, { displayName: 'Pseudo', handle: taken, avatarUrl: '' }),
+    ).toBe('handle_taken');
+  });
+
+  it("refuse une image qui ne vient pas d'un compte lié", async () => {
+    const userId = await profile({ avatarUrl: 'https://a.test/1.png' });
+    await profile({ avatarUrl: 'https://a.test/autre.png' });
+    expect(
+      await updateProfile(userId, {
+        displayName: 'Pseudo',
+        handle: handle(),
+        avatarUrl: 'https://a.test/autre.png',
+      }),
+    ).toBe('avatar_unknown');
+  });
+
+  it('valide le nom et le format de l’identifiant', () => {
+    const valid = { displayName: '  Pseudo ', handle: 'Mon-Pseudo', avatarUrl: '' };
+    expect(profileSchema.parse(valid)).toMatchObject({
+      displayName: 'Pseudo',
+      handle: 'mon-pseudo',
+    });
+    for (const bad of ['a', 'ab_cd', '-abc', 'abc-', 'a'.repeat(25), 'é-abc', '../admin']) {
+      expect(profileSchema.safeParse({ ...valid, handle: bad }).success).toBe(false);
+    }
+    for (const bad of ['x', 'y'.repeat(33), 'nom‮inversé', 'a\nb']) {
+      expect(profileSchema.safeParse({ ...valid, displayName: bad }).success).toBe(false);
+    }
   });
 });
 
