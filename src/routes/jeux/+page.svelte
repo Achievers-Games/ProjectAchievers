@@ -106,16 +106,13 @@
   }
 
   const collections = [
-    { value: null, label: 'Tous' },
-    { value: 'miens', label: 'Mes jeux' },
+    { value: null, label: 'Tous mes jeux' },
     { value: 'restants', label: 'Non 100 %' },
   ];
 
   /** « Non 100 % » sert à voir ce qui est presque fini : les plus avancés passent devant. */
-  function collectionHref(filtre: string | null) {
-    if (filtre === 'restants') return hrefWith({ filtre, tri: 'progression' });
-    return hrefWith({ filtre, tri: filtre ? data.params.tri : null });
-  }
+  const collectionHref = (filtre: string | null) =>
+    hrefWith(filtre ? { filtre, tri: 'progression' } : { filtre, tri: null });
 
   const platforms = [
     { value: null, label: 'Toutes' },
@@ -125,11 +122,11 @@
   ];
 </script>
 
-<svelte:head><title>Jeux — Project Achievers</title></svelte:head>
+<svelte:head><title>{data.user ? 'Mes jeux' : 'Jeux'} — Project Achievers</title></svelte:head>
 
 <div class="space-y-5">
   <div class="flex items-baseline justify-between gap-4">
-    <h1>Jeux</h1>
+    <h1>{data.user ? 'Mes jeux' : 'Jeux'}</h1>
     <p class="tabular text-sm text-muted">{plural(data.total, 'jeu', 'jeux')}</p>
   </div>
 
@@ -199,9 +196,14 @@
   </div>
 
   {#if games.length === 0}
-    <Empty title="Aucun jeu trouvé">
-      Essaie un autre filtre. Le catalogue s'enrichit à chaque synchronisation.
-    </Empty>
+    {#if data.user && !data.params.q && !data.params.plateforme && !data.params.filtre}
+      <Empty title="Aucun jeu pour l'instant">
+        Lie Steam, PlayStation ou Xbox pour importer ta bibliothèque.
+        {#snippet action()}<a href="/compte" class="btn btn-primary">Lier un compte</a>{/snippet}
+      </Empty>
+    {:else}
+      <Empty title="Aucun jeu trouvé">Essaie un autre filtre.</Empty>
+    {/if}
   {:else}
     <div
       class={data.params.vue === 'liste'

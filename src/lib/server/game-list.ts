@@ -7,13 +7,14 @@ const query = z.object({
   tri: z.enum(['nom', 'recent', 'progression', 'succes']).catch('nom'),
   page: z.coerce.number().int().min(1).max(10_000).catch(1),
   vue: z.enum(['grille', 'liste']).catch('grille'),
-  filtre: z.enum(['miens', 'restants']).optional().catch(undefined),
+  filtre: z.literal('restants').optional().catch(undefined),
 });
 
 /** Lecture commune à la page Jeux et au chargement au défilement. */
 export async function gamesFromUrl(url: URL, user: App.Locals['user']) {
   const params = query.parse(Object.fromEntries(url.searchParams));
-  const mine = Boolean(params.filtre && user);
+  // Un membre voit ses jeux ; le catalogue complet reste pour les visiteurs.
+  const mine = Boolean(user);
   const unfinished = mine && params.filtre === 'restants';
   // La progression n'existe que pour les jeux du joueur.
   const tri = params.tri === 'progression' && !mine ? 'nom' : params.tri;

@@ -1,6 +1,7 @@
 <script lang="ts">
   import Empty from '$lib/components/Empty.svelte';
   import GameCard from '$lib/components/GameCard.svelte';
+  import LiveCards from '$lib/components/LiveCards.svelte';
   import ProviderIcon from '$lib/components/ProviderIcon.svelte';
   import { formatNumber } from '$lib/labels';
 
@@ -29,6 +30,8 @@
         {#snippet action()}<a href="/compte" class="btn btn-primary">Lier un compte</a>{/snippet}
       </Empty>
     {/if}
+
+    <LiveCards initial={data.cards} />
 
     <dl class="card grid grid-cols-2 sm:grid-cols-4 sm:divide-x sm:divide-line">
       {#each stats as stat (stat.label)}
@@ -82,6 +85,8 @@
         <ProviderIcon provider="DISCORD" size={20} />
       </div>
     </section>
+
+    <LiveCards initial={data.cards} />
 
     {#if data.popular?.length}
       <section class="space-y-3">

@@ -15,6 +15,14 @@ export interface Reward {
     totalAchievements: number;
   };
   progress: CardProgress;
+  unlockedAt: Date | null;
+}
+
+/** Une carte obtenue, affichée dans le fil en direct. */
+export interface CardDrop {
+  user: { handle: string; displayName: string; avatarUrl: string | null };
+  game: { name: string; slug: string; headerUrl: string | null };
+  unlockedAt: Date | string;
 }
 
 /** Un jeu terminé devient une carte : 100 % des succès, ou le trophée platine PlayStation. */

@@ -121,6 +121,24 @@ export const RARE_CARD = {
   OR: [{ platinum: true }, { completion: { gte: 100 } }],
 } satisfies Prisma.UserGameWhereInput;
 
+/** Dernières cartes obtenues par les profils publics, à la date du dernier succès. */
+export async function cardFeed(limit = 12) {
+  const rows = await db.userGame.findMany({
+    where: { ...RARE_CARD, user: { isPublic: true }, lastUnlockedAt: { not: null } },
+    orderBy: { lastUnlockedAt: 'desc' },
+    take: limit,
+    select: {
+      lastUnlockedAt: true,
+      user: { select: { handle: true, displayName: true, avatarUrl: true } },
+      game: { select: { name: true, slug: true, headerUrl: true } },
+    },
+  });
+  return rows.map(({ lastUnlockedAt, ...row }) => ({
+    ...row,
+    unlockedAt: lastUnlockedAt as Date,
+  }));
+}
+
 export async function dashboard(userId: string) {
   const [recent, almost, stats] = await Promise.all([
     db.userGame.findMany({

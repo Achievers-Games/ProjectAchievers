@@ -5,7 +5,7 @@ import { profileSchema, resolveIdentity, updateProfile, type Identity } from './
 import { db } from './db';
 import { mergeUsers } from './merge';
 import { enqueueSync, runSync, startWorkers } from './sync/queue';
-import { onSync, type SyncEvent } from './sync/events';
+import { onCard, onSync, type SyncEvent } from './sync/events';
 import { steamImages } from './sync/steam';
 import { saveAchievements, saveProgress, upsertGame } from './sync/store';
 
@@ -456,6 +456,45 @@ describe('synchronisation Steam', () => {
     await runSync({ userId, provider: 'STEAM' });
     stop();
     expect(events.at(-1)?.rewards).toEqual([]);
+  });
+
+  it('diffuse en direct un 100 % récent, pas un ancien ni celui d’un profil privé', async () => {
+    const unlockAt = (date: number) => {
+      const api = steamApi(ownedGames);
+      vi.stubGlobal('fetch', async (input: string | URL) =>
+        String(input).includes('GetPlayerAchievements')
+          ? new Response(
+              JSON.stringify({
+                playerstats: {
+                  achievements: ['A', 'B'].map((apiname) => ({
+                    apiname,
+                    achieved: 1,
+                    unlocktime: Math.floor(date / 1000),
+                  })),
+                },
+              }),
+            )
+          : api(input),
+      );
+    };
+    const cards: string[] = [];
+    const stop = onCard((drop) => cards.push(drop.user.handle));
+
+    unlockAt(Date.now() - 365 * 86_400_000);
+    await runSync({ userId: await steamUser(), provider: 'STEAM' });
+    expect(cards).toEqual([]);
+
+    unlockAt(Date.now());
+    const privateUser = await steamUser();
+    await db.user.update({ where: { id: privateUser }, data: { isPublic: false } });
+    await runSync({ userId: privateUser, provider: 'STEAM' });
+    expect(cards).toEqual([]);
+
+    const userId = await steamUser();
+    await runSync({ userId, provider: 'STEAM' });
+    stop();
+    const { handle } = await db.user.findUniqueOrThrow({ where: { id: userId } });
+    expect(cards).toEqual([handle]);
   });
 
   it('accepte un texte hors de l’alphabet latin', async () => {

@@ -6,7 +6,7 @@ import { availableProviders } from '../providers';
 import { RARE_CARD } from '../queries';
 import type { Reward } from '$lib/collection';
 import { SyncError } from './errors';
-import { publishSync, publishUnlock } from './events';
+import { publishCard, publishSync, publishUnlock } from './events';
 import { syncPsn } from './psn';
 import { syncSteam } from './steam';
 import { syncXbox } from './xbox';
@@ -16,6 +16,8 @@ const SYNC_QUEUE = 'sync-account';
 const SWEEP_QUEUE = 'sync-sweep';
 const STALE_AFTER = 24 * 60 * 60 * 1000;
 const MAX_REWARDS = 12;
+/** Au-delà, la carte est ancienne : lier un compte ne doit pas inonder le fil en direct. */
+const LIVE_CARD_MAX_AGE = 48 * 60 * 60 * 1000;
 
 const SYNCERS: Partial<Record<Provider, ProviderSync>> = {
   STEAM: syncSteam,
@@ -66,6 +68,7 @@ async function rareCards(userId: string) {
       unlockedCount: true,
       completion: true,
       platinum: true,
+      lastUnlockedAt: true,
       game: {
         select: {
           name: true,
@@ -78,7 +81,10 @@ async function rareCards(userId: string) {
     },
   });
   return new Map(
-    rows.map(({ gameId, game, ...progress }): [string, Reward] => [gameId, { game, progress }]),
+    rows.map(({ gameId, game, lastUnlockedAt, ...progress }): [string, Reward] => [
+      gameId,
+      { game, progress, unlockedAt: lastUnlockedAt },
+    ]),
   );
 }
 
@@ -135,6 +141,14 @@ export async function runSync({ userId, provider }: SyncJob) {
       }),
     ]);
     const rewards = newRewards(before, await rareCards(userId));
+    if (user.isPublic) {
+      const { displayName, handle, avatarUrl } = user;
+      for (const { game, unlockedAt } of rewards) {
+        if (unlockedAt && Date.now() - unlockedAt.getTime() < LIVE_CARD_MAX_AGE) {
+          publishCard({ user: { displayName, handle, avatarUrl }, game, unlockedAt });
+        }
+      }
+    }
     publishSync(userId, {
       provider,
       status: 'COMPLETED',

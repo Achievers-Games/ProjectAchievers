@@ -150,6 +150,48 @@
 .progress-fill[data-complete] {
   background-image: linear-gradient(90deg, #b8860b, #ffe08a, #d9a520);
 }
+.live-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: rgb(var(--danger));
+  animation: live-pulse 1.6s ease-out infinite;
+}
+.live-rail {
+  @apply flex gap-3 overflow-x-auto pb-2;
+  scrollbar-width: thin;
+}
+.drop-tile {
+  @apply block w-56 shrink-0 overflow-hidden rounded-md;
+  border: 2px solid transparent;
+  background:
+    linear-gradient(160deg, rgb(92 66 12), rgb(38 28 8)) padding-box,
+    linear-gradient(135deg, #fff1bf, #d9a520, #b8860b, #ffe08a) border-box;
+  box-shadow: 0 0 12px rgb(247 196 72 / 0.3);
+  transition:
+    box-shadow 180ms,
+    transform 180ms;
+}
+.drop-tile:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 22px rgb(247 196 72 / 0.6);
+}
+.drop-image {
+  @apply aspect-[460/215] w-full object-cover;
+}
+.drop-body {
+  @apply block space-y-0.5 p-2;
+  color: #fff4d0;
+}
+@keyframes live-pulse {
+  from {
+    box-shadow: 0 0 0 0 rgb(var(--danger) / 0.7);
+  }
+  to {
+    box-shadow: 0 0 0 9px rgb(var(--danger) / 0);
+  }
+}
+
 .complete-badge {
   @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-extrabold;
   white-space: nowrap;

@@ -130,6 +130,31 @@ test.describe('membre', () => {
     await expect(page.getByText('Presque terminés')).toBeVisible();
   });
 
+  test('ne voit que ses jeux, et voit une carte arriver en direct', async ({ page }) => {
+    await login(page);
+    await page.goto('/jeux');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Mes jeux');
+    await expect(page.getByText('9 jeux')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Tous', exact: true })).toHaveCount(0);
+
+    const drop = {
+      user: { handle: 'lea', displayName: 'Léa', avatarUrl: null },
+      game: { name: 'Celeste', slug: 'celeste', headerUrl: null },
+      unlockedAt: new Date().toISOString(),
+    };
+    await page.route('**/api/cartes', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'text/event-stream',
+        body: `data: ${JSON.stringify(drop)}\n\n`,
+      }),
+    );
+    await page.goto('/');
+    const live = page.getByRole('region', { name: /En direct/ });
+    await expect(live.getByRole('link', { name: /Hades/ })).toBeVisible();
+    await expect(live.getByRole('link', { name: /Celeste/ })).toBeVisible();
+  });
+
   test('voit ses cartes rares et une révélation après une synchronisation', async ({ page }) => {
     await login(page);
     await page.goto('/u/demo');
