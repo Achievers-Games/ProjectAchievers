@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import GameCard from './GameCard.svelte';
+  import { TIER_LABELS } from '$lib/collection';
   import { plural } from '$lib/labels';
   import { NO_REWARDS, persistRewards, rewards } from '$lib/stores/sync';
 
@@ -89,10 +90,8 @@
       <p class="reward-title">
         {#if cards.length > 1}
           {cards.length} cartes 100 % obtenues !
-        {:else if cards[0]?.double}
-          Double 100 % !
         {:else}
-          Carte 100 % obtenue !
+          Carte {TIER_LABELS[cards[0]?.tier ?? 1]} obtenue !
         {/if}
       </p>
 
@@ -112,7 +111,7 @@
             <div class="reward-flip" class:revealed={index < flipped}>
               <div class="reward-back" aria-hidden="true">Achievers</div>
               <div class="reward-front">
-                <GameCard game={card.game} progress={card.progress} double={card.double} />
+                <GameCard game={card.game} progress={card.progress} tier={card.tier} />
               </div>
             </div>
           </div>

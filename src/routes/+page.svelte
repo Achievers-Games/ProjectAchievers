@@ -12,8 +12,10 @@
       ? [
           { label: 'Jeux', value: data.home.stats.games },
           { label: 'Succès', value: data.home.stats.unlocked },
-          { label: 'Cartes 100 %', value: data.home.stats.completed, gold: true },
-          { label: 'Double 100 %', value: data.home.stats.doubles, gold: true },
+          { label: 'Or', value: data.home.stats.tiers.or, tier: 1 },
+          { label: 'Platine', value: data.home.stats.tiers.platine, tier: 2 },
+          { label: 'Prismatique', value: data.home.stats.tiers.prismatique, tier: 3 },
+          { label: 'Légendaire', value: data.home.stats.tiers.legendaire, tier: 4 },
           { label: 'Points', value: data.home.stats.points },
         ]
       : [],
@@ -34,11 +36,11 @@
 
     <LiveCards initial={data.cards} />
 
-    <dl class="card grid grid-cols-2 sm:grid-cols-5 sm:divide-x sm:divide-line">
+    <dl class="card grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 sm:divide-x sm:divide-line">
       {#each stats as stat (stat.label)}
         <div class="p-4">
           <dt class="label">{stat.label}</dt>
-          <dd class="stat-value tabular mt-1" data-complete={stat.gold}>
+          <dd class="stat-value tabular mt-1" data-tier={stat.tier}>
             {formatNumber(stat.value)}
           </dd>
         </div>

@@ -15,9 +15,9 @@
   let replyTo = $state<string | null>(null);
 
   const REACTIONS = [
-    { type: 'HELPFUL', label: 'Utile' },
-    { type: 'THANKS', label: 'Merci' },
-    { type: 'FUNNY', label: 'Drôle' },
+    { type: 'HELPFUL', label: 'Utile', emoji: '👍' },
+    { type: 'THANKS', label: 'Merci', emoji: '🙏' },
+    { type: 'FUNNY', label: 'Drôle', emoji: '😂' },
   ] as const;
 
   /** Applique la réponse sans recharger la page et remonte le résultat en toast. */
@@ -217,11 +217,13 @@
                     <button
                       name="type"
                       value={reaction.type}
+                      aria-label={reaction.label}
+                      title={reaction.label}
                       aria-pressed={comment.myReaction === reaction.type}
-                      class="hover:text-ink"
-                      class:text-accent={comment.myReaction === reaction.type}
+                      class="reaction"
+                      class:reaction-active={comment.myReaction === reaction.type}
                     >
-                      {reaction.label}{#if comment.counts[reaction.type]}
+                      {reaction.emoji}{#if comment.counts[reaction.type]}
                         &nbsp;{comment.counts[reaction.type]}{/if}
                     </button>
                   {/each}

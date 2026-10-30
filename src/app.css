@@ -140,15 +140,46 @@
 .stat-value {
   @apply text-2xl font-bold;
 }
-.stat-value[data-complete] {
+.stat-value[data-tier='1'] {
   @apply text-gold;
+}
+.stat-value[data-tier='2'] {
+  color: #d9e8fb;
+}
+.stat-value[data-tier='3'] {
+  background: linear-gradient(100deg, #7dd3fc, #c4b5fd, #f9a8d4);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.stat-value[data-tier='4'] {
+  color: #ff7a3d;
 }
 .progress-fill {
   background-image: linear-gradient(90deg, rgb(var(--accent)), rgb(var(--accent-2)));
   transition: width 400ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-.progress-fill[data-complete] {
+.progress-fill[data-tier='1'] {
   background-image: linear-gradient(90deg, #b8860b, #ffe08a, #d9a520);
+}
+.progress-fill[data-tier='2'] {
+  background-image: linear-gradient(90deg, #7f93ad, #f2f8ff, #9fb4cc);
+}
+.progress-fill[data-tier='3'] {
+  background-image: linear-gradient(90deg, #38bdf8, #a78bfa, #f472b6, #fbbf24, #4ade80, #38bdf8);
+  background-size: 200% 100%;
+  animation: tier-flow 2.5s linear infinite;
+}
+.progress-fill[data-tier='4'] {
+  background-image: linear-gradient(90deg, #7f1d1d, #ff5a1f, #ffd76e, #ff5a1f, #7f1d1d);
+  background-size: 200% 100%;
+  animation: tier-flow 1.6s linear infinite;
+}
+.reaction {
+  @apply rounded-full border border-transparent px-1.5 text-sm transition-transform hover:scale-110;
+}
+.reaction-active {
+  @apply border-accent bg-accent/15 text-ink;
 }
 .live-dot {
   width: 9px;
@@ -197,11 +228,27 @@
   white-space: nowrap;
   box-shadow:
     0 2px 10px rgb(0 0 0 / 0.5),
-    0 0 12px rgb(247 196 72 / 0.7);
+    0 0 12px rgb(var(--tier-glow, 247 196 72) / 0.8);
 }
-.complete-badge {
+.complete-badge[data-tier='1'] {
   color: #3d2a00;
   background: linear-gradient(120deg, #ffe08a, #e0ac28, #fff1bf);
+}
+.complete-badge[data-tier='2'] {
+  --tier-glow: 200 225 255;
+  color: #14202e;
+  background: linear-gradient(120deg, #ffffff, #b4c6dc, #eef5ff);
+}
+.complete-badge[data-tier='3'] {
+  --tier-glow: 196 150 255;
+  color: #17132e;
+  background: linear-gradient(120deg, #7dd3fc, #c4b5fd, #f9a8d4, #fde68a);
+}
+.complete-badge[data-tier='4'] {
+  --tier-glow: 255 110 40;
+  color: #ffd76e;
+  background: linear-gradient(120deg, #1a0500, #7f1d1d, #1a0500);
+  border: 1px solid #ffb547;
 }
 .game-card {
   --rx: 0deg;
@@ -221,72 +268,205 @@
   box-shadow: 0 10px 26px rgb(0 0 0 / 0.35);
 }
 
-.game-card[data-complete] {
+/* Chaque rareté change toute la carte : cadre, fond, titre, reflet et lueur. */
+.game-card[data-tier] {
+  --frame: linear-gradient(135deg, #fff1bf, #d9a520 30%, #fff6d5 50%, #b8860b 75%, #ffe08a);
+  --body: linear-gradient(160deg, rgb(92 66 12), rgb(38 28 8));
+  --title: #ffe08a;
+  --text: rgb(255 236 180 / 0.8);
+  --glow: 247 196 72;
+  --sheen: 255 225 150;
   border: 3px solid transparent;
   background:
-    linear-gradient(160deg, rgb(92 66 12), rgb(38 28 8)) padding-box,
+    var(--body) padding-box,
     var(--frame) border-box;
   transform: perspective(700px) rotateX(var(--rx)) rotateY(var(--ry));
+  box-shadow:
+    0 0 0 1px rgb(var(--glow) / 0.35),
+    0 0 26px rgb(var(--glow) / 0.5);
 }
-.game-card[data-complete]:hover {
+.game-card[data-tier]:hover {
   transform: perspective(700px) rotateX(var(--rx)) rotateY(var(--ry)) scale(1.03);
   border-color: transparent;
   z-index: 1;
-}
-
-.game-card[data-complete] {
-  --frame: linear-gradient(135deg, #fff1bf, #d9a520 30%, #fff6d5 50%, #b8860b 75%, #ffe08a);
   box-shadow:
-    0 0 0 1px rgb(247 196 72 / 0.35),
-    0 0 26px rgb(247 196 72 / 0.5);
+    0 0 0 1px rgb(var(--glow) / 0.6),
+    0 0 44px rgb(var(--glow) / 0.8);
 }
-.game-card[data-complete]:hover {
-  box-shadow:
-    0 0 0 1px rgb(247 196 72 / 0.6),
-    0 0 44px rgb(247 196 72 / 0.8);
-}
-.game-card[data-complete] h3 {
-  color: #ffe08a;
+.game-card[data-tier] h3 {
+  color: var(--title);
   font-weight: 700;
 }
-.game-card[data-complete] p {
-  color: rgb(255 236 180 / 0.8);
+.game-card[data-tier] p {
+  color: var(--text);
 }
 
-/* Les jeux en cours s'effacent un peu : les cartes dorées ressortent dans une liste. */
-.game-card[data-owned]:not([data-complete]) img {
-  filter: saturate(0.55) brightness(0.72);
+.game-card[data-tier='2'] {
+  --frame: linear-gradient(135deg, #ffffff, #8ba0b8 30%, #f4f9ff 50%, #6f8299 75%, #dce8f6);
+  --body: linear-gradient(160deg, #46586d, #141c27);
+  --title: #f2f8ff;
+  --text: rgb(220 233 250 / 0.85);
+  --glow: 200 225 255;
+  --sheen: 225 240 255;
+  border-width: 4px;
+}
+
+.game-card[data-tier='3'] {
+  --frame: linear-gradient(120deg, #38bdf8, #a78bfa, #f472b6, #fbbf24, #4ade80, #38bdf8, #a78bfa);
+  --body: linear-gradient(120deg, #3a1a78, #0c5468, #7a1a63, #3a1a78);
+  --title: #ffffff;
+  --text: rgb(232 225 255 / 0.9);
+  --glow: 190 140 255;
+  --sheen: 255 255 255;
+  border-width: 4px;
+  background-size:
+    300% 300%,
+    300% 300%;
+  animation: tier-shift 5s linear infinite alternate;
+}
+.game-card[data-tier='3'] h3 {
+  background: linear-gradient(90deg, #7dd3fc, #e9d5ff, #fbcfe8, #fde68a);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.game-card[data-tier='3'] img {
+  filter: saturate(1.35) contrast(1.05);
+}
+
+.game-card[data-tier='4'] {
+  --frame: linear-gradient(120deg, #ffd76e, #ff5a1f, #b91c1c, #7c3aed, #ff5a1f, #ffd76e);
+  --body: radial-gradient(circle at 50% 120%, #7f1d1d, #1a0500 55%, #050000);
+  --title: #ffd76e;
+  --text: rgb(255 205 160 / 0.9);
+  --glow: 255 90 31;
+  --sheen: 255 170 80;
+  border-width: 5px;
+  background-size:
+    100% 100%,
+    300% 300%;
+  animation:
+    tier-shift-frame 3s linear infinite alternate,
+    tier-pulse 1.8s ease-in-out infinite alternate;
+}
+.game-card[data-tier='4'] h3 {
+  text-shadow: 0 0 12px rgb(255 90 31 / 0.9);
+}
+
+@keyframes tier-flow {
+  to {
+    background-position: -200% 0;
+  }
+}
+@keyframes tier-shift {
+  from {
+    background-position:
+      0% 50%,
+      0% 50%;
+  }
+  to {
+    background-position:
+      100% 50%,
+      100% 50%;
+  }
+}
+@keyframes tier-shift-frame {
+  from {
+    background-position:
+      0 0,
+      0% 50%;
+  }
+  to {
+    background-position:
+      0 0,
+      100% 50%;
+  }
+}
+@keyframes tier-pulse {
+  from {
+    box-shadow:
+      0 0 0 1px rgb(255 90 31 / 0.5),
+      0 0 22px rgb(255 90 31 / 0.5);
+  }
+  to {
+    box-shadow:
+      0 0 0 2px rgb(255 215 110 / 0.8),
+      0 0 48px rgb(255 90 31 / 0.95);
+  }
+}
+
+/* Les jeux en cours s'effacent, puis s'éclairent à chaque palier. */
+.game-card[data-owned]:not([data-tier]) img {
+  filter: saturate(0.5) brightness(0.68);
   transition: filter 180ms;
 }
-.game-card[data-owned]:not([data-complete]):hover img {
+.game-card[data-owned]:not([data-tier]):hover img {
   filter: none;
 }
-
-/* Double 100 % : la carte dorée reçoit un cadre irisé. */
-.game-card[data-double] {
-  --frame: linear-gradient(
-    120deg,
-    #ffe08a,
-    #7dd3fc 25%,
-    #c4b5fd 45%,
-    #f9a8d4 65%,
-    #ffe08a 85%,
-    #fff6d5
+.game-card[data-step='1'] {
+  --step: 74 222 128;
+}
+.game-card[data-step='2'] {
+  --step: 56 189 248;
+}
+.game-card[data-step='3'] {
+  --step: 244 114 182;
+}
+.game-card[data-step] {
+  border-color: rgb(var(--step) / 0.55);
+  box-shadow: 0 0 10px rgb(var(--step) / calc(0.1 * var(--step-level, 1)));
+}
+.game-card[data-step='2'] {
+  --step-level: 2;
+  border-width: 2px;
+}
+.game-card[data-step='3'] {
+  --step-level: 4;
+  border-width: 2px;
+}
+.game-card[data-step='1'] img {
+  filter: saturate(0.7) brightness(0.8);
+}
+.game-card[data-step='2'] img {
+  filter: saturate(0.85) brightness(0.9);
+}
+.game-card[data-step='3'] img {
+  filter: none;
+}
+.step-badge {
+  @apply rounded-full px-2 py-0.5 text-[11px] font-bold;
+  color: #0b1020;
+  background: rgb(var(--step));
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.5);
+}
+.progress-track {
+  position: relative;
+}
+/* Repères de palier sur la barre. */
+.progress-track::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent calc(25% - 1px),
+    rgb(0 0 0 / 0.55) calc(25% - 1px) calc(25% + 1px),
+    transparent calc(25% + 1px) calc(50% - 1px),
+    rgb(0 0 0 / 0.55) calc(50% - 1px) calc(50% + 1px),
+    transparent calc(50% + 1px) calc(75% - 1px),
+    rgb(0 0 0 / 0.55) calc(75% - 1px) calc(75% + 1px),
+    transparent calc(75% + 1px)
   );
-  box-shadow:
-    0 0 0 1px rgb(196 181 253 / 0.5),
-    0 0 26px rgb(196 181 253 / 0.55),
-    0 0 40px rgb(247 196 72 / 0.35);
 }
-.game-card[data-double]:hover {
-  box-shadow:
-    0 0 0 1px rgb(196 181 253 / 0.8),
-    0 0 40px rgb(196 181 253 / 0.8),
-    0 0 60px rgb(247 196 72 / 0.5);
+.progress-fill[data-step='1'] {
+  background-image: linear-gradient(90deg, #16a34a, #4ade80);
 }
-.complete-badge[data-double] {
-  color: #17132e;
-  background: linear-gradient(120deg, #ffe08a, #a5f3fc, #c4b5fd, #fbcfe8);
+.progress-fill[data-step='2'] {
+  background-image: linear-gradient(90deg, #0284c7, #38bdf8);
+}
+.progress-fill[data-step='3'] {
+  background-image: linear-gradient(90deg, #db2777, #f472b6);
 }
 
 .foil {
@@ -305,9 +485,9 @@
   background: linear-gradient(
     105deg,
     transparent,
-    rgb(255 225 150 / 0.9) 45%,
+    rgb(var(--sheen, 255 225 150) / 0.9) 45%,
     rgb(255 255 240) 50%,
-    rgb(255 225 150 / 0.9) 55%,
+    rgb(var(--sheen, 255 225 150) / 0.9) 55%,
     transparent
   );
   animation: foil-sweep 3.4s ease-in-out infinite;
@@ -639,12 +819,14 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
-  .game-card[data-complete],
-  .game-card[data-complete]:hover {
+  .game-card[data-tier],
+  .game-card[data-tier]:hover {
     transform: none;
   }
   .foil::before,
   .foil::after,
+  .game-card[data-tier],
+  .progress-fill[data-tier],
   .reward-rays,
   .reward-back::after,
   .reward-stage.finished .game-card {

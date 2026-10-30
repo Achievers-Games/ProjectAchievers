@@ -1,11 +1,13 @@
 <script lang="ts">
-  import { Layers, Star } from '@lucide/svelte';
+  import { Crown, Gem, Sparkles, Star } from '@lucide/svelte';
+  import { TIER_LABELS } from '$lib/collection';
 
-  let { double = false }: { double?: boolean } = $props();
-  const Icon = $derived(double ? Layers : Star);
+  let { tier = 1 }: { tier?: number } = $props();
+  const icons = [Star, Star, Gem, Sparkles, Crown];
+  const Icon = $derived(icons[tier] ?? Star);
 </script>
 
-<span class="complete-badge" data-double={double || undefined}>
+<span class="complete-badge" data-tier={tier}>
   <Icon size={12} aria-hidden="true" />
-  {double ? 'Double 100 %' : '100 %'}
+  {TIER_LABELS[tier]}
 </span>

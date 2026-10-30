@@ -5,7 +5,7 @@ import { env } from '../env';
 import { availableProviders } from '../providers';
 import { fillFamilies } from '../family';
 import { RARE_CARD } from '../queries';
-import type { Reward } from '$lib/collection';
+import { tierFor, type Reward } from '$lib/collection';
 import { rateGames } from './content';
 import { SyncError } from './errors';
 import { publishCard, publishSync, publishUnlock } from './events';
@@ -155,7 +155,7 @@ export async function runSync({ userId, provider }: SyncJob) {
     const rewards = newRewards(before, after)
       .map((card) => ({
         ...card,
-        double: (platforms.get(card.game.familyKey ?? card.game.slug)?.size ?? 0) >= 2,
+        tier: tierFor(platforms.get(card.game.familyKey ?? card.game.slug)?.size ?? 1),
       }))
       .filter(({ game }) => user.showAdult || !game.adultOnly);
     if (user.isPublic) {

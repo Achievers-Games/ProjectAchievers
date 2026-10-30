@@ -7,7 +7,7 @@ const query = z.object({
   tri: z.enum(['nom', 'recent', 'progression', 'succes']).catch('nom'),
   page: z.coerce.number().int().min(1).max(10_000).catch(1),
   vue: z.enum(['grille', 'liste']).catch('grille'),
-  filtre: z.literal('restants').optional().catch(undefined),
+  filtre: z.enum(['restants', 'caches']).optional().catch(undefined),
 });
 
 /** Lecture commune à la page Jeux et au chargement au défilement. */
@@ -27,6 +27,7 @@ export async function gamesFromUrl(url: URL, user: App.Locals['user']) {
       page: params.page,
       ownerId: mine ? user?.id : undefined,
       unfinished,
+      hidden: mine && params.filtre === 'caches',
       showAdult: user?.showAdult,
     },
     user?.id ?? null,

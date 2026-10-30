@@ -1,4 +1,5 @@
 import type { Platform } from '@prisma/client';
+import { tierFor } from '$lib/collection';
 
 interface LibraryRow {
   unlockedCount: number;
@@ -28,12 +29,12 @@ export interface LibraryCard {
   progress: { unlockedCount: number; completion: number; platinum: boolean };
   lastUnlockedAt: Date | null;
   versions: { platform: Platform; slug: string; completion: number }[];
-  double: boolean;
+  tier: number;
 }
 
 /**
  * Réunit les versions d'un jeu en une seule carte, celle de la version la plus avancée.
- * Finir une seule version suffit à obtenir la carte ; deux plateformes donnent le Double 100 %.
+ * Finir une seule version suffit à obtenir la carte ; chaque autre plateforme la fait monter.
  */
 export function groupLibrary(rows: LibraryRow[]): LibraryCard[] {
   const families = Map.groupBy(rows, (row) => row.game.familyKey ?? row.game.id);
@@ -63,7 +64,7 @@ export function groupLibrary(rows: LibraryRow[]): LibraryCard[] {
         slug: v.game.slug,
         completion: v.completion,
       })),
-      double: finished.size >= 2,
+      tier: tierFor(finished.size),
     };
   });
 }

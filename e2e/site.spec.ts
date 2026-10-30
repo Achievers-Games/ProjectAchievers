@@ -159,10 +159,10 @@ test.describe('membre', () => {
     await login(page);
     await page.goto('/u/demo');
     const showcase = page.getByRole('region', { name: 'Vitrine' });
-    // Hades, fini sur Steam et PlayStation, passe en tête sous une seule carte Double 100 %.
-    await expect(showcase.locator('a[data-complete]')).toHaveCount(2);
-    await expect(showcase.locator('a[data-double]')).toHaveCount(1);
-    await expect(showcase.getByText('Double 100 %')).toBeVisible();
+    // Hades, fini sur trois plateformes, passe en tête sous une seule carte Prismatique.
+    await expect(showcase.locator('a[data-tier]')).toHaveCount(2);
+    await expect(showcase.locator('a[data-tier="3"]')).toHaveCount(1);
+    await expect(showcase.getByText('Prismatique')).toBeVisible();
 
     const cards = Array.from({ length: 12 }, (_, index) => ({
       game: {
@@ -226,7 +226,7 @@ test.describe('membre', () => {
       .click();
     const dialog = page.getByRole('dialog', { name: 'Nouvelles cartes' });
     await page.keyboard.press('Enter');
-    await expect(dialog.locator('.reward-flip.revealed')).toHaveCount(3);
+    await expect(dialog.locator('.reward-flip.revealed')).toHaveCount(4);
     await page.keyboard.press('Escape');
     await expect(dialog).toBeHidden();
   });
@@ -255,6 +255,43 @@ test.describe('membre', () => {
     response = saved();
     await page.getByLabel(/Afficher les jeux pour adultes/).uncheck();
     await response;
+  });
+
+  test('cache un jeu de sa bibliothèque et le retrouve', async ({ page }) => {
+    await page.goto('/auth/dev?compte=marco');
+    await page.goto('/jeux/portal-2');
+    await ready(page);
+    await page.getByRole('button', { name: 'Cacher ce jeu' }).click();
+    await expect(page.getByRole('button', { name: 'Remettre dans ma bibliothèque' })).toBeVisible();
+
+    await page.goto('/jeux');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Mes jeux');
+    const main = page.locator('main');
+    await expect(main.getByRole('link', { name: /Portal 2/ })).toHaveCount(0);
+
+    await page.getByRole('link', { name: 'Cachés' }).click();
+    await expect(main.getByRole('link', { name: /Portal 2/ })).toBeVisible();
+
+    // Un autre compte ne voit pas ce jeu sur le profil.
+    const visitor = await page.context().browser()?.newContext();
+    const other = await visitor?.newPage();
+    await other?.goto(new URL('/u/marco', page.url()).href);
+    if (other)
+      await expect(other.locator('main').getByRole('heading', { level: 1 })).toHaveText('Marco');
+    expect(await other?.locator('main a[href="/jeux/portal-2"]').count()).toBe(0);
+    await visitor?.close();
+
+    await page.goto('/jeux/portal-2');
+    await ready(page);
+    await page.getByRole('button', { name: 'Remettre dans ma bibliothèque' }).click();
+    await expect(page.getByRole('button', { name: 'Cacher ce jeu' })).toBeVisible();
+  });
+
+  test('marque les paliers de progression', async ({ page }) => {
+    await login(page);
+    await page.goto('/jeux?tri=progression');
+    await expect(page.locator('main a[data-step]').first()).toBeVisible();
+    await expect(page.locator('main a[data-tier] .step-badge')).toHaveCount(0);
   });
 
   test('voit les quatre comptes et son export', async ({ page }) => {

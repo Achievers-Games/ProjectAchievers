@@ -1,9 +1,12 @@
 <script lang="ts">
-  import { Lock } from '@lucide/svelte';
+  import { enhance } from '$app/forms';
+  import type { SubmitFunction } from '@sveltejs/kit';
+  import { Eye, EyeOff, Lock } from '@lucide/svelte';
   import CompleteBadge from '$lib/components/CompleteBadge.svelte';
   import Progress from '$lib/components/Progress.svelte';
   import TrophyBadge from '$lib/components/TrophyBadge.svelte';
   import { tilt } from '$lib/actions/tilt';
+  import { toast } from '$lib/stores/toast';
   import { formatDate, PLATFORM_LABELS, plural } from '$lib/labels';
   import { isComplete } from '$lib/collection';
 
@@ -11,6 +14,14 @@
 
   type Filter = 'tous' | 'obtenus' | 'restants';
   const complete = $derived(isComplete(data.progress));
+  const toggleHidden: SubmitFunction = () => {
+    return async ({ result, update }) => {
+      await update();
+      if (result.type === 'success' && result.data?.success) toast(String(result.data.success));
+      else if (result.type === 'failure') toast('Action impossible.', 'error');
+    };
+  };
+
   let filter = $state<Filter>('tous');
   let sort = $state<'rarete' | 'nom'>('rarete');
 
@@ -52,12 +63,13 @@
       <div
         use:tilt
         data-complete={complete || undefined}
+        data-tier={complete ? data.tier : undefined}
         class="game-card relative w-full shrink-0 self-start overflow-hidden rounded-md sm:w-72"
       >
         <img src={data.game.headerUrl} alt="" class="w-full" />
         {#if complete}
           <span class="foil" aria-hidden="true"></span>
-          <span class="absolute right-2 top-2"><CompleteBadge /></span>
+          <span class="absolute right-2 top-2"><CompleteBadge tier={data.tier} /></span>
         {/if}
       </div>
     {/if}
@@ -82,8 +94,18 @@
         </p>
       {/if}
       {#if data.progress}
+        <form method="POST" action="?/hide" use:enhance={toggleHidden}>
+          <input type="hidden" name="hidden" value={data.progress.hidden ? '0' : '1'} />
+          <button class="btn h-8">
+            {#if data.progress.hidden}
+              <Eye size={14} aria-hidden="true" /> Remettre dans ma bibliothèque
+            {:else}
+              <EyeOff size={14} aria-hidden="true" /> Cacher ce jeu
+            {/if}
+          </button>
+        </form>
         <div class="max-w-sm space-y-1 pt-2">
-          <Progress value={data.progress.completion} {complete} />
+          <Progress value={data.progress.completion} tier={complete ? data.tier : 0} />
           <p class="tabular text-sm text-muted">
             {data.progress.unlockedCount} / {data.progress.totalCount} · {Math.round(
               data.progress.completion,

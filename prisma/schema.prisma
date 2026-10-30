@@ -199,6 +199,8 @@ model UserGame {
   lastPlayedAt    DateTime?
   lastUnlockedAt  DateTime?
   updatedAt       DateTime  @updatedAt
+  /// Retiré de la bibliothèque par le joueur, sans toucher à sa progression.
+  hidden          Boolean   @default(false)
 
   @@id([userId, gameId])
   @@index([userId, lastUnlockedAt])

@@ -16,6 +16,8 @@ interface GameFilters {
   ownerId?: string;
   /** Avec `ownerId` : seulement les jeux à succès qui ne sont pas encore à 100 %. */
   unfinished?: boolean;
+  /** Avec `ownerId` : montre les jeux cachés par le joueur, et seulement eux. */
+  hidden?: boolean;
   showAdult?: boolean;
 }
 
@@ -41,7 +43,7 @@ const librarySelect = {
 /** Bibliothèque d'un joueur : les versions d'un même jeu forment une seule carte. */
 async function listLibrary(filters: GameFilters, ownerId: string, where: Prisma.GameWhereInput) {
   const rows = await db.userGame.findMany({
-    where: { userId: ownerId, game: where },
+    where: { userId: ownerId, hidden: Boolean(filters.hidden), game: where },
     select: librarySelect,
   });
   const cards = groupLibrary(rows).filter(
@@ -105,7 +107,7 @@ export async function listGames(filters: GameFilters, viewerId: string | null) {
     db.game.count({ where }),
   ]);
   const items = await withProgress(games, viewerId);
-  return { games: items.map((game) => ({ ...game, versions: [], double: false })), total };
+  return { games: items.map((game) => ({ ...game, versions: [], tier: 0 })), total };
 }
 
 async function withProgress<T extends { id: string }>(games: T[], viewerId: string | null) {
@@ -149,6 +151,7 @@ export async function cardFeed(showAdult = false, limit = 12) {
   const rows = await db.userGame.findMany({
     where: {
       ...RARE_CARD,
+      hidden: false,
       user: { isPublic: true },
       game: visibleGames(showAdult),
       lastUnlockedAt: { not: null },
@@ -170,13 +173,23 @@ export async function cardFeed(showAdult = false, limit = 12) {
 export async function dashboard(userId: string, showAdult = false) {
   const [recent, almost, stats] = await Promise.all([
     db.userGame.findMany({
-      where: { userId, game: visibleGames(showAdult), lastUnlockedAt: { not: null } },
+      where: {
+        userId,
+        hidden: false,
+        game: visibleGames(showAdult),
+        lastUnlockedAt: { not: null },
+      },
       orderBy: { lastUnlockedAt: 'desc' },
       take: 4,
       select: profileGameSelect,
     }),
     db.userGame.findMany({
-      where: { userId, game: visibleGames(showAdult), completion: { gte: 50, lt: 100 } },
+      where: {
+        userId,
+        hidden: false,
+        game: visibleGames(showAdult),
+        completion: { gte: 50, lt: 100 },
+      },
       orderBy: { completion: 'desc' },
       take: 4,
       select: profileGameSelect,
@@ -188,10 +201,14 @@ export async function dashboard(userId: string, showAdult = false) {
 
 export async function userStats(userId: string) {
   const [collection, totals] = await Promise.all([
-    db.$queryRaw<{ games: bigint; completed: bigint; doubles: bigint }[]>`
+    db.$queryRaw<
+      { games: bigint; or: bigint; platine: bigint; prismatique: bigint; legendaire: bigint }[]
+    >`
       SELECT count(*) AS games,
-             count(*) FILTER (WHERE finished >= 1) AS completed,
-             count(*) FILTER (WHERE finished >= 2) AS doubles
+             count(*) FILTER (WHERE finished = 1) AS "or",
+             count(*) FILTER (WHERE finished = 2) AS platine,
+             count(*) FILTER (WHERE finished = 3) AS prismatique,
+             count(*) FILTER (WHERE finished >= 4) AS legendaire
       FROM (
         SELECT count(DISTINCT g.platform) FILTER (WHERE ug.completion >= 100) AS finished
         FROM "UserGame" ug
@@ -207,8 +224,12 @@ export async function userStats(userId: string) {
   ]);
   return {
     games: Number(collection[0]?.games ?? 0),
-    completed: Number(collection[0]?.completed ?? 0),
-    doubles: Number(collection[0]?.doubles ?? 0),
+    tiers: {
+      or: Number(collection[0]?.or ?? 0),
+      platine: Number(collection[0]?.platine ?? 0),
+      prismatique: Number(collection[0]?.prismatique ?? 0),
+      legendaire: Number(collection[0]?.legendaire ?? 0),
+    },
     unlocked: Number(totals[0]?.unlocked ?? 0),
     points: Number(totals[0]?.points ?? 0),
   };
@@ -235,18 +256,26 @@ export async function userProfile(handle: string, viewerId: string | null, showA
   const [stats, showcaseRows, gameRows, recent] = await Promise.all([
     userStats(user.id),
     db.userGame.findMany({
-      where: { userId: user.id, game: visibleGames(showAdult), ...RARE_CARD },
+      where: { userId: user.id, hidden: false, game: visibleGames(showAdult), ...RARE_CARD },
       orderBy: [{ lastUnlockedAt: { sort: 'desc', nulls: 'last' } }],
       select: librarySelect,
     }),
     db.userGame.findMany({
-      where: { userId: user.id, game: visibleGames(showAdult) },
+      where: { userId: user.id, hidden: false, game: visibleGames(showAdult) },
       orderBy: [{ lastUnlockedAt: { sort: 'desc', nulls: 'last' } }],
       take: 60,
       select: librarySelect,
     }),
     db.userAchievement.findMany({
-      where: { userId: user.id, achievement: { game: visibleGames(showAdult) } },
+      where: {
+        userId: user.id,
+        achievement: {
+          game: {
+            ...visibleGames(showAdult),
+            players: { none: { userId: user.id, hidden: true } },
+          },
+        },
+      },
       orderBy: { unlockedAt: 'desc' },
       take: 8,
       select: {
@@ -264,7 +293,7 @@ export async function userProfile(handle: string, viewerId: string | null, showA
     }),
   ]);
   const showcase = groupLibrary(showcaseRows)
-    .sort((a, b) => Number(b.double) - Number(a.double))
+    .sort((a, b) => b.tier - a.tier)
     .slice(0, 8);
   return { user, stats, showcase, games: groupLibrary(gameRows).slice(0, 24), recent };
 }
@@ -331,11 +360,11 @@ export function activityFeed(showAdult = false, limit = 30) {
 export async function compareUsers(a: string, b: string, showAdult = false) {
   const [left, right] = await Promise.all([
     db.userGame.findMany({
-      where: { userId: a, game: visibleGames(showAdult) },
+      where: { userId: a, hidden: false, game: visibleGames(showAdult) },
       select: profileGameSelect,
     }),
     db.userGame.findMany({
-      where: { userId: b, game: visibleGames(showAdult) },
+      where: { userId: b, hidden: false, game: visibleGames(showAdult) },
       select: profileGameSelect,
     }),
   ]);

@@ -8,8 +8,18 @@
 
   const rows = $derived([
     { label: 'Succès', left: data.leftStats.unlocked, right: data.rightStats.unlocked },
-    { label: 'Cartes 100 %', left: data.leftStats.completed, right: data.rightStats.completed },
-    { label: 'Double 100 %', left: data.leftStats.doubles, right: data.rightStats.doubles },
+    { label: 'Or', left: data.leftStats.tiers.or, right: data.rightStats.tiers.or },
+    { label: 'Platine', left: data.leftStats.tiers.platine, right: data.rightStats.tiers.platine },
+    {
+      label: 'Prismatique',
+      left: data.leftStats.tiers.prismatique,
+      right: data.rightStats.tiers.prismatique,
+    },
+    {
+      label: 'Légendaire',
+      left: data.leftStats.tiers.legendaire,
+      right: data.rightStats.tiers.legendaire,
+    },
     { label: 'Points', left: data.leftStats.points, right: data.rightStats.points },
   ]);
 </script>

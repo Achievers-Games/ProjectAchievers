@@ -2,13 +2,14 @@
   let {
     value,
     label = 'Progression',
-    complete = false,
-  }: { value: number; label?: string; complete?: boolean } = $props();
+    tier = 0,
+    step = 0,
+  }: { value: number; label?: string; tier?: number; step?: number } = $props();
   const percent = $derived(Math.min(100, Math.max(0, value)));
 </script>
 
 <div
-  class="h-1.5 w-full overflow-hidden rounded-full bg-raised"
+  class="progress-track h-1.5 w-full overflow-hidden rounded-full bg-raised"
   role="progressbar"
   aria-label={label}
   aria-valuemin={0}
@@ -17,7 +18,8 @@
 >
   <div
     class="progress-fill h-full rounded-full"
-    data-complete={complete || undefined}
+    data-tier={tier || undefined}
+    data-step={step || undefined}
     style:width="{percent}%"
   ></div>
 </div>

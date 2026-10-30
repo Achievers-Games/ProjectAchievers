@@ -108,11 +108,12 @@
   const collections = [
     { value: null, label: 'Tous mes jeux' },
     { value: 'restants', label: 'Non 100 %' },
+    { value: 'caches', label: 'Cachés' },
   ];
 
   /** « Non 100 % » sert à voir ce qui est presque fini : les plus avancés passent devant. */
   const collectionHref = (filtre: string | null) =>
-    hrefWith(filtre ? { filtre, tri: 'progression' } : { filtre, tri: null });
+    hrefWith(filtre === 'restants' ? { filtre, tri: 'progression' } : { filtre, tri: null });
 
   const platforms = [
     { value: null, label: 'Toutes' },
@@ -216,7 +217,7 @@
           progress={game.progress}
           layout={data.params.vue}
           versions={game.versions}
-          double={game.double}
+          tier={game.tier}
         />
       {/each}
     </div>

@@ -7,7 +7,13 @@
 </script>
 
 {#if src}
-  <img {src} alt="" width={size} height={size} class="shrink-0 rounded-full object-cover" />
+  <img
+    {src}
+    alt=""
+    style:width="{size}px"
+    style:height="{size}px"
+    class="shrink-0 rounded-full object-cover"
+  />
 {:else}
   <span
     class="grid shrink-0 place-items-center rounded-full bg-raised text-xs font-medium text-muted"

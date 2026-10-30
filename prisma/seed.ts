@@ -161,7 +161,7 @@ async function main() {
     create: { ...platinumProgress, userId: demo.id, gameId: platinumGame.id },
   });
 
-  // Hades existe aussi sur PlayStation : les deux versions à 100 % donnent un Double 100 %.
+  // Hades existe aussi sur PlayStation : une carte monte à chaque plateforme finie.
   const hadesPsn = await db.game.upsert({
     where: { platform_platformGameId: { platform: 'PSN', platformGameId: 'NPWR-HADES' } },
     update: {},
@@ -184,6 +184,25 @@ async function main() {
     where: { userId_gameId: { userId: demo.id, gameId: hadesPsn.id } },
     update: hadesDouble,
     create: { ...hadesDouble, userId: demo.id, gameId: hadesPsn.id },
+  });
+
+  // Et sur Xbox : trois plateformes à 100 % donnent une carte Prismatique.
+  const hadesXbox = await db.game.upsert({
+    where: { platform_platformGameId: { platform: 'XBOX', platformGameId: 'XBOX-HADES' } },
+    update: {},
+    create: {
+      platform: 'XBOX',
+      platformGameId: 'XBOX-HADES',
+      name: 'Hades',
+      slug: 'hades-xbox',
+      headerUrl: perfect.headerUrl,
+      totalAchievements: 1,
+    },
+  });
+  await db.userGame.upsert({
+    where: { userId_gameId: { userId: demo.id, gameId: hadesXbox.id } },
+    update: hadesDouble,
+    create: { ...hadesDouble, userId: demo.id, gameId: hadesXbox.id },
   });
 
   // Un jeu masqué par défaut, dans la bibliothèque de Léa.

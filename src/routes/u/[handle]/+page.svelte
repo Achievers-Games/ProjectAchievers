@@ -15,8 +15,10 @@
   const stats = $derived([
     { label: 'Jeux', value: profile.stats.games },
     { label: 'Succès', value: profile.stats.unlocked },
-    { label: 'Cartes 100 %', value: profile.stats.completed, gold: true },
-    { label: 'Double 100 %', value: profile.stats.doubles, gold: true },
+    { label: 'Or', value: profile.stats.tiers.or, tier: 1 },
+    { label: 'Platine', value: profile.stats.tiers.platine, tier: 2 },
+    { label: 'Prismatique', value: profile.stats.tiers.prismatique, tier: 3 },
+    { label: 'Légendaire', value: profile.stats.tiers.legendaire, tier: 4 },
     { label: 'Points', value: profile.stats.points },
   ]);
 
@@ -30,8 +32,10 @@
   <title>{profile.user.displayName} — Project Achievers</title>
   <meta
     name="description"
-    content="{formatNumber(profile.stats.unlocked)} succès et {profile.stats
-      .completed} cartes de collection."
+    content="{formatNumber(profile.stats.unlocked)} succès et {profile.stats.tiers.or +
+      profile.stats.tiers.platine +
+      profile.stats.tiers.prismatique +
+      profile.stats.tiers.legendaire} cartes de collection."
   />
   <meta property="og:title" content="{profile.user.displayName} sur Project Achievers" />
   <meta
@@ -76,11 +80,11 @@
     </div>
   </header>
 
-  <dl class="card grid grid-cols-2 sm:grid-cols-5 sm:divide-x sm:divide-line">
+  <dl class="card grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 sm:divide-x sm:divide-line">
     {#each stats as stat (stat.label)}
       <div class="p-4">
         <dt class="label">{stat.label}</dt>
-        <dd class="stat-value tabular mt-1" data-complete={stat.gold}>
+        <dd class="stat-value tabular mt-1" data-tier={stat.tier}>
           {formatNumber(stat.value)}
         </dd>
       </div>
@@ -96,7 +100,7 @@
             game={card}
             progress={card.progress}
             versions={card.versions}
-            double={card.double}
+            tier={card.tier}
           />
         {/each}
       </div>
@@ -120,7 +124,7 @@
               game={card}
               progress={card.progress}
               versions={card.versions}
-              double={card.double}
+              tier={card.tier}
             />
           {/each}
         </div>

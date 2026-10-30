@@ -3,6 +3,7 @@ import 'dotenv/config';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { listGames } from './queries';
 import { profileSchema, resolveIdentity, updateProfile, type Identity } from './accounts';
+import { stepOf, tierFor } from '$lib/collection';
 import { db } from './db';
 import { familyKey } from './family';
 import { groupLibrary } from './library';
@@ -118,17 +119,24 @@ describe('jeux sur plusieurs plateformes', () => {
     },
   });
 
+  it('fixe les paliers avant le 100 %', () => {
+    expect([0, 24.9, 25, 49, 50, 74, 75, 99, 100].map(stepOf)).toEqual([0, 0, 1, 1, 2, 2, 3, 3, 0]);
+  });
+
   it('réunit les versions sur la plus avancée, sans pénaliser une version finie', () => {
     const [card] = groupLibrary([row('PSN', 40), row('STEAM', 100)]);
-    expect(card).toMatchObject({ slug: 'steam', double: false });
+    expect(card).toMatchObject({ slug: 'steam', tier: 1 });
     expect(card?.progress.completion).toBe(100);
     expect(card?.versions.map((v) => v.platform)).toEqual(['STEAM', 'PSN']);
   });
 
-  it('réserve le Double 100 % à deux plateformes différentes', () => {
+  it('fait monter la carte à chaque plateforme finie', () => {
     expect(groupLibrary([row('PSN', 100), row('STEAM', 100)])).toHaveLength(1);
-    expect(groupLibrary([row('PSN', 100), row('STEAM', 100)])[0]?.double).toBe(true);
+    expect(groupLibrary([row('PSN', 100), row('STEAM', 100)])[0]?.tier).toBe(2);
     expect(groupLibrary([row('PSN', 100, 'a'), row('STEAM', 100, 'b')])).toHaveLength(2);
+    expect(tierFor(3)).toBe(3);
+    expect(tierFor(4)).toBe(4);
+    expect(tierFor(5)).toBe(4);
   });
 });
 
