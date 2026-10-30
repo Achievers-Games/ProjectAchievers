@@ -90,6 +90,25 @@ Avant une ouverture publique :
 - prévois des sauvegardes de la base ;
 - donne le rôle `MODERATOR` ou `ADMIN` à un compte, dans la table `User`, pour accéder à `/moderation`.
 
+### Sur le NAS
+
+La production tourne sur un QNAP TS-233 avec `docker-compose.nas.yml`, exposée par Cloudflare Tunnel
+sans port ouvert. Le code, le fichier `.env` et les sauvegardes sont dans
+`/share/CACHEDEV1_DATA/project-achievers`.
+
+Pour publier le dernier commit local, avec la clé SSH `~/.ssh/pa_nas` :
+
+```bash
+bash scripts/deploy-nas.sh
+```
+
+Une sauvegarde de la base est écrite chaque jour dans `backups/`, 14 jours sont conservés. Pour en
+restaurer une sur une base vide :
+
+```bash
+docker exec -i project-achievers-db-1 pg_restore -U achievers -d achievers --clean --if-exists < backups/achievers-AAAA-MM-JJ.dump
+```
+
 ## Structure
 
 ```
