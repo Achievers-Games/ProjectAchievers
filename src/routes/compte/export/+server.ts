@@ -13,6 +13,7 @@ export const GET: RequestHandler = async ({ locals }) => {
       displayName: true,
       avatarUrl: true,
       isPublic: true,
+      showAdult: true,
       createdAt: true,
       accounts: {
         select: {

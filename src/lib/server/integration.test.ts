@@ -1,10 +1,12 @@
 // Tests sur un vrai PostgreSQL : `npm run dev:db` ou le service de la CI.
 import 'dotenv/config';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { listGames } from './queries';
 import { profileSchema, resolveIdentity, updateProfile, type Identity } from './accounts';
 import { db } from './db';
 import { mergeUsers } from './merge';
 import { enqueueSync, runSync, startWorkers } from './sync/queue';
+import { isAdultOnly, rateGames } from './sync/content';
 import { onCard, onSync, type SyncEvent } from './sync/events';
 import { steamImages } from './sync/steam';
 import { saveAchievements, saveProgress, upsertGame } from './sync/store';
@@ -495,6 +497,43 @@ describe('synchronisation Steam', () => {
     stop();
     const { handle } = await db.user.findUniqueOrThrow({ where: { id: userId } });
     expect(cards).toEqual([handle]);
+  });
+
+  it('ne masque que la nudité fréquente et le contenu réservé aux adultes', async () => {
+    expect(isAdultOnly([1, 2, 5])).toBe(false);
+    expect(isAdultOnly([])).toBe(false);
+    expect(isAdultOnly([1, 3, 4, 5])).toBe(true);
+    expect(isAdultOnly([4])).toBe(true);
+    expect(isAdultOnly([3])).toBe(true);
+  });
+
+  it('classe les jeux Steam et les masque tant que le joueur ne les demande pas', async () => {
+    const name = `${PREFIX} classement`;
+    const game = await upsertGame({
+      platform: 'STEAM',
+      platformGameId: `${PREFIX}-${Math.random()}`,
+      name,
+    });
+    vi.stubGlobal(
+      'fetch',
+      async () =>
+        new Response(
+          JSON.stringify({
+            [game.platformGameId]: { data: { content_descriptors: { ids: [1, 3, 4, 5] } } },
+          }),
+        ),
+    );
+    await db.game.updateMany({
+      where: { contentCheckedAt: null, NOT: { id: game.id } },
+      data: { contentCheckedAt: new Date() },
+    });
+
+    expect(await rateGames(10, 0)).toBe(1);
+
+    const filters = { q: name, sort: 'nom', page: 1 } as const;
+    expect((await listGames(filters, null)).games).toEqual([]);
+    expect((await listGames({ ...filters, showAdult: true }, null)).games).toHaveLength(1);
+    expect(await rateGames(10, 0)).toBe(0);
   });
 
   it('accepte un texte hors de l’alphabet latin', async () => {

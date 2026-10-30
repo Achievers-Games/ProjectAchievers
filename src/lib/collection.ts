@@ -13,6 +13,7 @@ export interface Reward {
     platform: Platform;
     headerUrl: string | null;
     totalAchievements: number;
+    adultOnly?: boolean;
   };
   progress: CardProgress;
   unlockedAt: Date | null;

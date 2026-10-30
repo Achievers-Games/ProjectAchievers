@@ -4,7 +4,7 @@ export interface SyncContext {
   userId: string;
   account: LinkedAccount;
   report: (processed: number, total: number, game: string) => void;
-  onUnlocked: (game: Pick<Game, 'name' | 'slug'>, count: number) => void;
+  onUnlocked: (game: Pick<Game, 'name' | 'slug' | 'adultOnly'>, count: number) => void;
 }
 
 export type ProviderSync = (

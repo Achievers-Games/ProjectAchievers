@@ -226,6 +226,32 @@ test.describe('membre', () => {
     await expect(dialog).toBeHidden();
   });
 
+  test('masque les jeux adultes sauf si le compte les demande', async ({ page }) => {
+    await page.goto('/auth/dev?compte=lea');
+    await page.goto('/jeux');
+    const adult = page.getByRole('link', { name: /Jeu réservé aux adultes/ });
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Mes jeux');
+    await expect(adult).toHaveCount(0);
+    expect((await page.request.get('/jeux/jeu-reserve-aux-adultes')).status()).toBe(404);
+
+    await page.goto('/compte');
+    await ready(page);
+    const saved = () => page.waitForResponse((r) => r.url().includes('adult'));
+    let response = saved();
+    await page.getByLabel(/Afficher les jeux pour adultes/).check();
+    await response;
+
+    await page.goto('/jeux');
+    await expect(adult).toBeVisible();
+    expect((await page.request.get('/jeux/jeu-reserve-aux-adultes')).status()).toBe(200);
+
+    await page.goto('/compte');
+    await ready(page);
+    response = saved();
+    await page.getByLabel(/Afficher les jeux pour adultes/).uncheck();
+    await response;
+  });
+
   test('voit les quatre comptes et son export', async ({ page }) => {
     await login(page);
     await page.goto('/compte');

@@ -5,7 +5,7 @@ import type { RequestHandler } from './$types';
 export const GET: RequestHandler = async () => {
   const origin = env().ORIGIN;
   const [games, users] = await Promise.all([
-    db.game.findMany({ select: { slug: true }, take: 40_000 }),
+    db.game.findMany({ where: { adultOnly: false }, select: { slug: true }, take: 40_000 }),
     db.user.findMany({ where: { isPublic: true }, select: { handle: true }, take: 10_000 }),
   ]);
   const paths = [

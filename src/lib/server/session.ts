@@ -39,7 +39,16 @@ export async function validateSession(cookies: Cookies) {
     select: {
       expiresAt: true,
       lastUsedAt: true,
-      user: { select: { id: true, handle: true, displayName: true, avatarUrl: true, role: true } },
+      user: {
+        select: {
+          id: true,
+          handle: true,
+          displayName: true,
+          avatarUrl: true,
+          role: true,
+          showAdult: true,
+        },
+      },
     },
   });
 

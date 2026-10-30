@@ -5,11 +5,12 @@
   import { NO_REWARDS, persistRewards, rewards } from '$lib/stores/sync';
 
   const MAX_CARDS = 10;
-  const FIRST_FLIP = 500;
-  const FLIP_DURATION = 640;
+  const FIRST_FLIP = 320;
+  const FLIP_DURATION = 420;
   /** Chaque carte démarre quand la précédente est à mi-retournement. */
   const NEXT_FLIP = FLIP_DURATION / 2;
-  const PARTICLES = 14;
+  const PARTICLES = 18;
+  const CONFETTI = 48;
 
   let dialog = $state<HTMLDialogElement>();
   let flipped = $state(0);
@@ -21,7 +22,14 @@
 
   const particles = Array.from({ length: PARTICLES }, (_, index) => ({
     angle: (index / PARTICLES) * 360,
-    distance: 70 + (index % 4) * 26,
+    distance: 80 + (index % 4) * 38,
+  }));
+
+  const confetti = Array.from({ length: CONFETTI }, (_, index) => ({
+    left: (index * 37) % 100,
+    delay: (index * 53) % 700,
+    duration: 1400 + ((index * 97) % 1100),
+    drift: ((index * 71) % 160) - 80,
   }));
 
   onMount(persistRewards);
@@ -62,15 +70,32 @@
   class="reward-dialog"
 >
   {#if cards.length}
-    <div class="reward-stage">
+    <div class="reward-stage" class:finished>
+      <div class="reward-rays" aria-hidden="true"></div>
+      {#if finished}
+        <div class="reward-finale" aria-hidden="true"></div>
+        <div class="reward-confetti" aria-hidden="true">
+          {#each confetti as piece, index (index)}
+            <span
+              style:left="{piece.left}%"
+              style:--drift="{piece.drift}px"
+              style:animation-delay="{piece.delay}ms"
+              style:animation-duration="{piece.duration}ms"
+            ></span>
+          {/each}
+        </div>
+      {/if}
+
       <p class="reward-title">
         {cards.length > 1 ? `${cards.length} cartes 100 % obtenues !` : 'Carte 100 % obtenue !'}
       </p>
 
       <div class="reward-grid" style:--columns={columns} style:--flip="{FLIP_DURATION}ms" inert>
         {#each cards as card, index (card.game.slug)}
-          <div class="reward-scene">
+          <div class="reward-scene" class:landed={index < flipped} style:--index={index}>
             {#if index < flipped}
+              <div class="reward-flash" aria-hidden="true"></div>
+              <div class="reward-ring" aria-hidden="true"></div>
               <div class="reward-burst" aria-hidden="true">
                 {#each particles as particle (particle.angle)}
                   <span style:--angle="{particle.angle}deg" style:--distance="{particle.distance}px"

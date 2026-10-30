@@ -5,9 +5,9 @@ import type { PageServerLoad } from './$types';
 export const load: PageServerLoad = async ({ locals }) => {
   if (locals.user) {
     const [home, accounts, cards] = await Promise.all([
-      dashboard(locals.user.id),
+      dashboard(locals.user.id, locals.user.showAdult),
       db.linkedAccount.count({ where: { userId: locals.user.id } }),
-      cardFeed(),
+      cardFeed(locals.user.showAdult),
     ]);
     return { home, accounts, cards, popular: null };
   }

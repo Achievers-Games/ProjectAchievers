@@ -27,6 +27,7 @@ export async function gamesFromUrl(url: URL, user: App.Locals['user']) {
       page: params.page,
       ownerId: mine ? user?.id : undefined,
       unfinished,
+      showAdult: user?.showAdult,
     },
     user?.id ?? null,
   );

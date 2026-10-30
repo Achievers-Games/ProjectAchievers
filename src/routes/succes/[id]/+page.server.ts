@@ -11,11 +11,13 @@ export const load: PageServerLoad = async ({ params, locals }) => {
   const achievement = await db.achievement.findUnique({
     where: { id: params.id },
     include: {
-      game: { select: { name: true, slug: true } },
+      game: { select: { name: true, slug: true, adultOnly: true } },
       unlocks: viewerId ? { where: { userId: viewerId }, select: { unlockedAt: true } } : false,
     },
   });
-  if (!achievement) error(404, 'Ce succès est introuvable.');
+  if (!achievement || (achievement.game.adultOnly && !locals.user?.showAdult)) {
+    error(404, 'Ce succès est introuvable.');
+  }
 
   const [guides, comments, unlockers] = await Promise.all([
     db.guide.findMany({
@@ -77,7 +79,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
       trophyType: achievement.trophyType,
       globalRarity: achievement.globalRarity,
       points: achievement.points,
-      game: achievement.game,
+      game: { name: achievement.game.name, slug: achievement.game.slug },
     },
     unlockedAt: unlock,
     unlockers,

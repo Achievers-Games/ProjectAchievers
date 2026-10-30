@@ -11,7 +11,9 @@ export const load: PageServerLoad = async ({ params, locals }) => {
       },
     },
   });
-  if (!game) error(404, 'Ce jeu est introuvable.');
+  if (!game || (game.adultOnly && !locals.user?.showAdult)) {
+    error(404, 'Ce jeu est introuvable.');
+  }
 
   const [progress, unlocks, players] = await Promise.all([
     locals.user

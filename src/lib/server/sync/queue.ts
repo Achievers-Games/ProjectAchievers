@@ -5,6 +5,7 @@ import { env } from '../env';
 import { availableProviders } from '../providers';
 import { RARE_CARD } from '../queries';
 import type { Reward } from '$lib/collection';
+import { rateGames } from './content';
 import { SyncError } from './errors';
 import { publishCard, publishSync, publishUnlock } from './events';
 import { syncPsn } from './psn';
@@ -14,6 +15,7 @@ import type { ProviderSync } from './types';
 
 const SYNC_QUEUE = 'sync-account';
 const SWEEP_QUEUE = 'sync-sweep';
+const CONTENT_QUEUE = 'content-rating';
 const STALE_AFTER = 24 * 60 * 60 * 1000;
 const MAX_REWARDS = 10;
 /** Au-delà, la carte est ancienne : lier un compte ne doit pas inonder le fil en direct. */
@@ -39,6 +41,7 @@ function boss(): Promise<PgBoss> {
     await instance.start();
     await instance.createQueue(SYNC_QUEUE);
     await instance.createQueue(SWEEP_QUEUE);
+    await instance.createQueue(CONTENT_QUEUE);
     return instance;
   })());
 }
@@ -76,6 +79,7 @@ async function rareCards(userId: string) {
           platform: true,
           headerUrl: true,
           totalAchievements: true,
+          adultOnly: true,
         },
       },
     },
@@ -103,7 +107,7 @@ export async function runSync({ userId, provider }: SyncJob) {
 
   const user = await db.user.findUniqueOrThrow({
     where: { id: userId },
-    select: { displayName: true, handle: true, avatarUrl: true, isPublic: true },
+    select: { displayName: true, handle: true, avatarUrl: true, isPublic: true, showAdult: true },
   });
   const run = await db.syncRun.create({ data: { userId, provider, status: 'SYNCING' } });
   await db.linkedAccount.update({ where, data: { syncStatus: 'SYNCING', syncError: null } });
@@ -117,7 +121,7 @@ export async function runSync({ userId, provider }: SyncJob) {
       report: (processed, total, game) =>
         publishSync(userId, { provider, status: 'SYNCING', processed, total, game }),
       onUnlocked: (game, count) => {
-        if (!user.isPublic) return;
+        if (!user.isPublic || game.adultOnly) return;
         publishUnlock({
           user: user.displayName,
           handle: user.handle,
@@ -140,11 +144,14 @@ export async function runSync({ userId, provider }: SyncJob) {
         data: { syncStatus: 'COMPLETED', lastSyncedAt: finishedAt },
       }),
     ]);
-    const rewards = newRewards(before, await rareCards(userId));
+    const rewards = newRewards(before, await rareCards(userId)).filter(
+      ({ game }) => user.showAdult || !game.adultOnly,
+    );
     if (user.isPublic) {
       const { displayName, handle, avatarUrl } = user;
       for (const { game, unlockedAt } of rewards) {
-        if (unlockedAt && Date.now() - unlockedAt.getTime() < LIVE_CARD_MAX_AGE) {
+        const recent = unlockedAt && Date.now() - unlockedAt.getTime() < LIVE_CARD_MAX_AGE;
+        if (unlockedAt && recent && !game.adultOnly) {
           publishCard({ user: { displayName, handle, avatarUrl }, game, unlockedAt });
         }
       }
@@ -207,4 +214,6 @@ export async function startWorkers() {
   });
   await instance.work(SWEEP_QUEUE, async () => sweep());
   await instance.schedule(SWEEP_QUEUE, '0 * * * *');
+  await instance.work(CONTENT_QUEUE, async () => void (await rateGames()));
+  await instance.schedule(CONTENT_QUEUE, '*/5 * * * *');
 }

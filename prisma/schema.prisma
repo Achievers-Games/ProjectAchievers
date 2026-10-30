@@ -69,6 +69,8 @@ model User {
   displayName String
   avatarUrl   String?
   isPublic    Boolean  @default(true)
+  /// Affiche les jeux centrés sur le contenu sexuel, masqués par défaut.
+  showAdult   Boolean  @default(false)
   role        Role     @default(USER)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -143,6 +145,9 @@ model Game {
   headerUrl         String?
   totalAchievements Int       @default(0)
   schemaSyncedAt    DateTime?
+  /// Classification Steam : nudité fréquente ou contenu réservé aux adultes.
+  adultOnly         Boolean   @default(false)
+  contentCheckedAt  DateTime?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
@@ -151,6 +156,7 @@ model Game {
 
   @@unique([platform, platformGameId])
   @@index([name])
+  @@index([adultOnly])
 }
 
 model Achievement {

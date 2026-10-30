@@ -322,6 +322,28 @@
 
       <form
         method="POST"
+        action="?/adult"
+        use:enhance={submit}
+        class="flex items-center justify-between gap-4 p-4"
+      >
+        <label for="adult" class="text-sm">
+          <span class="font-medium">Afficher les jeux pour adultes</span>
+          <span class="block text-xs text-muted">
+            Les jeux Steam classés « Nudité fréquente ou contenu à caractère sexuel » ou « Contenu à
+            caractère sexuel réservé aux adultes » sont masqués par défaut.
+          </span>
+        </label>
+        <input
+          id="adult"
+          name="showAdult"
+          type="checkbox"
+          checked={data.profile.showAdult}
+          onchange={(event) => event.currentTarget.form?.requestSubmit()}
+        />
+      </form>
+
+      <form
+        method="POST"
         action="?/theme"
         use:enhance={applyTheme}
         class="flex items-center justify-between gap-4 p-4"

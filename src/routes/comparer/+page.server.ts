@@ -19,7 +19,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
   if (!left || !right) error(404, 'Un de ces profils est introuvable ou privé.');
 
   const [games, leftStats, rightStats] = await Promise.all([
-    compareUsers(left.id, right.id),
+    compareUsers(left.id, right.id, locals.user?.showAdult),
     userStats(left.id),
     userStats(right.id),
   ]);

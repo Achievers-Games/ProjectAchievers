@@ -161,6 +161,26 @@ async function main() {
     create: { ...platinumProgress, userId: demo.id, gameId: platinumGame.id },
   });
 
+  // Un jeu masqué par défaut, dans la bibliothèque de Léa.
+  const adultGame = await db.game.upsert({
+    where: { platform_platformGameId: { platform: 'STEAM', platformGameId: 'demo-adulte' } },
+    update: {},
+    create: {
+      platform: 'STEAM',
+      platformGameId: 'demo-adulte',
+      name: 'Jeu réservé aux adultes',
+      slug: 'jeu-reserve-aux-adultes',
+      adultOnly: true,
+      contentCheckedAt: new Date(),
+    },
+  });
+  const lea = users[1] as (typeof users)[number];
+  await db.userGame.upsert({
+    where: { userId_gameId: { userId: lea.id, gameId: adultGame.id } },
+    update: {},
+    create: { userId: lea.id, gameId: adultGame.id },
+  });
+
   // Assez de jeux pour remplir plusieurs pages de la liste.
   for (let i = 1; i <= 50; i++) {
     const name = `Jeu de démonstration ${i}`;

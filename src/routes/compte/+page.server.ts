@@ -40,7 +40,7 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
   const [profile, accounts, sessions, psn, merge] = await Promise.all([
     db.user.findUniqueOrThrow({
       where: { id: user.id },
-      select: { displayName: true, handle: true, avatarUrl: true, isPublic: true },
+      select: { displayName: true, handle: true, avatarUrl: true, isPublic: true, showAdult: true },
     }),
     db.linkedAccount.findMany({
       where: { userId: user.id },
@@ -172,6 +172,13 @@ export const actions: Actions = {
     const isPublic = (await request.formData()).get('isPublic') === 'on';
     await db.user.update({ where: { id: user.id }, data: { isPublic } });
     return { success: isPublic ? 'Ton profil est public.' : 'Ton profil est privé.' };
+  },
+
+  adult: async ({ request, locals }) => {
+    const user = requireUser(locals);
+    const showAdult = (await request.formData()).get('showAdult') === 'on';
+    await db.user.update({ where: { id: user.id }, data: { showAdult } });
+    return { success: showAdult ? 'Jeux pour adultes affichés.' : 'Jeux pour adultes masqués.' };
   },
 
   theme: async ({ request, cookies }) => {

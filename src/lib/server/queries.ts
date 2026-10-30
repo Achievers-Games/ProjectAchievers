@@ -3,6 +3,10 @@ import { db } from './db';
 
 export const PAGE_SIZE = 36;
 
+/** Les jeux adultes restent masqués tant que le visiteur ne les a pas demandés. */
+export const visibleGames = (showAdult = false) =>
+  (showAdult ? {} : { adultOnly: false }) satisfies Prisma.GameWhereInput;
+
 interface GameFilters {
   q?: string;
   platform?: Platform;
@@ -11,10 +15,12 @@ interface GameFilters {
   ownerId?: string;
   /** Avec `ownerId` : seulement les jeux à succès qui ne sont pas encore à 100 %. */
   unfinished?: boolean;
+  showAdult?: boolean;
 }
 
 export async function listGames(filters: GameFilters, viewerId: string | null) {
   const where: Prisma.GameWhereInput = {
+    ...visibleGames(filters.showAdult),
     ...(filters.q && { name: { contains: filters.q, mode: 'insensitive' } }),
     ...(filters.platform && { platform: filters.platform }),
     ...(filters.ownerId && {
@@ -122,9 +128,14 @@ export const RARE_CARD = {
 } satisfies Prisma.UserGameWhereInput;
 
 /** Dernières cartes obtenues par les profils publics, à la date du dernier succès. */
-export async function cardFeed(limit = 12) {
+export async function cardFeed(showAdult = false, limit = 12) {
   const rows = await db.userGame.findMany({
-    where: { ...RARE_CARD, user: { isPublic: true }, lastUnlockedAt: { not: null } },
+    where: {
+      ...RARE_CARD,
+      user: { isPublic: true },
+      game: visibleGames(showAdult),
+      lastUnlockedAt: { not: null },
+    },
     orderBy: { lastUnlockedAt: 'desc' },
     take: limit,
     select: {
@@ -139,16 +150,16 @@ export async function cardFeed(limit = 12) {
   }));
 }
 
-export async function dashboard(userId: string) {
+export async function dashboard(userId: string, showAdult = false) {
   const [recent, almost, stats] = await Promise.all([
     db.userGame.findMany({
-      where: { userId, lastUnlockedAt: { not: null } },
+      where: { userId, game: visibleGames(showAdult), lastUnlockedAt: { not: null } },
       orderBy: { lastUnlockedAt: 'desc' },
       take: 4,
       select: profileGameSelect,
     }),
     db.userGame.findMany({
-      where: { userId, completion: { gte: 50, lt: 100 } },
+      where: { userId, game: visibleGames(showAdult), completion: { gte: 50, lt: 100 } },
       orderBy: { completion: 'desc' },
       take: 4,
       select: profileGameSelect,
@@ -176,7 +187,7 @@ export async function userStats(userId: string) {
   };
 }
 
-export async function userProfile(handle: string, viewerId: string | null) {
+export async function userProfile(handle: string, viewerId: string | null, showAdult = false) {
   const user = await db.user.findUnique({
     where: { handle },
     select: {
@@ -197,19 +208,19 @@ export async function userProfile(handle: string, viewerId: string | null) {
   const [stats, showcase, games, recent] = await Promise.all([
     userStats(user.id),
     db.userGame.findMany({
-      where: { userId: user.id, ...RARE_CARD },
+      where: { userId: user.id, game: visibleGames(showAdult), ...RARE_CARD },
       orderBy: [{ lastUnlockedAt: { sort: 'desc', nulls: 'last' } }],
       take: 8,
       select: profileGameSelect,
     }),
     db.userGame.findMany({
-      where: { userId: user.id },
+      where: { userId: user.id, game: visibleGames(showAdult) },
       orderBy: [{ lastUnlockedAt: { sort: 'desc', nulls: 'last' } }],
       take: 24,
       select: profileGameSelect,
     }),
     db.userAchievement.findMany({
-      where: { userId: user.id },
+      where: { userId: user.id, achievement: { game: visibleGames(showAdult) } },
       orderBy: { unlockedAt: 'desc' },
       take: 8,
       select: {
@@ -265,9 +276,9 @@ export async function leaderboard(period: LeaderboardPeriod, limit = 20) {
   }));
 }
 
-export function activityFeed(limit = 30) {
+export function activityFeed(showAdult = false, limit = 30) {
   return db.userAchievement.findMany({
-    where: { user: { isPublic: true } },
+    where: { user: { isPublic: true }, achievement: { game: visibleGames(showAdult) } },
     orderBy: { unlockedAt: 'desc' },
     take: limit,
     select: {
@@ -288,10 +299,16 @@ export function activityFeed(limit = 30) {
 }
 
 /** Compare deux joueurs sur les jeux qu'ils possèdent tous les deux. */
-export async function compareUsers(a: string, b: string) {
+export async function compareUsers(a: string, b: string, showAdult = false) {
   const [left, right] = await Promise.all([
-    db.userGame.findMany({ where: { userId: a }, select: profileGameSelect }),
-    db.userGame.findMany({ where: { userId: b }, select: profileGameSelect }),
+    db.userGame.findMany({
+      where: { userId: a, game: visibleGames(showAdult) },
+      select: profileGameSelect,
+    }),
+    db.userGame.findMany({
+      where: { userId: b, game: visibleGames(showAdult) },
+      select: profileGameSelect,
+    }),
   ]);
   const rightByGame = new Map(right.map((row) => [row.game.id, row]));
   return left
