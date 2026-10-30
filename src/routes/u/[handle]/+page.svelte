@@ -16,6 +16,7 @@
     { label: 'Jeux', value: profile.stats.games },
     { label: 'Succès', value: profile.stats.unlocked },
     { label: 'Cartes 100 %', value: profile.stats.completed, gold: true },
+    { label: 'Double 100 %', value: profile.stats.doubles, gold: true },
     { label: 'Points', value: profile.stats.points },
   ]);
 
@@ -75,7 +76,7 @@
     </div>
   </header>
 
-  <dl class="card grid grid-cols-2 sm:grid-cols-4 sm:divide-x sm:divide-line">
+  <dl class="card grid grid-cols-2 sm:grid-cols-5 sm:divide-x sm:divide-line">
     {#each stats as stat (stat.label)}
       <div class="p-4">
         <dt class="label">{stat.label}</dt>
@@ -90,8 +91,13 @@
     <section class="space-y-3" aria-labelledby="vitrine">
       <h2 id="vitrine">Vitrine</h2>
       <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {#each profile.showcase as row (row.game.id)}
-          <GameCard game={row.game} progress={row} />
+        {#each profile.showcase as card (card.id)}
+          <GameCard
+            game={card}
+            progress={card.progress}
+            versions={card.versions}
+            double={card.double}
+          />
         {/each}
       </div>
     </section>
@@ -109,8 +115,13 @@
       <section class="space-y-3">
         <h2>Jeux</h2>
         <div class="grid gap-3 sm:grid-cols-2">
-          {#each profile.games as row (row.game.id)}
-            <GameCard game={row.game} progress={row} />
+          {#each profile.games as card (card.id)}
+            <GameCard
+              game={card}
+              progress={card.progress}
+              versions={card.versions}
+              double={card.double}
+            />
           {/each}
         </div>
       </section>

@@ -41,11 +41,26 @@ export function mapTrophy(trophy: {
   };
 }
 
+const PRIVATE_TROPHIES = 2240526;
+
+/** psn-api renvoie certaines erreurs de Sony comme une réponse normale. */
+export function assertPsnResponse(response: object) {
+  const { error } = response as { error?: { code?: number; message?: string } };
+  if (!error) return;
+  if (error.code === PRIVATE_TROPHIES) {
+    throw new SyncError(
+      'Tes trophées PSN sont privés. Rends-les visibles par tout le monde, puis relance la synchronisation.',
+    );
+  }
+  throw new Error(`PSN a répondu ${error.code} : ${error.message}`);
+}
+
 async function allTitles(accountId: string) {
   const authorization = await psnAuthorization();
   const titles: TrophyTitle[] = [];
   for (let offset = 0; ; offset += PAGE) {
     const page = await getUserTitles(authorization, accountId, { limit: PAGE, offset });
+    assertPsnResponse(page);
     titles.push(...page.trophyTitles);
     if (!page.nextOffset) return titles;
   }
@@ -54,17 +69,7 @@ async function allTitles(accountId: string) {
 export const syncPsn: ProviderSync = async ({ userId, account, report, onUnlocked }) => {
   const accountId = account.providerUserId;
 
-  let titles: TrophyTitle[];
-  try {
-    titles = await allTitles(accountId);
-  } catch (error) {
-    if (error instanceof Error && /forbidden|2240526|privacy/i.test(error.message)) {
-      throw new SyncError(
-        'Tes trophées PSN sont privés. Rends-les visibles par tout le monde, puis relance la synchronisation.',
-      );
-    }
-    throw error;
-  }
+  const titles = await allTitles(accountId);
 
   const previous = await db.userGame.findMany({
     where: { userId, game: { platform: 'PSN' } },

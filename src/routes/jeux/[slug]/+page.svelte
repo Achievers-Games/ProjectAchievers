@@ -71,6 +71,16 @@
         )}
         · {plural(data.players, 'joueur')}
       </p>
+      {#if data.versions.length}
+        <p class="flex flex-wrap gap-2 text-sm">
+          {#each data.versions as version (version.slug)}
+            <a href="/jeux/{version.slug}" class="btn h-8">
+              Version {PLATFORM_LABELS[version.platform]}
+              {#if version.completion !== null}· {Math.round(version.completion)} %{/if}
+            </a>
+          {/each}
+        </p>
+      {/if}
       {#if data.progress}
         <div class="max-w-sm space-y-1 pt-2">
           <Progress value={data.progress.completion} {complete} />

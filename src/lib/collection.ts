@@ -14,9 +14,12 @@ export interface Reward {
     headerUrl: string | null;
     totalAchievements: number;
     adultOnly?: boolean;
+    familyKey?: string | null;
   };
   progress: CardProgress;
   unlockedAt: Date | null;
+  /** Le même jeu est aussi à 100 % sur une autre plateforme. */
+  double?: boolean;
 }
 
 /** Une carte obtenue, affichée dans le fil en direct. */
@@ -26,6 +29,6 @@ export interface CardDrop {
   unlockedAt: Date | string;
 }
 
-/** Un jeu terminé devient une carte : 100 % des succès, ou le trophée platine PlayStation. */
+/** Seul le 100 % réel donne une carte : un platine ne couvre souvent pas les trophées de DLC. */
 export const isComplete = (progress: CardProgress | null | undefined) =>
-  Boolean(progress && (progress.platinum || progress.completion >= 100));
+  Boolean(progress && progress.completion >= 100);

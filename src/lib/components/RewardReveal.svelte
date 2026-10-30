@@ -87,7 +87,13 @@
       {/if}
 
       <p class="reward-title">
-        {cards.length > 1 ? `${cards.length} cartes 100 % obtenues !` : 'Carte 100 % obtenue !'}
+        {#if cards.length > 1}
+          {cards.length} cartes 100 % obtenues !
+        {:else if cards[0]?.double}
+          Double 100 % !
+        {:else}
+          Carte 100 % obtenue !
+        {/if}
       </p>
 
       <div class="reward-grid" style:--columns={columns} style:--flip="{FLIP_DURATION}ms" inert>
@@ -106,7 +112,7 @@
             <div class="reward-flip" class:revealed={index < flipped}>
               <div class="reward-back" aria-hidden="true">Achievers</div>
               <div class="reward-front">
-                <GameCard game={card.game} progress={card.progress} />
+                <GameCard game={card.game} progress={card.progress} double={card.double} />
               </div>
             </div>
           </div>

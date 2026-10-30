@@ -1,8 +1,30 @@
 import { describe, expect, it, vi } from 'vitest';
-import { fetchRetry, mapLimit } from './errors';
-import { mapTrophy } from './psn';
+import { isComplete } from '$lib/collection';
+import { fetchRetry, mapLimit, SyncError } from './errors';
+import { assertPsnResponse, mapTrophy } from './psn';
 import { mapSchema } from './steam';
 import { mapXboxAchievement } from './xbox';
+
+describe('cartes', () => {
+  it('ne donne une carte qu’à un vrai 100 %, même avec le trophée platine', () => {
+    const progress = { unlockedCount: 51, completion: 52, platinum: true };
+    expect(isComplete(progress)).toBe(false);
+    expect(isComplete({ ...progress, completion: 100 })).toBe(true);
+  });
+});
+
+describe('réponses PSN', () => {
+  it('explique des trophées privés, renvoyés sans exception par psn-api', () => {
+    const response = { error: { code: 2240526, message: 'Not permitted by access control' } };
+    expect(() => assertPsnResponse(response)).toThrow(SyncError);
+    expect(() => assertPsnResponse(response)).toThrow('trophées PSN sont privés');
+  });
+
+  it('laisse passer une réponse normale et signale les autres erreurs', () => {
+    expect(() => assertPsnResponse({ trophyTitles: [] })).not.toThrow();
+    expect(() => assertPsnResponse({ error: { code: 1, message: 'panne' } })).toThrow('panne');
+  });
+});
 
 describe('Steam', () => {
   it('lit displayName et les URL complètes du schéma', () => {

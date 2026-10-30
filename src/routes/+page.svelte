@@ -13,6 +13,7 @@
           { label: 'Jeux', value: data.home.stats.games },
           { label: 'Succès', value: data.home.stats.unlocked },
           { label: 'Cartes 100 %', value: data.home.stats.completed, gold: true },
+          { label: 'Double 100 %', value: data.home.stats.doubles, gold: true },
           { label: 'Points', value: data.home.stats.points },
         ]
       : [],
@@ -33,7 +34,7 @@
 
     <LiveCards initial={data.cards} />
 
-    <dl class="card grid grid-cols-2 sm:grid-cols-4 sm:divide-x sm:divide-line">
+    <dl class="card grid grid-cols-2 sm:grid-cols-5 sm:divide-x sm:divide-line">
       {#each stats as stat (stat.label)}
         <div class="p-4">
           <dt class="label">{stat.label}</dt>

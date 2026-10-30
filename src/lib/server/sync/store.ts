@@ -1,5 +1,6 @@
 import type { Platform, Prisma, TrophyType } from '@prisma/client';
 import { db } from '../db';
+import { familyKey } from '../family';
 import { slugify } from '$lib/slug';
 
 const POINTS: Record<TrophyType, number> = {
@@ -46,11 +47,15 @@ export async function upsertGame(input: GameInput) {
   const existing = await db.game.findUnique({ where: { platform_platformGameId: key } });
   const fields = { name: input.name, coverUrl: input.coverUrl, headerUrl: input.headerUrl };
 
-  if (existing) return db.game.update({ where: { id: existing.id }, data: fields });
+  if (existing) {
+    const family = existing.familyLocked ? {} : { familyKey: familyKey(input.name) };
+    return db.game.update({ where: { id: existing.id }, data: { ...fields, ...family } });
+  }
   return db.game.create({
     data: {
       ...key,
       ...fields,
+      familyKey: familyKey(input.name),
       slug: await availableSlug(input.name, input.platform, input.platformGameId),
     },
   });

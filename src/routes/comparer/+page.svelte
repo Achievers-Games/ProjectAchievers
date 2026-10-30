@@ -9,6 +9,7 @@
   const rows = $derived([
     { label: 'Succès', left: data.leftStats.unlocked, right: data.rightStats.unlocked },
     { label: 'Cartes 100 %', left: data.leftStats.completed, right: data.rightStats.completed },
+    { label: 'Double 100 %', left: data.leftStats.doubles, right: data.rightStats.doubles },
     { label: 'Points', left: data.leftStats.points, right: data.rightStats.points },
   ]);
 </script>

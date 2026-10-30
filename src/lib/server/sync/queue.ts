@@ -3,6 +3,7 @@ import type { Provider } from '@prisma/client';
 import { db } from '../db';
 import { env } from '../env';
 import { availableProviders } from '../providers';
+import { fillFamilies } from '../family';
 import { RARE_CARD } from '../queries';
 import type { Reward } from '$lib/collection';
 import { rateGames } from './content';
@@ -80,6 +81,7 @@ async function rareCards(userId: string) {
           headerUrl: true,
           totalAchievements: true,
           adultOnly: true,
+          familyKey: true,
         },
       },
     },
@@ -144,9 +146,18 @@ export async function runSync({ userId, provider }: SyncJob) {
         data: { syncStatus: 'COMPLETED', lastSyncedAt: finishedAt },
       }),
     ]);
-    const rewards = newRewards(before, await rareCards(userId)).filter(
-      ({ game }) => user.showAdult || !game.adultOnly,
-    );
+    const after = await rareCards(userId);
+    const platforms = new Map<string, Set<string>>();
+    for (const { game } of after.values()) {
+      const key = game.familyKey ?? game.slug;
+      platforms.set(key, (platforms.get(key) ?? new Set()).add(game.platform));
+    }
+    const rewards = newRewards(before, after)
+      .map((card) => ({
+        ...card,
+        double: (platforms.get(card.game.familyKey ?? card.game.slug)?.size ?? 0) >= 2,
+      }))
+      .filter(({ game }) => user.showAdult || !game.adultOnly);
     if (user.isPublic) {
       const { displayName, handle, avatarUrl } = user;
       for (const { game, unlockedAt } of rewards) {
@@ -202,6 +213,7 @@ async function sweep() {
 /** Démarre le traitement des synchronisations dans le processus du site. */
 export async function startWorkers() {
   const instance = await boss();
+  await fillFamilies();
 
   // Un arrêt brutal peut laisser des comptes bloqués en cours de synchronisation.
   await db.linkedAccount.updateMany({

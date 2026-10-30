@@ -1,5 +1,6 @@
 import { Prisma, type Platform } from '@prisma/client';
 import { db } from './db';
+import { groupLibrary } from './library';
 
 export const PAGE_SIZE = 36;
 
@@ -18,21 +19,63 @@ interface GameFilters {
   showAdult?: boolean;
 }
 
+const librarySelect = {
+  unlockedCount: true,
+  completion: true,
+  platinum: true,
+  lastUnlockedAt: true,
+  game: {
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      platform: true,
+      coverUrl: true,
+      headerUrl: true,
+      totalAchievements: true,
+      familyKey: true,
+    },
+  },
+} satisfies Prisma.UserGameSelect;
+
+/** Bibliothèque d'un joueur : les versions d'un même jeu forment une seule carte. */
+async function listLibrary(filters: GameFilters, ownerId: string, where: Prisma.GameWhereInput) {
+  const rows = await db.userGame.findMany({
+    where: { userId: ownerId, game: where },
+    select: librarySelect,
+  });
+  const cards = groupLibrary(rows).filter(
+    (card) => !filters.unfinished || (card.progress.completion < 100 && card.totalAchievements > 0),
+  );
+
+  const byName = (a: (typeof cards)[number], b: (typeof cards)[number]) =>
+    a.name.localeCompare(b.name, 'fr');
+  cards.sort((a, b) => {
+    if (filters.sort === 'succes') {
+      return b.totalAchievements - a.totalAchievements || byName(a, b);
+    }
+    if (filters.sort === 'progression') {
+      return b.progress.completion - a.progress.completion || byName(a, b);
+    }
+    if (filters.sort === 'recent') {
+      const time = (card: typeof a) => card.lastUnlockedAt?.getTime() ?? 0;
+      return time(b) - time(a) || byName(a, b);
+    }
+    return byName(a, b);
+  });
+
+  const start = (filters.page - 1) * PAGE_SIZE;
+  return { games: cards.slice(start, start + PAGE_SIZE), total: cards.length };
+}
+
 export async function listGames(filters: GameFilters, viewerId: string | null) {
   const where: Prisma.GameWhereInput = {
     ...visibleGames(filters.showAdult),
     ...(filters.q && { name: { contains: filters.q, mode: 'insensitive' } }),
     ...(filters.platform && { platform: filters.platform }),
-    ...(filters.ownerId && {
-      players: {
-        some: {
-          userId: filters.ownerId,
-          ...(filters.unfinished && { completion: { lt: 100 }, platinum: false }),
-        },
-      },
-    }),
-    ...(filters.unfinished && { totalAchievements: { gt: 0 } }),
   };
+  if (filters.ownerId) return listLibrary(filters, filters.ownerId, where);
+
   // L'identifiant départage les égalités : sans lui, un jeu pourrait passer d'une page à l'autre.
   const orderBy: Prisma.GameOrderByWithRelationInput[] = [
     filters.sort === 'succes'
@@ -43,52 +86,26 @@ export async function listGames(filters: GameFilters, viewerId: string | null) {
     { id: 'asc' },
   ];
 
-  const select = {
-    id: true,
-    name: true,
-    slug: true,
-    platform: true,
-    coverUrl: true,
-    headerUrl: true,
-    totalAchievements: true,
-  } satisfies Prisma.GameSelect;
-
-  // Trier par progression demande les lignes du joueur : on part donc de UserGame.
-  if (filters.sort === 'progression' && filters.ownerId) {
-    const [rows, total] = await Promise.all([
-      db.userGame.findMany({
-        where: { userId: filters.ownerId, game: where },
-        orderBy: [
-          { completion: 'desc' },
-          { lastUnlockedAt: { sort: 'desc', nulls: 'last' } },
-          { gameId: 'asc' },
-        ],
-        take: PAGE_SIZE,
-        skip: (filters.page - 1) * PAGE_SIZE,
-        select: { game: { select } },
-      }),
-      db.game.count({ where }),
-    ]);
-    return {
-      games: await withProgress(
-        rows.map((r) => r.game),
-        viewerId,
-      ),
-      total,
-    };
-  }
-
   const [games, total] = await Promise.all([
     db.game.findMany({
       where,
       orderBy,
       take: PAGE_SIZE,
       skip: (filters.page - 1) * PAGE_SIZE,
-      select,
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        platform: true,
+        coverUrl: true,
+        headerUrl: true,
+        totalAchievements: true,
+      },
     }),
     db.game.count({ where }),
   ]);
-  return { games: await withProgress(games, viewerId), total };
+  const items = await withProgress(games, viewerId);
+  return { games: items.map((game) => ({ ...game, versions: [], double: false })), total };
 }
 
 async function withProgress<T extends { id: string }>(games: T[], viewerId: string | null) {
@@ -122,9 +139,9 @@ const profileGameSelect = {
   },
 } satisfies Prisma.UserGameSelect;
 
-/** Les jeux terminés : 100 % des succès ou trophée platine, c'est la même carte. */
+/** Les jeux terminés : 100 % des succès, DLC compris. */
 export const RARE_CARD = {
-  OR: [{ platinum: true }, { completion: { gte: 100 } }],
+  completion: { gte: 100 },
 } satisfies Prisma.UserGameWhereInput;
 
 /** Dernières cartes obtenues par les profils publics, à la date du dernier succès. */
@@ -170,9 +187,18 @@ export async function dashboard(userId: string, showAdult = false) {
 }
 
 export async function userStats(userId: string) {
-  const [games, completed, totals] = await Promise.all([
-    db.userGame.count({ where: { userId } }),
-    db.userGame.count({ where: { userId, ...RARE_CARD } }),
+  const [collection, totals] = await Promise.all([
+    db.$queryRaw<{ games: bigint; completed: bigint; doubles: bigint }[]>`
+      SELECT count(*) AS games,
+             count(*) FILTER (WHERE finished >= 1) AS completed,
+             count(*) FILTER (WHERE finished >= 2) AS doubles
+      FROM (
+        SELECT count(DISTINCT g.platform) FILTER (WHERE ug.completion >= 100) AS finished
+        FROM "UserGame" ug
+        JOIN "Game" g ON g.id = ug."gameId"
+        WHERE ug."userId" = ${userId}
+        GROUP BY COALESCE(g."familyKey", g.id)
+      ) families`,
     db.$queryRaw<{ unlocked: bigint; points: bigint | null }[]>`
       SELECT count(*) AS unlocked, sum(a.points) AS points
       FROM "UserAchievement" ua
@@ -180,8 +206,9 @@ export async function userStats(userId: string) {
       WHERE ua."userId" = ${userId}`,
   ]);
   return {
-    games,
-    completed,
+    games: Number(collection[0]?.games ?? 0),
+    completed: Number(collection[0]?.completed ?? 0),
+    doubles: Number(collection[0]?.doubles ?? 0),
     unlocked: Number(totals[0]?.unlocked ?? 0),
     points: Number(totals[0]?.points ?? 0),
   };
@@ -205,19 +232,18 @@ export async function userProfile(handle: string, viewerId: string | null, showA
   });
   if (!user || (!user.isPublic && user.id !== viewerId)) return null;
 
-  const [stats, showcase, games, recent] = await Promise.all([
+  const [stats, showcaseRows, gameRows, recent] = await Promise.all([
     userStats(user.id),
     db.userGame.findMany({
       where: { userId: user.id, game: visibleGames(showAdult), ...RARE_CARD },
       orderBy: [{ lastUnlockedAt: { sort: 'desc', nulls: 'last' } }],
-      take: 8,
-      select: profileGameSelect,
+      select: librarySelect,
     }),
     db.userGame.findMany({
       where: { userId: user.id, game: visibleGames(showAdult) },
       orderBy: [{ lastUnlockedAt: { sort: 'desc', nulls: 'last' } }],
-      take: 24,
-      select: profileGameSelect,
+      take: 60,
+      select: librarySelect,
     }),
     db.userAchievement.findMany({
       where: { userId: user.id, achievement: { game: visibleGames(showAdult) } },
@@ -237,7 +263,10 @@ export async function userProfile(handle: string, viewerId: string | null, showA
       },
     }),
   ]);
-  return { user, stats, showcase, games, recent };
+  const showcase = groupLibrary(showcaseRows)
+    .sort((a, b) => Number(b.double) - Number(a.double))
+    .slice(0, 8);
+  return { user, stats, showcase, games: groupLibrary(gameRows).slice(0, 24), recent };
 }
 
 export type LeaderboardPeriod = 'semaine' | 'mois' | 'tout';

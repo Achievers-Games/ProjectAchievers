@@ -15,7 +15,7 @@ synchronise automatiquement, avec profils publics, comparaison, classement, guid
 
 ## Démarrer
 
-Node 20 ou plus est requis. Copie `.env.example` vers `.env`, génère `ENCRYPTION_KEY`, puis :
+Node 22 ou plus est requis. Copie `.env.example` vers `.env`, génère `ENCRYPTION_KEY`, puis :
 
 ```bash
 npm install

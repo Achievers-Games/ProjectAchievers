@@ -1,5 +1,6 @@
 import { error } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
+import { visibleGames } from '$lib/server/queries';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
@@ -15,7 +16,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
     error(404, 'Ce jeu est introuvable.');
   }
 
-  const [progress, unlocks, players] = await Promise.all([
+  const [progress, unlocks, players, others] = await Promise.all([
     locals.user
       ? db.userGame.findUnique({
           where: { userId_gameId: { userId: locals.user.id, gameId: game.id } },
@@ -28,6 +29,23 @@ export const load: PageServerLoad = async ({ params, locals }) => {
         })
       : [],
     db.userGame.count({ where: { gameId: game.id, user: { isPublic: true } } }),
+    game.familyKey
+      ? db.game.findMany({
+          where: {
+            familyKey: game.familyKey,
+            NOT: { id: game.id },
+            ...visibleGames(locals.user?.showAdult),
+          },
+          select: {
+            slug: true,
+            platform: true,
+            players: {
+              where: { userId: locals.user?.id ?? '' },
+              select: { completion: true },
+            },
+          },
+        })
+      : [],
   ]);
 
   const unlockedAt = new Map(unlocks.map((u) => [u.achievementId, u.unlockedAt]));
@@ -50,5 +68,10 @@ export const load: PageServerLoad = async ({ params, locals }) => {
     }),
     progress,
     players,
+    versions: others.map((other) => ({
+      slug: other.slug,
+      platform: other.platform,
+      completion: other.players[0]?.completion ?? null,
+    })),
   };
 };

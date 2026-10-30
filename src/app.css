@@ -262,6 +262,33 @@
   filter: none;
 }
 
+/* Double 100 % : la carte dorée reçoit un cadre irisé. */
+.game-card[data-double] {
+  --frame: linear-gradient(
+    120deg,
+    #ffe08a,
+    #7dd3fc 25%,
+    #c4b5fd 45%,
+    #f9a8d4 65%,
+    #ffe08a 85%,
+    #fff6d5
+  );
+  box-shadow:
+    0 0 0 1px rgb(196 181 253 / 0.5),
+    0 0 26px rgb(196 181 253 / 0.55),
+    0 0 40px rgb(247 196 72 / 0.35);
+}
+.game-card[data-double]:hover {
+  box-shadow:
+    0 0 0 1px rgb(196 181 253 / 0.8),
+    0 0 40px rgb(196 181 253 / 0.8),
+    0 0 60px rgb(247 196 72 / 0.5);
+}
+.complete-badge[data-double] {
+  color: #17132e;
+  background: linear-gradient(120deg, #ffe08a, #a5f3fc, #c4b5fd, #fbcfe8);
+}
+
 .foil {
   position: absolute;
   inset: 0;

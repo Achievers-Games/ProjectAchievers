@@ -1,0 +1,69 @@
+import type { Platform } from '@prisma/client';
+
+interface LibraryRow {
+  unlockedCount: number;
+  completion: number;
+  platinum: boolean;
+  lastUnlockedAt: Date | null;
+  game: {
+    id: string;
+    name: string;
+    slug: string;
+    platform: Platform;
+    coverUrl: string | null;
+    headerUrl: string | null;
+    totalAchievements: number;
+    familyKey: string | null;
+  };
+}
+
+export interface LibraryCard {
+  id: string;
+  name: string;
+  slug: string;
+  platform: Platform;
+  coverUrl: string | null;
+  headerUrl: string | null;
+  totalAchievements: number;
+  progress: { unlockedCount: number; completion: number; platinum: boolean };
+  lastUnlockedAt: Date | null;
+  versions: { platform: Platform; slug: string; completion: number }[];
+  double: boolean;
+}
+
+/**
+ * Réunit les versions d'un jeu en une seule carte, celle de la version la plus avancée.
+ * Finir une seule version suffit à obtenir la carte ; deux plateformes donnent le Double 100 %.
+ */
+export function groupLibrary(rows: LibraryRow[]): LibraryCard[] {
+  const families = Map.groupBy(rows, (row) => row.game.familyKey ?? row.game.id);
+
+  return [...families.values()].map((family) => {
+    const versions = family.toSorted((a, b) => b.completion - a.completion);
+    const best = versions[0] as LibraryRow;
+    const finished = new Set(
+      versions.filter((v) => v.completion >= 100).map((v) => v.game.platform),
+    );
+    return {
+      id: best.game.id,
+      name: best.game.name,
+      slug: best.game.slug,
+      platform: best.game.platform,
+      coverUrl: best.game.coverUrl,
+      headerUrl: best.game.headerUrl,
+      totalAchievements: best.game.totalAchievements,
+      progress: {
+        unlockedCount: best.unlockedCount,
+        completion: best.completion,
+        platinum: best.platinum,
+      },
+      lastUnlockedAt: best.lastUnlockedAt,
+      versions: versions.map((v) => ({
+        platform: v.game.platform,
+        slug: v.game.slug,
+        completion: v.completion,
+      })),
+      double: finished.size >= 2,
+    };
+  });
+}

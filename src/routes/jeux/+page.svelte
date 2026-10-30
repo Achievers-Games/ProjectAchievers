@@ -211,7 +211,13 @@
         : 'grid gap-3 sm:grid-cols-2 lg:grid-cols-4'}
     >
       {#each games as game (game.id)}
-        <GameCard {game} progress={game.progress} layout={data.params.vue} />
+        <GameCard
+          {game}
+          progress={game.progress}
+          layout={data.params.vue}
+          versions={game.versions}
+          double={game.double}
+        />
       {/each}
     </div>
   {/if}

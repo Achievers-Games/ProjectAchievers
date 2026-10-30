@@ -44,7 +44,7 @@ test.describe('visiteur', () => {
     await ready(page);
     await page.getByLabel('Filtrer par nom').fill('hades');
     await expect(page).toHaveURL(/q=hades/);
-    await expect(page.getByRole('link', { name: /Hades/ })).toBeVisible();
+    await expect(page.getByRole('link', { name: /Hades/ }).first()).toBeVisible();
     await expect(page.getByRole('link', { name: /Portal 2/ })).toHaveCount(0);
 
     await page.reload();
@@ -151,7 +151,7 @@ test.describe('membre', () => {
     );
     await page.goto('/');
     const live = page.getByRole('region', { name: /En direct/ });
-    await expect(live.getByRole('link', { name: /Hades/ })).toBeVisible();
+    await expect(live.getByRole('link', { name: /Hades/ }).first()).toBeVisible();
     await expect(live.getByRole('link', { name: /Celeste/ })).toBeVisible();
   });
 
@@ -159,8 +159,10 @@ test.describe('membre', () => {
     await login(page);
     await page.goto('/u/demo');
     const showcase = page.getByRole('region', { name: 'Vitrine' });
-    // Le jeu à 100 % et le jeu platiné donnent la même carte.
+    // Hades, fini sur Steam et PlayStation, passe en tête sous une seule carte Double 100 %.
     await expect(showcase.locator('a[data-complete]')).toHaveCount(2);
+    await expect(showcase.locator('a[data-double]')).toHaveCount(1);
+    await expect(showcase.getByText('Double 100 %')).toBeVisible();
 
     const cards = Array.from({ length: 12 }, (_, index) => ({
       game: {
@@ -218,10 +220,13 @@ test.describe('membre', () => {
     await login(page);
     await page.goto('/dev/revelation');
     await ready(page);
-    await page.getByRole('button', { name: 'Ouvrir 2 cartes' }).click();
+    await page
+      .getByRole('button', { name: /^Ouvrir [0-9]+ cartes$/ })
+      .first()
+      .click();
     const dialog = page.getByRole('dialog', { name: 'Nouvelles cartes' });
     await page.keyboard.press('Enter');
-    await expect(dialog.locator('.reward-flip.revealed')).toHaveCount(2);
+    await expect(dialog.locator('.reward-flip.revealed')).toHaveCount(3);
     await page.keyboard.press('Escape');
     await expect(dialog).toBeHidden();
   });

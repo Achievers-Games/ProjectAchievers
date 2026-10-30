@@ -4,6 +4,8 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest
 import { listGames } from './queries';
 import { profileSchema, resolveIdentity, updateProfile, type Identity } from './accounts';
 import { db } from './db';
+import { familyKey } from './family';
+import { groupLibrary } from './library';
 import { mergeUsers } from './merge';
 import { enqueueSync, runSync, startWorkers } from './sync/queue';
 import { isAdultOnly, rateGames } from './sync/content';
@@ -84,6 +86,49 @@ describe('rattachement des comptes', () => {
     });
     expect(row.accessTokenEnc).toBeTruthy();
     expect(row.accessTokenEnc).not.toContain('jeton-en-clair');
+  });
+});
+
+describe('jeux sur plusieurs plateformes', () => {
+  it('reconnaît un même jeu malgré les mentions commerciales', () => {
+    expect(familyKey('HEAVY RAIN™')).toBe(familyKey('Heavy Rain'));
+    expect(familyKey('Little Nightmares Enhanced Edition')).toBe(familyKey('Little Nightmares'));
+    expect(familyKey('The Witcher 3: Wild Hunt — Remastered')).toBe(
+      familyKey('The Witcher 3: Wild Hunt'),
+    );
+    expect(familyKey('Persona 5 Royal')).not.toBe(familyKey('Persona 4 Golden'));
+    expect(familyKey('Hotline Miami 2: Wrong Number')).not.toBe(familyKey('Hotline Miami'));
+    expect(familyKey('Remastered')).not.toBe('');
+  });
+
+  const row = (platform: 'STEAM' | 'PSN', completion: number, key: string | null = 'jeu') => ({
+    unlockedCount: 1,
+    completion,
+    platinum: false,
+    lastUnlockedAt: null,
+    game: {
+      id: `${platform}-${key}`,
+      name: 'Jeu',
+      slug: platform.toLowerCase(),
+      platform,
+      coverUrl: null,
+      headerUrl: null,
+      totalAchievements: 2,
+      familyKey: key,
+    },
+  });
+
+  it('réunit les versions sur la plus avancée, sans pénaliser une version finie', () => {
+    const [card] = groupLibrary([row('PSN', 40), row('STEAM', 100)]);
+    expect(card).toMatchObject({ slug: 'steam', double: false });
+    expect(card?.progress.completion).toBe(100);
+    expect(card?.versions.map((v) => v.platform)).toEqual(['STEAM', 'PSN']);
+  });
+
+  it('réserve le Double 100 % à deux plateformes différentes', () => {
+    expect(groupLibrary([row('PSN', 100), row('STEAM', 100)])).toHaveLength(1);
+    expect(groupLibrary([row('PSN', 100), row('STEAM', 100)])[0]?.double).toBe(true);
+    expect(groupLibrary([row('PSN', 100, 'a'), row('STEAM', 100, 'b')])).toHaveLength(2);
   });
 });
 

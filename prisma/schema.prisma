@@ -148,6 +148,10 @@ model Game {
   /// Classification Steam : nudité fréquente ou contenu réservé aux adultes.
   adultOnly         Boolean   @default(false)
   contentCheckedAt  DateTime?
+  /// Clé commune aux versions d'un même jeu sur plusieurs plateformes.
+  familyKey         String?
+  /// Corrigée par la modération : la synchronisation n'y touche plus.
+  familyLocked      Boolean   @default(false)
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
@@ -157,6 +161,7 @@ model Game {
   @@unique([platform, platformGameId])
   @@index([name])
   @@index([adultOnly])
+  @@index([familyKey])
 }
 
 model Achievement {
