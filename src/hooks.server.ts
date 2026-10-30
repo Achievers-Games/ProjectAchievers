@@ -31,11 +31,11 @@ export const handle: Handle = async ({ event, resolve }) => {
   }
 
   event.locals.user = await validateSession(event.cookies);
-  const theme = event.cookies.get('pa_theme');
 
   const response = await resolve(event, {
+    // Lu au rendu : une action peut avoir changé le cookie pendant cette requête.
     transformPageChunk: ({ html }) =>
-      html.replace('%theme%', theme === 'light' || theme === 'dark' ? theme : 'dark'),
+      html.replace('%theme%', event.cookies.get('pa_theme') === 'light' ? 'light' : 'dark'),
   });
 
   response.headers.set('X-Content-Type-Options', 'nosniff');

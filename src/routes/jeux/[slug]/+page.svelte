@@ -35,7 +35,8 @@
   <title>{data.game.name} — Project Achievers</title>
   <meta
     name="description"
-    content="{plural(data.achievements.length, 'succès', 'succès')} sur {data.game.name} : rareté, guides et conseils."
+    content="{plural(data.achievements.length, 'succès', 'succès')} sur {data.game
+      .name} : rareté, guides et conseils."
   />
   <meta property="og:title" content={data.game.name} />
   {#if data.game.headerUrl}<meta property="og:image" content={data.game.headerUrl} />{/if}
@@ -49,7 +50,11 @@
     <div class="min-w-0 flex-1 space-y-2">
       <h1>{data.game.name}</h1>
       <p class="text-sm text-muted">
-        {PLATFORM_LABELS[data.game.platform]} · {plural(data.achievements.length, 'succès', 'succès')}
+        {PLATFORM_LABELS[data.game.platform]} · {plural(
+          data.achievements.length,
+          'succès',
+          'succès',
+        )}
         · {plural(data.players, 'joueur')}
       </p>
       {#if data.progress}

@@ -3,13 +3,11 @@
 
   let { data } = $props();
 
-  const options = $derived(
-    [
-      { id: 'steam', provider: 'STEAM', label: 'Continuer avec Steam' },
-      { id: 'discord', provider: 'DISCORD', label: 'Continuer avec Discord' },
-      { id: 'xbox', provider: 'XBOX', label: 'Continuer avec Xbox' },
-    ] as const,
-  );
+  const options = $derived([
+    { id: 'steam', provider: 'STEAM', label: 'Continuer avec Steam' },
+    { id: 'discord', provider: 'DISCORD', label: 'Continuer avec Discord' },
+    { id: 'xbox', provider: 'XBOX', label: 'Continuer avec Xbox' },
+  ] as const);
   const none = $derived(options.every((o) => !data.providers[o.provider]));
 </script>
 

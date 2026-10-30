@@ -2,16 +2,10 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "frontend",
+      "name": "site",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
       "port": 5173
-    },
-    {
-      "name": "backend",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": ["--prefix", "backend", "tsx", "backend/src/index.ts"],
-      "port": 3001
     }
   ]
 }

@@ -77,15 +77,18 @@ async function xboxPost<T>(url: string, body: unknown): Promise<T> {
 
 /** Échange un jeton Microsoft contre un jeton utilisateur Xbox, puis un jeton XSTS. */
 export async function openXboxSession(microsoftAccessToken: string): Promise<XboxSession> {
-  const user = await xboxPost<{ Token: string }>('https://user.auth.xboxlive.com/user/authenticate', {
-    Properties: {
-      AuthMethod: 'RPS',
-      SiteName: 'user.auth.xboxlive.com',
-      RpsTicket: `d=${microsoftAccessToken}`,
+  const user = await xboxPost<{ Token: string }>(
+    'https://user.auth.xboxlive.com/user/authenticate',
+    {
+      Properties: {
+        AuthMethod: 'RPS',
+        SiteName: 'user.auth.xboxlive.com',
+        RpsTicket: `d=${microsoftAccessToken}`,
+      },
+      RelyingParty: 'http://auth.xboxlive.com',
+      TokenType: 'JWT',
     },
-    RelyingParty: 'http://auth.xboxlive.com',
-    TokenType: 'JWT',
-  });
+  );
 
   const xsts = await xboxPost<{
     Token: string;

@@ -8,23 +8,19 @@ import globals from 'globals';
 
 export default [
   {
-    ignores: ['dist/**', '.svelte-kit/**', 'src-tauri/**', 'legacy/**', 'node_modules/**'],
+    ignores: ['build/**', '.svelte-kit/**', 'node_modules/**', '.pgdata/**'],
   },
   js.configs.recommended,
   ...tsPlugin.configs['flat/recommended'],
   ...sveltePlugin.configs['flat/recommended'],
   {
     languageOptions: {
-      globals: {
-        ...globals.browser,
-        ...globals.node,
-      },
+      globals: { ...globals.browser, ...globals.node },
     },
     rules: {
-      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
-      '@typescript-eslint/no-explicit-any': 'off',
-      'svelte/no-at-html-tags': 'warn',
-      // App Tauri servie depuis la racine : les chemins absolus sont volontaires.
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      'no-undef': 'off',
+      // Le site est servi depuis la racine : les chemins absolus sont volontaires.
       'svelte/no-navigation-without-resolve': 'off',
     },
   },
@@ -32,9 +28,7 @@ export default [
     files: ['**/*.svelte'],
     languageOptions: {
       parser: svelteParser,
-      parserOptions: {
-        parser: tsParser,
-      },
+      parserOptions: { parser: tsParser },
     },
   },
   prettier,

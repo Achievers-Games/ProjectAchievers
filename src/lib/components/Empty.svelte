@@ -1,11 +1,8 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
 
-  let {
-    title,
-    children,
-    action,
-  }: { title: string; children?: Snippet; action?: Snippet } = $props();
+  let { title, children, action }: { title: string; children?: Snippet; action?: Snippet } =
+    $props();
 </script>
 
 <div class="card flex flex-col items-center gap-2 px-6 py-10 text-center">

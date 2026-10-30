@@ -46,7 +46,13 @@ export async function listGames(filters: GameFilters, viewerId: string | null) {
       }),
       db.game.count({ where }),
     ]);
-    return { games: await withProgress(rows.map((r) => r.game), viewerId), total };
+    return {
+      games: await withProgress(
+        rows.map((r) => r.game),
+        viewerId,
+      ),
+      total,
+    };
   }
 
   const [games, total] = await Promise.all([

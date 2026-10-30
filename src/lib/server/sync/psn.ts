@@ -90,7 +90,12 @@ export const syncPsn: ProviderSync = async ({ userId, account, report, onUnlocke
         headerUrl: title.trophyTitleIconUrl,
       });
 
-      const catalog = await getTitleTrophies(authorization, title.npCommunicationId, 'all', options);
+      const catalog = await getTitleTrophies(
+        authorization,
+        title.npCommunicationId,
+        'all',
+        options,
+      );
       const progress = await getUserTrophiesEarnedForTitle(
         authorization,
         accountId,
@@ -102,9 +107,7 @@ export const syncPsn: ProviderSync = async ({ userId, account, report, onUnlocke
       const rates = new Map(progress.trophies.map((t) => [t.trophyId, t.trophyEarnedRate]));
       await saveAchievements(
         game.id,
-        catalog.trophies.map((t) =>
-          mapTrophy({ ...t, trophyEarnedRate: rates.get(t.trophyId) }),
-        ),
+        catalog.trophies.map((t) => mapTrophy({ ...t, trophyEarnedRate: rates.get(t.trophyId) })),
       );
 
       const unlocks = progress.trophies

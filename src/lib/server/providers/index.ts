@@ -21,8 +21,7 @@ export function availableProviders(): Record<Provider, boolean> {
   };
 }
 
-export const callbackUrl = (provider: OAuthProvider) =>
-  `${env().ORIGIN}/auth/${provider}/callback`;
+export const callbackUrl = (provider: OAuthProvider) => `${env().ORIGIN}/auth/${provider}/callback`;
 
 const FLOW_COOKIE = 'pa_oauth';
 

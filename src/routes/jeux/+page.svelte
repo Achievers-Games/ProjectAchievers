@@ -12,6 +12,7 @@
 
   /** Les filtres vivent dans l'URL : une vue filtrée se partage et survit au rechargement. */
   function hrefWith(changes: Record<string, string | null>) {
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity -- copie locale, jamais observée
     const next = new URLSearchParams(page.url.searchParams);
     if (!('page' in changes)) next.delete('page');
     for (const [key, value] of Object.entries(changes)) {
@@ -111,7 +112,11 @@
       Essaie un autre filtre. Le catalogue s'enrichit à chaque synchronisation.
     </Empty>
   {:else}
-    <div class={data.params.vue === 'liste' ? 'grid gap-2' : 'grid gap-3 sm:grid-cols-2 lg:grid-cols-4'}>
+    <div
+      class={data.params.vue === 'liste'
+        ? 'grid gap-2'
+        : 'grid gap-3 sm:grid-cols-2 lg:grid-cols-4'}
+    >
       {#each data.games as game (game.id)}
         <GameCard {game} progress={game.progress} layout={data.params.vue} />
       {/each}

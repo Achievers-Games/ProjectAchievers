@@ -6,8 +6,21 @@ export function renderMarkdown(source: string): string {
   const html = marked.parse(source, { async: false, gfm: true, breaks: true }) as string;
   return sanitizeHtml(html, {
     allowedTags: [
-      'p', 'br', 'strong', 'em', 'del', 'code', 'pre', 'blockquote', 'ul', 'ol', 'li', 'h3', 'h4',
-      'a', 'hr',
+      'p',
+      'br',
+      'strong',
+      'em',
+      'del',
+      'code',
+      'pre',
+      'blockquote',
+      'ul',
+      'ol',
+      'li',
+      'h3',
+      'h4',
+      'a',
+      'hr',
     ],
     allowedAttributes: { a: ['href', 'rel', 'target'] },
     allowedSchemes: ['http', 'https'],

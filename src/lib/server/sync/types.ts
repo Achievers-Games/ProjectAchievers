@@ -7,4 +7,6 @@ export interface SyncContext {
   onUnlocked: (game: Pick<Game, 'name' | 'slug'>, count: number) => void;
 }
 
-export type ProviderSync = (context: SyncContext) => Promise<{ games: number; achievements: number }>;
+export type ProviderSync = (
+  context: SyncContext,
+) => Promise<{ games: number; achievements: number }>;

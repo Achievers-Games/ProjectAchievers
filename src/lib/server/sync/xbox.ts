@@ -64,7 +64,9 @@ async function fetchAchievements(session: XboxSession, titleId: string) {
   const achievements: XboxAchievement[] = [];
   let token: string | null = null;
   do {
-    const url = new URL(`https://achievements.xboxlive.com/users/xuid(${session.xuid})/achievements`);
+    const url = new URL(
+      `https://achievements.xboxlive.com/users/xuid(${session.xuid})/achievements`,
+    );
     url.searchParams.set('titleId', titleId);
     url.searchParams.set('maxItems', '200');
     if (token) url.searchParams.set('continuationToken', token);

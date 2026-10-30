@@ -1,11 +1,15 @@
 <script lang="ts">
   import '../app.css';
-  import { onNavigate } from '$app/navigation';
+  import { onMount } from 'svelte';
+  import { invalidateAll, onNavigate } from '$app/navigation';
   import { navigating, page } from '$app/state';
   import { Compass, Gamepad2, Search, Trophy, User } from '@lucide/svelte';
   import Avatar from '$lib/components/Avatar.svelte';
   import CommandPalette from '$lib/components/CommandPalette.svelte';
   import Toasts from '$lib/components/Toasts.svelte';
+  import { PROVIDER_LABELS } from '$lib/labels';
+  import { syncState, type SyncProgress } from '$lib/stores/sync';
+  import { toast } from '$lib/stores/toast';
 
   let { data, children } = $props();
   let paletteOpen = $state(false);
@@ -24,6 +28,28 @@
 
   const isActive = (href: string, exact: boolean) =>
     exact ? page.url.pathname === href : page.url.pathname.startsWith(href);
+
+  onMount(() => {
+    document.documentElement.dataset.ready = 'true';
+  });
+
+  // Progression des synchronisations : suivie partout, pour notifier la fin sur toute page.
+  $effect(() => {
+    if (!data.user) return;
+    const source = new EventSource('/api/sync/events');
+    source.onmessage = (message) => {
+      const event = JSON.parse(message.data) as SyncProgress;
+      syncState.update((state) => ({ ...state, [event.provider]: event }));
+      if (event.status === 'COMPLETED') {
+        toast(`${PROVIDER_LABELS[event.provider]} est à jour.`);
+        void invalidateAll();
+      } else if (event.status === 'FAILED' || event.status === 'NEEDS_RELINK') {
+        toast(event.error ?? 'La synchronisation a échoué.', 'error');
+        void invalidateAll();
+      }
+    };
+    return () => source.close();
+  });
 
   onNavigate((navigation) => {
     if (!document.startViewTransition) return;
@@ -44,7 +70,10 @@
   />
 </svelte:head>
 
-<a href="#contenu" class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-2 focus:z-50">
+<a
+  href="#contenu"
+  class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-2 focus:z-50"
+>
   Aller au contenu
 </a>
 
