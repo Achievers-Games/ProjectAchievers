@@ -37,10 +37,12 @@ export const load: PageServerLoad = async ({ params, locals }) => {
       // Un succès caché reste masqué tant que le joueur ne l'a pas obtenu.
       const masked = a.hidden && !unlocked;
       return {
-        ...a,
+        id: a.id,
+        trophyType: a.trophyType,
+        globalRarity: a.globalRarity,
         name: masked ? 'Succès caché' : a.name,
         description: masked ? '' : a.description,
-        iconUrl: unlocked ? a.iconUrl : (a.iconLockedUrl ?? a.iconUrl),
+        iconUrl: masked ? null : unlocked ? a.iconUrl : (a.iconLockedUrl ?? a.iconUrl),
         unlockedAt: unlocked,
       };
     }),

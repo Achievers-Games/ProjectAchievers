@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { enhance } from '$app/forms';
+  import { deserialize, enhance } from '$app/forms';
   import { invalidateAll } from '$app/navigation';
   import type { SubmitFunction } from '@sveltejs/kit';
   import { ChevronDown, ChevronUp, Flag } from '@lucide/svelte';
@@ -51,18 +51,24 @@
     };
   };
 
-  function report(type: 'GUIDE' | 'COMMENT', id: string) {
+  async function report(type: 'GUIDE' | 'COMMENT', id: string) {
     const reason = prompt('Pourquoi signaler ce contenu ?');
     if (!reason) return;
     const body = new FormData();
     body.set('targetType', type);
     body.set('targetId', id);
     body.set('reason', reason);
-    void fetch('?/report', {
+    const response = await fetch('?/report', {
       method: 'POST',
       body,
       headers: { 'x-sveltekit-action': 'true' },
-    }).then(() => toast('Signalement envoyé. Merci.'));
+    });
+    const result = deserialize(await response.text());
+    if (result.type === 'success') toast('Signalement envoyé. Merci.');
+    else {
+      const message = result.type === 'failure' ? result.data?.error : null;
+      toast(String(message ?? 'Le signalement a échoué.'), 'error');
+    }
   }
 </script>
 

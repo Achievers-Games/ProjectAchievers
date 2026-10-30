@@ -6,9 +6,10 @@
   import { Compass, Gamepad2, Search, Trophy, User } from '@lucide/svelte';
   import Avatar from '$lib/components/Avatar.svelte';
   import CommandPalette from '$lib/components/CommandPalette.svelte';
+  import RewardReveal from '$lib/components/RewardReveal.svelte';
   import Toasts from '$lib/components/Toasts.svelte';
-  import { PROVIDER_LABELS } from '$lib/labels';
-  import { syncState, type SyncProgress } from '$lib/stores/sync';
+  import { PROVIDER_LABELS, plural } from '$lib/labels';
+  import { rewards, syncState, type SyncProgress } from '$lib/stores/sync';
   import { toast } from '$lib/stores/toast';
 
   let { data, children } = $props();
@@ -26,6 +27,8 @@
     },
   ]);
 
+  const userId = $derived(data.user?.id);
+
   const isActive = (href: string, exact: boolean) =>
     exact ? page.url.pathname === href : page.url.pathname.startsWith(href);
 
@@ -35,13 +38,24 @@
 
   // Progression des synchronisations : suivie partout, pour notifier la fin sur toute page.
   $effect(() => {
-    if (!data.user) return;
+    if (!userId) return;
     const source = new EventSource('/api/sync/events');
     source.onmessage = (message) => {
       const event = JSON.parse(message.data) as SyncProgress;
       syncState.update((state) => ({ ...state, [event.provider]: event }));
       if (event.status === 'COMPLETED') {
-        toast(`${PROVIDER_LABELS[event.provider]} est à jour.`);
+        const gained = event.achievements ?? 0;
+        toast(
+          gained > 0
+            ? `${plural(gained, 'nouveau succès', 'nouveaux succès')} sur ${PROVIDER_LABELS[event.provider]} !`
+            : `${PROVIDER_LABELS[event.provider]} est à jour.`,
+        );
+        if (event.moreRewards) {
+          toast(
+            `Et ${plural(event.moreRewards, 'autre carte', 'autres cartes')} dans ta collection.`,
+          );
+        }
+        if (event.rewards?.length) rewards.update((list) => [...list, ...(event.rewards ?? [])]);
         void invalidateAll();
       } else if (event.status === 'FAILED' || event.status === 'NEEDS_RELINK') {
         toast(event.error ?? 'La synchronisation a échoué.', 'error');
@@ -151,4 +165,5 @@
 </nav>
 
 <CommandPalette bind:open={paletteOpen} />
+<RewardReveal />
 <Toasts />

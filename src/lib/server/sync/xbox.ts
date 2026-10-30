@@ -1,7 +1,7 @@
 import { db } from '../db';
 import { decrypt, encrypt } from '../crypto';
 import { openXboxSession, refreshMicrosoftTokens, type XboxSession } from '../providers/xbox';
-import { fetchRetry, mapLimit, SyncError } from './errors';
+import { fetchRetry, SyncError, syncGames } from './errors';
 import { saveAchievements, saveProgress, upsertGame, type AchievementInput } from './store';
 import type { ProviderSync } from './types';
 
@@ -113,11 +113,14 @@ export const syncXbox: ProviderSync = async ({ userId, account, report, onUnlock
   });
   const known = new Map(previous.map((p) => [p.game.platformGameId, p.unlockedCount]));
 
-  let processed = 0;
   let achievements = 0;
 
-  await mapLimit(titles, CONCURRENCY, async (title) => {
-    if (known.get(title.titleId) !== title.achievement?.currentAchievements) {
+  const games = await syncGames(
+    titles,
+    { platform: 'Xbox', concurrency: CONCURRENCY, name: (t) => t.name, report },
+    async (title) => {
+      if (known.get(title.titleId) === title.achievement?.currentAchievements) return;
+
       const game = await upsertGame({
         platform: 'XBOX',
         platformGameId: title.titleId,
@@ -141,11 +144,8 @@ export const syncXbox: ProviderSync = async ({ userId, account, report, onUnlock
       });
       achievements += gained;
       if (gained > 0) onUnlocked(game, gained);
-    }
+    },
+  );
 
-    processed += 1;
-    report(processed, titles.length, title.name);
-  });
-
-  return { games: processed, achievements };
+  return { games, achievements };
 };

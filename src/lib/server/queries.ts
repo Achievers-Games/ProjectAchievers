@@ -3,7 +3,7 @@ import { db } from './db';
 
 export const PAGE_SIZE = 36;
 
-export interface GameFilters {
+interface GameFilters {
   q?: string;
   platform?: Platform;
   sort: 'nom' | 'recent' | 'progression' | 'succes';
@@ -102,6 +102,11 @@ const profileGameSelect = {
   },
 } satisfies Prisma.UserGameSelect;
 
+/** Les cartes de collection : 100 % ou trophée platine. */
+export const RARE_CARD = {
+  OR: [{ platinum: true }, { completion: { gte: 100 } }],
+} satisfies Prisma.UserGameWhereInput;
+
 export async function dashboard(userId: string) {
   const [recent, almost, stats] = await Promise.all([
     db.userGame.findMany({
@@ -122,8 +127,9 @@ export async function dashboard(userId: string) {
 }
 
 export async function userStats(userId: string) {
-  const [games, platinums, totals] = await Promise.all([
+  const [games, perfect, platinums, totals] = await Promise.all([
     db.userGame.count({ where: { userId } }),
+    db.userGame.count({ where: { userId, platinum: false, completion: { gte: 100 } } }),
     db.userGame.count({ where: { userId, platinum: true } }),
     db.$queryRaw<{ unlocked: bigint; points: bigint | null }[]>`
       SELECT count(*) AS unlocked, sum(a.points) AS points
@@ -133,6 +139,7 @@ export async function userStats(userId: string) {
   ]);
   return {
     games,
+    perfect,
     platinums,
     unlocked: Number(totals[0]?.unlocked ?? 0),
     points: Number(totals[0]?.points ?? 0),
@@ -157,8 +164,14 @@ export async function userProfile(handle: string, viewerId: string | null) {
   });
   if (!user || (!user.isPublic && user.id !== viewerId)) return null;
 
-  const [stats, games, recent] = await Promise.all([
+  const [stats, showcase, games, recent] = await Promise.all([
     userStats(user.id),
+    db.userGame.findMany({
+      where: { userId: user.id, ...RARE_CARD },
+      orderBy: [{ platinum: 'desc' }, { lastUnlockedAt: { sort: 'desc', nulls: 'last' } }],
+      take: 8,
+      select: profileGameSelect,
+    }),
     db.userGame.findMany({
       where: { userId: user.id },
       orderBy: [{ lastUnlockedAt: { sort: 'desc', nulls: 'last' } }],
@@ -183,7 +196,7 @@ export async function userProfile(handle: string, viewerId: string | null) {
       },
     }),
   ]);
-  return { user, stats, games, recent };
+  return { user, stats, showcase, games, recent };
 }
 
 export type LeaderboardPeriod = 'semaine' | 'mois' | 'tout';

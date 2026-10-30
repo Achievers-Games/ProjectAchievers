@@ -1,6 +1,6 @@
 import { db } from '../db';
 import { env } from '../env';
-import { fetchRetry, mapLimit, SyncError } from './errors';
+import { fetchRetry, SyncError, syncGames } from './errors';
 import { saveAchievements, saveProgress, upsertGame, type AchievementInput } from './store';
 import type { ProviderSync } from './types';
 
@@ -10,7 +10,7 @@ const STORE = 'https://store.steampowered.com/api/appdetails';
 const SCHEMA_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
 const CONCURRENCY = 4;
 
-export interface OwnedGame {
+interface OwnedGame {
   appid: number;
   name: string;
   playtime_forever?: number;
@@ -35,7 +35,7 @@ async function steamGet(path: string, params: Record<string, string | number>) {
   return fetchRetry(url);
 }
 
-export async function fetchOwnedGames(steamId: string): Promise<OwnedGame[]> {
+async function fetchOwnedGames(steamId: string): Promise<OwnedGame[]> {
   const response = await steamGet('/IPlayerService/GetOwnedGames/v1/', {
     steamid: steamId,
     include_appinfo: 1,
@@ -156,57 +156,44 @@ export const syncSteam: ProviderSync = async ({ userId, account, report, onUnloc
   });
   const lastPlayed = new Map(previous.map((p) => [p.game.platformGameId, p.lastPlayedAt]));
 
-  let processed = 0;
   let achievements = 0;
-  let failed = 0;
 
-  await mapLimit(owned, CONCURRENCY, async (owned_game) => {
-    const appId = String(owned_game.appid);
-    const playedAt = owned_game.rtime_last_played
-      ? new Date(owned_game.rtime_last_played * 1000)
-      : null;
-    const known = lastPlayed.get(appId);
+  const games = await syncGames(
+    owned,
+    { platform: 'Steam', concurrency: CONCURRENCY, name: (g) => g.name, report },
+    async (ownedGame) => {
+      const appId = String(ownedGame.appid);
+      const playedAt = ownedGame.rtime_last_played
+        ? new Date(ownedGame.rtime_last_played * 1000)
+        : null;
 
-    // Un jeu non relancé depuis la dernière synchronisation ne peut pas avoir changé.
-    const unchanged = lastPlayed.has(appId) && known?.getTime() === playedAt?.getTime();
+      // Un jeu non relancé depuis la dernière synchronisation ne peut pas avoir changé.
+      const known = lastPlayed.get(appId);
+      if (lastPlayed.has(appId) && known?.getTime() === playedAt?.getTime()) return;
 
-    if (!unchanged) {
-      try {
-        const game = await upsertGame({
-          platform: 'STEAM',
-          platformGameId: appId,
-          name: owned_game.name,
-          ...(await steamImages(appId)),
-        });
+      const game = await upsertGame({
+        platform: 'STEAM',
+        platformGameId: appId,
+        name: ownedGame.name,
+        ...(await steamImages(appId)),
+      });
 
-        const stale =
-          !game.schemaSyncedAt || Date.now() - game.schemaSyncedAt.getTime() > SCHEMA_MAX_AGE;
-        if (stale) {
-          const schema = await fetchSchema(owned_game.appid);
-          if (schema) await saveAchievements(game.id, schema);
-        }
-
-        const unlocks = await fetchUnlocks(steamId, owned_game.appid);
-        const gained = await saveProgress(userId, game.id, unlocks, {
-          playtimeMinutes: owned_game.playtime_forever ?? 0,
-          lastPlayedAt: playedAt,
-        });
-        achievements += gained;
-        if (gained > 0) onUnlocked(game, gained);
-      } catch (error) {
-        if (error instanceof SyncError) throw error;
-        // Un jeu illisible ne coûte pas toute la bibliothèque : il sera repris au prochain passage.
-        console.error(`Synchronisation Steam du jeu ${appId} :`, error);
-        failed += 1;
+      const stale =
+        !game.schemaSyncedAt || Date.now() - game.schemaSyncedAt.getTime() > SCHEMA_MAX_AGE;
+      if (stale) {
+        const schema = await fetchSchema(ownedGame.appid);
+        if (schema) await saveAchievements(game.id, schema);
       }
-    }
 
-    processed += 1;
-    report(processed, owned.length, owned_game.name);
-  });
+      const unlocks = await fetchUnlocks(steamId, ownedGame.appid);
+      const gained = await saveProgress(userId, game.id, unlocks, {
+        playtimeMinutes: ownedGame.playtime_forever ?? 0,
+        lastPlayedAt: playedAt,
+      });
+      achievements += gained;
+      if (gained > 0) onUnlocked(game, gained);
+    },
+  );
 
-  if (failed > 0 && failed === owned.length) {
-    throw new Error('Aucun jeu Steam n’a pu être synchronisé');
-  }
-  return { games: processed - failed, achievements };
+  return { games, achievements };
 };

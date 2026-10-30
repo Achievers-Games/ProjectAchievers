@@ -95,7 +95,6 @@ async function main() {
         unlockedCount: unlocked,
         totalCount: g.count,
         completion: (unlocked / g.count) * 100,
-        platinum: unlocked === g.count,
         lastUnlockedAt: stamps[0]?.unlockedAt ?? null,
       };
       await db.userGame.upsert({
@@ -105,6 +104,62 @@ async function main() {
       });
     }
   }
+
+  // Une carte de chaque rareté.
+  const demo = users[0] as (typeof users)[number];
+  const perfect = await db.game.findUniqueOrThrow({ where: { slug: 'hades' } });
+  const steps = await db.achievement.findMany({ where: { gameId: perfect.id } });
+  await db.userAchievement.createMany({
+    data: steps.map((a) => ({ userId: demo.id, achievementId: a.id, unlockedAt: new Date() })),
+    skipDuplicates: true,
+  });
+  await db.userGame.update({
+    where: { userId_gameId: { userId: demo.id, gameId: perfect.id } },
+    data: { unlockedCount: steps.length, completion: 100, lastUnlockedAt: new Date() },
+  });
+
+  const platinumGame = await db.game.upsert({
+    where: { platform_platformGameId: { platform: 'PSN', platformGameId: 'NPWR-DEMO' } },
+    update: {},
+    create: {
+      platform: 'PSN',
+      platformGameId: 'NPWR-DEMO',
+      name: 'Astro Bot',
+      slug: 'astro-bot',
+      headerUrl: `${CDN}/620/header.jpg`,
+      totalAchievements: 1,
+      schemaSyncedAt: new Date(),
+    },
+  });
+  const platinumTrophy = await db.achievement.upsert({
+    where: {
+      gameId_platformAchievementId: { gameId: platinumGame.id, platformAchievementId: '0' },
+    },
+    update: {},
+    create: {
+      gameId: platinumGame.id,
+      platformAchievementId: '0',
+      name: 'Platine de démonstration',
+      trophyType: 'PLATINUM',
+      points: 180,
+    },
+  });
+  await db.userAchievement.createMany({
+    data: [{ userId: demo.id, achievementId: platinumTrophy.id, unlockedAt: new Date() }],
+    skipDuplicates: true,
+  });
+  const platinumProgress = {
+    unlockedCount: 1,
+    totalCount: 1,
+    completion: 100,
+    platinum: true,
+    lastUnlockedAt: new Date(),
+  };
+  await db.userGame.upsert({
+    where: { userId_gameId: { userId: demo.id, gameId: platinumGame.id } },
+    update: platinumProgress,
+    create: { ...platinumProgress, userId: demo.id, gameId: platinumGame.id },
+  });
 
   // Assez de jeux pour remplir plusieurs pages de la liste.
   for (let i = 1; i <= 50; i++) {

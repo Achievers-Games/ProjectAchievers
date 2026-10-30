@@ -1,11 +1,11 @@
-// Base dédiée aux tests Playwright : recréée à chaque lancement, elle laisse les vraies données
+// Base dédiée aux tests : recréée à chaque lancement, elle laisse les vraies données
 // du développement intactes.
 import 'dotenv/config';
 import { execSync } from 'node:child_process';
 import pg from 'pg';
 
 const url = new URL(process.env.DATABASE_URL);
-const testDatabase = 'achievers_e2e';
+const testDatabase = 'achievers_test';
 
 url.pathname = '/postgres';
 const admin = new pg.Client({ connectionString: url.href });

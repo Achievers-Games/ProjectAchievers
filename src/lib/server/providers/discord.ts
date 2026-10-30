@@ -19,6 +19,7 @@ export function discordAuthorizeUrl(state: string, verifier: string): string {
   return `${AUTHORIZE}?${params}`;
 }
 
+/** Discord ne sert qu'à se connecter : aucun jeton n'est conservé. */
 export async function exchangeDiscordCode(code: string, verifier: string): Promise<Identity> {
   const tokenResponse = await fetch(`${API}/oauth2/token`, {
     method: 'POST',
@@ -34,11 +35,7 @@ export async function exchangeDiscordCode(code: string, verifier: string): Promi
     signal: AbortSignal.timeout(10_000),
   });
   if (!tokenResponse.ok) throw new Error(`Discord a refusé le code (${tokenResponse.status})`);
-  const tokens = (await tokenResponse.json()) as {
-    access_token: string;
-    refresh_token: string;
-    expires_in: number;
-  };
+  const tokens = (await tokenResponse.json()) as { access_token: string };
 
   const userResponse = await fetch(`${API}/users/@me`, {
     headers: { Authorization: `Bearer ${tokens.access_token}` },
@@ -60,8 +57,5 @@ export async function exchangeDiscordCode(code: string, verifier: string): Promi
       ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=128`
       : null,
     profileUrl: `https://discord.com/users/${user.id}`,
-    accessToken: tokens.access_token,
-    refreshToken: tokens.refresh_token,
-    tokenExpiresAt: new Date(Date.now() + tokens.expires_in * 1000),
   };
 }

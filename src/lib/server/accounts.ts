@@ -19,7 +19,8 @@ export const profileSchema = z.object({
       /^[a-z0-9](?:[a-z0-9-]{1,22})[a-z0-9]$/,
       'Ton identifiant doit faire 3 à 24 caractères : lettres, chiffres et tirets.',
     ),
-  avatarUrl: z.string(),
+  /** Absent quand l'image actuelle ne correspond plus à un compte lié : elle est conservée. */
+  avatarUrl: z.string().optional(),
 });
 
 /** Le nom et l'identifiant restent ceux choisis ici : une reconnexion ne les écrase pas. */
@@ -41,7 +42,7 @@ export async function updateProfile(
       data: {
         displayName: input.displayName,
         handle: input.handle,
-        avatarUrl: input.avatarUrl || null,
+        ...(input.avatarUrl !== undefined && { avatarUrl: input.avatarUrl || null }),
       },
     });
     return null;
@@ -64,7 +65,7 @@ export interface Identity {
   tokenExpiresAt?: Date | null;
 }
 
-export type LinkResult =
+type LinkResult =
   | { ok: true; userId: string; created: boolean }
   | { ok: false; reason: 'already_linked'; ownerId: string }
   | { ok: false; reason: 'provider_taken' };
@@ -114,7 +115,11 @@ export async function resolveIdentity(
     }
     await db.linkedAccount.update({
       where,
-      data: { ...accountData(identity), syncError: null, syncStatus: 'IDLE' },
+      data: {
+        ...accountData(identity),
+        // Le statut d'une synchronisation en cours ne doit pas être écrasé.
+        ...(existing.syncStatus === 'NEEDS_RELINK' && { syncStatus: 'IDLE', syncError: null }),
+      },
     });
     return { ok: true, userId: existing.userId, created: false };
   }

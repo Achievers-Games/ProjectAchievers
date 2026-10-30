@@ -7,7 +7,7 @@ import {
 import type { TrophyType } from '@prisma/client';
 import { db } from '../db';
 import { psnAuthorization } from '../providers/psn';
-import { mapLimit, SyncError } from './errors';
+import { SyncError, syncGames } from './errors';
 import { saveAchievements, saveProgress, upsertGame, type AchievementInput } from './store';
 import type { ProviderSync } from './types';
 
@@ -72,14 +72,16 @@ export const syncPsn: ProviderSync = async ({ userId, account, report, onUnlocke
   });
   const known = new Map(previous.map((p) => [p.game.platformGameId, p.unlockedCount]));
 
-  let processed = 0;
   let achievements = 0;
 
-  await mapLimit(titles, CONCURRENCY, async (title) => {
-    const earned = Object.values(title.earnedTrophies).reduce((sum, n) => sum + n, 0);
+  const games = await syncGames(
+    titles,
+    { platform: 'PSN', concurrency: CONCURRENCY, name: (t) => t.trophyTitleName, report },
+    async (title) => {
+      // PSN donne le total obtenu par jeu : inutile de relire un jeu sans nouveauté.
+      const earned = Object.values(title.earnedTrophies).reduce((sum, n) => sum + n, 0);
+      if (known.get(title.npCommunicationId) === earned) return;
 
-    // PSN donne le total obtenu par jeu : inutile de relire un jeu sans nouveauté.
-    if (known.get(title.npCommunicationId) !== earned) {
       const authorization = await psnAuthorization();
       const options = { npServiceName: title.npServiceName };
       const game = await upsertGame({
@@ -121,11 +123,8 @@ export const syncPsn: ProviderSync = async ({ userId, account, report, onUnlocke
       });
       achievements += gained;
       if (gained > 0) onUnlocked(game, gained);
-    }
+    },
+  );
 
-    processed += 1;
-    report(processed, titles.length, title.trophyTitleName);
-  });
-
-  return { games: processed, achievements };
+  return { games, achievements };
 };

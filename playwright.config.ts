@@ -3,7 +3,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 const baseURL = 'http://localhost:5174';
 const database = new URL(process.env.DATABASE_URL ?? '');
-database.pathname = '/achievers_e2e';
+database.pathname = '/achievers_test';
 
 export default defineConfig({
   testDir: './e2e',

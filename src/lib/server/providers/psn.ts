@@ -16,6 +16,9 @@ interface ServiceTokens {
 
 let tokens: ServiceTokens | undefined;
 
+const fromNpsso = async () =>
+  exchangeAccessCodeForAuthTokens(await exchangeNpssoForAccessCode(env().PSN_SERVICE_NPSSO ?? ''));
+
 /**
  * Autorisation du compte de service PSN.
  *
@@ -25,11 +28,9 @@ let tokens: ServiceTokens | undefined;
 export async function psnAuthorization(): Promise<AuthorizationPayload> {
   if (tokens && tokens.expiresAt > Date.now() + 60_000) return { accessToken: tokens.accessToken };
 
-  const response = tokens
-    ? await exchangeRefreshTokenForAuthTokens(tokens.refreshToken)
-    : await exchangeAccessCodeForAuthTokens(
-        await exchangeNpssoForAccessCode(env().PSN_SERVICE_NPSSO ?? ''),
-      );
+  const response = await (tokens
+    ? exchangeRefreshTokenForAuthTokens(tokens.refreshToken).catch(fromNpsso)
+    : fromNpsso());
 
   tokens = {
     accessToken: response.accessToken,
@@ -39,12 +40,7 @@ export async function psnAuthorization(): Promise<AuthorizationPayload> {
   return { accessToken: tokens.accessToken };
 }
 
-/** Oublie les jetons en mémoire, pour repartir du NPSSO au prochain appel. */
-export function resetPsnAuthorization() {
-  tokens = undefined;
-}
-
-export interface PsnProfile {
+interface PsnProfile {
   accountId: string;
   onlineId: string;
   aboutMe: string;

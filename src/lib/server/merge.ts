@@ -24,7 +24,7 @@ export interface PendingMerge {
   providerUserId: string;
 }
 
-export type MergeFailure = 'stale' | 'sync_running' | 'provider_conflict';
+type MergeFailure = 'stale' | 'sync_running' | 'provider_conflict';
 
 /** La demande reste chez le navigateur, chiffrée, pendant 10 minutes. */
 export function saveMerge(cookies: Cookies, merge: PendingMerge) {

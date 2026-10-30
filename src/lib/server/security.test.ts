@@ -79,7 +79,13 @@ describe('flux OAuth', () => {
 
   it('refuse les redirections vers un autre site', () => {
     expect(safeReturnTo('/jeux')).toBe('/jeux');
-    for (const value of ['https://evil.test', '//evil.test', '/\\evil.test', null]) {
+    for (const value of [
+      'https://evil.test',
+      '//evil.test',
+      '/\\evil.test',
+      '/\t/evil.test',
+      null,
+    ]) {
       expect(safeReturnTo(value)).toBe('/compte');
     }
   });

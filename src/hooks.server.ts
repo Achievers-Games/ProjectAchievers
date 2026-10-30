@@ -1,4 +1,4 @@
-import type { Handle, ServerInit } from '@sveltejs/kit';
+import type { Handle, RequestEvent, ServerInit } from '@sveltejs/kit';
 import { env } from '$lib/server/env';
 import { rateLimit } from '$lib/server/rate-limit';
 import { validateSession } from '$lib/server/session';
@@ -12,17 +12,26 @@ export const init: ServerInit = async () => {
 const WINDOW = 60_000;
 
 function limitFor(request: Request, path: string): number | null {
+  if (path === '/auth/dev') return null;
   if (path.startsWith('/auth/')) return 20;
   if (request.method !== 'GET' && request.method !== 'HEAD') return 60;
   return path.startsWith('/api/') ? 120 : null;
+}
+
+/** Le client peut déjà être parti : ce n'est pas une raison de répondre 500. */
+function clientAddress(event: RequestEvent): string {
+  try {
+    return event.getClientAddress();
+  } catch {
+    return 'inconnue';
+  }
 }
 
 export const handle: Handle = async ({ event, resolve }) => {
   const path = event.url.pathname;
   const limit = limitFor(event.request, path);
   if (limit !== null) {
-    const key = `${event.getClientAddress()}:${path.split('/').slice(0, 3).join('/')}`;
-    if (!rateLimit(key, limit, WINDOW)) {
+    if (!rateLimit(`${clientAddress(event)}:${limit}`, limit, WINDOW)) {
       return new Response('Trop de requêtes, réessaie dans une minute.', {
         status: 429,
         headers: { 'Retry-After': '60' },

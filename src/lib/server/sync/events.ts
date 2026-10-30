@@ -1,5 +1,6 @@
 import { EventEmitter } from 'node:events';
 import type { Provider, SyncStatus } from '@prisma/client';
+import type { Reward } from '$lib/tiers';
 
 export interface SyncEvent {
   provider: Provider;
@@ -8,6 +9,11 @@ export interface SyncEvent {
   total: number;
   game?: string;
   error?: string | null;
+  /** Succès gagnés pendant cette synchronisation. */
+  achievements?: number;
+  /** Cartes rares obtenues pendant cette synchronisation. */
+  rewards?: Reward[];
+  moreRewards?: number;
 }
 
 export interface UnlockEvent {

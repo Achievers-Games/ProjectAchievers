@@ -29,7 +29,6 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx prisma migrate deploy
       - run: npm run check
       - run: npm run lint
       - run: npm test

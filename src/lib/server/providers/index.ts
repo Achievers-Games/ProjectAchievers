@@ -27,7 +27,7 @@ export const callbackUrl = (provider: OAuthProvider) => `${env().ORIGIN}/auth/${
 
 const FLOW_COOKIE = 'pa_oauth';
 
-export interface OAuthFlow {
+interface OAuthFlow {
   provider: OAuthProvider;
   state: string;
   verifier?: string;
@@ -60,8 +60,5 @@ export function takeFlow(cookies: Cookies, provider: OAuthProvider, state: strin
 
 /** N'accepte qu'un chemin interne, pour éviter les redirections ouvertes. */
 export function safeReturnTo(value: string | null | undefined, fallback = '/compte'): string {
-  if (!value || !value.startsWith('/') || value.startsWith('//') || value.includes('\\')) {
-    return fallback;
-  }
-  return value;
+  return value && /^\/(?!\/)[^\s\\]*$/.test(value) ? value : fallback;
 }

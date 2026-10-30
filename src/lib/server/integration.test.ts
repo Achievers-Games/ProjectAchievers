@@ -194,6 +194,15 @@ describe('calcul de la progression', () => {
     expect(row.platinum).toBe(true);
   });
 
+  it('réserve la platine au trophée, pas au 100 %', async () => {
+    const { userId, gameId } = await fixture(['ACHIEVEMENT']);
+    await saveProgress(userId, gameId, [{ platformAchievementId: '0', unlockedAt: new Date() }]);
+    const row = await db.userGame.findUniqueOrThrow({
+      where: { userId_gameId: { userId, gameId } },
+    });
+    expect(row).toMatchObject({ completion: 100, platinum: false });
+  });
+
   it('ignore un déverrouillage inconnu du catalogue', async () => {
     const { userId, gameId } = await fixture(['GOLD']);
     expect(
@@ -417,6 +426,36 @@ describe('synchronisation Steam', () => {
 
     vi.stubGlobal('fetch', async () => new Response(null, { status: 200 }));
     expect((await steamImages(42)).headerUrl).toContain('/42/header.jpg');
+  });
+
+  it('annonce une carte quand un jeu atteint 100 %, une seule fois', async () => {
+    const api = steamApi(ownedGames);
+    vi.stubGlobal('fetch', async (input: string | URL) =>
+      String(input).includes('GetPlayerAchievements')
+        ? new Response(
+            JSON.stringify({
+              playerstats: {
+                achievements: [
+                  { apiname: 'A', achieved: 1, unlocktime: 1_700_000_000 },
+                  { apiname: 'B', achieved: 1, unlocktime: 1_700_000_000 },
+                ],
+              },
+            }),
+          )
+        : api(input),
+    );
+    const userId = await steamUser();
+    const events: SyncEvent[] = [];
+    const stop = onSync(userId, (event) => events.push(event));
+
+    await runSync({ userId, provider: 'STEAM' });
+    expect(events.at(-1)?.rewards).toMatchObject([
+      { game: { name: `${PREFIX} steam` }, progress: { completion: 100, platinum: false } },
+    ]);
+
+    await runSync({ userId, provider: 'STEAM' });
+    stop();
+    expect(events.at(-1)?.rewards).toEqual([]);
   });
 
   it('accepte un texte hors de l’alphabet latin', async () => {

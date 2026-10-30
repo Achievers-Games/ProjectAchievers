@@ -89,7 +89,7 @@ export const actions: Actions = {
     const parsed = profileSchema.safeParse({
       displayName: form.get('displayName'),
       handle: form.get('handle'),
-      avatarUrl: form.get('avatarUrl') ?? '',
+      avatarUrl: form.get('avatarUrl') ?? undefined,
     });
     if (!parsed.success) return fail(400, { error: parsed.error.issues[0]?.message });
 
@@ -115,8 +115,16 @@ export const actions: Actions = {
 
     const accounts = await db.linkedAccount.findMany({
       where: { userId: user.id },
-      select: { provider: true },
+      select: { provider: true, syncStatus: true },
     });
+    const target = accounts.find((a) => a.provider === provider.data);
+    if (!target) return fail(404, { error: 'Ce compte n’est pas lié.' });
+    if (target.syncStatus === 'QUEUED' || target.syncStatus === 'SYNCING') {
+      return fail(409, {
+        error: 'Une synchronisation est en cours. Réessaie quand elle sera finie.',
+      });
+    }
+
     const remainingLogin = accounts.some(
       (a) => a.provider !== provider.data && LOGIN_PROVIDERS.includes(a.provider),
     );

@@ -41,10 +41,9 @@ npm test
 npm run test:e2e
 ```
 
-`npm run test:e2e` recrée une base séparée, `achievers_e2e`, avec les données de démonstration : ta
-base de développement ne contient que de vraies données. Les tests d'intégration ont besoin de
-Postgres. Arrête `npm run dev` pendant `npm test` : un serveur
-de développement partage la file de tâches et prendrait les tâches des tests.
+`npm test` et `npm run test:e2e` recréent une base séparée, `achievers_test`, avec des données de
+démonstration. La base de développement ne contient que de vraies données, et le serveur peut rester
+allumé pendant les tests.
 
 ## Comptes de jeu
 

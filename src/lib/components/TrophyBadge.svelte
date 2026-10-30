@@ -5,7 +5,7 @@
   let { type }: { type: TrophyType } = $props();
 
   const colors: Record<TrophyType, string> = {
-    PLATINUM: 'text-platinum',
+    PLATINUM: 'text-platinum font-semibold',
     GOLD: 'text-gold',
     SILVER: 'text-silver',
     BRONZE: 'text-bronze',

@@ -9,10 +9,10 @@
   const stats = $derived(
     data.home
       ? [
-          { label: 'Jeux', value: data.home.stats.games },
-          { label: 'Succès', value: data.home.stats.unlocked },
-          { label: 'Terminés', value: data.home.stats.platinums },
-          { label: 'Points', value: data.home.stats.points },
+          { label: 'Jeux', value: data.home.stats.games, tier: null },
+          { label: 'Succès', value: data.home.stats.unlocked, tier: null },
+          { label: 'Cartes 100 %', value: data.home.stats.perfect, tier: 'complet' },
+          { label: 'Cartes Platine', value: data.home.stats.platinums, tier: 'platine' },
         ]
       : [],
   );
@@ -34,7 +34,7 @@
       {#each stats as stat (stat.label)}
         <div class="p-4">
           <dt class="label">{stat.label}</dt>
-          <dd class="tabular mt-1 text-xl font-semibold">{formatNumber(stat.value)}</dd>
+          <dd class="stat-value tabular mt-1" data-tier={stat.tier}>{formatNumber(stat.value)}</dd>
         </div>
       {/each}
     </dl>
@@ -64,10 +64,10 @@
 {:else}
   <div class="space-y-10">
     <section class="max-w-2xl space-y-4 py-8">
-      <h1 class="text-3xl">Tous tes succès, au même endroit.</h1>
+      <h1 class="hero-title">Collectionne tes jeux terminés.</h1>
       <p class="text-muted">
-        Connecte tes comptes de jeu : ta progression Steam, PlayStation et Xbox se synchronise toute
-        seule. Compare-la avec tes amis et partage ton profil.
+        Connecte tes comptes : ta progression Steam, PlayStation et Xbox se synchronise toute seule.
+        Chaque jeu à 100 % devient une carte en or, chaque platine une carte holographique.
       </p>
       <div class="flex flex-wrap items-center gap-3">
         <a href="/connexion" class="btn btn-primary">Commencer</a>

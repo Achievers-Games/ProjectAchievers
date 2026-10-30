@@ -2,10 +2,11 @@ import type { Cookies } from '@sveltejs/kit';
 import { db } from './db';
 import { randomToken, sha256 } from './crypto';
 
-export const SESSION_COOKIE = 'pa_session';
+const SESSION_COOKIE = 'pa_session';
 const SESSION_DAYS = 30;
 const DAY = 24 * 60 * 60 * 1000;
 const RENEW_THRESHOLD = 15 * DAY;
+const TOUCH_INTERVAL = 60 * 60 * 1000;
 
 export type SessionUser = NonNullable<Awaited<ReturnType<typeof validateSession>>>;
 
@@ -37,6 +38,7 @@ export async function validateSession(cookies: Cookies) {
     where: { id },
     select: {
       expiresAt: true,
+      lastUsedAt: true,
       user: { select: { id: true, handle: true, displayName: true, avatarUrl: true, role: true } },
     },
   });
@@ -52,6 +54,8 @@ export async function validateSession(cookies: Cookies) {
     const expiresAt = new Date(Date.now() + SESSION_DAYS * DAY);
     await db.session.update({ where: { id }, data: { expiresAt, lastUsedAt: new Date() } });
     setCookie(cookies, token, expiresAt);
+  } else if (Date.now() - session.lastUsedAt.getTime() > TOUCH_INTERVAL) {
+    await db.session.update({ where: { id }, data: { lastUsedAt: new Date() } });
   }
 
   return { ...session.user, sessionId: id };

@@ -41,6 +41,45 @@ export async function mapLimit<T>(
   if (failure) throw failure.reason;
 }
 
+interface GameLoop<T> {
+  platform: string;
+  concurrency: number;
+  name: (item: T) => string;
+  report: (processed: number, total: number, game: string) => void;
+}
+
+/**
+ * Synchronise chaque jeu et renvoie le nombre de réussites.
+ *
+ * Un jeu illisible ne coûte pas toute la bibliothèque : il sera repris au prochain passage.
+ * Une `SyncError` concerne tout le compte et arrête la boucle, comme un échec général.
+ */
+export async function syncGames<T>(
+  items: T[],
+  { platform, concurrency, name, report }: GameLoop<T>,
+  task: (item: T) => Promise<void>,
+): Promise<number> {
+  let processed = 0;
+  let failed = 0;
+
+  await mapLimit(items, concurrency, async (item) => {
+    try {
+      await task(item);
+    } catch (error) {
+      if (error instanceof SyncError) throw error;
+      console.error(`Synchronisation ${platform} de « ${name(item)} » :`, error);
+      failed += 1;
+    }
+    processed += 1;
+    report(processed, items.length, name(item));
+  });
+
+  if (failed > 0 && failed === items.length) {
+    throw new Error(`Aucun jeu ${platform} n'a pu être synchronisé`);
+  }
+  return processed - failed;
+}
+
 /** `fetch` avec nouvelles tentatives sur 429 et 5xx, en respectant `Retry-After`. */
 export async function fetchRetry(url: string | URL, init?: RequestInit, attempts = 4) {
   for (let attempt = 1; ; attempt++) {

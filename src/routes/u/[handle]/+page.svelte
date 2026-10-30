@@ -13,10 +13,10 @@
   const profile = $derived(data.profile);
   const isMe = $derived(data.user?.id === profile.user.id);
   const stats = $derived([
-    { label: 'Jeux', value: profile.stats.games },
-    { label: 'Succès', value: profile.stats.unlocked },
-    { label: 'Terminés', value: profile.stats.platinums },
-    { label: 'Points', value: profile.stats.points },
+    { label: 'Jeux', value: profile.stats.games, tier: null },
+    { label: 'Succès', value: profile.stats.unlocked, tier: null },
+    { label: 'Cartes 100 %', value: profile.stats.perfect, tier: 'complet' },
+    { label: 'Cartes Platine', value: profile.stats.platinums, tier: 'platine' },
   ]);
 
   async function share() {
@@ -29,8 +29,8 @@
   <title>{profile.user.displayName} — Project Achievers</title>
   <meta
     name="description"
-    content="{formatNumber(profile.stats.unlocked)} succès et {profile.stats
-      .platinums} jeux terminés."
+    content="{formatNumber(profile.stats.unlocked)} succès et {profile.stats.perfect +
+      profile.stats.platinums} cartes de collection."
   />
   <meta property="og:title" content="{profile.user.displayName} sur Project Achievers" />
   <meta
@@ -79,10 +79,21 @@
     {#each stats as stat (stat.label)}
       <div class="p-4">
         <dt class="label">{stat.label}</dt>
-        <dd class="tabular mt-1 text-xl font-semibold">{formatNumber(stat.value)}</dd>
+        <dd class="stat-value tabular mt-1" data-tier={stat.tier}>{formatNumber(stat.value)}</dd>
       </div>
     {/each}
   </dl>
+
+  {#if profile.showcase.length}
+    <section class="space-y-3" aria-labelledby="vitrine">
+      <h2 id="vitrine">Vitrine</h2>
+      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {#each profile.showcase as row (row.game.id)}
+          <GameCard game={row.game} progress={row} />
+        {/each}
+      </div>
+    </section>
+  {/if}
 
   {#if profile.games.length === 0}
     <Empty title="Aucun jeu synchronisé">

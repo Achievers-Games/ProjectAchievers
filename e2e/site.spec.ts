@@ -29,7 +29,7 @@ const ready = (page: Page) =>
 test.describe('visiteur', () => {
   test("voit l'accueil public et les jeux", async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('Tous tes succès');
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Collectionne');
     await expect(page.locator('a[href^="/jeux/"]').first()).toBeVisible();
   });
 
@@ -128,6 +128,47 @@ test.describe('membre', () => {
     await login(page);
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Bonjour');
     await expect(page.getByText('Presque terminés')).toBeVisible();
+  });
+
+  test('voit ses cartes rares et une révélation après une synchronisation', async ({ page }) => {
+    await login(page);
+    await page.goto('/u/demo');
+    const showcase = page.getByRole('region', { name: 'Vitrine' });
+    await expect(showcase.locator('[data-tier="platine"]').first()).toBeVisible();
+    await expect(showcase.locator('[data-tier="complet"]').first()).toBeVisible();
+
+    const reward = {
+      game: {
+        name: 'Hades',
+        slug: 'hades',
+        platform: 'STEAM',
+        headerUrl: null,
+        totalAchievements: 49,
+      },
+      progress: { unlockedCount: 49, completion: 100, platinum: false },
+    };
+    const event = {
+      provider: 'STEAM',
+      status: 'COMPLETED',
+      processed: 1,
+      total: 1,
+      achievements: 3,
+      rewards: [reward, { ...reward, progress: { ...reward.progress, platinum: true } }],
+    };
+    await page.route('**/api/sync/events', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'text/event-stream',
+        body: `data: ${JSON.stringify(event)}\n\n`,
+      }),
+    );
+    await page.goto('/');
+    const dialog = page.getByRole('dialog', { name: 'Nouvelle carte' });
+    await expect(dialog.getByText('Carte 100 % obtenue !')).toBeVisible();
+    await dialog.getByRole('button', { name: 'Carte suivante (1)' }).click();
+    await expect(dialog.getByText('Carte Platine obtenue !')).toBeVisible();
+    await dialog.getByRole('button', { name: 'Super !' }).click();
+    await expect(dialog).toBeHidden();
   });
 
   test('voit les quatre comptes et son export', async ({ page }) => {

@@ -19,9 +19,9 @@
 
   <h2 class="pt-4">Ce que nous ne collectons pas</h2>
   <p>
-    Aucun mot de passe de plateforme, et aucun jeton NPSSO de joueur. Les jetons Discord et Xbox
-    sont chiffrés sur le serveur. Les seuls cookies sont ceux de la session et du thème, strictement
-    nécessaires au service.
+    Aucun mot de passe de plateforme, et aucun jeton NPSSO de joueur. Les jetons Xbox sont chiffrés
+    sur le serveur. Les seuls cookies sont ceux de la session, du thème et des étapes de connexion
+    ou de fusion de profils, strictement nécessaires au service.
   </p>
 
   <h2 class="pt-4">Tes droits</h2>

@@ -2,7 +2,7 @@ import type { Platform, Prisma, TrophyType } from '@prisma/client';
 import { db } from '../db';
 import { slugify } from '$lib/slug';
 
-export const POINTS: Record<TrophyType, number> = {
+const POINTS: Record<TrophyType, number> = {
   PLATINUM: 180,
   GOLD: 90,
   SILVER: 30,
@@ -122,10 +122,7 @@ export async function saveProgress(
   const total = known.length;
   const unlockedCount = owned.length;
   const completion = total > 0 ? (unlockedCount / total) * 100 : 0;
-  const hasPlatinumTrophy = known.some((a) => a.trophyType === 'PLATINUM');
-  const platinum = hasPlatinumTrophy
-    ? owned.some((o) => o.achievement.trophyType === 'PLATINUM')
-    : total > 0 && unlockedCount === total;
+  const platinum = owned.some((o) => o.achievement.trophyType === 'PLATINUM');
   const lastUnlockedAt = owned.reduce<Date | null>(
     (latest, o) => (!latest || o.unlockedAt > latest ? o.unlockedAt : latest),
     null,

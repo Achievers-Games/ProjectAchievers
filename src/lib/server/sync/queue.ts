@@ -3,6 +3,8 @@ import type { Provider } from '@prisma/client';
 import { db } from '../db';
 import { env } from '../env';
 import { availableProviders } from '../providers';
+import { RARE_CARD } from '../queries';
+import { tierOf, type Reward } from '$lib/tiers';
 import { SyncError } from './errors';
 import { publishSync, publishUnlock } from './events';
 import { syncPsn } from './psn';
@@ -13,6 +15,7 @@ import type { ProviderSync } from './types';
 const SYNC_QUEUE = 'sync-account';
 const SWEEP_QUEUE = 'sync-sweep';
 const STALE_AFTER = 24 * 60 * 60 * 1000;
+const MAX_REWARDS = 12;
 
 const SYNCERS: Partial<Record<Provider, ProviderSync>> = {
   STEAM: syncSteam,
@@ -41,21 +44,50 @@ function boss(): Promise<PgBoss> {
 export async function enqueueSync(userId: string, provider: Provider) {
   if (!SYNCERS[provider] || !availableProviders()[provider]) return false;
 
-  const account = await db.linkedAccount.findUnique({
-    where: { userId_provider: { userId, provider } },
-    select: { syncStatus: true },
-  });
-  if (!account || account.syncStatus === 'QUEUED' || account.syncStatus === 'SYNCING') return false;
-
-  await db.linkedAccount.update({
-    where: { userId_provider: { userId, provider } },
+  // Une seule requête : deux clics simultanés ne peuvent pas lancer deux synchronisations.
+  const { count } = await db.linkedAccount.updateMany({
+    where: { userId, provider, syncStatus: { notIn: ['QUEUED', 'SYNCING'] } },
     data: { syncStatus: 'QUEUED', syncError: null },
   });
+  if (count === 0) return false;
+
   publishSync(userId, { provider, status: 'QUEUED', processed: 0, total: 0 });
 
   const job: SyncJob = { userId, provider };
   await (await boss()).send(SYNC_QUEUE, job, { retryLimit: 1, retryDelay: 60 });
   return true;
+}
+
+async function rareCards(userId: string) {
+  const rows = await db.userGame.findMany({
+    where: { userId, ...RARE_CARD },
+    select: {
+      gameId: true,
+      unlockedCount: true,
+      completion: true,
+      platinum: true,
+      game: {
+        select: {
+          name: true,
+          slug: true,
+          platform: true,
+          headerUrl: true,
+          totalAchievements: true,
+        },
+      },
+    },
+  });
+  return new Map(
+    rows.map(({ gameId, game, ...progress }): [string, Reward] => [gameId, { game, progress }]),
+  );
+}
+
+/** Cartes apparues ou montées en rareté depuis `before`, les plus rares d'abord. */
+function newRewards(before: Map<string, Reward>, after: Map<string, Reward>) {
+  return [...after]
+    .filter(([id, card]) => tierOf(before.get(id)?.progress) !== tierOf(card.progress))
+    .map(([, card]) => card)
+    .sort((a, b) => Number(b.progress.platinum) - Number(a.progress.platinum));
 }
 
 export async function runSync({ userId, provider }: SyncJob) {
@@ -75,6 +107,7 @@ export async function runSync({ userId, provider }: SyncJob) {
   publishSync(userId, { provider, status: 'SYNCING', processed: 0, total: 0 });
 
   try {
+    const before = await rareCards(userId);
     const result = await syncer({
       userId,
       account,
@@ -104,11 +137,15 @@ export async function runSync({ userId, provider }: SyncJob) {
         data: { syncStatus: 'COMPLETED', lastSyncedAt: finishedAt },
       }),
     ]);
+    const rewards = newRewards(before, await rareCards(userId));
     publishSync(userId, {
       provider,
       status: 'COMPLETED',
       processed: result.games,
       total: result.games,
+      achievements: result.achievements,
+      rewards: rewards.slice(0, MAX_REWARDS),
+      moreRewards: Math.max(0, rewards.length - MAX_REWARDS),
     });
   } catch (error) {
     const known = error instanceof SyncError;

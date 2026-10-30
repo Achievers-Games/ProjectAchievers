@@ -16,7 +16,7 @@ const schema = z.object({
   DEV_LOGIN: z.string().optional(),
 });
 
-export type Env = z.infer<typeof schema>;
+type Env = z.infer<typeof schema>;
 
 let cached: Env | undefined;
 

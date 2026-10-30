@@ -73,7 +73,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
       description: masked
         ? 'Obtiens ce succès pour révéler sa description.'
         : achievement.description,
-      iconUrl: achievement.iconUrl,
+      iconUrl: masked ? null : achievement.iconUrl,
       trophyType: achievement.trophyType,
       globalRarity: achievement.globalRarity,
       points: achievement.points,
@@ -114,6 +114,10 @@ function requireUser(locals: App.Locals, url: URL) {
 
 const tooFast = (userId: string) => !rateLimit(`publication:${userId}`, 5, 60_000);
 
+const achievementExists = async (id: string) => (await db.achievement.count({ where: { id } })) > 0;
+
+const GONE = 'Ce contenu n’existe plus.';
+
 export const actions: Actions = {
   guide: async ({ request, params, locals, url }) => {
     const user = requireUser(locals, url);
@@ -121,6 +125,7 @@ export const actions: Actions = {
     const content = body(20_000).safeParse(form.get('content'));
     if (!content.success) return fail(400, { error: content.error.issues[0]?.message });
     if (tooFast(user.id)) return fail(429, { error: 'Attends une minute avant de republier.' });
+    if (!(await achievementExists(params.id))) return fail(404, { error: GONE });
 
     await db.guide.create({
       data: { achievementId: params.id, authorId: user.id, contentMd: content.data },
@@ -133,6 +138,8 @@ export const actions: Actions = {
     const form = await request.formData();
     const guideId = String(form.get('guideId'));
     const value = Number(form.get('value')) > 0 ? 1 : -1;
+    const guide = await db.guide.count({ where: { id: guideId, status: 'PUBLISHED' } });
+    if (!guide) return fail(404, { error: GONE });
 
     await db.$transaction(async (tx) => {
       const key = { guideId_userId: { guideId, userId: user.id } };
@@ -156,6 +163,7 @@ export const actions: Actions = {
     const content = body(2_000).safeParse(form.get('content'));
     if (!content.success) return fail(400, { error: content.error.issues[0]?.message });
     if (tooFast(user.id)) return fail(429, { error: 'Attends une minute avant de republier.' });
+    if (!(await achievementExists(params.id))) return fail(404, { error: GONE });
 
     // Les réponses restent à un seul niveau : plus lisible sur mobile.
     const parentId = form.get('parentId');
@@ -182,6 +190,10 @@ export const actions: Actions = {
     const user = requireUser(locals, url);
     const parsed = reactionSchema.safeParse(Object.fromEntries(await request.formData()));
     if (!parsed.success) return fail(400, { error: 'Réaction invalide.' });
+    const comment = await db.comment.count({
+      where: { id: parsed.data.commentId, status: 'PUBLISHED' },
+    });
+    if (!comment) return fail(404, { error: GONE });
 
     const key = { commentId_userId: { commentId: parsed.data.commentId, userId: user.id } };
     const current = await db.commentReaction.findUnique({ where: key });

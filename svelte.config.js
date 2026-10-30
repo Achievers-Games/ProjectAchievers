@@ -6,7 +6,6 @@ const config = {
   preprocess: vitePreprocess(),
   kit: {
     adapter: adapter(),
-    alias: { '@': 'src' },
     csp: {
       mode: 'auto',
       directives: {
