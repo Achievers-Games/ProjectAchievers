@@ -67,7 +67,7 @@ services:
     environment:
       PGPASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - ./backups:/backups
+      - ${BACKUP_DIR:-./backups}:/backups
     entrypoint:
       - sh
       - -c
