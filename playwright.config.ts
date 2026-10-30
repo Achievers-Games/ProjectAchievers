@@ -21,6 +21,11 @@ export default defineConfig({
     url: baseURL,
     reuseExistingServer: false,
     timeout: 60_000,
-    env: { DATABASE_URL: database.href, ORIGIN: baseURL, DEV_LOGIN: '1' },
+    env: {
+      DATABASE_URL: database.href,
+      ORIGIN: baseURL,
+      DEV_LOGIN: '1',
+      VITE_CACHE_DIR: 'node_modules/.vite-test',
+    },
   },
 });
