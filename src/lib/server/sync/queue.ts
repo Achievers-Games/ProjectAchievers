@@ -209,9 +209,13 @@ export async function startWorkers() {
     data: { syncStatus: 'IDLE' },
   });
 
-  await instance.work<SyncJob>(SYNC_QUEUE, { localConcurrency: 2 }, async (jobs) => {
-    for (const job of jobs) await runSync(job.data);
-  });
+  await instance.work<SyncJob>(
+    SYNC_QUEUE,
+    { localConcurrency: env().SYNC_CONCURRENCY },
+    async (jobs) => {
+      for (const job of jobs) await runSync(job.data);
+    },
+  );
   await instance.work(SWEEP_QUEUE, async () => sweep());
   await instance.schedule(SWEEP_QUEUE, '0 * * * *');
   await instance.work(CONTENT_QUEUE, async () => void (await rateGames()));

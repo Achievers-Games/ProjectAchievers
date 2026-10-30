@@ -14,6 +14,7 @@ const schema = z.object({
   XBOX_CLIENT_SECRET: z.string().optional(),
   PSN_SERVICE_NPSSO: z.string().optional(),
   DEV_LOGIN: z.string().optional(),
+  SYNC_CONCURRENCY: z.coerce.number().int().min(1).default(2),
 });
 
 type Env = z.infer<typeof schema>;
