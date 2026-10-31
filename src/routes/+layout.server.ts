@@ -1,8 +1,10 @@
+import { pushPublicKey } from '$lib/server/push';
 import { unreadCount } from '$lib/server/social';
 import type { LayoutServerLoad } from './$types';
 
 export const load: LayoutServerLoad = async ({ locals, cookies }) => ({
   unread: locals.user ? await unreadCount(locals.user.id) : 0,
+  pushKey: pushPublicKey(),
   user: locals.user && {
     id: locals.user.id,
     handle: locals.user.handle,

@@ -16,10 +16,12 @@
   import Avatar from '$lib/components/Avatar.svelte';
   import ChatDock from '$lib/components/ChatDock.svelte';
   import CommandPalette from '$lib/components/CommandPalette.svelte';
+  import PushPrompt from '$lib/components/PushPrompt.svelte';
   import RewardReveal from '$lib/components/RewardReveal.svelte';
   import Toasts from '$lib/components/Toasts.svelte';
   import { LOCALE_LABELS, PROVIDER_LABELS, syncErrorText } from '$lib/labels';
   import { getLocale, locales, setLocale, type Locale } from '$lib/paraglide/runtime';
+  import { restorePush } from '$lib/push';
   import { hasDock, incoming, unread } from '$lib/stores/chat';
   import { refreshPresence, watchPresence } from '$lib/stores/presence';
   import { rewards, syncState, type SyncProgress } from '$lib/stores/sync';
@@ -88,6 +90,7 @@
 
   onMount(() => {
     document.documentElement.dataset.ready = 'true';
+    if (data.user) void restorePush().catch(() => {});
     return watchPresence();
   });
 
@@ -276,6 +279,7 @@
 </nav>
 
 {#if data.user && !inSocial}<ChatDock me={data.user.id} />{/if}
+{#if data.user}<PushPrompt publicKey={data.pushKey} />{/if}
 <CommandPalette bind:open={paletteOpen} />
 <RewardReveal />
 <Toasts />

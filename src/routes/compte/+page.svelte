@@ -5,6 +5,7 @@
   import type { Provider, SyncStatus } from '@prisma/client';
   import Avatar from '$lib/components/Avatar.svelte';
   import ProviderIcon from '$lib/components/ProviderIcon.svelte';
+  import PushSettings from '$lib/components/PushSettings.svelte';
   import Progress from '$lib/components/Progress.svelte';
   import { formatRelative, PROVIDER_LABELS, syncErrorText } from '$lib/labels';
   import { FRAMES, frameHint, frameLabel } from '$lib/frames';
@@ -360,6 +361,8 @@
       {/each}
     </ul>
   </section>
+
+  <PushSettings publicKey={data.pushKey} profile={data.profile} />
 
   <section class="space-y-3">
     <h2>{m.preferences()}</h2>

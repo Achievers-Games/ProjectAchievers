@@ -678,6 +678,29 @@ test.describe('membre', () => {
     await expect(page).toHaveURL(/\/messages\/./);
   });
 
+  test('propose les notifications après un moment, puis se laisse reporter', async ({ page }) => {
+    await page.clock.install();
+    await page.addInitScript(() => {
+      localStorage.setItem('pa_push_temps', '110');
+      Object.defineProperty(Notification, 'permission', { value: 'default' });
+    });
+    await login(page);
+    await page.goto('/jeux');
+    await ready(page);
+    await page.clock.fastForward(11_000);
+
+    const prompt = page.getByRole('dialog', { name: /Tes amis/ });
+    await expect(prompt).toBeVisible();
+    await expect(prompt.getByRole('checkbox')).toHaveCount(3);
+    await prompt.getByRole('button', { name: 'Plus tard' }).click();
+    await expect(prompt).toBeHidden();
+
+    await page.reload();
+    await ready(page);
+    await page.clock.fastForward(11_000);
+    await expect(prompt).toBeHidden();
+  });
+
   test('compare deux profils', async ({ page }) => {
     await login(page);
     await page.goto('/u/lea');

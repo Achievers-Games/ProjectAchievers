@@ -18,6 +18,7 @@
     <li>{m.privacy_data_content()}</li>
     <li>{m.privacy_data_sessions()}</li>
     <li>{m.privacy_data_social()}</li>
+    <li>{m.privacy_data_push()}</li>
   </ul>
 
   <h2 class="pt-4">{m.privacy_not_collected()}</h2>

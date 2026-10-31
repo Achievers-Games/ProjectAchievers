@@ -4,6 +4,7 @@ import { db } from '../db';
 import { env } from '../env';
 import { availableProviders } from '../providers';
 import { fillFamilies } from '../family';
+import { announceSeason } from '../push';
 import { rateLimit } from '../rate-limit';
 import { isPublicGame, publicUser, RARE_CARD } from '../queries';
 import { tierFor, type Reward } from '$lib/collection';
@@ -342,6 +343,7 @@ async function sweep() {
     take: 500,
   });
   for (const account of accounts) await enqueueSync(account.userId, account.provider);
+  await announceSeason().catch((cause) => console.error('Annonce :', cause));
   await refreshDiscordAccounts().catch((cause) => console.error('Discord :', cause));
   await fillHiddenDescriptions().catch((cause) => console.error('Succès cachés :', cause));
 }

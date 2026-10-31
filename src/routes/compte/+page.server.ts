@@ -10,6 +10,7 @@ import { availableProviders } from '$lib/server/providers';
 import { bioContainsCode, findPsnProfile, newPsnCode } from '$lib/server/providers/psn';
 import { destroySession } from '$lib/server/session';
 import { leaveClan } from '$lib/server/social';
+import { pushPublicKey } from '$lib/server/push';
 import { enqueueSync } from '$lib/server/sync/queue';
 import type { Actions, PageServerLoad } from './$types';
 import { m } from '$lib/paraglide/messages';
@@ -51,6 +52,9 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
         frameMotionUrl: true,
         isPublic: true,
         showAdult: true,
+        pushMessages: true,
+        pushInvites: true,
+        pushEvents: true,
       },
     }),
     db.linkedAccount.findMany({
@@ -80,6 +84,7 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
 
   return {
     profile,
+    pushKey: pushPublicKey(),
     frames: earned.map((row) => row.frame),
     merge,
     accounts,
@@ -231,6 +236,20 @@ export const actions: Actions = {
     const isPublic = (await request.formData()).get('isPublic') === 'on';
     await db.user.update({ where: { id: user.id }, data: { isPublic } });
     return { success: isPublic ? m.profile_public_ok() : m.profile_private_ok() };
+  },
+
+  notifications: async ({ request, locals }) => {
+    const user = requireUser(locals);
+    const form = await request.formData();
+    await db.user.update({
+      where: { id: user.id },
+      data: {
+        pushMessages: form.get('messages') === 'on',
+        pushInvites: form.get('invites') === 'on',
+        pushEvents: form.get('events') === 'on',
+      },
+    });
+    return { success: m.push_saved() };
   },
 
   adult: async ({ request, locals }) => {

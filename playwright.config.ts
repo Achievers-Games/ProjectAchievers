@@ -24,6 +24,7 @@ export default defineConfig({
     timeout: 60_000,
     env: {
       DATABASE_URL: database.href,
+      VAPID_PUBLIC_KEY: 'cle-de-test',
       ORIGIN: baseURL,
       DEV_LOGIN: '1',
       CLOUDFLARE_ACCOUNT_ID: 'compte',

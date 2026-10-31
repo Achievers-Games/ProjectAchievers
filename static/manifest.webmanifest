@@ -1,0 +1,9 @@
+{
+  "name": "Project Achievers",
+  "short_name": "Achievers",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0c0b16",
+  "theme_color": "#0c0b16",
+  "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}

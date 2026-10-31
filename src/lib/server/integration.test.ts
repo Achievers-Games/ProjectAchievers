@@ -9,6 +9,7 @@ import { db } from './db';
 import { familyKey } from './family';
 import { groupLibrary } from './library';
 import { mergeUsers } from './merge';
+import { markActive, subscribersToNotify } from './push';
 import { checkLiveGames } from './sync/live';
 import { enqueueSync, refreshAccounts, runSync, startWorkers } from './sync/queue';
 import { isAdultOnly, rateGames } from './sync/content';
@@ -1258,6 +1259,62 @@ describe('amis, clans et discussions', () => {
     });
     await leaveClan(b.id);
     expect(await db.clan.findUnique({ where: { name } })).toBeNull();
+  });
+});
+
+describe('notifications', () => {
+  async function subscribed() {
+    const result = await resolveIdentity(identity(), null);
+    if (!result.ok) throw new Error('compte non créé');
+    const session = await db.session.create({
+      data: {
+        id: `${PREFIX}-${Math.random()}`,
+        userId: result.userId,
+        expiresAt: new Date(Date.now() + 60_000),
+      },
+    });
+    await db.pushSubscription.create({
+      data: {
+        userId: result.userId,
+        sessionId: session.id,
+        endpoint: `https://push.exemple/${Math.random()}`,
+        p256dh: 'p',
+        auth: 'a',
+        locale: 'fr',
+      },
+    });
+    return { userId: result.userId, session };
+  }
+
+  it('ne sonne qu’une fois par discussion', async () => {
+    const { userId } = await subscribed();
+    expect(await subscribersToNotify(userId, 'message', 'c1')).toHaveLength(1);
+    expect(await subscribersToNotify(userId, 'message', 'c1')).toHaveLength(0);
+    expect(await subscribersToNotify(userId, 'message', 'c2')).toHaveLength(1);
+  });
+
+  it('se tait pendant que le joueur regarde le site', async () => {
+    const { userId } = await subscribed();
+    markActive(userId);
+    expect(await subscribersToNotify(userId, 'invite', 'a')).toHaveLength(0);
+  });
+
+  it('respecte les préférences et la limite horaire', async () => {
+    const { userId } = await subscribed();
+    await db.user.update({ where: { id: userId }, data: { pushInvites: false } });
+    expect(await subscribersToNotify(userId, 'invite', 'a')).toHaveLength(0);
+
+    const sent = [];
+    for (let index = 0; index < 12; index++) {
+      sent.push((await subscribersToNotify(userId, 'event', String(index))).length);
+    }
+    expect(sent.reduce((sum, count) => sum + count, 0)).toBe(8);
+  });
+
+  it('s’arrête quand la session se ferme', async () => {
+    const { userId, session } = await subscribed();
+    await db.session.delete({ where: { id: session.id } });
+    expect(await subscribersToNotify(userId, 'event', 'a')).toHaveLength(0);
   });
 });
 

@@ -2,10 +2,13 @@ import { Prisma, type PrismaClient } from '@prisma/client';
 import { randomToken } from './crypto';
 import { db } from './db';
 import { slugify } from '$lib/slug';
+import { notify } from './push';
 import { publicUser } from './queries';
 import { publishChat } from './sync/events';
+import { m } from '$lib/paraglide/messages';
 
 const MESSAGES_SHOWN = 100;
+const PUSH_PREVIEW = 120;
 const MAX_CLAN_MEMBERS = 50;
 
 export type SocialFailure =
@@ -49,6 +52,18 @@ export async function relationWith(userId: string, otherId: string): Promise<Rel
   return link.requesterId === userId ? 'sent' : 'received';
 }
 
+async function inviteNotice(userId: string, fromId: string, type: 'ami' | 'clan') {
+  const { displayName: name } = await db.user.findUniqueOrThrow({
+    where: { id: fromId },
+    select: { displayName: true },
+  });
+  notify(userId, 'invite', `${type}:${fromId}`, (locale) =>
+    type === 'ami'
+      ? { title: name, body: m.push_friend_request({}, { locale }), url: '/amis' }
+      : { title: name, body: m.push_clan_invite({}, { locale }), url: '/clan' },
+  );
+}
+
 /** Un profil privé ne se trouve pas par son identifiant, et un blocage ne se devine pas. */
 export async function requestFriend(userId: string, handle: string): Promise<SocialFailure | null> {
   const other = await db.user.findFirst({
@@ -61,6 +76,7 @@ export async function requestFriend(userId: string, handle: string): Promise<Soc
   const link = await db.friendship.findFirst({ where: { OR: pair(userId, other.id) } });
   if (!link) {
     await db.friendship.create({ data: { requesterId: userId, addresseeId: other.id } });
+    await inviteNotice(other.id, userId, 'ami');
   } else if (!link.accepted && link.addresseeId === userId) {
     await db.friendship.update({ where: { id: link.id }, data: { accepted: true } });
   }
@@ -160,7 +176,7 @@ export async function listConversations(userId: string) {
       db.message.count({
         where: {
           conversationId: conversation.id,
-          createdAt: { gt: lastReadAt },
+          createdAt: { gte: lastReadAt },
           NOT: { authorId: userId },
         },
       }),
@@ -188,7 +204,7 @@ export async function unreadCount(userId: string) {
     SELECT count(*) AS count
     FROM "ConversationMember" cm
     JOIN "Message" m ON m."conversationId" = cm."conversationId"
-    WHERE cm."userId" = ${userId} AND m."createdAt" > cm."lastReadAt" AND m."authorId" <> ${userId}`;
+    WHERE cm."userId" = ${userId} AND m."createdAt" >= cm."lastReadAt" AND m."authorId" <> ${userId}`;
   return Number(count);
 }
 
@@ -238,7 +254,11 @@ export async function sendMessage(
 ): Promise<ChatMessage | SocialFailure> {
   const conversation = await db.conversation.findFirst({
     where: { id: conversationId, members: { some: { userId } } },
-    select: { directKey: true, members: { select: { userId: true } } },
+    select: {
+      directKey: true,
+      clan: { select: { name: true } },
+      members: { select: { userId: true } },
+    },
   });
   if (!conversation) return 'not_found';
 
@@ -253,6 +273,12 @@ export async function sendMessage(
   });
   for (const member of conversation.members) {
     publishChat(member.userId, { type: 'chat', conversationId, message });
+    if (member.userId === userId) continue;
+    notify(member.userId, 'message', conversationId, () => ({
+      title: conversation.clan?.name ?? message.author.displayName,
+      body: content.slice(0, PUSH_PREVIEW),
+      url: `/messages/${conversationId}`,
+    }));
   }
   return message;
 }
@@ -335,6 +361,7 @@ export async function inviteToClan(
     data: [{ clanId: membership.clanId, userId: friendId }],
     skipDuplicates: true,
   });
+  await inviteNotice(friendId, userId, 'clan');
   return null;
 }
 

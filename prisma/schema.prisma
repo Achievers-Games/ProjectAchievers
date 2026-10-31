@@ -105,6 +105,33 @@ model User {
   clanInvites     ClanInvite[]
   conversations   ConversationMember[]
   messages        Message[]
+
+  pushMessages      Boolean            @default(true)
+  pushInvites       Boolean            @default(true)
+  pushEvents        Boolean            @default(true)
+  pushSubscriptions PushSubscription[]
+}
+
+/// Un navigateur abonné aux notifications. Lié à la session : se déconnecter l'arrête.
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessionId String
+  session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  locale    String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+/// Une annonce envoyée à tous : elle ne part qu'une fois.
+model Announcement {
+  key    String   @id
+  sentAt DateTime @default(now())
 }
 
 /// Une demande d'ami, acceptée ou non : un couple de joueurs n'a qu'une ligne.
@@ -234,6 +261,8 @@ model Session {
 
   @@index([userId])
   @@index([expiresAt])
+
+  pushSubscriptions PushSubscription[]
 }
 
 model LinkedAccount {
