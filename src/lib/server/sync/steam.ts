@@ -77,6 +77,13 @@ export async function steamImages(appId: string | number) {
   }
 }
 
+/** L'API indique encore un ancien serveur, qui n'a pas les icônes des jeux récents. */
+const steamIcon = (url: string) =>
+  url.replace(
+    'https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/',
+    'https://shared.fastly.steamstatic.com/community_assets/images/apps/',
+  );
+
 export const mapSchema = (
   achievements: SchemaAchievement[],
   rarity: Map<string, number>,
@@ -85,8 +92,8 @@ export const mapSchema = (
     platformAchievementId: a.name,
     name: a.displayName || a.name,
     description: a.description ?? '',
-    iconUrl: a.icon,
-    iconLockedUrl: a.icongray,
+    iconUrl: steamIcon(a.icon),
+    iconLockedUrl: steamIcon(a.icongray),
     hidden: a.hidden === 1,
     trophyType: 'ACHIEVEMENT',
     globalRarity: rarity.get(a.name) ?? null,
