@@ -33,6 +33,12 @@ test.describe('visiteur', () => {
     await expect(page.locator('a[href^="/jeux/"]').first()).toBeVisible();
   });
 
+  test('tire une phrase d’accroche', async ({ page }) => {
+    await page.goto('/');
+    await ready(page);
+    await expect(page.locator('.tagline')).not.toBeEmpty();
+  });
+
   test('utilise la police prévue', async ({ page }) => {
     await page.goto('/');
     const font = await page.evaluate(() => getComputedStyle(document.body).fontFamily);

@@ -6,6 +6,7 @@
   import Podium from '$lib/components/Podium.svelte';
   import ProviderIcon from '$lib/components/ProviderIcon.svelte';
   import { formatNumber, tierLabel } from '$lib/labels';
+  import { taglineText } from '$lib/taglines';
 
   let { data } = $props();
 
@@ -26,7 +27,10 @@
 
 {#if data.home && data.user}
   <div class="space-y-8">
-    <h1>{m.home_hello({ name: data.user.displayName })}</h1>
+    <div class="space-y-1">
+      <h1>{m.home_hello({ name: data.user.displayName })}</h1>
+      <p class="tagline">{taglineText(data.tagline)}</p>
+    </div>
 
     {#if data.accounts === 0}
       <Empty title={m.home_no_account()}>
@@ -76,6 +80,7 @@
 {:else}
   <div class="space-y-10">
     <section class="max-w-2xl space-y-4 py-8">
+      <p class="tagline">{taglineText(data.tagline)}</p>
       <h1 class="hero-title">{m.hero_title()}</h1>
       <p class="text-muted">
         {m.hero_text()}

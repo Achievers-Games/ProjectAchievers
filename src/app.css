@@ -924,3 +924,7 @@
     animation: none;
   }
 }
+
+.tagline {
+  @apply text-sm font-semibold italic text-accent;
+}
