@@ -7,6 +7,7 @@ import { fillFamilies } from '../family';
 import { RARE_CARD } from '../queries';
 import { tierFor, type Reward } from '$lib/collection';
 import { rateGames } from './content';
+import { refreshDiscordAccounts } from './discord';
 import { SyncError } from './errors';
 import { publishCard, publishSync, publishUnlock } from './events';
 import { grantFrames } from '../frames';
@@ -226,6 +227,7 @@ async function sweep() {
     take: 500,
   });
   for (const account of accounts) await enqueueSync(account.userId, account.provider);
+  await refreshDiscordAccounts().catch((cause) => console.error('Discord :', cause));
 }
 
 /** Démarre le traitement des synchronisations dans le processus du site. */

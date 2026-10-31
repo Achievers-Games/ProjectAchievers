@@ -42,31 +42,37 @@ export async function exchangeDiscordCode(code: string, verifier: string): Promi
     signal: AbortSignal.timeout(10_000),
   });
   if (!userResponse.ok) throw new Error(`Profil Discord illisible (${userResponse.status})`);
-  const user = (await userResponse.json()) as {
-    id: string;
+  const user = (await userResponse.json()) as DiscordUser & {
     username: string;
     global_name: string | null;
-    avatar: string | null;
-    avatar_decoration_data?: { asset: string } | null;
   };
-
-  const decoration = user.avatar_decoration_data?.asset;
-  const decorationUrl = (animated: boolean) =>
-    `https://cdn.discordapp.com/avatar-decoration-presets/${decoration}.png?size=160&passthrough=${animated}`;
 
   return {
     provider: 'DISCORD',
     providerUserId: user.id,
     displayName: user.global_name || user.username,
-    avatarUrl: user.avatar
-      ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=128`
-      : null,
+    ...discordLook(user),
+    profileUrl: `https://discord.com/users/${user.id}`,
+  };
+}
+
+export interface DiscordUser {
+  id: string;
+  avatar: string | null;
+  avatar_decoration_data?: { asset: string } | null;
+}
+
+export function discordLook(user: DiscordUser) {
+  const decoration = user.avatar_decoration_data?.asset;
+  const avatars = `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}`;
+  const decorationUrl = (animated: boolean) =>
+    `https://cdn.discordapp.com/avatar-decoration-presets/${decoration}.png?size=160&passthrough=${animated}`;
+
+  return {
+    avatarUrl: user.avatar ? `${avatars}.png?size=128` : null,
     // Discord marque ses avatars animés par ce préfixe.
-    avatarMotionUrl: user.avatar?.startsWith('a_')
-      ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.gif?size=128`
-      : null,
+    avatarMotionUrl: user.avatar?.startsWith('a_') ? `${avatars}.gif?size=128` : null,
     frameUrl: decoration ? decorationUrl(false) : null,
     frameMotionUrl: decoration ? decorationUrl(true) : null,
-    profileUrl: `https://discord.com/users/${user.id}`,
   };
 }

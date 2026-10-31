@@ -16,6 +16,7 @@ import { steamImages } from './sync/steam';
 import { saveAchievements, saveProgress, upsertGame } from './sync/store';
 import { splitText, translateContent } from './translate';
 import { ensureGameTexts, localizeAchievements } from './achievement-texts';
+import { refreshDiscordAccounts } from './sync/discord';
 
 const PREFIX = 'zz-test';
 const STEAM_ID = '76561190000000001';
@@ -832,6 +833,46 @@ describe('cadres importés', () => {
     await resolveIdentity({ ...id, avatarUrl: 'https://a.test/nouveau.png' }, null);
     const user = await db.user.findUniqueOrThrow({ where: { id: created.userId } });
     expect(user.avatarUrl).toBe('https://a.test/nouveau.png');
+  });
+
+  it('suit Discord sans jeton de joueur', async () => {
+    const stale = await db.linkedAccount.findMany({ where: { provider: 'DISCORD' } });
+    await db.linkedAccount.updateMany({
+      where: { provider: 'DISCORD' },
+      data: { lastSyncedAt: new Date() },
+    });
+    const id = identity({
+      provider: 'DISCORD',
+      providerUserId: `${PREFIX}-${Math.random()}`,
+      avatarUrl: 'https://cdn.discordapp.com/avatars/1/ancien.png?size=128',
+    });
+    const created = await resolveIdentity(id, null);
+    if (!created.ok) throw new Error('compte non créé');
+    vi.stubGlobal(
+      'fetch',
+      async () =>
+        new Response(
+          JSON.stringify({
+            id: '1',
+            avatar: 'a_nouveau',
+            avatar_decoration_data: { asset: 'deco' },
+          }),
+        ),
+    );
+
+    expect(await refreshDiscordAccounts(0)).toBe(1);
+    const user = await db.user.findUniqueOrThrow({ where: { id: created.userId } });
+    expect(user.avatarUrl).toContain('a_nouveau.png');
+    expect(user.avatarMotionUrl).toContain('a_nouveau.gif');
+    const account = await db.linkedAccount.findFirstOrThrow({
+      where: { userId: created.userId },
+    });
+    expect(account.frameMotionUrl).toContain('deco.png');
+
+    expect(await refreshDiscordAccounts(0)).toBe(0);
+    for (const { id: accountId, lastSyncedAt } of stale) {
+      await db.linkedAccount.update({ where: { id: accountId }, data: { lastSyncedAt } });
+    }
   });
 
   it('ne touche pas au cadre du site équipé', async () => {

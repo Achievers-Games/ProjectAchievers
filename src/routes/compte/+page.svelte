@@ -284,8 +284,8 @@
                 >
                   {m.reconnect()}
                 </a>
-              {:else if LOGIN_ONLY.includes(provider) && OAUTH[provider]}
-                <!-- Ces comptes n'ont pas de jeux : repasser par le fournisseur relit leur image. -->
+              {:else if provider === 'GOOGLE'}
+                <!-- Google n'a pas d'accès de serveur : repasser par lui relit son image. -->
                 <a
                   class="btn"
                   href="/auth/{OAUTH[provider]}/start?retour=/compte"

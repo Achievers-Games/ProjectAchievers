@@ -31,6 +31,7 @@ export default defineConfig({
       ENCRYPTION_KEY: 'a'.repeat(64),
       ORIGIN: 'http://localhost:5173',
       STEAM_API_KEY: 'test-key',
+      DISCORD_BOT_TOKEN: 'bot',
       CLOUDFLARE_ACCOUNT_ID: 'compte',
       CLOUDFLARE_AI_TOKEN: 'jeton',
     },
