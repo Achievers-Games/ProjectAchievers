@@ -136,7 +136,7 @@
               <span class="tabular w-5 text-right text-xs text-muted">{index + 1}</span>
               <Avatar name={row.displayName} src={row.avatarUrl} size={28} />
               <span class="min-w-0 flex-1 truncate text-sm font-medium">{row.displayName}</span>
-              <span class="tabular text-sm">{formatNumber(row.points)}</span>
+              <span class="tabular text-sm">{formatNumber(row.unlocked)}</span>
             </a>
           </li>
         {/each}

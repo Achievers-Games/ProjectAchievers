@@ -1,7 +1,9 @@
 import { error, fail } from '@sveltejs/kit';
 import { nextTier, tierFor } from '$lib/collection';
 import { db } from '$lib/server/db';
+import { ensureGameTexts, localizeAchievements } from '$lib/server/achievement-texts';
 import { visibleGames } from '$lib/server/queries';
+import { getLocale } from '$lib/paraglide/runtime';
 import type { Actions, PageServerLoad } from './$types';
 import { m } from '$lib/paraglide/messages';
 
@@ -57,9 +59,13 @@ export const load: PageServerLoad = async ({ params, locals }) => {
     ...others.filter((other) => (other.players[0]?.completion ?? 0) >= 100),
   ];
 
+  const locale = getLocale();
+  await ensureGameTexts(game, locale);
+  const achievements = await localizeAchievements(game.achievements, locale);
+
   return {
     game: { ...game, achievements: undefined },
-    achievements: game.achievements.map((a) => {
+    achievements: achievements.map((a) => {
       const unlocked = unlockedAt.get(a.id) ?? null;
       // Un succès caché reste masqué tant que le joueur ne l'a pas obtenu.
       const masked = a.hidden && !unlocked;

@@ -1,3 +1,4 @@
+import type { Locale } from '$lib/paraglide/runtime';
 import { db } from '../db';
 import { env } from '../env';
 import { fetchRetry, SyncError, syncGames } from './errors';
@@ -117,6 +118,33 @@ async function fetchSchema(appId: number): Promise<AchievementInput[] | null> {
     }
   }
   return mapSchema(achievements, rarity);
+}
+
+const STEAM_LANGUAGES: Record<Locale, string> = {
+  fr: 'french',
+  en: 'english',
+  es: 'spanish',
+  de: 'german',
+  'pt-BR': 'brazilian',
+  ru: 'russian',
+  'zh-CN': 'schinese',
+  ja: 'japanese',
+};
+
+export async function fetchSteamTexts(appId: string, locale: Locale) {
+  const response = await steamGet('/ISteamUserStats/GetSchemaForGame/v2/', {
+    appid: appId,
+    l: STEAM_LANGUAGES[locale],
+  });
+  if (!response.ok) throw new Error(`GetSchemaForGame a répondu ${response.status}`);
+  const schema = (await response.json()) as {
+    game?: { availableGameStats?: { achievements?: SchemaAchievement[] } };
+  };
+  return (schema.game?.availableGameStats?.achievements ?? []).map((a) => ({
+    platformAchievementId: a.name,
+    name: a.displayName || a.name,
+    description: a.description ?? '',
+  }));
 }
 
 async function fetchUnlocks(steamId: string, appId: number) {

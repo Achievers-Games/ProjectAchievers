@@ -5,6 +5,7 @@ import {
   type TrophyTitle,
 } from 'psn-api';
 import type { TrophyType } from '@prisma/client';
+import type { Locale } from '$lib/paraglide/runtime';
 import { db } from '../db';
 import { psnAuthorization } from '../providers/psn';
 import { SyncError, syncGames } from './errors';
@@ -51,6 +52,34 @@ export function assertPsnResponse(response: object) {
     throw new SyncError('sync_psn_private');
   }
   throw new Error(`PSN a répondu ${error.code} : ${error.message}`);
+}
+
+const PSN_LANGUAGES: Record<Locale, string> = {
+  fr: 'fr-FR',
+  en: 'en-US',
+  es: 'es-ES',
+  de: 'de-DE',
+  'pt-BR': 'pt-BR',
+  ru: 'ru-RU',
+  'zh-CN': 'zh-Hans',
+  ja: 'ja-JP',
+};
+
+/** Le service dépend de la génération du jeu, qui n'est pas conservée : PS5 d'abord. */
+export async function fetchPsnTexts(titleId: string, locale: Locale) {
+  const authorization = await psnAuthorization();
+  const headerOverrides = { 'Accept-Language': PSN_LANGUAGES[locale] };
+  const read = (npServiceName: 'trophy' | 'trophy2') =>
+    getTitleTrophies(authorization, titleId, 'all', { npServiceName, headerOverrides });
+
+  let catalog = await read('trophy2');
+  if (!catalog.trophies) catalog = await read('trophy');
+  assertPsnResponse(catalog);
+  return catalog.trophies.map((trophy) => ({
+    platformAchievementId: String(trophy.trophyId),
+    name: trophy.trophyName ?? '',
+    description: trophy.trophyDetail ?? '',
+  }));
 }
 
 async function allTitles(accountId: string) {

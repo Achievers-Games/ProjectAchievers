@@ -14,6 +14,7 @@ import { onCard, onSync, type SyncEvent } from './sync/events';
 import { steamImages } from './sync/steam';
 import { saveAchievements, saveProgress, upsertGame } from './sync/store';
 import { splitText, translateContent } from './translate';
+import { ensureGameTexts, localizeAchievements } from './achievement-texts';
 
 const PREFIX = 'zz-test';
 const STEAM_ID = '76561190000000001';
@@ -844,5 +845,48 @@ describe('filtres par niveau', () => {
     const filters = await library();
     const unfinished = await listGames({ ...filters, unfinished: true }, filters.ownerId);
     expect(names(unfinished)).toEqual(['presque', 'or', 'debut']);
+  });
+});
+
+describe('textes officiels des succès', () => {
+  it('demande une fois les textes d’un jeu, puis les affiche', async () => {
+    const game = await db.game.create({
+      data: {
+        platform: 'STEAM',
+        platformGameId: '424242',
+        name: `${PREFIX} textes`,
+        slug: `${PREFIX}-${Math.random().toString(36).slice(2)}`,
+      },
+    });
+    const achievement = await db.achievement.create({
+      data: {
+        gameId: game.id,
+        platformAchievementId: 'BOSS',
+        name: 'Le boss',
+        description: 'Bats le boss',
+      },
+    });
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            game: {
+              availableGameStats: {
+                achievements: [{ name: 'BOSS', displayName: 'The boss', description: 'Beat it' }],
+              },
+            },
+          }),
+        ),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await ensureGameTexts(game, 'en');
+    await ensureGameTexts(game, 'en');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    const [text] = await localizeAchievements([achievement], 'en');
+    expect(text).toMatchObject({ name: 'The boss', description: 'Beat it' });
+    const [french] = await localizeAchievements([achievement], 'fr');
+    expect(french?.name).toBe('Le boss');
   });
 });

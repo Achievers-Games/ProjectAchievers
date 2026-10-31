@@ -186,7 +186,6 @@
           <span>{m.achievement_rarity({ value: formatRarity(data.achievement.globalRarity) })}</span
           >
         {/if}
-        <span>{m.count_points({ count: data.achievement.points })}</span>
         {#if data.unlockedAt}
           <span class="text-success"
             >{m.achievement_unlocked_on({ date: formatDate(data.unlockedAt) })}</span

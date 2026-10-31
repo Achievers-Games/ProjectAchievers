@@ -136,24 +136,25 @@ model PsnVerification {
 // ── Catalogue ──────────────────────────────────────────────────────────
 
 model Game {
-  id                String    @id @default(cuid())
+  id                String            @id @default(cuid())
   platform          Platform
   platformGameId    String
+  translations      GameTranslation[]
   name              String
-  slug              String    @unique
+  slug              String            @unique
   coverUrl          String?
   headerUrl         String?
-  totalAchievements Int       @default(0)
+  totalAchievements Int               @default(0)
   schemaSyncedAt    DateTime?
   /// Classification Steam : nudité fréquente ou contenu réservé aux adultes.
-  adultOnly         Boolean   @default(false)
+  adultOnly         Boolean           @default(false)
   contentCheckedAt  DateTime?
   /// Clé commune aux versions d'un même jeu sur plusieurs plateformes.
   familyKey         String?
   /// Corrigée par la modération : la synchronisation n'y touche plus.
-  familyLocked      Boolean   @default(false)
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  familyLocked      Boolean           @default(false)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
 
   achievements Achievement[]
   players      UserGame[]
@@ -162,6 +163,27 @@ model Game {
   @@index([name])
   @@index([adultOnly])
   @@index([familyKey])
+}
+
+/// Jeux dont les textes ont déjà été demandés à la plateforme, même sans résultat.
+model GameTranslation {
+  gameId    String
+  game      Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  locale    String
+  checkedAt DateTime @default(now())
+
+  @@id([gameId, locale])
+}
+
+/// Nom et description officiels d'un succès dans une autre langue.
+model AchievementTranslation {
+  achievementId String
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  locale        String
+  name          String
+  description   String      @default("")
+
+  @@id([achievementId, locale])
 }
 
 model Achievement {
@@ -178,9 +200,10 @@ model Achievement {
   globalRarity          Float?
   points                Int        @default(10)
 
-  unlocks  UserAchievement[]
-  guides   Guide[]
-  comments Comment[]
+  unlocks      UserAchievement[]
+  translations AchievementTranslation[]
+  guides       Guide[]
+  comments     Comment[]
 
   @@unique([gameId, platformAchievementId])
   @@index([gameId])

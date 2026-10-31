@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type { ReactionType } from '@prisma/client';
 import { db } from '$lib/server/db';
 import { renderMarkdown } from '$lib/server/markdown';
+import { ensureGameTexts, localizeAchievements } from '$lib/server/achievement-texts';
 import { rateLimit } from '$lib/server/rate-limit';
 import { canTranslate, translateContent } from '$lib/server/translate';
 import { getLocale } from '$lib/paraglide/runtime';
@@ -14,7 +15,16 @@ export const load: PageServerLoad = async ({ params, locals }) => {
   const achievement = await db.achievement.findUnique({
     where: { id: params.id },
     include: {
-      game: { select: { name: true, slug: true, adultOnly: true } },
+      game: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          adultOnly: true,
+          platform: true,
+          platformGameId: true,
+        },
+      },
       unlocks: viewerId ? { where: { userId: viewerId }, select: { unlockedAt: true } } : false,
     },
   });
@@ -23,6 +33,8 @@ export const load: PageServerLoad = async ({ params, locals }) => {
   }
 
   const locale = getLocale();
+  await ensureGameTexts(achievement.game, locale);
+  const [text = achievement] = await localizeAchievements([achievement], locale);
   const translations = { where: { locale }, select: { contentMd: true }, take: 1 };
 
   /** Traduit d'office ce qui vient d'une autre langue : les textes anciens gardent le bouton seul. */
@@ -96,12 +108,11 @@ export const load: PageServerLoad = async ({ params, locals }) => {
   return {
     achievement: {
       id: achievement.id,
-      name: masked ? m.achievement_hidden() : achievement.name,
-      description: masked ? m.achievement_hidden_text() : achievement.description,
+      name: masked ? m.achievement_hidden() : text.name,
+      description: masked ? m.achievement_hidden_text() : text.description,
       iconUrl: masked ? null : achievement.iconUrl,
       trophyType: achievement.trophyType,
       globalRarity: achievement.globalRarity,
-      points: achievement.points,
       game: { name: achievement.game.name, slug: achievement.game.slug },
     },
     unlockedAt: unlock,
