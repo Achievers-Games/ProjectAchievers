@@ -197,9 +197,28 @@
       <div class="grid gap-3 sm:grid-cols-2">
         <label class="flex items-center gap-3 text-sm">
           <input type="radio" name="frame" value="" checked={!data.profile.frame} />
-          <Avatar name={data.profile.displayName} src={data.profile.avatarUrl} size={36} />
+          <Avatar name={data.profile.displayName} src={data.profile.avatarUrl} size={64} />
           {m.frame_none()}
         </label>
+        {#each data.accounts.filter((a) => a.frameUrl) as account (account.provider)}
+          <label class="flex items-center gap-3 text-sm">
+            <input
+              type="radio"
+              name="frame"
+              value="compte:{account.provider}"
+              checked={data.profile.frame === account.frameUrl}
+            />
+            <Avatar
+              name={data.profile.displayName}
+              src={data.profile.avatarUrl}
+              frame={account.frameUrl}
+              frameMotion={account.frameMotionUrl}
+              play="always"
+              size={64}
+            />
+            {PROVIDER_LABELS[account.provider]}
+          </label>
+        {/each}
         {#each FRAMES as frame (frame)}
           {@const owned = data.frames.includes(frame)}
           <label class="flex items-center gap-3 text-sm" class:opacity-50={!owned}>
@@ -214,7 +233,7 @@
               name={data.profile.displayName}
               src={data.profile.avatarUrl}
               {frame}
-              size={36}
+              size={64}
             />
             <span>
               {frameLabel(frame)}

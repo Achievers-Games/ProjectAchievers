@@ -20,6 +20,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
       avatarUrl: true,
       avatarMotionUrl: true,
       frame: true,
+      frameMotionUrl: true,
     },
   });
   const left = users.find((u) => u.handle === a);

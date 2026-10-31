@@ -3,12 +3,23 @@
   import ChevronLeft from '@lucide/svelte/icons/chevron-left';
   import ChevronRight from '@lucide/svelte/icons/chevron-right';
   import { formatPercent } from '$lib/labels';
+  import { FRAMES } from '$lib/frames';
+  import Avatar from './Avatar.svelte';
   import type { BannerGame } from '$lib/server/queries';
 
   const AUTOPLAY = 7_000;
 
-  let { tagline, banners, member }: { tagline: string; banners: BannerGame[]; member: boolean } =
-    $props();
+  let {
+    tagline,
+    banners,
+    avatar = null,
+    member,
+  }: {
+    tagline: string;
+    banners: { season: BannerGame | null; ranking: BannerGame | null };
+    avatar?: string | null;
+    member: boolean;
+  } = $props();
 
   const art = (game: BannerGame | undefined) =>
     game?.images.map((image) => `url("${encodeURI(image)}")`).join(', ');
@@ -21,6 +32,7 @@
   const slides = $derived([
     {
       id: 'saison',
+      game: banners.season,
       eyebrow: m.banner_season_label(),
       title: m.banner_season_title(),
       text: tagline,
@@ -29,6 +41,7 @@
     },
     {
       id: 'classement',
+      game: banners.ranking,
       eyebrow: m.ranking(),
       title: m.ranking_collectors(),
       text: m.ranking_rules(),
@@ -37,6 +50,7 @@
     },
     {
       id: 'cadres',
+      game: null,
       eyebrow: m.banner_frames_label(),
       title: m.frames_title(),
       text: m.banner_frames_text(),
@@ -82,7 +96,7 @@
       <article
         class="carousel-slide"
         data-slide={slide.id}
-        style:--art={art(banners[index])}
+        style:--art={art(slide.game ?? undefined)}
         role="group"
         aria-roledescription="slide"
         aria-label="{index + 1} / {slides.length}"
@@ -92,8 +106,8 @@
         <p class="carousel-text" class:tagline={slide.id === 'saison'}>{slide.text}</p>
         <div class="mt-auto flex flex-wrap items-center gap-3">
           <a href={slide.href} class="btn btn-primary">{slide.cta}</a>
-          {#if banners[index]}
-            {@const game = banners[index]}
+          {#if slide.game}
+            {@const game = slide.game}
             <a href="/jeux/{game.slug}" class="carousel-game">
               {game.completion === null
                 ? game.name
@@ -101,6 +115,13 @@
             </a>
           {/if}
         </div>
+        {#if slide.id === 'cadres'}
+          <div class="carousel-frames" aria-hidden="true">
+            {#each FRAMES as frame (frame)}
+              <Avatar name="Achievers" src={avatar} {frame} size={56} />
+            {/each}
+          </div>
+        {/if}
       </article>
     {/each}
   </div>

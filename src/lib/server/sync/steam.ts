@@ -1,8 +1,8 @@
 import type { Locale } from '$lib/paraglide/runtime';
-import { applyAvatarMotion } from '../accounts';
+import { applyAccountLook } from '../accounts';
 import { db } from '../db';
 import { env } from '../env';
-import { fetchSteamAvatarMotion } from '../providers/steam';
+import { fetchSteamLook } from '../providers/steam';
 import { fetchRetry, SyncError, syncGames } from './errors';
 import { saveAchievements, saveProgress, upsertGame, type AchievementInput } from './store';
 import type { ProviderSync } from './types';
@@ -230,8 +230,8 @@ export const syncSteam: ProviderSync = async ({ userId, account, report, onUnloc
     },
   );
 
-  // Le joueur a pu changer d'avatar animé sur Steam depuis sa dernière connexion.
-  await applyAvatarMotion(account.id, await fetchSteamAvatarMotion(steamId));
+  // Le joueur a pu changer d'avatar ou de cadre sur Steam depuis sa dernière connexion.
+  await applyAccountLook(account, await fetchSteamLook(steamId));
 
   return { games, achievements };
 };

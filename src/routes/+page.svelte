@@ -29,7 +29,12 @@
   <div class="space-y-8">
     <h1>{m.home_hello({ name: data.user.displayName })}</h1>
 
-    <HomeCarousel tagline={data.tagline} banners={data.banners} member />
+    <HomeCarousel
+      tagline={data.tagline}
+      banners={data.banners}
+      avatar={data.user.avatarUrl}
+      member
+    />
 
     {#if data.accounts === 0}
       <Empty title={m.home_no_account()}>

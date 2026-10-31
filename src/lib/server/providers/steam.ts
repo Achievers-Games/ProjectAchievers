@@ -1,4 +1,4 @@
-import type { Identity } from '../accounts';
+import type { AccountLook, Identity } from '../accounts';
 import { env } from '../env';
 import { callbackUrl } from './index';
 
@@ -73,23 +73,45 @@ export async function fetchSteamIdentity(steamId: string): Promise<Identity> {
     providerUserId: steamId,
     displayName: player?.personaname || `Steam ${steamId.slice(-5)}`,
     avatarUrl: player?.avatarfull,
-    avatarMotionUrl: await fetchSteamAvatarMotion(steamId),
+    ...(await fetchSteamLook(steamId)),
     profileUrl: player?.profileurl ?? `https://steamcommunity.com/profiles/${steamId}`,
   };
 }
 
-/** L'avatar animé est un plus : une panne de Steam ne doit jamais empêcher de se connecter. */
-export async function fetchSteamAvatarMotion(steamId: string): Promise<string | null> {
-  const url = new URL('https://api.steampowered.com/IPlayerService/GetAnimatedAvatar/v1/');
+const STEAM_IMAGES = 'https://shared.fastly.steamstatic.com/community_assets/images/';
+
+interface SteamItem {
+  image_small?: string;
+  image_large?: string;
+}
+
+async function fetchSteamItem(method: string, steamId: string) {
+  const url = new URL(`https://api.steampowered.com/IPlayerService/${method}/v1/`);
   url.searchParams.set('key', env().STEAM_API_KEY ?? '');
   url.searchParams.set('steamid', steamId);
+  const response = await fetch(url, { signal: AbortSignal.timeout(10_000) });
+  if (!response.ok) return {};
+  const data = (await response.json()) as {
+    response?: { avatar?: SteamItem; avatar_frame?: SteamItem };
+  };
+  return data.response ?? {};
+}
+
+const steamImage = (path: string | undefined) => (path ? `${STEAM_IMAGES}${path}` : null);
+
+/** Ces images sont un plus : une panne de Steam ne doit jamais empêcher de se connecter. */
+export async function fetchSteamLook(steamId: string): Promise<AccountLook> {
   try {
-    const response = await fetch(url, { signal: AbortSignal.timeout(10_000) });
-    if (!response.ok) return null;
-    const data = (await response.json()) as { response?: { avatar?: { image_small?: string } } };
-    const image = data.response?.avatar?.image_small;
-    return image ? `https://shared.fastly.steamstatic.com/community_assets/images/${image}` : null;
+    const [avatar, frame] = await Promise.all([
+      fetchSteamItem('GetAnimatedAvatar', steamId),
+      fetchSteamItem('GetAvatarFrame', steamId),
+    ]);
+    return {
+      avatarMotionUrl: steamImage(avatar.avatar?.image_small),
+      frameUrl: steamImage(frame.avatar_frame?.image_large),
+      frameMotionUrl: steamImage(frame.avatar_frame?.image_small),
+    };
   } catch {
-    return null;
+    return { avatarMotionUrl: null, frameUrl: null, frameMotionUrl: null };
   }
 }

@@ -15,6 +15,7 @@
     avatarUrl: string | null;
     avatarMotionUrl: string | null;
     frame: string | null;
+    frameMotionUrl: string | null;
     game: string;
     gameSlug: string;
     count: number;
@@ -69,6 +70,7 @@
               src={event.avatarUrl}
               frame={event.frame}
               motion={event.avatarMotionUrl}
+              frameMotion={event.frameMotionUrl}
               size={28}
             />
             <p class="min-w-0 text-sm">
@@ -98,6 +100,7 @@
               src={item.user.avatarUrl}
               frame={item.user.frame}
               motion={item.user.avatarMotionUrl}
+              frameMotion={item.user.frameMotionUrl}
               size={28}
             />
             <div class="min-w-0 flex-1">
@@ -153,6 +156,7 @@
                 src={row.avatarUrl}
                 frame={row.frame}
                 motion={row.avatarMotionUrl}
+                frameMotion={row.frameMotionUrl}
                 size={28}
               />
               <span class="min-w-0 flex-1 truncate text-sm font-medium">{row.displayName}</span>

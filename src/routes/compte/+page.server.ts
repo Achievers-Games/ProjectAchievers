@@ -47,6 +47,7 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
         avatarUrl: true,
         avatarMotionUrl: true,
         frame: true,
+        frameMotionUrl: true,
         isPublic: true,
         showAdult: true,
       },
@@ -59,6 +60,8 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
         displayName: true,
         avatarUrl: true,
         avatarMotionUrl: true,
+        frameUrl: true,
+        frameMotionUrl: true,
         syncStatus: true,
         syncError: true,
         lastSyncedAt: true,
@@ -125,7 +128,7 @@ export const actions: Actions = {
 
     const accounts = await db.linkedAccount.findMany({
       where: { userId: user.id },
-      select: { provider: true, syncStatus: true },
+      select: { provider: true, syncStatus: true, frameUrl: true },
     });
     const target = accounts.find((a) => a.provider === provider.data);
     if (!target) return fail(404, { error: m.account_not_linked() });
@@ -145,6 +148,12 @@ export const actions: Actions = {
     }
 
     await db.$transaction(async (tx) => {
+      if (target.frameUrl) {
+        await tx.user.updateMany({
+          where: { id: user.id, frame: target.frameUrl },
+          data: { frame: null, frameMotionUrl: null },
+        });
+      }
       await tx.linkedAccount.delete({
         where: { userId_provider: { userId: user.id, provider: provider.data } },
       });
@@ -180,11 +189,30 @@ export const actions: Actions = {
   frame: async ({ request, locals }) => {
     const user = requireUser(locals);
     const frame = String((await request.formData()).get('frame') ?? '');
+    const provider = providerSchema.safeParse(frame.replace('compte:', ''));
+    if (frame.startsWith('compte:')) {
+      // Seul le cadre d'un compte lié est accepté : aucune adresse libre n'atteint les profils.
+      const account = provider.success
+        ? await db.linkedAccount.findFirst({
+            where: { userId: user.id, provider: provider.data, frameUrl: { not: null } },
+            select: { frameUrl: true, frameMotionUrl: true },
+          })
+        : null;
+      if (!account) return fail(403, { error: m.frame_unknown() });
+      await db.user.update({
+        where: { id: user.id },
+        data: { frame: account.frameUrl, frameMotionUrl: account.frameMotionUrl },
+      });
+      return { success: m.frame_saved() };
+    }
     if (frame) {
       const owned = await db.userFrame.count({ where: { userId: user.id, frame } });
       if (!owned) return fail(403, { error: m.frame_unknown() });
     }
-    await db.user.update({ where: { id: user.id }, data: { frame: frame || null } });
+    await db.user.update({
+      where: { id: user.id },
+      data: { frame: frame || null, frameMotionUrl: null },
+    });
     return { success: m.frame_saved() };
   },
 

@@ -155,6 +155,7 @@
             src={data.user.avatarUrl}
             frame={data.user.frame}
             motion={data.user.avatarMotionUrl}
+            frameMotion={data.user.frameMotionUrl}
           />
         </a>
       {:else}

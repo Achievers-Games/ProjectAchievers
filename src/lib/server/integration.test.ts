@@ -809,6 +809,33 @@ describe('avatars animés', () => {
   });
 });
 
+describe('cadres importés', () => {
+  it('suit le cadre de la plateforme, et le retire avec elle', async () => {
+    const id = identity({ frameUrl: 'https://a.test/cadre.png' });
+    const created = await resolveIdentity(id, null);
+    if (!created.ok) throw new Error('compte non créé');
+    const where = { id: created.userId };
+    await db.user.update({ where, data: { frame: 'https://a.test/cadre.png' } });
+
+    await resolveIdentity({ ...id, frameUrl: 'https://a.test/autre.png' }, null);
+    expect((await db.user.findUniqueOrThrow({ where })).frame).toBe('https://a.test/autre.png');
+
+    await resolveIdentity({ ...id, frameUrl: null }, null);
+    expect((await db.user.findUniqueOrThrow({ where })).frame).toBeNull();
+  });
+
+  it('ne touche pas au cadre du site équipé', async () => {
+    const id = identity({ frameUrl: 'https://a.test/cadre.png' });
+    const created = await resolveIdentity(id, null);
+    if (!created.ok) throw new Error('compte non créé');
+    const where = { id: created.userId };
+    await db.user.update({ where, data: { frame: 'podium-1' } });
+
+    await resolveIdentity({ ...id, frameUrl: null }, null);
+    expect((await db.user.findUniqueOrThrow({ where })).frame).toBe('podium-1');
+  });
+});
+
 describe('filtres par niveau', () => {
   async function library(extraCards = 0) {
     const result = await resolveIdentity(identity(), null);

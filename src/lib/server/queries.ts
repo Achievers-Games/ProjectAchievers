@@ -184,6 +184,7 @@ export async function cardFeed(showAdult = false, limit = 12) {
           avatarUrl: true,
           avatarMotionUrl: true,
           frame: true,
+          frameMotionUrl: true,
         },
       },
       game: { select: { name: true, slug: true, headerUrl: true } },
@@ -244,41 +245,60 @@ const bannerImages = (headerUrl: string) =>
     ? [headerUrl.replace('/header.jpg', '/library_hero.jpg'), headerUrl]
     : [headerUrl];
 
-const BANNERS = 3;
+const toBanner = (game: {
+  name: string;
+  slug: string;
+  headerUrl: string;
+  completion?: number | null;
+}): BannerGame => ({
+  name: game.name,
+  slug: game.slug,
+  images: bannerImages(game.headerUrl),
+  completion: game.completion ?? null,
+});
 
-/** Les jeux les plus proches de la fin ; à défaut, ou pour un invité, des jeux au hasard. */
-export async function bannerGames(userId?: string): Promise<BannerGame[]> {
+/** Le jeu le plus avancé du joueur ; à défaut, ou pour un invité, un jeu au hasard. */
+async function seasonBanner(userId?: string) {
   const library = userId
     ? await listGames({ sort: 'progression', page: 1, ownerId: userId, unfinished: true }, userId)
     : null;
-  const closest = (library?.games ?? [])
-    .filter((game) => game.headerUrl)
-    .slice(0, BANNERS)
-    .map((game) => ({
-      name: game.name,
-      slug: game.slug,
-      images: bannerImages(game.headerUrl as string),
-      completion: game.next?.completion ?? game.progress?.completion ?? null,
-    }));
-  if (closest.length === BANNERS) return closest;
+  const closest = library?.games.find((game) => game.headerUrl);
+  if (closest?.headerUrl) {
+    return toBanner({
+      ...closest,
+      headerUrl: closest.headerUrl,
+      completion: closest.next?.completion ?? closest.progress?.completion,
+    });
+  }
 
   // Un jeu pas encore classé pourrait être un jeu adulte : il ne s'affiche pas à l'accueil.
-  const random = await db.$queryRaw<{ name: string; slug: string; headerUrl: string }[]>`
+  const [random] = await db.$queryRaw<{ name: string; slug: string; headerUrl: string }[]>`
     SELECT name, slug, "headerUrl"
     FROM "Game"
     WHERE NOT "adultOnly" AND "headerUrl" IS NOT NULL AND "totalAchievements" > 0
       AND (platform <> 'STEAM' OR "contentCheckedAt" IS NOT NULL)
     ORDER BY random()
-    LIMIT ${BANNERS - closest.length}`;
-  return [
-    ...closest,
-    ...random.map((game) => ({
-      name: game.name,
-      slug: game.slug,
-      images: bannerImages(game.headerUrl),
-      completion: null,
-    })),
-  ];
+    LIMIT 1`;
+  return random ? toBanner(random) : null;
+}
+
+/** La plus belle carte du premier du classement. */
+async function rankingBanner() {
+  const [leader] = await collectors(1);
+  if (!leader) return null;
+  const user = await db.user.findUnique({
+    where: { handle: leader.handle },
+    select: { id: true },
+  });
+  if (!user) return null;
+  const { games } = await listGames({ sort: 'progression', page: 1, ownerId: user.id }, user.id);
+  const best = games.find((game) => game.headerUrl);
+  return best?.headerUrl ? toBanner({ ...best, headerUrl: best.headerUrl }) : null;
+}
+
+export async function homeBanners(userId?: string) {
+  const [season, ranking] = await Promise.all([seasonBanner(userId), rankingBanner()]);
+  return { season, ranking };
 }
 
 export async function userStats(userId: string) {
@@ -324,6 +344,7 @@ export async function userProfile(handle: string, viewerId: string | null, showA
       avatarUrl: true,
       avatarMotionUrl: true,
       frame: true,
+      frameMotionUrl: true,
       isPublic: true,
       createdAt: true,
       accounts: {
@@ -397,10 +418,11 @@ export async function leaderboard(period: LeaderboardPeriod, limit = 20) {
       avatarUrl: string | null;
       avatarMotionUrl: string | null;
       frame: string | null;
+      frameMotionUrl: string | null;
       unlocked: bigint;
     }[]
   >`
-    SELECT u.handle, u."displayName", u."avatarUrl", u."avatarMotionUrl", u.frame,
+    SELECT u.handle, u."displayName", u."avatarUrl", u."avatarMotionUrl", u.frame, u."frameMotionUrl",
            count(*) AS unlocked
     FROM "UserAchievement" ua
     JOIN "User" u ON u.id = ua."userId" AND u."isPublic"
@@ -420,13 +442,14 @@ export async function collectors(limit = 100) {
       avatarUrl: string | null;
       avatarMotionUrl: string | null;
       frame: string | null;
+      frameMotionUrl: string | null;
       or: bigint;
       platine: bigint;
       prismatique: bigint;
       legendaire: bigint;
     }[]
   >`
-    SELECT u.handle, u."displayName", u."avatarUrl", u."avatarMotionUrl", u.frame,
+    SELECT u.handle, u."displayName", u."avatarUrl", u."avatarMotionUrl", u.frame, u."frameMotionUrl",
            count(*) FILTER (WHERE finished = 1) AS "or",
            count(*) FILTER (WHERE finished = 2) AS platine,
            count(*) FILTER (WHERE finished = 3) AS prismatique,
@@ -471,6 +494,7 @@ export function activityFeed(showAdult = false, limit = 30) {
           avatarUrl: true,
           avatarMotionUrl: true,
           frame: true,
+          frameMotionUrl: true,
         },
       },
       achievement: {

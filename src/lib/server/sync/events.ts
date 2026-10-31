@@ -22,6 +22,7 @@ export interface UnlockEvent {
   avatarUrl: string | null;
   avatarMotionUrl: string | null;
   frame: string | null;
+  frameMotionUrl: string | null;
   game: string;
   gameSlug: string;
   count: number;

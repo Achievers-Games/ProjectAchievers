@@ -7,6 +7,7 @@
     size = 32,
     frame = null,
     motion = null,
+    frameMotion = null,
     play = 'hover',
   }: {
     name: string;
@@ -14,6 +15,7 @@
     size?: number;
     frame?: string | null;
     motion?: string | null;
+    frameMotion?: string | null;
     /** Dans les listes, l'animation attend le survol : un GIF pèse près d'un mégaoctet. */
     play?: 'hover' | 'always';
   } = $props();
@@ -25,7 +27,11 @@
     allowed = !matchMedia('(prefers-reduced-motion: reduce)').matches;
   });
 
-  const shown = $derived(motion && allowed && (play === 'always' || hovering) ? motion : src);
+  const playing = $derived(allowed && (play === 'always' || hovering));
+  const shown = $derived(motion && playing ? motion : src);
+  /** Un cadre importé est une image ; ceux du site sont dessinés en CSS. */
+  const overlay = $derived(frame?.startsWith('https://') ? frame : null);
+  const overlayShown = $derived(frameMotion && playing ? frameMotion : overlay);
 </script>
 
 {#snippet picture()}
@@ -51,14 +57,17 @@
 
 <!-- Le survol ne fait que démarrer une animation décorative : rien à reproduire au clavier. -->
 <span
-  class="inline-grid shrink-0"
+  class="relative inline-grid shrink-0"
   role="presentation"
   onmouseenter={() => (hovering = true)}
   onmouseleave={() => (hovering = false)}
 >
-  {#if frame}
+  {#if frame && !overlay}
     <span class="avatar-frame" data-frame={frame}>{@render picture()}</span>
   {:else}
     {@render picture()}
+  {/if}
+  {#if overlayShown}
+    <img src={overlayShown} alt="" class="avatar-overlay" />
   {/if}
 </span>

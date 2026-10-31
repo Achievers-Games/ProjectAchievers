@@ -30,6 +30,7 @@ export interface CardDrop {
     avatarUrl: string | null;
     avatarMotionUrl?: string | null;
     frame?: string | null;
+    frameMotionUrl?: string | null;
   };
   game: { name: string; slug: string; headerUrl: string | null };
   unlockedAt: Date | string;

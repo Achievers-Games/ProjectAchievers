@@ -56,12 +56,21 @@ export async function updateProfile(
   }
 }
 
+/** Ce qu'un compte apporte à l'apparence du profil, en plus de son image. */
+export interface AccountLook {
+  avatarMotionUrl: string | null;
+  frameUrl: string | null;
+  frameMotionUrl: string | null;
+}
+
 export interface Identity {
   provider: Provider;
   providerUserId: string;
   displayName: string;
   avatarUrl?: string | null;
   avatarMotionUrl?: string | null;
+  frameUrl?: string | null;
+  frameMotionUrl?: string | null;
   profileUrl?: string | null;
   accessToken?: string;
   refreshToken?: string | null;
@@ -78,6 +87,8 @@ function accountData(identity: Identity) {
     displayName: identity.displayName,
     avatarUrl: identity.avatarUrl,
     avatarMotionUrl: identity.avatarMotionUrl,
+    frameUrl: identity.frameUrl,
+    frameMotionUrl: identity.frameMotionUrl,
     profileUrl: identity.profileUrl,
     accessTokenEnc: identity.accessToken ? encrypt(identity.accessToken) : null,
     refreshTokenEnc: identity.refreshToken ? encrypt(identity.refreshToken) : null,
@@ -85,18 +96,25 @@ function accountData(identity: Identity) {
   };
 }
 
-/** Met à jour l'animation d'un compte, et celle du profil s'il utilise l'image de ce compte. */
-export async function applyAvatarMotion(accountId: string, avatarMotionUrl: string | null) {
-  const account = await db.linkedAccount.update({
-    where: { id: accountId },
-    data: { avatarMotionUrl },
-    select: { userId: true, avatarUrl: true },
-  });
-  if (!account.avatarUrl) return;
-  await db.user.updateMany({
-    where: { id: account.userId, avatarUrl: account.avatarUrl },
-    data: { avatarMotionUrl },
-  });
+/** Reporte sur le compte et sur le profil ce que le joueur a changé sur la plateforme. */
+export async function applyAccountLook(
+  account: { id: string; userId: string; avatarUrl: string | null; frameUrl: string | null },
+  look: AccountLook,
+) {
+  await db.linkedAccount.update({ where: { id: account.id }, data: look });
+  if (account.avatarUrl) {
+    await db.user.updateMany({
+      where: { id: account.userId, avatarUrl: account.avatarUrl },
+      data: { avatarMotionUrl: look.avatarMotionUrl },
+    });
+  }
+  // Un cadre retiré de la plateforme disparaît aussi du profil qui l'avait équipé.
+  if (account.frameUrl) {
+    await db.user.updateMany({
+      where: { id: account.userId, frame: account.frameUrl },
+      data: { frame: look.frameUrl, frameMotionUrl: look.frameMotionUrl },
+    });
+  }
 }
 
 async function uniqueHandle(name: string): Promise<string> {
@@ -139,7 +157,11 @@ export async function resolveIdentity(
         ...(existing.syncStatus === 'NEEDS_RELINK' && { syncStatus: 'IDLE', syncError: null }),
       },
     });
-    await applyAvatarMotion(existing.id, identity.avatarMotionUrl ?? null);
+    await applyAccountLook(existing, {
+      avatarMotionUrl: identity.avatarMotionUrl ?? null,
+      frameUrl: identity.frameUrl ?? null,
+      frameMotionUrl: identity.frameMotionUrl ?? null,
+    });
     return { ok: true, userId: existing.userId, created: false };
   }
 

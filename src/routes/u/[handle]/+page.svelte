@@ -66,12 +66,13 @@
       src={profile.user.avatarUrl}
       frame={profile.user.frame}
       motion={profile.user.avatarMotionUrl}
+      frameMotion={profile.user.frameMotionUrl}
       play="always"
-      size={64}
+      size={112}
     />
     <div class="min-w-0">
       <h1>{profile.user.displayName}</h1>
-      <p class="text-sm text-muted">
+      <p class="text-muted">
         {m.member_since({ date: formatDate(profile.user.createdAt) })}
         {#if !profile.user.isPublic}· {m.private_profile()}{/if}
       </p>

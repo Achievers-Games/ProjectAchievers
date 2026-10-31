@@ -295,6 +295,7 @@
           src={comment.author.avatarUrl}
           frame={comment.author.frame}
           motion={comment.author.avatarMotionUrl}
+          frameMotion={comment.author.frameMotionUrl}
           size={28}
         />
         <div class="min-w-0 flex-1 space-y-1">

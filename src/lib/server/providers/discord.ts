@@ -47,7 +47,12 @@ export async function exchangeDiscordCode(code: string, verifier: string): Promi
     username: string;
     global_name: string | null;
     avatar: string | null;
+    avatar_decoration_data?: { asset: string } | null;
   };
+
+  const decoration = user.avatar_decoration_data?.asset;
+  const decorationUrl = (animated: boolean) =>
+    `https://cdn.discordapp.com/avatar-decoration-presets/${decoration}.png?size=160&passthrough=${animated}`;
 
   return {
     provider: 'DISCORD',
@@ -60,6 +65,8 @@ export async function exchangeDiscordCode(code: string, verifier: string): Promi
     avatarMotionUrl: user.avatar?.startsWith('a_')
       ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.gif?size=128`
       : null,
+    frameUrl: decoration ? decorationUrl(false) : null,
+    frameMotionUrl: decoration ? decorationUrl(true) : null,
     profileUrl: `https://discord.com/users/${user.id}`,
   };
 }

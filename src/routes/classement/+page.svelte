@@ -43,6 +43,7 @@
               src={row.avatarUrl}
               frame={row.frame}
               motion={row.avatarMotionUrl}
+              frameMotion={row.frameMotionUrl}
               size={28}
             />
             <span class="min-w-0 flex-1 truncate text-sm font-medium">{row.displayName}</span>

@@ -8,6 +8,7 @@ export const load: LayoutServerLoad = ({ locals, cookies }) => ({
     avatarUrl: locals.user.avatarUrl,
     avatarMotionUrl: locals.user.avatarMotionUrl,
     frame: locals.user.frame,
+    frameMotionUrl: locals.user.frameMotionUrl,
     role: locals.user.role,
   },
   theme: cookies.get('pa_theme') === 'light' ? ('light' as const) : ('dark' as const),

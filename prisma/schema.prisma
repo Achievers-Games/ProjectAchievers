@@ -70,7 +70,8 @@ model User {
   avatarUrl       String?
   /// Version animée de `avatarUrl`, chargée seulement quand elle doit jouer.
   avatarMotionUrl String?
-  /// Cadre d'avatar équipé, parmi ceux de `frames`.
+  /// Cadre équipé : un identifiant de `frames`, ou l'image d'un cadre importé d'un compte.
+  frameMotionUrl  String?
   frame           String?
   isPublic        Boolean  @default(true)
   /// Affiche les jeux centrés sur le contenu sexuel, masqués par défaut.
@@ -125,6 +126,8 @@ model LinkedAccount {
   displayName     String
   avatarUrl       String?
   avatarMotionUrl String?
+  frameUrl        String?
+  frameMotionUrl  String?
   profileUrl      String?
   accessTokenEnc  String?
   refreshTokenEnc String?

@@ -163,6 +163,7 @@ export async function mergeUsers(merge: PendingMerge): Promise<MergeFailure | nu
           avatarUrl: target.avatarUrl ?? source.avatarUrl,
           avatarMotionUrl: target.avatarUrl ? target.avatarMotionUrl : source.avatarMotionUrl,
           frame: target.frame ?? source.frame,
+          frameMotionUrl: target.frame ? target.frameMotionUrl : source.frameMotionUrl,
         },
       });
       await tx.user.delete({ where: { id: sourceId } });

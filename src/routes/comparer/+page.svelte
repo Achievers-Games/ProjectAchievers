@@ -57,6 +57,7 @@
                   src={person.avatarUrl}
                   frame={person.frame}
                   motion={person.avatarMotionUrl}
+                  frameMotion={person.frameMotionUrl}
                   size={24}
                 />
                 {person.displayName}
