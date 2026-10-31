@@ -405,6 +405,6 @@
   "translating": "Translating…",
   "translate_failed": "Translation failed. Try again later.",
   "privacy_translation": "Automatic translation",
-  "privacy_translation_text": "When someone asks to translate a guide or comment, its public text is sent to Cloudflare Workers AI. The translation is stored on the site and deleted along with the original text.",
+  "privacy_translation_text": "Public guides and comments are sent to Cloudflare Workers AI to be translated automatically into their readers' language. The translation is stored on the site and deleted along with the original text.",
   "games_tier": "Tier"
 }

@@ -242,6 +242,8 @@ model Guide {
   authorId      String
   author        User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
   contentMd     String
+  /// Langue du site de l'auteur à la publication ; vide pour les textes plus anciens.
+  locale        String?
   status        ContentStatus @default(PUBLISHED)
   score         Int           @default(0)
   createdAt     DateTime      @default(now())
@@ -273,6 +275,8 @@ model Comment {
   parent        Comment?      @relation("Replies", fields: [parentId], references: [id], onDelete: Cascade)
   replies       Comment[]     @relation("Replies")
   contentMd     String
+  /// Langue du site de l'auteur à la publication ; vide pour les textes plus anciens.
+  locale        String?
   status        ContentStatus @default(PUBLISHED)
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt

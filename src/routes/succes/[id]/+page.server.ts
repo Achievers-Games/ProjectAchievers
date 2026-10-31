@@ -22,6 +22,24 @@ export const load: PageServerLoad = async ({ params, locals }) => {
     error(404, m.achievement_not_found());
   }
 
+  const locale = getLocale();
+  const translations = { where: { locale }, select: { contentMd: true }, take: 1 };
+
+  /** Traduit d'office ce qui vient d'une autre langue : les textes anciens gardent le bouton seul. */
+  const translation = (item: {
+    locale: string | null;
+    authorId: string;
+    translations: { contentMd: string }[];
+  }) => {
+    const autoTranslate =
+      canTranslate() &&
+      Boolean(item.locale) &&
+      item.locale !== locale &&
+      item.authorId !== viewerId;
+    const cached = autoTranslate ? item.translations[0]?.contentMd : undefined;
+    return { autoTranslate, translatedHtml: cached ? renderMarkdown(cached) : null };
+  };
+
   const [guides, comments, unlockers] = await Promise.all([
     db.guide.findMany({
       where: { achievementId: params.id, status: 'PUBLISHED' },
@@ -29,6 +47,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
       include: {
         author: { select: { handle: true, displayName: true, avatarUrl: true } },
         votes: viewerId ? { where: { userId: viewerId }, select: { value: true } } : false,
+        translations,
       },
     }),
     db.comment.findMany({
@@ -38,12 +57,14 @@ export const load: PageServerLoad = async ({ params, locals }) => {
       include: {
         author: { select: { handle: true, displayName: true, avatarUrl: true } },
         reactions: { select: { userId: true, type: true } },
+        translations,
         replies: {
           where: { status: { not: 'HIDDEN' } },
           orderBy: { createdAt: 'asc' },
           include: {
             author: { select: { handle: true, displayName: true, avatarUrl: true } },
             reactions: { select: { userId: true, type: true } },
+            translations,
           },
         },
       },
@@ -61,6 +82,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
       createdAt: comment.createdAt,
       deleted,
       html: deleted ? '' : renderMarkdown(comment.contentMd),
+      ...(deleted ? { autoTranslate: false, translatedHtml: null } : translation(comment)),
       author: comment.author,
       mine: comment.authorId === viewerId,
       counts,
@@ -88,6 +110,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
     guides: guides.map((guide) => ({
       id: guide.id,
       html: renderMarkdown(guide.contentMd),
+      ...translation(guide),
       score: guide.score,
       author: guide.author,
       createdAt: guide.createdAt,
@@ -143,7 +166,12 @@ export const actions: Actions = {
     if (!(await achievementExists(params.id))) return fail(404, { error: m.gone() });
 
     await db.guide.create({
-      data: { achievementId: params.id, authorId: user.id, contentMd: content.data },
+      data: {
+        achievementId: params.id,
+        authorId: user.id,
+        contentMd: content.data,
+        locale: getLocale(),
+      },
     });
     return { success: m.guide_published() };
   },
@@ -195,6 +223,7 @@ export const actions: Actions = {
         achievementId: params.id,
         authorId: user.id,
         contentMd: content.data,
+        locale: getLocale(),
         parentId: parent?.id,
       },
     });

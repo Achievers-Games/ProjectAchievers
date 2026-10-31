@@ -19,6 +19,11 @@
   let replyTo = $state<string | null>(null);
   let translations = $state<Record<string, { html: string; shown: boolean }>>({});
   let translating = $state<string | null>(null);
+  // eslint-disable-next-line svelte/prefer-svelte-reactivity -- ne doit pas relancer l'effet
+  const attempted = new Set<string>();
+
+  type Target = 'GUIDE' | 'COMMENT';
+  const MAX_AUTO_TRANSLATIONS = 10;
 
   const REACTIONS = [
     { type: 'HELPFUL', label: m.reaction_helpful(), emoji: '👍' },
@@ -57,8 +62,19 @@
     };
   };
 
-  const shownHtml = (item: { id: string; html: string }) => {
-    const translation = translations[item.id];
+  interface Translatable {
+    id: string;
+    html: string;
+    translatedHtml: string | null;
+    autoTranslate: boolean;
+  }
+
+  const translationOf = (item: Translatable) =>
+    translations[item.id] ??
+    (item.translatedHtml ? { html: item.translatedHtml, shown: true } : undefined);
+
+  const shownHtml = (item: Translatable) => {
+    const translation = translationOf(item);
     return translation?.shown ? translation.html : item.html;
   };
 
@@ -73,28 +89,49 @@
     return deserialize(await response.text());
   }
 
-  /** La traduction reste en mémoire : revenir à l'original puis à la traduction est immédiat. */
-  async function translate(targetType: 'GUIDE' | 'COMMENT', targetId: string) {
-    const known = translations[targetId];
-    if (known) {
-      known.shown = !known.shown;
-      return;
-    }
-    translating = targetId;
+  async function fetchTranslation(targetType: Target, item: Translatable): Promise<string> {
+    translating = item.id;
     try {
-      const result = await postAction('translate', { targetType, targetId });
+      const result = await postAction('translate', { targetType, targetId: item.id });
       if (result.type === 'success') {
-        translations[targetId] = { html: String(result.data?.html), shown: true };
-      } else {
-        const message = result.type === 'failure' ? result.data?.error : null;
-        toast(String(message ?? m.translate_failed()), 'error');
+        translations[item.id] = { html: String(result.data?.html), shown: true };
+        return '';
       }
+      return String((result.type === 'failure' && result.data?.error) || m.translate_failed());
     } catch {
-      toast(m.translate_failed(), 'error');
+      return m.translate_failed();
     } finally {
       translating = null;
     }
   }
+
+  /** La traduction reste en mémoire : revenir à l'original puis à la traduction est immédiat. */
+  async function translate(targetType: Target, item: Translatable) {
+    const known = translationOf(item);
+    if (known) {
+      translations[item.id] = { html: known.html, shown: !known.shown };
+      return;
+    }
+    const failure = await fetchTranslation(targetType, item);
+    if (failure) toast(failure, 'error');
+  }
+
+  /** Une par une, et discrètement : un quota épuisé laisse simplement les textes d'origine. */
+  async function translatePage(pending: [Target, Translatable][]) {
+    for (const [type, item] of pending.slice(0, MAX_AUTO_TRANSLATIONS)) {
+      attempted.add(item.id);
+      if (await fetchTranslation(type, item)) return;
+    }
+  }
+
+  $effect(() => {
+    const replies = data.comments.flatMap((comment) => comment.replies);
+    const pending = [
+      ...data.guides.map((guide): [Target, Translatable] => ['GUIDE', guide]),
+      ...[...data.comments, ...replies].map((item): [Target, Translatable] => ['COMMENT', item]),
+    ].filter(([, item]) => item.autoTranslate && !item.translatedHtml && !attempted.has(item.id));
+    void translatePage(pending);
+  });
 
   async function report(type: 'GUIDE' | 'COMMENT', id: string) {
     const reason = prompt(m.report_prompt());
@@ -113,17 +150,17 @@
   <meta name="description" content={data.achievement.description} />
 </svelte:head>
 
-{#snippet translateButton(type: 'GUIDE' | 'COMMENT', id: string)}
+{#snippet translateButton(type: Target, item: Translatable)}
   {#if data.canTranslate}
     <button
       type="button"
       class="text-xs text-muted hover:text-ink"
-      disabled={translating === id}
-      onclick={() => translate(type, id)}
+      disabled={translating === item.id}
+      onclick={() => translate(type, item)}
     >
-      {#if translating === id}
+      {#if translating === item.id}
         {m.translating()}
-      {:else if translations[id]?.shown}
+      {:else if translationOf(item)?.shown}
         {m.translate_original()}
       {:else}
         {m.translate()}
@@ -220,7 +257,7 @@
           <!-- eslint-disable-next-line svelte/no-at-html-tags -- assaini par renderMarkdown -->
           <div class="prose-user">{@html shownHtml(guide)}</div>
           <div class="flex gap-3">
-            {#if !guide.mine}{@render translateButton('GUIDE', guide.id)}{/if}
+            {#if !guide.mine}{@render translateButton('GUIDE', guide)}{/if}
             {#if guide.mine}
               <form method="POST" action="?/deleteGuide" use:enhance={submit}>
                 <input type="hidden" name="id" value={guide.id} />
@@ -268,7 +305,7 @@
             <!-- eslint-disable-next-line svelte/no-at-html-tags -- assaini par renderMarkdown -->
             <div class="prose-user">{@html shownHtml(comment)}</div>
             <div class="flex flex-wrap items-center gap-3 text-xs text-muted">
-              {#if !comment.mine}{@render translateButton('COMMENT', comment.id)}{/if}
+              {#if !comment.mine}{@render translateButton('COMMENT', comment)}{/if}
               {#if data.user}
                 <form method="POST" action="?/react" use:enhance={submit} class="flex gap-2">
                   <input type="hidden" name="commentId" value={comment.id} />

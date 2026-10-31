@@ -405,6 +405,6 @@
   "translating": "Traduction…",
   "translate_failed": "La traduction a échoué. Réessaie plus tard.",
   "privacy_translation": "Traduction automatique",
-  "privacy_translation_text": "Quand quelqu'un demande à traduire un guide ou un commentaire, son texte public est envoyé à Cloudflare Workers AI. La traduction est conservée sur le site et supprimée avec le texte d'origine.",
+  "privacy_translation_text": "Les guides et commentaires publics sont envoyés à Cloudflare Workers AI pour être traduits automatiquement dans la langue des personnes qui les lisent. La traduction est conservée sur le site et supprimée avec le texte d'origine.",
   "games_tier": "Niveau"
 }

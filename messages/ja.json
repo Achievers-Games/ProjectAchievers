@@ -396,6 +396,6 @@
   "translating": "翻訳中…",
   "translate_failed": "翻訳に失敗しました。しばらくしてからもう一度お試しください。",
   "privacy_translation": "自動翻訳",
-  "privacy_translation_text": "ガイドやコメントの翻訳がリクエストされると、その公開テキストが Cloudflare Workers AI に送信されます。翻訳はサイトに保存され、原文とともに削除されます。",
+  "privacy_translation_text": "公開されたガイドやコメントは、読者の言語に自動翻訳するため Cloudflare Workers AI に送信されます。翻訳はサイトに保存され、原文とともに削除されます。",
   "games_tier": "レベル"
 }

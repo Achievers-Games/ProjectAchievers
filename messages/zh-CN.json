@@ -396,6 +396,6 @@
   "translating": "翻译中…",
   "translate_failed": "翻译失败，请稍后重试。",
   "privacy_translation": "自动翻译",
-  "privacy_translation_text": "当有人请求翻译攻略或评论时，其公开文本会发送至 Cloudflare Workers AI。译文保存在本站，并随原文一起删除。",
+  "privacy_translation_text": "公开的攻略和评论会发送至 Cloudflare Workers AI，自动翻译为读者的语言。译文保存在本站，并随原文一起删除。",
   "games_tier": "等级"
 }

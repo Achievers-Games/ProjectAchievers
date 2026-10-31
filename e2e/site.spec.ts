@@ -417,6 +417,36 @@ test.describe('membre', () => {
     await expect(page.getByRole('article').filter({ hasText: marker })).toHaveCount(0);
   });
 
+  test('traduit d’office un texte écrit dans une autre langue', async ({ page, browser }) => {
+    await login(page);
+    await page.goto('/jeux/hades');
+    await page
+      .getByRole('link', { name: /étape 1$|étape 1 / })
+      .first()
+      .click();
+    await expect(page).toHaveURL(/\/succes\//);
+
+    const marker = `Automatique ${Date.now()}`;
+    await page.getByRole('textbox', { name: 'Ton commentaire' }).fill(marker);
+    await page.getByRole('button', { name: 'Publier' }).click();
+    const mine = page.getByRole('article').filter({ hasText: marker });
+    await expect(mine).toBeVisible();
+
+    const reader = await browser.newPage({ locale: 'en-US' });
+    await reader.route('**/*translate', (route) =>
+      route.fulfill({
+        json: { type: 'success', status: 200, data: '[{"html":1},"<p>Automatic tip</p>"]' },
+      }),
+    );
+    await reader.goto(page.url());
+    await expect(reader.getByText('Automatic tip').first()).toBeVisible();
+    await expect(reader.getByRole('button', { name: /See original/ }).first()).toBeVisible();
+    await reader.close();
+
+    await mine.getByRole('button', { name: 'Supprimer' }).click();
+    await expect(page.getByRole('article').filter({ hasText: marker })).toHaveCount(0);
+  });
+
   test('compare deux profils', async ({ page }) => {
     await login(page);
     await page.goto('/u/lea');
