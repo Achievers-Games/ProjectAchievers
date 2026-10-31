@@ -12,7 +12,7 @@ import { SyncError } from './errors';
 import { publishCard, publishSync, publishUnlock } from './events';
 import { grantFrames } from '../frames';
 import { syncPsn } from './psn';
-import { syncSteam } from './steam';
+import { fillHiddenDescriptions, syncSteam } from './steam';
 import { syncXbox } from './xbox';
 import type { ProviderSync } from './types';
 
@@ -228,6 +228,7 @@ async function sweep() {
   });
   for (const account of accounts) await enqueueSync(account.userId, account.provider);
   await refreshDiscordAccounts().catch((cause) => console.error('Discord :', cause));
+  await fillHiddenDescriptions().catch((cause) => console.error('Succès cachés :', cause));
 }
 
 /** Démarre le traitement des synchronisations dans le processus du site. */

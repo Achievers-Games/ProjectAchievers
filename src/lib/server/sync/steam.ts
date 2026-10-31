@@ -1,4 +1,4 @@
-import type { Locale } from '$lib/paraglide/runtime';
+import { baseLocale, type Locale } from '$lib/paraglide/runtime';
 import { applyAccountLook } from '../accounts';
 import { db } from '../db';
 import { env } from '../env';
@@ -151,11 +151,82 @@ export async function fetchSteamTexts(appId: string, locale: Locale) {
   const schema = (await response.json()) as {
     game?: { availableGameStats?: { achievements?: SchemaAchievement[] } };
   };
+  const owner = await db.linkedAccount.findFirst({
+    where: {
+      provider: 'STEAM',
+      user: { games: { some: { game: { platform: 'STEAM', platformGameId: appId } } } },
+    },
+    select: { providerUserId: true },
+  });
+  const hidden = owner ? await fetchPageDescriptions(owner.providerUserId, appId, locale) : null;
+
   return (schema.game?.availableGameStats?.achievements ?? []).map((a) => ({
     platformAchievementId: a.name,
     name: a.displayName || a.name,
-    description: a.description ?? '',
+    description: a.description || hidden?.get(a.name) || '',
   }));
+}
+
+const unescape = (text: string) => {
+  try {
+    return JSON.parse(`"${text}"`) as string;
+  } catch {
+    return text;
+  }
+};
+
+/** Lit dans la page d'un joueur les données du site Steam, seules à décrire les succès cachés. */
+export function parseSteamPage(html: string) {
+  const entries =
+    /\\"api_name\\":\\"(.*?)\\",\\"name\\":\\".*?\\",\\"description\\":\\"(.*?)\\",\\"hidden\\":/g;
+  const descriptions = new Map<string, string>();
+  for (const [, apiName, description] of html.matchAll(entries)) {
+    if (apiName && description) descriptions.set(apiName, unescape(unescape(description)));
+  }
+  return descriptions;
+}
+
+async function fetchPageDescriptions(steamId: string, appId: string, locale: Locale) {
+  const response = await fetchRetry(
+    `https://steamcommunity.com/profiles/${steamId}/stats/${appId}/achievements/`,
+    { headers: { Cookie: `Steam_Language=${STEAM_LANGUAGES[locale]}` } },
+  );
+  return response.ok ? parseSteamPage(await response.text()) : new Map<string, string>();
+}
+
+const HIDDEN_BATCH = 60;
+const HIDDEN_PAUSE = 2_000;
+
+/** L'API ne décrit pas les succès cachés : la page d'un joueur qui a le jeu comble ces trous. */
+export async function fillHiddenDescriptions(limit = HIDDEN_BATCH, pause = HIDDEN_PAUSE) {
+  const games = await db.$queryRaw<{ id: string; appId: string; steamId: string }[]>`
+    SELECT id, "appId", "steamId"
+    FROM (
+      SELECT DISTINCT ON (g.id) g.id, g."platformGameId" AS "appId", la."providerUserId" AS "steamId"
+      FROM "Game" g
+      JOIN "Achievement" a ON a."gameId" = g.id AND a.hidden AND a.description = ''
+      JOIN "UserGame" ug ON ug."gameId" = g.id
+      JOIN "LinkedAccount" la ON la."userId" = ug."userId" AND la.provider = 'STEAM'
+      WHERE g.platform = 'STEAM'
+    ) missing
+    ORDER BY random()
+    LIMIT ${limit}`;
+
+  let filled = 0;
+  for (const game of games) {
+    const descriptions = await fetchPageDescriptions(game.steamId, game.appId, baseLocale);
+    await db.$transaction(
+      [...descriptions].map(([platformAchievementId, description]) =>
+        db.achievement.updateMany({
+          where: { gameId: game.id, platformAchievementId, description: '' },
+          data: { description },
+        }),
+      ),
+    );
+    filled += descriptions.size ? 1 : 0;
+    if (pause) await new Promise((resolve) => setTimeout(resolve, pause));
+  }
+  return filled;
 }
 
 async function fetchUnlocks(steamId: string, appId: number) {

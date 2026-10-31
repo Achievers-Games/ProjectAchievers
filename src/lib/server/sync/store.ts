@@ -81,7 +81,8 @@ export async function saveAchievements(gameId: string, achievements: Achievement
           platformAchievementId: a.platformAchievementId,
         },
       },
-      update: data,
+      // L'API ne décrit pas les succès cachés : ne pas effacer ce qui vient d'ailleurs.
+      update: { ...data, description: a.description || undefined },
       create: { ...data, gameId, platformAchievementId: a.platformAchievementId },
     });
   });

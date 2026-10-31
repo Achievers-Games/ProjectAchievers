@@ -12,7 +12,7 @@ import { mergeUsers } from './merge';
 import { enqueueSync, runSync, startWorkers } from './sync/queue';
 import { isAdultOnly, rateGames } from './sync/content';
 import { onCard, onSync, type SyncEvent } from './sync/events';
-import { steamImages } from './sync/steam';
+import { parseSteamPage, steamImages } from './sync/steam';
 import { saveAchievements, saveProgress, upsertGame } from './sync/store';
 import { splitText, translateContent } from './translate';
 import { ensureGameTexts, localizeAchievements } from './achievement-texts';
@@ -884,6 +884,15 @@ describe('cadres importés', () => {
 
     await resolveIdentity({ ...id, frameUrl: null }, null);
     expect((await db.user.findUniqueOrThrow({ where })).frame).toBe('podium-1');
+  });
+});
+
+describe('succès cachés Steam', () => {
+  it('lit leur description dans la page du joueur', () => {
+    const page = String.raw`{\"api_name\":\"BOSS\",\"name\":\"On répète\",\"description\":\"Éliminer le \\\"Polyèdre\\\"\",\"hidden\":true,\"icon\":\"a.jpg\"},{\"api_name\":\"VIDE\",\"name\":\"Rien\",\"description\":\"\",\"hidden\":true}`;
+    const descriptions = parseSteamPage(page);
+    expect(descriptions.get('BOSS')).toBe('Éliminer le "Polyèdre"');
+    expect(descriptions.has('VIDE')).toBe(false);
   });
 });
 
