@@ -4,7 +4,12 @@
   import { onMount } from 'svelte';
   import { invalidateAll, onNavigate } from '$app/navigation';
   import { navigating, page } from '$app/state';
-  import { Compass, Gamepad2, Languages, Search, Trophy, User } from '@lucide/svelte';
+  import Compass from '@lucide/svelte/icons/compass';
+  import Gamepad2 from '@lucide/svelte/icons/gamepad-2';
+  import Languages from '@lucide/svelte/icons/languages';
+  import Search from '@lucide/svelte/icons/search';
+  import Trophy from '@lucide/svelte/icons/trophy';
+  import User from '@lucide/svelte/icons/user';
   import Avatar from '$lib/components/Avatar.svelte';
   import CommandPalette from '$lib/components/CommandPalette.svelte';
   import RewardReveal from '$lib/components/RewardReveal.svelte';

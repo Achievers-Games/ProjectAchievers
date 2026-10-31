@@ -27,6 +27,7 @@ services:
       retries: 10
 
   site:
+    image: ${SITE_IMAGE:-ghcr.io/rbasic/projectachievers:latest}
     build: .
     restart: unless-stopped
     mem_limit: 512m

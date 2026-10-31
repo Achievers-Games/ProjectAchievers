@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { Crown, Gem, Sparkles, Star } from '@lucide/svelte';
+  import Crown from '@lucide/svelte/icons/crown';
+  import Gem from '@lucide/svelte/icons/gem';
+  import Sparkles from '@lucide/svelte/icons/sparkles';
+  import Star from '@lucide/svelte/icons/star';
   import { tierLabel } from '$lib/labels';
 
   let { tier = 1 }: { tier?: number } = $props();

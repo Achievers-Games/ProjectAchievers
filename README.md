@@ -96,11 +96,16 @@ La production tourne sur un QNAP TS-233 avec `docker-compose.nas.yml`, exposée 
 sans port ouvert. Le code, le fichier `.env` et les sauvegardes sont dans
 `/share/CACHEDEV1_DATA/project-achievers`.
 
-Pour publier le dernier commit local, avec la clé SSH `~/.ssh/pa_nas` :
+La CI publie une image ARM64 pour chaque commit de `main` qui passe les tests. Pour la mettre en
+ligne, avec la clé SSH `~/.ssh/pa_nas` :
 
 ```bash
 bash scripts/deploy-nas.sh
 ```
+
+Le NAS doit avoir été autorisé une fois avec un jeton GitHub `read:packages`, par
+`bash scripts/nas-ghcr-login.sh`. Pour tester du code non commité, ou si GitHub est indisponible,
+`NAS_BUILD=1 bash scripts/deploy-nas.sh <ref>` reconstruit l'image sur le NAS.
 
 Une sauvegarde de la base est écrite chaque jour dans `backups/`, 14 jours sont conservés. Pour en
 restaurer une sur une base vide :

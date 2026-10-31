@@ -2,7 +2,9 @@
   import { m } from '$lib/paraglide/messages';
   import { enhance } from '$app/forms';
   import type { SubmitFunction } from '@sveltejs/kit';
-  import { Eye, EyeOff, Lock } from '@lucide/svelte';
+  import Eye from '@lucide/svelte/icons/eye';
+  import EyeOff from '@lucide/svelte/icons/eye-off';
+  import Lock from '@lucide/svelte/icons/lock';
   import AchievementIcon from '$lib/components/AchievementIcon.svelte';
   import CompleteBadge from '$lib/components/CompleteBadge.svelte';
   import Progress from '$lib/components/Progress.svelte';

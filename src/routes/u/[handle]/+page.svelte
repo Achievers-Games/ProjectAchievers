@@ -1,6 +1,6 @@
 <script lang="ts">
   import { m } from '$lib/paraglide/messages';
-  import { Link } from '@lucide/svelte';
+  import Link from '@lucide/svelte/icons/link';
   import Avatar from '$lib/components/Avatar.svelte';
   import Empty from '$lib/components/Empty.svelte';
   import GameCard from '$lib/components/GameCard.svelte';

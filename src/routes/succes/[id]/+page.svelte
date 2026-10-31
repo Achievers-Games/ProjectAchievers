@@ -3,7 +3,9 @@
   import { deserialize, enhance } from '$app/forms';
   import { invalidateAll } from '$app/navigation';
   import type { SubmitFunction } from '@sveltejs/kit';
-  import { ChevronDown, ChevronUp, Flag } from '@lucide/svelte';
+  import ChevronDown from '@lucide/svelte/icons/chevron-down';
+  import ChevronUp from '@lucide/svelte/icons/chevron-up';
+  import Flag from '@lucide/svelte/icons/flag';
   import AchievementIcon from '$lib/components/AchievementIcon.svelte';
   import Avatar from '$lib/components/Avatar.svelte';
   import Empty from '$lib/components/Empty.svelte';

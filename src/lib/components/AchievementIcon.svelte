@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Trophy } from '@lucide/svelte';
+  import Trophy from '@lucide/svelte/icons/trophy';
 
   let { src, size, dim = false }: { src: string | null; size: number; dim?: boolean } = $props();
 

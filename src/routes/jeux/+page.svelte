@@ -2,7 +2,8 @@
   import { m } from '$lib/paraglide/messages';
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
-  import { LayoutGrid, List } from '@lucide/svelte';
+  import LayoutGrid from '@lucide/svelte/icons/layout-grid';
+  import List from '@lucide/svelte/icons/list';
   import Empty from '$lib/components/Empty.svelte';
   import GameCard from '$lib/components/GameCard.svelte';
   import type { GameListItem } from '$lib/server/queries';

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { m } from '$lib/paraglide/messages';
   import { goto } from '$app/navigation';
-  import { Search } from '@lucide/svelte';
+  import Search from '@lucide/svelte/icons/search';
   import { PLATFORM_LABELS } from '$lib/labels';
   import type { Platform } from '@prisma/client';
 
