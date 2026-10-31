@@ -420,10 +420,10 @@
   "frame_collector_how": "获得 10 张卡牌",
   "frame_podium_how": "在排行榜上达到此名次",
   "tagline_1": "这辈子就这一次，把一件事做完吧。",
-  "tagline_2": "你的游戏卡在 87% 奄奄一息。给它们个痛快。",
-  "tagline_3": "买了 400 款游戏，通关 12 款。你还好吗？",
+  "tagline_2": "你的游戏卡在 {percent}% 奄奄一息。给它们个痛快。",
+  "tagline_3": "你有 {games} 款游戏，通关 {finished} 款。你还好吗？",
   "tagline_4": "你的游戏库不是收藏，是坟场。",
-  "tagline_5": "那款 94% 的游戏正盯着你。它都知道。",
+  "tagline_5": "那款 {percent}% 的游戏正盯着你。它都知道。",
   "tagline_6": "你没放弃，只是“以后再玩”。当然了。",
   "tagline_7": "打折你一场不落，游戏你一款不通。",
   "tagline_8": "你丢下了最终 Boss。它还在等你。",
@@ -437,5 +437,7 @@
   "carousel_label": "精选",
   "carousel_prev": "上一张横幅",
   "carousel_next": "下一张横幅",
-  "carousel_go": "前往第 {number} 张横幅"
+  "carousel_go": "前往第 {number} 张横幅",
+  "games_of": "{name} 的游戏",
+  "games_see_all": "查看全部 {count} 款游戏"
 }

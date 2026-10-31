@@ -140,7 +140,15 @@
   {:else}
     <div class="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
       <section class="space-y-3">
-        <h2>{m.stat_games()}</h2>
+        <div class="flex items-baseline justify-between gap-4">
+          <h2>{m.stat_games()}</h2>
+          <a
+            href="/jeux?joueur={profile.user.handle}&tri=progression"
+            class="text-sm text-muted hover:text-ink"
+          >
+            {m.games_see_all({ count: profile.stats.games })}
+          </a>
+        </div>
         <div class="grid gap-3 sm:grid-cols-2">
           {#each profile.games as card (card.id)}
             <GameCard

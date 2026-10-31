@@ -2,11 +2,16 @@
   import { m } from '$lib/paraglide/messages';
   import ChevronLeft from '@lucide/svelte/icons/chevron-left';
   import ChevronRight from '@lucide/svelte/icons/chevron-right';
-  import { taglineText } from '$lib/taglines';
+  import { formatPercent } from '$lib/labels';
+  import type { BannerGame } from '$lib/server/queries';
 
   const AUTOPLAY = 7_000;
 
-  let { tagline, member }: { tagline: number; member: boolean } = $props();
+  let { tagline, banners, member }: { tagline: string; banners: BannerGame[]; member: boolean } =
+    $props();
+
+  const art = (game: BannerGame | undefined) =>
+    game?.images.map((image) => `url("${encodeURI(image)}")`).join(', ');
 
   let track = $state<HTMLDivElement>();
   let active = $state(0);
@@ -18,7 +23,7 @@
       id: 'saison',
       eyebrow: m.banner_season_label(),
       title: m.banner_season_title(),
-      text: taglineText(tagline),
+      text: tagline,
       href: member ? '/jeux?filtre=restants&tri=progression' : signIn,
       cta: m.banner_season_cta(),
     },
@@ -77,6 +82,7 @@
       <article
         class="carousel-slide"
         data-slide={slide.id}
+        style:--art={art(banners[index])}
         role="group"
         aria-roledescription="slide"
         aria-label="{index + 1} / {slides.length}"
@@ -84,7 +90,17 @@
         <p class="carousel-eyebrow">{slide.eyebrow}</p>
         <h2 class="carousel-title">{slide.title}</h2>
         <p class="carousel-text" class:tagline={slide.id === 'saison'}>{slide.text}</p>
-        <a href={slide.href} class="btn btn-primary mt-auto self-start">{slide.cta}</a>
+        <div class="mt-auto flex flex-wrap items-center gap-3">
+          <a href={slide.href} class="btn btn-primary">{slide.cta}</a>
+          {#if banners[index]}
+            {@const game = banners[index]}
+            <a href="/jeux/{game.slug}" class="carousel-game">
+              {game.completion === null
+                ? game.name
+                : `${game.name} · ${formatPercent(game.completion)}`}
+            </a>
+          {/if}
+        </div>
       </article>
     {/each}
   </div>

@@ -940,7 +940,12 @@
 .carousel-slide {
   @apply flex min-h-56 w-full shrink-0 flex-col gap-2 px-14 py-6;
   scroll-snap-align: start;
-  background: linear-gradient(115deg, var(--slide-a), var(--slide-b));
+  background-image:
+    linear-gradient(90deg, rgb(8 6 18 / 0.94) 15%, rgb(8 6 18 / 0.6) 60%, rgb(8 6 18 / 0.2)),
+    var(--art, none),
+    linear-gradient(115deg, var(--slide-a), var(--slide-b));
+  background-position: center;
+  background-size: cover;
 }
 .carousel-slide[data-slide='saison'] {
   --slide-a: #2a0f3f;
@@ -977,4 +982,15 @@
 }
 .carousel-dots button[aria-current='true'] {
   @apply bg-white;
+}
+.carousel-game {
+  @apply max-w-full truncate text-xs font-medium text-white/80 hover:text-white;
+}
+@media (max-width: 639px) {
+  .carousel-slide {
+    background-image:
+      linear-gradient(rgb(8 6 18 / 0.82), rgb(8 6 18 / 0.82)),
+      var(--art, none),
+      linear-gradient(115deg, var(--slide-a), var(--slide-b));
+  }
 }

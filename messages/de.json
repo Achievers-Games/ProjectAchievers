@@ -430,10 +430,10 @@
   "frame_collector_how": "Erhalte 10 Karten",
   "frame_podium_how": "Erreiche diesen Platz in der Rangliste",
   "tagline_1": "Bring ausnahmsweise mal etwas zu Ende.",
-  "tagline_2": "Deine Spiele liegen bei 87 % im Sterben. Erlöse sie.",
-  "tagline_3": "400 Spiele gekauft. 12 beendet. Alles gut bei dir?",
+  "tagline_2": "Deine Spiele liegen bei {percent} % im Sterben. Erlöse sie.",
+  "tagline_3": "Du hast {games} Spiele. Beendet: {finished}. Alles gut bei dir?",
   "tagline_4": "Deine Bibliothek ist keine Sammlung. Sie ist ein Friedhof.",
-  "tagline_5": "Das Spiel bei 94 % beobachtet dich. Es weiß Bescheid.",
+  "tagline_5": "Das Spiel bei {percent} % beobachtet dich. Es weiß Bescheid.",
   "tagline_6": "Du gibst es nicht auf. Du machst „später weiter“. Klar doch.",
   "tagline_7": "Beim Sale bist du immer bis zum Schluss dabei. Bei Spielen nie.",
   "tagline_8": "Du hast den Endboss sitzen lassen. Er wartet immer noch.",
@@ -447,5 +447,7 @@
   "carousel_label": "Im Fokus",
   "carousel_prev": "Vorheriges Banner",
   "carousel_next": "Nächstes Banner",
-  "carousel_go": "Zu Banner {number}"
+  "carousel_go": "Zu Banner {number}",
+  "games_of": "Spiele von {name}",
+  "games_see_all": "Alle {count} Spiele ansehen"
 }

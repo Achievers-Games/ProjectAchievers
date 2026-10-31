@@ -430,10 +430,10 @@
   "frame_collector_how": "Earn 10 cards",
   "frame_podium_how": "Reach this place in the ranking",
   "tagline_1": "For once in your life, you're going to finish something.",
-  "tagline_2": "Your games are dying at 87%. Finish them.",
-  "tagline_3": "You bought 400 games. You finished 12. Doing okay?",
+  "tagline_2": "Your games are dying at {percent}%. Finish them.",
+  "tagline_3": "You own {games} games. You finished {finished}. Doing okay?",
   "tagline_4": "Your library isn't a collection. It's a graveyard.",
-  "tagline_5": "That game at 94% is watching you. It knows.",
+  "tagline_5": "That game at {percent}% is watching you. It knows.",
   "tagline_6": "You didn't quit. You'll \"get back to it later\". Sure.",
   "tagline_7": "You always catch the end of a sale. Never the end of a game.",
   "tagline_8": "You walked away from the final boss. It's still waiting.",
@@ -447,5 +447,7 @@
   "carousel_label": "Featured",
   "carousel_prev": "Previous banner",
   "carousel_next": "Next banner",
-  "carousel_go": "Go to banner {number}"
+  "carousel_go": "Go to banner {number}",
+  "games_of": "{name}'s games",
+  "games_see_all": "See all {count} games"
 }

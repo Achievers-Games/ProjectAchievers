@@ -14,6 +14,11 @@
 
   let timer: ReturnType<typeof setTimeout>;
 
+  const heading = $derived.by(() => {
+    if (data.player) return m.games_of({ name: data.player.displayName });
+    return data.user ? m.games_mine() : m.games_title();
+  });
+
   let extra = $state<GameListItem[]>([]);
   let loadedPages = $state(0);
   let loadedFor = $state<string | null>(null);
@@ -132,13 +137,11 @@
   ];
 </script>
 
-<svelte:head
-  ><title>{data.user ? m.games_mine() : m.games_title()} — Project Achievers</title></svelte:head
->
+<svelte:head><title>{heading} — Project Achievers</title></svelte:head>
 
 <div class="space-y-5">
   <div class="flex items-baseline justify-between gap-4">
-    <h1>{data.user ? m.games_mine() : m.games_title()}</h1>
+    <h1>{heading}</h1>
     <p class="tabular text-sm text-muted">{m.count_games({ count: data.total })}</p>
   </div>
 
@@ -167,9 +170,9 @@
       {/each}
     </div>
 
-    {#if data.user}
+    {#if data.params.mine}
       <div class="flex rounded border border-line" role="group" aria-label={m.games_collection()}>
-        {#each collections as item (item.label)}
+        {#each collections.filter((item) => !data.player || item.value !== 'caches') as item (item.label)}
           <a
             href={collectionHref(item.value)}
             data-sveltekit-noscroll
@@ -226,7 +229,7 @@
   </div>
 
   {#if games.length === 0}
-    {#if data.user && !data.params.q && !data.params.plateforme && !data.params.filtre}
+    {#if data.user && !data.player && !data.params.q && !data.params.plateforme && !data.params.filtre}
       <Empty title={m.games_empty_title()}>
         {m.games_empty_text()}
         {#snippet action()}<a href="/compte" class="btn btn-primary">{m.link_account()}</a

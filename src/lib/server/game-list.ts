@@ -1,10 +1,14 @@
+import { error } from '@sveltejs/kit';
 import { z } from 'zod';
+import { m } from '$lib/paraglide/messages';
+import { db } from './db';
 import { listGames, PAGE_SIZE } from './queries';
 
 const TIERS: Record<string, number> = { or: 1, platine: 2, prismatique: 3, legendaire: 4 };
 
 const query = z.object({
   q: z.string().trim().max(80).optional().catch(undefined),
+  joueur: z.string().trim().max(24).optional().catch(undefined),
   plateforme: z.enum(['STEAM', 'PSN', 'XBOX']).optional().catch(undefined),
   tri: z.enum(['nom', 'recent', 'progression', 'succes']).catch('nom'),
   page: z.coerce.number().int().min(1).max(10_000).catch(1),
@@ -19,7 +23,17 @@ const query = z.object({
 export async function gamesFromUrl(url: URL, user: App.Locals['user']) {
   const params = query.parse(Object.fromEntries(url.searchParams));
   // Un membre voit ses jeux ; le catalogue complet reste pour les visiteurs.
-  const mine = Boolean(user);
+  const player = params.joueur
+    ? await db.user.findFirst({
+        where: { handle: params.joueur, OR: [{ isPublic: true }, { id: user?.id ?? '' }] },
+        select: { id: true, handle: true, displayName: true },
+      })
+    : null;
+  if (params.joueur && !player) error(404, m.profile_not_found());
+
+  const ownerId = player?.id ?? user?.id;
+  const own = ownerId === user?.id;
+  const mine = Boolean(ownerId);
   const unfinished = mine && params.filtre === 'restants';
   // La progression n'existe que pour les jeux du joueur.
   const tri = params.tri === 'progression' && !mine ? 'nom' : params.tri;
@@ -30,10 +44,11 @@ export async function gamesFromUrl(url: URL, user: App.Locals['user']) {
       platform: params.plateforme,
       sort: tri,
       page: params.page,
-      ownerId: mine ? user?.id : undefined,
+      ownerId,
       unfinished,
       tier: mine ? TIERS[params.filtre ?? ''] : undefined,
-      hidden: mine && params.filtre === 'caches',
+      // Les jeux cachés ne regardent que leur propriétaire.
+      hidden: own && mine && params.filtre === 'caches',
       showAdult: user?.showAdult,
     },
     user?.id ?? null,
@@ -43,6 +58,7 @@ export async function gamesFromUrl(url: URL, user: App.Locals['user']) {
     games,
     total,
     params: { ...params, tri, mine, filtre: mine ? params.filtre : undefined },
+    player: own ? null : player,
     pages: Math.ceil(total / PAGE_SIZE),
   };
 }

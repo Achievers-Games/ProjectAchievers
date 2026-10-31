@@ -29,7 +29,7 @@
   <div class="space-y-8">
     <h1>{m.home_hello({ name: data.user.displayName })}</h1>
 
-    <HomeCarousel tagline={data.tagline} member />
+    <HomeCarousel tagline={data.tagline} banners={data.banners} member />
 
     {#if data.accounts === 0}
       <Empty title={m.home_no_account()}>
@@ -78,7 +78,7 @@
   </div>
 {:else}
   <div class="space-y-10">
-    <HomeCarousel tagline={data.tagline} member={false} />
+    <HomeCarousel tagline={data.tagline} banners={data.banners} member={false} />
 
     <section class="max-w-2xl space-y-4">
       <h1 class="hero-title">{m.hero_title()}</h1>

@@ -430,10 +430,10 @@
   "frame_collector_how": "Obtenha 10 cartas",
   "frame_podium_how": "Alcance esta posição no ranking",
   "tagline_1": "Pela primeira vez na vida, você vai terminar alguma coisa.",
-  "tagline_2": "Seus jogos estão agonizando em 87%. Acabe com eles.",
-  "tagline_3": "Você comprou 400 jogos. Terminou 12. Tudo bem aí?",
+  "tagline_2": "Seus jogos estão agonizando em {percent}%. Acabe com eles.",
+  "tagline_3": "Você tem {games} jogos. Terminou {finished}. Tudo bem aí?",
   "tagline_4": "Sua biblioteca não é uma coleção. É um cemitério.",
-  "tagline_5": "Aquele jogo em 94% está te olhando. Ele sabe.",
+  "tagline_5": "Aquele jogo em {percent}% está te olhando. Ele sabe.",
   "tagline_6": "Você não abandonou. Vai “continuar depois”. Sei.",
   "tagline_7": "Promoção você aproveita até o fim. Jogo, nunca.",
   "tagline_8": "Você largou o chefe final. Ele ainda está esperando.",
@@ -447,5 +447,7 @@
   "carousel_label": "Em destaque",
   "carousel_prev": "Banner anterior",
   "carousel_next": "Próximo banner",
-  "carousel_go": "Ir para o banner {number}"
+  "carousel_go": "Ir para o banner {number}",
+  "games_of": "Jogos de {name}",
+  "games_see_all": "Ver os {count} jogos"
 }

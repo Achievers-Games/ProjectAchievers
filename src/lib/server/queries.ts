@@ -223,6 +223,56 @@ const TIER_POINTS = [100, 300, 900, 2700];
 const cardScore = (tiers: number[]) =>
   tiers.reduce((sum, count, index) => sum + count * (TIER_POINTS[index] ?? 0), 0);
 
+export interface BannerGame {
+  name: string;
+  slug: string;
+  images: string[];
+  completion: number | null;
+}
+
+/** Steam a une grande image pour la plupart des jeux ; l'en-tête prend le relais sinon. */
+const bannerImages = (headerUrl: string) =>
+  headerUrl.endsWith('/header.jpg')
+    ? [headerUrl.replace('/header.jpg', '/library_hero.jpg'), headerUrl]
+    : [headerUrl];
+
+const BANNERS = 3;
+
+/** Les jeux les plus proches de la fin ; à défaut, ou pour un invité, des jeux au hasard. */
+export async function bannerGames(userId?: string): Promise<BannerGame[]> {
+  const library = userId
+    ? await listGames({ sort: 'progression', page: 1, ownerId: userId, unfinished: true }, userId)
+    : null;
+  const closest = (library?.games ?? [])
+    .filter((game) => game.headerUrl)
+    .slice(0, BANNERS)
+    .map((game) => ({
+      name: game.name,
+      slug: game.slug,
+      images: bannerImages(game.headerUrl as string),
+      completion: game.next?.completion ?? game.progress?.completion ?? null,
+    }));
+  if (closest.length === BANNERS) return closest;
+
+  // Un jeu pas encore classé pourrait être un jeu adulte : il ne s'affiche pas à l'accueil.
+  const random = await db.$queryRaw<{ name: string; slug: string; headerUrl: string }[]>`
+    SELECT name, slug, "headerUrl"
+    FROM "Game"
+    WHERE NOT "adultOnly" AND "headerUrl" IS NOT NULL AND "totalAchievements" > 0
+      AND (platform <> 'STEAM' OR "contentCheckedAt" IS NOT NULL)
+    ORDER BY random()
+    LIMIT ${BANNERS - closest.length}`;
+  return [
+    ...closest,
+    ...random.map((game) => ({
+      name: game.name,
+      slug: game.slug,
+      images: bannerImages(game.headerUrl),
+      completion: null,
+    })),
+  ];
+}
+
 export async function userStats(userId: string) {
   const [collection, unlocked] = await Promise.all([
     db.$queryRaw<

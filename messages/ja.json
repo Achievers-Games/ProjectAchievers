@@ -420,10 +420,10 @@
   "frame_collector_how": "カードを 10 枚獲得",
   "frame_podium_how": "ランキングでこの順位に到達",
   "tagline_1": "人生で一度くらい、何かを最後までやり遂げよう。",
-  "tagline_2": "君のゲームは 87% で虫の息だ。とどめを刺せ。",
-  "tagline_3": "400 本買って、クリアは 12 本。大丈夫？",
+  "tagline_2": "君のゲームは {percent}% で虫の息だ。とどめを刺せ。",
+  "tagline_3": "{games} 本持っていて、クリアは {finished} 本。大丈夫？",
   "tagline_4": "君のライブラリはコレクションじゃない。墓場だ。",
-  "tagline_5": "94% のあのゲームが君を見ている。全部お見通しだ。",
+  "tagline_5": "{percent}% のあのゲームが君を見ている。全部お見通しだ。",
   "tagline_6": "やめたわけじゃない。「あとでやる」んだよね。はいはい。",
   "tagline_7": "セールは最後まで見逃さない。ゲームは最後までやらない。",
   "tagline_8": "ラスボスを放置したね。まだ待ってるよ。",
@@ -437,5 +437,7 @@
   "carousel_label": "注目",
   "carousel_prev": "前のバナー",
   "carousel_next": "次のバナー",
-  "carousel_go": "バナー {number} へ移動"
+  "carousel_go": "バナー {number} へ移動",
+  "games_of": "{name} のゲーム",
+  "games_see_all": "{count} 本すべて見る"
 }

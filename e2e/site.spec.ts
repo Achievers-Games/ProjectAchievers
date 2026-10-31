@@ -45,6 +45,14 @@ test.describe('visiteur', () => {
     );
   });
 
+  test('parcourt tous les jeux d’un profil public', async ({ page }) => {
+    await page.goto('/u/demo');
+    await page.getByRole('link', { name: /Voir les \d+ jeux/ }).click();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Jeux de Demo');
+    await expect(page.getByRole('link', { name: 'Cachés' })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: 'Platine', exact: true })).toBeVisible();
+  });
+
   test('utilise la police prévue', async ({ page }) => {
     await page.goto('/');
     const font = await page.evaluate(() => getComputedStyle(document.body).fontFamily);
