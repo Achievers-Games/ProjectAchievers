@@ -1,7 +1,7 @@
 import type { Identity } from '../accounts';
 import { pkceChallenge } from '../crypto';
 import { env } from '../env';
-import { callbackUrl } from './index';
+import { callbackUrl, fetchOAuthProfile } from './index';
 
 const AUTHORIZE = 'https://accounts.google.com/o/oauth2/v2/auth';
 const TOKEN = 'https://oauth2.googleapis.com/token';
@@ -22,28 +22,18 @@ export function googleAuthorizeUrl(state: string, verifier: string): string {
 
 /** Google ne sert qu'à se connecter : aucun jeton n'est conservé. */
 export async function exchangeGoogleCode(code: string, verifier: string): Promise<Identity> {
-  const tokenResponse = await fetch(TOKEN, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      grant_type: 'authorization_code',
-      code,
-      client_id: env().GOOGLE_CLIENT_ID ?? '',
-      client_secret: env().GOOGLE_CLIENT_SECRET ?? '',
-      redirect_uri: callbackUrl('google'),
-      code_verifier: verifier,
-    }),
-    signal: AbortSignal.timeout(10_000),
-  });
-  if (!tokenResponse.ok) throw new Error(`Google a refusé le code (${tokenResponse.status})`);
-  const tokens = (await tokenResponse.json()) as { access_token: string };
-
-  const userResponse = await fetch(USERINFO, {
-    headers: { Authorization: `Bearer ${tokens.access_token}` },
-    signal: AbortSignal.timeout(10_000),
-  });
-  if (!userResponse.ok) throw new Error(`Profil Google illisible (${userResponse.status})`);
-  const user = (await userResponse.json()) as { sub: string; name?: string; picture?: string };
+  const user = await fetchOAuthProfile<{ sub: string; name?: string; picture?: string }>(
+    {
+      name: 'Google',
+      provider: 'google',
+      tokenUrl: TOKEN,
+      profileUrl: USERINFO,
+      clientId: env().GOOGLE_CLIENT_ID,
+      clientSecret: env().GOOGLE_CLIENT_SECRET,
+    },
+    code,
+    verifier,
+  );
 
   return {
     provider: 'GOOGLE',

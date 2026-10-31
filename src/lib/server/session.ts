@@ -1,4 +1,5 @@
 import type { Cookies } from '@sveltejs/kit';
+import { secureCookie } from './cookies';
 import { db } from './db';
 import { randomToken, sha256 } from './crypto';
 
@@ -12,10 +13,8 @@ export type SessionUser = NonNullable<Awaited<ReturnType<typeof validateSession>
 
 function setCookie(cookies: Cookies, token: string, expires: Date) {
   cookies.set(SESSION_COOKIE, token, {
+    ...secureCookie,
     path: '/',
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
     expires,
   });
 }

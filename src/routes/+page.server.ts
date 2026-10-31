@@ -13,12 +13,12 @@ import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
   if (locals.user) {
-    const [home, accounts, cards, podium, banners, barelyPlayed] = await Promise.all([
+    const podium = await collectors(3);
+    const [home, accounts, cards, banners, barelyPlayed] = await Promise.all([
       dashboard(locals.user.id, locals.user.showAdult),
       db.linkedAccount.count({ where: { userId: locals.user.id } }),
       cardFeed(locals.user.showAdult),
-      collectors(3),
-      homeBanners(locals.user.id),
+      homeBanners(podium[0], locals.user.id),
       barelyPlayedGame(locals.user.id, locals.user.showAdult),
     ]);
     const { games, tiers } = home.stats;
@@ -32,11 +32,11 @@ export const load: PageServerLoad = async ({ locals }) => {
     if (aboutBarelyPlayed && barelyPlayed) banners.season = toBanner(barelyPlayed);
     return { home, accounts, cards, podium, banners, popular: null, tagline };
   }
-  const [{ games }, cards, podium, banners] = await Promise.all([
+  const podium = await collectors(3);
+  const [{ games }, cards, banners] = await Promise.all([
     listGames({ sort: 'succes', page: 1 }, null),
     cardFeed(),
-    collectors(3),
-    homeBanners(),
+    homeBanners(podium[0]),
   ]);
   return {
     home: null,

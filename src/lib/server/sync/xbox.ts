@@ -1,6 +1,11 @@
 import { db } from '../db';
 import { decrypt, encrypt } from '../crypto';
-import { openXboxSession, refreshMicrosoftTokens, type XboxSession } from '../providers/xbox';
+import {
+  openXboxSession,
+  refreshMicrosoftTokens,
+  XboxAuthError,
+  type XboxSession,
+} from '../providers/xbox';
 import { fetchRetry, SyncError, syncGames } from './errors';
 import { saveAchievements, saveProgress, upsertGame, type AchievementInput } from './store';
 import type { ProviderSync } from './types';
@@ -98,8 +103,10 @@ async function connect(account: Parameters<ProviderSync>[0]['account']): Promise
       },
     });
     return await openXboxSession(tokens.accessToken);
-  } catch {
-    throw new SyncError('sync_xbox_expired', true);
+  } catch (cause) {
+    // Une panne passagère ne doit pas obliger le joueur à relier son compte.
+    if (cause instanceof XboxAuthError) throw new SyncError('sync_xbox_expired', true);
+    throw cause;
   }
 }
 

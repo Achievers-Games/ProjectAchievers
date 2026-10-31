@@ -80,6 +80,8 @@ export async function syncGames<T>(
   return processed - failed;
 }
 
+export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 /** `fetch` avec nouvelles tentatives sur 429 et 5xx, en respectant `Retry-After`. */
 export async function fetchRetry(url: string | URL, init?: RequestInit, attempts = 4) {
   for (let attempt = 1; ; attempt++) {
@@ -94,6 +96,6 @@ export async function fetchRetry(url: string | URL, init?: RequestInit, attempts
 
     const retryAfter = Number(response?.headers.get('retry-after'));
     const delay = retryAfter > 0 ? retryAfter * 1000 : 500 * 2 ** attempt;
-    await new Promise((resolve) => setTimeout(resolve, Math.min(delay, 30_000)));
+    await sleep(Math.min(delay, 30_000));
   }
 }

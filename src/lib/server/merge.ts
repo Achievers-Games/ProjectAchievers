@@ -1,5 +1,6 @@
 import type { Cookies } from '@sveltejs/kit';
 import type { Provider, Role } from '@prisma/client';
+import { secureCookie } from './cookies';
 import { decrypt, encrypt } from './crypto';
 import { db } from './db';
 
@@ -31,10 +32,8 @@ type MergeFailure = 'stale' | 'sync_running' | 'provider_conflict';
 /** La demande reste chez le navigateur, chiffrée, pendant 10 minutes. */
 export function saveMerge(cookies: Cookies, merge: PendingMerge) {
   cookies.set(MERGE_COOKIE, encrypt(JSON.stringify(merge)), {
+    ...secureCookie,
     path: '/compte',
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
     maxAge: 600,
   });
 }

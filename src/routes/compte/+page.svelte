@@ -9,7 +9,7 @@
   import { formatRelative, PROVIDER_LABELS, syncErrorText } from '$lib/labels';
   import { FRAMES, frameHint, frameLabel } from '$lib/frames';
   import { syncState } from '$lib/stores/sync';
-  import { toast } from '$lib/stores/toast';
+  import { submitWithToast } from '$lib/forms';
 
   let { data } = $props();
 
@@ -52,18 +52,15 @@
     ),
   ]);
 
-  const submitWith =
-    (keepValues: boolean): SubmitFunction =>
-    () => {
-      return async ({ result, update }) => {
-        await update({ reset: !keepValues && result.type === 'success' });
-        if (result.type === 'failure')
-          toast(String(result.data?.error ?? m.action_failed()), 'error');
-        else if (result.type === 'success' && result.data?.success)
-          toast(String(result.data.success));
-      };
-    };
-  const submit = submitWith(false);
+  /** Aperçu d'un cadre sur l'avatar du joueur, animation comprise. */
+  const framed = (frame: string | null, frameMotionUrl: string | null = null) => ({
+    ...data.profile,
+    frame,
+    frameMotionUrl,
+  });
+
+  const submit = submitWithToast();
+  const submitKeeping = submitWithToast({ reset: false });
 
   const applyTheme: SubmitFunction = ({ formData }) => {
     document.documentElement.dataset.theme = String(formData.get('theme'));
@@ -126,12 +123,7 @@
 
   <section class="space-y-3">
     <h2>{m.profile()}</h2>
-    <form
-      method="POST"
-      action="?/profile"
-      use:enhance={submitWith(true)}
-      class="card space-y-4 p-4"
-    >
+    <form method="POST" action="?/profile" use:enhance={submitKeeping} class="card space-y-4 p-4">
       <div class="space-y-1">
         <label for="displayName" class="label block">{m.profile_name()}</label>
         <input
@@ -193,11 +185,11 @@
 
   <section class="space-y-3">
     <h2>{m.frames_title()}</h2>
-    <form method="POST" action="?/frame" use:enhance={submitWith(true)} class="card space-y-4 p-4">
+    <form method="POST" action="?/frame" use:enhance={submitKeeping} class="card space-y-4 p-4">
       <div class="grid gap-3 sm:grid-cols-2">
         <label class="flex items-center gap-3 text-sm">
           <input type="radio" name="frame" value="" checked={!data.profile.frame} />
-          <Avatar name={data.profile.displayName} src={data.profile.avatarUrl} size={64} />
+          <Avatar person={framed(null)} play="always" size={64} />
           {m.frame_none()}
         </label>
         {#each data.accounts.filter((a) => a.frameUrl) as account (account.provider)}
@@ -209,10 +201,7 @@
               checked={data.profile.frame === account.frameUrl}
             />
             <Avatar
-              name={data.profile.displayName}
-              src={data.profile.avatarUrl}
-              frame={account.frameUrl}
-              frameMotion={account.frameMotionUrl}
+              person={framed(account.frameUrl, account.frameMotionUrl)}
               play="always"
               size={64}
             />
@@ -229,12 +218,7 @@
               disabled={!owned}
               checked={data.profile.frame === frame}
             />
-            <Avatar
-              name={data.profile.displayName}
-              src={data.profile.avatarUrl}
-              {frame}
-              size={64}
-            />
+            <Avatar person={framed(frame)} play="always" size={64} />
             <span>
               {frameLabel(frame)}
               {#if !owned}<span class="block text-xs text-muted">{frameHint(frame)}</span>{/if}

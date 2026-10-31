@@ -13,7 +13,9 @@ export const GET: RequestHandler = async ({ locals }) => {
       handle: true,
       displayName: true,
       avatarUrl: true,
+      avatarMotionUrl: true,
       frame: true,
+      frameMotionUrl: true,
       isPublic: true,
       showAdult: true,
       createdAt: true,
@@ -27,7 +29,13 @@ export const GET: RequestHandler = async ({ locals }) => {
         },
       },
       games: {
-        select: { game: { select: { name: true } }, unlockedCount: true, completion: true },
+        select: {
+          game: { select: { name: true } },
+          unlockedCount: true,
+          completion: true,
+          hidden: true,
+          playtimeMinutes: true,
+        },
       },
       achievements: {
         select: {
@@ -37,6 +45,12 @@ export const GET: RequestHandler = async ({ locals }) => {
       },
       guides: { select: { contentMd: true, createdAt: true } },
       comments: { select: { contentMd: true, createdAt: true } },
+      frames: { select: { frame: true, earnedAt: true } },
+      pinned: { select: { position: true, game: { select: { name: true } } } },
+      guideVotes: { select: { guideId: true, value: true } },
+      reactions: { select: { commentId: true, type: true } },
+      reports: { select: { targetType: true, targetId: true, reason: true, createdAt: true } },
+      sessions: { select: { userAgent: true, createdAt: true, lastUsedAt: true } },
     },
   });
 

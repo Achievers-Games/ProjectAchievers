@@ -1,7 +1,7 @@
 // Tests sur un vrai PostgreSQL : `npm run dev:db` ou le service de la CI.
 import 'dotenv/config';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import { collectors, listGames, seasonStats } from './queries';
+import { activityFeed, cardFeed, collectors, listGames, seasonStats, userCards } from './queries';
 import { grantFrames } from './frames';
 import { profileSchema, resolveIdentity, updateProfile, type Identity } from './accounts';
 import { nextTier, stepOf, tierFor } from '$lib/collection';
@@ -574,9 +574,21 @@ describe('synchronisation Steam', () => {
     expect(cards).toEqual([]);
 
     const userId = await steamUser();
+    await db.game.updateMany({
+      where: { players: { some: { userId: privateUser } } },
+      data: { contentCheckedAt: null },
+    });
     await runSync({ userId, provider: 'STEAM' });
+    expect(cards).toEqual([]);
+
+    const rated = await steamUser();
+    await db.game.updateMany({
+      where: { players: { some: { userId: privateUser } } },
+      data: { contentCheckedAt: new Date() },
+    });
+    await runSync({ userId: rated, provider: 'STEAM' });
     stop();
-    const { handle } = await db.user.findUniqueOrThrow({ where: { id: userId } });
+    const { handle } = await db.user.findUniqueOrThrow({ where: { id: rated } });
     expect(cards).toEqual([handle]);
   });
 
@@ -775,7 +787,7 @@ describe('traduction des guides et commentaires', () => {
 
   it('découpe un long texte aux paragraphes', () => {
     expect(splitText('aaaa\n\nbbbb\n\ncc', 10)).toEqual(['aaaa\n\nbbbb', 'cc']);
-    expect(splitText('un seul bloc', 5)).toEqual(['un seul bloc']);
+    expect(splitText('un seul bloc', 5)).toEqual(['un', 'seul', 'bloc']);
   });
 });
 
@@ -902,7 +914,8 @@ describe('saison', () => {
     endsAt: new Date('2026-07-01T00:00:00Z'),
     goal: 100,
     tiers: [100, 500, 2_000],
-    dailyCap: 60,
+    burstPerSecond: 3,
+    burstPerMinute: 4,
     completionBonus: 500,
   } as const;
 
@@ -930,14 +943,16 @@ describe('saison', () => {
     );
   }
 
-  it('compte les jeux déjà commencés, avec le plafond du jour', async () => {
+  const unlockFor = (userId: string) => (achievementId: string | undefined, unlockedAt: string) =>
+    db.userAchievement.create({
+      data: { userId, achievementId: achievementId as string, unlockedAt: new Date(unlockedAt) },
+    });
+
+  it('compte les jeux déjà commencés', async () => {
     const userId = await player();
     const [old, rare, rarer, common] = await achievements([90, 3, 2, 90]);
     const [fresh] = await achievements([3]);
-    const unlock = (achievementId: string | undefined, unlockedAt: string) =>
-      db.userAchievement.create({
-        data: { userId, achievementId: achievementId as string, unlockedAt: new Date(unlockedAt) },
-      });
+    const unlock = unlockFor(userId);
     await unlock(old?.id, '2026-05-01T12:00:00Z');
     await unlock(rare?.id, '2026-06-10T12:00:00Z');
     await unlock(rarer?.id, '2026-06-10T13:00:00Z');
@@ -945,8 +960,79 @@ describe('saison', () => {
     await unlock(fresh?.id, '2026-06-12T12:00:00Z');
 
     const stats = await seasonStats(season);
-    // 100 points le premier jour, plafonnés à 60, puis 5 ; le jeu commencé en saison ne compte pas.
-    expect(stats.ranking.find((row) => row.id === userId)?.points).toBe(65);
+    // 50 + 50 + 5 ; le jeu commencé en saison ne compte pas.
+    expect(stats.ranking.find((row) => row.id === userId)?.points).toBe(105);
+  });
+
+  it('écarte les rafales et le bonus du jeu qu’elles terminent', async () => {
+    const userId = await player();
+    const [old, ...burst] = await achievements([90, 90, 90, 90]);
+    const unlock = unlockFor(userId);
+    await unlock(old?.id, '2026-05-01T12:00:00Z');
+    await Promise.all(burst.map((item) => unlock(item.id, '2026-06-10T12:00:00Z')));
+    if (!old) throw new Error('succès non créé');
+    await db.userGame.create({
+      data: {
+        userId,
+        gameId: old.gameId,
+        completion: 100,
+        unlockedCount: 4,
+        totalCount: 4,
+        lastUnlockedAt: new Date('2026-06-10T12:00:00Z'),
+      },
+    });
+
+    const row = (await seasonStats(season)).ranking.find((item) => item.id === userId);
+    expect(row).toMatchObject({ points: 0, ignored: 3 });
+  });
+
+  it('écarte aussi les rafales étalées sur une minute', async () => {
+    const userId = await player();
+    const [old, a, b, c, d] = await achievements([90, 90, 90, 90, 90]);
+    const unlock = unlockFor(userId);
+    await unlock(old?.id, '2026-05-01T12:00:00Z');
+    await unlock(a?.id, '2026-06-10T12:00:01Z');
+    await unlock(b?.id, '2026-06-10T12:00:11Z');
+    await unlock(c?.id, '2026-06-10T12:00:21Z');
+    await unlock(d?.id, '2026-06-10T12:00:31Z');
+
+    const row = (await seasonStats(season)).ranking.find((item) => item.id === userId);
+    expect(row).toMatchObject({ points: 0, ignored: 4 });
+  });
+
+  it('ne montre pas le badge quand seule une version jamais commencée reste à finir', async () => {
+    const userId = await player();
+    const key = `${PREFIX}-${Math.random()}`;
+    const [started] = await achievements([90]);
+    const [other] = await achievements([90, 90]);
+    if (!started || !other) throw new Error('succès non créé');
+    await db.game.updateMany({
+      where: { id: { in: [started.gameId, other.gameId] } },
+      data: { familyKey: key },
+    });
+    await db.game.update({ where: { id: other.gameId }, data: { platform: 'PSN' } });
+    await unlockFor(userId)(started.id, '2020-01-01T12:00:00Z');
+    await db.userGame.createMany({
+      data: [
+        { userId, gameId: started.gameId, completion: 100, unlockedCount: 1, totalCount: 1 },
+        { userId, gameId: other.gameId, completion: 0, unlockedCount: 0, totalCount: 2 },
+      ],
+    });
+
+    const { games } = await listGames({ sort: 'nom', page: 1, ownerId: userId }, userId);
+    expect(games[0]?.seasonEligible).toBe(false);
+  });
+
+  it('garde les succès isolés', async () => {
+    const userId = await player();
+    const [old, a, b] = await achievements([90, 90, 90]);
+    const unlock = unlockFor(userId);
+    await unlock(old?.id, '2026-05-01T12:00:00Z');
+    await unlock(a?.id, '2026-06-10T12:00:00Z');
+    await unlock(b?.id, '2026-06-10T12:00:00Z');
+
+    const row = (await seasonStats(season)).ranking.find((item) => item.id === userId);
+    expect(row).toMatchObject({ points: 10, ignored: 0 });
   });
 });
 
@@ -988,6 +1074,95 @@ describe('filtres par niveau', () => {
     for (let index = 0; index < extraCards; index++) await add(`carte ${index}`, 'STEAM', 100);
     return { sort: 'progression', page: 1, ownerId: userId } as const;
   }
+  it('place les cartes Or avancées vers le Platine juste après les Platines', async () => {
+    const { ownerId } = await library();
+    const cards = await userCards(ownerId);
+    expect(cards.map((card) => card.name)).toEqual([
+      `${PREFIX} platine`,
+      `${PREFIX} or`,
+      `${PREFIX} or seul`,
+    ]);
+    expect(cards[1]?.next?.completion).toBe(40);
+  });
+
+  it('garde le niveau d’une carte quand la recherche ne vise qu’une version', async () => {
+    const { ownerId } = await library();
+    const family = `${PREFIX}-${Math.random()}`;
+    const names = ['Royal', 'Classique'];
+    for (const [index, platform] of (['STEAM', 'PSN'] as const).entries()) {
+      const game = await db.game.create({
+        data: {
+          platform,
+          platformGameId: `${PREFIX}-${Math.random()}`,
+          name: `${PREFIX} ${names[index]}`,
+          slug: `${PREFIX}-${Math.random().toString(36).slice(2)}`,
+          totalAchievements: 10,
+          familyKey: family,
+        },
+      });
+      await db.userGame.create({
+        data: {
+          userId: ownerId,
+          gameId: game.id,
+          completion: 100,
+          unlockedCount: 10,
+          totalCount: 10,
+        },
+      });
+    }
+    const { games } = await listGames({ sort: 'nom', page: 1, ownerId, q: 'classique' }, ownerId);
+    expect(games).toHaveLength(1);
+    expect(games[0]?.tier).toBe(2);
+  });
+
+  it('garde les jeux cachés et non classés hors des fils publics', async () => {
+    const { ownerId } = await library();
+    await db.user.update({ where: { id: ownerId }, data: { isPublic: true } });
+    const add = async (name: string, contentCheckedAt: Date | null, hidden: boolean) => {
+      const game = await db.game.create({
+        data: {
+          platform: 'STEAM',
+          platformGameId: `${PREFIX}-${Math.random()}`,
+          name: `${PREFIX} ${name}`,
+          slug: `${PREFIX}-${Math.random().toString(36).slice(2)}`,
+          contentCheckedAt,
+        },
+      });
+      const achievement = await db.achievement.create({
+        data: { gameId: game.id, platformAchievementId: '0', name },
+      });
+      await db.userGame.create({
+        data: {
+          userId: ownerId,
+          gameId: game.id,
+          completion: 100,
+          unlockedCount: 1,
+          totalCount: 1,
+          hidden,
+          lastUnlockedAt: new Date(Date.now() + 60_000),
+        },
+      });
+      await db.userAchievement.create({
+        data: {
+          userId: ownerId,
+          achievementId: achievement.id,
+          unlockedAt: new Date(Date.now() + 60_000),
+        },
+      });
+    };
+    await add('visible', new Date(), false);
+    await add('secret', new Date(), true);
+    await add('non classe', null, false);
+
+    const feed = (await activityFeed()).map((row) => row.achievement.name);
+    expect(feed).toContain('visible');
+    expect(feed).not.toContain('secret');
+    expect(feed).not.toContain('non classe');
+    const cards = (await cardFeed()).map((row) => row.game.name);
+    expect(cards).toContain(`${PREFIX} visible`);
+    expect(cards).not.toContain(`${PREFIX} non classe`);
+  });
+
   it('classe les collections selon leurs cartes, jeux réunis', async () => {
     const { ownerId } = await library();
     const user = await db.user.update({ where: { id: ownerId }, data: { isPublic: true } });

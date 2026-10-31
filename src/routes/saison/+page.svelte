@@ -6,7 +6,7 @@
   import GameCard from '$lib/components/GameCard.svelte';
   import Progress from '$lib/components/Progress.svelte';
   import { formatDate, formatNumber, formatPercent } from '$lib/labels';
-  import type { SeasonState } from '$lib/season';
+  import { RARITY_POINTS, type SeasonState } from '$lib/season';
 
   const MINUTE = 60_000;
 
@@ -60,10 +60,10 @@
   ]);
 
   const scale = $derived([
-    { label: m.season_rule_common(), points: 5 },
-    { label: m.season_rule_uncommon(), points: 10 },
-    { label: m.season_rule_rare(), points: 25 },
-    { label: m.season_rule_epic(), points: 50 },
+    { label: m.season_rule_common(), points: RARITY_POINTS.common },
+    { label: m.season_rule_uncommon(), points: RARITY_POINTS.uncommon },
+    { label: m.season_rule_rare(), points: RARITY_POINTS.rare },
+    { label: m.season_rule_epic(), points: RARITY_POINTS.epic },
     { label: m.season_rule_complete(), points: data.completionBonus },
   ]);
 </script>
@@ -152,9 +152,10 @@
           </li>
         {/each}
       </ul>
-      <p class="text-sm text-muted">
-        {m.season_rules_text({ cap: formatNumber(data.dailyCap) })}
-      </p>
+      <p class="text-sm text-muted">{m.season_rules_text()}</p>
+      {#if data.ignored}
+        <p class="text-sm text-muted">{m.season_ignored({ count: formatNumber(data.ignored) })}</p>
+      {/if}
     </section>
 
     <section class="min-w-0 space-y-3" aria-labelledby="classement-saison">
@@ -168,14 +169,7 @@
                 class="flex items-center gap-3 p-3 transition-colors hover:bg-raised"
               >
                 <span class="tabular w-5 text-right text-xs text-muted">{index + 1}</span>
-                <Avatar
-                  name={row.displayName}
-                  src={row.avatarUrl}
-                  frame={row.frame}
-                  motion={row.avatarMotionUrl}
-                  frameMotion={row.frameMotionUrl}
-                  size={28}
-                />
+                <Avatar person={row} size={28} />
                 <span class="min-w-0 flex-1 truncate text-sm font-medium">{row.displayName}</span>
                 <span class="tabular text-sm">{formatNumber(row.points)}</span>
               </a>

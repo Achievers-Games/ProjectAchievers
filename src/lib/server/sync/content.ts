@@ -1,5 +1,5 @@
 import { db } from '../db';
-import { fetchRetry } from './errors';
+import { fetchRetry, sleep } from './errors';
 
 const STORE = 'https://store.steampowered.com/api/appdetails';
 /** La boutique tolère environ 200 requêtes par tranche de 5 minutes. */
@@ -39,7 +39,7 @@ export async function rateGames(limit = BATCH, pause = PAUSE) {
       data: { adultOnly: isAdultOnly(descriptors), contentCheckedAt: new Date() },
     });
     rated += 1;
-    if (pause) await new Promise((resolve) => setTimeout(resolve, pause));
+    await sleep(pause);
   }
   return rated;
 }

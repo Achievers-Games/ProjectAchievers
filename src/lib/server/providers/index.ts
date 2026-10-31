@@ -1,5 +1,6 @@
 import type { Cookies } from '@sveltejs/kit';
 import type { Provider } from '@prisma/client';
+import { secureCookie } from '../cookies';
 import { decrypt, encrypt } from '../crypto';
 import { env } from '../env';
 
@@ -25,6 +26,41 @@ export function availableProviders(): Record<Provider, boolean> {
 
 export const callbackUrl = (provider: OAuthProvider) => `${env().ORIGIN}/auth/${provider}/callback`;
 
+interface CodeExchange {
+  name: string;
+  provider: OAuthProvider;
+  tokenUrl: string;
+  profileUrl: string;
+  clientId?: string;
+  clientSecret?: string;
+}
+
+/** Échange un code d'autorisation contre le profil du joueur ; aucun jeton n'est conservé. */
+export async function fetchOAuthProfile<T>(flow: CodeExchange, code: string, verifier: string) {
+  const tokenResponse = await fetch(flow.tokenUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'authorization_code',
+      code,
+      client_id: flow.clientId ?? '',
+      client_secret: flow.clientSecret ?? '',
+      redirect_uri: callbackUrl(flow.provider),
+      code_verifier: verifier,
+    }),
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (!tokenResponse.ok) throw new Error(`${flow.name} a refusé le code (${tokenResponse.status})`);
+  const tokens = (await tokenResponse.json()) as { access_token: string };
+
+  const userResponse = await fetch(flow.profileUrl, {
+    headers: { Authorization: `Bearer ${tokens.access_token}` },
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (!userResponse.ok) throw new Error(`Profil ${flow.name} illisible (${userResponse.status})`);
+  return (await userResponse.json()) as T;
+}
+
 const FLOW_COOKIE = 'pa_oauth';
 
 interface OAuthFlow {
@@ -37,10 +73,8 @@ interface OAuthFlow {
 /** Le contexte du flux reste chez le navigateur, chiffré, pendant 10 minutes. */
 export function saveFlow(cookies: Cookies, flow: OAuthFlow) {
   cookies.set(FLOW_COOKIE, encrypt(JSON.stringify(flow)), {
+    ...secureCookie,
     path: '/auth',
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
     maxAge: 600,
   });
 }

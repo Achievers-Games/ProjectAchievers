@@ -1,23 +1,15 @@
 <script lang="ts">
   import { m } from '$lib/paraglide/messages';
   import { enhance } from '$app/forms';
-  import type { SubmitFunction } from '@sveltejs/kit';
   import ChevronDown from '@lucide/svelte/icons/chevron-down';
   import ChevronUp from '@lucide/svelte/icons/chevron-up';
   import Empty from '$lib/components/Empty.svelte';
   import GameCard from '$lib/components/GameCard.svelte';
-  import { toast } from '$lib/stores/toast';
+  import { submitWithToast } from '$lib/forms';
 
   let { data } = $props();
 
-  const submit: SubmitFunction = () => {
-    return async ({ result, update }) => {
-      await update({ reset: false });
-      if (result.type === 'failure') {
-        toast(String(result.data?.error ?? m.action_failed()), 'error');
-      }
-    };
-  };
+  const submit = submitWithToast({ reset: false });
 </script>
 
 <svelte:head><title>{m.showcase_edit()} — Project Achievers</title></svelte:head>

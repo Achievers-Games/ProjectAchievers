@@ -169,13 +169,7 @@
           class="flex items-center gap-2 rounded"
           aria-label={m.nav_profile()}
         >
-          <Avatar
-            name={data.user.displayName}
-            src={data.user.avatarUrl}
-            frame={data.user.frame}
-            motion={data.user.avatarMotionUrl}
-            frameMotion={data.user.frameMotionUrl}
-          />
+          <Avatar person={data.user} />
         </a>
       {:else}
         <a href="/connexion" class="btn btn-primary">{m.sign_in()}</a>

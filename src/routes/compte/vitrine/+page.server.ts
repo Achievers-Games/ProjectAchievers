@@ -1,13 +1,11 @@
-import { fail, redirect } from '@sveltejs/kit';
+import { fail } from '@sveltejs/kit';
 import { m } from '$lib/paraglide/messages';
+import { requireLogin } from '$lib/server/auth';
 import { db } from '$lib/server/db';
 import { chosenCards, MAX_SHOWCASE, userCards } from '$lib/server/queries';
 import type { Actions, PageServerLoad } from './$types';
 
-function requireUser(locals: App.Locals) {
-  if (!locals.user) redirect(303, '/connexion?retour=/compte/vitrine');
-  return locals.user;
-}
+const requireUser = (locals: App.Locals) => requireLogin(locals, '/compte/vitrine');
 
 export const load: PageServerLoad = async ({ locals, url }) => {
   const user = requireUser(locals);
@@ -54,9 +52,14 @@ export const actions: Actions = {
     }
     const pins = await db.pinnedGame.findMany({
       where: { userId: user.id },
-      select: { position: true },
+      select: { position: true, game: { select: { slug: true } } },
     });
-    if (pins.length >= MAX_SHOWCASE) {
+    // Une carte épinglée puis cachée ou perdue ne prend pas de place dans la vitrine.
+    const shown = chosenCards(
+      cards,
+      pins.map((pin) => pin.game.slug),
+    );
+    if (shown.length >= MAX_SHOWCASE) {
       return fail(409, { error: m.showcase_full({ max: MAX_SHOWCASE }) });
     }
 
@@ -79,11 +82,16 @@ export const actions: Actions = {
     const user = requireUser(locals);
     const form = await request.formData();
     const slugs = form.getAll('slug').map(String);
-    const pins = await db.pinnedGame.findMany({
-      where: { userId: user.id },
-      orderBy: { position: 'asc' },
-      include: { game: { select: { slug: true } } },
-    });
+    const [cards, allPins] = await Promise.all([
+      userCards(user.id, true),
+      db.pinnedGame.findMany({
+        where: { userId: user.id },
+        orderBy: { position: 'asc' },
+        include: { game: { select: { slug: true } } },
+      }),
+    ]);
+    // On échange deux cartes visibles : les épingles d'une carte cachée ne comptent pas.
+    const pins = allPins.filter((pin) => chosenCards(cards, [pin.game.slug]).length > 0);
 
     const index = pins.findIndex((pin) => slugs.includes(pin.game.slug));
     const other = pins[index + (form.get('direction') === 'up' ? -1 : 1)];

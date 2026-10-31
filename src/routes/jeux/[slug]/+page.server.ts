@@ -8,7 +8,8 @@ import { getLocale } from '$lib/paraglide/runtime';
 import type { Actions, PageServerLoad } from './$types';
 import { m } from '$lib/paraglide/messages';
 
-export const load: PageServerLoad = async ({ params, locals }) => {
+export const load: PageServerLoad = async ({ params, locals, url }) => {
+  const revealed = url.searchParams.has('caches');
   const game = await db.game.findUnique({
     where: { slug: params.slug },
     include: {
@@ -56,19 +57,19 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 
   const unlockedAt = new Map(unlocks.map((u) => [u.achievementId, u.unlockedAt]));
 
-  const finished = [
-    ...(progress && progress.completion >= 100 ? [game] : []),
-    ...others.filter((other) => (other.players[0]?.completion ?? 0) >= 100),
+  const owned = [
+    ...(progress
+      ? [{ id: game.id, platform: game.platform, completion: progress.completion }]
+      : []),
+    ...others.flatMap(({ id, platform, players: [player] }) =>
+      player ? [{ id, platform, completion: player.completion }] : [],
+    ),
   ];
 
   const state = seasonState(SEASON);
   const started = locals.user ? await seasonStartedGames(locals.user.id) : new Set<string>();
-  const unfinished =
-    !progress ||
-    progress.completion < 100 ||
-    others.some((other) => other.players[0] && other.players[0].completion < 100);
-  const counts =
-    unfinished && [game.id, ...others.map((other) => other.id)].some((id) => started.has(id));
+  const unfinished = !progress || owned.some((version) => version.completion < 100);
+  const counts = owned.some((version) => version.completion < 100 && started.has(version.id));
   const season =
     locals.user && state !== 'ended' && game.totalAchievements > 0 && unfinished
       ? { state, counts, startsAt: SEASON.startsAt }
@@ -82,10 +83,12 @@ export const load: PageServerLoad = async ({ params, locals }) => {
     game: { ...game, achievements: undefined },
     achievements: achievements.map((a) => {
       const unlocked = unlockedAt.get(a.id) ?? null;
-      // Un succès caché reste masqué tant que le joueur ne l'a pas obtenu.
-      const masked = a.hidden && !unlocked;
+      // Un succès caché reste masqué tant que le joueur ne l'a pas obtenu ou demandé à le voir.
+      const secret = a.hidden && !unlocked;
+      const masked = secret && !revealed;
       return {
         id: a.id,
+        secret,
         trophyType: a.trophyType,
         globalRarity: a.globalRarity,
         name: masked ? m.achievement_hidden() : a.name,
@@ -94,6 +97,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
         unlockedAt: unlocked,
       };
     }),
+    revealed,
     progress,
     season,
     players,
@@ -102,15 +106,8 @@ export const load: PageServerLoad = async ({ params, locals }) => {
       platform: other.platform,
       completion: other.players[0]?.completion ?? null,
     })),
-    tier: tierFor(new Set(finished.map((version) => version.platform)).size),
-    next: nextTier([
-      ...(progress ? [{ platform: game.platform, completion: progress.completion }] : []),
-      ...others.flatMap((other) =>
-        other.players[0]
-          ? [{ platform: other.platform, completion: other.players[0].completion }]
-          : [],
-      ),
-    ]),
+    tier: tierFor(new Set(owned.filter((v) => v.completion >= 100).map((v) => v.platform)).size),
+    next: nextTier(owned),
   };
 };
 

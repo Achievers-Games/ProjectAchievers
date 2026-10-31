@@ -95,14 +95,7 @@
       <ul class="card divide-y divide-line">
         {#each data.feed as item (`${item.user.handle}-${item.achievement.id}`)}
           <li class="flex items-center gap-3 p-3">
-            <Avatar
-              name={item.user.displayName}
-              src={item.user.avatarUrl}
-              frame={item.user.frame}
-              motion={item.user.avatarMotionUrl}
-              frameMotion={item.user.frameMotionUrl}
-              size={28}
-            />
+            <Avatar person={item.user} size={28} />
             <div class="min-w-0 flex-1">
               <p class="truncate text-sm">
                 <a href="/u/{item.user.handle}" class="font-medium">{item.user.displayName}</a>
@@ -151,14 +144,7 @@
               class="flex items-center gap-3 p-3 transition-colors hover:bg-raised"
             >
               <span class="tabular w-5 text-right text-xs text-muted">{index + 1}</span>
-              <Avatar
-                name={row.displayName}
-                src={row.avatarUrl}
-                frame={row.frame}
-                motion={row.avatarMotionUrl}
-                frameMotion={row.frameMotionUrl}
-                size={28}
-              />
+              <Avatar person={row} size={28} />
               <span class="min-w-0 flex-1 truncate text-sm font-medium">{row.displayName}</span>
               <span class="tabular text-sm">{formatNumber(row.unlocked)}</span>
             </a>

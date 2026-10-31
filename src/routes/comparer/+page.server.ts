@@ -1,5 +1,5 @@
 import { error } from '@sveltejs/kit';
-import { compareUsers, userStats } from '$lib/server/queries';
+import { compareUsers, publicUser, userStats } from '$lib/server/queries';
 import { db } from '$lib/server/db';
 import type { PageServerLoad } from './$types';
 import { m } from '$lib/paraglide/messages';
@@ -15,12 +15,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
     },
     select: {
       id: true,
-      handle: true,
-      displayName: true,
-      avatarUrl: true,
-      avatarMotionUrl: true,
-      frame: true,
-      frameMotionUrl: true,
+      ...publicUser,
     },
   });
   const left = users.find((u) => u.handle === a);

@@ -75,6 +75,7 @@ async function main() {
             name: `${g.name.split(':')[0]} — étape ${i + 1}`,
             description: `Atteindre l'objectif numéro ${i + 1} du jeu.`,
             trophyType,
+            hidden: i === g.count - 1,
             globalRarity: Math.max(0.6, 92 - (i * 90) / g.count),
           },
         }),

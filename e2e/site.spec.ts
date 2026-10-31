@@ -126,6 +126,30 @@ test.describe('visiteur', () => {
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Léa');
   });
 
+  test('révèle les succès cachés à la demande', async ({ page }) => {
+    await page.goto('/jeux/portal-2');
+    const secret = page.getByRole('link', { name: /Portal 2 — étape 51/ });
+    await expect(page.getByRole('link', { name: /^Succès caché/ })).toBeVisible();
+    await expect(secret).toHaveCount(0);
+
+    await page.getByRole('link', { name: /Révéler les succès cachés/ }).click();
+    await expect(secret).toBeVisible();
+    await secret.click();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Portal 2 — étape 51');
+
+    await page.getByRole('link', { name: 'Le masquer à nouveau' }).click();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Succès caché');
+    await page.getByRole('link', { name: 'Révéler ce succès' }).click();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Portal 2 — étape 51');
+  });
+
+  test('distingue les succès obtenus', async ({ page }) => {
+    await login(page);
+    await page.goto('/jeux/portal-2');
+    await expect(page.locator('.achievement-row[data-unlocked]').first()).toBeVisible();
+    await expect(page.locator('.achievement-row:not([data-unlocked])').first()).toBeVisible();
+  });
+
   test('voit le classement', async ({ page }) => {
     await page.goto('/communaute?periode=tout');
     await expect(page.getByRole('link', { name: /Demo/ }).first()).toBeVisible();
@@ -535,6 +559,13 @@ test.describe('membre', () => {
     await expect(page.locator('.season-badge').first()).toBeVisible();
     await page.locator('.game-card').first().click();
     await expect(page.getByText('Ce jeu compte pour la saison.')).toBeVisible();
+  });
+
+  test('explique les règles de la saison', async ({ page }) => {
+    await login(page);
+    await page.goto('/saison');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Achève-les.');
+    await expect(page.getByText('Les succès débloqués en rafale ne rapportent rien')).toBeVisible();
   });
 
   test('compare deux profils', async ({ page }) => {

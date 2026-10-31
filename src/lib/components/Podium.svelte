@@ -28,15 +28,7 @@
       {#each steps as { collector, place } (collector.handle)}
         <li class="podium-step" data-place={place} style:grid-column={[2, 1, 3][place - 1]}>
           <a href="/u/{collector.handle}" class="podium-link">
-            <Avatar
-              name={collector.displayName}
-              src={collector.avatarUrl}
-              frame={collector.frame}
-              motion={collector.avatarMotionUrl}
-              frameMotion={collector.frameMotionUrl}
-              play="always"
-              size={place === 1 ? 96 : 72}
-            />
+            <Avatar person={collector} play="always" size={place === 1 ? 96 : 72} />
             <span class="max-w-full truncate text-sm font-semibold">{collector.displayName}</span>
             <span class="tabular text-xs text-muted">
               {m.count_cards({ count: collector.cards })}

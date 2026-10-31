@@ -2,6 +2,7 @@ import { applyAccountLook } from '../accounts';
 import { db } from '../db';
 import { env } from '../env';
 import { discordLook, type DiscordUser } from '../providers/discord';
+import { sleep } from './errors';
 
 const STALE_AFTER = 24 * 60 * 60 * 1000;
 const BATCH = 100;
@@ -35,11 +36,11 @@ export async function refreshDiscordAccounts(pause = PAUSE) {
       await applyAccountLook(account, look, avatarUrl);
       await db.linkedAccount.update({
         where: { id: account.id },
-        data: { avatarUrl, lastSyncedAt: new Date() },
+        data: { lastSyncedAt: new Date() },
       });
       refreshed += 1;
     }
-    if (pause) await new Promise((resolve) => setTimeout(resolve, pause));
+    await sleep(pause);
   }
   return refreshed;
 }

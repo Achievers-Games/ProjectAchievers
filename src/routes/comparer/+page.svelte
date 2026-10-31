@@ -52,14 +52,7 @@
           {#each [data.left, data.right] as person (person.id)}
             <th scope="col" class="p-3 text-right">
               <a href="/u/{person.handle}" class="inline-flex items-center gap-2 font-medium">
-                <Avatar
-                  name={person.displayName}
-                  src={person.avatarUrl}
-                  frame={person.frame}
-                  motion={person.avatarMotionUrl}
-                  frameMotion={person.frameMotionUrl}
-                  size={24}
-                />
+                <Avatar {person} size={24} />
                 {person.displayName}
               </a>
             </th>

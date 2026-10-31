@@ -1,7 +1,7 @@
 <script lang="ts">
   import { m } from '$lib/paraglide/messages';
   import { enhance } from '$app/forms';
-  import type { SubmitFunction } from '@sveltejs/kit';
+  import Check from '@lucide/svelte/icons/check';
   import Eye from '@lucide/svelte/icons/eye';
   import EyeOff from '@lucide/svelte/icons/eye-off';
   import Flame from '@lucide/svelte/icons/flame';
@@ -11,7 +11,7 @@
   import Progress from '$lib/components/Progress.svelte';
   import TrophyBadge from '$lib/components/TrophyBadge.svelte';
   import { tilt } from '$lib/actions/tilt';
-  import { toast } from '$lib/stores/toast';
+  import { submitWithToast } from '$lib/forms';
   import { formatDate, formatPercent, formatRarity, PLATFORM_LABELS, tierLabel } from '$lib/labels';
   import { getLocale } from '$lib/paraglide/runtime';
   import { isComplete } from '$lib/collection';
@@ -20,13 +20,7 @@
 
   type Filter = 'tous' | 'obtenus' | 'restants';
   const complete = $derived(isComplete(data.progress));
-  const toggleHidden: SubmitFunction = () => {
-    return async ({ result, update }) => {
-      await update();
-      if (result.type === 'success' && result.data?.success) toast(String(result.data.success));
-      else if (result.type === 'failure') toast(m.action_failed(), 'error');
-    };
-  };
+  const toggleHidden = submitWithToast({ reset: false });
 
   let filter = $state<Filter>('tous');
   let sort = $state<'rarete' | 'nom'>('rarete');
@@ -44,6 +38,8 @@
           : (a.globalRarity ?? 101) - (b.globalRarity ?? 101),
       ),
   );
+
+  const secrets = $derived(data.achievements.filter((a) => a.secret).length);
 
   const filters: { value: Filter; label: string }[] = [
     { value: 'tous', label: m.filter_all() },
@@ -167,6 +163,21 @@
         </button>
       {/each}
     </div>
+    {#if secrets}
+      <a
+        href={data.revealed ? '?' : '?caches=1'}
+        rel="nofollow"
+        data-sveltekit-noscroll
+        class="btn h-9"
+      >
+        {#if data.revealed}
+          <EyeOff size={14} aria-hidden="true" /> {m.achievements_conceal()}
+        {:else}
+          <Eye size={14} aria-hidden="true" />
+          {m.achievements_reveal({ count: secrets })}
+        {/if}
+      </a>
+    {/if}
     <select class="input ml-auto w-auto" aria-label={m.sort_achievements_label()} bind:value={sort}>
       <option value="rarete">{m.sort_rarest()}</option>
       <option value="nom">{m.sort_name()}</option>
@@ -177,25 +188,38 @@
     {#each visible as achievement (achievement.id)}
       <li>
         <a
-          href="/succes/{achievement.id}"
-          class="flex items-center gap-3 p-3 transition-colors hover:bg-raised"
+          href="/succes/{achievement.id}{data.revealed && achievement.secret ? '?caches=1' : ''}"
+          data-unlocked={achievement.unlockedAt ? '' : undefined}
+          class="achievement-row flex items-center gap-3 p-3 transition-colors hover:bg-raised"
         >
-          {#if achievement.iconUrl}
-            <AchievementIcon src={achievement.iconUrl} size={40} dim={!achievement.unlockedAt} />
-          {:else}
-            <span class="grid h-10 w-10 shrink-0 place-items-center rounded bg-raised text-muted">
-              <Lock size={14} aria-hidden="true" />
-            </span>
-          {/if}
+          <span class="relative shrink-0">
+            {#if achievement.iconUrl}
+              <AchievementIcon src={achievement.iconUrl} size={40} dim={!achievement.unlockedAt} />
+            {:else}
+              <span class="grid h-10 w-10 place-items-center rounded bg-raised text-muted">
+                <Lock size={14} aria-hidden="true" />
+              </span>
+            {/if}
+            {#if achievement.unlockedAt}
+              <span class="achievement-check"><Check size={11} strokeWidth={3} /></span>
+            {/if}
+          </span>
           <div class="min-w-0 flex-1">
-            <p class="truncate text-sm font-medium">{achievement.name}</p>
+            <p class="flex items-center gap-1.5 text-sm font-medium">
+              <span class="truncate" class:text-muted={data.user && !achievement.unlockedAt}>
+                {achievement.name}
+              </span>
+              {#if achievement.secret && data.revealed}
+                <EyeOff size={12} class="shrink-0 text-muted" aria-label={m.achievement_hidden()} />
+              {/if}
+            </p>
             <p class="truncate text-xs text-muted">{achievement.description}</p>
           </div>
           <div class="shrink-0 text-right">
             <TrophyBadge type={achievement.trophyType} />
             <p class="tabular text-xs text-muted">
               {#if achievement.unlockedAt}
-                {formatDate(achievement.unlockedAt)}
+                <span class="font-semibold text-success">{formatDate(achievement.unlockedAt)}</span>
               {:else if achievement.globalRarity !== null}
                 {m.percent({ value: formatRarity(achievement.globalRarity) })}
               {/if}

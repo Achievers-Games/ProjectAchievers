@@ -1,16 +1,27 @@
 <script lang="ts">
   import { onMount } from 'svelte';
 
+  interface Person {
+    displayName: string;
+    avatarUrl: string | null;
+    avatarMotionUrl?: string | null;
+    frame?: string | null;
+    frameMotionUrl?: string | null;
+  }
+
   let {
-    name,
-    src = null,
+    person = null,
+    name = person?.displayName ?? '',
+    src = person?.avatarUrl ?? null,
     size = 32,
-    frame = null,
-    motion = null,
-    frameMotion = null,
+    frame = person?.frame ?? null,
+    motion = person?.avatarMotionUrl ?? null,
+    frameMotion = person?.frameMotionUrl ?? null,
     play = 'hover',
   }: {
-    name: string;
+    /** Un profil complet ; les autres attributs servent aux aperçus. */
+    person?: Person | null;
+    name?: string;
     src?: string | null;
     size?: number;
     frame?: string | null;

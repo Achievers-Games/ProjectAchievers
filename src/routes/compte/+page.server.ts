@@ -2,6 +2,8 @@ import { fail, redirect } from '@sveltejs/kit';
 import { z } from 'zod';
 import type { Provider } from '@prisma/client';
 import { profileSchema, resolveIdentity, updateProfile } from '$lib/server/accounts';
+import { requireLogin } from '$lib/server/auth';
+import { secureCookie } from '$lib/server/cookies';
 import { db } from '$lib/server/db';
 import { clearMerge, mergePreview, mergeUsers, readMerge, saveMerge } from '$lib/server/merge';
 import { availableProviders } from '$lib/server/providers';
@@ -29,10 +31,7 @@ const PROFILE_ERRORS = {
 const LOGIN_PROVIDERS: Provider[] = ['STEAM', 'DISCORD', 'XBOX', 'GOOGLE'];
 const PSN_CODE_LIFETIME = 30 * 60 * 1000;
 
-function requireUser(locals: App.Locals) {
-  if (!locals.user) redirect(303, '/connexion?retour=/compte');
-  return locals.user;
-}
+const requireUser = (locals: App.Locals) => requireLogin(locals, '/compte');
 
 export const load: PageServerLoad = async ({ locals, url, cookies }) => {
   const user = requireUser(locals);
@@ -234,10 +233,9 @@ export const actions: Actions = {
   theme: async ({ request, cookies }) => {
     const theme = (await request.formData()).get('theme') === 'light' ? 'light' : 'dark';
     cookies.set('pa_theme', theme, {
+      ...secureCookie,
       path: '/',
-      sameSite: 'lax',
       httpOnly: false,
-      secure: process.env.NODE_ENV === 'production',
       maxAge: 60 * 60 * 24 * 365,
     });
   },

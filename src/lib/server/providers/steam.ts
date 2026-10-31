@@ -90,7 +90,7 @@ async function fetchSteamItem(method: string, steamId: string) {
   url.searchParams.set('key', env().STEAM_API_KEY ?? '');
   url.searchParams.set('steamid', steamId);
   const response = await fetch(url, { signal: AbortSignal.timeout(10_000) });
-  if (!response.ok) return {};
+  if (!response.ok) throw new Error(`${method} a répondu ${response.status}`);
   const data = (await response.json()) as {
     response?: { avatar?: SteamItem; avatar_frame?: SteamItem };
   };
@@ -99,8 +99,11 @@ async function fetchSteamItem(method: string, steamId: string) {
 
 const steamImage = (path: string | undefined) => (path ? `${STEAM_IMAGES}${path}` : null);
 
-/** Ces images sont un plus : une panne de Steam ne doit jamais empêcher de se connecter. */
-export async function fetchSteamLook(steamId: string): Promise<AccountLook> {
+/**
+ * Ces images sont un plus : une panne de Steam ne doit jamais empêcher de se connecter.
+ * `null` veut dire « inconnu », à ne pas confondre avec un joueur sans cadre.
+ */
+export async function fetchSteamLook(steamId: string): Promise<AccountLook | null> {
   try {
     const [avatar, frame] = await Promise.all([
       fetchSteamItem('GetAnimatedAvatar', steamId),
@@ -112,6 +115,6 @@ export async function fetchSteamLook(steamId: string): Promise<AccountLook> {
       frameMotionUrl: steamImage(frame.avatar_frame?.image_small),
     };
   } catch {
-    return { avatarMotionUrl: null, frameUrl: null, frameMotionUrl: null };
+    return null;
   }
 }

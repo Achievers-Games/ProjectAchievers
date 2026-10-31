@@ -1,8 +1,10 @@
-import { error, fail, redirect } from '@sveltejs/kit';
+import { error, fail } from '@sveltejs/kit';
 import { z } from 'zod';
 import type { ReactionType } from '@prisma/client';
+import { requireLogin } from '$lib/server/auth';
 import { db } from '$lib/server/db';
 import { renderMarkdown } from '$lib/server/markdown';
+import { publicUser } from '$lib/server/queries';
 import { ensureGameTexts, localizeAchievements } from '$lib/server/achievement-texts';
 import { rateLimit } from '$lib/server/rate-limit';
 import { canTranslate, translateContent } from '$lib/server/translate';
@@ -10,8 +12,9 @@ import { getLocale } from '$lib/paraglide/runtime';
 import type { Actions, PageServerLoad } from './$types';
 import { m } from '$lib/paraglide/messages';
 
-export const load: PageServerLoad = async ({ params, locals }) => {
+export const load: PageServerLoad = async ({ params, locals, url }) => {
   const viewerId = locals.user?.id;
+  const revealed = url.searchParams.has('caches');
   const achievement = await db.achievement.findUnique({
     where: { id: params.id },
     include: {
@@ -58,14 +61,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
       orderBy: [{ score: 'desc' }, { createdAt: 'asc' }],
       include: {
         author: {
-          select: {
-            handle: true,
-            displayName: true,
-            avatarUrl: true,
-            avatarMotionUrl: true,
-            frame: true,
-            frameMotionUrl: true,
-          },
+          select: publicUser,
         },
         votes: viewerId ? { where: { userId: viewerId }, select: { value: true } } : false,
         translations,
@@ -77,14 +73,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
       take: 100,
       include: {
         author: {
-          select: {
-            handle: true,
-            displayName: true,
-            avatarUrl: true,
-            avatarMotionUrl: true,
-            frame: true,
-            frameMotionUrl: true,
-          },
+          select: publicUser,
         },
         reactions: { select: { userId: true, type: true } },
         translations,
@@ -93,14 +82,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
           orderBy: { createdAt: 'asc' },
           include: {
             author: {
-              select: {
-                handle: true,
-                displayName: true,
-                avatarUrl: true,
-                avatarMotionUrl: true,
-                frame: true,
-                frameMotionUrl: true,
-              },
+              select: publicUser,
             },
             reactions: { select: { userId: true, type: true } },
             translations,
@@ -130,9 +112,12 @@ export const load: PageServerLoad = async ({ params, locals }) => {
   };
 
   const unlock = achievement.unlocks?.[0]?.unlockedAt ?? null;
-  const masked = achievement.hidden && !unlock;
+  const secret = achievement.hidden && !unlock;
+  const masked = secret && !revealed;
 
   return {
+    secret,
+    revealed,
     achievement: {
       id: achievement.id,
       name: masked ? m.achievement_hidden() : text.name,
@@ -182,15 +167,10 @@ const reactionSchema = z.object({
   type: z.enum(['HELPFUL', 'THANKS', 'FUNNY']),
 });
 
-function requireUser(locals: App.Locals, url: URL) {
-  if (!locals.user) redirect(303, `/connexion?retour=${encodeURIComponent(url.pathname)}`);
-  return locals.user;
-}
+const requireUser = (locals: App.Locals, url: URL) => requireLogin(locals, url.pathname);
 
-/** Le quota gratuit est partagé par tout le site. */
-const TRANSLATIONS_PER_HOUR = 300;
-
-const tooFast = (userId: string) => !rateLimit(`publication:${userId}`, 5, 60_000);
+const tooFast = (userId: string, action = 'publication') =>
+  !rateLimit(`${action}:${userId}`, 5, 60_000);
 
 const achievementExists = async (id: string) => (await db.achievement.count({ where: { id } })) > 0;
 
@@ -251,10 +231,11 @@ export const actions: Actions = {
     const parent =
       typeof parentId === 'string' && parentId
         ? await db.comment.findFirst({
-            where: { id: parentId, achievementId: params.id, parentId: null },
+            where: { id: parentId, achievementId: params.id, parentId: null, status: 'PUBLISHED' },
             select: { id: true },
           })
         : null;
+    if (parentId && !parent) return fail(404, { error: m.gone() });
 
     await db.comment.create({
       data: {
@@ -328,13 +309,11 @@ export const actions: Actions = {
         ? await db.guide.findFirst({ where, select })
         : await db.comment.findFirst({ where, select });
     if (!source) return fail(404, { error: m.gone() });
-    if (!rateLimit('traduction', TRANSLATIONS_PER_HOUR, 3_600_000)) {
-      return fail(429, { error: m.translate_failed() });
-    }
 
     const target = targetType === 'GUIDE' ? { guideId: targetId } : { commentId: targetId };
     try {
       const translated = await translateContent(target, source.contentMd, getLocale());
+      if (translated === null) return fail(429, { error: m.translate_failed() });
       return { html: renderMarkdown(translated) };
     } catch (cause) {
       console.error('Traduction :', cause);
@@ -346,6 +325,13 @@ export const actions: Actions = {
     const user = requireUser(locals, url);
     const parsed = reportSchema.safeParse(Object.fromEntries(await request.formData()));
     if (!parsed.success) return fail(400, { error: m.report_reason_missing() });
+    if (tooFast(user.id, 'signalement')) return fail(429, { error: m.too_fast() });
+
+    const { targetType, targetId } = parsed.data;
+    const where = { id: targetId };
+    const exists =
+      targetType === 'GUIDE' ? await db.guide.count({ where }) : await db.comment.count({ where });
+    if (!exists) return fail(404, { error: m.gone() });
 
     await db.report.upsert({
       where: {

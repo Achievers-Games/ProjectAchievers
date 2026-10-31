@@ -38,13 +38,19 @@ async function loadTexts(
   });
   const ids = new Map(achievements.map((a) => [a.platformAchievementId, a.id]));
 
-  await db.achievementTranslation.createMany({
-    data: texts.flatMap(({ platformAchievementId, name, description }) => {
-      const achievementId = ids.get(platformAchievementId);
-      return achievementId ? [{ achievementId, locale, name, description }] : [];
-    }),
-    skipDuplicates: true,
+  const rows = texts.flatMap(({ platformAchievementId, name, description }) => {
+    const achievementId = ids.get(platformAchievementId);
+    return achievementId ? [{ achievementId, locale, name, description }] : [];
   });
+  // Une réponse vide ne doit pas effacer les textes déjà connus.
+  if (rows.length) {
+    await db.$transaction([
+      db.achievementTranslation.deleteMany({
+        where: { locale, achievementId: { in: rows.map((row) => row.achievementId) } },
+      }),
+      db.achievementTranslation.createMany({ data: rows, skipDuplicates: true }),
+    ]);
+  }
   await db.gameTranslation.upsert({
     where: { gameId_locale: { gameId: game.id, locale } },
     update: { checkedAt: new Date() },
@@ -81,10 +87,9 @@ export async function ensureGameTexts(
 }
 
 /** Remplace les textes par ceux de la langue demandée, quand ils sont déjà connus. */
-export async function localizeAchievements<T extends { id: string; name: string }>(
-  achievements: T[],
-  locale: Locale,
-) {
+export async function localizeAchievements<
+  T extends { id: string; name: string; description?: string },
+>(achievements: T[], locale: Locale) {
   const rows = await db.achievementTranslation.findMany({
     where: { locale, achievementId: { in: achievements.map((a) => a.id) } },
   });
@@ -92,7 +97,10 @@ export async function localizeAchievements<T extends { id: string; name: string 
   return achievements.map((achievement) => {
     const text = byId.get(achievement.id);
     if (!text) return achievement;
-    const description = text.description || (achievement as { description?: string }).description;
-    return { ...achievement, name: text.name, description };
+    return {
+      ...achievement,
+      name: text.name,
+      description: text.description || achievement.description,
+    };
   });
 }

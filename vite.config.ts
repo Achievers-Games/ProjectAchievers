@@ -18,6 +18,7 @@ export default defineConfig({
   // Préchargés au démarrage : sinon Vite recharge la page au premier import, en plein parcours.
   optimizeDeps: {
     include: [
+      '@lucide/svelte/icons/check',
       '@lucide/svelte/icons/chevron-down',
       '@lucide/svelte/icons/chevron-left',
       '@lucide/svelte/icons/chevron-right',

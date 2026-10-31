@@ -124,15 +124,7 @@
         {#if slide.id === 'classement' && banners.leader}
           {@const leader = banners.leader}
           <a href="/u/{leader.handle}" class="carousel-leader">
-            <Avatar
-              name={leader.displayName}
-              src={leader.avatarUrl}
-              motion={leader.avatarMotionUrl}
-              frame={leader.frame}
-              frameMotion={leader.frameMotionUrl}
-              play="always"
-              size={96}
-            />
+            <Avatar person={leader} play="always" size={96} />
             <span class="max-w-full truncate text-sm font-bold text-white">
               {leader.displayName}
             </span>

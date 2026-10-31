@@ -61,15 +61,7 @@
 
 <div class="space-y-8">
   <header class="flex flex-wrap items-center gap-4">
-    <Avatar
-      name={profile.user.displayName}
-      src={profile.user.avatarUrl}
-      frame={profile.user.frame}
-      motion={profile.user.avatarMotionUrl}
-      frameMotion={profile.user.frameMotionUrl}
-      play="always"
-      size={112}
-    />
+    <Avatar person={profile.user} play="always" size={112} />
     <div class="min-w-0">
       <h1>{profile.user.displayName}</h1>
       <p class="text-muted">

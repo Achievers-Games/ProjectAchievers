@@ -50,14 +50,7 @@
             {/if}
             <span class="drop-body">
               <span class="flex items-center gap-1.5">
-                <Avatar
-                  name={drop.user.displayName}
-                  src={drop.user.avatarUrl}
-                  frame={drop.user.frame}
-                  motion={drop.user.avatarMotionUrl}
-                  frameMotion={drop.user.frameMotionUrl}
-                  size={18}
-                />
+                <Avatar person={drop.user} size={18} />
                 <span class="truncate text-xs font-semibold">{drop.user.displayName}</span>
               </span>
               <span class="block truncate text-sm font-bold text-gold">{drop.game.name}</span>

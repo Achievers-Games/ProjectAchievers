@@ -5,12 +5,15 @@
   import type { SubmitFunction } from '@sveltejs/kit';
   import ChevronDown from '@lucide/svelte/icons/chevron-down';
   import ChevronUp from '@lucide/svelte/icons/chevron-up';
+  import Eye from '@lucide/svelte/icons/eye';
+  import EyeOff from '@lucide/svelte/icons/eye-off';
   import Flag from '@lucide/svelte/icons/flag';
   import AchievementIcon from '$lib/components/AchievementIcon.svelte';
   import Avatar from '$lib/components/Avatar.svelte';
   import Empty from '$lib/components/Empty.svelte';
   import TrophyBadge from '$lib/components/TrophyBadge.svelte';
   import { formatDate, formatRarity, formatRelative } from '$lib/labels';
+  import { submitWithToast } from '$lib/forms';
   import { toast } from '$lib/stores/toast';
 
   let { data } = $props();
@@ -32,20 +35,14 @@
   ] as const;
 
   /** Applique la réponse sans recharger la page et remonte le résultat en toast. */
-  const submit: SubmitFunction = ({ formElement }) => {
-    return async ({ result, update }) => {
-      await update({ reset: result.type === 'success', invalidateAll: true });
-      if (result.type === 'failure')
-        toast(String(result.data?.error ?? m.action_failed()), 'error');
-      else if (result.type === 'success') {
-        if (result.data?.success) toast(String(result.data.success));
-        if (formElement.dataset.closes) {
-          writingGuide = false;
-          replyTo = null;
-        }
+  const submit = submitWithToast({
+    onSuccess: (form) => {
+      if (form.dataset.closes) {
+        writingGuide = false;
+        replyTo = null;
       }
-    };
-  };
+    },
+  });
 
   /** Vote optimiste : le score bouge tout de suite, le serveur tranche ensuite. */
   const vote: SubmitFunction = ({ formData }) => {
@@ -192,6 +189,20 @@
           >
         {/if}
       </p>
+      {#if data.secret}
+        <a
+          href={data.revealed ? '?' : '?caches=1'}
+          rel="nofollow"
+          data-sveltekit-noscroll
+          class="btn mt-2 h-8"
+        >
+          {#if data.revealed}
+            <EyeOff size={14} aria-hidden="true" /> {m.achievement_conceal()}
+          {:else}
+            <Eye size={14} aria-hidden="true" /> {m.achievement_reveal()}
+          {/if}
+        </a>
+      {/if}
     </div>
   </header>
 
@@ -290,14 +301,7 @@
       isReply: boolean,
     )}
       <article class="flex gap-3">
-        <Avatar
-          name={comment.author.displayName}
-          src={comment.author.avatarUrl}
-          frame={comment.author.frame}
-          motion={comment.author.avatarMotionUrl}
-          frameMotion={comment.author.frameMotionUrl}
-          size={28}
-        />
+        <Avatar person={comment.author} size={28} />
         <div class="min-w-0 flex-1 space-y-1">
           <p class="text-xs text-muted">
             <a href="/u/{comment.author.handle}" class="font-medium text-ink">

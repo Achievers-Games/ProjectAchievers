@@ -96,13 +96,22 @@ function accountData(identity: Identity) {
   };
 }
 
+/** Ce qu'une identité ne précise pas reste tel quel : la plateforme n'a peut-être pas répondu. */
+export const identityLook = (identity: Identity, account: AccountLook): AccountLook => ({
+  avatarMotionUrl:
+    identity.avatarMotionUrl === undefined ? account.avatarMotionUrl : identity.avatarMotionUrl,
+  frameUrl: identity.frameUrl === undefined ? account.frameUrl : identity.frameUrl,
+  frameMotionUrl:
+    identity.frameMotionUrl === undefined ? account.frameMotionUrl : identity.frameMotionUrl,
+});
+
 /** Reporte sur le compte et sur le profil ce que le joueur a changé sur la plateforme. */
 export async function applyAccountLook(
   account: { id: string; userId: string; avatarUrl: string | null; frameUrl: string | null },
   look: AccountLook,
   avatarUrl = account.avatarUrl,
 ) {
-  await db.linkedAccount.update({ where: { id: account.id }, data: look });
+  await db.linkedAccount.update({ where: { id: account.id }, data: { ...look, avatarUrl } });
   if (account.avatarUrl) {
     await db.user.updateMany({
       where: { id: account.userId, avatarUrl: account.avatarUrl },
@@ -118,8 +127,10 @@ export async function applyAccountLook(
   }
 }
 
+/** Reste valide pour le formulaire de profil : de 3 à 24 caractères, suffixe compris. */
 async function uniqueHandle(name: string): Promise<string> {
-  const base = slugify(name).slice(0, 24) || 'chasseur';
+  const slug = slugify(name).slice(0, 20).replace(/-+$/, '');
+  const base = slug.length >= 3 ? slug : 'chasseur';
   for (let suffix = 1; suffix < 1000; suffix++) {
     const handle = suffix === 1 ? base : `${base}-${suffix}`;
     if (!(await db.user.findUnique({ where: { handle }, select: { id: true } }))) return handle;
@@ -158,15 +169,7 @@ export async function resolveIdentity(
         ...(existing.syncStatus === 'NEEDS_RELINK' && { syncStatus: 'IDLE', syncError: null }),
       },
     });
-    await applyAccountLook(
-      existing,
-      {
-        avatarMotionUrl: identity.avatarMotionUrl ?? null,
-        frameUrl: identity.frameUrl ?? null,
-        frameMotionUrl: identity.frameMotionUrl ?? null,
-      },
-      identity.avatarUrl,
-    );
+    await applyAccountLook(existing, identityLook(identity, existing), identity.avatarUrl);
     return { ok: true, userId: existing.userId, created: false };
   }
 

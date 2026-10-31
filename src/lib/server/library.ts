@@ -28,7 +28,7 @@ export interface LibraryCard {
   totalAchievements: number;
   progress: { unlockedCount: number; completion: number; platinum: boolean };
   lastUnlockedAt: Date | null;
-  versions: { platform: Platform; slug: string; completion: number }[];
+  versions: { platform: Platform; name: string; slug: string; completion: number }[];
   tier: number;
   next: NextTier | null;
 }
@@ -48,6 +48,7 @@ export function groupLibrary(rows: LibraryRow[]): LibraryCard[] {
     );
     const summary = versions.map((v) => ({
       platform: v.game.platform,
+      name: v.game.name,
       slug: v.game.slug,
       completion: v.completion,
     }));

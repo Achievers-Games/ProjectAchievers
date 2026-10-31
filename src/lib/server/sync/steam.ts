@@ -1,9 +1,9 @@
 import { baseLocale, type Locale } from '$lib/paraglide/runtime';
-import { applyAccountLook } from '../accounts';
+import { applyAccountLook, identityLook } from '../accounts';
 import { db } from '../db';
 import { env } from '../env';
-import { fetchSteamLook } from '../providers/steam';
-import { fetchRetry, SyncError, syncGames } from './errors';
+import { fetchSteamIdentity } from '../providers/steam';
+import { fetchRetry, sleep, SyncError, syncGames } from './errors';
 import { saveAchievements, saveProgress, upsertGame, type AchievementInput } from './store';
 import type { ProviderSync } from './types';
 
@@ -103,17 +103,22 @@ export const mapSchema = (
     globalRarity: rarity.get(a.name) ?? null,
   }));
 
-async function fetchSchema(appId: number): Promise<AchievementInput[] | null> {
-  const schemaResponse = await steamGet('/ISteamUserStats/GetSchemaForGame/v2/', {
+/** `null` si Steam n'a pas répondu ; une liste vide si le jeu n'a pas de succès. */
+async function fetchSchemaAchievements(appId: string | number, language: string) {
+  const response = await steamGet('/ISteamUserStats/GetSchemaForGame/v2/', {
     appid: appId,
-    l: 'french',
+    l: language,
   });
-  if (!schemaResponse.ok) return null;
-  const schema = (await schemaResponse.json()) as {
+  if (!response.ok) return null;
+  const schema = (await response.json()) as {
     game?: { availableGameStats?: { achievements?: SchemaAchievement[] } };
   };
-  const achievements = schema.game?.availableGameStats?.achievements;
-  if (!achievements?.length) return [];
+  return schema.game?.availableGameStats?.achievements ?? [];
+}
+
+async function fetchSchema(appId: number): Promise<AchievementInput[] | null> {
+  const achievements = await fetchSchemaAchievements(appId, 'french');
+  if (!achievements?.length) return achievements && [];
 
   const rarityResponse = await steamGet(
     '/ISteamUserStats/GetGlobalAchievementPercentagesForApp/v2/',
@@ -143,14 +148,8 @@ const STEAM_LANGUAGES: Record<Locale, string> = {
 };
 
 export async function fetchSteamTexts(appId: string, locale: Locale) {
-  const response = await steamGet('/ISteamUserStats/GetSchemaForGame/v2/', {
-    appid: appId,
-    l: STEAM_LANGUAGES[locale],
-  });
-  if (!response.ok) throw new Error(`GetSchemaForGame a répondu ${response.status}`);
-  const schema = (await response.json()) as {
-    game?: { availableGameStats?: { achievements?: SchemaAchievement[] } };
-  };
+  const achievements = await fetchSchemaAchievements(appId, STEAM_LANGUAGES[locale]);
+  if (!achievements) throw new Error('GetSchemaForGame sans réponse');
   const owner = await db.linkedAccount.findFirst({
     where: {
       provider: 'STEAM',
@@ -158,9 +157,12 @@ export async function fetchSteamTexts(appId: string, locale: Locale) {
     },
     select: { providerUserId: true },
   });
-  const hidden = owner ? await fetchPageDescriptions(owner.providerUserId, appId, locale) : null;
+  // Les textes de l'API suffisent : la page publique ne fait que compléter les succès cachés.
+  const hidden = owner
+    ? await fetchPageDescriptions(owner.providerUserId, appId, locale).catch(() => null)
+    : null;
 
-  return (schema.game?.availableGameStats?.achievements ?? []).map((a) => ({
+  return achievements.map((a) => ({
     platformAchievementId: a.name,
     name: a.displayName || a.name,
     description: a.description || hidden?.get(a.name) || '',
@@ -224,7 +226,7 @@ export async function fillHiddenDescriptions(limit = HIDDEN_BATCH, pause = HIDDE
       ),
     );
     filled += descriptions.size ? 1 : 0;
-    if (pause) await new Promise((resolve) => setTimeout(resolve, pause));
+    await sleep(pause);
   }
   return filled;
 }
@@ -302,7 +304,9 @@ export const syncSteam: ProviderSync = async ({ userId, account, report, onUnloc
   );
 
   // Le joueur a pu changer d'avatar ou de cadre sur Steam depuis sa dernière connexion.
-  await applyAccountLook(account, await fetchSteamLook(steamId));
+  const identity = await fetchSteamIdentity(steamId).catch(() => null);
+  if (identity)
+    await applyAccountLook(account, identityLook(identity, account), identity.avatarUrl);
 
   return { games, achievements };
 };

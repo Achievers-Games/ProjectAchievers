@@ -4,7 +4,7 @@ import { db } from '../db';
 import { env } from '../env';
 import { availableProviders } from '../providers';
 import { fillFamilies } from '../family';
-import { RARE_CARD } from '../queries';
+import { isPublicGame, RARE_CARD } from '../queries';
 import { tierFor, type Reward } from '$lib/collection';
 import { rateGames } from './content';
 import { refreshDiscordAccounts } from './discord';
@@ -28,6 +28,10 @@ const SYNCERS: Partial<Record<Provider, ProviderSync>> = {
   STEAM: syncSteam,
   PSN: syncPsn,
   XBOX: syncXbox,
+};
+
+type CardReward = Reward & {
+  game: Parameters<typeof isPublicGame>[0];
 };
 
 interface SyncJob {
@@ -68,7 +72,7 @@ export async function enqueueSync(userId: string, provider: Provider) {
 
 async function rareCards(userId: string) {
   const rows = await db.userGame.findMany({
-    where: { userId, ...RARE_CARD },
+    where: { userId, hidden: false, ...RARE_CARD },
     select: {
       gameId: true,
       unlockedCount: true,
@@ -83,13 +87,14 @@ async function rareCards(userId: string) {
           headerUrl: true,
           totalAchievements: true,
           adultOnly: true,
+          contentCheckedAt: true,
           familyKey: true,
         },
       },
     },
   });
   return new Map(
-    rows.map(({ gameId, game, lastUnlockedAt, ...progress }): [string, Reward] => [
+    rows.map(({ gameId, game, lastUnlockedAt, ...progress }): [string, CardReward] => [
       gameId,
       { game, progress, unlockedAt: lastUnlockedAt },
     ]),
@@ -97,7 +102,7 @@ async function rareCards(userId: string) {
 }
 
 /** Cartes apparues depuis `before`. */
-function newRewards(before: Map<string, Reward>, after: Map<string, Reward>) {
+function newRewards(before: Map<string, CardReward>, after: Map<string, CardReward>) {
   return [...after].filter(([id]) => !before.has(id)).map(([, card]) => card);
 }
 
@@ -122,8 +127,19 @@ export async function runSync({ userId, provider }: SyncJob) {
       showAdult: true,
     },
   });
+  // Une seule requête : une tâche restée en file ne double jamais une synchronisation en cours.
+  const { count } = await db.linkedAccount.updateMany({
+    where: { userId, provider, syncStatus: { not: 'SYNCING' } },
+    data: { syncStatus: 'SYNCING', syncError: null },
+  });
+  if (count === 0) return;
+
   const run = await db.syncRun.create({ data: { userId, provider, status: 'SYNCING' } });
-  await db.linkedAccount.update({ where, data: { syncStatus: 'SYNCING', syncError: null } });
+  const hiddenGames = await db.userGame.findMany({
+    where: { userId, hidden: true },
+    select: { gameId: true },
+  });
+  const hidden = new Set(hiddenGames.map((row) => row.gameId));
   publishSync(userId, { provider, status: 'SYNCING', processed: 0, total: 0 });
 
   try {
@@ -134,7 +150,7 @@ export async function runSync({ userId, provider }: SyncJob) {
       report: (processed, total, game) =>
         publishSync(userId, { provider, status: 'SYNCING', processed, total, game }),
       onUnlocked: (game, count) => {
-        if (!user.isPublic || game.adultOnly) return;
+        if (!user.isPublic || !isPublicGame(game) || hidden.has(game.id)) return;
         publishUnlock({
           user: user.displayName,
           handle: user.handle,
@@ -176,7 +192,7 @@ export async function runSync({ userId, provider }: SyncJob) {
       const { displayName, handle, avatarUrl, avatarMotionUrl, frame, frameMotionUrl } = user;
       for (const { game, unlockedAt } of rewards) {
         const recent = unlockedAt && Date.now() - unlockedAt.getTime() < LIVE_CARD_MAX_AGE;
-        if (unlockedAt && recent && !game.adultOnly) {
+        if (unlockedAt && recent && isPublicGame(game)) {
           publishCard({
             user: { displayName, handle, avatarUrl, avatarMotionUrl, frame, frameMotionUrl },
             game,
@@ -240,6 +256,10 @@ export async function startWorkers() {
   await db.linkedAccount.updateMany({
     where: { syncStatus: { in: ['QUEUED', 'SYNCING'] } },
     data: { syncStatus: 'IDLE' },
+  });
+  await db.syncRun.updateMany({
+    where: { status: 'SYNCING' },
+    data: { status: 'FAILED', error: 'sync_failed_retry', finishedAt: new Date() },
   });
 
   await instance.work<SyncJob>(

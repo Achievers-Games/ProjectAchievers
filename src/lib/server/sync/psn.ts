@@ -137,6 +137,8 @@ export const syncPsn: ProviderSync = async ({ userId, account, report, onUnlocke
         'all',
         options,
       );
+      assertPsnResponse(catalog);
+      assertPsnResponse(progress);
 
       const rates = new Map(progress.trophies.map((t) => [t.trophyId, t.trophyEarnedRate]));
       await saveAchievements(

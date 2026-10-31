@@ -1081,6 +1081,18 @@
   color: #1a0d05;
   background: linear-gradient(100deg, #ffd166, #ff7a3d);
 }
+.achievement-row[data-unlocked] {
+  background-color: rgb(var(--success) / 0.1);
+  box-shadow: inset 3px 0 0 rgb(var(--success));
+}
+.achievement-row[data-unlocked]:hover {
+  background-color: rgb(var(--success) / 0.18);
+}
+.achievement-check {
+  @apply absolute -bottom-1 -right-1 grid h-4 w-4 place-items-center rounded-full;
+  color: rgb(var(--surface));
+  background: rgb(var(--success));
+}
 /* Décale chaque carte dans ses boucles, sans changer leur durée. */
 .game-card,
 .game-card::before,

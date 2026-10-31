@@ -1,13 +1,35 @@
 import { Prisma, type Platform } from '@prisma/client';
 import { db } from './db';
 import { groupLibrary, type LibraryCard } from './library';
-import { SEASON, seasonState, type Season } from '$lib/season';
+import { RARITY_POINTS, SEASON, seasonState, type Season } from '$lib/season';
 
 export const PAGE_SIZE = 36;
 
 /** Les jeux adultes restent masqués tant que le visiteur ne les a pas demandés. */
 export const visibleGames = (showAdult = false) =>
   (showAdult ? {} : { adultOnly: false }) satisfies Prisma.GameWhereInput;
+
+/** Un jeu Steam pas encore classé pourrait être un jeu adulte : il reste hors des fils publics. */
+export const publicGames = {
+  adultOnly: false,
+  OR: [{ platform: { not: 'STEAM' } }, { contentCheckedAt: { not: null } }],
+} satisfies Prisma.GameWhereInput;
+
+export const isPublicGame = (game: {
+  adultOnly: boolean;
+  platform: Platform;
+  contentCheckedAt: Date | null;
+}) => !game.adultOnly && (game.platform !== 'STEAM' || game.contentCheckedAt !== null);
+
+/** Ce qu'un profil montre de lui partout sur le site. */
+export const publicUser = {
+  handle: true,
+  displayName: true,
+  avatarUrl: true,
+  avatarMotionUrl: true,
+  frame: true,
+  frameMotionUrl: true,
+} satisfies Prisma.UserSelect;
 
 interface GameFilters {
   q?: string;
@@ -63,6 +85,7 @@ async function listLibrary(
     where: { userId: ownerId, hidden: Boolean(filters.hidden), game: where },
     select: librarySelect,
   });
+  const search = filters.q?.toLowerCase();
   const started = ownerId === viewerId ? await seasonStartedGames(ownerId) : new Set<string>();
   const startedSlugs = new Set(
     rows.filter((row) => started.has(row.game.id)).map((row) => row.game.slug),
@@ -71,12 +94,14 @@ async function listLibrary(
   const cards = groupLibrary(rows)
     .map((card) => ({
       ...card,
-      seasonEligible:
-        (Boolean(card.next) || card.progress.completion < 100) &&
-        card.versions.some((version) => startedSlugs.has(version.slug)),
+      // Seule une version commencée rapporte des points : il faut qu'il lui reste des succès.
+      seasonEligible: card.versions.some(
+        (version) => version.completion < 100 && startedSlugs.has(version.slug),
+      ),
     }))
     .filter(
       (card) =>
+        (!search || card.versions.some((v) => v.name.toLowerCase().includes(search))) &&
         (!filters.platform || card.versions.some((v) => v.platform === filters.platform)) &&
         (!filters.tier || card.tier === filters.tier) &&
         (!filters.seasonOnly || card.seasonEligible) &&
@@ -108,11 +133,9 @@ async function listLibrary(
 }
 
 export async function listGames(filters: GameFilters, viewerId: string | null) {
-  const where: Prisma.GameWhereInput = {
-    ...visibleGames(filters.showAdult),
-    ...(filters.q && { name: { contains: filters.q, mode: 'insensitive' } }),
-  };
+  const where: Prisma.GameWhereInput = visibleGames(filters.showAdult);
   if (filters.ownerId) return listLibrary(filters, filters.ownerId, where, viewerId);
+  if (filters.q) where.name = { contains: filters.q, mode: 'insensitive' };
   if (filters.platform) where.platform = filters.platform;
 
   // L'identifiant départage les égalités : sans lui, un jeu pourrait passer d'une page à l'autre.
@@ -199,7 +222,7 @@ export async function cardFeed(showAdult = false, limit = 12) {
       ...RARE_CARD,
       hidden: false,
       user: { isPublic: true },
-      game: visibleGames(showAdult),
+      game: showAdult ? {} : publicGames,
       lastUnlockedAt: { not: null },
     },
     orderBy: { lastUnlockedAt: 'desc' },
@@ -207,14 +230,7 @@ export async function cardFeed(showAdult = false, limit = 12) {
     select: {
       lastUnlockedAt: true,
       user: {
-        select: {
-          handle: true,
-          displayName: true,
-          avatarUrl: true,
-          avatarMotionUrl: true,
-          frame: true,
-          frameMotionUrl: true,
-        },
+        select: publicUser,
       },
       game: { select: { name: true, slug: true, headerUrl: true } },
     },
@@ -298,15 +314,25 @@ export async function seasonStartedGames(userId: string, season = SEASON) {
   return new Set(rows.map((row) => row.gameId));
 }
 
-/** Les cartes obtenues par le joueur, les plus hauts niveaux d'abord. */
+/**
+ * Les cartes obtenues par le joueur, les plus avancées d'abord.
+ * Les versions inachevées restent lues : elles disent où en est le niveau suivant.
+ */
 export async function userCards(userId: string, showAdult = false) {
+  return bestCards(await visibleLibrary(userId, showAdult));
+}
+
+async function visibleLibrary(userId: string, showAdult: boolean) {
   const rows = await db.userGame.findMany({
-    where: { userId, hidden: false, game: visibleGames(showAdult), ...RARE_CARD },
+    where: { userId, hidden: false, game: visibleGames(showAdult) },
     orderBy: [{ lastUnlockedAt: { sort: 'desc', nulls: 'last' } }],
     select: librarySelect,
   });
-  return groupLibrary(rows).sort((a, b) => b.tier - a.tier);
+  return groupLibrary(rows);
 }
+
+const bestCards = (library: LibraryCard[]) =>
+  library.filter((card) => card.tier > 0).sort((a, b) => tierProgress(b) - tierProgress(a));
 
 /** Retrouve les cartes choisies : une carte réunit toutes les versions d'un jeu. */
 export const chosenCards = (cards: LibraryCard[], slugs: string[]) => [
@@ -317,9 +343,24 @@ export const chosenCards = (cards: LibraryCard[], slugs: string[]) => [
   ),
 ];
 
+/** Une rafale ne prouve pas une partie jouée pendant la saison : elle ne rapporte rien. */
+function seasonUnlocks({ startsAt, endsAt, burstPerSecond, burstPerMinute }: Season) {
+  return Prisma.sql`
+    SELECT ua."userId", a."gameId", a."globalRarity",
+           count(*) OVER (
+             PARTITION BY ua."userId", a."gameId", date_trunc('second', ua."unlockedAt")
+           ) >= ${burstPerSecond}::int
+           OR count(*) OVER (
+             PARTITION BY ua."userId", a."gameId", date_trunc('minute', ua."unlockedAt")
+           ) >= ${burstPerMinute}::int AS burst
+    FROM "UserAchievement" ua
+    JOIN "Achievement" a ON a.id = ua."achievementId"
+    WHERE ua."unlockedAt" >= ${startsAt} AND ua."unlockedAt" < ${endsAt}`;
+}
+
 /** Points de saison : seuls comptent les jeux déjà commencés avant son ouverture. */
 export async function seasonStats(season: Season) {
-  const { startsAt, endsAt, dailyCap, completionBonus } = season;
+  const { startsAt, endsAt, completionBonus } = season;
   const ranking = await db.$queryRaw<
     {
       id: string;
@@ -331,54 +372,62 @@ export async function seasonStats(season: Season) {
       frameMotionUrl: string | null;
       isPublic: boolean;
       points: bigint;
+      ignored: bigint;
     }[]
   >`
-    WITH started AS (
+    WITH unlocks AS (${seasonUnlocks(season)}), started AS (
       SELECT DISTINCT ua."userId", a."gameId"
       FROM "UserAchievement" ua
       JOIN "Achievement" a ON a.id = ua."achievementId"
       WHERE ua."unlockedAt" < ${startsAt}
-    ), daily AS (
-      SELECT ua."userId", (ua."unlockedAt" AT TIME ZONE 'UTC')::date,
-             sum(CASE
-               WHEN a."globalRarity" IS NULL THEN 10
-               WHEN a."globalRarity" > 50 THEN 5
-               WHEN a."globalRarity" >= 20 THEN 10
-               WHEN a."globalRarity" >= 5 THEN 25
-               ELSE 50
-             END) AS points
-      FROM "UserAchievement" ua
-      JOIN "Achievement" a ON a.id = ua."achievementId"
-      JOIN started s ON s."userId" = ua."userId" AND s."gameId" = a."gameId"
-      WHERE ua."unlockedAt" >= ${startsAt} AND ua."unlockedAt" < ${endsAt}
-      GROUP BY 1, 2
     ), earned AS (
-      SELECT "userId", sum(least(points, ${dailyCap})) AS points FROM daily GROUP BY 1
+      SELECT u."userId",
+             coalesce(sum(CASE
+               WHEN u."globalRarity" IS NULL THEN ${RARITY_POINTS.uncommon}::int
+               WHEN u."globalRarity" > 50 THEN ${RARITY_POINTS.common}::int
+               WHEN u."globalRarity" >= 20 THEN ${RARITY_POINTS.uncommon}::int
+               WHEN u."globalRarity" >= 5 THEN ${RARITY_POINTS.rare}::int
+               ELSE ${RARITY_POINTS.epic}::int
+             END) FILTER (WHERE NOT u.burst), 0) AS points,
+             count(*) FILTER (WHERE u.burst) AS ignored
+      FROM unlocks u
+      JOIN started s ON s."userId" = u."userId" AND s."gameId" = u."gameId"
+      GROUP BY 1
     ), finished AS (
       SELECT ug."userId", count(*) * ${completionBonus}::int AS points
       FROM "UserGame" ug
       JOIN started s ON s."userId" = ug."userId" AND s."gameId" = ug."gameId"
       WHERE ug.completion >= 100
         AND ug."lastUnlockedAt" >= ${startsAt} AND ug."lastUnlockedAt" < ${endsAt}
+        AND NOT EXISTS (
+          SELECT 1 FROM unlocks b
+          WHERE b."userId" = ug."userId" AND b."gameId" = ug."gameId" AND b.burst
+        )
       GROUP BY 1
     )
     SELECT u.id, u.handle, u."displayName", u."avatarUrl", u."avatarMotionUrl", u.frame,
            u."frameMotionUrl", u."isPublic",
-           (coalesce(e.points, 0) + coalesce(f.points, 0))::bigint AS points
+           (coalesce(e.points, 0) + coalesce(f.points, 0))::bigint AS points,
+           coalesce(e.ignored, 0)::bigint AS ignored
     FROM earned e
     FULL JOIN finished f USING ("userId")
     JOIN "User" u ON u.id = "userId"
     ORDER BY points DESC, u.handle`;
 
   const [{ unlocked } = { unlocked: 0n }] = await db.$queryRaw<{ unlocked: bigint }[]>`
+    WITH unlocks AS (${seasonUnlocks(season)})
     SELECT count(*) AS unlocked
-    FROM "UserAchievement" ua
+    FROM unlocks ua
     JOIN "User" u ON u.id = ua."userId" AND u."isPublic"
-    WHERE ua."unlockedAt" >= ${startsAt} AND ua."unlockedAt" < ${endsAt}`;
+    WHERE NOT ua.burst`;
 
   return {
     unlocked: Number(unlocked),
-    ranking: ranking.map((row) => ({ ...row, points: Number(row.points) })),
+    ranking: ranking.map((row) => ({
+      ...row,
+      points: Number(row.points),
+      ignored: Number(row.ignored),
+    })),
   };
 }
 
@@ -433,8 +482,7 @@ async function seasonBanner(userId?: string) {
 }
 
 /** Le numéro 1 du classement et le premier jeu de sa vitrine, comme sur son profil. */
-async function rankingBanner() {
-  const [leader] = await collectors(1);
+async function rankingBanner(leader: Collector | undefined) {
   if (!leader) return { leader: null, game: null };
   const profile = await userProfile(leader.handle, null);
   const best = profile?.showcase.find((game) => game.headerUrl);
@@ -444,8 +492,11 @@ async function rankingBanner() {
   };
 }
 
-export async function homeBanners(userId?: string) {
-  const [season, { leader, game }] = await Promise.all([seasonBanner(userId), rankingBanner()]);
+export async function homeBanners(firstCollector: Collector | undefined, userId?: string) {
+  const [season, { leader, game }] = await Promise.all([
+    seasonBanner(userId),
+    rankingBanner(firstCollector),
+  ]);
   return { season, ranking: game, leader };
 }
 
@@ -487,12 +538,7 @@ export async function userProfile(handle: string, viewerId: string | null, showA
     where: { handle },
     select: {
       id: true,
-      handle: true,
-      displayName: true,
-      avatarUrl: true,
-      avatarMotionUrl: true,
-      frame: true,
-      frameMotionUrl: true,
+      ...publicUser,
       showcaseCustom: true,
       isPublic: true,
       createdAt: true,
@@ -504,19 +550,13 @@ export async function userProfile(handle: string, viewerId: string | null, showA
   });
   if (!user || (!user.isPublic && user.id !== viewerId)) return null;
 
-  const [stats, cards, pins, gameRows, recent] = await Promise.all([
+  const [stats, library, pins, recent] = await Promise.all([
     userStats(user.id),
-    userCards(user.id, showAdult),
+    visibleLibrary(user.id, showAdult),
     db.pinnedGame.findMany({
       where: { userId: user.id },
       orderBy: { position: 'asc' },
       select: { game: { select: { slug: true } } },
-    }),
-    db.userGame.findMany({
-      where: { userId: user.id, hidden: false, game: visibleGames(showAdult) },
-      orderBy: [{ lastUnlockedAt: { sort: 'desc', nulls: 'last' } }],
-      take: 60,
-      select: librarySelect,
     }),
     db.userAchievement.findMany({
       where: {
@@ -544,13 +584,14 @@ export async function userProfile(handle: string, viewerId: string | null, showA
       },
     }),
   ]);
+  const cards = bestCards(library);
   const chosen = chosenCards(
     cards,
     pins.map((pin) => pin.game.slug),
   );
   // Une sélection vide ou masquée au visiteur ne laisse pas une vitrine vide.
   const showcase = (user.showcaseCustom && chosen.length ? chosen : cards).slice(0, MAX_SHOWCASE);
-  return { user, stats, showcase, games: groupLibrary(gameRows).slice(0, 24), recent };
+  return { user, stats, showcase, games: library.slice(0, 24), recent };
 }
 
 export type LeaderboardPeriod = 'semaine' | 'mois' | 'tout';
@@ -587,9 +628,10 @@ export async function leaderboard(period: LeaderboardPeriod, limit = 20) {
 }
 
 /** Classement des collections : seules les cartes comptent, pas le nombre de succès. */
-export async function collectors(limit = 100) {
+async function rankedCollectors(limit: number) {
   const rows = await db.$queryRaw<
     {
+      id: string;
       handle: string;
       displayName: string;
       avatarUrl: string | null;
@@ -602,7 +644,8 @@ export async function collectors(limit = 100) {
       legendaire: bigint;
     }[]
   >`
-    SELECT u.handle, u."displayName", u."avatarUrl", u."avatarMotionUrl", u.frame, u."frameMotionUrl",
+    SELECT u.id, u.handle, u."displayName", u."avatarUrl", u."avatarMotionUrl", u.frame,
+           u."frameMotionUrl",
            count(*) FILTER (WHERE finished = 1) AS "or",
            count(*) FILTER (WHERE finished = 2) AS platine,
            count(*) FILTER (WHERE finished = 3) AS prismatique,
@@ -631,28 +674,32 @@ export async function collectors(limit = 100) {
     .slice(0, limit);
 }
 
+export async function collectors(limit = 100) {
+  const rows = await rankedCollectors(limit);
+  return rows.map(({ id: _id, ...row }) => row);
+}
+
+/** Tout le classement, avec les identifiants : réservé à l'attribution des récompenses. */
+export const allCollectors = () => rankedCollectors(Number.MAX_SAFE_INTEGER);
+
 export type Collector = Awaited<ReturnType<typeof collectors>>[number];
 
-export function activityFeed(showAdult = false, limit = 30) {
-  return db.userAchievement.findMany({
-    where: { user: { isPublic: true }, achievement: { game: visibleGames(showAdult) } },
+export async function activityFeed(showAdult = false, limit = 30) {
+  const rows = await db.userAchievement.findMany({
+    where: { user: { isPublic: true }, achievement: { game: showAdult ? {} : publicGames } },
     orderBy: { unlockedAt: 'desc' },
-    take: limit,
+    // De la marge : les jeux cachés par leur joueur sont retirés ensuite.
+    take: limit * 3,
     select: {
+      userId: true,
       unlockedAt: true,
       user: {
-        select: {
-          handle: true,
-          displayName: true,
-          avatarUrl: true,
-          avatarMotionUrl: true,
-          frame: true,
-          frameMotionUrl: true,
-        },
+        select: publicUser,
       },
       achievement: {
         select: {
           id: true,
+          gameId: true,
           name: true,
           iconUrl: true,
           trophyType: true,
@@ -662,6 +709,15 @@ export function activityFeed(showAdult = false, limit = 30) {
       },
     },
   });
+  const hidden = await db.userGame.findMany({
+    where: { hidden: true, userId: { in: [...new Set(rows.map((row) => row.userId))] } },
+    select: { userId: true, gameId: true },
+  });
+  const secret = new Set(hidden.map((row) => `${row.userId}:${row.gameId}`));
+  return rows
+    .filter((row) => !secret.has(`${row.userId}:${row.achievement.gameId}`))
+    .slice(0, limit)
+    .map(({ userId: _userId, ...row }) => row);
 }
 
 /** Compare deux joueurs sur les jeux qu'ils possèdent tous les deux. */

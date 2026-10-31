@@ -6,6 +6,9 @@ import { callbackUrl } from './index';
 const AUTHORITY = 'https://login.microsoftonline.com/consumers/oauth2/v2.0';
 const SCOPE = 'XboxLive.signin XboxLive.offline_access offline_access';
 
+/** Microsoft ou Xbox Live refuse le joueur : seule une nouvelle connexion peut réparer le compte. */
+export class XboxAuthError extends Error {}
+
 export interface XboxSession {
   /** En-tête d'autorisation des API Xbox Live. */
   authorization: string;
@@ -44,7 +47,10 @@ async function requestTokens(grant: Record<string, string>): Promise<MicrosoftTo
     }),
     signal: AbortSignal.timeout(10_000),
   });
-  if (!response.ok) throw new Error(`Microsoft a refusé la demande (${response.status})`);
+  if (response.status === 400 || response.status === 401) {
+    throw new XboxAuthError(`Microsoft a refusé la demande (${response.status})`);
+  }
+  if (!response.ok) throw new Error(`Microsoft a répondu ${response.status}`);
   const tokens = (await response.json()) as {
     access_token: string;
     refresh_token: string;
@@ -71,7 +77,10 @@ async function xboxPost<T>(url: string, body: unknown): Promise<T> {
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(10_000),
   });
-  if (!response.ok) throw new Error(`Xbox Live a refusé l'authentification (${response.status})`);
+  if (response.status === 401 || response.status === 403) {
+    throw new XboxAuthError(`Xbox Live a refusé l'authentification (${response.status})`);
+  }
+  if (!response.ok) throw new Error(`Xbox Live a répondu ${response.status}`);
   return (await response.json()) as T;
 }
 
