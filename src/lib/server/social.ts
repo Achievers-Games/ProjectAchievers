@@ -145,7 +145,13 @@ export async function openDirect(userId: string, otherId: string) {
     update: {},
     create: {
       directKey: directKey(userId, otherId),
-      members: { create: [{ userId }, { userId: otherId }] },
+      // Rien n'est lu au départ : le tout premier message compte toujours comme non lu.
+      members: {
+        create: [
+          { userId, lastReadAt: new Date(0) },
+          { userId: otherId, lastReadAt: new Date(0) },
+        ],
+      },
     },
     select: { id: true },
   });
@@ -176,7 +182,7 @@ export async function listConversations(userId: string) {
       db.message.count({
         where: {
           conversationId: conversation.id,
-          createdAt: { gte: lastReadAt },
+          createdAt: { gt: lastReadAt },
           NOT: { authorId: userId },
         },
       }),
@@ -204,7 +210,7 @@ export async function unreadCount(userId: string) {
     SELECT count(*) AS count
     FROM "ConversationMember" cm
     JOIN "Message" m ON m."conversationId" = cm."conversationId"
-    WHERE cm."userId" = ${userId} AND m."createdAt" >= cm."lastReadAt" AND m."authorId" <> ${userId}`;
+    WHERE cm."userId" = ${userId} AND m."createdAt" > cm."lastReadAt" AND m."authorId" <> ${userId}`;
   return Number(count);
 }
 
@@ -268,7 +274,7 @@ export async function sendMessage(
   }
 
   const message = await db.message.create({
-    data: { conversationId, authorId: userId, content },
+    data: { conversationId, authorId: userId, content, createdAt: new Date() },
     select: { id: true, content: true, createdAt: true, author: { select: personSelect } },
   });
   for (const member of conversation.members) {
