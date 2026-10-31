@@ -3,22 +3,20 @@ import { z } from 'zod';
 import { db } from './db';
 import { encrypt } from './crypto';
 import { slugify } from '$lib/slug';
+import { m } from '$lib/paraglide/messages';
 
 export const profileSchema = z.object({
   displayName: z
     .string()
     .trim()
-    .min(2, 'Ton nom doit faire au moins 2 caractères.')
-    .max(32, 'Ton nom doit faire au plus 32 caractères.')
-    .regex(/^[^\p{C}]+$/u, 'Ton nom contient des caractères non autorisés.'),
+    .min(2, { error: () => m.profile_name_short() })
+    .max(32, { error: () => m.profile_name_long() })
+    .regex(/^[^\p{C}]+$/u, { error: () => m.profile_name_invalid() }),
   handle: z
     .string()
     .trim()
     .toLowerCase()
-    .regex(
-      /^[a-z0-9](?:[a-z0-9-]{1,22})[a-z0-9]$/,
-      'Ton identifiant doit faire 3 à 24 caractères : lettres, chiffres et tirets.',
-    ),
+    .regex(/^[a-z0-9](?:[a-z0-9-]{1,22})[a-z0-9]$/, { error: () => m.profile_handle_invalid() }),
   /** Absent quand l'image actuelle ne correspond plus à un compte lié : elle est conservée. */
   avatarUrl: z.string().optional(),
 });

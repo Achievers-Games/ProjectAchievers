@@ -30,13 +30,6 @@ export interface CardDrop {
 }
 
 /** Une plateforme à 100 % donne l'Or, chaque plateforme de plus fait monter la carte. */
-export const TIER_LABELS: Record<number, string> = {
-  1: 'Or',
-  2: 'Platine',
-  3: 'Prismatique',
-  4: 'Légendaire',
-};
-
 export const tierFor = (platforms: number) => Math.min(platforms, 4);
 
 export interface NextTier {

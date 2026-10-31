@@ -85,7 +85,7 @@ async function fetchAchievements(session: XboxSession, titleId: string) {
 
 async function connect(account: Parameters<ProviderSync>[0]['account']): Promise<XboxSession> {
   if (!account.refreshTokenEnc) {
-    throw new SyncError('Reconnecte ton compte Xbox pour relancer la synchronisation.', true);
+    throw new SyncError('sync_xbox_relink', true);
   }
   try {
     const tokens = await refreshMicrosoftTokens(decrypt(account.refreshTokenEnc));
@@ -99,7 +99,7 @@ async function connect(account: Parameters<ProviderSync>[0]['account']): Promise
     });
     return await openXboxSession(tokens.accessToken);
   } catch {
-    throw new SyncError('Ton autorisation Xbox a expiré. Reconnecte ton compte.', true);
+    throw new SyncError('sync_xbox_expired', true);
   }
 }
 

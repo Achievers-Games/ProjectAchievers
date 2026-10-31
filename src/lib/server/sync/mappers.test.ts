@@ -17,7 +17,7 @@ describe('réponses PSN', () => {
   it('explique des trophées privés, renvoyés sans exception par psn-api', () => {
     const response = { error: { code: 2240526, message: 'Not permitted by access control' } };
     expect(() => assertPsnResponse(response)).toThrow(SyncError);
-    expect(() => assertPsnResponse(response)).toThrow('trophées PSN sont privés');
+    expect(() => assertPsnResponse(response)).toThrow('sync_psn_private');
   });
 
   it('laisse passer une réponse normale et signale les autres erreurs', () => {

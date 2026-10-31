@@ -45,9 +45,7 @@ async function fetchOwnedGames(steamId: string): Promise<OwnedGame[]> {
   const data = (await response.json()) as { response?: { games?: OwnedGame[] } };
   // Steam répond 200 avec un objet vide quand les détails de jeu sont privés.
   if (!data.response?.games) {
-    throw new SyncError(
-      'Ton profil Steam est privé. Rends « Détails des jeux » public, puis relance la synchronisation.',
-    );
+    throw new SyncError('sync_steam_private');
   }
   return data.response.games;
 }
@@ -129,9 +127,7 @@ async function fetchUnlocks(steamId: string, appId: number) {
   // 400 : le jeu n'a pas de statistiques. Ce n'est pas une erreur du joueur.
   if (response.status === 400) return [];
   if (response.status === 403) {
-    throw new SyncError(
-      'Tes succès Steam sont privés. Rends « Détails des jeux » public, puis relance la synchronisation.',
-    );
+    throw new SyncError('sync_steam_achievements_private');
   }
   if (!response.ok) throw new Error(`GetPlayerAchievements a répondu ${response.status}`);
 

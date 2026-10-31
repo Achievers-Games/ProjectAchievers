@@ -3,13 +3,14 @@ import { dev } from '$app/environment';
 import { env } from '$lib/server/env';
 import { availableProviders, safeReturnTo } from '$lib/server/providers';
 import type { PageServerLoad } from './$types';
+import { m } from '$lib/paraglide/messages';
 
-const ERRORS: Record<string, string> = {
-  expire: 'La demande de connexion a expiré. Réessaie.',
-  annule: 'Connexion annulée.',
-  refuse: "Le fournisseur n'a pas confirmé ton identité.",
-  fournisseur: 'Le fournisseur est injoignable pour le moment. Réessaie plus tard.',
-  indisponible: "Ce mode de connexion n'est pas encore activé.",
+const ERRORS: Record<string, () => string> = {
+  expire: m.signin_expired,
+  annule: m.signin_cancelled,
+  refuse: m.signin_refused,
+  fournisseur: m.signin_provider_down,
+  indisponible: m.signin_unavailable,
 };
 
 export const load: PageServerLoad = ({ locals, url }) => {
@@ -17,7 +18,7 @@ export const load: PageServerLoad = ({ locals, url }) => {
   return {
     providers: availableProviders(),
     retour: safeReturnTo(url.searchParams.get('retour'), '/'),
-    error: ERRORS[url.searchParams.get('erreur') ?? ''] ?? null,
+    error: ERRORS[url.searchParams.get('erreur') ?? '']?.() ?? null,
     devLogin: dev && env().DEV_LOGIN === '1',
   };
 };

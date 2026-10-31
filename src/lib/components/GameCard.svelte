@@ -1,16 +1,11 @@
 <script lang="ts">
+  import { m } from '$lib/paraglide/messages';
   import type { Platform } from '@prisma/client';
   import CompleteBadge from './CompleteBadge.svelte';
   import Progress from './Progress.svelte';
   import { tilt } from '$lib/actions/tilt';
-  import { PLATFORM_LABELS, plural } from '$lib/labels';
-  import {
-    isComplete,
-    stepOf,
-    TIER_LABELS,
-    type CardProgress,
-    type NextTier,
-  } from '$lib/collection';
+  import { formatPercent, PLATFORM_LABELS, tierLabel } from '$lib/labels';
+  import { isComplete, stepOf, type CardProgress, type NextTier } from '$lib/collection';
 
   interface Props {
     game: {
@@ -67,7 +62,7 @@
       />
     {/if}
     {#if step && !list}
-      <span class="step-badge absolute right-2 top-2">{step * 25} %</span>
+      <span class="step-badge absolute right-2 top-2">{formatPercent(step * 25)}</span>
     {/if}
     {#if complete}
       <span class="foil" aria-hidden="true"></span>
@@ -87,32 +82,37 @@
           value={next.completion}
           tier={next.tier}
           base={level}
-          label="Progression vers {TIER_LABELS[next.tier]} sur {game.name}"
+          label={m.progress_toward_on({ tier: tierLabel(next.tier), game: game.name })}
         />
         <p class="tabular truncate text-xs text-muted">
-          {TIER_LABELS[next.tier]} : {PLATFORM_LABELS[next.platform]}
-          {Math.round(next.completion)} %
+          {m.next_tier({
+            tier: tierLabel(next.tier),
+            platform: PLATFORM_LABELS[next.platform],
+            percent: Math.round(next.completion),
+          })}
         </p>
       {:else}
         <Progress
           value={progress.completion}
           tier={complete ? level : 0}
           {step}
-          label="Progression sur {game.name}"
+          label={m.progress_on({ game: game.name })}
         />
         <p class="tabular truncate text-xs text-muted">
           {#if versions.length > 1}
             {versions
-              .map((v) => `${PLATFORM_LABELS[v.platform]} ${Math.round(v.completion)} %`)
+              .map((v) => `${PLATFORM_LABELS[v.platform]} ${formatPercent(v.completion)}`)
               .join(' · ')}
           {:else}
-            {progress.unlockedCount} / {game.totalAchievements} · {Math.round(progress.completion)} %
+            {progress.unlockedCount} / {game.totalAchievements} · {formatPercent(
+              progress.completion,
+            )}
           {/if}
         </p>
       {/if}
     {:else}
       <p class="text-xs text-muted">
-        {PLATFORM_LABELS[game.platform]} · {plural(game.totalAchievements, 'succès', 'succès')}
+        {PLATFORM_LABELS[game.platform]} · {m.count_achievements({ count: game.totalAchievements })}
       </p>
     {/if}
   </div>

@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { TrophyType } from '@prisma/client';
-  import { TROPHY_LABELS } from '$lib/labels';
+  import { trophyLabel } from '$lib/labels';
 
   let { type }: { type: TrophyType } = $props();
 
@@ -13,4 +13,4 @@
   };
 </script>
 
-<span class="text-xs font-medium {colors[type]}">{TROPHY_LABELS[type]}</span>
+<span class="text-xs font-medium {colors[type]}">{trophyLabel(type)}</span>

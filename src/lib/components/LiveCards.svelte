@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from '$lib/paraglide/messages';
   import { flip } from 'svelte/animate';
   import { fly } from 'svelte/transition';
   import Avatar from './Avatar.svelte';
@@ -33,14 +34,12 @@
 <section class="space-y-3" aria-labelledby="direct">
   <h2 id="direct" class="flex items-center gap-2">
     <span class="live-dot" aria-hidden="true"></span>
-    En direct
-    <span class="text-sm font-normal text-muted">Les dernières cartes 100 %</span>
+    {m.live_title()}
+    <span class="text-sm font-normal text-muted">{m.live_subtitle()}</span>
   </h2>
 
   {#if drops.length === 0}
-    <p class="text-sm text-muted">
-      Aucune carte pour l'instant. La première sera peut-être la tienne.
-    </p>
+    <p class="text-sm text-muted">{m.live_empty()}</p>
   {:else}
     <ul class="live-rail" aria-live="polite">
       {#each drops as drop (keyOf(drop))}

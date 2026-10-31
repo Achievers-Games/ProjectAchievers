@@ -1,32 +1,28 @@
-<svelte:head><title>Confidentialité — Project Achievers</title></svelte:head>
+<script lang="ts">
+  import { m } from '$lib/paraglide/messages';
+</script>
+
+<svelte:head><title>{m.privacy()} — Project Achievers</title></svelte:head>
 
 <article class="prose-user mx-auto max-w-2xl">
-  <h1>Confidentialité</h1>
+  <h1>{m.privacy()}</h1>
   <p>
-    Project Achievers est un site indépendant. Pour toute question sur tes données :
-    <a href="mailto:gamefeelstudio@gmail.com">gamefeelstudio@gmail.com</a>.
+    {m.privacy_intro()}
+    <a href="mailto:gamefeelstudio@gmail.com">gamefeelstudio@gmail.com</a>
   </p>
 
-  <h2 class="pt-4">Données traitées</h2>
+  <h2 class="pt-4">{m.privacy_data()}</h2>
   <ul>
-    <li>
-      Identifiant, pseudo et avatar de tes comptes Steam, Discord, Google, PlayStation et Xbox.
-    </li>
-    <li>Ta bibliothèque, ta progression et tes succès.</li>
-    <li>Tes guides, commentaires, votes et signalements.</li>
-    <li>Tes sessions : date d'utilisation et navigateur.</li>
+    <li>{m.privacy_data_accounts()}</li>
+    <li>{m.privacy_data_library()}</li>
+    <li>{m.privacy_data_content()}</li>
+    <li>{m.privacy_data_sessions()}</li>
   </ul>
 
-  <h2 class="pt-4">Ce que nous ne collectons pas</h2>
-  <p>
-    Aucun mot de passe de plateforme, et aucun jeton NPSSO de joueur. Les jetons Xbox sont chiffrés
-    sur le serveur. Les seuls cookies sont ceux de la session, du thème et des étapes de connexion
-    ou de fusion de profils, strictement nécessaires au service.
-  </p>
+  <h2 class="pt-4">{m.privacy_not_collected()}</h2>
+  <p>{m.privacy_not_collected_text()}</p>
 
-  <h2 class="pt-4">Tes droits</h2>
-  <p>
-    Depuis <a href="/compte">ton compte</a>, tu peux rendre ton profil privé, dissocier un compte,
-    exporter tes données ou supprimer définitivement ton compte.
-  </p>
+  <h2 class="pt-4">{m.privacy_rights()}</h2>
+  <p>{m.privacy_rights_text()}</p>
+  <p><a href="/compte">{m.privacy_account_link()}</a></p>
 </article>

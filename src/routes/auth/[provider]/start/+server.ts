@@ -1,3 +1,4 @@
+import { m } from '$lib/paraglide/messages';
 import { error, redirect } from '@sveltejs/kit';
 import { randomToken } from '$lib/server/crypto';
 import {
@@ -15,7 +16,7 @@ import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = ({ params, url, cookies }) => {
   const provider = params.provider as OAuthProvider;
-  if (!(provider in OAUTH_PROVIDERS)) error(404, 'Fournisseur inconnu');
+  if (!(provider in OAUTH_PROVIDERS)) error(404, m.provider_unknown());
   if (!availableProviders()[OAUTH_PROVIDERS[provider]]) {
     redirect(303, '/connexion?erreur=indisponible');
   }

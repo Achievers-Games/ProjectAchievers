@@ -9,20 +9,21 @@ import { bioContainsCode, findPsnProfile, newPsnCode } from '$lib/server/provide
 import { destroySession } from '$lib/server/session';
 import { enqueueSync } from '$lib/server/sync/queue';
 import type { Actions, PageServerLoad } from './$types';
+import { m } from '$lib/paraglide/messages';
 
-const NOTICES: Record<string, string> = {
-  provider_taken: 'Un compte de ce type est déjà lié. Dissocie-le pour en lier un autre.',
+const NOTICES: Record<string, () => string> = {
+  provider_taken: m.provider_taken,
 };
 
 const MERGE_ERRORS = {
-  stale: 'Cette demande de fusion n’est plus valable. Lie le compte à nouveau.',
-  sync_running: 'Une synchronisation est en cours. Réessaie quand elle sera terminée.',
-  provider_conflict: 'Les deux profils ont un compte du même type. Dissocie-le avant de fusionner.',
+  stale: m.merge_stale,
+  sync_running: m.merge_busy,
+  provider_conflict: m.merge_blocked,
 };
 
 const PROFILE_ERRORS = {
-  handle_taken: 'Cet identifiant est déjà pris.',
-  avatar_unknown: 'Cette image ne vient pas de tes comptes liés.',
+  handle_taken: m.profile_handle_taken,
+  avatar_unknown: m.profile_avatar_unknown,
 };
 
 const LOGIN_PROVIDERS: Provider[] = ['STEAM', 'DISCORD', 'XBOX', 'GOOGLE'];
@@ -78,7 +79,7 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
 const onlineId = z
   .string()
   .trim()
-  .regex(/^[a-zA-Z][a-zA-Z0-9_-]{2,15}$/, "Cet identifiant PSN n'est pas valide.");
+  .regex(/^[a-zA-Z][a-zA-Z0-9_-]{2,15}$/, { error: () => m.psn_id_invalid() });
 
 const providerSchema = z.enum(['STEAM', 'PSN', 'XBOX', 'DISCORD', 'GOOGLE']);
 
@@ -94,34 +95,32 @@ export const actions: Actions = {
     if (!parsed.success) return fail(400, { error: parsed.error.issues[0]?.message });
 
     const failure = await updateProfile(user.id, parsed.data);
-    if (failure) return fail(409, { error: PROFILE_ERRORS[failure] });
-    return { success: 'Profil enregistré.' };
+    if (failure) return fail(409, { error: PROFILE_ERRORS[failure]() });
+    return { success: m.profile_saved() };
   },
 
   sync: async ({ request, locals }) => {
     const user = requireUser(locals);
     const provider = providerSchema.safeParse((await request.formData()).get('provider'));
-    if (!provider.success) return fail(400, { error: 'Compte inconnu.' });
+    if (!provider.success) return fail(400, { error: m.account_unknown() });
     const started = await enqueueSync(user.id, provider.data);
-    return started
-      ? { success: 'Synchronisation lancée.' }
-      : fail(409, { error: 'Une synchronisation est déjà en cours.' });
+    return started ? { success: m.sync_started() } : fail(409, { error: m.sync_already() });
   },
 
   unlink: async ({ request, locals }) => {
     const user = requireUser(locals);
     const provider = providerSchema.safeParse((await request.formData()).get('provider'));
-    if (!provider.success) return fail(400, { error: 'Compte inconnu.' });
+    if (!provider.success) return fail(400, { error: m.account_unknown() });
 
     const accounts = await db.linkedAccount.findMany({
       where: { userId: user.id },
       select: { provider: true, syncStatus: true },
     });
     const target = accounts.find((a) => a.provider === provider.data);
-    if (!target) return fail(404, { error: 'Ce compte n’est pas lié.' });
+    if (!target) return fail(404, { error: m.account_not_linked() });
     if (target.syncStatus === 'QUEUED' || target.syncStatus === 'SYNCING') {
       return fail(409, {
-        error: 'Une synchronisation est en cours. Réessaie quand elle sera finie.',
+        error: m.sync_wait(),
       });
     }
 
@@ -130,7 +129,7 @@ export const actions: Actions = {
     );
     if (!remainingLogin) {
       return fail(409, {
-        error: 'Garde au moins un compte Steam, Discord, Xbox ou Google : il sert à te connecter.',
+        error: m.keep_one_login(),
       });
     }
 
@@ -146,21 +145,21 @@ export const actions: Actions = {
         await tx.userGame.deleteMany({ where: { userId: user.id, game: { platform } } });
       }
     });
-    return { success: 'Compte dissocié, ses données ont été retirées de ton profil.' };
+    return { success: m.account_unlinked() };
   },
 
   merge: async ({ locals, cookies }) => {
     const user = requireUser(locals);
     const pending = readMerge(cookies, user.id);
-    if (!pending) return fail(410, { error: MERGE_ERRORS.stale });
+    if (!pending) return fail(410, { error: MERGE_ERRORS.stale() });
 
     const failure = await mergeUsers(pending);
     if (failure === 'sync_running' || failure === 'provider_conflict') {
-      return fail(409, { error: MERGE_ERRORS[failure] });
+      return fail(409, { error: MERGE_ERRORS[failure]() });
     }
     clearMerge(cookies);
-    if (failure) return fail(410, { error: MERGE_ERRORS[failure] });
-    return { success: 'Profils fusionnés. Tous tes comptes ouvrent maintenant ce profil.' };
+    if (failure) return fail(410, { error: MERGE_ERRORS[failure]() });
+    return { success: m.merge_done() };
   },
 
   mergeCancel: async ({ cookies }) => {
@@ -171,14 +170,14 @@ export const actions: Actions = {
     const user = requireUser(locals);
     const isPublic = (await request.formData()).get('isPublic') === 'on';
     await db.user.update({ where: { id: user.id }, data: { isPublic } });
-    return { success: isPublic ? 'Ton profil est public.' : 'Ton profil est privé.' };
+    return { success: isPublic ? m.profile_public_ok() : m.profile_private_ok() };
   },
 
   adult: async ({ request, locals }) => {
     const user = requireUser(locals);
     const showAdult = (await request.formData()).get('showAdult') === 'on';
     await db.user.update({ where: { id: user.id }, data: { showAdult } });
-    return { success: showAdult ? 'Jeux pour adultes affichés.' : 'Jeux pour adultes masqués.' };
+    return { success: showAdult ? m.adult_on() : m.adult_off() };
   },
 
   theme: async ({ request, cookies }) => {
@@ -196,7 +195,7 @@ export const actions: Actions = {
     const user = requireUser(locals);
     const id = String((await request.formData()).get('id'));
     await db.session.deleteMany({ where: { id, userId: user.id, NOT: { id: user.sessionId } } });
-    return { success: 'Session déconnectée.' };
+    return { success: m.session_revoked() };
   },
 
   revokeOthers: async ({ locals }) => {
@@ -204,9 +203,7 @@ export const actions: Actions = {
     const { count } = await db.session.deleteMany({
       where: { userId: user.id, NOT: { id: user.sessionId } },
     });
-    return {
-      success: `${count} session${count > 1 ? 's' : ''} déconnectée${count > 1 ? 's' : ''}.`,
-    };
+    return { success: m.count_sessions_closed({ count }) };
   },
 
   psnStart: async ({ request, locals }) => {
@@ -219,9 +216,9 @@ export const actions: Actions = {
       profile = await findPsnProfile(parsed.data);
     } catch (cause) {
       console.error('Recherche PSN :', cause);
-      return fail(502, { error: 'PlayStation Network ne répond pas. Réessaie plus tard.' });
+      return fail(502, { error: m.psn_down() });
     }
-    if (!profile) return fail(404, { error: 'Aucun profil PSN à ce nom.' });
+    if (!profile) return fail(404, { error: m.psn_not_found() });
 
     const data = {
       onlineId: profile.onlineId,
@@ -240,7 +237,7 @@ export const actions: Actions = {
     const user = requireUser(locals);
     const pending = await db.psnVerification.findUnique({ where: { userId: user.id } });
     if (!pending || pending.expiresAt < new Date()) {
-      return fail(410, { error: 'Le code a expiré. Recommence la liaison.' });
+      return fail(410, { error: m.psn_code_expired() });
     }
 
     let profile;
@@ -248,14 +245,14 @@ export const actions: Actions = {
       profile = await findPsnProfile(pending.onlineId);
     } catch (cause) {
       console.error('Vérification PSN :', cause);
-      return fail(502, { error: 'PlayStation Network ne répond pas. Réessaie plus tard.' });
+      return fail(502, { error: m.psn_down() });
     }
     if (!profile || profile.accountId !== pending.accountId) {
-      return fail(404, { error: 'Ce profil PSN a changé. Recommence la liaison.' });
+      return fail(404, { error: m.psn_changed() });
     }
     if (!bioContainsCode(profile.aboutMe, pending.code)) {
       return fail(409, {
-        error: `Le code ${pending.code} n'apparaît pas encore dans ta bio PSN.`,
+        error: m.psn_code_missing({ code: pending.code }),
       });
     }
 
@@ -270,7 +267,7 @@ export const actions: Actions = {
       user.id,
     );
     if (!result.ok && result.reason === 'provider_taken') {
-      return fail(409, { error: NOTICES[result.reason] });
+      return fail(409, { error: NOTICES[result.reason]?.() });
     }
 
     await db.psnVerification.delete({ where: { userId: user.id } });
@@ -281,11 +278,11 @@ export const actions: Actions = {
         provider: 'PSN',
         providerUserId: profile.accountId,
       });
-      return { success: 'Ce compte PlayStation appartient à un autre de tes profils.' };
+      return { success: m.psn_other_profile() };
     }
 
     await enqueueSync(user.id, 'PSN');
-    return { success: 'Compte PlayStation lié. Tu peux retirer le code de ta bio.' };
+    return { success: m.psn_linked() };
   },
 
   psnCancel: async ({ locals }) => {
@@ -296,7 +293,7 @@ export const actions: Actions = {
   delete: async ({ request, locals, cookies }) => {
     const user = requireUser(locals);
     if ((await request.formData()).get('confirmation') !== user.handle) {
-      return fail(400, { error: 'Saisis ton identifiant pour confirmer.' });
+      return fail(400, { error: m.delete_account_confirm() });
     }
     await destroySession(cookies);
     await db.psnVerification.deleteMany({ where: { userId: user.id } });

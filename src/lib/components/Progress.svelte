@@ -1,7 +1,8 @@
 <script lang="ts">
+  import { m } from '$lib/paraglide/messages';
   let {
     value,
-    label = 'Progression',
+    label = m.progress(),
     tier = 0,
     step = 0,
     base = 0,

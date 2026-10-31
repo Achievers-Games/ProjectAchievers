@@ -1,11 +1,18 @@
 <script lang="ts">
+  import { m } from '$lib/paraglide/messages';
   import { Link } from '@lucide/svelte';
   import Avatar from '$lib/components/Avatar.svelte';
   import Empty from '$lib/components/Empty.svelte';
   import GameCard from '$lib/components/GameCard.svelte';
   import ProviderIcon from '$lib/components/ProviderIcon.svelte';
   import TrophyBadge from '$lib/components/TrophyBadge.svelte';
-  import { formatDate, formatNumber, formatRelative, PROVIDER_LABELS } from '$lib/labels';
+  import {
+    formatDate,
+    formatNumber,
+    formatRelative,
+    PROVIDER_LABELS,
+    tierLabel,
+  } from '$lib/labels';
   import { toast } from '$lib/stores/toast';
 
   let { data } = $props();
@@ -13,18 +20,18 @@
   const profile = $derived(data.profile);
   const isMe = $derived(data.user?.id === profile.user.id);
   const stats = $derived([
-    { label: 'Jeux', value: profile.stats.games },
-    { label: 'Succès', value: profile.stats.unlocked },
-    { label: 'Or', value: profile.stats.tiers.or, tier: 1 },
-    { label: 'Platine', value: profile.stats.tiers.platine, tier: 2 },
-    { label: 'Prismatique', value: profile.stats.tiers.prismatique, tier: 3 },
-    { label: 'Légendaire', value: profile.stats.tiers.legendaire, tier: 4 },
-    { label: 'Points', value: profile.stats.points },
+    { label: m.stat_games(), value: profile.stats.games },
+    { label: m.stat_achievements(), value: profile.stats.unlocked },
+    { label: tierLabel(1), value: profile.stats.tiers.or, tier: 1 },
+    { label: tierLabel(2), value: profile.stats.tiers.platine, tier: 2 },
+    { label: tierLabel(3), value: profile.stats.tiers.prismatique, tier: 3 },
+    { label: tierLabel(4), value: profile.stats.tiers.legendaire, tier: 4 },
+    { label: m.stat_points(), value: profile.stats.points },
   ]);
 
   async function share() {
     await navigator.clipboard.writeText(location.href);
-    toast('Lien du profil copié.');
+    toast(m.share_copied());
   }
 </script>
 
@@ -32,15 +39,22 @@
   <title>{profile.user.displayName} — Project Achievers</title>
   <meta
     name="description"
-    content="{formatNumber(profile.stats.unlocked)} succès et {profile.stats.tiers.or +
-      profile.stats.tiers.platine +
-      profile.stats.tiers.prismatique +
-      profile.stats.tiers.legendaire} cartes de collection."
+    content={m.profile_description({
+      achievements: m.count_achievements({ count: profile.stats.unlocked }),
+      cards:
+        profile.stats.tiers.or +
+        profile.stats.tiers.platine +
+        profile.stats.tiers.prismatique +
+        profile.stats.tiers.legendaire,
+    })}
   />
-  <meta property="og:title" content="{profile.user.displayName} sur Project Achievers" />
+  <meta property="og:title" content={m.profile_og_title({ name: profile.user.displayName })} />
   <meta
     property="og:description"
-    content="{formatNumber(profile.stats.unlocked)} succès sur {profile.stats.games} jeux"
+    content={m.profile_og_description({
+      achievements: m.count_achievements({ count: profile.stats.unlocked }),
+      games: m.count_games({ count: profile.stats.games }),
+    })}
   />
   {#if profile.user.avatarUrl}<meta property="og:image" content={profile.user.avatarUrl} />{/if}
 </svelte:head>
@@ -51,8 +65,8 @@
     <div class="min-w-0">
       <h1>{profile.user.displayName}</h1>
       <p class="text-sm text-muted">
-        Membre depuis le {formatDate(profile.user.createdAt)}
-        {#if !profile.user.isPublic}· Profil privé{/if}
+        {m.member_since({ date: formatDate(profile.user.createdAt) })}
+        {#if !profile.user.isPublic}· {m.private_profile()}{/if}
       </p>
       <ul class="mt-1 flex gap-3 text-muted">
         {#each profile.user.accounts as account (account.provider)}
@@ -72,10 +86,13 @@
     </div>
     <div class="ml-auto flex gap-2">
       <button type="button" class="btn" onclick={share}>
-        <Link size={14} aria-hidden="true" /> Partager
+        <Link size={14} aria-hidden="true" />
+        {m.share()}
       </button>
       {#if data.user && !isMe}
-        <a class="btn" href="/comparer?a={data.user.handle}&b={profile.user.handle}">Comparer</a>
+        <a class="btn" href="/comparer?a={data.user.handle}&b={profile.user.handle}"
+          >{m.compare()}</a
+        >
       {/if}
     </div>
   </header>
@@ -93,7 +110,7 @@
 
   {#if profile.showcase.length}
     <section class="space-y-3" aria-labelledby="vitrine">
-      <h2 id="vitrine">Vitrine</h2>
+      <h2 id="vitrine">{m.showcase()}</h2>
       <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {#each profile.showcase as card (card.id)}
           <GameCard
@@ -109,16 +126,16 @@
   {/if}
 
   {#if profile.games.length === 0}
-    <Empty title="Aucun jeu synchronisé">
-      {isMe ? 'Lie un compte de jeu pour remplir ton profil.' : 'Ce profil est encore vide.'}
+    <Empty title={m.profile_empty()}>
+      {isMe ? m.profile_empty_mine() : m.profile_empty_other()}
       {#snippet action()}
-        {#if isMe}<a href="/compte" class="btn btn-primary">Lier un compte</a>{/if}
+        {#if isMe}<a href="/compte" class="btn btn-primary">{m.link_account()}</a>{/if}
       {/snippet}
     </Empty>
   {:else}
     <div class="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
       <section class="space-y-3">
-        <h2>Jeux</h2>
+        <h2>{m.stat_games()}</h2>
         <div class="grid gap-3 sm:grid-cols-2">
           {#each profile.games as card (card.id)}
             <GameCard
@@ -133,7 +150,7 @@
       </section>
 
       <section class="space-y-3">
-        <h2>Derniers succès</h2>
+        <h2>{m.recent_achievements()}</h2>
         <ul class="card divide-y divide-line">
           {#each profile.recent as item (item.achievement.id)}
             <li>

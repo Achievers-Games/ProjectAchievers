@@ -1,10 +1,11 @@
 import { error, json } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import type { RequestHandler } from './$types';
+import { m } from '$lib/paraglide/messages';
 
 /** Export RGPD : tout ce qui concerne l'utilisateur, sans les jetons chiffrés. */
 export const GET: RequestHandler = async ({ locals }) => {
-  if (!locals.user) error(401, 'Connexion requise');
+  if (!locals.user) error(401, m.login_required());
 
   const data = await db.user.findUniqueOrThrow({
     where: { id: locals.user.id },

@@ -1,8 +1,8 @@
 <script lang="ts">
+  import { m } from '$lib/paraglide/messages';
   import { onMount } from 'svelte';
   import GameCard from './GameCard.svelte';
-  import { TIER_LABELS } from '$lib/collection';
-  import { plural } from '$lib/labels';
+  import { tierLabel } from '$lib/labels';
   import { NO_REWARDS, persistRewards, rewards } from '$lib/stores/sync';
 
   const MAX_CARDS = 10;
@@ -67,7 +67,7 @@
     // Seule une action du joueur termine la révélation.
     if (cards.length) event.currentTarget.showModal();
   }}
-  aria-label="Nouvelles cartes"
+  aria-label={m.reveal_dialog()}
   class="reward-dialog"
 >
   {#if cards.length}
@@ -89,9 +89,9 @@
 
       <p class="reward-title">
         {#if cards.length > 1}
-          {cards.length} cartes 100 % obtenues !
+          {m.reveal_many({ count: cards.length })}
         {:else}
-          Carte {TIER_LABELS[cards[0]?.tier ?? 1]} obtenue !
+          {m.reveal_one({ tier: tierLabel(cards[0]?.tier ?? 1) })}
         {/if}
       </p>
 
@@ -119,10 +119,12 @@
       </div>
 
       {#if hidden > 0}
-        <p class="reward-more">+ {plural(hidden, 'autre déblocage', 'autres déblocages')}</p>
+        <p class="reward-more">{m.more_cards({ count: hidden })}</p>
       {/if}
 
-      <button type="button" class="btn btn-primary">{finished ? 'Fermer' : 'Passer'}</button>
+      <button type="button" class="btn btn-primary"
+        >{finished ? m.reveal_close() : m.reveal_skip()}</button
+      >
     </div>
   {/if}
 </dialog>

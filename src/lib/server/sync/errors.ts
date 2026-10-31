@@ -1,4 +1,4 @@
-/** Erreur attendue d'une synchronisation : son message est montré tel quel à l'utilisateur. */
+/** Erreur attendue d'une synchronisation : son message est un code, traduit à l'affichage. */
 export class SyncError extends Error {
   constructor(
     message: string,

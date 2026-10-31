@@ -48,9 +48,7 @@ export function assertPsnResponse(response: object) {
   const { error } = response as { error?: { code?: number; message?: string } };
   if (!error) return;
   if (error.code === PRIVATE_TROPHIES) {
-    throw new SyncError(
-      'Tes trophées PSN sont privés. Rends-les visibles par tout le monde, puis relance la synchronisation.',
-    );
+    throw new SyncError('sync_psn_private');
   }
   throw new Error(`PSN a répondu ${error.code} : ${error.message}`);
 }

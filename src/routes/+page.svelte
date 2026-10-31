@@ -1,22 +1,23 @@
 <script lang="ts">
+  import { m } from '$lib/paraglide/messages';
   import Empty from '$lib/components/Empty.svelte';
   import GameCard from '$lib/components/GameCard.svelte';
   import LiveCards from '$lib/components/LiveCards.svelte';
   import ProviderIcon from '$lib/components/ProviderIcon.svelte';
-  import { formatNumber } from '$lib/labels';
+  import { formatNumber, tierLabel } from '$lib/labels';
 
   let { data } = $props();
 
   const stats = $derived(
     data.home
       ? [
-          { label: 'Jeux', value: data.home.stats.games },
-          { label: 'Succès', value: data.home.stats.unlocked },
-          { label: 'Or', value: data.home.stats.tiers.or, tier: 1 },
-          { label: 'Platine', value: data.home.stats.tiers.platine, tier: 2 },
-          { label: 'Prismatique', value: data.home.stats.tiers.prismatique, tier: 3 },
-          { label: 'Légendaire', value: data.home.stats.tiers.legendaire, tier: 4 },
-          { label: 'Points', value: data.home.stats.points },
+          { label: m.stat_games(), value: data.home.stats.games },
+          { label: m.stat_achievements(), value: data.home.stats.unlocked },
+          { label: tierLabel(1), value: data.home.stats.tiers.or, tier: 1 },
+          { label: tierLabel(2), value: data.home.stats.tiers.platine, tier: 2 },
+          { label: tierLabel(3), value: data.home.stats.tiers.prismatique, tier: 3 },
+          { label: tierLabel(4), value: data.home.stats.tiers.legendaire, tier: 4 },
+          { label: m.stat_points(), value: data.home.stats.points },
         ]
       : [],
   );
@@ -24,13 +25,13 @@
 
 {#if data.home && data.user}
   <div class="space-y-8">
-    <h1>Bonjour, {data.user.displayName}</h1>
+    <h1>{m.home_hello({ name: data.user.displayName })}</h1>
 
     {#if data.accounts === 0}
-      <Empty title="Aucun compte de jeu lié">
-        Lie Steam, PlayStation ou Xbox : ta bibliothèque et tes succès seront importés
-        automatiquement.
-        {#snippet action()}<a href="/compte" class="btn btn-primary">Lier un compte</a>{/snippet}
+      <Empty title={m.home_no_account()}>
+        {m.home_no_account_text()}
+        {#snippet action()}<a href="/compte" class="btn btn-primary">{m.link_account()}</a
+          >{/snippet}
       </Empty>
     {/if}
 
@@ -49,7 +50,7 @@
 
     {#if data.home.almost.length}
       <section class="space-y-3">
-        <h2>Presque terminés</h2>
+        <h2>{m.home_almost()}</h2>
         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {#each data.home.almost as row (row.game.id)}
             <GameCard game={row.game} progress={row} />
@@ -60,7 +61,7 @@
 
     {#if data.home.recent.length}
       <section class="space-y-3">
-        <h2>Derniers succès</h2>
+        <h2>{m.home_recent()}</h2>
         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {#each data.home.recent as row (row.game.id)}
             <GameCard game={row.game} progress={row} />
@@ -72,14 +73,13 @@
 {:else}
   <div class="space-y-10">
     <section class="max-w-2xl space-y-4 py-8">
-      <h1 class="hero-title">Collectionne tes jeux terminés.</h1>
+      <h1 class="hero-title">{m.hero_title()}</h1>
       <p class="text-muted">
-        Connecte tes comptes : ta progression Steam, PlayStation et Xbox se synchronise toute seule.
-        Chaque jeu terminé à 100 % devient une carte en or à collectionner.
+        {m.hero_text()}
       </p>
       <div class="flex flex-wrap items-center gap-3">
-        <a href="/connexion" class="btn btn-primary">Commencer</a>
-        <a href="/jeux" class="btn">Parcourir les jeux</a>
+        <a href="/connexion" class="btn btn-primary">{m.hero_start()}</a>
+        <a href="/jeux" class="btn">{m.hero_browse()}</a>
       </div>
       <div class="flex gap-4 pt-2 text-muted">
         <ProviderIcon provider="STEAM" size={20} />
@@ -93,7 +93,7 @@
 
     {#if data.popular?.length}
       <section class="space-y-3">
-        <h2>Jeux à explorer</h2>
+        <h2>{m.home_explore()}</h2>
         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {#each data.popular as game (game.id)}
             <GameCard {game} />

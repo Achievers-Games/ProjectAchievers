@@ -1,25 +1,25 @@
 <script lang="ts">
+  import { m } from '$lib/paraglide/messages';
   import ProviderIcon from '$lib/components/ProviderIcon.svelte';
+  import { PROVIDER_LABELS } from '$lib/labels';
 
   let { data } = $props();
 
   const options = $derived([
-    { id: 'steam', provider: 'STEAM', label: 'Continuer avec Steam' },
-    { id: 'discord', provider: 'DISCORD', label: 'Continuer avec Discord' },
-    { id: 'xbox', provider: 'XBOX', label: 'Continuer avec Xbox' },
-    { id: 'google', provider: 'GOOGLE', label: 'Continuer avec Google' },
+    { id: 'steam', provider: 'STEAM' },
+    { id: 'discord', provider: 'DISCORD' },
+    { id: 'xbox', provider: 'XBOX' },
+    { id: 'google', provider: 'GOOGLE' },
   ] as const);
   const none = $derived(options.every((o) => !data.providers[o.provider]));
 </script>
 
-<svelte:head><title>Connexion — Project Achievers</title></svelte:head>
+<svelte:head><title>{m.sign_in()} — Project Achievers</title></svelte:head>
 
 <div class="mx-auto max-w-sm space-y-6 py-10">
   <div class="space-y-1">
-    <h1>Connexion</h1>
-    <p class="text-sm text-muted">
-      Pas de mot de passe. Tous les comptes que tu lies ouvrent le même profil.
-    </p>
+    <h1>{m.sign_in()}</h1>
+    <p class="text-sm text-muted">{m.signin_tagline()}</p>
   </div>
 
   {#if data.error}
@@ -36,24 +36,24 @@
           class="btn h-11 w-full"
         >
           <ProviderIcon provider={option.provider} />
-          {option.label}
+          {m.signin_with({ provider: PROVIDER_LABELS[option.provider] })}
         </a>
       {/if}
     {/each}
   </div>
 
   {#if none}
-    <p class="text-sm text-muted">Aucun mode de connexion n'est configuré sur ce serveur.</p>
+    <p class="text-sm text-muted">{m.signin_none()}</p>
   {/if}
 
   {#if data.devLogin}
     <a href="/auth/dev" data-sveltekit-reload class="btn btn-ghost w-full">
-      Compte de démonstration
+      {m.signin_demo()}
     </a>
   {/if}
 
   <p class="text-xs text-muted">
-    PlayStation se lie depuis ton compte, une fois connecté. Voir la
-    <a href="/confidentialite" class="underline">politique de confidentialité</a>.
+    {m.signin_psn_note()}
+    <a href="/confidentialite" class="underline">{m.privacy()}</a>
   </p>
 </div>

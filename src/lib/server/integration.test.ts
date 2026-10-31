@@ -693,7 +693,7 @@ describe('synchronisation Steam', () => {
 
     const account = await db.linkedAccount.findFirstOrThrow({ where: { userId } });
     expect(account.syncStatus).toBe('FAILED');
-    expect(account.syncError).toContain('profil Steam est privé');
+    expect(account.syncError).toBe('sync_steam_private');
   });
 
   it('passe par la file de tâches et publie la progression', async () => {

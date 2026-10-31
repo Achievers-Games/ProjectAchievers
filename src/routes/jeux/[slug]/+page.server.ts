@@ -3,6 +3,7 @@ import { nextTier, tierFor } from '$lib/collection';
 import { db } from '$lib/server/db';
 import { visibleGames } from '$lib/server/queries';
 import type { Actions, PageServerLoad } from './$types';
+import { m } from '$lib/paraglide/messages';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
   const game = await db.game.findUnique({
@@ -14,7 +15,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
     },
   });
   if (!game || (game.adultOnly && !locals.user?.showAdult)) {
-    error(404, 'Ce jeu est introuvable.');
+    error(404, m.game_not_found());
   }
 
   const [progress, unlocks, players, others] = await Promise.all([
@@ -66,7 +67,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
         id: a.id,
         trophyType: a.trophyType,
         globalRarity: a.globalRarity,
-        name: masked ? 'Succès caché' : a.name,
+        name: masked ? m.achievement_hidden() : a.name,
         description: masked ? '' : a.description,
         iconUrl: masked ? null : unlocked ? a.iconUrl : (a.iconLockedUrl ?? a.iconUrl),
         unlockedAt: unlocked,
@@ -94,12 +95,12 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 export const actions: Actions = {
   /** Cache ou remontre un jeu : toutes ses versions, car elles forment une seule carte. */
   hide: async ({ request, params, locals }) => {
-    if (!locals.user) return fail(401, { error: 'Connexion requise.' });
+    if (!locals.user) return fail(401, { error: m.login_required() });
     const game = await db.game.findUnique({
       where: { slug: params.slug },
       select: { id: true, familyKey: true },
     });
-    if (!game) return fail(404, { error: 'Ce jeu est introuvable.' });
+    if (!game) return fail(404, { error: m.game_not_found() });
 
     const hidden = (await request.formData()).get('hidden') === '1';
     await db.userGame.updateMany({
@@ -110,7 +111,7 @@ export const actions: Actions = {
       data: { hidden },
     });
     return {
-      success: hidden ? 'Jeu caché de ta bibliothèque.' : 'Jeu remis dans ta bibliothèque.',
+      success: hidden ? m.game_hidden_ok() : m.game_unhidden_ok(),
     };
   },
 };

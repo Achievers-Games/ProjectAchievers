@@ -1,10 +1,10 @@
 <script lang="ts">
+  import { m } from '$lib/paraglide/messages';
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
   import { LayoutGrid, List } from '@lucide/svelte';
   import Empty from '$lib/components/Empty.svelte';
   import GameCard from '$lib/components/GameCard.svelte';
-  import { plural } from '$lib/labels';
   import type { GameListItem } from '$lib/server/queries';
   import type { Snapshot } from './$types';
 
@@ -106,9 +106,9 @@
   }
 
   const collections = [
-    { value: null, label: 'Tous mes jeux' },
-    { value: 'restants', label: 'Non 100 %' },
-    { value: 'caches', label: 'Cachés' },
+    { value: null, label: m.games_all_mine() },
+    { value: 'restants', label: m.games_unfinished() },
+    { value: 'caches', label: m.games_hidden() },
   ];
 
   /** « Non 100 % » sert à voir ce qui est presque fini : les plus avancés passent devant. */
@@ -116,19 +116,21 @@
     hrefWith(filtre === 'restants' ? { filtre, tri: 'progression' } : { filtre, tri: null });
 
   const platforms = [
-    { value: null, label: 'Toutes' },
+    { value: null, label: m.games_all_platforms() },
     { value: 'STEAM', label: 'Steam' },
     { value: 'PSN', label: 'PlayStation' },
     { value: 'XBOX', label: 'Xbox' },
   ];
 </script>
 
-<svelte:head><title>{data.user ? 'Mes jeux' : 'Jeux'} — Project Achievers</title></svelte:head>
+<svelte:head
+  ><title>{data.user ? m.games_mine() : m.games_title()} — Project Achievers</title></svelte:head
+>
 
 <div class="space-y-5">
   <div class="flex items-baseline justify-between gap-4">
-    <h1>{data.user ? 'Mes jeux' : 'Jeux'}</h1>
-    <p class="tabular text-sm text-muted">{plural(data.total, 'jeu', 'jeux')}</p>
+    <h1>{data.user ? m.games_mine() : m.games_title()}</h1>
+    <p class="tabular text-sm text-muted">{m.count_games({ count: data.total })}</p>
   </div>
 
   <div class="flex flex-wrap items-center gap-2">
@@ -136,12 +138,12 @@
       type="search"
       value={data.params.q ?? ''}
       oninput={onSearch}
-      placeholder="Filtrer par nom…"
-      aria-label="Filtrer par nom"
+      placeholder={m.games_filter()}
+      aria-label={m.games_filter_label()}
       class="input sm:w-64"
     />
 
-    <div class="flex rounded border border-line" role="group" aria-label="Plateforme">
+    <div class="flex rounded border border-line" role="group" aria-label={m.games_platform()}>
       {#each platforms as platform (platform.label)}
         <a
           href={hrefWith({ plateforme: platform.value })}
@@ -157,7 +159,7 @@
     </div>
 
     {#if data.user}
-      <div class="flex rounded border border-line" role="group" aria-label="Collection">
+      <div class="flex rounded border border-line" role="group" aria-label={m.games_collection()}>
         {#each collections as item (item.label)}
           <a
             href={collectionHref(item.value)}
@@ -176,20 +178,20 @@
     <div class="ml-auto flex items-center gap-2">
       <select
         class="input w-auto"
-        aria-label="Trier"
+        aria-label={m.games_sort()}
         value={data.params.tri}
         onchange={(event) => apply({ tri: event.currentTarget.value })}
       >
-        <option value="nom">Nom</option>
-        <option value="succes">Nombre de succès</option>
-        <option value="recent">Mis à jour</option>
-        {#if data.params.mine}<option value="progression">Progression (%)</option>{/if}
+        <option value="nom">{m.sort_name()}</option>
+        <option value="succes">{m.sort_achievements()}</option>
+        <option value="recent">{m.sort_recent()}</option>
+        {#if data.params.mine}<option value="progression">{m.sort_progress()}</option>{/if}
       </select>
       <a
         href={hrefWith({ vue: data.params.vue === 'grille' ? 'liste' : null })}
         data-sveltekit-noscroll
         class="btn w-9 px-0"
-        aria-label={data.params.vue === 'grille' ? 'Afficher en liste' : 'Afficher en grille'}
+        aria-label={data.params.vue === 'grille' ? m.view_list() : m.view_grid()}
       >
         {#if data.params.vue === 'grille'}<List size={16} />{:else}<LayoutGrid size={16} />{/if}
       </a>
@@ -198,12 +200,13 @@
 
   {#if games.length === 0}
     {#if data.user && !data.params.q && !data.params.plateforme && !data.params.filtre}
-      <Empty title="Aucun jeu pour l'instant">
-        Lie Steam, PlayStation ou Xbox pour importer ta bibliothèque.
-        {#snippet action()}<a href="/compte" class="btn btn-primary">Lier un compte</a>{/snippet}
+      <Empty title={m.games_empty_title()}>
+        {m.games_empty_text()}
+        {#snippet action()}<a href="/compte" class="btn btn-primary">{m.link_account()}</a
+          >{/snippet}
       </Empty>
     {:else}
-      <Empty title="Aucun jeu trouvé">Essaie un autre filtre.</Empty>
+      <Empty title={m.games_none_title()}>{m.games_none_text()}</Empty>
     {/if}
   {:else}
     <div
@@ -237,7 +240,7 @@
             loadMore();
           }}
         >
-          {#if loading}Chargement…{:else if failed}Réessayer{:else}Afficher plus{/if}
+          {#if loading}{m.loading()}{:else if failed}{m.retry()}{:else}{m.show_more()}{/if}
         </a>
       </div>
     {/key}

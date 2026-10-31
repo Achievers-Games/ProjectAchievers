@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Crown, Gem, Sparkles, Star } from '@lucide/svelte';
-  import { TIER_LABELS } from '$lib/collection';
+  import { tierLabel } from '$lib/labels';
 
   let { tier = 1 }: { tier?: number } = $props();
   const icons = [Star, Star, Gem, Sparkles, Crown];
@@ -9,5 +9,5 @@
 
 <span class="complete-badge" data-tier={tier}>
   <Icon size={12} aria-hidden="true" />
-  {TIER_LABELS[tier]}
+  {tierLabel(tier)}
 </span>

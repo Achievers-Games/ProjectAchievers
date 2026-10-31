@@ -1,4 +1,7 @@
 import type { Handle, RequestEvent, ServerInit } from '@sveltejs/kit';
+import { m } from '$lib/paraglide/messages';
+import { getLocale } from '$lib/paraglide/runtime';
+import { paraglideMiddleware } from '$lib/paraglide/server';
 import { env } from '$lib/server/env';
 import { rateLimit } from '$lib/server/rate-limit';
 import { validateSession } from '$lib/server/session';
@@ -27,7 +30,7 @@ function clientAddress(event: RequestEvent): string {
   }
 }
 
-export const handle: Handle = async ({ event, resolve }) => {
+const secured: Handle = async ({ event, resolve }) => {
   // Les cookies et le contrôle d'origine ne valent que pour l'adresse officielle du site.
   const origin = new URL(env().ORIGIN);
   if (event.request.headers.get('host') === `www.${origin.host}`) {
@@ -41,7 +44,7 @@ export const handle: Handle = async ({ event, resolve }) => {
   const limit = limitFor(event.request, path);
   if (limit !== null) {
     if (!rateLimit(`${clientAddress(event)}:${limit}`, limit, WINDOW)) {
-      return new Response('Trop de requêtes, réessaie dans une minute.', {
+      return new Response(m.rate_limited(), {
         status: 429,
         headers: { 'Retry-After': '60' },
       });
@@ -53,7 +56,9 @@ export const handle: Handle = async ({ event, resolve }) => {
   const response = await resolve(event, {
     // Lu au rendu : une action peut avoir changé le cookie pendant cette requête.
     transformPageChunk: ({ html }) =>
-      html.replace('%theme%', event.cookies.get('pa_theme') === 'light' ? 'light' : 'dark'),
+      html
+        .replace('%lang%', getLocale())
+        .replace('%theme%', event.cookies.get('pa_theme') === 'light' ? 'light' : 'dark'),
   });
 
   response.headers.set('X-Content-Type-Options', 'nosniff');
@@ -61,3 +66,10 @@ export const handle: Handle = async ({ event, resolve }) => {
   response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
   return response;
 };
+
+// Tout le reste s'exécute dans la langue du visiteur, messages d'erreur compris.
+export const handle: Handle = ({ event, resolve }) =>
+  paraglideMiddleware(event.request, ({ request }) => {
+    event.request = request;
+    return secured({ event, resolve });
+  });

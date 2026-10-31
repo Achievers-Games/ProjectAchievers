@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from '$lib/paraglide/messages';
   import { enhance } from '$app/forms';
   import type { SubmitFunction } from '@sveltejs/kit';
   import { Eye, EyeOff, Lock } from '@lucide/svelte';
@@ -8,8 +9,9 @@
   import TrophyBadge from '$lib/components/TrophyBadge.svelte';
   import { tilt } from '$lib/actions/tilt';
   import { toast } from '$lib/stores/toast';
-  import { formatDate, PLATFORM_LABELS, plural } from '$lib/labels';
-  import { isComplete, TIER_LABELS } from '$lib/collection';
+  import { formatDate, formatPercent, formatRarity, PLATFORM_LABELS, tierLabel } from '$lib/labels';
+  import { getLocale } from '$lib/paraglide/runtime';
+  import { isComplete } from '$lib/collection';
 
   let { data } = $props();
 
@@ -19,7 +21,7 @@
     return async ({ result, update }) => {
       await update();
       if (result.type === 'success' && result.data?.success) toast(String(result.data.success));
-      else if (result.type === 'failure') toast('Action impossible.', 'error');
+      else if (result.type === 'failure') toast(m.action_failed(), 'error');
     };
   };
 
@@ -35,15 +37,15 @@
       })
       .toSorted((a, b) =>
         sort === 'nom'
-          ? a.name.localeCompare(b.name, 'fr')
+          ? a.name.localeCompare(b.name, getLocale())
           : (a.globalRarity ?? 101) - (b.globalRarity ?? 101),
       ),
   );
 
   const filters: { value: Filter; label: string }[] = [
-    { value: 'tous', label: 'Tous' },
-    { value: 'obtenus', label: 'Obtenus' },
-    { value: 'restants', label: 'Restants' },
+    { value: 'tous', label: m.filter_all() },
+    { value: 'obtenus', label: m.filter_unlocked() },
+    { value: 'restants', label: m.filter_remaining() },
   ];
 </script>
 
@@ -51,8 +53,10 @@
   <title>{data.game.name} — Project Achievers</title>
   <meta
     name="description"
-    content="{plural(data.achievements.length, 'succès', 'succès')} sur {data.game
-      .name} : rareté, guides et conseils."
+    content={m.game_description({
+      count: m.count_achievements({ count: data.achievements.length }),
+      game: data.game.name,
+    })}
   />
   <meta property="og:title" content={data.game.name} />
   {#if data.game.headerUrl}<meta property="og:image" content={data.game.headerUrl} />{/if}
@@ -77,19 +81,17 @@
     <div class="min-w-0 flex-1 space-y-2">
       <h1>{data.game.name}</h1>
       <p class="text-sm text-muted">
-        {PLATFORM_LABELS[data.game.platform]} · {plural(
-          data.achievements.length,
-          'succès',
-          'succès',
-        )}
-        · {plural(data.players, 'joueur')}
+        {PLATFORM_LABELS[data.game.platform]} · {m.count_achievements({
+          count: data.achievements.length,
+        })}
+        · {m.count_players({ count: data.players })}
       </p>
       {#if data.versions.length}
         <p class="flex flex-wrap gap-2 text-sm">
           {#each data.versions as version (version.slug)}
             <a href="/jeux/{version.slug}" class="btn h-8">
-              Version {PLATFORM_LABELS[version.platform]}
-              {#if version.completion !== null}· {Math.round(version.completion)} %{/if}
+              {m.version_of({ platform: PLATFORM_LABELS[version.platform] })}
+              {#if version.completion !== null}· {formatPercent(version.completion)}{/if}
             </a>
           {/each}
         </p>
@@ -99,9 +101,9 @@
           <input type="hidden" name="hidden" value={data.progress.hidden ? '0' : '1'} />
           <button class="btn h-8">
             {#if data.progress.hidden}
-              <Eye size={14} aria-hidden="true" /> Remettre dans ma bibliothèque
+              <Eye size={14} aria-hidden="true" /> {m.game_unhide()}
             {:else}
-              <EyeOff size={14} aria-hidden="true" /> Cacher ce jeu
+              <EyeOff size={14} aria-hidden="true" /> {m.game_hide()}
             {/if}
           </button>
         </form>
@@ -111,18 +113,21 @@
               value={data.next.completion}
               tier={data.next.tier}
               base={data.tier}
-              label="Progression vers {TIER_LABELS[data.next.tier]}"
+              label={m.progress_toward({ tier: tierLabel(data.next.tier) })}
             />
             <p class="tabular text-sm text-muted">
-              {TIER_LABELS[data.next.tier]} : {PLATFORM_LABELS[data.next.platform]}
-              {Math.round(data.next.completion)} %
+              {m.next_tier({
+                tier: tierLabel(data.next.tier),
+                platform: PLATFORM_LABELS[data.next.platform],
+                percent: Math.round(data.next.completion),
+              })}
             </p>
           {/if}
           <Progress value={data.progress.completion} tier={complete ? data.tier : 0} />
           <p class="tabular text-sm text-muted">
-            {data.progress.unlockedCount} / {data.progress.totalCount} · {Math.round(
+            {data.progress.unlockedCount} / {data.progress.totalCount} · {formatPercent(
               data.progress.completion,
-            )} %
+            )}
           </p>
         </div>
       {/if}
@@ -130,7 +135,7 @@
   </header>
 
   <div class="flex flex-wrap items-center gap-2">
-    <div class="flex rounded border border-line" role="group" aria-label="Filtrer les succès">
+    <div class="flex rounded border border-line" role="group" aria-label={m.filter_achievements()}>
       {#each filters as item (item.value)}
         <button
           type="button"
@@ -144,9 +149,9 @@
         </button>
       {/each}
     </div>
-    <select class="input ml-auto w-auto" aria-label="Trier les succès" bind:value={sort}>
-      <option value="rarete">Les plus rares</option>
-      <option value="nom">Nom</option>
+    <select class="input ml-auto w-auto" aria-label={m.sort_achievements_label()} bind:value={sort}>
+      <option value="rarete">{m.sort_rarest()}</option>
+      <option value="nom">{m.sort_name()}</option>
     </select>
   </div>
 
@@ -174,7 +179,7 @@
               {#if achievement.unlockedAt}
                 {formatDate(achievement.unlockedAt)}
               {:else if achievement.globalRarity !== null}
-                {achievement.globalRarity.toFixed(1)} %
+                {m.percent({ value: formatRarity(achievement.globalRarity) })}
               {/if}
             </p>
           </div>

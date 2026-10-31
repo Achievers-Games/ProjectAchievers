@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from '$lib/paraglide/messages';
   import { goto } from '$app/navigation';
   import { Search } from '@lucide/svelte';
   import { PLATFORM_LABELS } from '$lib/labels';
@@ -87,7 +88,7 @@
 <dialog
   bind:this={dialog}
   onclose={close}
-  aria-label="Recherche de jeux"
+  aria-label={m.search_dialog()}
   class="mt-[12vh] w-[36rem] max-w-[calc(100vw-2rem)] rounded-md border border-line bg-surface p-0 text-ink backdrop:bg-black/50"
 >
   <div class="flex items-center gap-2 border-b border-line px-3">
@@ -102,12 +103,17 @@
       aria-expanded={results.length > 0}
       aria-controls="palette-results"
       aria-activedescendant={results.length ? `palette-${active}` : undefined}
-      aria-label="Rechercher un jeu"
-      placeholder="Rechercher un jeu…"
+      aria-label={m.search_game()}
+      placeholder={m.search_placeholder()}
       class="h-11 w-full bg-transparent text-sm outline-none"
     />
   </div>
-  <ul id="palette-results" role="listbox" aria-label="Résultats" class="max-h-80 overflow-y-auto">
+  <ul
+    id="palette-results"
+    role="listbox"
+    aria-label={m.search_results()}
+    class="max-h-80 overflow-y-auto"
+  >
     {#each results as result, index (result.slug)}
       <li
         id="palette-{index}"
@@ -125,6 +131,6 @@
     {/each}
   </ul>
   {#if query.trim().length >= 2 && !loading && results.length === 0}
-    <p class="px-3 py-4 text-sm text-muted">Aucun jeu pour « {query.trim()} ».</p>
+    <p class="px-3 py-4 text-sm text-muted">{m.search_none({ query: query.trim() })}</p>
   {/if}
 </dialog>

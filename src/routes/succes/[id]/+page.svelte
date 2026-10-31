@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from '$lib/paraglide/messages';
   import { deserialize, enhance } from '$app/forms';
   import { invalidateAll } from '$app/navigation';
   import type { SubmitFunction } from '@sveltejs/kit';
@@ -7,7 +8,7 @@
   import Avatar from '$lib/components/Avatar.svelte';
   import Empty from '$lib/components/Empty.svelte';
   import TrophyBadge from '$lib/components/TrophyBadge.svelte';
-  import { formatDate, formatRelative, plural } from '$lib/labels';
+  import { formatDate, formatRarity, formatRelative } from '$lib/labels';
   import { toast } from '$lib/stores/toast';
 
   let { data } = $props();
@@ -16,9 +17,9 @@
   let replyTo = $state<string | null>(null);
 
   const REACTIONS = [
-    { type: 'HELPFUL', label: 'Utile', emoji: '👍' },
-    { type: 'THANKS', label: 'Merci', emoji: '🙏' },
-    { type: 'FUNNY', label: 'Drôle', emoji: '😂' },
+    { type: 'HELPFUL', label: m.reaction_helpful(), emoji: '👍' },
+    { type: 'THANKS', label: m.reaction_thanks(), emoji: '🙏' },
+    { type: 'FUNNY', label: m.reaction_funny(), emoji: '😂' },
   ] as const;
 
   /** Applique la réponse sans recharger la page et remonte le résultat en toast. */
@@ -26,7 +27,7 @@
     return async ({ result, update }) => {
       await update({ reset: result.type === 'success', invalidateAll: true });
       if (result.type === 'failure')
-        toast(String(result.data?.error ?? 'Action impossible.'), 'error');
+        toast(String(result.data?.error ?? m.action_failed()), 'error');
       else if (result.type === 'success') {
         if (result.data?.success) toast(String(result.data.success));
         if (formElement.dataset.closes) {
@@ -53,7 +54,7 @@
   };
 
   async function report(type: 'GUIDE' | 'COMMENT', id: string) {
-    const reason = prompt('Pourquoi signaler ce contenu ?');
+    const reason = prompt(m.report_prompt());
     if (!reason) return;
     const body = new FormData();
     body.set('targetType', type);
@@ -65,10 +66,10 @@
       headers: { 'x-sveltekit-action': 'true' },
     });
     const result = deserialize(await response.text());
-    if (result.type === 'success') toast('Signalement envoyé. Merci.');
+    if (result.type === 'success') toast(m.report_sent());
     else {
       const message = result.type === 'failure' ? result.data?.error : null;
-      toast(String(message ?? 'Le signalement a échoué.'), 'error');
+      toast(String(message ?? m.report_failed()), 'error');
     }
   }
 </script>
@@ -92,11 +93,14 @@
       <p class="tabular flex flex-wrap items-center gap-x-3 text-xs text-muted">
         <TrophyBadge type={data.achievement.trophyType} />
         {#if data.achievement.globalRarity !== null}
-          <span>{data.achievement.globalRarity.toFixed(1)} % des joueurs</span>
+          <span>{m.achievement_rarity({ value: formatRarity(data.achievement.globalRarity) })}</span
+          >
         {/if}
-        <span>{plural(data.achievement.points, 'point')}</span>
+        <span>{m.count_points({ count: data.achievement.points })}</span>
         {#if data.unlockedAt}
-          <span class="text-success">Obtenu le {formatDate(data.unlockedAt)}</span>
+          <span class="text-success"
+            >{m.achievement_unlocked_on({ date: formatDate(data.unlockedAt) })}</span
+          >
         {/if}
       </p>
     </div>
@@ -104,17 +108,17 @@
 
   <section class="space-y-3">
     <div class="flex items-center justify-between">
-      <h2>Guides</h2>
+      <h2>{m.guides()}</h2>
       {#if data.user}
         <button type="button" class="btn" onclick={() => (writingGuide = !writingGuide)}>
-          {writingGuide ? 'Annuler' : 'Écrire un guide'}
+          {writingGuide ? m.cancel() : m.guide_write()}
         </button>
       {/if}
     </div>
 
     {#if writingGuide}
       <form method="POST" action="?/guide" use:enhance={submit} data-closes="1" class="space-y-2">
-        <label class="label" for="guide-content">Ton guide (Markdown accepté)</label>
+        <label class="label" for="guide-content">{m.guide_label()}</label>
         <textarea
           id="guide-content"
           name="content"
@@ -123,7 +127,7 @@
           minlength="3"
           class="input h-auto py-2"
         ></textarea>
-        <button class="btn btn-primary">Publier</button>
+        <button class="btn btn-primary">{m.publish()}</button>
       </form>
     {/if}
 
@@ -136,7 +140,7 @@
             value="1"
             class="btn-ghost rounded p-1"
             class:text-accent={guide.myVote === 1}
-            aria-label="Voter pour ce guide"
+            aria-label={m.vote_up()}
             aria-pressed={guide.myVote === 1}
           >
             <ChevronUp size={18} />
@@ -147,7 +151,7 @@
             value="-1"
             class="btn-ghost rounded p-1"
             class:text-danger={guide.myVote === -1}
-            aria-label="Voter contre ce guide"
+            aria-label={m.vote_down()}
             aria-pressed={guide.myVote === -1}
           >
             <ChevronDown size={18} />
@@ -166,7 +170,7 @@
             {#if guide.mine}
               <form method="POST" action="?/deleteGuide" use:enhance={submit}>
                 <input type="hidden" name="id" value={guide.id} />
-                <button class="text-xs text-muted hover:text-danger">Supprimer</button>
+                <button class="text-xs text-muted hover:text-danger">{m.delete()}</button>
               </form>
             {:else if data.user}
               <button
@@ -174,23 +178,22 @@
                 class="flex items-center gap-1 text-xs text-muted hover:text-ink"
                 onclick={() => report('GUIDE', guide.id)}
               >
-                <Flag size={12} aria-hidden="true" /> Signaler
+                <Flag size={12} aria-hidden="true" />
+                {m.report()}
               </button>
             {/if}
           </div>
         </div>
       </article>
     {:else}
-      <Empty title="Pas encore de guide">
-        {data.user
-          ? 'Sois le premier à partager ta méthode.'
-          : 'Connecte-toi pour écrire le premier.'}
+      <Empty title={m.guides_empty()}>
+        {data.user ? m.guides_empty_user() : m.guides_empty_visitor()}
       </Empty>
     {/each}
   </section>
 
   <section class="space-y-3">
-    <h2>Discussion</h2>
+    <h2>{m.discussion()}</h2>
 
     {#snippet commentView(
       comment: (typeof data.comments)[number] | (typeof data.comments)[number]['replies'][number],
@@ -206,7 +209,7 @@
             · {formatRelative(comment.createdAt)}
           </p>
           {#if comment.deleted}
-            <p class="text-sm italic text-muted">Commentaire supprimé.</p>
+            <p class="text-sm italic text-muted">{m.comment_deleted()}</p>
           {:else}
             <!-- eslint-disable-next-line svelte/no-at-html-tags -- assaini par renderMarkdown -->
             <div class="prose-user">{@html comment.html}</div>
@@ -235,13 +238,13 @@
                     class="hover:text-ink"
                     onclick={() => (replyTo = comment.id)}
                   >
-                    Répondre
+                    {m.reply()}
                   </button>
                 {/if}
                 {#if comment.mine}
                   <form method="POST" action="?/deleteComment" use:enhance={submit}>
                     <input type="hidden" name="id" value={comment.id} />
-                    <button class="hover:text-danger">Supprimer</button>
+                    <button class="hover:text-danger">{m.delete()}</button>
                   </form>
                 {:else}
                   <button
@@ -249,7 +252,7 @@
                     class="hover:text-ink"
                     onclick={() => report('COMMENT', comment.id)}
                   >
-                    Signaler
+                    {m.report()}
                   </button>
                 {/if}
               {/if}
@@ -273,11 +276,11 @@
           rows="2"
           required
           minlength="3"
-          aria-label={parentId ? 'Ta réponse' : 'Ton commentaire'}
-          placeholder={parentId ? 'Ta réponse…' : 'Ajouter un commentaire…'}
+          aria-label={parentId ? m.reply_label() : m.comment_label()}
+          placeholder={parentId ? m.reply_placeholder() : m.comment_placeholder()}
           class="input h-auto py-2"
         ></textarea>
-        <button class="btn">Publier</button>
+        <button class="btn">{m.publish()}</button>
       </form>
     {/snippet}
 
@@ -295,7 +298,7 @@
           {/if}
         </div>
       {:else}
-        <p class="text-sm text-muted">Aucun commentaire pour le moment.</p>
+        <p class="text-sm text-muted">{m.comments_empty()}</p>
       {/each}
     </div>
 
@@ -303,7 +306,7 @@
       {@render commentForm(null)}
     {:else}
       <a href="/connexion?retour=/succes/{data.achievement.id}" class="btn">
-        Connecte-toi pour participer
+        {m.sign_in_to_join()}
       </a>
     {/if}
   </section>

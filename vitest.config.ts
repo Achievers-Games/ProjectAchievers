@@ -1,11 +1,20 @@
 import 'dotenv/config';
 import { defineConfig } from 'vitest/config';
 import path from 'node:path';
+import { paraglideVitePlugin } from '@inlang/paraglide-js';
 
 const database = new URL(process.env.DATABASE_URL ?? '');
 database.pathname = '/achievers_test';
 
 export default defineConfig({
+  plugins: [
+    paraglideVitePlugin({
+      project: './project.inlang',
+      outdir: './src/lib/paraglide',
+      strategy: ['cookie', 'preferredLanguage', 'baseLocale'],
+      cookieName: 'pa_lang',
+    }),
+  ],
   resolve: {
     alias: {
       $lib: path.resolve(__dirname, './src/lib'),

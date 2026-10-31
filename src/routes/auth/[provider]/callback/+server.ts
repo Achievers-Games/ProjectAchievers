@@ -9,6 +9,7 @@ import { exchangeXboxCode } from '$lib/server/providers/xbox';
 import { createSession } from '$lib/server/session';
 import { enqueueSync } from '$lib/server/sync/queue';
 import type { RequestHandler } from './$types';
+import { m } from '$lib/paraglide/messages';
 
 async function identityFrom(
   provider: OAuthProvider,
@@ -28,7 +29,7 @@ async function identityFrom(
 
 export const GET: RequestHandler = async ({ params, url, cookies, locals, request }) => {
   const provider = params.provider as OAuthProvider;
-  if (!(provider in OAUTH_PROVIDERS)) error(404, 'Fournisseur inconnu');
+  if (!(provider in OAUTH_PROVIDERS)) error(404, m.provider_unknown());
 
   const flow = takeFlow(cookies, provider, url.searchParams.get('state'));
   if (!flow) redirect(303, '/connexion?erreur=expire');

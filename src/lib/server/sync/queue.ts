@@ -179,7 +179,7 @@ export async function runSync({ userId, provider }: SyncJob) {
   } catch (error) {
     const known = error instanceof SyncError;
     if (!known) console.error(`Synchronisation ${provider} :`, error);
-    const message = known ? error.message : 'La synchronisation a échoué. Réessaie plus tard.';
+    const message = known ? error.message : 'sync_failed_retry';
     const status = known && error.needsRelink ? 'NEEDS_RELINK' : 'FAILED';
 
     await db.$transaction([

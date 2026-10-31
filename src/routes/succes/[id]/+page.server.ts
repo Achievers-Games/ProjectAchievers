@@ -5,6 +5,7 @@ import { db } from '$lib/server/db';
 import { renderMarkdown } from '$lib/server/markdown';
 import { rateLimit } from '$lib/server/rate-limit';
 import type { Actions, PageServerLoad } from './$types';
+import { m } from '$lib/paraglide/messages';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
   const viewerId = locals.user?.id;
@@ -16,7 +17,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
     },
   });
   if (!achievement || (achievement.game.adultOnly && !locals.user?.showAdult)) {
-    error(404, 'Ce succès est introuvable.');
+    error(404, m.achievement_not_found());
   }
 
   const [guides, comments, unlockers] = await Promise.all([
@@ -71,10 +72,8 @@ export const load: PageServerLoad = async ({ params, locals }) => {
   return {
     achievement: {
       id: achievement.id,
-      name: masked ? 'Succès caché' : achievement.name,
-      description: masked
-        ? 'Obtiens ce succès pour révéler sa description.'
-        : achievement.description,
+      name: masked ? m.achievement_hidden() : achievement.name,
+      description: masked ? m.achievement_hidden_text() : achievement.description,
       iconUrl: masked ? null : achievement.iconUrl,
       trophyType: achievement.trophyType,
       globalRarity: achievement.globalRarity,
@@ -96,7 +95,12 @@ export const load: PageServerLoad = async ({ params, locals }) => {
   };
 };
 
-const body = (max: number) => z.string().trim().min(3, 'Ce message est trop court.').max(max);
+const body = (max: number) =>
+  z
+    .string()
+    .trim()
+    .min(3, { error: () => m.too_short() })
+    .max(max);
 
 const reportSchema = z.object({
   targetType: z.enum(['GUIDE', 'COMMENT']),
@@ -118,21 +122,19 @@ const tooFast = (userId: string) => !rateLimit(`publication:${userId}`, 5, 60_00
 
 const achievementExists = async (id: string) => (await db.achievement.count({ where: { id } })) > 0;
 
-const GONE = 'Ce contenu n’existe plus.';
-
 export const actions: Actions = {
   guide: async ({ request, params, locals, url }) => {
     const user = requireUser(locals, url);
     const form = await request.formData();
     const content = body(20_000).safeParse(form.get('content'));
     if (!content.success) return fail(400, { error: content.error.issues[0]?.message });
-    if (tooFast(user.id)) return fail(429, { error: 'Attends une minute avant de republier.' });
-    if (!(await achievementExists(params.id))) return fail(404, { error: GONE });
+    if (tooFast(user.id)) return fail(429, { error: m.too_fast() });
+    if (!(await achievementExists(params.id))) return fail(404, { error: m.gone() });
 
     await db.guide.create({
       data: { achievementId: params.id, authorId: user.id, contentMd: content.data },
     });
-    return { success: 'Guide publié.' };
+    return { success: m.guide_published() };
   },
 
   vote: async ({ request, locals, url }) => {
@@ -141,7 +143,7 @@ export const actions: Actions = {
     const guideId = String(form.get('guideId'));
     const value = Number(form.get('value')) > 0 ? 1 : -1;
     const guide = await db.guide.count({ where: { id: guideId, status: 'PUBLISHED' } });
-    if (!guide) return fail(404, { error: GONE });
+    if (!guide) return fail(404, { error: m.gone() });
 
     await db.$transaction(async (tx) => {
       const key = { guideId_userId: { guideId, userId: user.id } };
@@ -164,8 +166,8 @@ export const actions: Actions = {
     const form = await request.formData();
     const content = body(2_000).safeParse(form.get('content'));
     if (!content.success) return fail(400, { error: content.error.issues[0]?.message });
-    if (tooFast(user.id)) return fail(429, { error: 'Attends une minute avant de republier.' });
-    if (!(await achievementExists(params.id))) return fail(404, { error: GONE });
+    if (tooFast(user.id)) return fail(429, { error: m.too_fast() });
+    if (!(await achievementExists(params.id))) return fail(404, { error: m.gone() });
 
     // Les réponses restent à un seul niveau : plus lisible sur mobile.
     const parentId = form.get('parentId');
@@ -185,17 +187,17 @@ export const actions: Actions = {
         parentId: parent?.id,
       },
     });
-    return { success: 'Commentaire publié.' };
+    return { success: m.comment_published() };
   },
 
   react: async ({ request, locals, url }) => {
     const user = requireUser(locals, url);
     const parsed = reactionSchema.safeParse(Object.fromEntries(await request.formData()));
-    if (!parsed.success) return fail(400, { error: 'Réaction invalide.' });
+    if (!parsed.success) return fail(400, { error: m.reaction_invalid() });
     const comment = await db.comment.count({
       where: { id: parsed.data.commentId, status: 'PUBLISHED' },
     });
-    if (!comment) return fail(404, { error: GONE });
+    if (!comment) return fail(404, { error: m.gone() });
 
     const key = { commentId_userId: { commentId: parsed.data.commentId, userId: user.id } };
     const current = await db.commentReaction.findUnique({ where: key });
@@ -217,7 +219,7 @@ export const actions: Actions = {
       where: { id, authorId: user.id },
       data: { status: 'DELETED', contentMd: '' },
     });
-    return { success: 'Commentaire supprimé.' };
+    return { success: m.comment_deleted() };
   },
 
   deleteGuide: async ({ request, locals, url }) => {
@@ -227,13 +229,13 @@ export const actions: Actions = {
       where: { id, authorId: user.id },
       data: { status: 'DELETED', contentMd: '' },
     });
-    return { success: 'Guide supprimé.' };
+    return { success: m.guide_deleted() };
   },
 
   report: async ({ request, locals, url }) => {
     const user = requireUser(locals, url);
     const parsed = reportSchema.safeParse(Object.fromEntries(await request.formData()));
-    if (!parsed.success) return fail(400, { error: 'Précise la raison du signalement.' });
+    if (!parsed.success) return fail(400, { error: m.report_reason_missing() });
 
     await db.report.upsert({
       where: {
@@ -246,6 +248,6 @@ export const actions: Actions = {
       update: { reason: parsed.data.reason },
       create: { ...parsed.data, reporterId: user.id },
     });
-    return { success: 'Signalement envoyé. Merci.' };
+    return { success: m.report_sent() };
   },
 };

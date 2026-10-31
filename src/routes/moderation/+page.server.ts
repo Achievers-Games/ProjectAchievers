@@ -1,9 +1,10 @@
 import { error, fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import type { Actions, PageServerLoad } from './$types';
+import { m } from '$lib/paraglide/messages';
 
 function requireModerator(locals: App.Locals) {
-  if (!locals.user || locals.user.role === 'USER') error(404, 'Page introuvable');
+  if (!locals.user || locals.user.role === 'USER') error(404, m.not_found());
   return locals.user;
 }
 
@@ -81,7 +82,7 @@ export const actions: Actions = {
         db.game.findUnique({ where: { slug: String(form.get(name)).trim() } }),
       ),
     );
-    if (!first || !second) return fail(404, { error: 'Un de ces jeux est introuvable.' });
+    if (!first || !second) return fail(404, { error: m.mod_game_missing() });
 
     const familyKey = first.familyKey ?? first.id;
     await db.game.updateMany({
@@ -94,7 +95,7 @@ export const actions: Actions = {
     requireModerator(locals);
     const form = await request.formData();
     const report = await db.report.findUnique({ where: { id: String(form.get('id')) } });
-    if (!report) return fail(404, { error: 'Signalement introuvable.' });
+    if (!report) return fail(404, { error: m.mod_report_missing() });
 
     await db.$transaction(async (tx) => {
       if (form.get('hide') === '1') {

@@ -1,42 +1,53 @@
 <script lang="ts">
+  import { m } from '$lib/paraglide/messages';
   import Avatar from '$lib/components/Avatar.svelte';
   import Empty from '$lib/components/Empty.svelte';
   import Progress from '$lib/components/Progress.svelte';
-  import { formatNumber } from '$lib/labels';
+  import { formatNumber, formatPercent, tierLabel } from '$lib/labels';
 
   let { data } = $props();
 
   const rows = $derived([
-    { label: 'Succès', left: data.leftStats.unlocked, right: data.rightStats.unlocked },
-    { label: 'Or', left: data.leftStats.tiers.or, right: data.rightStats.tiers.or },
-    { label: 'Platine', left: data.leftStats.tiers.platine, right: data.rightStats.tiers.platine },
     {
-      label: 'Prismatique',
+      label: m.stat_achievements(),
+      left: data.leftStats.unlocked,
+      right: data.rightStats.unlocked,
+    },
+    { label: tierLabel(1), left: data.leftStats.tiers.or, right: data.rightStats.tiers.or },
+    {
+      label: tierLabel(2),
+      left: data.leftStats.tiers.platine,
+      right: data.rightStats.tiers.platine,
+    },
+    {
+      label: tierLabel(3),
       left: data.leftStats.tiers.prismatique,
       right: data.rightStats.tiers.prismatique,
     },
     {
-      label: 'Légendaire',
+      label: tierLabel(4),
       left: data.leftStats.tiers.legendaire,
       right: data.rightStats.tiers.legendaire,
     },
-    { label: 'Points', left: data.leftStats.points, right: data.rightStats.points },
+    { label: m.stat_points(), left: data.leftStats.points, right: data.rightStats.points },
   ]);
 </script>
 
 <svelte:head>
-  <title>{data.left.displayName} et {data.right.displayName} — Comparaison</title>
+  <title>
+    {m.comparison_title({ left: data.left.displayName, right: data.right.displayName })} — {m.comparison()}
+  </title>
 </svelte:head>
 
 <div class="mx-auto max-w-3xl space-y-6">
-  <h1>Comparaison</h1>
+  <h1>{m.comparison()}</h1>
 
   <div class="card overflow-x-auto">
     <table class="w-full text-sm">
       <thead>
         <tr class="border-b border-line">
           <th scope="col" class="p-3 text-left font-normal text-muted">
-            <span class="sr-only">Statistique</span>
+            <span class="sr-only">{m.stat_label()}</span>
           </th>
           {#each [data.left, data.right] as person (person.id)}
             <th scope="col" class="p-3 text-right">
@@ -65,9 +76,9 @@
   </div>
 
   <section class="space-y-3">
-    <h2>Jeux en commun ({data.games.length})</h2>
+    <h2>{m.common_games({ count: data.games.length })}</h2>
     {#if data.games.length === 0}
-      <Empty title="Aucun jeu en commun" />
+      <Empty title={m.common_games_none()} />
     {:else}
       <ul class="card divide-y divide-line">
         {#each data.games as row (row.game.id)}
@@ -76,7 +87,7 @@
             {#each [row.left, row.right] as side, index (index)}
               <div class="space-y-1">
                 <Progress value={side.completion} />
-                <p class="tabular text-xs text-muted">{Math.round(side.completion)} %</p>
+                <p class="tabular text-xs text-muted">{formatPercent(side.completion)}</p>
               </div>
             {/each}
           </li>
