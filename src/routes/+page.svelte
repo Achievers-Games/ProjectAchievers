@@ -2,11 +2,11 @@
   import { m } from '$lib/paraglide/messages';
   import Empty from '$lib/components/Empty.svelte';
   import GameCard from '$lib/components/GameCard.svelte';
+  import HomeCarousel from '$lib/components/HomeCarousel.svelte';
   import LiveCards from '$lib/components/LiveCards.svelte';
   import Podium from '$lib/components/Podium.svelte';
   import ProviderIcon from '$lib/components/ProviderIcon.svelte';
   import { formatNumber, tierLabel } from '$lib/labels';
-  import { taglineText } from '$lib/taglines';
 
   let { data } = $props();
 
@@ -27,10 +27,9 @@
 
 {#if data.home && data.user}
   <div class="space-y-8">
-    <div class="space-y-1">
-      <h1>{m.home_hello({ name: data.user.displayName })}</h1>
-      <p class="tagline">{taglineText(data.tagline)}</p>
-    </div>
+    <h1>{m.home_hello({ name: data.user.displayName })}</h1>
+
+    <HomeCarousel tagline={data.tagline} member />
 
     {#if data.accounts === 0}
       <Empty title={m.home_no_account()}>
@@ -79,8 +78,9 @@
   </div>
 {:else}
   <div class="space-y-10">
-    <section class="max-w-2xl space-y-4 py-8">
-      <p class="tagline">{taglineText(data.tagline)}</p>
+    <HomeCarousel tagline={data.tagline} member={false} />
+
+    <section class="max-w-2xl space-y-4">
       <h1 class="hero-title">{m.hero_title()}</h1>
       <p class="text-muted">
         {m.hero_text()}

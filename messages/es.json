@@ -437,5 +437,15 @@
   "tagline_6": "No lo abandonas. Lo «retomarás más tarde». Claro.",
   "tagline_7": "Las rebajas las aprovechas hasta el final. Los juegos, nunca.",
   "tagline_8": "Dejaste plantado al jefe final. Sigue esperándote.",
-  "tagline_9": "Nosotros acabamos el sitio. Te toca."
+  "tagline_9": "Nosotros acabamos el sitio. Te toca.",
+  "banner_season_label": "Temporada de inauguración · próximamente",
+  "banner_season_title": "Remátalos.",
+  "banner_season_cta": "Ver mis juegos por acabar",
+  "banner_frames_label": "Recompensas",
+  "banner_frames_text": "Gana marcos y muéstralos en todo el sitio.",
+  "banner_frames_cta": "Ver los marcos",
+  "carousel_label": "Destacado",
+  "carousel_prev": "Banner anterior",
+  "carousel_next": "Banner siguiente",
+  "carousel_go": "Ir al banner {number}"
 }

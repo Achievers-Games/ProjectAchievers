@@ -427,5 +427,15 @@
   "tagline_6": "你没放弃，只是“以后再玩”。当然了。",
   "tagline_7": "打折你一场不落，游戏你一款不通。",
   "tagline_8": "你丢下了最终 Boss。它还在等你。",
-  "tagline_9": "网站我们做完了。该你了。"
+  "tagline_9": "网站我们做完了。该你了。",
+  "banner_season_label": "开幕赛季 · 即将到来",
+  "banner_season_title": "给它们个痛快。",
+  "banner_season_cta": "查看我未完成的游戏",
+  "banner_frames_label": "奖励",
+  "banner_frames_text": "赢取头像框，在全站展示。",
+  "banner_frames_cta": "查看头像框",
+  "carousel_label": "精选",
+  "carousel_prev": "上一张横幅",
+  "carousel_next": "下一张横幅",
+  "carousel_go": "前往第 {number} 张横幅"
 }

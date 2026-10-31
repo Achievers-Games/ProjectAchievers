@@ -19,6 +19,8 @@ export default defineConfig({
   optimizeDeps: {
     include: [
       '@lucide/svelte/icons/chevron-down',
+      '@lucide/svelte/icons/chevron-left',
+      '@lucide/svelte/icons/chevron-right',
       '@lucide/svelte/icons/chevron-up',
       '@lucide/svelte/icons/compass',
       '@lucide/svelte/icons/crown',

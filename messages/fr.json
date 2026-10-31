@@ -437,5 +437,15 @@
   "tagline_6": "Tu ne l'abandonnes pas. Tu « le reprendras plus tard ». Bien sûr.",
   "tagline_7": "Les soldes, tu les finis. Les jeux, jamais.",
   "tagline_8": "Tu as lâché le dernier boss. Il t'attend toujours.",
-  "tagline_9": "On a fini le site. À ton tour."
+  "tagline_9": "On a fini le site. À ton tour.",
+  "banner_season_label": "Saison d'inauguration · bientôt",
+  "banner_season_title": "Achève-les.",
+  "banner_season_cta": "Voir mes jeux à finir",
+  "banner_frames_label": "Récompenses",
+  "banner_frames_text": "Gagne des cadres et affiche-les partout sur le site.",
+  "banner_frames_cta": "Voir les cadres",
+  "carousel_label": "À la une",
+  "carousel_prev": "Bannière précédente",
+  "carousel_next": "Bannière suivante",
+  "carousel_go": "Aller à la bannière {number}"
 }

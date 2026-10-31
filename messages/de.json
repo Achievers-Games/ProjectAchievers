@@ -437,5 +437,15 @@
   "tagline_6": "Du gibst es nicht auf. Du machst „später weiter“. Klar doch.",
   "tagline_7": "Beim Sale bist du immer bis zum Schluss dabei. Bei Spielen nie.",
   "tagline_8": "Du hast den Endboss sitzen lassen. Er wartet immer noch.",
-  "tagline_9": "Wir haben die Website fertig. Jetzt bist du dran."
+  "tagline_9": "Wir haben die Website fertig. Jetzt bist du dran.",
+  "banner_season_label": "Eröffnungssaison · demnächst",
+  "banner_season_title": "Erlöse sie.",
+  "banner_season_cta": "Meine offenen Spiele",
+  "banner_frames_label": "Belohnungen",
+  "banner_frames_text": "Verdiene Rahmen und zeige sie überall auf der Website.",
+  "banner_frames_cta": "Rahmen ansehen",
+  "carousel_label": "Im Fokus",
+  "carousel_prev": "Vorheriges Banner",
+  "carousel_next": "Nächstes Banner",
+  "carousel_go": "Zu Banner {number}"
 }

@@ -37,6 +37,12 @@ test.describe('visiteur', () => {
     await page.goto('/');
     await ready(page);
     await expect(page.locator('.tagline')).not.toBeEmpty();
+
+    await page.getByRole('button', { name: 'Bannière suivante' }).click();
+    await expect(page.getByRole('button', { name: 'Aller à la bannière 2' })).toHaveAttribute(
+      'aria-current',
+      'true',
+    );
   });
 
   test('utilise la police prévue', async ({ page }) => {
@@ -520,7 +526,7 @@ test.describe('mobile', () => {
 
 test('montre le podium et le classement complet', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('link', { name: 'Classement complet' }).click();
+  await page.getByRole('link', { name: 'Classement complet' }).last().click();
   await expect(page).toHaveURL(/classement/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Classement');
 });

@@ -437,5 +437,15 @@
   "tagline_6": "Você não abandonou. Vai “continuar depois”. Sei.",
   "tagline_7": "Promoção você aproveita até o fim. Jogo, nunca.",
   "tagline_8": "Você largou o chefe final. Ele ainda está esperando.",
-  "tagline_9": "A gente terminou o site. Sua vez."
+  "tagline_9": "A gente terminou o site. Sua vez.",
+  "banner_season_label": "Temporada de inauguração · em breve",
+  "banner_season_title": "Acabe com eles.",
+  "banner_season_cta": "Ver meus jogos por terminar",
+  "banner_frames_label": "Recompensas",
+  "banner_frames_text": "Ganhe molduras e mostre-as em todo o site.",
+  "banner_frames_cta": "Ver as molduras",
+  "carousel_label": "Em destaque",
+  "carousel_prev": "Banner anterior",
+  "carousel_next": "Próximo banner",
+  "carousel_go": "Ir para o banner {number}"
 }

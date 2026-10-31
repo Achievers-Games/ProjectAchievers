@@ -437,5 +437,15 @@
   "tagline_6": "You didn't quit. You'll \"get back to it later\". Sure.",
   "tagline_7": "You always catch the end of a sale. Never the end of a game.",
   "tagline_8": "You walked away from the final boss. It's still waiting.",
-  "tagline_9": "We finished the site. Your turn."
+  "tagline_9": "We finished the site. Your turn.",
+  "banner_season_label": "Opening season · coming soon",
+  "banner_season_title": "Finish them.",
+  "banner_season_cta": "See my unfinished games",
+  "banner_frames_label": "Rewards",
+  "banner_frames_text": "Earn frames and show them everywhere on the site.",
+  "banner_frames_cta": "See the frames",
+  "carousel_label": "Featured",
+  "carousel_prev": "Previous banner",
+  "carousel_next": "Next banner",
+  "carousel_go": "Go to banner {number}"
 }

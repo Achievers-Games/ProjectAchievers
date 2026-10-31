@@ -925,6 +925,56 @@
   }
 }
 
-.tagline {
-  @apply text-sm font-semibold italic text-accent;
+
+.carousel {
+  @apply relative overflow-hidden rounded-lg border border-line;
+}
+.carousel-track {
+  @apply flex overflow-x-auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+.carousel-track::-webkit-scrollbar {
+  display: none;
+}
+.carousel-slide {
+  @apply flex min-h-56 w-full shrink-0 flex-col gap-2 px-14 py-6;
+  scroll-snap-align: start;
+  background: linear-gradient(115deg, var(--slide-a), var(--slide-b));
+}
+.carousel-slide[data-slide='saison'] {
+  --slide-a: #2a0f3f;
+  --slide-b: #0d0a1c;
+}
+.carousel-slide[data-slide='classement'] {
+  --slide-a: #3a2a08;
+  --slide-b: #0d0a1c;
+}
+.carousel-slide[data-slide='cadres'] {
+  --slide-a: #0b3142;
+  --slide-b: #0d0a1c;
+}
+.carousel-eyebrow {
+  @apply text-xs font-semibold uppercase tracking-wide text-white/70;
+}
+.carousel-title {
+  @apply text-3xl font-extrabold text-white;
+}
+.carousel-text {
+  @apply max-w-xl text-sm text-white/80;
+}
+.carousel-text.tagline {
+  @apply text-base font-semibold italic text-white;
+}
+.carousel-arrow {
+  @apply absolute top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full bg-black/40 text-white transition-colors hover:bg-black/70;
+}
+.carousel-dots {
+  @apply absolute bottom-3 right-4 flex gap-1.5;
+}
+.carousel-dots button {
+  @apply h-2 w-2 rounded-full bg-white/30 transition-colors;
+}
+.carousel-dots button[aria-current='true'] {
+  @apply bg-white;
 }

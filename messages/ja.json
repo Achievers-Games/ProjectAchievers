@@ -427,5 +427,15 @@
   "tagline_6": "やめたわけじゃない。「あとでやる」んだよね。はいはい。",
   "tagline_7": "セールは最後まで見逃さない。ゲームは最後までやらない。",
   "tagline_8": "ラスボスを放置したね。まだ待ってるよ。",
-  "tagline_9": "サイトは完成した。次は君の番だ。"
+  "tagline_9": "サイトは完成した。次は君の番だ。",
+  "banner_season_label": "オープニングシーズン · 近日開始",
+  "banner_season_title": "とどめを刺せ。",
+  "banner_season_cta": "未完了のゲームを見る",
+  "banner_frames_label": "報酬",
+  "banner_frames_text": "フレームを獲得して、サイト全体で見せよう。",
+  "banner_frames_cta": "フレームを見る",
+  "carousel_label": "注目",
+  "carousel_prev": "前のバナー",
+  "carousel_next": "次のバナー",
+  "carousel_go": "バナー {number} へ移動"
 }
