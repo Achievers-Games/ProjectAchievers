@@ -56,6 +56,7 @@
                   name={person.displayName}
                   src={person.avatarUrl}
                   frame={person.frame}
+                  motion={person.avatarMotionUrl}
                   size={24}
                 />
                 {person.displayName}

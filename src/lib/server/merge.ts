@@ -161,6 +161,7 @@ export async function mergeUsers(merge: PendingMerge): Promise<MergeFailure | nu
           isPublic: source.isPublic && target.isPublic,
           role: ROLE_RANK[source.role] > ROLE_RANK[target.role] ? source.role : target.role,
           avatarUrl: target.avatarUrl ?? source.avatarUrl,
+          avatarMotionUrl: target.avatarUrl ? target.avatarMotionUrl : source.avatarMotionUrl,
           frame: target.frame ?? source.frame,
         },
       });

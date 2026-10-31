@@ -56,6 +56,10 @@ export async function exchangeDiscordCode(code: string, verifier: string): Promi
     avatarUrl: user.avatar
       ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=128`
       : null,
+    // Discord marque ses avatars animés par ce préfixe.
+    avatarMotionUrl: user.avatar?.startsWith('a_')
+      ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.gif?size=128`
+      : null,
     profileUrl: `https://discord.com/users/${user.id}`,
   };
 }

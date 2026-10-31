@@ -778,6 +778,37 @@ describe('traduction des guides et commentaires', () => {
   });
 });
 
+describe('avatars animés', () => {
+  it('suit l’animation du compte dont le profil utilise l’image', async () => {
+    const id = identity({
+      avatarUrl: 'https://a.test/fixe.png',
+      avatarMotionUrl: 'https://a.test/anime.gif',
+    });
+    const created = await resolveIdentity(id, null);
+    if (!created.ok) throw new Error('compte non créé');
+    const read = () =>
+      db.user.findUniqueOrThrow({
+        where: { id: created.userId },
+        select: { avatarMotionUrl: true },
+      });
+    expect(await read()).toEqual({ avatarMotionUrl: 'https://a.test/anime.gif' });
+
+    await resolveIdentity({ ...id, avatarMotionUrl: null }, null);
+    expect(await read()).toEqual({ avatarMotionUrl: null });
+
+    await resolveIdentity(id, null);
+    expect(await read()).toEqual({ avatarMotionUrl: 'https://a.test/anime.gif' });
+
+    const user = await db.user.findUniqueOrThrow({ where: { id: created.userId } });
+    await updateProfile(created.userId, {
+      displayName: 'Pseudo',
+      handle: user.handle,
+      avatarUrl: '',
+    });
+    expect(await read()).toEqual({ avatarMotionUrl: null });
+  });
+});
+
 describe('filtres par niveau', () => {
   async function library(extraCards = 0) {
     const result = await resolveIdentity(identity(), null);

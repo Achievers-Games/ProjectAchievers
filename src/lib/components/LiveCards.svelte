@@ -54,6 +54,7 @@
                   name={drop.user.displayName}
                   src={drop.user.avatarUrl}
                   frame={drop.user.frame}
+                  motion={drop.user.avatarMotionUrl}
                   size={18}
                 />
                 <span class="truncate text-xs font-semibold">{drop.user.displayName}</span>

@@ -73,6 +73,23 @@ export async function fetchSteamIdentity(steamId: string): Promise<Identity> {
     providerUserId: steamId,
     displayName: player?.personaname || `Steam ${steamId.slice(-5)}`,
     avatarUrl: player?.avatarfull,
+    avatarMotionUrl: await fetchSteamAvatarMotion(steamId),
     profileUrl: player?.profileurl ?? `https://steamcommunity.com/profiles/${steamId}`,
   };
+}
+
+/** L'avatar animé est un plus : une panne de Steam ne doit jamais empêcher de se connecter. */
+export async function fetchSteamAvatarMotion(steamId: string): Promise<string | null> {
+  const url = new URL('https://api.steampowered.com/IPlayerService/GetAnimatedAvatar/v1/');
+  url.searchParams.set('key', env().STEAM_API_KEY ?? '');
+  url.searchParams.set('steamid', steamId);
+  try {
+    const response = await fetch(url, { signal: AbortSignal.timeout(10_000) });
+    if (!response.ok) return null;
+    const data = (await response.json()) as { response?: { avatar?: { image_small?: string } } };
+    const image = data.response?.avatar?.image_small;
+    return image ? `https://shared.fastly.steamstatic.com/community_assets/images/${image}` : null;
+  } catch {
+    return null;
+  }
 }

@@ -45,6 +45,7 @@ export async function validateSession(cookies: Cookies) {
           handle: true,
           displayName: true,
           avatarUrl: true,
+          avatarMotionUrl: true,
           frame: true,
           role: true,
           showAdult: true,

@@ -925,7 +925,6 @@
   }
 }
 
-
 .carousel {
   @apply relative overflow-hidden rounded-lg border border-line;
 }
@@ -942,8 +941,7 @@
   scroll-snap-align: start;
   background-image:
     linear-gradient(90deg, rgb(8 6 18 / 0.94) 15%, rgb(8 6 18 / 0.6) 60%, rgb(8 6 18 / 0.2)),
-    var(--art, none),
-    linear-gradient(115deg, var(--slide-a), var(--slide-b));
+    var(--art, none), linear-gradient(115deg, var(--slide-a), var(--slide-b));
   background-position: center;
   background-size: cover;
 }
@@ -989,8 +987,7 @@
 @media (max-width: 639px) {
   .carousel-slide {
     background-image:
-      linear-gradient(rgb(8 6 18 / 0.82), rgb(8 6 18 / 0.82)),
-      var(--art, none),
+      linear-gradient(rgb(8 6 18 / 0.82), rgb(8 6 18 / 0.82)), var(--art, none),
       linear-gradient(115deg, var(--slide-a), var(--slide-b));
   }
 }

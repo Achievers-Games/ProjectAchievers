@@ -65,6 +65,8 @@
       name={profile.user.displayName}
       src={profile.user.avatarUrl}
       frame={profile.user.frame}
+      motion={profile.user.avatarMotionUrl}
+      play="always"
       size={64}
     />
     <div class="min-w-0">

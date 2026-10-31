@@ -6,6 +6,7 @@ export const load: LayoutServerLoad = ({ locals, cookies }) => ({
     handle: locals.user.handle,
     displayName: locals.user.displayName,
     avatarUrl: locals.user.avatarUrl,
+    avatarMotionUrl: locals.user.avatarMotionUrl,
     frame: locals.user.frame,
     role: locals.user.role,
   },

@@ -32,6 +32,8 @@
               name={collector.displayName}
               src={collector.avatarUrl}
               frame={collector.frame}
+              motion={collector.avatarMotionUrl}
+              play="always"
               size={place === 1 ? 64 : 48}
             />
             <span class="max-w-full truncate text-sm font-semibold">{collector.displayName}</span>

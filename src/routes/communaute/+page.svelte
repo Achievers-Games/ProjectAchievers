@@ -13,6 +13,7 @@
     user: string;
     handle: string;
     avatarUrl: string | null;
+    avatarMotionUrl: string | null;
     frame: string | null;
     game: string;
     gameSlug: string;
@@ -63,7 +64,13 @@
       <ul class="space-y-2" aria-live="polite">
         {#each live as event (event.key)}
           <li class="card flex items-center gap-3 p-3" in:fly={{ y: -8, duration: 150 }}>
-            <Avatar name={event.user} src={event.avatarUrl} frame={event.frame} size={28} />
+            <Avatar
+              name={event.user}
+              src={event.avatarUrl}
+              frame={event.frame}
+              motion={event.avatarMotionUrl}
+              size={28}
+            />
             <p class="min-w-0 text-sm">
               {#each liveParts(event) as part, index (index)}
                 {#if part === USER}
@@ -90,6 +97,7 @@
               name={item.user.displayName}
               src={item.user.avatarUrl}
               frame={item.user.frame}
+              motion={item.user.avatarMotionUrl}
               size={28}
             />
             <div class="min-w-0 flex-1">
@@ -140,7 +148,13 @@
               class="flex items-center gap-3 p-3 transition-colors hover:bg-raised"
             >
               <span class="tabular w-5 text-right text-xs text-muted">{index + 1}</span>
-              <Avatar name={row.displayName} src={row.avatarUrl} frame={row.frame} size={28} />
+              <Avatar
+                name={row.displayName}
+                src={row.avatarUrl}
+                frame={row.frame}
+                motion={row.avatarMotionUrl}
+                size={28}
+              />
               <span class="min-w-0 flex-1 truncate text-sm font-medium">{row.displayName}</span>
               <span class="tabular text-sm">{formatNumber(row.unlocked)}</span>
             </a>

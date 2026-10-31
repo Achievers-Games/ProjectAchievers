@@ -27,12 +27,13 @@ export async function updateProfile(
   input: z.infer<typeof profileSchema>,
 ): Promise<'handle_taken' | 'avatar_unknown' | null> {
   // Seule l'image d'un compte lié est acceptée : aucune adresse libre n'atteint les profils publics.
-  if (input.avatarUrl) {
-    const owned = await db.linkedAccount.count({
-      where: { userId, avatarUrl: input.avatarUrl },
-    });
-    if (!owned) return 'avatar_unknown';
-  }
+  const account = input.avatarUrl
+    ? await db.linkedAccount.findFirst({
+        where: { userId, avatarUrl: input.avatarUrl },
+        select: { avatarMotionUrl: true },
+      })
+    : null;
+  if (input.avatarUrl && !account) return 'avatar_unknown';
 
   try {
     await db.user.update({
@@ -40,7 +41,10 @@ export async function updateProfile(
       data: {
         displayName: input.displayName,
         handle: input.handle,
-        ...(input.avatarUrl !== undefined && { avatarUrl: input.avatarUrl || null }),
+        ...(input.avatarUrl !== undefined && {
+          avatarUrl: input.avatarUrl || null,
+          avatarMotionUrl: account?.avatarMotionUrl ?? null,
+        }),
       },
     });
     return null;
@@ -57,6 +61,7 @@ export interface Identity {
   providerUserId: string;
   displayName: string;
   avatarUrl?: string | null;
+  avatarMotionUrl?: string | null;
   profileUrl?: string | null;
   accessToken?: string;
   refreshToken?: string | null;
@@ -72,11 +77,26 @@ function accountData(identity: Identity) {
   return {
     displayName: identity.displayName,
     avatarUrl: identity.avatarUrl,
+    avatarMotionUrl: identity.avatarMotionUrl,
     profileUrl: identity.profileUrl,
     accessTokenEnc: identity.accessToken ? encrypt(identity.accessToken) : null,
     refreshTokenEnc: identity.refreshToken ? encrypt(identity.refreshToken) : null,
     tokenExpiresAt: identity.tokenExpiresAt ?? null,
   };
+}
+
+/** Met à jour l'animation d'un compte, et celle du profil s'il utilise l'image de ce compte. */
+export async function applyAvatarMotion(accountId: string, avatarMotionUrl: string | null) {
+  const account = await db.linkedAccount.update({
+    where: { id: accountId },
+    data: { avatarMotionUrl },
+    select: { userId: true, avatarUrl: true },
+  });
+  if (!account.avatarUrl) return;
+  await db.user.updateMany({
+    where: { id: account.userId, avatarUrl: account.avatarUrl },
+    data: { avatarMotionUrl },
+  });
 }
 
 async function uniqueHandle(name: string): Promise<string> {
@@ -119,6 +139,7 @@ export async function resolveIdentity(
         ...(existing.syncStatus === 'NEEDS_RELINK' && { syncStatus: 'IDLE', syncError: null }),
       },
     });
+    await applyAvatarMotion(existing.id, identity.avatarMotionUrl ?? null);
     return { ok: true, userId: existing.userId, created: false };
   }
 
@@ -144,6 +165,7 @@ export async function resolveIdentity(
       handle: await uniqueHandle(identity.displayName),
       displayName: identity.displayName,
       avatarUrl: identity.avatarUrl,
+      avatarMotionUrl: identity.avatarMotionUrl,
       accounts: {
         create: {
           ...accountData(identity),

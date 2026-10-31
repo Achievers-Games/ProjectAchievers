@@ -114,6 +114,7 @@ export async function runSync({ userId, provider }: SyncJob) {
       displayName: true,
       handle: true,
       avatarUrl: true,
+      avatarMotionUrl: true,
       frame: true,
       isPublic: true,
       showAdult: true,
@@ -136,6 +137,7 @@ export async function runSync({ userId, provider }: SyncJob) {
           user: user.displayName,
           handle: user.handle,
           avatarUrl: user.avatarUrl,
+          avatarMotionUrl: user.avatarMotionUrl,
           frame: user.frame,
           game: game.name,
           gameSlug: game.slug,
@@ -168,11 +170,15 @@ export async function runSync({ userId, provider }: SyncJob) {
       }))
       .filter(({ game }) => user.showAdult || !game.adultOnly);
     if (user.isPublic) {
-      const { displayName, handle, avatarUrl, frame } = user;
+      const { displayName, handle, avatarUrl, avatarMotionUrl, frame } = user;
       for (const { game, unlockedAt } of rewards) {
         const recent = unlockedAt && Date.now() - unlockedAt.getTime() < LIVE_CARD_MAX_AGE;
         if (unlockedAt && recent && !game.adultOnly) {
-          publishCard({ user: { displayName, handle, avatarUrl, frame }, game, unlockedAt });
+          publishCard({
+            user: { displayName, handle, avatarUrl, avatarMotionUrl, frame },
+            game,
+            unlockedAt,
+          });
         }
       }
     }

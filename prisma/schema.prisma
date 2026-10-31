@@ -64,18 +64,20 @@ enum ReportTarget {
 // ── Comptes ────────────────────────────────────────────────────────────
 
 model User {
-  id          String   @id @default(cuid())
-  handle      String   @unique
-  displayName String
-  avatarUrl   String?
+  id              String   @id @default(cuid())
+  handle          String   @unique
+  displayName     String
+  avatarUrl       String?
+  /// Version animée de `avatarUrl`, chargée seulement quand elle doit jouer.
+  avatarMotionUrl String?
   /// Cadre d'avatar équipé, parmi ceux de `frames`.
-  frame       String?
-  isPublic    Boolean  @default(true)
+  frame           String?
+  isPublic        Boolean  @default(true)
   /// Affiche les jeux centrés sur le contenu sexuel, masqués par défaut.
-  showAdult   Boolean  @default(false)
-  role        Role     @default(USER)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  showAdult       Boolean  @default(false)
+  role            Role     @default(USER)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   accounts     LinkedAccount[]
   sessions     Session[]
@@ -122,6 +124,7 @@ model LinkedAccount {
   providerUserId  String
   displayName     String
   avatarUrl       String?
+  avatarMotionUrl String?
   profileUrl      String?
   accessTokenEnc  String?
   refreshTokenEnc String?

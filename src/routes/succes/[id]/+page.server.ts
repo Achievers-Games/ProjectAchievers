@@ -57,7 +57,15 @@ export const load: PageServerLoad = async ({ params, locals }) => {
       where: { achievementId: params.id, status: 'PUBLISHED' },
       orderBy: [{ score: 'desc' }, { createdAt: 'asc' }],
       include: {
-        author: { select: { handle: true, displayName: true, avatarUrl: true, frame: true } },
+        author: {
+          select: {
+            handle: true,
+            displayName: true,
+            avatarUrl: true,
+            avatarMotionUrl: true,
+            frame: true,
+          },
+        },
         votes: viewerId ? { where: { userId: viewerId }, select: { value: true } } : false,
         translations,
       },
@@ -67,14 +75,30 @@ export const load: PageServerLoad = async ({ params, locals }) => {
       orderBy: { createdAt: 'asc' },
       take: 100,
       include: {
-        author: { select: { handle: true, displayName: true, avatarUrl: true, frame: true } },
+        author: {
+          select: {
+            handle: true,
+            displayName: true,
+            avatarUrl: true,
+            avatarMotionUrl: true,
+            frame: true,
+          },
+        },
         reactions: { select: { userId: true, type: true } },
         translations,
         replies: {
           where: { status: { not: 'HIDDEN' } },
           orderBy: { createdAt: 'asc' },
           include: {
-            author: { select: { handle: true, displayName: true, avatarUrl: true, frame: true } },
+            author: {
+              select: {
+                handle: true,
+                displayName: true,
+                avatarUrl: true,
+                avatarMotionUrl: true,
+                frame: true,
+              },
+            },
             reactions: { select: { userId: true, type: true } },
             translations,
           },

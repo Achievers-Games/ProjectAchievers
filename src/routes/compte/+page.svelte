@@ -45,7 +45,10 @@
     ...new Map(
       data.accounts
         .filter((a) => a.avatarUrl)
-        .map((a) => [a.avatarUrl, PROVIDER_LABELS[a.provider]]),
+        .map((a) => [
+          a.avatarUrl,
+          { label: PROVIDER_LABELS[a.provider], motion: a.avatarMotionUrl },
+        ]),
     ),
   ]);
 
@@ -164,7 +167,7 @@
       <fieldset class="space-y-2">
         <legend class="label">{m.profile_avatar()}</legend>
         <div class="flex flex-wrap gap-4">
-          {#each avatars as [url, label] (url)}
+          {#each avatars as [url, { label, motion }] (url)}
             <label class="flex items-center gap-2 text-sm">
               <input
                 type="radio"
@@ -172,7 +175,7 @@
                 value={url}
                 checked={data.profile.avatarUrl === url}
               />
-              <Avatar name={data.profile.displayName} src={url} size={28} />
+              <Avatar name={data.profile.displayName} src={url} {motion} play="always" size={28} />
               {label}
             </label>
           {/each}
