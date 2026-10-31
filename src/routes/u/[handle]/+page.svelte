@@ -1,12 +1,14 @@
 <script lang="ts">
   import { m } from '$lib/paraglide/messages';
   import Link from '@lucide/svelte/icons/link';
+  import AchievementIcon from '$lib/components/AchievementIcon.svelte';
   import Avatar from '$lib/components/Avatar.svelte';
   import Empty from '$lib/components/Empty.svelte';
   import GameCard from '$lib/components/GameCard.svelte';
   import ProviderIcon from '$lib/components/ProviderIcon.svelte';
   import TrophyBadge from '$lib/components/TrophyBadge.svelte';
   import {
+    formatRarity,
     formatDate,
     formatNumber,
     formatRelative,
@@ -116,9 +118,47 @@
     {/each}
   </dl>
 
+  {#if data.pinned.length || isMe}
+    <section class="space-y-3" aria-labelledby="succes-vitrine">
+      <div class="flex items-baseline justify-between gap-4">
+        <h2 id="succes-vitrine">{m.showcase_title()}</h2>
+        {#if isMe}
+          <a href="/compte/vitrine" class="text-sm text-muted hover:text-ink">
+            {m.showcase_edit()}
+          </a>
+        {/if}
+      </div>
+      {#if data.pinned.length}
+        <ul class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {#each data.pinned as achievement (achievement.id)}
+            <li>
+              <a
+                href="/succes/{achievement.id}"
+                class="card flex h-full items-center gap-3 p-3 transition-colors hover:bg-raised"
+              >
+                <AchievementIcon src={achievement.iconUrl} size={48} />
+                <span class="min-w-0">
+                  <span class="block truncate text-sm font-medium">{achievement.name}</span>
+                  <span class="block truncate text-xs text-muted">{achievement.game.name}</span>
+                  {#if achievement.globalRarity !== null}
+                    <span class="block text-xs text-gold">
+                      {m.achievement_rarity({ value: formatRarity(achievement.globalRarity) })}
+                    </span>
+                  {/if}
+                </span>
+              </a>
+            </li>
+          {/each}
+        </ul>
+      {:else}
+        <p class="text-sm text-muted">{m.showcase_empty_mine()}</p>
+      {/if}
+    </section>
+  {/if}
+
   {#if profile.showcase.length}
     <section class="space-y-3" aria-labelledby="vitrine">
-      <h2 id="vitrine">{m.showcase()}</h2>
+      <h2 id="vitrine">{m.showcase_cards()}</h2>
       <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {#each profile.showcase as card (card.id)}
           <GameCard

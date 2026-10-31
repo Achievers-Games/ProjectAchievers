@@ -251,6 +251,28 @@ export async function barelyPlayedGame(userId: string, showAdult = false) {
   return picked ? { name: picked.game.name, minutes: picked.playtimeMinutes } : null;
 }
 
+export const MAX_PINNED = 8;
+
+/** La vitrine choisie par le joueur ; un jeu masqué pour le visiteur n'y apparaît pas. */
+export async function pinnedAchievements(userId: string, showAdult = true) {
+  const rows = await db.pinnedAchievement.findMany({
+    where: { userId, achievement: { game: visibleGames(showAdult) } },
+    orderBy: { position: 'asc' },
+    select: {
+      achievement: {
+        select: {
+          id: true,
+          name: true,
+          iconUrl: true,
+          globalRarity: true,
+          game: { select: { name: true } },
+        },
+      },
+    },
+  });
+  return rows.map((row) => row.achievement);
+}
+
 export interface BannerGame {
   name: string;
   slug: string;

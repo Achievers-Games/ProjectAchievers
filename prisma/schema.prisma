@@ -91,6 +91,18 @@ model User {
   reports      Report[]
   syncRuns     SyncRun[]
   frames       UserFrame[]
+  pinned       PinnedAchievement[]
+}
+
+/// Succès choisis par le joueur pour sa vitrine, dans l'ordre qu'il a décidé.
+model PinnedAchievement {
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievementId String
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  position      Int
+
+  @@id([userId, achievementId])
 }
 
 model UserFrame {
@@ -218,10 +230,11 @@ model Achievement {
   globalRarity          Float?
   points                Int        @default(10)
 
-  unlocks      UserAchievement[]
-  translations AchievementTranslation[]
-  guides       Guide[]
-  comments     Comment[]
+  unlocks           UserAchievement[]
+  translations      AchievementTranslation[]
+  guides            Guide[]
+  comments          Comment[]
+  pinned   PinnedAchievement[]
 
   @@unique([gameId, platformAchievementId])
   @@index([gameId])

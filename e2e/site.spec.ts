@@ -178,7 +178,7 @@ test.describe('membre', () => {
   test('voit ses cartes rares et une révélation après une synchronisation', async ({ page }) => {
     await login(page);
     await page.goto('/u/demo');
-    const showcase = page.getByRole('region', { name: 'Vitrine' });
+    const showcase = page.getByRole('region', { name: 'Mes meilleures cartes' });
     // Hades, fini sur trois plateformes, passe en tête sous une seule carte Prismatique.
     await expect(showcase.locator('a[data-tier]')).toHaveCount(2);
     await expect(showcase.locator('a[data-tier="3"]')).toHaveCount(1);
@@ -484,6 +484,29 @@ test.describe('membre', () => {
     await page.getByRole('radio', { name: 'Aucun' }).check();
     await page.getByRole('button', { name: 'Enregistrer' }).nth(1).click();
     await expect(page.getByText('Cadre enregistré.')).toBeVisible();
+  });
+
+  test('choisit, classe et retire les succès de sa vitrine', async ({ page }) => {
+    await login(page);
+    await page.goto('/compte/vitrine');
+    await ready(page);
+    const add = page.getByRole('button', { name: 'Ajouter' });
+    await add.first().click();
+    await expect(page.getByRole('heading', { name: /Dans ma vitrine \(1\/8\)/ })).toBeVisible();
+    await add.first().click();
+    await expect(page.getByRole('heading', { name: /Dans ma vitrine \(2\/8\)/ })).toBeVisible();
+
+    await page.getByRole('button', { name: 'Descendre' }).first().click();
+    await page.goto('/u/demo');
+    await expect(page.getByRole('heading', { name: 'Vitrine', exact: true })).toBeVisible();
+    await page.getByRole('link', { name: 'Modifier ma vitrine' }).click();
+    await ready(page);
+
+    const remove = page.getByRole('button', { name: 'Retirer' });
+    await remove.first().click();
+    await expect(remove).toHaveCount(1);
+    await remove.first().click();
+    await expect(remove).toHaveCount(0);
   });
 
   test('compare deux profils', async ({ page }) => {

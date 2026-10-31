@@ -159,6 +159,9 @@ export const actions: Actions = {
       });
       if (provider.data !== 'DISCORD' && provider.data !== 'GOOGLE') {
         const platform = provider.data;
+        await tx.pinnedAchievement.deleteMany({
+          where: { userId: user.id, achievement: { game: { platform } } },
+        });
         await tx.userAchievement.deleteMany({
           where: { userId: user.id, achievement: { game: { platform } } },
         });
