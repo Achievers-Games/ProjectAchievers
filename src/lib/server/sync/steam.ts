@@ -41,6 +41,8 @@ async function fetchOwnedGames(steamId: string): Promise<OwnedGame[]> {
     steamid: steamId,
     include_appinfo: 1,
     include_played_free_games: 1,
+    // Par défaut, Steam retire de la liste les jeux qu'il n'a pas validés.
+    skip_unvetted_apps: 0,
   });
   if (!response.ok) throw new Error(`GetOwnedGames a répondu ${response.status}`);
   const data = (await response.json()) as { response?: { games?: OwnedGame[] } };
