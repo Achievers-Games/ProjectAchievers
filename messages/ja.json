@@ -491,5 +491,11 @@
   "season_rule_complete": "シーズン中に 100% 達成したゲーム",
   "season_rules_text": "シーズン前に始めたゲームのみ対象で、1 日の上限は {cap} ポイントです。",
   "season_ranking_empty": "まだ誰も得点していません",
-  "season_waiting_title": "君を待っている"
+  "season_waiting_title": "君を待っている",
+  "nav_season": "とどめを刺せ",
+  "season_badge_help": "このゲームは「とどめを刺せ」シーズンの対象です。",
+  "season_all_games": "対象のゲームをすべて見る",
+  "season_game_counts": "このゲームはシーズンの対象です。",
+  "season_game_soon": "まだ対象外です：{date} までに実績を獲得すると対象になります。",
+  "season_game_no": "シーズン対象外です：開始前に始めている必要がありました。"
 }

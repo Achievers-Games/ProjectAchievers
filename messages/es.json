@@ -501,5 +501,11 @@
   "season_rule_complete": "Juego completado al 100 % durante la temporada",
   "season_rules_text": "Solo cuentan los juegos empezados antes de la temporada, con {cap} puntos como máximo al día.",
   "season_ranking_empty": "Nadie ha puntuado todavía",
-  "season_waiting_title": "Te están esperando"
+  "season_waiting_title": "Te están esperando",
+  "nav_season": "Remátalos",
+  "season_badge_help": "Este juego cuenta para la temporada Remátalos.",
+  "season_all_games": "Todos mis juegos elegibles",
+  "season_game_counts": "Este juego cuenta para la temporada.",
+  "season_game_soon": "Aún no cuenta: consigue un logro antes del {date} para que cuente en la temporada.",
+  "season_game_no": "No cuenta para la temporada: debía empezarse antes de su apertura."
 }

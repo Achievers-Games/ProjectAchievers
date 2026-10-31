@@ -9,7 +9,7 @@ export const load: PageServerLoad = async ({ locals }) => {
   const [stats, library] = await Promise.all([
     seasonStats(SEASON),
     userId
-      ? listGames({ sort: 'progression', page: 1, ownerId: userId, unfinished: true }, userId)
+      ? listGames({ sort: 'progression', page: 1, ownerId: userId, seasonOnly: true }, userId)
       : null,
   ]);
 

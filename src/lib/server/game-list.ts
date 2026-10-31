@@ -14,7 +14,7 @@ const query = z.object({
   page: z.coerce.number().int().min(1).max(10_000).catch(1),
   vue: z.enum(['grille', 'liste']).catch('grille'),
   filtre: z
-    .enum(['restants', 'caches', 'or', 'platine', 'prismatique', 'legendaire'])
+    .enum(['restants', 'saison', 'caches', 'or', 'platine', 'prismatique', 'legendaire'])
     .optional()
     .catch(undefined),
 });
@@ -46,6 +46,7 @@ export async function gamesFromUrl(url: URL, user: App.Locals['user']) {
       page: params.page,
       ownerId,
       unfinished,
+      seasonOnly: own && mine && params.filtre === 'saison',
       tier: mine ? TIERS[params.filtre ?? ''] : undefined,
       // Les jeux cachés ne regardent que leur propriétaire.
       hidden: own && mine && params.filtre === 'caches',

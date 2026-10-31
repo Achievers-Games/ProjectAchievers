@@ -1,7 +1,7 @@
 import { Prisma, type Platform } from '@prisma/client';
 import { db } from './db';
 import { groupLibrary, type LibraryCard } from './library';
-import type { Season } from '$lib/season';
+import { SEASON, seasonState, type Season } from '$lib/season';
 
 export const PAGE_SIZE = 36;
 
@@ -17,6 +17,8 @@ interface GameFilters {
   ownerId?: string;
   /** Avec `ownerId` : seulement les jeux qui ont encore une version à terminer. */
   unfinished?: boolean;
+  /** Avec `ownerId` : seulement les jeux qui comptent pour la saison en cours. */
+  seasonOnly?: boolean;
   /** Avec `ownerId` : seulement les cartes de ce niveau. */
   tier?: number;
   /** Avec `ownerId` : montre les jeux cachés par le joueur, et seulement eux. */
@@ -51,20 +53,37 @@ const tierProgress = (card: LibraryCard) =>
   card.tier + (card.tier ? (card.next?.completion ?? 0) : card.progress.completion) / 100;
 
 /** Bibliothèque d'un joueur : les versions d'un même jeu forment une seule carte. */
-async function listLibrary(filters: GameFilters, ownerId: string, where: Prisma.GameWhereInput) {
+async function listLibrary(
+  filters: GameFilters,
+  ownerId: string,
+  where: Prisma.GameWhereInput,
+  viewerId: string | null,
+) {
   const rows = await db.userGame.findMany({
     where: { userId: ownerId, hidden: Boolean(filters.hidden), game: where },
     select: librarySelect,
   });
-  // Le niveau dépend de toutes les versions : la plateforme se filtre une fois les cartes réunies.
-  const cards = groupLibrary(rows).filter(
-    (card) =>
-      (!filters.platform || card.versions.some((v) => v.platform === filters.platform)) &&
-      (!filters.tier || card.tier === filters.tier) &&
-      (!filters.unfinished ||
-        Boolean(card.next) ||
-        (card.progress.completion < 100 && card.totalAchievements > 0)),
+  const started = ownerId === viewerId ? await seasonStartedGames(ownerId) : new Set<string>();
+  const startedSlugs = new Set(
+    rows.filter((row) => started.has(row.game.id)).map((row) => row.game.slug),
   );
+  // Le niveau dépend de toutes les versions : la plateforme se filtre une fois les cartes réunies.
+  const cards = groupLibrary(rows)
+    .map((card) => ({
+      ...card,
+      seasonEligible:
+        (Boolean(card.next) || card.progress.completion < 100) &&
+        card.versions.some((version) => startedSlugs.has(version.slug)),
+    }))
+    .filter(
+      (card) =>
+        (!filters.platform || card.versions.some((v) => v.platform === filters.platform)) &&
+        (!filters.tier || card.tier === filters.tier) &&
+        (!filters.seasonOnly || card.seasonEligible) &&
+        (!filters.unfinished ||
+          Boolean(card.next) ||
+          (card.progress.completion < 100 && card.totalAchievements > 0)),
+    );
 
   const byName = (a: (typeof cards)[number], b: (typeof cards)[number]) =>
     a.name.localeCompare(b.name, 'fr');
@@ -93,7 +112,7 @@ export async function listGames(filters: GameFilters, viewerId: string | null) {
     ...visibleGames(filters.showAdult),
     ...(filters.q && { name: { contains: filters.q, mode: 'insensitive' } }),
   };
-  if (filters.ownerId) return listLibrary(filters, filters.ownerId, where);
+  if (filters.ownerId) return listLibrary(filters, filters.ownerId, where, viewerId);
   if (filters.platform) where.platform = filters.platform;
 
   // L'identifiant départage les égalités : sans lui, un jeu pourrait passer d'une page à l'autre.
@@ -125,7 +144,16 @@ export async function listGames(filters: GameFilters, viewerId: string | null) {
     db.game.count({ where }),
   ]);
   const items = await withProgress(games, viewerId);
-  return { games: items.map((game) => ({ ...game, versions: [], tier: 0, next: null })), total };
+  return {
+    games: items.map((game) => ({
+      ...game,
+      versions: [],
+      tier: 0,
+      next: null,
+      seasonEligible: false,
+    })),
+    total,
+  };
 }
 
 async function withProgress<T extends { id: string }>(games: T[], viewerId: string | null) {
@@ -258,6 +286,17 @@ export async function barelyPlayedGame(userId: string, showAdult = false) {
 }
 
 export const MAX_SHOWCASE = 8;
+
+/** Jeux du joueur qui compteront : ceux où il a un succès d'avant la saison. */
+export async function seasonStartedGames(userId: string, season = SEASON) {
+  if (seasonState(season) === 'ended') return new Set<string>();
+  const rows = await db.achievement.findMany({
+    where: { unlocks: { some: { userId, unlockedAt: { lt: season.startsAt } } } },
+    distinct: ['gameId'],
+    select: { gameId: true },
+  });
+  return new Set(rows.map((row) => row.gameId));
+}
 
 /** Les cartes obtenues par le joueur, les plus hauts niveaux d'abord. */
 export async function userCards(userId: string, showAdult = false) {

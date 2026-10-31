@@ -27,6 +27,7 @@ export default defineConfig({
       '@lucide/svelte/icons/eye',
       '@lucide/svelte/icons/eye-off',
       '@lucide/svelte/icons/flag',
+      '@lucide/svelte/icons/flame',
       '@lucide/svelte/icons/gamepad-2',
       '@lucide/svelte/icons/gem',
       '@lucide/svelte/icons/languages',

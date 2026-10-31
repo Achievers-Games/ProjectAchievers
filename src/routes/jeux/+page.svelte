@@ -115,6 +115,7 @@
   const collections = [
     { value: null, label: m.games_all_mine() },
     { value: 'restants', label: m.games_unfinished() },
+    { value: 'saison', label: m.nav_season() },
     { value: 'caches', label: m.games_hidden() },
   ];
 
@@ -127,7 +128,11 @@
 
   /** « Non 100 % » sert à voir ce qui est presque fini : les plus avancés passent devant. */
   const collectionHref = (filtre: string | null) =>
-    hrefWith(filtre === 'restants' ? { filtre, tri: 'progression' } : { filtre, tri: null });
+    hrefWith(
+      filtre === 'restants' || filtre === 'saison'
+        ? { filtre, tri: 'progression' }
+        : { filtre, tri: null },
+    );
 
   const platforms = [
     { value: null, label: m.games_all_platforms() },
@@ -171,13 +176,17 @@
     </div>
 
     {#if data.params.mine}
-      <div class="flex rounded border border-line" role="group" aria-label={m.games_collection()}>
-        {#each collections.filter((item) => !data.player || item.value !== 'caches') as item (item.label)}
+      <div
+        class="flex flex-wrap rounded border border-line"
+        role="group"
+        aria-label={m.games_collection()}
+      >
+        {#each collections.filter((item) => !data.player || (item.value !== 'caches' && item.value !== 'saison')) as item (item.label)}
           <a
             href={collectionHref(item.value)}
             data-sveltekit-noscroll
             aria-current={(data.params.filtre ?? null) === item.value ? 'true' : undefined}
-            class="px-3 py-1.5 text-sm transition-colors"
+            class="whitespace-nowrap px-3 py-1.5 text-sm transition-colors"
             class:bg-raised={(data.params.filtre ?? null) === item.value}
             class:text-muted={(data.params.filtre ?? null) !== item.value}
           >
@@ -252,6 +261,7 @@
           versions={game.versions}
           tier={game.tier}
           next={game.next}
+          seasonEligible={game.seasonEligible}
         />
       {/each}
     </div>

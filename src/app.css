@@ -1028,7 +1028,65 @@
 .carousel-leader {
   @apply absolute right-16 top-1/2 hidden w-36 -translate-y-1/2 flex-col items-center gap-1 sm:flex;
 }
-.season-hero {
-  @apply space-y-3 rounded-lg border border-line p-8;
-  background: linear-gradient(115deg, #2a0f3f, #0d0a1c);
+.season-art {
+  @apply relative overflow-hidden rounded-lg border border-line;
+}
+.season-art img {
+  @apply block h-auto w-full;
+}
+.season-embers {
+  @apply pointer-events-none absolute inset-0;
+}
+.season-embers span {
+  @apply absolute rounded-full;
+  bottom: -8px;
+  background: #ffb347;
+  box-shadow:
+    0 0 6px 2px rgb(255 122 61 / 0.9),
+    0 0 14px 4px rgb(220 38 38 / 0.5);
+  mix-blend-mode: screen;
+  animation-name: ember-rise;
+  animation-iteration-count: infinite;
+  animation-timing-function: ease-out;
+}
+@keyframes ember-rise {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(1);
+  }
+  12% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--drift), -340px) scale(0.3);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .season-embers {
+    display: none;
+  }
+}
+.season-tab {
+  @apply ml-1 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-bold transition-transform hover:scale-105;
+  color: #1a0d05;
+  background: linear-gradient(100deg, #ffd166, #ff7a3d);
+  box-shadow: 0 0 14px rgb(255 122 61 / 0.45);
+}
+.season-badge {
+  @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold;
+  color: #1a0d05;
+  background: linear-gradient(100deg, #ffd166, #ff7a3d);
+}
+/* Décale chaque carte dans ses boucles, sans changer leur durée. */
+.game-card,
+.game-card::before,
+.game-card::after,
+.game-card *,
+.game-card *::before,
+.game-card *::after {
+  animation-delay: calc(var(--phase, 0) * -6s);
 }

@@ -501,5 +501,11 @@
   "season_rule_complete": "Jogo concluído em 100% durante a temporada",
   "season_rules_text": "Só contam jogos começados antes da temporada, com no máximo {cap} pontos por dia.",
   "season_ranking_empty": "Ninguém pontuou ainda",
-  "season_waiting_title": "Eles estão te esperando"
+  "season_waiting_title": "Eles estão te esperando",
+  "nav_season": "Acabe com eles",
+  "season_badge_help": "Este jogo conta para a temporada Acabe com eles.",
+  "season_all_games": "Todos os meus jogos elegíveis",
+  "season_game_counts": "Este jogo conta para a temporada.",
+  "season_game_soon": "Ainda não conta: obtenha uma conquista antes de {date} para que conte na temporada.",
+  "season_game_no": "Não conta para a temporada: precisava ser começado antes da abertura."
 }

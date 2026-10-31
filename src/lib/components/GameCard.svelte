@@ -1,6 +1,7 @@
 <script lang="ts">
   import { m } from '$lib/paraglide/messages';
   import type { Platform } from '@prisma/client';
+  import Flame from '@lucide/svelte/icons/flame';
   import CompleteBadge from './CompleteBadge.svelte';
   import Progress from './Progress.svelte';
   import { tilt } from '$lib/actions/tilt';
@@ -20,6 +21,7 @@
     versions?: { platform: Platform; slug: string; completion: number }[];
     tier?: number;
     next?: NextTier | null;
+    seasonEligible?: boolean;
   }
 
   let {
@@ -29,11 +31,17 @@
     versions = [],
     tier = 0,
     next = null,
+    seasonEligible = false,
   }: Props = $props();
   const list = $derived(layout === 'liste');
   const complete = $derived(isComplete(progress));
   const level = $derived(tier || 1);
   const step = $derived(progress ? stepOf(progress.completion) : 0);
+  /** Tirée du jeu pour rester stable : les cartes d'une page ne brillent pas en même temps. */
+  const phase = $derived(
+    (([...game.slug].reduce((sum, letter) => sum * 31 + letter.charCodeAt(0), 7) >>> 0) % 1000) /
+      1000,
+  );
 </script>
 
 <a
@@ -44,6 +52,7 @@
   data-step={step || undefined}
   data-owned={progress ? true : undefined}
   data-next={next?.tier}
+  style:--phase={phase}
   class="game-card card group flex overflow-hidden"
   class:flex-col={!list}
   class:items-center={list}
@@ -61,6 +70,12 @@
         class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
       />
     {/if}
+    {#if seasonEligible && !list}
+      <span class="season-badge absolute left-2 top-2" title={m.season_badge_help()}>
+        <Flame size={11} aria-hidden="true" />
+        {m.nav_season()}
+      </span>
+    {/if}
     {#if step && !list}
       <span class="step-badge absolute right-2 top-2">{formatPercent(step * 25)}</span>
     {/if}
@@ -74,6 +89,12 @@
   <div class="min-w-0 flex-1 space-y-2 p-3">
     <div class="flex items-center justify-between gap-2">
       <h3 class="truncate text-sm font-medium">{game.name}</h3>
+      {#if seasonEligible && list}
+        <span class="season-badge shrink-0" title={m.season_badge_help()}>
+          <Flame size={11} aria-hidden="true" />
+          {m.nav_season()}
+        </span>
+      {/if}
       {#if complete && list}<CompleteBadge tier={level} />{/if}
     </div>
     {#if progress}

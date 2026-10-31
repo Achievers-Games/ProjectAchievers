@@ -5,6 +5,7 @@
   import { invalidateAll, onNavigate } from '$app/navigation';
   import { navigating, page } from '$app/state';
   import Compass from '@lucide/svelte/icons/compass';
+  import Flame from '@lucide/svelte/icons/flame';
   import Gamepad2 from '@lucide/svelte/icons/gamepad-2';
   import Languages from '@lucide/svelte/icons/languages';
   import Search from '@lucide/svelte/icons/search';
@@ -32,6 +33,12 @@
       icon: User,
       exact: false,
     },
+  ]);
+
+  const mobileLinks = $derived([
+    ...links.slice(0, 2),
+    { href: '/saison', label: m.nav_season(), icon: Flame, exact: false },
+    ...links.slice(2),
   ]);
 
   const userId = $derived(data.user?.id);
@@ -120,6 +127,14 @@
           {link.label}
         </a>
       {/each}
+      <a
+        href="/saison"
+        aria-current={isActive('/saison', false) ? 'page' : undefined}
+        class="season-tab"
+      >
+        <Flame size={14} aria-hidden="true" />
+        {m.nav_season()}
+      </a>
     </nav>
 
     <div class="ml-auto flex items-center gap-2">
@@ -180,9 +195,9 @@
 
 <nav
   aria-label={m.nav_mobile()}
-  class="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-line bg-bg md:hidden"
+  class="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-line bg-bg md:hidden"
 >
-  {#each links as link (link.href)}
+  {#each mobileLinks as link (link.href)}
     {@const Icon = link.icon}
     <a
       href={link.href}

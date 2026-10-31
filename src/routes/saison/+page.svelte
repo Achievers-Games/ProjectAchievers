@@ -10,7 +10,18 @@
 
   const MINUTE = 60_000;
 
+  const EMBERS = 36;
+
   let { data } = $props();
+
+  /** Réparties par calcul : le serveur et le navigateur dessinent les mêmes braises. */
+  const embers = Array.from({ length: EMBERS }, (_, index) => ({
+    left: (index * 37) % 100,
+    size: 2 + (index % 4),
+    delay: -((index * 730) % 7000),
+    duration: 3500 + ((index * 410) % 3500),
+    drift: ((index * 53) % 90) - 45,
+  }));
 
   let now = $state<number | null>(null);
 
@@ -63,14 +74,31 @@
 </svelte:head>
 
 <div class="space-y-8">
-  <header class="season-hero">
-    <p class="carousel-eyebrow">{stateLabels[data.state]()}</p>
-    <h1 class="hero-title text-white">{m.banner_season_title()}</h1>
-    <p class="max-w-xl text-white/80">{m.season_intro()}</p>
-    <p class="tabular text-sm font-semibold text-white">
-      {formatDate(data.startsAt)} → {formatDate(data.endsAt)}
-      {#if countdown && data.state !== 'ended'}· {countdown}{/if}
-    </p>
+  <header class="space-y-4">
+    <div class="season-art">
+      <img src="/saison/finish-them.webp" alt="Finish them" width="1536" height="640" />
+      <div class="season-embers" aria-hidden="true">
+        {#each embers as ember, index (index)}
+          <span
+            style:left="{ember.left}%"
+            style:width="{ember.size}px"
+            style:height="{ember.size}px"
+            style:animation-delay="{ember.delay}ms"
+            style:animation-duration="{ember.duration}ms"
+            style:--drift="{ember.drift}px"
+          ></span>
+        {/each}
+      </div>
+    </div>
+    <div class="space-y-2">
+      <p class="label uppercase tracking-wide">{stateLabels[data.state]()}</p>
+      <h1>{m.banner_season_title()}</h1>
+      <p class="max-w-xl text-muted">{m.season_intro()}</p>
+      <p class="tabular text-sm font-semibold">
+        {formatDate(data.startsAt)} → {formatDate(data.endsAt)}
+        {#if countdown && data.state !== 'ended'}· {countdown}{/if}
+      </p>
+    </div>
   </header>
 
   <section class="card space-y-3 p-5" aria-labelledby="objectif">
@@ -162,7 +190,12 @@
 
   {#if data.waiting.length}
     <section class="space-y-3" aria-labelledby="attente">
-      <h2 id="attente">{m.season_waiting_title()}</h2>
+      <div class="flex items-baseline justify-between gap-4">
+        <h2 id="attente">{m.season_waiting_title()}</h2>
+        <a href="/jeux?filtre=saison&tri=progression" class="text-sm text-muted hover:text-ink">
+          {m.season_all_games()}
+        </a>
+      </div>
       <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {#each data.waiting as game (game.id)}
           <GameCard
@@ -171,6 +204,7 @@
             versions={game.versions}
             tier={game.tier}
             next={game.next}
+            seasonEligible={game.seasonEligible}
           />
         {/each}
       </div>

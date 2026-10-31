@@ -501,5 +501,11 @@
   "season_rule_complete": "Spiel während der Saison zu 100 % abgeschlossen",
   "season_rules_text": "Es zählen nur vor der Saison begonnene Spiele, mit höchstens {cap} Punkten pro Tag.",
   "season_ranking_empty": "Noch hat niemand gepunktet",
-  "season_waiting_title": "Sie warten auf dich"
+  "season_waiting_title": "Sie warten auf dich",
+  "nav_season": "Erlöse sie",
+  "season_badge_help": "Dieses Spiel zählt für die Saison Erlöse sie.",
+  "season_all_games": "Alle meine zählenden Spiele",
+  "season_game_counts": "Dieses Spiel zählt für die Saison.",
+  "season_game_soon": "Zählt noch nicht: Hol dir vor dem {date} einen Erfolg, damit es für die Saison zählt.",
+  "season_game_no": "Zählt nicht für die Saison: Es musste vor dem Start begonnen werden."
 }

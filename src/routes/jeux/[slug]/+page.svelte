@@ -4,6 +4,7 @@
   import type { SubmitFunction } from '@sveltejs/kit';
   import Eye from '@lucide/svelte/icons/eye';
   import EyeOff from '@lucide/svelte/icons/eye-off';
+  import Flame from '@lucide/svelte/icons/flame';
   import Lock from '@lucide/svelte/icons/lock';
   import AchievementIcon from '$lib/components/AchievementIcon.svelte';
   import CompleteBadge from '$lib/components/CompleteBadge.svelte';
@@ -97,6 +98,21 @@
             </a>
           {/each}
         </p>
+      {/if}
+      {#if data.season}
+        <a href="/saison" class="flex flex-wrap items-center gap-2 text-sm">
+          {#if data.season.counts}
+            <span class="season-badge"><Flame size={11} aria-hidden="true" /> {m.nav_season()}</span
+            >
+            {m.season_game_counts()}
+          {:else if data.season.state === 'soon'}
+            <span class="text-muted">
+              {m.season_game_soon({ date: formatDate(data.season.startsAt) })}
+            </span>
+          {:else}
+            <span class="text-muted">{m.season_game_no()}</span>
+          {/if}
+        </a>
       {/if}
       {#if data.progress}
         <form method="POST" action="?/hide" use:enhance={toggleHidden}>

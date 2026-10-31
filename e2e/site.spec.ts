@@ -54,7 +54,8 @@ test.describe('visiteur', () => {
   });
 
   test('présente l’événement et son objectif commun', async ({ page }) => {
-    await page.goto('/saison');
+    await page.goto('/');
+    await page.getByRole('link', { name: 'Achève-les', exact: true }).first().click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Achève-les.');
     await expect(page.getByRole('heading', { name: 'Objectif commun' })).toBeVisible();
     await expect(page.getByRole('progressbar', { name: 'Objectif commun' })).toBeVisible();
@@ -526,6 +527,14 @@ test.describe('membre', () => {
     await expect(page).toHaveURL(/\/u\/demo/);
     await page.getByRole('link', { name: 'Modifier', exact: true }).click();
     await expect(page).toHaveURL(/\/compte$/);
+  });
+
+  test('repère les jeux qui comptent pour la saison', async ({ page }) => {
+    await login(page);
+    await page.goto('/jeux?filtre=saison&tri=progression');
+    await expect(page.locator('.season-badge').first()).toBeVisible();
+    await page.locator('.game-card').first().click();
+    await expect(page.getByText('Ce jeu compte pour la saison.')).toBeVisible();
   });
 
   test('compare deux profils', async ({ page }) => {

@@ -2,7 +2,8 @@ import { error, fail } from '@sveltejs/kit';
 import { nextTier, tierFor } from '$lib/collection';
 import { db } from '$lib/server/db';
 import { ensureGameTexts, localizeAchievements } from '$lib/server/achievement-texts';
-import { visibleGames } from '$lib/server/queries';
+import { seasonStartedGames, visibleGames } from '$lib/server/queries';
+import { SEASON, seasonState } from '$lib/season';
 import { getLocale } from '$lib/paraglide/runtime';
 import type { Actions, PageServerLoad } from './$types';
 import { m } from '$lib/paraglide/messages';
@@ -41,6 +42,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
             ...visibleGames(locals.user?.showAdult),
           },
           select: {
+            id: true,
             slug: true,
             platform: true,
             players: {
@@ -58,6 +60,19 @@ export const load: PageServerLoad = async ({ params, locals }) => {
     ...(progress && progress.completion >= 100 ? [game] : []),
     ...others.filter((other) => (other.players[0]?.completion ?? 0) >= 100),
   ];
+
+  const state = seasonState(SEASON);
+  const started = locals.user ? await seasonStartedGames(locals.user.id) : new Set<string>();
+  const unfinished =
+    !progress ||
+    progress.completion < 100 ||
+    others.some((other) => other.players[0] && other.players[0].completion < 100);
+  const counts =
+    unfinished && [game.id, ...others.map((other) => other.id)].some((id) => started.has(id));
+  const season =
+    locals.user && state !== 'ended' && game.totalAchievements > 0 && unfinished
+      ? { state, counts, startsAt: SEASON.startsAt }
+      : null;
 
   const locale = getLocale();
   await ensureGameTexts(game, locale);
@@ -80,6 +95,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
       };
     }),
     progress,
+    season,
     players,
     versions: others.map((other) => ({
       slug: other.slug,

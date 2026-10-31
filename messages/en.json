@@ -501,5 +501,11 @@
   "season_rule_complete": "Game completed to 100% during the season",
   "season_rules_text": "Only games started before the season count, with {cap} points maximum per day.",
   "season_ranking_empty": "Nobody has scored yet",
-  "season_waiting_title": "They're waiting for you"
+  "season_waiting_title": "They're waiting for you",
+  "nav_season": "Finish them",
+  "season_badge_help": "This game counts for the Finish them season.",
+  "season_all_games": "All my eligible games",
+  "season_game_counts": "This game counts for the season.",
+  "season_game_soon": "Does not count yet: earn an achievement before {date} to make it count for the season.",
+  "season_game_no": "Does not count for the season: it had to be started before it opened."
 }

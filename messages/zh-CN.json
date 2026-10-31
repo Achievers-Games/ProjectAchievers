@@ -491,5 +491,11 @@
   "season_rule_complete": "赛季期间 100% 完成的游戏",
   "season_rules_text": "只计算赛季前已开始的游戏，每天最多 {cap} 分。",
   "season_ranking_empty": "还没有人得分",
-  "season_waiting_title": "它们在等你"
+  "season_waiting_title": "它们在等你",
+  "nav_season": "给它们个痛快",
+  "season_badge_help": "这款游戏计入“给它们个痛快”赛季。",
+  "season_all_games": "我所有符合条件的游戏",
+  "season_game_counts": "这款游戏计入赛季。",
+  "season_game_soon": "暂不计入：在 {date} 前获得一个成就，它就会计入赛季。",
+  "season_game_no": "不计入赛季：必须在赛季开始前开始游玩。"
 }
