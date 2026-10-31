@@ -45,6 +45,10 @@ const librarySelect = {
 /** Le pourcentage affiché sur la carte : celui du niveau suivant, s'il est en cours. */
 const shownProgress = (card: LibraryCard) => card.next?.completion ?? card.progress.completion;
 
+/** Position sur l'échelle des niveaux : une carte Or à 58 % du Platine vaut 1,58. */
+const tierProgress = (card: LibraryCard) =>
+  card.tier + (card.tier ? (card.next?.completion ?? 0) : card.progress.completion) / 100;
+
 /** Bibliothèque d'un joueur : les versions d'un même jeu forment une seule carte. */
 async function listLibrary(filters: GameFilters, ownerId: string, where: Prisma.GameWhereInput) {
   const rows = await db.userGame.findMany({
@@ -68,9 +72,9 @@ async function listLibrary(filters: GameFilters, ownerId: string, where: Prisma.
       return b.totalAchievements - a.totalAchievements || byName(a, b);
     }
     if (filters.sort === 'progression') {
-      // Dans « Non 100 % », seul compte ce qui est presque fini ; sinon les plus belles cartes d'abord.
-      const tier = filters.unfinished ? 0 : b.tier - a.tier;
-      return tier || shownProgress(b) - shownProgress(a) || byName(a, b);
+      // Dans « Non 100 % », seul compte ce qui est presque fini.
+      const rank = filters.unfinished ? shownProgress : tierProgress;
+      return rank(b) - rank(a) || byName(a, b);
     }
     if (filters.sort === 'recent') {
       const time = (card: typeof a) => card.lastUnlockedAt?.getTime() ?? 0;

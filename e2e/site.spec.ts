@@ -391,7 +391,7 @@ test.describe('membre', () => {
       .click();
     await expect(page).toHaveURL(/\/succes\//);
 
-    const marker = `Astuce ${Date.now()}`;
+    const marker = `À traduire ${Date.now()}`;
     await page.getByRole('textbox', { name: 'Ton commentaire' }).fill(marker);
     await page.getByRole('button', { name: 'Publier' }).click();
     const mine = page.getByRole('article').filter({ hasText: marker });

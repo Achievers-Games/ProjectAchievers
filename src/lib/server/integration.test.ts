@@ -808,6 +808,7 @@ describe('filtres par niveau', () => {
     await add('platine', 'PSN', 100, platinum);
     await add('or', 'STEAM', 100, gold);
     await add('or', 'PSN', 40, gold);
+    await add('or seul', 'STEAM', 100);
     await add('presque', 'STEAM', 90);
     await add('debut', 'PSN', 10);
     return { sort: 'progression', page: 1, ownerId: userId } as const;
@@ -821,11 +822,12 @@ describe('filtres par niveau', () => {
     expect(names(steam)).toEqual(['platine']);
   });
 
-  it('range les plus belles cartes d’abord, puis par progression', async () => {
+  it('place chaque carte selon son avancée vers le niveau suivant', async () => {
     const filters = await library();
     expect(names(await listGames(filters, filters.ownerId))).toEqual([
       'platine',
       'or',
+      'or seul',
       'presque',
       'debut',
     ]);
