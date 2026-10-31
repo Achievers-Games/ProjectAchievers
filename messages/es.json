@@ -449,5 +449,16 @@
   "carousel_next": "Banner siguiente",
   "carousel_go": "Ir al banner {number}",
   "games_of": "Juegos de {name}",
-  "games_see_all": "Ver los {count} juegos"
+  "games_see_all": "Ver los {count} juegos",
+  "tagline_10": "No terminaste este juego. Como todo lo demás.",
+  "tagline_11": "Abandonar es tu verdadero 100 %.",
+  "tagline_12": "Tus juegos ya no te esperan. Han rehecho su vida.",
+  "tagline_13": "Rendirse con rabia no es un logro.",
+  "tagline_14": "Comprar no es jugar.",
+  "tagline_15": "Sé bueno. Remátalos.",
+  "tagline_16": "Sigues con {game} al {percent} %. Vas progresando. No.",
+  "tagline_17": "Tu historial de juego te avergüenza. A nosotros también.",
+  "tagline_18": "Dijiste «lo acabo este fin de semana». Fue en 2019.",
+  "tagline_19": "Nadie te juzga. Bueno, nosotros sí.",
+  "tagline_20": "{minutes} minutos en {game}. Y te atreves a decir que lo has probado."
 }

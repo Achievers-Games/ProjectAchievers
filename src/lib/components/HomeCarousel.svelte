@@ -5,7 +5,7 @@
   import { formatPercent } from '$lib/labels';
   import { FRAMES } from '$lib/frames';
   import Avatar from './Avatar.svelte';
-  import type { BannerGame } from '$lib/server/queries';
+  import type { BannerGame, Collector } from '$lib/server/queries';
 
   const AUTOPLAY = 7_000;
 
@@ -13,11 +13,17 @@
     tagline,
     banners,
     avatar = null,
+    avatarMotion = null,
     member,
   }: {
     tagline: string;
-    banners: { season: BannerGame | null; ranking: BannerGame | null };
+    banners: {
+      season: BannerGame | null;
+      ranking: BannerGame | null;
+      leader: Collector | null;
+    };
     avatar?: string | null;
+    avatarMotion?: string | null;
     member: boolean;
   } = $props();
 
@@ -115,10 +121,37 @@
             </a>
           {/if}
         </div>
+        {#if slide.id === 'classement' && banners.leader}
+          {@const leader = banners.leader}
+          <a href="/u/{leader.handle}" class="carousel-leader">
+            <Avatar
+              name={leader.displayName}
+              src={leader.avatarUrl}
+              motion={leader.avatarMotionUrl}
+              frame={leader.frame}
+              frameMotion={leader.frameMotionUrl}
+              play="always"
+              size={96}
+            />
+            <span class="max-w-full truncate text-sm font-bold text-white">
+              {leader.displayName}
+            </span>
+            <span class="text-xs font-semibold text-gold">
+              {m.count_points({ count: leader.score })}
+            </span>
+          </a>
+        {/if}
         {#if slide.id === 'cadres'}
           <div class="carousel-frames" aria-hidden="true">
             {#each FRAMES as frame (frame)}
-              <Avatar name="Achievers" src={avatar} {frame} size={56} />
+              <Avatar
+                name="Achievers"
+                src={member ? avatar : banners.leader?.avatarUrl}
+                motion={member ? avatarMotion : banners.leader?.avatarMotionUrl}
+                play="always"
+                {frame}
+                size={56}
+              />
             {/each}
           </div>
         {/if}

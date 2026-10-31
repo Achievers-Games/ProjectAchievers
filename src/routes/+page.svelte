@@ -33,6 +33,7 @@
       tagline={data.tagline}
       banners={data.banners}
       avatar={data.user.avatarUrl}
+      avatarMotion={data.user.avatarMotionUrl}
       member
     />
 

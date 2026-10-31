@@ -449,5 +449,16 @@
   "carousel_next": "Next banner",
   "carousel_go": "Go to banner {number}",
   "games_of": "{name}'s games",
-  "games_see_all": "See all {count} games"
+  "games_see_all": "See all {count} games",
+  "tagline_10": "You didn't finish this game. Just like everything else.",
+  "tagline_11": "Quitting is your real 100%.",
+  "tagline_12": "Your games stopped waiting. They've moved on.",
+  "tagline_13": "Rage quitting isn't an achievement.",
+  "tagline_14": "Buying isn't playing.",
+  "tagline_15": "Be kind. Finish them.",
+  "tagline_16": "Still {game} at {percent}%. You're making progress. No.",
+  "tagline_17": "Your play history embarrasses you. Us too.",
+  "tagline_18": "You said \"I'll finish it this weekend\". That was in 2019.",
+  "tagline_19": "Nobody's judging. Well, we are.",
+  "tagline_20": "{minutes} minutes on {game}. And you dare say you tried it."
 }

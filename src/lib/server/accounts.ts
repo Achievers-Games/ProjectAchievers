@@ -100,12 +100,13 @@ function accountData(identity: Identity) {
 export async function applyAccountLook(
   account: { id: string; userId: string; avatarUrl: string | null; frameUrl: string | null },
   look: AccountLook,
+  avatarUrl = account.avatarUrl,
 ) {
   await db.linkedAccount.update({ where: { id: account.id }, data: look });
   if (account.avatarUrl) {
     await db.user.updateMany({
       where: { id: account.userId, avatarUrl: account.avatarUrl },
-      data: { avatarMotionUrl: look.avatarMotionUrl },
+      data: { avatarUrl, avatarMotionUrl: look.avatarMotionUrl },
     });
   }
   // Un cadre retiré de la plateforme disparaît aussi du profil qui l'avait équipé.
@@ -157,11 +158,15 @@ export async function resolveIdentity(
         ...(existing.syncStatus === 'NEEDS_RELINK' && { syncStatus: 'IDLE', syncError: null }),
       },
     });
-    await applyAccountLook(existing, {
-      avatarMotionUrl: identity.avatarMotionUrl ?? null,
-      frameUrl: identity.frameUrl ?? null,
-      frameMotionUrl: identity.frameMotionUrl ?? null,
-    });
+    await applyAccountLook(
+      existing,
+      {
+        avatarMotionUrl: identity.avatarMotionUrl ?? null,
+        frameUrl: identity.frameUrl ?? null,
+        frameMotionUrl: identity.frameMotionUrl ?? null,
+      },
+      identity.avatarUrl,
+    );
     return { ok: true, userId: existing.userId, created: false };
   }
 

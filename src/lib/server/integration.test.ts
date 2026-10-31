@@ -824,6 +824,16 @@ describe('cadres importés', () => {
     expect((await db.user.findUniqueOrThrow({ where })).frame).toBeNull();
   });
 
+  it('suit le nouvel avatar d’un compte déjà choisi', async () => {
+    const id = identity({ avatarUrl: 'https://a.test/ancien.png' });
+    const created = await resolveIdentity(id, null);
+    if (!created.ok) throw new Error('compte non créé');
+
+    await resolveIdentity({ ...id, avatarUrl: 'https://a.test/nouveau.png' }, null);
+    const user = await db.user.findUniqueOrThrow({ where: { id: created.userId } });
+    expect(user.avatarUrl).toBe('https://a.test/nouveau.png');
+  });
+
   it('ne touche pas au cadre du site équipé', async () => {
     const id = identity({ frameUrl: 'https://a.test/cadre.png' });
     const created = await resolveIdentity(id, null);

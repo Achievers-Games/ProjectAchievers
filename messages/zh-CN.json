@@ -439,5 +439,16 @@
   "carousel_next": "下一张横幅",
   "carousel_go": "前往第 {number} 张横幅",
   "games_of": "{name} 的游戏",
-  "games_see_all": "查看全部 {count} 款游戏"
+  "games_see_all": "查看全部 {count} 款游戏",
+  "tagline_10": "这款游戏你没通关。和其他一样。",
+  "tagline_11": "放弃才是你真正的 100%。",
+  "tagline_12": "你的游戏不再等你了，它们有了新生活。",
+  "tagline_13": "怒退不算成就。",
+  "tagline_14": "买了不等于玩了。",
+  "tagline_15": "行行好，给它们个痛快。",
+  "tagline_16": "{game} 还是 {percent}%。有进步吗？没有。",
+  "tagline_17": "你的游戏记录让你丢脸，也让我们丢脸。",
+  "tagline_18": "你说过“这周末就通关”。那是 2019 年。",
+  "tagline_19": "没人评判你。好吧，我们会。",
+  "tagline_20": "{game} 只玩了 {minutes} 分钟，你还敢说试过了。"
 }

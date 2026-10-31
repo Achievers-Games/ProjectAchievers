@@ -232,6 +232,25 @@ const TIER_POINTS = [100, 300, 900, 2700];
 const cardScore = (tiers: number[]) =>
   tiers.reduce((sum, count, index) => sum + count * (TIER_POINTS[index] ?? 0), 0);
 
+const BARELY_PLAYED_MINUTES = 60;
+
+/** Un jeu lancé à peine une heure et jamais terminé, tiré au hasard. */
+export async function barelyPlayedGame(userId: string, showAdult = false) {
+  const games = await db.userGame.findMany({
+    where: {
+      userId,
+      hidden: false,
+      completion: { lt: 100 },
+      playtimeMinutes: { gt: 0, lt: BARELY_PLAYED_MINUTES },
+      game: visibleGames(showAdult),
+    },
+    select: { playtimeMinutes: true, game: { select: { name: true } } },
+    take: 20,
+  });
+  const picked = games[Math.floor(Math.random() * games.length)];
+  return picked ? { name: picked.game.name, minutes: picked.playtimeMinutes } : null;
+}
+
 export interface BannerGame {
   name: string;
   slug: string;
@@ -282,23 +301,21 @@ async function seasonBanner(userId?: string) {
   return random ? toBanner(random) : null;
 }
 
-/** La plus belle carte du premier du classement. */
+/** Le numéro 1 du classement et le premier jeu de sa vitrine, comme sur son profil. */
 async function rankingBanner() {
   const [leader] = await collectors(1);
-  if (!leader) return null;
-  const user = await db.user.findUnique({
-    where: { handle: leader.handle },
-    select: { id: true },
-  });
-  if (!user) return null;
-  const { games } = await listGames({ sort: 'progression', page: 1, ownerId: user.id }, user.id);
-  const best = games.find((game) => game.headerUrl);
-  return best?.headerUrl ? toBanner({ ...best, headerUrl: best.headerUrl }) : null;
+  if (!leader) return { leader: null, game: null };
+  const profile = await userProfile(leader.handle, null);
+  const best = profile?.showcase.find((game) => game.headerUrl);
+  return {
+    leader,
+    game: best?.headerUrl ? toBanner({ ...best, headerUrl: best.headerUrl }) : null,
+  };
 }
 
 export async function homeBanners(userId?: string) {
-  const [season, ranking] = await Promise.all([seasonBanner(userId), rankingBanner()]);
-  return { season, ranking };
+  const [season, { leader, game }] = await Promise.all([seasonBanner(userId), rankingBanner()]);
+  return { season, ranking: game, leader };
 }
 
 export async function userStats(userId: string) {

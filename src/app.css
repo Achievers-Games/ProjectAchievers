@@ -893,14 +893,22 @@
   background: var(--frame);
 }
 .avatar-frame[data-frame='collector'] {
-  --frame: linear-gradient(135deg, rgb(var(--accent)), rgb(var(--accent-2)));
+  --frame: conic-gradient(
+    from var(--spin, 0deg),
+    rgb(var(--accent)),
+    rgb(var(--accent-2)),
+    rgb(var(--accent))
+  );
+  animation: frame-spin 8s linear infinite;
 }
 .avatar-frame[data-frame='podium-3'] {
-  --frame: conic-gradient(#8a5324, #e8a765, #8a5324, #e8a765, #8a5324);
+  --frame: conic-gradient(from var(--spin, 0deg), #8a5324, #e8a765, #8a5324, #e8a765, #8a5324);
+  animation: frame-spin 7s linear infinite;
 }
 .avatar-frame[data-frame='podium-2'] {
   --ring: 3px;
-  --frame: conic-gradient(#8fa3bb, #ffffff, #8fa3bb, #ffffff, #8fa3bb);
+  --frame: conic-gradient(from var(--spin, 0deg), #8fa3bb, #ffffff, #8fa3bb, #ffffff, #8fa3bb);
+  animation: frame-spin 6s linear infinite;
   box-shadow: 0 0 8px rgb(200 225 255 / 0.5);
 }
 .avatar-frame[data-frame='podium-1'] {
@@ -920,8 +928,8 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .avatar-frame[data-frame='podium-1'] {
-    animation: none;
+  .avatar-frame {
+    animation: none !important;
   }
 }
 
@@ -1016,4 +1024,7 @@
   html {
     font-size: 21px;
   }
+}
+.carousel-leader {
+  @apply absolute right-16 top-1/2 hidden w-36 -translate-y-1/2 flex-col items-center gap-1 sm:flex;
 }

@@ -284,6 +284,15 @@
                 >
                   {m.reconnect()}
                 </a>
+              {:else if LOGIN_ONLY.includes(provider) && OAUTH[provider]}
+                <!-- Ces comptes n'ont pas de jeux : repasser par le fournisseur relit leur image. -->
+                <a
+                  class="btn"
+                  href="/auth/{OAUTH[provider]}/start?retour=/compte"
+                  data-sveltekit-reload
+                >
+                  {m.synchronize()}
+                </a>
               {:else if !LOGIN_ONLY.includes(provider)}
                 <form method="POST" action="?/sync" use:enhance={submit}>
                   <input type="hidden" name="provider" value={provider} />

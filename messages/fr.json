@@ -435,7 +435,7 @@
   "tagline_4": "Ta bibliothèque n'est pas une collection. C'est un cimetière.",
   "tagline_5": "Ce jeu à {percent} % te regarde. Il sait.",
   "tagline_6": "Tu ne l'abandonnes pas. Tu « le reprendras plus tard ». Bien sûr.",
-  "tagline_7": "Les soldes, tu les finis. Les jeux, jamais.",
+  "tagline_7": "Les soldes, tu ne les rates jamais. Tes jeux, tu ne les finis jamais.",
   "tagline_8": "Tu as lâché le dernier boss. Il t'attend toujours.",
   "tagline_9": "On a fini le site. À ton tour.",
   "banner_season_label": "Saison d'inauguration · bientôt",
@@ -449,5 +449,16 @@
   "carousel_next": "Bannière suivante",
   "carousel_go": "Aller à la bannière {number}",
   "games_of": "Jeux de {name}",
-  "games_see_all": "Voir les {count} jeux"
+  "games_see_all": "Voir les {count} jeux",
+  "tagline_10": "Tu n'as pas fini ce jeu. Comme le reste.",
+  "tagline_11": "Abandonner, c'est ton vrai 100 %.",
+  "tagline_12": "Tes jeux ne t'attendent plus. Ils ont refait leur vie.",
+  "tagline_13": "Rage quit n'est pas un succès.",
+  "tagline_14": "Acheter n'est pas jouer.",
+  "tagline_15": "Sois gentil. Achève-les.",
+  "tagline_16": "Encore {game} à {percent} %. Tu progresses. Non.",
+  "tagline_17": "Ton historique de jeu te fait honte. À nous aussi.",
+  "tagline_18": "Tu as dit « je le finis ce week-end ». C'était en 2019.",
+  "tagline_19": "Personne ne juge. Enfin, nous, si.",
+  "tagline_20": "{minutes} minutes sur {game}. Et tu oses dire que tu l'as testé."
 }

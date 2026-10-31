@@ -449,5 +449,16 @@
   "carousel_next": "Nächstes Banner",
   "carousel_go": "Zu Banner {number}",
   "games_of": "Spiele von {name}",
-  "games_see_all": "Alle {count} Spiele ansehen"
+  "games_see_all": "Alle {count} Spiele ansehen",
+  "tagline_10": "Du hast dieses Spiel nicht beendet. Wie alles andere.",
+  "tagline_11": "Aufgeben ist dein wahres 100 %.",
+  "tagline_12": "Deine Spiele warten nicht mehr. Sie sind weitergezogen.",
+  "tagline_13": "Rage Quit ist kein Erfolg.",
+  "tagline_14": "Kaufen ist nicht spielen.",
+  "tagline_15": "Sei gnädig. Erlöse sie.",
+  "tagline_16": "Immer noch {game} bei {percent} %. Du machst Fortschritte. Nein.",
+  "tagline_17": "Dein Spielverlauf ist dir peinlich. Uns auch.",
+  "tagline_18": "Du hast gesagt: „Ich beende es dieses Wochenende.“ Das war 2019.",
+  "tagline_19": "Niemand urteilt. Na ja, wir schon.",
+  "tagline_20": "{minutes} Minuten in {game}. Und du behauptest, du hättest es getestet."
 }

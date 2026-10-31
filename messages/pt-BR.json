@@ -449,5 +449,16 @@
   "carousel_next": "Próximo banner",
   "carousel_go": "Ir para o banner {number}",
   "games_of": "Jogos de {name}",
-  "games_see_all": "Ver os {count} jogos"
+  "games_see_all": "Ver os {count} jogos",
+  "tagline_10": "Você não terminou este jogo. Como todo o resto.",
+  "tagline_11": "Desistir é o seu verdadeiro 100%.",
+  "tagline_12": "Seus jogos não esperam mais. Refizeram a vida.",
+  "tagline_13": "Rage quit não é conquista.",
+  "tagline_14": "Comprar não é jogar.",
+  "tagline_15": "Seja bonzinho. Acabe com eles.",
+  "tagline_16": "Ainda {game} em {percent}%. Está progredindo. Só que não.",
+  "tagline_17": "Seu histórico de jogo te envergonha. A gente também.",
+  "tagline_18": "Você disse “termino neste fim de semana”. Foi em 2019.",
+  "tagline_19": "Ninguém está julgando. Bom, nós estamos.",
+  "tagline_20": "{minutes} minutos em {game}. E você ainda diz que testou."
 }
