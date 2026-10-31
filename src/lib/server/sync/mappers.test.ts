@@ -3,7 +3,13 @@ import { isComplete } from '$lib/collection';
 import { fetchRetry, mapLimit, SyncError } from './errors';
 import { assertPsnResponse, mapTrophy } from './psn';
 import { mapSchema } from './steam';
-import { mapXboxAchievement } from './xbox';
+import {
+  hasAchievements,
+  mapXbox360Achievement,
+  mapXboxAchievement,
+  xboxImage,
+  xboxUnlocks,
+} from './xbox';
 
 describe('cartes', () => {
   it('ne donne une carte qu’à un vrai 100 %, même avec le trophée platine', () => {
@@ -101,5 +107,58 @@ describe('utilitaires de synchronisation', () => {
     expect(response.status).toBe(200);
     expect(fetchMock).toHaveBeenCalledTimes(2);
     vi.unstubAllGlobals();
+  });
+});
+
+describe('Xbox', () => {
+  const fallback = new Date('2026-01-01T00:00:00Z');
+
+  it('compte un succès obtenu, même sans date', () => {
+    const unlocks = xboxUnlocks(
+      [
+        {
+          id: '1',
+          name: 'A',
+          progressState: 'Achieved',
+          progression: { timeUnlocked: '2025-05-01T10:00:00Z' },
+        },
+        { id: '2', name: 'B', progressState: 'achieved' },
+        { id: '3', name: 'C', progressState: 'NotStarted' },
+      ],
+      fallback,
+    );
+    expect(unlocks).toEqual([
+      { platformAchievementId: '1', unlockedAt: new Date('2025-05-01T10:00:00Z') },
+      { platformAchievementId: '2', unlockedAt: fallback },
+    ]);
+  });
+
+  it('garde un jeu dont seul le gamerscore annonce des succès', () => {
+    const title = { titleId: '1', name: 'A' };
+    expect(
+      hasAchievements({ ...title, achievement: { totalAchievements: 0, totalGamerscore: 1000 } }),
+    ).toBe(true);
+    expect(hasAchievements({ ...title, achievement: { totalAchievements: 0 } })).toBe(false);
+    expect(hasAchievements(title)).toBe(false);
+  });
+
+  it('sert les images Xbox en https, à une taille raisonnable', () => {
+    expect(xboxImage('http://store-images.s-microsoft.com/image/a')).toBe(
+      'https://store-images.s-microsoft.com/image/a?w=920',
+    );
+    expect(xboxImage('http://images-eds.xboxlive.com/a?x=1')).toBe(
+      'https://images-eds.xboxlive.com/a?x=1',
+    );
+    expect(xboxImage(undefined)).toBeUndefined();
+  });
+
+  it('lit le format Xbox 360', () => {
+    expect(
+      mapXbox360Achievement({ id: 7, name: 'A', lockedDescription: 'B', gamerscore: 20 }),
+    ).toMatchObject({
+      platformAchievementId: '7',
+      description: 'B',
+      points: 20,
+    });
   });
 });

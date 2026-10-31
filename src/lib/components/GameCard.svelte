@@ -2,6 +2,7 @@
   import { m } from '$lib/paraglide/messages';
   import type { Platform } from '@prisma/client';
   import Flame from '@lucide/svelte/icons/flame';
+  import Gamepad2 from '@lucide/svelte/icons/gamepad-2';
   import CompleteBadge from './CompleteBadge.svelte';
   import Progress from './Progress.svelte';
   import { tilt } from '$lib/actions/tilt';
@@ -37,6 +38,16 @@
   const complete = $derived(isComplete(progress));
   const level = $derived(tier || 1);
   const step = $derived(progress ? stepOf(progress.completion) : 0);
+  let imageFailed = $state(false);
+
+  /** L'image peut avoir déjà échoué avant que Svelte ne prenne la main sur la page. */
+  function watchImage(frame: HTMLElement) {
+    const image = frame.querySelector('img');
+    if (image?.complete && image.naturalWidth === 0) imageFailed = true;
+    // Sur le cadre : une action sur l'image ajouterait un gestionnaire en ligne, refusé par la CSP.
+    frame.addEventListener('error', () => (imageFailed = true), true);
+  }
+
   /** Tirée du jeu pour rester stable : les cartes d'une page ne brillent pas en même temps. */
   const phase = $derived(
     (([...game.slug].reduce((sum, letter) => sum * 31 + letter.charCodeAt(0), 7) >>> 0) % 1000) /
@@ -58,17 +69,22 @@
   class:items-center={list}
 >
   <div
+    use:watchImage
     class="relative shrink-0 overflow-hidden bg-raised {list
       ? 'h-14 w-28'
       : 'aspect-[460/215] w-full'}"
   >
-    {#if game.headerUrl}
+    {#if game.headerUrl && !imageFailed}
       <img
         src={game.headerUrl}
         alt=""
         loading="lazy"
         class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
       />
+    {:else}
+      <span class="grid h-full w-full place-items-center text-muted" aria-hidden="true">
+        <Gamepad2 size={24} />
+      </span>
     {/if}
     {#if seasonEligible && !list}
       <span class="season-badge absolute left-2 top-2" title={m.season_badge_help()}>
