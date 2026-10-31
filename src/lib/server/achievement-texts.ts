@@ -60,7 +60,8 @@ export async function ensureGameTexts(
   game: { id: string; platform: Platform; platformGameId: string },
   locale: Locale,
 ) {
-  if (locale === baseLocale || game.platform === 'XBOX') return;
+  // Steam et Xbox sont stockés en français ; PSN dans la langue du compte de service.
+  if (game.platform === 'XBOX' || (game.platform === 'STEAM' && locale === baseLocale)) return;
 
   const known = await db.gameTranslation.findUnique({
     where: { gameId_locale: { gameId: game.id, locale } },
@@ -84,7 +85,6 @@ export async function localizeAchievements<T extends { id: string; name: string 
   achievements: T[],
   locale: Locale,
 ) {
-  if (locale === baseLocale) return achievements;
   const rows = await db.achievementTranslation.findMany({
     where: { locale, achievementId: { in: achievements.map((a) => a.id) } },
   });
