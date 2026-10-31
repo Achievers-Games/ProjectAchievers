@@ -1,7 +1,7 @@
 // Tests sur un vrai PostgreSQL : `npm run dev:db` ou le service de la CI.
 import 'dotenv/config';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import { collectors, listGames } from './queries';
+import { collectors, listGames, seasonStats } from './queries';
 import { grantFrames } from './frames';
 import { profileSchema, resolveIdentity, updateProfile, type Identity } from './accounts';
 import { nextTier, stepOf, tierFor } from '$lib/collection';
@@ -893,6 +893,60 @@ describe('succès cachés Steam', () => {
     const descriptions = parseSteamPage(page);
     expect(descriptions.get('BOSS')).toBe('Éliminer le "Polyèdre"');
     expect(descriptions.has('VIDE')).toBe(false);
+  });
+});
+
+describe('saison', () => {
+  const season = {
+    startsAt: new Date('2026-06-01T00:00:00Z'),
+    endsAt: new Date('2026-07-01T00:00:00Z'),
+    goal: 100,
+    tiers: [100, 500, 2_000],
+    dailyCap: 60,
+    completionBonus: 500,
+  } as const;
+
+  async function player() {
+    const result = await resolveIdentity(identity(), null);
+    if (!result.ok) throw new Error('compte non créé');
+    return result.userId;
+  }
+
+  async function achievements(rarities: number[]) {
+    const game = await db.game.create({
+      data: {
+        platform: 'STEAM',
+        platformGameId: `${PREFIX}-${Math.random()}`,
+        name: `${PREFIX} saison`,
+        slug: `${PREFIX}-${Math.random().toString(36).slice(2)}`,
+      },
+    });
+    return Promise.all(
+      rarities.map((globalRarity, index) =>
+        db.achievement.create({
+          data: { gameId: game.id, platformAchievementId: String(index), name: 'S', globalRarity },
+        }),
+      ),
+    );
+  }
+
+  it('compte les jeux déjà commencés, avec le plafond du jour', async () => {
+    const userId = await player();
+    const [old, rare, rarer, common] = await achievements([90, 3, 2, 90]);
+    const [fresh] = await achievements([3]);
+    const unlock = (achievementId: string | undefined, unlockedAt: string) =>
+      db.userAchievement.create({
+        data: { userId, achievementId: achievementId as string, unlockedAt: new Date(unlockedAt) },
+      });
+    await unlock(old?.id, '2026-05-01T12:00:00Z');
+    await unlock(rare?.id, '2026-06-10T12:00:00Z');
+    await unlock(rarer?.id, '2026-06-10T13:00:00Z');
+    await unlock(common?.id, '2026-06-11T12:00:00Z');
+    await unlock(fresh?.id, '2026-06-12T12:00:00Z');
+
+    const stats = await seasonStats(season);
+    // 100 points le premier jour, plafonnés à 60, puis 5 ; le jeu commencé en saison ne compte pas.
+    expect(stats.ranking.find((row) => row.id === userId)?.points).toBe(65);
   });
 });
 

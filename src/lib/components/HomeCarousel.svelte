@@ -42,7 +42,7 @@
       eyebrow: m.banner_season_label(),
       title: m.banner_season_title(),
       text: tagline,
-      href: member ? '/jeux?filtre=restants&tri=progression' : signIn,
+      href: '/saison',
       cta: m.banner_season_cta(),
     },
     {

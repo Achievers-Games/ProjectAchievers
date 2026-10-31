@@ -1028,3 +1028,7 @@
 .carousel-leader {
   @apply absolute right-16 top-1/2 hidden w-36 -translate-y-1/2 flex-col items-center gap-1 sm:flex;
 }
+.season-hero {
+  @apply space-y-3 rounded-lg border border-line p-8;
+  background: linear-gradient(115deg, #2a0f3f, #0d0a1c);
+}

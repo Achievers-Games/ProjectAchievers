@@ -1,6 +1,7 @@
 import { Prisma, type Platform } from '@prisma/client';
 import { db } from './db';
 import { groupLibrary, type LibraryCard } from './library';
+import type { Season } from '$lib/season';
 
 export const PAGE_SIZE = 36;
 
@@ -276,6 +277,71 @@ export const chosenCards = (cards: LibraryCard[], slugs: string[]) => [
     ),
   ),
 ];
+
+/** Points de saison : seuls comptent les jeux déjà commencés avant son ouverture. */
+export async function seasonStats(season: Season) {
+  const { startsAt, endsAt, dailyCap, completionBonus } = season;
+  const ranking = await db.$queryRaw<
+    {
+      id: string;
+      handle: string;
+      displayName: string;
+      avatarUrl: string | null;
+      avatarMotionUrl: string | null;
+      frame: string | null;
+      frameMotionUrl: string | null;
+      isPublic: boolean;
+      points: bigint;
+    }[]
+  >`
+    WITH started AS (
+      SELECT DISTINCT ua."userId", a."gameId"
+      FROM "UserAchievement" ua
+      JOIN "Achievement" a ON a.id = ua."achievementId"
+      WHERE ua."unlockedAt" < ${startsAt}
+    ), daily AS (
+      SELECT ua."userId", (ua."unlockedAt" AT TIME ZONE 'UTC')::date,
+             sum(CASE
+               WHEN a."globalRarity" IS NULL THEN 10
+               WHEN a."globalRarity" > 50 THEN 5
+               WHEN a."globalRarity" >= 20 THEN 10
+               WHEN a."globalRarity" >= 5 THEN 25
+               ELSE 50
+             END) AS points
+      FROM "UserAchievement" ua
+      JOIN "Achievement" a ON a.id = ua."achievementId"
+      JOIN started s ON s."userId" = ua."userId" AND s."gameId" = a."gameId"
+      WHERE ua."unlockedAt" >= ${startsAt} AND ua."unlockedAt" < ${endsAt}
+      GROUP BY 1, 2
+    ), earned AS (
+      SELECT "userId", sum(least(points, ${dailyCap})) AS points FROM daily GROUP BY 1
+    ), finished AS (
+      SELECT ug."userId", count(*) * ${completionBonus}::int AS points
+      FROM "UserGame" ug
+      JOIN started s ON s."userId" = ug."userId" AND s."gameId" = ug."gameId"
+      WHERE ug.completion >= 100
+        AND ug."lastUnlockedAt" >= ${startsAt} AND ug."lastUnlockedAt" < ${endsAt}
+      GROUP BY 1
+    )
+    SELECT u.id, u.handle, u."displayName", u."avatarUrl", u."avatarMotionUrl", u.frame,
+           u."frameMotionUrl", u."isPublic",
+           (coalesce(e.points, 0) + coalesce(f.points, 0))::bigint AS points
+    FROM earned e
+    FULL JOIN finished f USING ("userId")
+    JOIN "User" u ON u.id = "userId"
+    ORDER BY points DESC, u.handle`;
+
+  const [{ unlocked } = { unlocked: 0n }] = await db.$queryRaw<{ unlocked: bigint }[]>`
+    SELECT count(*) AS unlocked
+    FROM "UserAchievement" ua
+    JOIN "User" u ON u.id = ua."userId" AND u."isPublic"
+    WHERE ua."unlockedAt" >= ${startsAt} AND ua."unlockedAt" < ${endsAt}`;
+
+  return {
+    unlocked: Number(unlocked),
+    ranking: ranking.map((row) => ({ ...row, points: Number(row.points) })),
+  };
+}
 
 export interface BannerGame {
   name: string;

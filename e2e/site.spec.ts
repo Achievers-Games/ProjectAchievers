@@ -53,6 +53,13 @@ test.describe('visiteur', () => {
     await expect(page.getByRole('link', { name: 'Platine', exact: true })).toBeVisible();
   });
 
+  test('présente l’événement et son objectif commun', async ({ page }) => {
+    await page.goto('/saison');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Achève-les.');
+    await expect(page.getByRole('heading', { name: 'Objectif commun' })).toBeVisible();
+    await expect(page.getByRole('progressbar', { name: 'Objectif commun' })).toBeVisible();
+  });
+
   test('utilise la police prévue', async ({ page }) => {
     await page.goto('/');
     const font = await page.evaluate(() => getComputedStyle(document.body).fontFamily);
