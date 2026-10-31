@@ -178,7 +178,7 @@ test.describe('membre', () => {
   test('voit ses cartes rares et une révélation après une synchronisation', async ({ page }) => {
     await login(page);
     await page.goto('/u/demo');
-    const showcase = page.getByRole('region', { name: 'Mes meilleures cartes' });
+    const showcase = page.getByRole('region', { name: 'Vitrine' });
     // Hades, fini sur trois plateformes, passe en tête sous une seule carte Prismatique.
     await expect(showcase.locator('a[data-tier]')).toHaveCount(2);
     await expect(showcase.locator('a[data-tier="3"]')).toHaveCount(1);
@@ -486,27 +486,39 @@ test.describe('membre', () => {
     await expect(page.getByText('Cadre enregistré.')).toBeVisible();
   });
 
-  test('choisit, classe et retire les succès de sa vitrine', async ({ page }) => {
+  test('choisit les cartes de sa vitrine, puis revient aux meilleures', async ({ page }) => {
     await login(page);
     await page.goto('/compte/vitrine');
     await ready(page);
+    await page.getByRole('button', { name: 'Personnalisée' }).click();
+
     const add = page.getByRole('button', { name: 'Ajouter' });
     await add.first().click();
     await expect(page.getByRole('heading', { name: /Dans ma vitrine \(1\/8\)/ })).toBeVisible();
-    await add.first().click();
-    await expect(page.getByRole('heading', { name: /Dans ma vitrine \(2\/8\)/ })).toBeVisible();
 
-    await page.getByRole('button', { name: 'Descendre' }).first().click();
     await page.goto('/u/demo');
-    await expect(page.getByRole('heading', { name: 'Vitrine', exact: true })).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Vitrine' }).locator('a[data-tier]')).toHaveCount(
+      1,
+    );
     await page.getByRole('link', { name: 'Modifier ma vitrine' }).click();
     await ready(page);
 
-    const remove = page.getByRole('button', { name: 'Retirer' });
-    await remove.first().click();
-    await expect(remove).toHaveCount(1);
-    await remove.first().click();
-    await expect(remove).toHaveCount(0);
+    await page.getByRole('button', { name: 'Retirer' }).click();
+    await expect(page.getByRole('heading', { name: /Dans ma vitrine \(0\/8\)/ })).toBeVisible();
+    await page.getByRole('button', { name: 'Les meilleures' }).click();
+    await expect(page.getByRole('button', { name: 'Les meilleures' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+  });
+
+  test('ouvre son profil public et va le modifier', async ({ page }) => {
+    await login(page);
+    await page.goto('/');
+    await page.getByRole('link', { name: 'Profil' }).first().click();
+    await expect(page).toHaveURL(/\/u\/demo/);
+    await page.getByRole('link', { name: 'Modifier', exact: true }).click();
+    await expect(page).toHaveURL(/\/compte$/);
   });
 
   test('compare deux profils', async ({ page }) => {

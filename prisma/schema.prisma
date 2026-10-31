@@ -74,6 +74,8 @@ model User {
   frameMotionUrl  String?
   frame           String?
   isPublic        Boolean  @default(true)
+  /// Vitrine choisie à la main ; sinon, les meilleures cartes.
+  showcaseCustom Boolean @default(false)
   /// Affiche les jeux centrés sur le contenu sexuel, masqués par défaut.
   showAdult       Boolean  @default(false)
   role            Role     @default(USER)
@@ -91,18 +93,18 @@ model User {
   reports      Report[]
   syncRuns     SyncRun[]
   frames       UserFrame[]
-  pinned       PinnedAchievement[]
+  pinned       PinnedGame[]
 }
 
-/// Succès choisis par le joueur pour sa vitrine, dans l'ordre qu'il a décidé.
-model PinnedAchievement {
-  userId        String
-  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  achievementId String
-  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
-  position      Int
+/// Cartes choisies par le joueur pour sa vitrine, dans l'ordre qu'il a décidé.
+model PinnedGame {
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gameId   String
+  game     Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  position Int
 
-  @@id([userId, achievementId])
+  @@id([userId, gameId])
 }
 
 model UserFrame {
@@ -169,6 +171,7 @@ model Game {
   id                String            @id @default(cuid())
   platform          Platform
   platformGameId    String
+  pinnedBy          PinnedGame[]
   translations      GameTranslation[]
   name              String
   slug              String            @unique
@@ -230,11 +233,10 @@ model Achievement {
   globalRarity          Float?
   points                Int        @default(10)
 
-  unlocks           UserAchievement[]
-  translations      AchievementTranslation[]
-  guides            Guide[]
-  comments          Comment[]
-  pinned   PinnedAchievement[]
+  unlocks      UserAchievement[]
+  translations AchievementTranslation[]
+  guides       Guide[]
+  comments     Comment[]
 
   @@unique([gameId, platformAchievementId])
   @@index([gameId])

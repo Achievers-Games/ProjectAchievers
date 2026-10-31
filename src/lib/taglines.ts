@@ -29,37 +29,52 @@ const GENERAL = [
   m.tagline_19,
 ];
 
+interface Tagline {
+  text: () => string;
+  /** La phrase parle de ce jeu à peine lancé : la bannière doit le montrer. */
+  barelyPlayed?: boolean;
+}
+
 /** Les phrases chiffrées parlent du joueur : un invité n'en voit aucune. */
 function personal({ games, finished, closest, closestName, barelyPlayed }: TaglineStats) {
   const percent = closest === null ? null : Math.round(closest);
-  return [
-    ...(games >= 2
-      ? [
-          () =>
-            m.tagline_3({
-              games: formatNumber(games),
-              finished: formatNumber(finished),
-            }),
-        ]
-      : []),
-    ...(percent === null ? [] : [() => m.tagline_2({ percent }), () => m.tagline_5({ percent })]),
-    ...(percent === null || !closestName
-      ? []
-      : [() => m.tagline_16({ game: closestName, percent })]),
-    ...(barelyPlayed
-      ? [
-          () =>
-            m.tagline_20({
-              game: barelyPlayed.name,
-              minutes: formatNumber(barelyPlayed.minutes),
-            }),
-        ]
-      : []),
-  ];
+  const taglines: Tagline[] = [];
+  if (games >= 2) {
+    taglines.push({
+      text: () => m.tagline_3({ games: formatNumber(games), finished: formatNumber(finished) }),
+    });
+  }
+  if (percent !== null) {
+    taglines.push(
+      { text: () => m.tagline_2({ percent }) },
+      { text: () => m.tagline_5({ percent }) },
+    );
+    if (closestName) {
+      taglines.push({ text: () => m.tagline_16({ game: closestName, percent }) });
+    }
+  }
+  if (barelyPlayed) {
+    taglines.push({
+      barelyPlayed: true,
+      text: () =>
+        m.tagline_20({
+          game: barelyPlayed.name,
+          minutes: formatNumber(barelyPlayed.minutes),
+        }),
+    });
+  }
+  return taglines;
 }
 
 /** Tirée côté serveur : le navigateur doit afficher la même phrase que la page reçue. */
 export function randomTagline(stats?: TaglineStats) {
-  const taglines = [...GENERAL, ...(stats ? personal(stats) : [])];
-  return (taglines[Math.floor(Math.random() * taglines.length)] ?? m.tagline_1)();
+  const taglines: Tagline[] = [
+    ...GENERAL.map((text) => ({ text })),
+    ...(stats ? personal(stats) : []),
+  ];
+  const picked = taglines[Math.floor(Math.random() * taglines.length)];
+  return {
+    text: (picked?.text ?? m.tagline_1)(),
+    barelyPlayed: picked?.barelyPlayed ?? false,
+  };
 }

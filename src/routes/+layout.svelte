@@ -149,7 +149,11 @@
       </span>
 
       {#if data.user}
-        <a href="/compte" class="flex items-center gap-2 rounded" aria-label={m.my_account()}>
+        <a
+          href="/u/{data.user.handle}"
+          class="flex items-center gap-2 rounded"
+          aria-label={m.nav_profile()}
+        >
           <Avatar
             name={data.user.displayName}
             src={data.user.avatarUrl}

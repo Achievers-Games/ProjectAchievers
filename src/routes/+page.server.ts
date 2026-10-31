@@ -5,6 +5,7 @@ import {
   dashboard,
   homeBanners,
   listGames,
+  toBanner,
 } from '$lib/server/queries';
 import { db } from '$lib/server/db';
 import { randomTagline } from '$lib/taglines';
@@ -21,13 +22,14 @@ export const load: PageServerLoad = async ({ locals }) => {
       barelyPlayedGame(locals.user.id, locals.user.showAdult),
     ]);
     const { games, tiers } = home.stats;
-    const tagline = randomTagline({
+    const { text: tagline, barelyPlayed: aboutBarelyPlayed } = randomTagline({
       games,
       finished: tiers.or + tiers.platine + tiers.prismatique + tiers.legendaire,
       closest: banners.season?.completion ?? null,
       closestName: banners.season?.name ?? null,
       barelyPlayed,
     });
+    if (aboutBarelyPlayed && barelyPlayed) banners.season = toBanner(barelyPlayed);
     return { home, accounts, cards, podium, banners, popular: null, tagline };
   }
   const [{ games }, cards, podium, banners] = await Promise.all([
@@ -43,6 +45,6 @@ export const load: PageServerLoad = async ({ locals }) => {
     podium,
     banners,
     popular: games.slice(0, 8),
-    tagline: randomTagline(),
+    tagline: randomTagline().text,
   };
 };

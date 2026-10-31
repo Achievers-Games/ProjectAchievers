@@ -242,36 +242,40 @@ export async function barelyPlayedGame(userId: string, showAdult = false) {
       hidden: false,
       completion: { lt: 100 },
       playtimeMinutes: { gt: 0, lt: BARELY_PLAYED_MINUTES },
-      game: visibleGames(showAdult),
+      game: { ...visibleGames(showAdult), headerUrl: { not: null } },
     },
-    select: { playtimeMinutes: true, game: { select: { name: true } } },
+    select: {
+      playtimeMinutes: true,
+      game: { select: { name: true, slug: true, headerUrl: true } },
+    },
     take: 20,
   });
   const picked = games[Math.floor(Math.random() * games.length)];
-  return picked ? { name: picked.game.name, minutes: picked.playtimeMinutes } : null;
+  if (!picked?.game.headerUrl) return null;
+  const { name, slug, headerUrl } = picked.game;
+  return { name, slug, headerUrl, minutes: picked.playtimeMinutes };
 }
 
-export const MAX_PINNED = 8;
+export const MAX_SHOWCASE = 8;
 
-/** La vitrine choisie par le joueur ; un jeu masqué pour le visiteur n'y apparaît pas. */
-export async function pinnedAchievements(userId: string, showAdult = true) {
-  const rows = await db.pinnedAchievement.findMany({
-    where: { userId, achievement: { game: visibleGames(showAdult) } },
-    orderBy: { position: 'asc' },
-    select: {
-      achievement: {
-        select: {
-          id: true,
-          name: true,
-          iconUrl: true,
-          globalRarity: true,
-          game: { select: { name: true } },
-        },
-      },
-    },
+/** Les cartes obtenues par le joueur, les plus hauts niveaux d'abord. */
+export async function userCards(userId: string, showAdult = false) {
+  const rows = await db.userGame.findMany({
+    where: { userId, hidden: false, game: visibleGames(showAdult), ...RARE_CARD },
+    orderBy: [{ lastUnlockedAt: { sort: 'desc', nulls: 'last' } }],
+    select: librarySelect,
   });
-  return rows.map((row) => row.achievement);
+  return groupLibrary(rows).sort((a, b) => b.tier - a.tier);
 }
+
+/** Retrouve les cartes choisies : une carte réunit toutes les versions d'un jeu. */
+export const chosenCards = (cards: LibraryCard[], slugs: string[]) => [
+  ...new Set(
+    slugs.flatMap(
+      (slug) => cards.find((card) => card.versions.some((version) => version.slug === slug)) ?? [],
+    ),
+  ),
+];
 
 export interface BannerGame {
   name: string;
@@ -286,7 +290,7 @@ const bannerImages = (headerUrl: string) =>
     ? [headerUrl.replace('/header.jpg', '/library_hero.jpg'), headerUrl]
     : [headerUrl];
 
-const toBanner = (game: {
+export const toBanner = (game: {
   name: string;
   slug: string;
   headerUrl: string;
@@ -384,6 +388,7 @@ export async function userProfile(handle: string, viewerId: string | null, showA
       avatarMotionUrl: true,
       frame: true,
       frameMotionUrl: true,
+      showcaseCustom: true,
       isPublic: true,
       createdAt: true,
       accounts: {
@@ -394,12 +399,13 @@ export async function userProfile(handle: string, viewerId: string | null, showA
   });
   if (!user || (!user.isPublic && user.id !== viewerId)) return null;
 
-  const [stats, showcaseRows, gameRows, recent] = await Promise.all([
+  const [stats, cards, pins, gameRows, recent] = await Promise.all([
     userStats(user.id),
-    db.userGame.findMany({
-      where: { userId: user.id, hidden: false, game: visibleGames(showAdult), ...RARE_CARD },
-      orderBy: [{ lastUnlockedAt: { sort: 'desc', nulls: 'last' } }],
-      select: librarySelect,
+    userCards(user.id, showAdult),
+    db.pinnedGame.findMany({
+      where: { userId: user.id },
+      orderBy: { position: 'asc' },
+      select: { game: { select: { slug: true } } },
     }),
     db.userGame.findMany({
       where: { userId: user.id, hidden: false, game: visibleGames(showAdult) },
@@ -433,9 +439,12 @@ export async function userProfile(handle: string, viewerId: string | null, showA
       },
     }),
   ]);
-  const showcase = groupLibrary(showcaseRows)
-    .sort((a, b) => b.tier - a.tier)
-    .slice(0, 8);
+  const chosen = chosenCards(
+    cards,
+    pins.map((pin) => pin.game.slug),
+  );
+  // Une sélection vide ou masquée au visiteur ne laisse pas une vitrine vide.
+  const showcase = (user.showcaseCustom && chosen.length ? chosen : cards).slice(0, MAX_SHOWCASE);
   return { user, stats, showcase, games: groupLibrary(gameRows).slice(0, 24), recent };
 }
 

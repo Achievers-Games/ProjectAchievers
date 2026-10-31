@@ -1,111 +1,103 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { m } from '$lib/paraglide/messages';
-import { getLocale } from '$lib/paraglide/runtime';
-import { localizeAchievements } from '$lib/server/achievement-texts';
 import { db } from '$lib/server/db';
-import { MAX_PINNED, pinnedAchievements } from '$lib/server/queries';
+import { chosenCards, MAX_SHOWCASE, userCards } from '$lib/server/queries';
 import type { Actions, PageServerLoad } from './$types';
-
-const RESULTS = 40;
 
 function requireUser(locals: App.Locals) {
   if (!locals.user) redirect(303, '/connexion?retour=/compte/vitrine');
   return locals.user;
 }
 
-const achievementSelect = {
-  id: true,
-  name: true,
-  iconUrl: true,
-  globalRarity: true,
-  game: { select: { name: true } },
-};
-
 export const load: PageServerLoad = async ({ locals, url }) => {
   const user = requireUser(locals);
-  const q = url.searchParams.get('q')?.trim().slice(0, 80) || '';
-  const locale = getLocale();
+  const q = url.searchParams.get('q')?.trim().toLowerCase().slice(0, 80) || '';
 
-  const pinned = await pinnedAchievements(user.id);
-  const unlocked = await db.userAchievement.findMany({
-    where: {
-      userId: user.id,
-      achievementId: { notIn: pinned.map((a) => a.id) },
-      ...(q && {
-        achievement: {
-          OR: [
-            { name: { contains: q, mode: 'insensitive' } },
-            { game: { name: { contains: q, mode: 'insensitive' } } },
-          ],
-        },
-      }),
-    },
-    orderBy: { achievement: { globalRarity: { sort: 'asc', nulls: 'last' } } },
-    take: RESULTS,
-    select: { achievement: { select: achievementSelect } },
-  });
+  const [profile, cards, pins] = await Promise.all([
+    db.user.findUniqueOrThrow({ where: { id: user.id }, select: { showcaseCustom: true } }),
+    userCards(user.id, true),
+    db.pinnedGame.findMany({
+      where: { userId: user.id },
+      orderBy: { position: 'asc' },
+      select: { game: { select: { slug: true } } },
+    }),
+  ]);
+  const selected = chosenCards(
+    cards,
+    pins.map((pin) => pin.game.slug),
+  );
+  const taken = new Set(selected.map((card) => card.id));
 
   return {
     q,
-    max: MAX_PINNED,
-    pinned: await localizeAchievements(pinned, locale),
-    results: await localizeAchievements(
-      unlocked.map((row) => row.achievement),
-      locale,
-    ),
+    max: MAX_SHOWCASE,
+    custom: profile.showcaseCustom,
+    selected,
+    available: cards.filter((card) => !taken.has(card.id) && card.name.toLowerCase().includes(q)),
   };
 };
 
 export const actions: Actions = {
+  mode: async ({ request, locals }) => {
+    const user = requireUser(locals);
+    const showcaseCustom = (await request.formData()).get('mode') === 'custom';
+    await db.user.update({ where: { id: user.id }, data: { showcaseCustom } });
+  },
+
   add: async ({ request, locals }) => {
     const user = requireUser(locals);
-    const achievementId = String((await request.formData()).get('id'));
+    const slug = String((await request.formData()).get('slug'));
 
-    const unlocked = await db.userAchievement.count({ where: { userId: user.id, achievementId } });
-    if (!unlocked) return fail(403, { error: m.showcase_not_unlocked() });
-
-    const pinned = await db.pinnedAchievement.findMany({
+    const cards = await userCards(user.id, true);
+    if (!cards.some((card) => card.versions.some((version) => version.slug === slug))) {
+      return fail(403, { error: m.showcase_not_owned() });
+    }
+    const pins = await db.pinnedGame.findMany({
       where: { userId: user.id },
       select: { position: true },
     });
-    if (pinned.length >= MAX_PINNED) {
-      return fail(409, { error: m.showcase_full({ max: MAX_PINNED }) });
+    if (pins.length >= MAX_SHOWCASE) {
+      return fail(409, { error: m.showcase_full({ max: MAX_SHOWCASE }) });
     }
 
-    const position = Math.max(-1, ...pinned.map((row) => row.position)) + 1;
-    await db.pinnedAchievement.createMany({
-      data: [{ userId: user.id, achievementId, position }],
+    const game = await db.game.findUniqueOrThrow({ where: { slug }, select: { id: true } });
+    const position = Math.max(-1, ...pins.map((pin) => pin.position)) + 1;
+    await db.pinnedGame.createMany({
+      data: [{ userId: user.id, gameId: game.id, position }],
       skipDuplicates: true,
     });
   },
 
   remove: async ({ request, locals }) => {
     const user = requireUser(locals);
-    const achievementId = String((await request.formData()).get('id'));
-    await db.pinnedAchievement.deleteMany({ where: { userId: user.id, achievementId } });
+    const form = await request.formData();
+    const slugs = form.getAll('slug').map(String);
+    await db.pinnedGame.deleteMany({ where: { userId: user.id, game: { slug: { in: slugs } } } });
   },
 
   move: async ({ request, locals }) => {
     const user = requireUser(locals);
     const form = await request.formData();
-    const pinned = await db.pinnedAchievement.findMany({
+    const slugs = form.getAll('slug').map(String);
+    const pins = await db.pinnedGame.findMany({
       where: { userId: user.id },
       orderBy: { position: 'asc' },
+      include: { game: { select: { slug: true } } },
     });
 
-    const index = pinned.findIndex((row) => row.achievementId === form.get('id'));
-    const other = pinned[index + (form.get('direction') === 'up' ? -1 : 1)];
-    const current = pinned[index];
+    const index = pins.findIndex((pin) => slugs.includes(pin.game.slug));
+    const other = pins[index + (form.get('direction') === 'up' ? -1 : 1)];
+    const current = pins[index];
     if (!current || !other) return;
 
-    // Les deux lignes échangent leur place d'un seul coup.
+    const key = (gameId: string) => ({ userId_gameId: { userId: user.id, gameId } });
     await db.$transaction([
-      db.pinnedAchievement.update({
-        where: { userId_achievementId: { userId: user.id, achievementId: current.achievementId } },
+      db.pinnedGame.update({
+        where: key(current.gameId),
         data: { position: other.position },
       }),
-      db.pinnedAchievement.update({
-        where: { userId_achievementId: { userId: user.id, achievementId: other.achievementId } },
+      db.pinnedGame.update({
+        where: key(other.gameId),
         data: { position: current.position },
       }),
     ]);

@@ -8,7 +8,7 @@ const MERGE_COOKIE = 'pa_merge';
 /** Tables qui n'acceptent qu'une ligne par utilisateur et par élément. */
 const PER_USER_TABLES = [
   ['UserFrame', 'frame'],
-  ['PinnedAchievement', 'achievementId'],
+  ['PinnedGame', 'gameId'],
   ['UserGame', 'gameId'],
   ['UserAchievement', 'achievementId'],
   ['GuideVote', 'guideId'],
@@ -139,7 +139,7 @@ export async function mergeUsers(merge: PendingMerge): Promise<MergeFailure | nu
       await tx.commentReaction.updateMany(owner);
       await tx.syncRun.updateMany(owner);
       await tx.userFrame.updateMany(owner);
-      await tx.pinnedAchievement.updateMany(owner);
+      await tx.pinnedGame.updateMany(owner);
 
       const author = { where: { authorId: sourceId }, data: { authorId: targetId } };
       await tx.guide.updateMany(author);
@@ -165,6 +165,7 @@ export async function mergeUsers(merge: PendingMerge): Promise<MergeFailure | nu
           avatarUrl: target.avatarUrl ?? source.avatarUrl,
           avatarMotionUrl: target.avatarUrl ? target.avatarMotionUrl : source.avatarMotionUrl,
           frame: target.frame ?? source.frame,
+          showcaseCustom: target.showcaseCustom || source.showcaseCustom,
           frameMotionUrl: target.frame ? target.frameMotionUrl : source.frameMotionUrl,
         },
       });
