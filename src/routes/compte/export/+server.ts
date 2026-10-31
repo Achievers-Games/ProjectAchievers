@@ -48,6 +48,7 @@ export const GET: RequestHandler = async ({ locals }) => {
       frames: { select: { frame: true, earnedAt: true } },
       pinned: { select: { position: true, game: { select: { name: true } } } },
       guideVotes: { select: { guideId: true, value: true } },
+      guideChecks: { select: { guideId: true, item: true } },
       reactions: { select: { commentId: true, type: true } },
       reports: { select: { targetType: true, targetId: true, reason: true, createdAt: true } },
       sessions: { select: { userAgent: true, createdAt: true, lastUsedAt: true } },

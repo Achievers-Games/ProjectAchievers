@@ -88,6 +88,7 @@ model User {
   achievements UserAchievement[]
   guides       Guide[]
   guideVotes   GuideVote[]
+  guideChecks  GuideCheck[]
   comments     Comment[]
   reactions    CommentReaction[]
   reports      Report[]
@@ -302,13 +303,27 @@ model Guide {
   locale        String?
   status        ContentStatus @default(PUBLISHED)
   score         Int           @default(0)
+  /// Renseigné sur les guides officiels, importés depuis le dépôt.
+  curatedKey    String?       @unique
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
   votes        GuideVote[]
+  checks       GuideCheck[]
   translations ContentTranslation[]
 
   @@index([achievementId, score])
+}
+
+/// Une case cochée par un joueur, repérée par son rang dans le guide.
+model GuideCheck {
+  guideId String
+  guide   Guide  @relation(fields: [guideId], references: [id], onDelete: Cascade)
+  userId  String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item    Int
+
+  @@id([guideId, userId, item])
 }
 
 model GuideVote {

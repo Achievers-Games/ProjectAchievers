@@ -13,6 +13,7 @@
   import Empty from '$lib/components/Empty.svelte';
   import TrophyBadge from '$lib/components/TrophyBadge.svelte';
   import { formatDate, formatRarity, formatRelative } from '$lib/labels';
+  import { guideChecks } from '$lib/actions/guide-checks';
   import { submitWithToast } from '$lib/forms';
   import { toast } from '$lib/stores/toast';
 
@@ -209,7 +210,7 @@
   <section class="space-y-3">
     <div class="flex items-center justify-between">
       <h2>{m.guides()}</h2>
-      {#if data.user}
+      {#if data.canWriteGuide}
         <button type="button" class="btn" onclick={() => (writingGuide = !writingGuide)}>
           {writingGuide ? m.cancel() : m.guide_write()}
         </button>
@@ -259,13 +260,27 @@
         </form>
         <div class="min-w-0 flex-1 space-y-2">
           <p class="flex items-center gap-2 text-xs text-muted">
-            <a href="/u/{guide.author.handle}" class="font-medium text-ink">
-              {guide.author.displayName}
-            </a>
+            {#if guide.official}
+              <span class="font-medium text-ink">{guide.author.displayName}</span>
+            {:else}
+              <a href="/u/{guide.author.handle}" class="font-medium text-ink">
+                {guide.author.displayName}
+              </a>
+            {/if}
             {formatRelative(guide.createdAt)}
           </p>
-          <!-- eslint-disable-next-line svelte/no-at-html-tags -- assaini par renderMarkdown -->
-          <div class="prose-user">{@html shownHtml(guide)}</div>
+          <div
+            class="prose-user"
+            use:guideChecks={{
+              guideId: guide.id,
+              checked: guide.checked,
+              enabled: Boolean(data.user),
+              html: shownHtml(guide),
+            }}
+          >
+            <!-- eslint-disable-next-line svelte/no-at-html-tags -- assaini par renderGuide -->
+            {@html shownHtml(guide)}
+          </div>
           <div class="flex gap-3">
             {#if !guide.mine}{@render translateButton('GUIDE', guide)}{/if}
             {#if guide.mine}
@@ -287,8 +302,8 @@
         </div>
       </article>
     {:else}
-      <Empty title={m.guides_empty()}>
-        {data.user ? m.guides_empty_user() : m.guides_empty_visitor()}
+      <Empty title={data.masked ? m.guides_masked() : m.guides_empty()}>
+        {data.masked ? m.guides_masked_text() : m.guides_empty_text()}
       </Empty>
     {/each}
   </section>

@@ -13,6 +13,8 @@ const config = {
         'script-src': ['self'],
         'style-src': ['self', 'unsafe-inline'],
         'img-src': ['self', 'data:', 'https:'],
+        'media-src': ['https:'],
+        'frame-src': ['https://www.youtube-nocookie.com'],
         'font-src': ['self'],
         'connect-src': ['self'],
         'frame-ancestors': ['none'],

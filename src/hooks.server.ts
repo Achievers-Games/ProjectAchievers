@@ -2,6 +2,7 @@ import type { Handle, RequestEvent, ServerInit } from '@sveltejs/kit';
 import { m } from '$lib/paraglide/messages';
 import { getLocale } from '$lib/paraglide/runtime';
 import { paraglideMiddleware } from '$lib/paraglide/server';
+import { syncCuratedGuides } from '$lib/server/curated-guides';
 import { env } from '$lib/server/env';
 import { grantFrames } from '$lib/server/frames';
 import { rateLimit } from '$lib/server/rate-limit';
@@ -12,6 +13,7 @@ export const init: ServerInit = async () => {
   env();
   await startWorkers();
   await grantFrames().catch((cause) => console.error('Cadres :', cause));
+  await syncCuratedGuides().catch((cause) => console.error('Guides officiels :', cause));
 };
 
 const WINDOW = 60_000;

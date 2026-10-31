@@ -568,6 +568,39 @@ test.describe('membre', () => {
     await expect(page.getByText('Les succès débloqués en rafale ne rapportent rien')).toBeVisible();
   });
 
+  test('publie un guide riche et garde ses cases cochées', async ({ page }) => {
+    await login(page);
+    await page.goto('/jeux/portal-2');
+    await page
+      .getByRole('link', { name: /étape 3 / })
+      .first()
+      .click();
+    await ready(page);
+    await page.getByRole('button', { name: 'Écrire un guide' }).click();
+    await page
+      .getByLabel(/guide/i)
+      .fill(`## Étapes ${Date.now()}\n\n- [ ] Trouver la clé\n- [ ] Ouvrir`);
+    await page.getByRole('button', { name: 'Publier' }).first().click();
+
+    const heading = page.getByRole('heading', { level: 2, name: /^Étapes/ }).last();
+    await expect(heading).toBeVisible();
+    const box = heading.locator('..').getByRole('checkbox').first();
+    const saved = page.waitForResponse((r) => r.url().includes('check'));
+    await box.check();
+    await saved;
+
+    await page.reload();
+    await ready(page);
+    await expect(
+      page
+        .getByRole('heading', { level: 2, name: /^Étapes/ })
+        .last()
+        .locator('..')
+        .getByRole('checkbox')
+        .first(),
+    ).toBeChecked();
+  });
+
   test('compare deux profils', async ({ page }) => {
     await login(page);
     await page.goto('/u/lea');

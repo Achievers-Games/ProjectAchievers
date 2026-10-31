@@ -126,6 +126,10 @@ export async function mergeUsers(merge: PendingMerge): Promise<MergeFailure | nu
         );
       }
       await tx.$executeRaw`
+        DELETE FROM "GuideCheck" s USING "GuideCheck" t
+        WHERE s."userId" = ${sourceId} AND t."userId" = ${targetId}
+          AND s."guideId" = t."guideId" AND s."item" = t."item"`;
+      await tx.$executeRaw`
         DELETE FROM "Report" s USING "Report" t
         WHERE s."reporterId" = ${sourceId} AND t."reporterId" = ${targetId}
           AND s."targetType" = t."targetType" AND s."targetId" = t."targetId"`;
@@ -135,6 +139,7 @@ export async function mergeUsers(merge: PendingMerge): Promise<MergeFailure | nu
       await tx.userGame.updateMany(owner);
       await tx.userAchievement.updateMany(owner);
       await tx.guideVote.updateMany(owner);
+      await tx.guideCheck.updateMany(owner);
       await tx.commentReaction.updateMany(owner);
       await tx.syncRun.updateMany(owner);
       await tx.userFrame.updateMany(owner);

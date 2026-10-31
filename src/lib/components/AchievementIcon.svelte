@@ -18,7 +18,9 @@
     width={size}
     height={size}
     loading="lazy"
-    class="shrink-0 rounded"
+    style:width="{size}px"
+    style:height="{size}px"
+    class="shrink-0 rounded object-cover"
     class:opacity-50={dim}
     use:watch
     onerror={() => (failed = true)}

@@ -14,6 +14,7 @@ import { isAdultOnly, rateGames } from './sync/content';
 import { onCard, onSync, type SyncEvent } from './sync/events';
 import { parseSteamPage, steamImages } from './sync/steam';
 import { saveAchievements, saveProgress, upsertGame } from './sync/store';
+import { parseGuideFile, syncCuratedGuides } from './curated-guides';
 import { splitText, translateContent } from './translate';
 import { ensureGameTexts, localizeAchievements } from './achievement-texts';
 import { refreshDiscordAccounts } from './sync/discord';
@@ -1033,6 +1034,45 @@ describe('saison', () => {
 
     const row = (await seasonStats(season)).ranking.find((item) => item.id === userId);
     expect(row).toMatchObject({ points: 10, ignored: 0 });
+  });
+});
+
+describe('guides officiels', () => {
+  const file = (text: string) => `STEAM ${PREFIX}-guides\n\n@@ A1\n${text}\n\n@@ INCONNU\nRien.\n`;
+
+  it('lit un fichier de guides', () => {
+    expect(parseGuideFile('STEAM 42\n@@ A\n## Un\n\ntexte\n\n@@ B\nDeux\n')).toEqual({
+      platform: 'STEAM',
+      gameId: '42',
+      guides: [
+        { achievementId: 'A', content: '## Un\n\ntexte' },
+        { achievementId: 'B', content: 'Deux' },
+      ],
+    });
+  });
+
+  it('suit le dépôt : ajoute, met à jour, puis retire', async () => {
+    const game = await db.game.create({
+      data: {
+        platform: 'STEAM',
+        platformGameId: `${PREFIX}-guides`,
+        name: `${PREFIX} guides`,
+        slug: `${PREFIX}-guides`,
+      },
+    });
+    const achievement = await db.achievement.create({
+      data: { gameId: game.id, platformAchievementId: 'A1', name: 'A' },
+    });
+    const guides = () => db.guide.findMany({ where: { achievementId: achievement.id } });
+
+    await syncCuratedGuides([file('Première version.')]);
+    expect((await guides()).map((g) => g.contentMd)).toEqual(['Première version.']);
+
+    await syncCuratedGuides([file('Deuxième version.')]);
+    expect((await guides()).map((g) => g.contentMd)).toEqual(['Deuxième version.']);
+
+    await syncCuratedGuides([]);
+    expect(await guides()).toEqual([]);
   });
 });
 

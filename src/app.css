@@ -120,6 +120,32 @@
   .prose-user blockquote {
     @apply border-l-2 border-line pl-3 text-muted;
   }
+  .prose-user h2 {
+    @apply pt-3 text-lg font-bold;
+  }
+  .prose-user h3 {
+    @apply pt-2 text-base font-semibold;
+  }
+  .prose-user h4 {
+    @apply pt-1 text-sm font-semibold;
+  }
+  .prose-user img,
+  .prose-user video,
+  .prose-user iframe {
+    @apply w-full max-w-2xl rounded;
+  }
+  .prose-user iframe {
+    aspect-ratio: 16 / 9;
+  }
+  .prose-user li:has(> input[data-check]) {
+    @apply -ml-5 flex list-none items-start gap-2;
+  }
+  .prose-user input[data-check] {
+    @apply mt-1 h-4 w-4 shrink-0 accent-accent;
+  }
+  .prose-user li:has(> input[data-check]:checked) {
+    @apply text-muted line-through;
+  }
 }
 
 /* ── Collection ─────────────────────────────────────────────────────── */

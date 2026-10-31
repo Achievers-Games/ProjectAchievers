@@ -3,7 +3,7 @@ import { z } from 'zod';
 import type { ReactionType } from '@prisma/client';
 import { requireLogin } from '$lib/server/auth';
 import { db } from '$lib/server/db';
-import { renderMarkdown } from '$lib/server/markdown';
+import { renderGuide, renderMarkdown } from '$lib/server/markdown';
 import { publicUser } from '$lib/server/queries';
 import { ensureGameTexts, localizeAchievements } from '$lib/server/achievement-texts';
 import { rateLimit } from '$lib/server/rate-limit';
@@ -41,18 +41,21 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
   const translations = { where: { locale }, select: { contentMd: true }, take: 1 };
 
   /** Traduit d'office ce qui vient d'une autre langue : les textes anciens gardent le bouton seul. */
-  const translation = (item: {
-    locale: string | null;
-    authorId: string;
-    translations: { contentMd: string }[];
-  }) => {
+  const translation = (
+    item: {
+      locale: string | null;
+      authorId: string;
+      translations: { contentMd: string }[];
+    },
+    render = renderMarkdown,
+  ) => {
     const autoTranslate =
       canTranslate() &&
       Boolean(item.locale) &&
       item.locale !== locale &&
       item.authorId !== viewerId;
     const cached = autoTranslate ? item.translations[0]?.contentMd : undefined;
-    return { autoTranslate, translatedHtml: cached ? renderMarkdown(cached) : null };
+    return { autoTranslate, translatedHtml: cached ? render(cached) : null };
   };
 
   const [guides, comments, unlockers] = await Promise.all([
@@ -64,6 +67,7 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
           select: publicUser,
         },
         votes: viewerId ? { where: { userId: viewerId }, select: { value: true } } : false,
+        checks: viewerId ? { where: { userId: viewerId }, select: { item: true } } : false,
         translations,
       },
     }),
@@ -130,10 +134,15 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
     unlockedAt: unlock,
     unlockers,
     canTranslate: canTranslate(),
-    guides: guides.map((guide) => ({
+    canWriteGuide: canWriteGuide(locals.user),
+    // Un guide dévoile le succès : il reste caché tant que le succès l'est.
+    masked,
+    guides: (masked ? [] : guides).map((guide) => ({
       id: guide.id,
-      html: renderMarkdown(guide.contentMd),
-      ...translation(guide),
+      html: renderGuide(guide.contentMd),
+      ...translation(guide, renderGuide),
+      official: guide.curatedKey !== null,
+      checked: guide.checks?.map((check) => check.item) ?? [],
       score: guide.score,
       author: guide.author,
       createdAt: guide.createdAt,
@@ -172,11 +181,21 @@ const requireUser = (locals: App.Locals, url: URL) => requireLogin(locals, url.p
 const tooFast = (userId: string, action = 'publication') =>
   !rateLimit(`${action}:${userId}`, 5, 60_000);
 
+/** Les guides sont écrits par l'équipe ; les joueurs gardent la discussion. */
+const canWriteGuide = (user: App.Locals['user']) => Boolean(user && user.role !== 'USER');
+
+const checkSchema = z.object({
+  guideId: z.string().min(1),
+  item: z.coerce.number().int().min(0).max(1_000),
+  checked: z.literal('1').optional(),
+});
+
 const achievementExists = async (id: string) => (await db.achievement.count({ where: { id } })) > 0;
 
 export const actions: Actions = {
   guide: async ({ request, params, locals, url }) => {
     const user = requireUser(locals, url);
+    if (!canWriteGuide(user)) return fail(403, { error: m.guide_forbidden() });
     const form = await request.formData();
     const content = body(20_000).safeParse(form.get('content'));
     if (!content.success) return fail(400, { error: content.error.issues[0]?.message });
@@ -216,6 +235,24 @@ export const actions: Actions = {
       const { _sum } = await tx.guideVote.aggregate({ where: { guideId }, _sum: { value: true } });
       await tx.guide.update({ where: { id: guideId }, data: { score: _sum.value ?? 0 } });
     });
+  },
+
+  check: async ({ request, locals, url }) => {
+    const user = requireUser(locals, url);
+    const parsed = checkSchema.safeParse(Object.fromEntries(await request.formData()));
+    if (!parsed.success) return fail(400, { error: m.action_failed() });
+    const { guideId, item, checked } = parsed.data;
+    const guide = await db.guide.count({ where: { id: guideId, status: 'PUBLISHED' } });
+    if (!guide) return fail(404, { error: m.gone() });
+
+    if (checked) {
+      await db.guideCheck.createMany({
+        data: [{ guideId, item, userId: user.id }],
+        skipDuplicates: true,
+      });
+    } else {
+      await db.guideCheck.deleteMany({ where: { guideId, item, userId: user.id } });
+    }
   },
 
   comment: async ({ request, params, locals, url }) => {
@@ -314,7 +351,7 @@ export const actions: Actions = {
     try {
       const translated = await translateContent(target, source.contentMd, getLocale());
       if (translated === null) return fail(429, { error: m.translate_failed() });
-      return { html: renderMarkdown(translated) };
+      return { html: (targetType === 'GUIDE' ? renderGuide : renderMarkdown)(translated) };
     } catch (cause) {
       console.error('Traduction :', cause);
       return fail(503, { error: m.translate_failed() });

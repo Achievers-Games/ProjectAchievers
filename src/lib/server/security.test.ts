@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Cookies } from '@sveltejs/kit';
 import { decrypt, encrypt, pkceChallenge } from './crypto';
-import { renderMarkdown } from './markdown';
+import { renderGuide, renderMarkdown } from './markdown';
 import { safeReturnTo, saveFlow, takeFlow } from './providers';
 import { bioContainsCode } from './providers/psn';
 import { steamAuthorizeUrl, verifySteamResponse } from './providers/steam';
@@ -153,6 +153,32 @@ describe('Markdown utilisateur', () => {
     const html = renderMarkdown('**gras** [site](https://example.com)');
     expect(html).toContain('<strong>gras</strong>');
     expect(html).toContain('rel="nofollow noopener noreferrer"');
+  });
+});
+
+describe('Markdown des guides', () => {
+  it('garde les titres, les images et les cases numérotées', () => {
+    const html = renderGuide(
+      '## Titre\n\n![carte](https://exemple.fr/a.gif)\n\n- [ ] Un\n- [x] Deux',
+    );
+    expect(html).toContain('<h2>Titre</h2>');
+    expect(html).toContain('src="https://exemple.fr/a.gif"');
+    expect(html).toContain('data-check="0"');
+    expect(html).toContain('data-check="1"');
+  });
+
+  it('intègre YouTube sans cookie et lit les vidéos', () => {
+    const youtube = renderGuide('![démo](https://www.youtube.com/watch?v=dQw4w9WgXcQ)');
+    expect(youtube).toContain('<iframe');
+    expect(youtube).toContain('https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ');
+    expect(renderGuide('![clip](https://exemple.fr/a.mp4)')).toContain('<video');
+  });
+
+  it('refuse les cadres étrangers, les scripts et le http', () => {
+    const html = renderGuide(
+      '<iframe src="https://evil.test/"></iframe><script>alert(1)</script><img src="http://exemple.fr/a.png" onerror="alert(1)">',
+    );
+    expect(html).not.toMatch(/evil\.test|script|onerror|http:/);
   });
 });
 
