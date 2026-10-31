@@ -24,7 +24,7 @@ export interface Reward {
 
 /** Une carte obtenue, affichée dans le fil en direct. */
 export interface CardDrop {
-  user: { handle: string; displayName: string; avatarUrl: string | null };
+  user: { handle: string; displayName: string; avatarUrl: string | null; frame?: string | null };
   game: { name: string; slug: string; headerUrl: string | null };
   unlockedAt: Date | string;
 }

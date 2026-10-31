@@ -150,7 +150,7 @@
 
       {#if data.user}
         <a href="/compte" class="flex items-center gap-2 rounded" aria-label={m.my_account()}>
-          <Avatar name={data.user.displayName} src={data.user.avatarUrl} />
+          <Avatar name={data.user.displayName} src={data.user.avatarUrl} frame={data.user.frame} />
         </a>
       {:else}
         <a href="/connexion" class="btn btn-primary">{m.sign_in()}</a>

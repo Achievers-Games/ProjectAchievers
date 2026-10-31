@@ -420,6 +420,13 @@
   "ranking_collectors": "Top collectionneurs",
   "ranking_full": "Classement complet",
   "ranking_collectors_empty": "Aucune carte pour le moment.",
-  "ranking_place": "{place}ᵉ place",
-  "ranking_rules": "Les cartes de collection font le classement : Or 100 points, Platine 300, Prismatique 900 et Légendaire 2 700."
+  "ranking_place": "Place {place}",
+  "ranking_rules": "Les cartes de collection font le classement : Or 100 points, Platine 300, Prismatique 900 et Légendaire 2 700.",
+  "frames_title": "Cadre d'avatar",
+  "frame_none": "Aucun",
+  "frame_saved": "Cadre enregistré.",
+  "frame_unknown": "Tu n'as pas encore ce cadre.",
+  "frame_collector": "Collectionneur",
+  "frame_collector_how": "Obtiens 10 cartes",
+  "frame_podium_how": "Atteins cette place au classement"
 }

@@ -13,6 +13,7 @@ export const GET: RequestHandler = async ({ locals }) => {
       handle: true,
       displayName: true,
       avatarUrl: true,
+      frame: true,
       isPublic: true,
       showAdult: true,
       createdAt: true,

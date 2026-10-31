@@ -7,6 +7,7 @@ const MERGE_COOKIE = 'pa_merge';
 
 /** Tables qui n'acceptent qu'une ligne par utilisateur et par élément. */
 const PER_USER_TABLES = [
+  ['UserFrame', 'frame'],
   ['UserGame', 'gameId'],
   ['UserAchievement', 'achievementId'],
   ['GuideVote', 'guideId'],
@@ -136,6 +137,7 @@ export async function mergeUsers(merge: PendingMerge): Promise<MergeFailure | nu
       await tx.guideVote.updateMany(owner);
       await tx.commentReaction.updateMany(owner);
       await tx.syncRun.updateMany(owner);
+      await tx.userFrame.updateMany(owner);
 
       const author = { where: { authorId: sourceId }, data: { authorId: targetId } };
       await tx.guide.updateMany(author);
@@ -159,6 +161,7 @@ export async function mergeUsers(merge: PendingMerge): Promise<MergeFailure | nu
           isPublic: source.isPublic && target.isPublic,
           role: ROLE_RANK[source.role] > ROLE_RANK[target.role] ? source.role : target.role,
           avatarUrl: target.avatarUrl ?? source.avatarUrl,
+          frame: target.frame ?? source.frame,
         },
       });
       await tx.user.delete({ where: { id: sourceId } });

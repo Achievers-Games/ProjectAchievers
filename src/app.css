@@ -885,3 +885,42 @@
 .podium-step[data-place='2'] .podium-place {
   @apply pb-2;
 }
+
+.avatar-frame {
+  @apply relative inline-grid shrink-0 place-items-center rounded-full;
+  --ring: 2px;
+  padding: var(--ring);
+  background: var(--frame);
+}
+.avatar-frame[data-frame='collector'] {
+  --frame: linear-gradient(135deg, rgb(var(--accent)), rgb(var(--accent-2)));
+}
+.avatar-frame[data-frame='podium-3'] {
+  --frame: conic-gradient(#8a5324, #e8a765, #8a5324, #e8a765, #8a5324);
+}
+.avatar-frame[data-frame='podium-2'] {
+  --ring: 3px;
+  --frame: conic-gradient(#8fa3bb, #ffffff, #8fa3bb, #ffffff, #8fa3bb);
+  box-shadow: 0 0 8px rgb(200 225 255 / 0.5);
+}
+.avatar-frame[data-frame='podium-1'] {
+  --ring: 3px;
+  --frame: conic-gradient(from var(--spin, 0deg), #b8860b, #ffe08a, #f7c448, #fff1bf, #b8860b);
+  box-shadow: 0 0 12px rgb(247 196 72 / 0.65);
+  animation: frame-spin 4s linear infinite;
+}
+@property --spin {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+@keyframes frame-spin {
+  to {
+    --spin: 360deg;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .avatar-frame[data-frame='podium-1'] {
+    animation: none;
+  }
+}

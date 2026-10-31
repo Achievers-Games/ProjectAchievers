@@ -61,7 +61,12 @@
 
 <div class="space-y-8">
   <header class="flex flex-wrap items-center gap-4">
-    <Avatar name={profile.user.displayName} src={profile.user.avatarUrl} size={64} />
+    <Avatar
+      name={profile.user.displayName}
+      src={profile.user.avatarUrl}
+      frame={profile.user.frame}
+      size={64}
+    />
     <div class="min-w-0">
       <h1>{profile.user.displayName}</h1>
       <p class="text-sm text-muted">

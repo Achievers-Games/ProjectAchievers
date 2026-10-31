@@ -38,10 +38,17 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
   const user = requireUser(locals);
   const pendingMerge = readMerge(cookies, user.id);
 
-  const [profile, accounts, sessions, psn, merge] = await Promise.all([
+  const [profile, accounts, sessions, psn, merge, earned] = await Promise.all([
     db.user.findUniqueOrThrow({
       where: { id: user.id },
-      select: { displayName: true, handle: true, avatarUrl: true, isPublic: true, showAdult: true },
+      select: {
+        displayName: true,
+        handle: true,
+        avatarUrl: true,
+        frame: true,
+        isPublic: true,
+        showAdult: true,
+      },
     }),
     db.linkedAccount.findMany({
       where: { userId: user.id },
@@ -62,10 +69,12 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
     }),
     db.psnVerification.findUnique({ where: { userId: user.id } }),
     pendingMerge ? mergePreview(pendingMerge) : null,
+    db.userFrame.findMany({ where: { userId: user.id }, select: { frame: true } }),
   ]);
 
   return {
     profile,
+    frames: earned.map((row) => row.frame),
     merge,
     accounts,
     sessions: sessions.map((s) => ({ ...s, current: s.id === user.sessionId })),
@@ -164,6 +173,17 @@ export const actions: Actions = {
 
   mergeCancel: async ({ cookies }) => {
     clearMerge(cookies);
+  },
+
+  frame: async ({ request, locals }) => {
+    const user = requireUser(locals);
+    const frame = String((await request.formData()).get('frame') ?? '');
+    if (frame) {
+      const owned = await db.userFrame.count({ where: { userId: user.id, frame } });
+      if (!owned) return fail(403, { error: m.frame_unknown() });
+    }
+    await db.user.update({ where: { id: user.id }, data: { frame: frame || null } });
+    return { success: m.frame_saved() };
   },
 
   visibility: async ({ request, locals }) => {

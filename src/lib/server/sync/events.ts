@@ -20,6 +20,7 @@ export interface UnlockEvent {
   user: string;
   handle: string;
   avatarUrl: string | null;
+  frame: string | null;
   game: string;
   gameSlug: string;
   count: number;

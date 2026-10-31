@@ -31,6 +31,7 @@
             <Avatar
               name={collector.displayName}
               src={collector.avatarUrl}
+              frame={collector.frame}
               size={place === 1 ? 64 : 48}
             />
             <span class="max-w-full truncate text-sm font-semibold">{collector.displayName}</span>

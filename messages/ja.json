@@ -411,5 +411,12 @@
   "ranking_full": "ランキング全体",
   "ranking_collectors_empty": "まだカードはありません。",
   "ranking_place": "{place} 位",
-  "ranking_rules": "ランキングはコレクションカードで決まります：ゴールド 100 ポイント、プラチナ 300、プリズム 900、レジェンド 2,700。"
+  "ranking_rules": "ランキングはコレクションカードで決まります：ゴールド 100 ポイント、プラチナ 300、プリズム 900、レジェンド 2,700。",
+  "frames_title": "アバターフレーム",
+  "frame_none": "なし",
+  "frame_saved": "フレームを保存しました。",
+  "frame_unknown": "このフレームはまだ持っていません。",
+  "frame_collector": "コレクター",
+  "frame_collector_how": "カードを 10 枚獲得",
+  "frame_podium_how": "ランキングでこの順位に到達"
 }

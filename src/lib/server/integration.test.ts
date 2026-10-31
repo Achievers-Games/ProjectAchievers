@@ -2,6 +2,7 @@
 import 'dotenv/config';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { collectors, listGames } from './queries';
+import { grantFrames } from './frames';
 import { profileSchema, resolveIdentity, updateProfile, type Identity } from './accounts';
 import { nextTier, stepOf, tierFor } from '$lib/collection';
 import { db } from './db';
@@ -778,7 +779,7 @@ describe('traduction des guides et commentaires', () => {
 });
 
 describe('filtres par niveau', () => {
-  async function library() {
+  async function library(extraCards = 0) {
     const result = await resolveIdentity(identity(), null);
     if (!result.ok) throw new Error('compte non créé');
     const userId = result.userId;
@@ -812,6 +813,7 @@ describe('filtres par niveau', () => {
     await add('or seul', 'STEAM', 100);
     await add('presque', 'STEAM', 90);
     await add('debut', 'PSN', 10);
+    for (let index = 0; index < extraCards; index++) await add(`carte ${index}`, 'STEAM', 100);
     return { sort: 'progression', page: 1, ownerId: userId } as const;
   }
   it('classe les collections selon leurs cartes, jeux réunis', async () => {
@@ -819,6 +821,20 @@ describe('filtres par niveau', () => {
     const user = await db.user.update({ where: { id: ownerId }, data: { isPublic: true } });
     const row = (await collectors(10_000)).find((entry) => entry.handle === user.handle);
     expect(row).toMatchObject({ cards: 3, tiers: [2, 1, 0, 0], score: 500 });
+  });
+
+  it('attribue une fois les cadres, et les garde', async () => {
+    const { ownerId } = await library(7);
+    await db.user.update({ where: { id: ownerId }, data: { isPublic: true } });
+
+    await grantFrames();
+    await grantFrames();
+    const owned = await db.userFrame.findMany({ where: { userId: ownerId, frame: 'collector' } });
+    expect(owned).toHaveLength(1);
+
+    await db.userGame.deleteMany({ where: { userId: ownerId } });
+    await grantFrames();
+    expect(await db.userFrame.count({ where: { userId: ownerId, frame: 'collector' } })).toBe(1);
   });
 
   const names = (result: Awaited<ReturnType<typeof listGames>>) =>

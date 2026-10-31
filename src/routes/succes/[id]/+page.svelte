@@ -290,7 +290,12 @@
       isReply: boolean,
     )}
       <article class="flex gap-3">
-        <Avatar name={comment.author.displayName} src={comment.author.avatarUrl} size={28} />
+        <Avatar
+          name={comment.author.displayName}
+          src={comment.author.avatarUrl}
+          frame={comment.author.frame}
+          size={28}
+        />
         <div class="min-w-0 flex-1 space-y-1">
           <p class="text-xs text-muted">
             <a href="/u/{comment.author.handle}" class="font-medium text-ink">

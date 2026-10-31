@@ -68,6 +68,8 @@ model User {
   handle      String   @unique
   displayName String
   avatarUrl   String?
+  /// Cadre d'avatar équipé, parmi ceux de `frames`.
+  frame       String?
   isPublic    Boolean  @default(true)
   /// Affiche les jeux centrés sur le contenu sexuel, masqués par défaut.
   showAdult   Boolean  @default(false)
@@ -85,6 +87,16 @@ model User {
   reactions    CommentReaction[]
   reports      Report[]
   syncRuns     SyncRun[]
+  frames       UserFrame[]
+}
+
+model UserFrame {
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  frame    String
+  earnedAt DateTime @default(now())
+
+  @@id([userId, frame])
 }
 
 /// L'identifiant est le SHA-256 du jeton du cookie : une fuite de la base

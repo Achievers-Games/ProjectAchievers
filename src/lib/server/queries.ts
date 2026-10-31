@@ -177,7 +177,7 @@ export async function cardFeed(showAdult = false, limit = 12) {
     take: limit,
     select: {
       lastUnlockedAt: true,
-      user: { select: { handle: true, displayName: true, avatarUrl: true } },
+      user: { select: { handle: true, displayName: true, avatarUrl: true, frame: true } },
       game: { select: { name: true, slug: true, headerUrl: true } },
     },
   });
@@ -264,6 +264,7 @@ export async function userProfile(handle: string, viewerId: string | null, showA
       handle: true,
       displayName: true,
       avatarUrl: true,
+      frame: true,
       isPublic: true,
       createdAt: true,
       accounts: {
@@ -335,10 +336,11 @@ export async function leaderboard(period: LeaderboardPeriod, limit = 20) {
       handle: string;
       displayName: string;
       avatarUrl: string | null;
+      frame: string | null;
       unlocked: bigint;
     }[]
   >`
-    SELECT u.handle, u."displayName", u."avatarUrl",
+    SELECT u.handle, u."displayName", u."avatarUrl", u.frame,
            count(*) AS unlocked
     FROM "UserAchievement" ua
     JOIN "User" u ON u.id = ua."userId" AND u."isPublic"
@@ -356,13 +358,14 @@ export async function collectors(limit = 100) {
       handle: string;
       displayName: string;
       avatarUrl: string | null;
+      frame: string | null;
       or: bigint;
       platine: bigint;
       prismatique: bigint;
       legendaire: bigint;
     }[]
   >`
-    SELECT u.handle, u."displayName", u."avatarUrl",
+    SELECT u.handle, u."displayName", u."avatarUrl", u.frame,
            count(*) FILTER (WHERE finished = 1) AS "or",
            count(*) FILTER (WHERE finished = 2) AS platine,
            count(*) FILTER (WHERE finished = 3) AS prismatique,
@@ -400,7 +403,7 @@ export function activityFeed(showAdult = false, limit = 30) {
     take: limit,
     select: {
       unlockedAt: true,
-      user: { select: { handle: true, displayName: true, avatarUrl: true } },
+      user: { select: { handle: true, displayName: true, avatarUrl: true, frame: true } },
       achievement: {
         select: {
           id: true,

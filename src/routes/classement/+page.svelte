@@ -38,7 +38,7 @@
             class:bg-raised={row.handle === data.user?.handle}
           >
             <span class="tabular w-7 text-right text-xs text-muted">{index + 4}</span>
-            <Avatar name={row.displayName} src={row.avatarUrl} size={28} />
+            <Avatar name={row.displayName} src={row.avatarUrl} frame={row.frame} size={28} />
             <span class="min-w-0 flex-1 truncate text-sm font-medium">{row.displayName}</span>
             <span class="hidden gap-3 text-xs sm:flex">
               {#each [1, 2, 3, 4] as tier (tier)}

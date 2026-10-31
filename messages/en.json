@@ -421,5 +421,12 @@
   "ranking_full": "Full ranking",
   "ranking_collectors_empty": "No cards yet.",
   "ranking_place": "Place {place}",
-  "ranking_rules": "Collection cards make the ranking: Gold 100 points, Platinum 300, Prismatic 900 and Legendary 2,700."
+  "ranking_rules": "Collection cards make the ranking: Gold 100 points, Platinum 300, Prismatic 900 and Legendary 2,700.",
+  "frames_title": "Avatar frame",
+  "frame_none": "None",
+  "frame_saved": "Frame saved.",
+  "frame_unknown": "You do not have this frame yet.",
+  "frame_collector": "Collector",
+  "frame_collector_how": "Earn 10 cards",
+  "frame_podium_how": "Reach this place in the ranking"
 }

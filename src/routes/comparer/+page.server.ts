@@ -13,7 +13,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
       handle: { in: [a, b] },
       OR: [{ isPublic: true }, { id: locals.user?.id ?? '' }],
     },
-    select: { id: true, handle: true, displayName: true, avatarUrl: true },
+    select: { id: true, handle: true, displayName: true, avatarUrl: true, frame: true },
   });
   const left = users.find((u) => u.handle === a);
   const right = users.find((u) => u.handle === b);

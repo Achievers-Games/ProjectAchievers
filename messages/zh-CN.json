@@ -411,5 +411,12 @@
   "ranking_full": "完整排行榜",
   "ranking_collectors_empty": "还没有卡牌。",
   "ranking_place": "第 {place} 名",
-  "ranking_rules": "排行榜按收藏卡牌计算：黄金 100 分，白金 300 分，棱彩 900 分，传奇 2700 分。"
+  "ranking_rules": "排行榜按收藏卡牌计算：黄金 100 分，白金 300 分，棱彩 900 分，传奇 2700 分。",
+  "frames_title": "头像框",
+  "frame_none": "无",
+  "frame_saved": "头像框已保存。",
+  "frame_unknown": "你还没有这个头像框。",
+  "frame_collector": "收藏家",
+  "frame_collector_how": "获得 10 张卡牌",
+  "frame_podium_how": "在排行榜上达到此名次"
 }

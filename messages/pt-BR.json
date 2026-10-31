@@ -421,5 +421,12 @@
   "ranking_full": "Ranking completo",
   "ranking_collectors_empty": "Ainda não há cartas.",
   "ranking_place": "{place}º lugar",
-  "ranking_rules": "As cartas de coleção definem o ranking: Ouro 100 pontos, Platina 300, Prismática 900 e Lendária 2.700."
+  "ranking_rules": "As cartas de coleção definem o ranking: Ouro 100 pontos, Platina 300, Prismática 900 e Lendária 2.700.",
+  "frames_title": "Moldura de avatar",
+  "frame_none": "Nenhuma",
+  "frame_saved": "Moldura salva.",
+  "frame_unknown": "Você ainda não tem esta moldura.",
+  "frame_collector": "Colecionador",
+  "frame_collector_how": "Obtenha 10 cartas",
+  "frame_podium_how": "Alcance esta posição no ranking"
 }

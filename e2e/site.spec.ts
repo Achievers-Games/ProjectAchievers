@@ -321,7 +321,7 @@ test.describe('membre', () => {
     await ready(page);
     const name = page.getByLabel('Nom affiché');
     const original = await name.inputValue();
-    const save = page.getByRole('button', { name: 'Enregistrer' });
+    const save = page.getByRole('button', { name: 'Enregistrer' }).first();
 
     await name.fill('Nouveau nom');
     await save.click();
@@ -445,6 +445,25 @@ test.describe('membre', () => {
 
     await mine.getByRole('button', { name: 'Supprimer' }).click();
     await expect(page.getByRole('article').filter({ hasText: marker })).toHaveCount(0);
+  });
+
+  test('équipe un cadre obtenu, jamais un cadre manquant', async ({ page }) => {
+    await login(page);
+    await page.goto('/compte');
+    await ready(page);
+    await expect(page.getByRole('radio', { name: /Collectionneur/ })).toBeDisabled();
+
+    await page.getByRole('radio', { name: /Place 1/ }).check();
+    await page.getByRole('button', { name: 'Enregistrer' }).nth(1).click();
+    await expect(page.getByText('Cadre enregistré.')).toBeVisible();
+    await page.goto('/classement');
+    await expect(page.locator('.avatar-frame[data-frame="podium-1"]').first()).toBeVisible();
+
+    await page.goto('/compte');
+    await ready(page);
+    await page.getByRole('radio', { name: 'Aucun' }).check();
+    await page.getByRole('button', { name: 'Enregistrer' }).nth(1).click();
+    await expect(page.getByText('Cadre enregistré.')).toBeVisible();
   });
 
   test('compare deux profils', async ({ page }) => {

@@ -421,5 +421,12 @@
   "ranking_full": "Vollständige Rangliste",
   "ranking_collectors_empty": "Noch keine Karten.",
   "ranking_place": "Platz {place}",
-  "ranking_rules": "Die Sammelkarten bestimmen die Rangliste: Gold 100 Punkte, Platin 300, Prismatisch 900 und Legendär 2.700."
+  "ranking_rules": "Die Sammelkarten bestimmen die Rangliste: Gold 100 Punkte, Platin 300, Prismatisch 900 und Legendär 2.700.",
+  "frames_title": "Avatar-Rahmen",
+  "frame_none": "Keiner",
+  "frame_saved": "Rahmen gespeichert.",
+  "frame_unknown": "Du hast diesen Rahmen noch nicht.",
+  "frame_collector": "Sammler",
+  "frame_collector_how": "Erhalte 10 Karten",
+  "frame_podium_how": "Erreiche diesen Platz in der Rangliste"
 }

@@ -7,6 +7,7 @@
   import ProviderIcon from '$lib/components/ProviderIcon.svelte';
   import Progress from '$lib/components/Progress.svelte';
   import { formatRelative, PROVIDER_LABELS, syncErrorText } from '$lib/labels';
+  import { FRAMES, frameHint, frameLabel } from '$lib/frames';
   import { syncState } from '$lib/stores/sync';
   import { toast } from '$lib/stores/toast';
 
@@ -183,6 +184,42 @@
         </div>
       </fieldset>
 
+      <button class="btn btn-primary">{m.save()}</button>
+    </form>
+  </section>
+
+  <section class="space-y-3">
+    <h2>{m.frames_title()}</h2>
+    <form method="POST" action="?/frame" use:enhance={submitWith(true)} class="card space-y-4 p-4">
+      <div class="grid gap-3 sm:grid-cols-2">
+        <label class="flex items-center gap-3 text-sm">
+          <input type="radio" name="frame" value="" checked={!data.profile.frame} />
+          <Avatar name={data.profile.displayName} src={data.profile.avatarUrl} size={36} />
+          {m.frame_none()}
+        </label>
+        {#each FRAMES as frame (frame)}
+          {@const owned = data.frames.includes(frame)}
+          <label class="flex items-center gap-3 text-sm" class:opacity-50={!owned}>
+            <input
+              type="radio"
+              name="frame"
+              value={frame}
+              disabled={!owned}
+              checked={data.profile.frame === frame}
+            />
+            <Avatar
+              name={data.profile.displayName}
+              src={data.profile.avatarUrl}
+              {frame}
+              size={36}
+            />
+            <span>
+              {frameLabel(frame)}
+              {#if !owned}<span class="block text-xs text-muted">{frameHint(frame)}</span>{/if}
+            </span>
+          </label>
+        {/each}
+      </div>
       <button class="btn btn-primary">{m.save()}</button>
     </form>
   </section>

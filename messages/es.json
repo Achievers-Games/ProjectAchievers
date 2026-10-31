@@ -421,5 +421,12 @@
   "ranking_full": "Clasificación completa",
   "ranking_collectors_empty": "Todavía no hay cartas.",
   "ranking_place": "Puesto {place}",
-  "ranking_rules": "Las cartas de colección forman la clasificación: Oro 100 puntos, Platino 300, Prismática 900 y Legendaria 2700."
+  "ranking_rules": "Las cartas de colección forman la clasificación: Oro 100 puntos, Platino 300, Prismática 900 y Legendaria 2700.",
+  "frames_title": "Marco de avatar",
+  "frame_none": "Ninguno",
+  "frame_saved": "Marco guardado.",
+  "frame_unknown": "Todavía no tienes este marco.",
+  "frame_collector": "Coleccionista",
+  "frame_collector_how": "Consigue 10 cartas",
+  "frame_podium_how": "Alcanza este puesto en la clasificación"
 }

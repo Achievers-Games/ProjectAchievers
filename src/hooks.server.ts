@@ -3,6 +3,7 @@ import { m } from '$lib/paraglide/messages';
 import { getLocale } from '$lib/paraglide/runtime';
 import { paraglideMiddleware } from '$lib/paraglide/server';
 import { env } from '$lib/server/env';
+import { grantFrames } from '$lib/server/frames';
 import { rateLimit } from '$lib/server/rate-limit';
 import { validateSession } from '$lib/server/session';
 import { startWorkers } from '$lib/server/sync/queue';
@@ -10,6 +11,7 @@ import { startWorkers } from '$lib/server/sync/queue';
 export const init: ServerInit = async () => {
   env();
   await startWorkers();
+  await grantFrames().catch((cause) => console.error('Cadres :', cause));
 };
 
 const WINDOW = 60_000;

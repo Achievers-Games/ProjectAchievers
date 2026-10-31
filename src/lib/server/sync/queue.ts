@@ -9,6 +9,7 @@ import { tierFor, type Reward } from '$lib/collection';
 import { rateGames } from './content';
 import { SyncError } from './errors';
 import { publishCard, publishSync, publishUnlock } from './events';
+import { grantFrames } from '../frames';
 import { syncPsn } from './psn';
 import { syncSteam } from './steam';
 import { syncXbox } from './xbox';
@@ -109,7 +110,14 @@ export async function runSync({ userId, provider }: SyncJob) {
 
   const user = await db.user.findUniqueOrThrow({
     where: { id: userId },
-    select: { displayName: true, handle: true, avatarUrl: true, isPublic: true, showAdult: true },
+    select: {
+      displayName: true,
+      handle: true,
+      avatarUrl: true,
+      frame: true,
+      isPublic: true,
+      showAdult: true,
+    },
   });
   const run = await db.syncRun.create({ data: { userId, provider, status: 'SYNCING' } });
   await db.linkedAccount.update({ where, data: { syncStatus: 'SYNCING', syncError: null } });
@@ -128,6 +136,7 @@ export async function runSync({ userId, provider }: SyncJob) {
           user: user.displayName,
           handle: user.handle,
           avatarUrl: user.avatarUrl,
+          frame: user.frame,
           game: game.name,
           gameSlug: game.slug,
           count,
@@ -159,14 +168,15 @@ export async function runSync({ userId, provider }: SyncJob) {
       }))
       .filter(({ game }) => user.showAdult || !game.adultOnly);
     if (user.isPublic) {
-      const { displayName, handle, avatarUrl } = user;
+      const { displayName, handle, avatarUrl, frame } = user;
       for (const { game, unlockedAt } of rewards) {
         const recent = unlockedAt && Date.now() - unlockedAt.getTime() < LIVE_CARD_MAX_AGE;
         if (unlockedAt && recent && !game.adultOnly) {
-          publishCard({ user: { displayName, handle, avatarUrl }, game, unlockedAt });
+          publishCard({ user: { displayName, handle, avatarUrl, frame }, game, unlockedAt });
         }
       }
     }
+    await grantFrames().catch((cause) => console.error('Cadres :', cause));
     publishSync(userId, {
       provider,
       status: 'COMPLETED',
