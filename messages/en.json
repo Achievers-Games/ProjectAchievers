@@ -406,5 +406,20 @@
   "translate_failed": "Translation failed. Try again later.",
   "privacy_translation": "Automatic translation",
   "privacy_translation_text": "Public guides and comments are sent to Cloudflare Workers AI to be translated automatically into their readers' language. The translation is stored on the site and deleted along with the original text.",
-  "games_tier": "Tier"
+  "games_tier": "Tier",
+  "count_cards": [
+    {
+      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
+      "selectors": ["c"],
+      "match": {
+        "c=one": "{n} card",
+        "c=*": "{n} cards"
+      }
+    }
+  ],
+  "ranking_collectors": "Top collectors",
+  "ranking_full": "Full ranking",
+  "ranking_collectors_empty": "No cards yet.",
+  "ranking_place": "Place {place}",
+  "ranking_rules": "Collection cards make the ranking: Gold 100 points, Platinum 300, Prismatic 900 and Legendary 2,700."
 }

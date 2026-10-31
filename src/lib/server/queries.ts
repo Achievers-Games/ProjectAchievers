@@ -351,6 +351,53 @@ export async function leaderboard(period: LeaderboardPeriod, limit = 20) {
   }));
 }
 
+/** Chaque niveau vaut trois fois le précédent : une Légendaire pèse 27 cartes Or. */
+const TIER_POINTS = [100, 300, 900, 2700];
+
+/** Classement des collections : seules les cartes comptent, pas le nombre de succès. */
+export async function collectors(limit = 100) {
+  const rows = await db.$queryRaw<
+    {
+      handle: string;
+      displayName: string;
+      avatarUrl: string | null;
+      or: bigint;
+      platine: bigint;
+      prismatique: bigint;
+      legendaire: bigint;
+    }[]
+  >`
+    SELECT u.handle, u."displayName", u."avatarUrl",
+           count(*) FILTER (WHERE finished = 1) AS "or",
+           count(*) FILTER (WHERE finished = 2) AS platine,
+           count(*) FILTER (WHERE finished = 3) AS prismatique,
+           count(*) FILTER (WHERE finished >= 4) AS legendaire
+    FROM (
+      SELECT ug."userId", count(DISTINCT g.platform) AS finished
+      FROM "UserGame" ug
+      JOIN "Game" g ON g.id = ug."gameId"
+      WHERE ug.completion >= 100 AND NOT ug.hidden
+      GROUP BY ug."userId", COALESCE(g."familyKey", g.id)
+    ) cards
+    JOIN "User" u ON u.id = cards."userId" AND u."isPublic"
+    GROUP BY u.id`;
+
+  return rows
+    .map(({ or, platine, prismatique, legendaire, ...user }) => {
+      const tiers = [or, platine, prismatique, legendaire].map(Number);
+      return {
+        ...user,
+        tiers,
+        cards: tiers.reduce((sum, count) => sum + count, 0),
+        score: tiers.reduce((sum, count, index) => sum + count * (TIER_POINTS[index] ?? 0), 0),
+      };
+    })
+    .sort((a, b) => b.score - a.score || a.handle.localeCompare(b.handle))
+    .slice(0, limit);
+}
+
+export type Collector = Awaited<ReturnType<typeof collectors>>[number];
+
 export function activityFeed(showAdult = false, limit = 30) {
   return db.userAchievement.findMany({
     where: { user: { isPublic: true }, achievement: { game: visibleGames(showAdult) } },

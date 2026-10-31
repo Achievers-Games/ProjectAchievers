@@ -406,5 +406,20 @@
   "translate_failed": "La traducción ha fallado. Inténtalo más tarde.",
   "privacy_translation": "Traducción automática",
   "privacy_translation_text": "Las guías y los comentarios públicos se envían a Cloudflare Workers AI para traducirlos automáticamente al idioma de quienes los leen. La traducción se conserva en el sitio y se elimina junto con el texto original.",
-  "games_tier": "Nivel"
+  "games_tier": "Nivel",
+  "count_cards": [
+    {
+      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
+      "selectors": ["c"],
+      "match": {
+        "c=one": "{n} carta",
+        "c=*": "{n} cartas"
+      }
+    }
+  ],
+  "ranking_collectors": "Mejores coleccionistas",
+  "ranking_full": "Clasificación completa",
+  "ranking_collectors_empty": "Todavía no hay cartas.",
+  "ranking_place": "Puesto {place}",
+  "ranking_rules": "Las cartas de colección forman la clasificación: Oro 100 puntos, Platino 300, Prismática 900 y Legendaria 2700."
 }

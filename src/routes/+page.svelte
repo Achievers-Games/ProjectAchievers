@@ -3,6 +3,7 @@
   import Empty from '$lib/components/Empty.svelte';
   import GameCard from '$lib/components/GameCard.svelte';
   import LiveCards from '$lib/components/LiveCards.svelte';
+  import Podium from '$lib/components/Podium.svelte';
   import ProviderIcon from '$lib/components/ProviderIcon.svelte';
   import { formatNumber, tierLabel } from '$lib/labels';
 
@@ -36,6 +37,8 @@
     {/if}
 
     <LiveCards initial={data.cards} />
+
+    <Podium collectors={data.podium} />
 
     <dl class="card grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 sm:divide-x sm:divide-line">
       {#each stats as stat (stat.label)}
@@ -90,6 +93,8 @@
     </section>
 
     <LiveCards initial={data.cards} />
+
+    <Podium collectors={data.podium} />
 
     {#if data.popular?.length}
       <section class="space-y-3">

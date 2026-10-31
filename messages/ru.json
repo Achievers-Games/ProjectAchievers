@@ -424,5 +424,22 @@
   "translate_failed": "Не удалось выполнить перевод. Повтори попытку позже.",
   "privacy_translation": "Автоматический перевод",
   "privacy_translation_text": "Публичные гайды и комментарии отправляются в Cloudflare Workers AI для автоматического перевода на язык читателей. Перевод хранится на сайте и удаляется вместе с исходным текстом.",
-  "games_tier": "Уровень"
+  "games_tier": "Уровень",
+  "count_cards": [
+    {
+      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
+      "selectors": ["c"],
+      "match": {
+        "c=one": "{n} карта",
+        "c=few": "{n} карты",
+        "c=many": "{n} карт",
+        "c=*": "{n} карты"
+      }
+    }
+  ],
+  "ranking_collectors": "Лучшие коллекционеры",
+  "ranking_full": "Полный рейтинг",
+  "ranking_collectors_empty": "Карт пока нет.",
+  "ranking_place": "{place}-е место",
+  "ranking_rules": "Рейтинг строится по коллекционным картам: Золото — 100 очков, Платина — 300, Призматическая — 900, Легендарная — 2700."
 }

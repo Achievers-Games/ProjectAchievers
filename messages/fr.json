@@ -406,5 +406,20 @@
   "translate_failed": "La traduction a échoué. Réessaie plus tard.",
   "privacy_translation": "Traduction automatique",
   "privacy_translation_text": "Les guides et commentaires publics sont envoyés à Cloudflare Workers AI pour être traduits automatiquement dans la langue des personnes qui les lisent. La traduction est conservée sur le site et supprimée avec le texte d'origine.",
-  "games_tier": "Niveau"
+  "games_tier": "Niveau",
+  "count_cards": [
+    {
+      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
+      "selectors": ["c"],
+      "match": {
+        "c=one": "{n} carte",
+        "c=*": "{n} cartes"
+      }
+    }
+  ],
+  "ranking_collectors": "Top collectionneurs",
+  "ranking_full": "Classement complet",
+  "ranking_collectors_empty": "Aucune carte pour le moment.",
+  "ranking_place": "{place}ᵉ place",
+  "ranking_rules": "Les cartes de collection font le classement : Or 100 points, Platine 300, Prismatique 900 et Légendaire 2 700."
 }

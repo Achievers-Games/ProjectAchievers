@@ -397,5 +397,19 @@
   "translate_failed": "翻訳に失敗しました。しばらくしてからもう一度お試しください。",
   "privacy_translation": "自動翻訳",
   "privacy_translation_text": "公開されたガイドやコメントは、読者の言語に自動翻訳するため Cloudflare Workers AI に送信されます。翻訳はサイトに保存され、原文とともに削除されます。",
-  "games_tier": "レベル"
+  "games_tier": "レベル",
+  "count_cards": [
+    {
+      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
+      "selectors": ["c"],
+      "match": {
+        "c=*": "{n} 枚のカード"
+      }
+    }
+  ],
+  "ranking_collectors": "トップコレクター",
+  "ranking_full": "ランキング全体",
+  "ranking_collectors_empty": "まだカードはありません。",
+  "ranking_place": "{place} 位",
+  "ranking_rules": "ランキングはコレクションカードで決まります：ゴールド 100 ポイント、プラチナ 300、プリズム 900、レジェンド 2,700。"
 }

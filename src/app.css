@@ -856,3 +856,32 @@
     display: none;
   }
 }
+
+.podium {
+  @apply grid grid-cols-3 items-end gap-2;
+}
+.podium-link {
+  @apply flex min-w-0 flex-col items-center gap-1 rounded-md border border-line bg-surface px-2 pt-4 transition-colors hover:bg-raised;
+  --place: rgb(var(--line));
+  border-top: 3px solid var(--place);
+}
+.podium-step[data-place='1'] .podium-link {
+  --place: #f7c448;
+  padding-top: 1.5rem;
+}
+.podium-step[data-place='2'] .podium-link {
+  --place: #d9e8fb;
+}
+.podium-step[data-place='3'] .podium-link {
+  --place: #cd7f32;
+}
+.podium-place {
+  @apply mt-1 text-2xl font-extrabold;
+  color: var(--place);
+}
+.podium-step[data-place='1'] .podium-place {
+  @apply pb-4 text-4xl;
+}
+.podium-step[data-place='2'] .podium-place {
+  @apply pb-2;
+}

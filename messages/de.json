@@ -406,5 +406,20 @@
   "translate_failed": "Die Übersetzung ist fehlgeschlagen. Versuche es später erneut.",
   "privacy_translation": "Automatische Übersetzung",
   "privacy_translation_text": "Öffentliche Guides und Kommentare werden an Cloudflare Workers AI gesendet, um sie automatisch in die Sprache der Lesenden zu übersetzen. Die Übersetzung wird auf der Website gespeichert und zusammen mit dem Originaltext gelöscht.",
-  "games_tier": "Stufe"
+  "games_tier": "Stufe",
+  "count_cards": [
+    {
+      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
+      "selectors": ["c"],
+      "match": {
+        "c=one": "{n} Karte",
+        "c=*": "{n} Karten"
+      }
+    }
+  ],
+  "ranking_collectors": "Top-Sammler",
+  "ranking_full": "Vollständige Rangliste",
+  "ranking_collectors_empty": "Noch keine Karten.",
+  "ranking_place": "Platz {place}",
+  "ranking_rules": "Die Sammelkarten bestimmen die Rangliste: Gold 100 Punkte, Platin 300, Prismatisch 900 und Legendär 2.700."
 }

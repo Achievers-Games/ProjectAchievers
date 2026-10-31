@@ -1,7 +1,7 @@
 // Tests sur un vrai PostgreSQL : `npm run dev:db` ou le service de la CI.
 import 'dotenv/config';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import { listGames } from './queries';
+import { collectors, listGames } from './queries';
 import { profileSchema, resolveIdentity, updateProfile, type Identity } from './accounts';
 import { nextTier, stepOf, tierFor } from '$lib/collection';
 import { db } from './db';
@@ -813,6 +813,13 @@ describe('filtres par niveau', () => {
     await add('debut', 'PSN', 10);
     return { sort: 'progression', page: 1, ownerId: userId } as const;
   }
+  it('classe les collections selon leurs cartes, jeux réunis', async () => {
+    const { ownerId } = await library();
+    const user = await db.user.update({ where: { id: ownerId }, data: { isPublic: true } });
+    const row = (await collectors(10_000)).find((entry) => entry.handle === user.handle);
+    expect(row).toMatchObject({ cards: 3, tiers: [2, 1, 0, 0], score: 500 });
+  });
+
   const names = (result: Awaited<ReturnType<typeof listGames>>) =>
     result.games.map((game) => game.name.replace(`${PREFIX} `, ''));
 

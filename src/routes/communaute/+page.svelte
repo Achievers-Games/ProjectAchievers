@@ -106,7 +106,7 @@
 
   <section class="min-w-0 space-y-3" aria-labelledby="classement">
     <div class="flex items-center justify-between gap-2">
-      <h2 id="classement">{m.ranking()}</h2>
+      <h2 id="classement"><a href="/classement" class="hover:text-accent">{m.ranking()}</a></h2>
       <div class="flex rounded border border-line text-xs" role="group" aria-label={m.period()}>
         {#each periods as period (period.value)}
           <a
