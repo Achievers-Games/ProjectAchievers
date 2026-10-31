@@ -26,6 +26,8 @@ export default defineConfig({
       DATABASE_URL: database.href,
       ORIGIN: baseURL,
       DEV_LOGIN: '1',
+      CLOUDFLARE_ACCOUNT_ID: 'compte',
+      CLOUDFLARE_AI_TOKEN: 'jeton',
       VITE_CACHE_DIR: 'node_modules/.vite-test',
     },
   },

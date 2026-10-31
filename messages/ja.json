@@ -390,5 +390,12 @@
   "privacy_rights": "あなたの権利",
   "privacy_rights_text": "アカウント画面から、プロフィールの非公開化、アカウントの連携解除、データのエクスポート、アカウントの完全削除ができます。",
   "privacy_account_link": "マイアカウントを開く",
-  "rate_limited": "リクエストが多すぎます。1 分後にもう一度お試しください。"
+  "rate_limited": "リクエストが多すぎます。1 分後にもう一度お試しください。",
+  "translate": "翻訳",
+  "translate_original": "自動翻訳 · 原文を見る",
+  "translating": "翻訳中…",
+  "translate_failed": "翻訳に失敗しました。しばらくしてからもう一度お試しください。",
+  "privacy_translation": "自動翻訳",
+  "privacy_translation_text": "ガイドやコメントの翻訳がリクエストされると、その公開テキストが Cloudflare Workers AI に送信されます。翻訳はサイトに保存され、原文とともに削除されます。",
+  "games_tier": "レベル"
 }

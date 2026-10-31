@@ -399,5 +399,12 @@
   "privacy_rights": "Seus direitos",
   "privacy_rights_text": "Na sua conta, você pode tornar seu perfil privado, desvincular uma conta, exportar seus dados ou excluir sua conta definitivamente.",
   "privacy_account_link": "Abrir minha conta",
-  "rate_limited": "Solicitações demais, tente novamente em um minuto."
+  "rate_limited": "Solicitações demais, tente novamente em um minuto.",
+  "translate": "Traduzir",
+  "translate_original": "Traduzido automaticamente · Ver o original",
+  "translating": "Traduzindo…",
+  "translate_failed": "A tradução falhou. Tente novamente mais tarde.",
+  "privacy_translation": "Tradução automática",
+  "privacy_translation_text": "Quando alguém pede para traduzir um guia ou comentário, o texto público é enviado ao Cloudflare Workers AI. A tradução fica guardada no site e é excluída junto com o texto original.",
+  "games_tier": "Nível"
 }

@@ -13,6 +13,7 @@ import { isAdultOnly, rateGames } from './sync/content';
 import { onCard, onSync, type SyncEvent } from './sync/events';
 import { steamImages } from './sync/steam';
 import { saveAchievements, saveProgress, upsertGame } from './sync/store';
+import { splitText, translateContent } from './translate';
 
 const PREFIX = 'zz-test';
 const STEAM_ID = '76561190000000001';
@@ -719,5 +720,120 @@ describe('synchronisation Steam', () => {
     expect(events.map((e) => e.status)).toEqual(
       expect.arrayContaining(['QUEUED', 'SYNCING', 'COMPLETED']),
     );
+  });
+});
+
+describe('traduction des guides et commentaires', () => {
+  const answer = (content: string, finish_reason = 'stop') =>
+    new Response(
+      JSON.stringify({ result: { choices: [{ finish_reason, message: { content } }] } }),
+    );
+
+  async function guide() {
+    const result = await resolveIdentity(identity(), null);
+    if (!result.ok) throw new Error('compte non créé');
+    const game = await db.game.create({
+      data: {
+        platform: 'STEAM',
+        platformGameId: `${PREFIX}-${Math.random()}`,
+        name: `${PREFIX} traduction`,
+        slug: `${PREFIX}-${Math.random().toString(36).slice(2)}`,
+      },
+    });
+    const achievement = await db.achievement.create({
+      data: { gameId: game.id, platformAchievementId: 'a', name: 'Succès' },
+    });
+    return db.guide.create({
+      data: {
+        achievementId: achievement.id,
+        authorId: result.userId,
+        contentMd: 'Reste derrière.',
+      },
+    });
+  }
+
+  it('ne demande la traduction qu’une fois par langue', async () => {
+    const { id } = await guide();
+    const fetchMock = vi.fn(async () => answer('Stay behind.'));
+    vi.stubGlobal('fetch', fetchMock);
+
+    expect(await translateContent({ guideId: id }, 'Reste derrière.', 'en')).toBe('Stay behind.');
+    expect(await translateContent({ guideId: id }, 'Reste derrière.', 'en')).toBe('Stay behind.');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('ne garde pas une traduction coupée', async () => {
+    const { id } = await guide();
+    vi.stubGlobal('fetch', async () => answer('Stay', 'length'));
+
+    await expect(translateContent({ guideId: id }, 'Reste derrière.', 'de')).rejects.toThrow();
+    expect(await db.contentTranslation.count({ where: { guideId: id } })).toBe(0);
+  });
+
+  it('découpe un long texte aux paragraphes', () => {
+    expect(splitText('aaaa\n\nbbbb\n\ncc', 10)).toEqual(['aaaa\n\nbbbb', 'cc']);
+    expect(splitText('un seul bloc', 5)).toEqual(['un seul bloc']);
+  });
+});
+
+describe('filtres par niveau', () => {
+  async function library() {
+    const result = await resolveIdentity(identity(), null);
+    if (!result.ok) throw new Error('compte non créé');
+    const userId = result.userId;
+    const add = async (
+      name: string,
+      platform: 'STEAM' | 'PSN',
+      completion: number,
+      familyKey?: string,
+    ) => {
+      const game = await db.game.create({
+        data: {
+          platform,
+          platformGameId: `${PREFIX}-${Math.random()}`,
+          name: `${PREFIX} ${name}`,
+          slug: `${PREFIX}-${Math.random().toString(36).slice(2)}`,
+          totalAchievements: 10,
+          familyKey,
+        },
+      });
+      await db.userGame.create({
+        data: { userId, gameId: game.id, completion, unlockedCount: 0, totalCount: 10 },
+      });
+    };
+    const key = () => `${PREFIX}-${Math.random()}`;
+    const platinum = key();
+    const gold = key();
+    await add('platine', 'STEAM', 100, platinum);
+    await add('platine', 'PSN', 100, platinum);
+    await add('or', 'STEAM', 100, gold);
+    await add('or', 'PSN', 40, gold);
+    await add('presque', 'STEAM', 90);
+    await add('debut', 'PSN', 10);
+    return { sort: 'progression', page: 1, ownerId: userId } as const;
+  }
+  const names = (result: Awaited<ReturnType<typeof listGames>>) =>
+    result.games.map((game) => game.name.replace(`${PREFIX} `, ''));
+
+  it('garde le niveau de la carte quand on filtre par plateforme', async () => {
+    const filters = await library();
+    const steam = await listGames({ ...filters, platform: 'STEAM', tier: 2 }, filters.ownerId);
+    expect(names(steam)).toEqual(['platine']);
+  });
+
+  it('range les plus belles cartes d’abord, puis par progression', async () => {
+    const filters = await library();
+    expect(names(await listGames(filters, filters.ownerId))).toEqual([
+      'platine',
+      'or',
+      'presque',
+      'debut',
+    ]);
+  });
+
+  it('garde dans « Non 100 % » les cartes dont une autre version avance', async () => {
+    const filters = await library();
+    const unfinished = await listGames({ ...filters, unfinished: true }, filters.ownerId);
+    expect(names(unfinished)).toEqual(['presque', 'or', 'debut']);
   });
 });

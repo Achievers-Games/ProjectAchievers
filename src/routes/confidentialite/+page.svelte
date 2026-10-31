@@ -22,6 +22,9 @@
   <h2 class="pt-4">{m.privacy_not_collected()}</h2>
   <p>{m.privacy_not_collected_text()}</p>
 
+  <h2 class="pt-4">{m.privacy_translation()}</h2>
+  <p>{m.privacy_translation_text()}</p>
+
   <h2 class="pt-4">{m.privacy_rights()}</h2>
   <p>{m.privacy_rights_text()}</p>
   <p><a href="/compte">{m.privacy_account_link()}</a></p>

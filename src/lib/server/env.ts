@@ -13,6 +13,8 @@ const schema = z.object({
   XBOX_CLIENT_ID: z.string().optional(),
   XBOX_CLIENT_SECRET: z.string().optional(),
   PSN_SERVICE_NPSSO: z.string().optional(),
+  CLOUDFLARE_ACCOUNT_ID: z.string().optional(),
+  CLOUDFLARE_AI_TOKEN: z.string().optional(),
   DEV_LOGIN: z.string().optional(),
   SYNC_CONCURRENCY: z.coerce.number().int().min(1).default(2),
 });

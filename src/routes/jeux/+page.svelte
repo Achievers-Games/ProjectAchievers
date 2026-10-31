@@ -6,6 +6,7 @@
   import List from '@lucide/svelte/icons/list';
   import Empty from '$lib/components/Empty.svelte';
   import GameCard from '$lib/components/GameCard.svelte';
+  import { tierLabel } from '$lib/labels';
   import type { GameListItem } from '$lib/server/queries';
   import type { Snapshot } from './$types';
 
@@ -112,6 +113,13 @@
     { value: 'caches', label: m.games_hidden() },
   ];
 
+  const tiers = [
+    { value: 'or', label: tierLabel(1), tier: 1 },
+    { value: 'platine', label: tierLabel(2), tier: 2 },
+    { value: 'prismatique', label: tierLabel(3), tier: 3 },
+    { value: 'legendaire', label: tierLabel(4), tier: 4 },
+  ];
+
   /** « Non 100 % » sert à voir ce qui est presque fini : les plus avancés passent devant. */
   const collectionHref = (filtre: string | null) =>
     hrefWith(filtre === 'restants' ? { filtre, tri: 'progression' } : { filtre, tri: null });
@@ -169,6 +177,24 @@
             class="px-3 py-1.5 text-sm transition-colors"
             class:bg-raised={(data.params.filtre ?? null) === item.value}
             class:text-muted={(data.params.filtre ?? null) !== item.value}
+          >
+            {item.label}
+          </a>
+        {/each}
+      </div>
+      <div
+        class="flex flex-wrap rounded border border-line"
+        role="group"
+        aria-label={m.games_tier()}
+      >
+        {#each tiers as item (item.value)}
+          <a
+            href={collectionHref(item.value)}
+            data-sveltekit-noscroll
+            data-tier={item.tier}
+            aria-current={data.params.filtre === item.value ? 'true' : undefined}
+            class="stat-value px-3 py-1.5 !text-sm transition-colors"
+            class:bg-raised={data.params.filtre === item.value}
           >
             {item.label}
           </a>

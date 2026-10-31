@@ -1,6 +1,6 @@
 import { Prisma, type Platform } from '@prisma/client';
 import { db } from './db';
-import { groupLibrary } from './library';
+import { groupLibrary, type LibraryCard } from './library';
 
 export const PAGE_SIZE = 36;
 
@@ -14,8 +14,10 @@ interface GameFilters {
   sort: 'nom' | 'recent' | 'progression' | 'succes';
   page: number;
   ownerId?: string;
-  /** Avec `ownerId` : seulement les jeux à succès qui ne sont pas encore à 100 %. */
+  /** Avec `ownerId` : seulement les jeux qui ont encore une version à terminer. */
   unfinished?: boolean;
+  /** Avec `ownerId` : seulement les cartes de ce niveau. */
+  tier?: number;
   /** Avec `ownerId` : montre les jeux cachés par le joueur, et seulement eux. */
   hidden?: boolean;
   showAdult?: boolean;
@@ -40,14 +42,23 @@ const librarySelect = {
   },
 } satisfies Prisma.UserGameSelect;
 
+/** Le pourcentage affiché sur la carte : celui du niveau suivant, s'il est en cours. */
+const shownProgress = (card: LibraryCard) => card.next?.completion ?? card.progress.completion;
+
 /** Bibliothèque d'un joueur : les versions d'un même jeu forment une seule carte. */
 async function listLibrary(filters: GameFilters, ownerId: string, where: Prisma.GameWhereInput) {
   const rows = await db.userGame.findMany({
     where: { userId: ownerId, hidden: Boolean(filters.hidden), game: where },
     select: librarySelect,
   });
+  // Le niveau dépend de toutes les versions : la plateforme se filtre une fois les cartes réunies.
   const cards = groupLibrary(rows).filter(
-    (card) => !filters.unfinished || (card.progress.completion < 100 && card.totalAchievements > 0),
+    (card) =>
+      (!filters.platform || card.versions.some((v) => v.platform === filters.platform)) &&
+      (!filters.tier || card.tier === filters.tier) &&
+      (!filters.unfinished ||
+        Boolean(card.next) ||
+        (card.progress.completion < 100 && card.totalAchievements > 0)),
   );
 
   const byName = (a: (typeof cards)[number], b: (typeof cards)[number]) =>
@@ -57,7 +68,9 @@ async function listLibrary(filters: GameFilters, ownerId: string, where: Prisma.
       return b.totalAchievements - a.totalAchievements || byName(a, b);
     }
     if (filters.sort === 'progression') {
-      return b.progress.completion - a.progress.completion || byName(a, b);
+      // Dans « Non 100 % », seul compte ce qui est presque fini ; sinon les plus belles cartes d'abord.
+      const tier = filters.unfinished ? 0 : b.tier - a.tier;
+      return tier || shownProgress(b) - shownProgress(a) || byName(a, b);
     }
     if (filters.sort === 'recent') {
       const time = (card: typeof a) => card.lastUnlockedAt?.getTime() ?? 0;
@@ -74,9 +87,9 @@ export async function listGames(filters: GameFilters, viewerId: string | null) {
   const where: Prisma.GameWhereInput = {
     ...visibleGames(filters.showAdult),
     ...(filters.q && { name: { contains: filters.q, mode: 'insensitive' } }),
-    ...(filters.platform && { platform: filters.platform }),
   };
   if (filters.ownerId) return listLibrary(filters, filters.ownerId, where);
+  if (filters.platform) where.platform = filters.platform;
 
   // L'identifiant départage les égalités : sans lui, un jeu pourrait passer d'une page à l'autre.
   const orderBy: Prisma.GameOrderByWithRelationInput[] = [

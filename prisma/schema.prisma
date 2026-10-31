@@ -247,7 +247,8 @@ model Guide {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
-  votes GuideVote[]
+  votes        GuideVote[]
+  translations ContentTranslation[]
 
   @@index([achievementId, score])
 }
@@ -276,9 +277,25 @@ model Comment {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
-  reactions CommentReaction[]
+  reactions    CommentReaction[]
+  translations ContentTranslation[]
 
   @@index([achievementId, createdAt])
+}
+
+/// Traductions automatiques, supprimées avec le texte d'origine.
+model ContentTranslation {
+  id        String   @id @default(cuid())
+  guideId   String?
+  guide     Guide?   @relation(fields: [guideId], references: [id], onDelete: Cascade)
+  commentId String?
+  comment   Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  locale    String
+  contentMd String
+  createdAt DateTime @default(now())
+
+  @@unique([guideId, locale])
+  @@unique([commentId, locale])
 }
 
 model CommentReaction {

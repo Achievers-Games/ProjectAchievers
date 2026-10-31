@@ -4,6 +4,8 @@ import type { ReactionType } from '@prisma/client';
 import { db } from '$lib/server/db';
 import { renderMarkdown } from '$lib/server/markdown';
 import { rateLimit } from '$lib/server/rate-limit';
+import { canTranslate, translateContent } from '$lib/server/translate';
+import { getLocale } from '$lib/paraglide/runtime';
 import type { Actions, PageServerLoad } from './$types';
 import { m } from '$lib/paraglide/messages';
 
@@ -82,6 +84,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
     },
     unlockedAt: unlock,
     unlockers,
+    canTranslate: canTranslate(),
     guides: guides.map((guide) => ({
       id: guide.id,
       html: renderMarkdown(guide.contentMd),
@@ -108,6 +111,11 @@ const reportSchema = z.object({
   reason: z.string().trim().min(3).max(500),
 });
 
+const translateSchema = z.object({
+  targetType: z.enum(['GUIDE', 'COMMENT']),
+  targetId: z.string().min(1),
+});
+
 const reactionSchema = z.object({
   commentId: z.string().min(1),
   type: z.enum(['HELPFUL', 'THANKS', 'FUNNY']),
@@ -117,6 +125,9 @@ function requireUser(locals: App.Locals, url: URL) {
   if (!locals.user) redirect(303, `/connexion?retour=${encodeURIComponent(url.pathname)}`);
   return locals.user;
 }
+
+/** Le quota gratuit est partagé par tout le site. */
+const TRANSLATIONS_PER_HOUR = 300;
 
 const tooFast = (userId: string) => !rateLimit(`publication:${userId}`, 5, 60_000);
 
@@ -214,6 +225,9 @@ export const actions: Actions = {
   deleteComment: async ({ request, locals, url }) => {
     const user = requireUser(locals, url);
     const id = String((await request.formData()).get('id'));
+    await db.contentTranslation.deleteMany({
+      where: { commentId: id, comment: { authorId: user.id } },
+    });
     // Le contenu est retiré, la ligne reste pour garder le fil des réponses.
     await db.comment.updateMany({
       where: { id, authorId: user.id },
@@ -225,11 +239,40 @@ export const actions: Actions = {
   deleteGuide: async ({ request, locals, url }) => {
     const user = requireUser(locals, url);
     const id = String((await request.formData()).get('id'));
+    await db.contentTranslation.deleteMany({
+      where: { guideId: id, guide: { authorId: user.id } },
+    });
     await db.guide.updateMany({
       where: { id, authorId: user.id },
       data: { status: 'DELETED', contentMd: '' },
     });
     return { success: m.guide_deleted() };
+  },
+
+  translate: async ({ request, params }) => {
+    const parsed = translateSchema.safeParse(Object.fromEntries(await request.formData()));
+    if (!parsed.success || !canTranslate()) return fail(400, { error: m.translate_failed() });
+
+    const { targetType, targetId } = parsed.data;
+    const where = { id: targetId, achievementId: params.id, status: 'PUBLISHED' as const };
+    const select = { contentMd: true };
+    const source =
+      targetType === 'GUIDE'
+        ? await db.guide.findFirst({ where, select })
+        : await db.comment.findFirst({ where, select });
+    if (!source) return fail(404, { error: m.gone() });
+    if (!rateLimit('traduction', TRANSLATIONS_PER_HOUR, 3_600_000)) {
+      return fail(429, { error: m.translate_failed() });
+    }
+
+    const target = targetType === 'GUIDE' ? { guideId: targetId } : { commentId: targetId };
+    try {
+      const translated = await translateContent(target, source.contentMd, getLocale());
+      return { html: renderMarkdown(translated) };
+    } catch (cause) {
+      console.error('Traduction :', cause);
+      return fail(503, { error: m.translate_failed() });
+    }
   },
 
   report: async ({ request, locals, url }) => {

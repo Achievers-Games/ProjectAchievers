@@ -17,6 +17,8 @@
 
   let writingGuide = $state(false);
   let replyTo = $state<string | null>(null);
+  let translations = $state<Record<string, { html: string; shown: boolean }>>({});
+  let translating = $state<string | null>(null);
 
   const REACTIONS = [
     { type: 'HELPFUL', label: m.reaction_helpful(), emoji: '👍' },
@@ -55,19 +57,49 @@
     };
   };
 
-  async function report(type: 'GUIDE' | 'COMMENT', id: string) {
-    const reason = prompt(m.report_prompt());
-    if (!reason) return;
+  const shownHtml = (item: { id: string; html: string }) => {
+    const translation = translations[item.id];
+    return translation?.shown ? translation.html : item.html;
+  };
+
+  async function postAction(action: string, fields: Record<string, string>) {
     const body = new FormData();
-    body.set('targetType', type);
-    body.set('targetId', id);
-    body.set('reason', reason);
-    const response = await fetch('?/report', {
+    for (const [key, value] of Object.entries(fields)) body.set(key, value);
+    const response = await fetch(`?/${action}`, {
       method: 'POST',
       body,
       headers: { 'x-sveltekit-action': 'true' },
     });
-    const result = deserialize(await response.text());
+    return deserialize(await response.text());
+  }
+
+  /** La traduction reste en mémoire : revenir à l'original puis à la traduction est immédiat. */
+  async function translate(targetType: 'GUIDE' | 'COMMENT', targetId: string) {
+    const known = translations[targetId];
+    if (known) {
+      known.shown = !known.shown;
+      return;
+    }
+    translating = targetId;
+    try {
+      const result = await postAction('translate', { targetType, targetId });
+      if (result.type === 'success') {
+        translations[targetId] = { html: String(result.data?.html), shown: true };
+      } else {
+        const message = result.type === 'failure' ? result.data?.error : null;
+        toast(String(message ?? m.translate_failed()), 'error');
+      }
+    } catch {
+      toast(m.translate_failed(), 'error');
+    } finally {
+      translating = null;
+    }
+  }
+
+  async function report(type: 'GUIDE' | 'COMMENT', id: string) {
+    const reason = prompt(m.report_prompt());
+    if (!reason) return;
+    const result = await postAction('report', { targetType: type, targetId: id, reason });
     if (result.type === 'success') toast(m.report_sent());
     else {
       const message = result.type === 'failure' ? result.data?.error : null;
@@ -80,6 +112,25 @@
   <title>{data.achievement.name} — {data.achievement.game.name}</title>
   <meta name="description" content={data.achievement.description} />
 </svelte:head>
+
+{#snippet translateButton(type: 'GUIDE' | 'COMMENT', id: string)}
+  {#if data.canTranslate}
+    <button
+      type="button"
+      class="text-xs text-muted hover:text-ink"
+      disabled={translating === id}
+      onclick={() => translate(type, id)}
+    >
+      {#if translating === id}
+        {m.translating()}
+      {:else if translations[id]?.shown}
+        {m.translate_original()}
+      {:else}
+        {m.translate()}
+      {/if}
+    </button>
+  {/if}
+{/snippet}
 
 <div class="mx-auto max-w-3xl space-y-8">
   <header class="flex gap-4">
@@ -167,8 +218,9 @@
             {formatRelative(guide.createdAt)}
           </p>
           <!-- eslint-disable-next-line svelte/no-at-html-tags -- assaini par renderMarkdown -->
-          <div class="prose-user">{@html guide.html}</div>
-          <div class="flex gap-2">
+          <div class="prose-user">{@html shownHtml(guide)}</div>
+          <div class="flex gap-3">
+            {#if !guide.mine}{@render translateButton('GUIDE', guide.id)}{/if}
             {#if guide.mine}
               <form method="POST" action="?/deleteGuide" use:enhance={submit}>
                 <input type="hidden" name="id" value={guide.id} />
@@ -214,8 +266,9 @@
             <p class="text-sm italic text-muted">{m.comment_deleted()}</p>
           {:else}
             <!-- eslint-disable-next-line svelte/no-at-html-tags -- assaini par renderMarkdown -->
-            <div class="prose-user">{@html comment.html}</div>
+            <div class="prose-user">{@html shownHtml(comment)}</div>
             <div class="flex flex-wrap items-center gap-3 text-xs text-muted">
+              {#if !comment.mine}{@render translateButton('COMMENT', comment.id)}{/if}
               {#if data.user}
                 <form method="POST" action="?/react" use:enhance={submit} class="flex gap-2">
                   <input type="hidden" name="commentId" value={comment.id} />

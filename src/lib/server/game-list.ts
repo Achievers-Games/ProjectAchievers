@@ -1,13 +1,18 @@
 import { z } from 'zod';
 import { listGames, PAGE_SIZE } from './queries';
 
+const TIERS: Record<string, number> = { or: 1, platine: 2, prismatique: 3, legendaire: 4 };
+
 const query = z.object({
   q: z.string().trim().max(80).optional().catch(undefined),
   plateforme: z.enum(['STEAM', 'PSN', 'XBOX']).optional().catch(undefined),
   tri: z.enum(['nom', 'recent', 'progression', 'succes']).catch('nom'),
   page: z.coerce.number().int().min(1).max(10_000).catch(1),
   vue: z.enum(['grille', 'liste']).catch('grille'),
-  filtre: z.enum(['restants', 'caches']).optional().catch(undefined),
+  filtre: z
+    .enum(['restants', 'caches', 'or', 'platine', 'prismatique', 'legendaire'])
+    .optional()
+    .catch(undefined),
 });
 
 /** Lecture commune à la page Jeux et au chargement au défilement. */
@@ -27,6 +32,7 @@ export async function gamesFromUrl(url: URL, user: App.Locals['user']) {
       page: params.page,
       ownerId: mine ? user?.id : undefined,
       unfinished,
+      tier: mine ? TIERS[params.filtre ?? ''] : undefined,
       hidden: mine && params.filtre === 'caches',
       showAdult: user?.showAdult,
     },

@@ -399,5 +399,12 @@
   "privacy_rights": "Deine Rechte",
   "privacy_rights_text": "In deinem Konto kannst du dein Profil auf privat stellen, ein Konto trennen, deine Daten exportieren oder dein Konto endgültig löschen.",
   "privacy_account_link": "Mein Konto öffnen",
-  "rate_limited": "Zu viele Anfragen, versuche es in einer Minute erneut."
+  "rate_limited": "Zu viele Anfragen, versuche es in einer Minute erneut.",
+  "translate": "Übersetzen",
+  "translate_original": "Automatisch übersetzt · Original ansehen",
+  "translating": "Wird übersetzt…",
+  "translate_failed": "Die Übersetzung ist fehlgeschlagen. Versuche es später erneut.",
+  "privacy_translation": "Automatische Übersetzung",
+  "privacy_translation_text": "Wenn jemand die Übersetzung eines Guides oder Kommentars anfordert, wird dessen öffentlicher Text an Cloudflare Workers AI gesendet. Die Übersetzung wird auf der Website gespeichert und zusammen mit dem Originaltext gelöscht.",
+  "games_tier": "Stufe"
 }

@@ -379,6 +379,44 @@ test.describe('membre', () => {
     await expect(page.getByRole('article').filter({ hasText: marker })).toHaveCount(0);
   });
 
+  test('traduit le commentaire d’une autre personne, et revient à l’original', async ({
+    page,
+    browser,
+  }) => {
+    await login(page);
+    await page.goto('/jeux/hades');
+    await page
+      .getByRole('link', { name: /étape 1$|étape 1 / })
+      .first()
+      .click();
+    await expect(page).toHaveURL(/\/succes\//);
+
+    const marker = `Astuce ${Date.now()}`;
+    await page.getByRole('textbox', { name: 'Ton commentaire' }).fill(marker);
+    await page.getByRole('button', { name: 'Publier' }).click();
+    const mine = page.getByRole('article').filter({ hasText: marker });
+    await expect(mine.getByRole('button', { name: 'Traduire' })).toHaveCount(0);
+
+    const visitor = await browser.newPage({ locale: 'fr-FR' });
+    await visitor.route('**/*translate', (route) =>
+      route.fulfill({
+        json: { type: 'success', status: 200, data: '[{"html":1},"<p>Translated tip</p>"]' },
+      }),
+    );
+    await visitor.goto(page.url());
+    await ready(visitor);
+    const other = visitor.getByRole('article').filter({ hasText: marker });
+    await other.getByRole('button', { name: 'Traduire' }).click();
+    await expect(visitor.getByText('Translated tip')).toBeVisible();
+
+    await visitor.getByRole('button', { name: /Voir l'original/ }).click();
+    await expect(other).toContainText(marker);
+    await visitor.close();
+
+    await mine.getByRole('button', { name: 'Supprimer' }).click();
+    await expect(page.getByRole('article').filter({ hasText: marker })).toHaveCount(0);
+  });
+
   test('compare deux profils', async ({ page }) => {
     await login(page);
     await page.goto('/u/lea');
