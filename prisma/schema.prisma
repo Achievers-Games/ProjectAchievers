@@ -59,6 +59,7 @@ enum ReactionType {
 enum ReportTarget {
   GUIDE
   COMMENT
+  MESSAGE
 }
 
 // ── Comptes ────────────────────────────────────────────────────────────
@@ -95,6 +96,109 @@ model User {
   syncRuns     SyncRun[]
   frames       UserFrame[]
   pinned       PinnedGame[]
+
+  friendRequests  Friendship[]         @relation("FriendRequester")
+  friendReceived  Friendship[]         @relation("FriendAddressee")
+  blocks          Block[]              @relation("Blocker")
+  blockedBy       Block[]              @relation("Blocked")
+  clanMember      ClanMember?
+  clanInvites     ClanInvite[]
+  conversations   ConversationMember[]
+  messages        Message[]
+}
+
+/// Une demande d'ami, acceptée ou non : un couple de joueurs n'a qu'une ligne.
+model Friendship {
+  id          String   @id @default(cuid())
+  requesterId String
+  requester   User     @relation("FriendRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  addresseeId String
+  addressee   User     @relation("FriendAddressee", fields: [addresseeId], references: [id], onDelete: Cascade)
+  accepted    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@unique([requesterId, addresseeId])
+  @@index([addresseeId])
+}
+
+model Block {
+  blockerId String
+  blocker   User     @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blockedId String
+  blocked   User     @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([blockerId, blockedId])
+  @@index([blockedId])
+}
+
+model Clan {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  createdAt DateTime @default(now())
+
+  members      ClanMember[]
+  invites      ClanInvite[]
+  conversation Conversation?
+}
+
+/// Un joueur appartient à un seul clan à la fois.
+model ClanMember {
+  userId   String   @id
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clanId   String
+  clan     Clan     @relation(fields: [clanId], references: [id], onDelete: Cascade)
+  owner    Boolean  @default(false)
+  joinedAt DateTime @default(now())
+
+  @@index([clanId])
+}
+
+model ClanInvite {
+  clanId    String
+  clan      Clan     @relation(fields: [clanId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([clanId, userId])
+}
+
+/// Une discussion entre deux amis (directKey) ou celle d'un clan (clanId).
+model Conversation {
+  id        String   @id @default(cuid())
+  directKey String?  @unique
+  clanId    String?  @unique
+  clan      Clan?    @relation(fields: [clanId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  members  ConversationMember[]
+  messages Message[]
+}
+
+model ConversationMember {
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lastReadAt     DateTime     @default(now())
+
+  @@id([conversationId, userId])
+  @@index([userId])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  authorId       String
+  author         User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  content        String
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
+  @@index([createdAt])
 }
 
 /// Cartes choisies par le joueur pour sa vitrine, dans l'ordre qu'il a décidé.

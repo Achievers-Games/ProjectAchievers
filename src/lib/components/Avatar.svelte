@@ -1,7 +1,11 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { m } from '$lib/paraglide/messages';
+  import { online } from '$lib/stores/presence';
 
   interface Person {
+    /** Sans identifiant, pas de pastille : c'est le cas des aperçus. */
+    handle?: string;
     displayName: string;
     avatarUrl: string | null;
     avatarMotionUrl?: string | null;
@@ -38,6 +42,7 @@
     allowed = !matchMedia('(prefers-reduced-motion: reduce)').matches;
   });
 
+  const isOnline = $derived(Boolean(person?.handle && $online.has(person.handle)));
   const playing = $derived(allowed && (play === 'always' || hovering));
   const shown = $derived(motion && playing ? motion : src);
   /** Un cadre importé est une image ; ceux du site sont dessinés en CSS. */
@@ -80,5 +85,14 @@
   {/if}
   {#if overlayShown}
     <img src={overlayShown} alt="" class="avatar-overlay" />
+  {/if}
+  {#if isOnline}
+    <span
+      class="avatar-online"
+      style:--dot="{Math.max(8, Math.round(size * 0.26))}px"
+      role="img"
+      aria-label={m.user_online()}
+      title={m.user_online()}
+    ></span>
   {/if}
 </span>

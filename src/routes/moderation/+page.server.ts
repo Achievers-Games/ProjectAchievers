@@ -20,7 +20,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 
   const guideIds = reports.filter((r) => r.targetType === 'GUIDE').map((r) => r.targetId);
   const commentIds = reports.filter((r) => r.targetType === 'COMMENT').map((r) => r.targetId);
-  const [guides, comments] = await Promise.all([
+  const messageIds = reports.filter((r) => r.targetType === 'MESSAGE').map((r) => r.targetId);
+  const [guides, comments, messages] = await Promise.all([
     db.guide.findMany({
       where: { id: { in: guideIds } },
       select: { id: true, contentMd: true, achievementId: true, status: true },
@@ -29,8 +30,16 @@ export const load: PageServerLoad = async ({ locals }) => {
       where: { id: { in: commentIds } },
       select: { id: true, contentMd: true, achievementId: true, status: true },
     }),
+    // Seul le message signalé est lu, jamais le reste de la discussion.
+    db.message.findMany({
+      where: { id: { in: messageIds } },
+      select: { id: true, content: true },
+    }),
   ]);
-  const targets = new Map([...guides, ...comments].map((t) => [t.id, t]));
+  const targets = new Map<string, { contentMd: string; achievementId: string | null }>([
+    ...[...guides, ...comments].map((t) => [t.id, t] as const),
+    ...messages.map((t) => [t.id, { contentMd: t.content, achievementId: null }] as const),
+  ]);
 
   // Les familles de plusieurs jeux : c'est là que le rapprochement par titre peut se tromper.
   const shared = await db.game.groupBy({
@@ -99,7 +108,9 @@ export const actions: Actions = {
 
     await db.$transaction(async (tx) => {
       if (form.get('hide') === '1') {
-        if (report.targetType === 'GUIDE') {
+        if (report.targetType === 'MESSAGE') {
+          await tx.message.deleteMany({ where: { id: report.targetId } });
+        } else if (report.targetType === 'GUIDE') {
           await tx.guide.updateMany({ where: { id: report.targetId }, data: { status: 'HIDDEN' } });
         } else {
           await tx.comment.updateMany({

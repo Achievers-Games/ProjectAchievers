@@ -1,8 +1,9 @@
 import type { Cookies } from '@sveltejs/kit';
-import type { Provider, Role } from '@prisma/client';
+import type { Prisma, Provider, Role } from '@prisma/client';
 import { secureCookie } from './cookies';
 import { decrypt, encrypt } from './crypto';
 import { db } from './db';
+import { directKey, leaveClan } from './social';
 
 const MERGE_COOKIE = 'pa_merge';
 
@@ -16,6 +17,65 @@ const PER_USER_TABLES = [
   ['CommentReaction', 'commentId'],
 ] as const;
 
+type Transaction = Prisma.TransactionClient;
+
+async function mergeClans(
+  tx: Transaction,
+  sourceId: string,
+  targetId: string,
+  choice: ClanChoice | undefined,
+) {
+  await tx.$executeRaw`
+    DELETE FROM "ClanInvite" s USING "ClanInvite" t
+    WHERE s."userId" = ${sourceId} AND t."userId" = ${targetId} AND s."clanId" = t."clanId"`;
+  await tx.clanInvite.updateMany({ where: { userId: sourceId }, data: { userId: targetId } });
+
+  const kept = await tx.clanMember.findUnique({ where: { userId: sourceId } });
+  if (!kept) return;
+  const targetHasClan = await tx.clanMember.count({ where: { userId: targetId } });
+  if (targetHasClan && choice !== 'source') {
+    await leaveClan(sourceId, tx);
+    return;
+  }
+  if (targetHasClan) await leaveClan(targetId, tx);
+  await tx.clanMember.update({ where: { userId: sourceId }, data: { userId: targetId } });
+}
+
+/** Deux discussions avec le même ami n'en font plus qu'une, messages compris. */
+async function mergeConversations(tx: Transaction, sourceId: string, targetId: string) {
+  const direct = await tx.conversation.findMany({
+    where: { directKey: { not: null }, members: { some: { userId: sourceId } } },
+    select: { id: true, directKey: true },
+  });
+  for (const conversation of direct) {
+    const friend = conversation.directKey?.split(':').find((id) => id !== sourceId) as string;
+    if (friend === targetId) {
+      await tx.conversation.delete({ where: { id: conversation.id } });
+      continue;
+    }
+    const key = directKey(targetId, friend);
+    const existing = await tx.conversation.findUnique({ where: { directKey: key } });
+    if (existing) {
+      await tx.message.updateMany({
+        where: { conversationId: conversation.id },
+        data: { conversationId: existing.id },
+      });
+      await tx.conversation.delete({ where: { id: conversation.id } });
+    } else {
+      await tx.conversation.update({ where: { id: conversation.id }, data: { directKey: key } });
+    }
+  }
+  await tx.$executeRaw`
+    DELETE FROM "ConversationMember" s USING "ConversationMember" t
+    WHERE s."userId" = ${sourceId} AND t."userId" = ${targetId}
+      AND s."conversationId" = t."conversationId"`;
+  await tx.conversationMember.updateMany({
+    where: { userId: sourceId },
+    data: { userId: targetId },
+  });
+  await tx.message.updateMany({ where: { authorId: sourceId }, data: { authorId: targetId } });
+}
+
 const ROLE_RANK: Record<Role, number> = { USER: 0, MODERATOR: 1, ADMIN: 2 };
 
 export interface PendingMerge {
@@ -27,7 +87,10 @@ export interface PendingMerge {
   providerUserId: string;
 }
 
-type MergeFailure = 'stale' | 'sync_running' | 'provider_conflict';
+type MergeFailure = 'stale' | 'sync_running' | 'provider_conflict' | 'clan_choice';
+
+/** Le clan à garder quand les deux profils en ont un. */
+export type ClanChoice = 'source' | 'target';
 
 /** La demande reste chez le navigateur, chiffrée, pendant 10 minutes. */
 export function saveMerge(cookies: Cookies, merge: PendingMerge) {
@@ -62,11 +125,16 @@ export async function mergePreview(merge: PendingMerge) {
         handle: true,
         displayName: true,
         accounts: { select: { provider: true } },
+        clanMember: { select: { clan: { select: { name: true } } } },
         _count: { select: { games: true, guides: true, comments: true } },
       },
     }),
     db.linkedAccount.findMany({ where: { userId: merge.targetId }, select: { provider: true } }),
   ]);
+  const targetClan = await db.clanMember.findUnique({
+    where: { userId: merge.targetId },
+    select: { clan: { select: { name: true } } },
+  });
   if (!source) return null;
 
   const taken = new Set(targetAccounts.map((a) => a.provider));
@@ -75,6 +143,11 @@ export async function mergePreview(merge: PendingMerge) {
     displayName: source.displayName,
     providers: source.accounts.map((a) => a.provider),
     conflicts: source.accounts.map((a) => a.provider).filter((p) => taken.has(p)),
+    // Un joueur n'a qu'un clan : s'il en a deux, c'est à lui de choisir.
+    clans:
+      source.clanMember && targetClan
+        ? { source: source.clanMember.clan.name, target: targetClan.clan.name }
+        : null,
     games: source._count.games,
     guides: source._count.guides,
     comments: source._count.comments,
@@ -88,7 +161,10 @@ export async function mergePreview(merge: PendingMerge) {
  * Tant que les deux profils portent un compte du même fournisseur, la fusion est
  * refusée : garder l'un des deux en silence ferait perdre une bibliothèque.
  */
-export async function mergeUsers(merge: PendingMerge): Promise<MergeFailure | null> {
+export async function mergeUsers(
+  merge: PendingMerge,
+  clanChoice?: ClanChoice,
+): Promise<MergeFailure | null> {
   const { sourceId, targetId, provider, providerUserId } = merge;
 
   return db.$transaction(
@@ -111,10 +187,13 @@ export async function mergeUsers(merge: PendingMerge): Promise<MergeFailure | nu
         return 'provider_conflict';
       }
 
-      const [source, target] = await Promise.all([
+      const [source, target, sourceClans, targetClans] = await Promise.all([
         tx.user.findUniqueOrThrow({ where: { id: sourceId } }),
         tx.user.findUniqueOrThrow({ where: { id: targetId } }),
+        tx.clanMember.count({ where: { userId: sourceId } }),
+        tx.clanMember.count({ where: { userId: targetId } }),
       ]);
+      if (sourceClans && targetClans && !clanChoice) return 'clan_choice';
 
       // En cas de doublon, la ligne du profil conservé fait foi.
       for (const [table, key] of PER_USER_TABLES) {
@@ -158,6 +237,36 @@ export async function mergeUsers(merge: PendingMerge): Promise<MergeFailure | nu
         UPDATE "Guide" g
         SET "score" = COALESCE((SELECT SUM(v."value") FROM "GuideVote" v WHERE v."guideId" = g."id"), 0)
         WHERE g."id" IN (SELECT "guideId" FROM "GuideVote" WHERE "userId" = ${targetId})`;
+
+      // Rien de social ne se perd : amis, blocages, clan et discussions suivent le profil gardé.
+      await tx.$executeRaw`
+        DELETE FROM "Friendship" s
+        WHERE (s."requesterId" = ${sourceId} AND s."addresseeId" = ${targetId})
+           OR (s."requesterId" = ${targetId} AND s."addresseeId" = ${sourceId})`;
+      await tx.$executeRaw`
+        DELETE FROM "Friendship" s
+        WHERE (s."requesterId" = ${sourceId} OR s."addresseeId" = ${sourceId})
+          AND EXISTS (
+            SELECT 1 FROM "Friendship" t
+            WHERE (t."requesterId" = ${targetId} OR t."addresseeId" = ${targetId})
+              AND CASE WHEN t."requesterId" = ${targetId} THEN t."addresseeId" ELSE t."requesterId" END
+                = CASE WHEN s."requesterId" = ${sourceId} THEN s."addresseeId" ELSE s."requesterId" END
+          )`;
+      await tx.friendship.updateMany({
+        where: { requesterId: sourceId },
+        data: { requesterId: targetId },
+      });
+      await tx.friendship.updateMany({
+        where: { addresseeId: sourceId },
+        data: { addresseeId: targetId },
+      });
+      await tx.$executeRaw`
+        INSERT INTO "Block" ("blockerId", "blockedId")
+        SELECT ${targetId}, "blockedId" FROM "Block"
+        WHERE "blockerId" = ${sourceId} AND "blockedId" <> ${targetId}
+        ON CONFLICT DO NOTHING`;
+      await mergeClans(tx, sourceId, targetId, clanChoice);
+      await mergeConversations(tx, sourceId, targetId);
 
       await tx.psnVerification.deleteMany({ where: { userId: sourceId } });
       await tx.user.update({

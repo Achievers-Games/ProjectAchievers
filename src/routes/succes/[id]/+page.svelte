@@ -324,57 +324,49 @@
             </a>
             · {formatRelative(comment.createdAt)}
           </p>
-          {#if comment.deleted}
-            <p class="text-sm italic text-muted">{m.comment_deleted()}</p>
-          {:else}
-            <!-- eslint-disable-next-line svelte/no-at-html-tags -- assaini par renderMarkdown -->
-            <div class="prose-user">{@html shownHtml(comment)}</div>
-            <div class="flex flex-wrap items-center gap-3 text-xs text-muted">
-              {#if !comment.mine}{@render translateButton('COMMENT', comment)}{/if}
-              {#if data.user}
-                <form method="POST" action="?/react" use:enhance={submit} class="flex gap-2">
-                  <input type="hidden" name="commentId" value={comment.id} />
-                  {#each REACTIONS as reaction (reaction.type)}
-                    <button
-                      name="type"
-                      value={reaction.type}
-                      aria-label={reaction.label}
-                      title={reaction.label}
-                      aria-pressed={comment.myReaction === reaction.type}
-                      class="reaction"
-                      class:reaction-active={comment.myReaction === reaction.type}
-                    >
-                      {reaction.emoji}{#if comment.counts[reaction.type]}
-                        &nbsp;{comment.counts[reaction.type]}{/if}
-                    </button>
-                  {/each}
-                </form>
-                {#if !isReply}
+          <!-- eslint-disable-next-line svelte/no-at-html-tags -- assaini par renderMarkdown -->
+          <div class="prose-user">{@html shownHtml(comment)}</div>
+          <div class="flex flex-wrap items-center gap-3 text-xs text-muted">
+            {#if !comment.mine}{@render translateButton('COMMENT', comment)}{/if}
+            {#if data.user}
+              <form method="POST" action="?/react" use:enhance={submit} class="flex gap-2">
+                <input type="hidden" name="commentId" value={comment.id} />
+                {#each REACTIONS as reaction (reaction.type)}
                   <button
-                    type="button"
-                    class="hover:text-ink"
-                    onclick={() => (replyTo = comment.id)}
+                    name="type"
+                    value={reaction.type}
+                    aria-label={reaction.label}
+                    title={reaction.label}
+                    aria-pressed={comment.myReaction === reaction.type}
+                    class="reaction"
+                    class:reaction-active={comment.myReaction === reaction.type}
                   >
-                    {m.reply()}
+                    {reaction.emoji}{#if comment.counts[reaction.type]}
+                      &nbsp;{comment.counts[reaction.type]}{/if}
                   </button>
-                {/if}
-                {#if comment.mine}
-                  <form method="POST" action="?/deleteComment" use:enhance={submit}>
-                    <input type="hidden" name="id" value={comment.id} />
-                    <button class="hover:text-danger">{m.delete()}</button>
-                  </form>
-                {:else}
-                  <button
-                    type="button"
-                    class="hover:text-ink"
-                    onclick={() => report('COMMENT', comment.id)}
-                  >
-                    {m.report()}
-                  </button>
-                {/if}
+                {/each}
+              </form>
+              {#if !isReply}
+                <button type="button" class="hover:text-ink" onclick={() => (replyTo = comment.id)}>
+                  {m.reply()}
+                </button>
               {/if}
-            </div>
-          {/if}
+              {#if comment.mine}
+                <form method="POST" action="?/deleteComment" use:enhance={submit}>
+                  <input type="hidden" name="id" value={comment.id} />
+                  <button class="hover:text-danger">{m.delete()}</button>
+                </form>
+              {:else}
+                <button
+                  type="button"
+                  class="hover:text-ink"
+                  onclick={() => report('COMMENT', comment.id)}
+                >
+                  {m.report()}
+                </button>
+              {/if}
+            {/if}
+          </div>
         </div>
       </article>
     {/snippet}

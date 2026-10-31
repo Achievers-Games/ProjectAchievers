@@ -4,7 +4,8 @@ import { db } from '../db';
 import { env } from '../env';
 import { availableProviders } from '../providers';
 import { fillFamilies } from '../family';
-import { isPublicGame, RARE_CARD } from '../queries';
+import { rateLimit } from '../rate-limit';
+import { isPublicGame, publicUser, RARE_CARD } from '../queries';
 import { tierFor, type Reward } from '$lib/collection';
 import { rateGames } from './content';
 import { refreshDiscordAccounts } from './discord';
@@ -12,9 +13,10 @@ import { SyncError } from './errors';
 import { publishCard, publishSync, publishUnlock } from './events';
 import { grantFrames } from '../frames';
 import { syncPsn } from './psn';
-import { fillHiddenDescriptions, syncSteam } from './steam';
+import { fetchUnlocks, fillHiddenDescriptions, syncSteam } from './steam';
+import { saveProgress } from './store';
 import { syncXbox } from './xbox';
-import type { ProviderSync } from './types';
+import type { ProviderSync, UnlockedGame } from './types';
 
 const SYNC_QUEUE = 'sync-account';
 const SWEEP_QUEUE = 'sync-sweep';
@@ -37,6 +39,8 @@ type CardReward = Reward & {
 interface SyncJob {
   userId: string;
   provider: Provider;
+  /** Lancée sans que le joueur ne demande rien : pas de message s'il n'y a rien à annoncer. */
+  quiet?: boolean;
 }
 
 const globalForBoss = globalThis as unknown as { paBoss?: Promise<PgBoss> };
@@ -53,7 +57,7 @@ function boss(): Promise<PgBoss> {
   })());
 }
 
-export async function enqueueSync(userId: string, provider: Provider) {
+export async function enqueueSync(userId: string, provider: Provider, quiet = false) {
   if (!SYNCERS[provider] || !availableProviders()[provider]) return false;
 
   // Une seule requête : deux clics simultanés ne peuvent pas lancer deux synchronisations.
@@ -65,9 +69,57 @@ export async function enqueueSync(userId: string, provider: Provider) {
 
   publishSync(userId, { provider, status: 'QUEUED', processed: 0, total: 0 });
 
-  const job: SyncJob = { userId, provider };
+  const job: SyncJob = { userId, provider, quiet };
   await (await boss()).send(SYNC_QUEUE, job, { retryLimit: 1, retryDelay: 60 });
   return true;
+}
+
+/** Relance les comptes d'un joueur qui n'ont pas été lus depuis `cooldown`, échecs compris. */
+export async function refreshAccounts(
+  userId: string,
+  cooldown: number | ((provider: Provider) => number),
+  quiet = false,
+) {
+  const wait = typeof cooldown === 'number' ? () => cooldown : cooldown;
+  const providers = Object.keys(SYNCERS) as Provider[];
+  const [accounts, recent] = await Promise.all([
+    db.linkedAccount.findMany({
+      where: {
+        userId,
+        provider: { in: providers },
+        syncStatus: { in: ['IDLE', 'COMPLETED', 'FAILED'] },
+      },
+      select: { provider: true },
+    }),
+    db.syncRun.findMany({
+      where: { userId },
+      orderBy: { startedAt: 'desc' },
+      distinct: ['provider'],
+      select: { provider: true, startedAt: true },
+    }),
+  ]);
+  const lastRun = new Map(recent.map((run) => [run.provider, run.startedAt.getTime()]));
+  const due = accounts.filter(
+    ({ provider }) => Date.now() - (lastRun.get(provider) ?? 0) >= wait(provider),
+  );
+  const started = await Promise.all(
+    due.map((account) => enqueueSync(userId, account.provider, quiet)),
+  );
+  return started.filter(Boolean).length;
+}
+
+/** L'API Steam est officielle ; PSN passe par un compte de service unique, à ménager. */
+const autoInterval = (provider: Provider) => (provider === 'STEAM' ? 5 : 15) * 60 * 1000;
+const RUN_HISTORY = 30 * 24 * 60 * 60 * 1000;
+const MESSAGE_RETENTION = 365 * 24 * 60 * 60 * 1000;
+const AUTO_CHECK = 60_000;
+
+/** À chaque visite, sans la ralentir : au plus une vérification par minute et par joueur. */
+export function autoRefresh(userId: string) {
+  if (!rateLimit(`rafraichissement:${userId}`, 1, AUTO_CHECK)) return;
+  void refreshAccounts(userId, autoInterval, true).catch((cause) =>
+    console.error('Rafraîchissement :', cause),
+  );
 }
 
 async function rareCards(userId: string) {
@@ -106,7 +158,95 @@ function newRewards(before: Map<string, CardReward>, after: Map<string, CardRewa
   return [...after].filter(([id]) => !before.has(id)).map(([, card]) => card);
 }
 
-export async function runSync({ userId, provider }: SyncJob) {
+const syncUser = (userId: string) =>
+  db.user.findUniqueOrThrow({
+    where: { id: userId },
+    select: { ...publicUser, isPublic: true, showAdult: true },
+  });
+
+type SyncUser = Awaited<ReturnType<typeof syncUser>>;
+
+function announceUnlock(user: SyncUser, game: UnlockedGame, count: number) {
+  if (!user.isPublic || !isPublicGame(game)) return;
+  publishUnlock({
+    user: user.displayName,
+    handle: user.handle,
+    avatarUrl: user.avatarUrl,
+    avatarMotionUrl: user.avatarMotionUrl,
+    frame: user.frame,
+    frameMotionUrl: user.frameMotionUrl,
+    game: game.name,
+    gameSlug: game.slug,
+    count,
+  });
+}
+
+/** Annonce les cartes apparues depuis `before` et renvoie celles à révéler au joueur. */
+async function announceCards(user: SyncUser, userId: string, before: Map<string, CardReward>) {
+  const after = await rareCards(userId);
+  const platforms = new Map<string, Set<string>>();
+  for (const { game } of after.values()) {
+    const key = game.familyKey ?? game.slug;
+    platforms.set(key, (platforms.get(key) ?? new Set()).add(game.platform));
+  }
+  const rewards = newRewards(before, after)
+    .map((card) => ({
+      ...card,
+      tier: tierFor(platforms.get(card.game.familyKey ?? card.game.slug)?.size ?? 1),
+    }))
+    .filter(({ game }) => user.showAdult || !game.adultOnly);
+  if (user.isPublic) {
+    const { displayName, handle, avatarUrl, avatarMotionUrl, frame, frameMotionUrl } = user;
+    for (const { game, unlockedAt } of rewards) {
+      const recent = unlockedAt && Date.now() - unlockedAt.getTime() < LIVE_CARD_MAX_AGE;
+      if (unlockedAt && recent && isPublicGame(game)) {
+        publishCard({
+          user: { displayName, handle, avatarUrl, avatarMotionUrl, frame, frameMotionUrl },
+          game,
+          unlockedAt,
+        });
+      }
+    }
+  }
+  await grantFrames().catch((cause) => console.error('Cadres :', cause));
+  return rewards;
+}
+
+/**
+ * Relit un seul jeu, celui que le joueur a ouvert : les succès arrivent sur sa page en direct.
+ * Un jeu encore inconnu attend la synchronisation complète, qui saura lire son catalogue.
+ */
+export async function runLiveGame(userId: string, steamId: string, appId: string) {
+  const owned = await db.userGame.findFirst({
+    where: { userId, game: { platform: 'STEAM', platformGameId: appId } },
+    select: { unlockedCount: true, hidden: true, game: true },
+  });
+  if (!owned) return 0;
+
+  const unlocks = await fetchUnlocks(steamId, Number(appId));
+  if (unlocks.length <= owned.unlockedCount) return 0;
+
+  const before = await rareCards(userId);
+  const gained = await saveProgress(userId, owned.game.id, unlocks);
+  if (gained === 0) return 0;
+
+  const user = await syncUser(userId);
+  if (!owned.hidden) announceUnlock(user, owned.game, gained);
+  const rewards = await announceCards(user, userId, before);
+  publishSync(userId, {
+    provider: 'STEAM',
+    status: 'COMPLETED',
+    processed: 1,
+    total: 1,
+    achievements: gained,
+    quiet: true,
+    rewards: rewards.slice(0, MAX_REWARDS),
+    moreRewards: Math.max(0, rewards.length - MAX_REWARDS),
+  });
+  return gained;
+}
+
+export async function runSync({ userId, provider, quiet }: SyncJob) {
   const syncer = SYNCERS[provider];
   if (!syncer) return;
 
@@ -114,19 +254,7 @@ export async function runSync({ userId, provider }: SyncJob) {
   const account = await db.linkedAccount.findUnique({ where });
   if (!account) return;
 
-  const user = await db.user.findUniqueOrThrow({
-    where: { id: userId },
-    select: {
-      displayName: true,
-      handle: true,
-      avatarUrl: true,
-      avatarMotionUrl: true,
-      frame: true,
-      frameMotionUrl: true,
-      isPublic: true,
-      showAdult: true,
-    },
-  });
+  const user = await syncUser(userId);
   // Une seule requête : une tâche restée en file ne double jamais une synchronisation en cours.
   const { count } = await db.linkedAccount.updateMany({
     where: { userId, provider, syncStatus: { not: 'SYNCING' } },
@@ -150,18 +278,7 @@ export async function runSync({ userId, provider }: SyncJob) {
       report: (processed, total, game) =>
         publishSync(userId, { provider, status: 'SYNCING', processed, total, game }),
       onUnlocked: (game, count) => {
-        if (!user.isPublic || !isPublicGame(game) || hidden.has(game.id)) return;
-        publishUnlock({
-          user: user.displayName,
-          handle: user.handle,
-          avatarUrl: user.avatarUrl,
-          avatarMotionUrl: user.avatarMotionUrl,
-          frame: user.frame,
-          frameMotionUrl: user.frameMotionUrl,
-          game: game.name,
-          gameSlug: game.slug,
-          count,
-        });
+        if (!hidden.has(game.id)) announceUnlock(user, game, count);
       },
     });
 
@@ -176,38 +293,14 @@ export async function runSync({ userId, provider }: SyncJob) {
         data: { syncStatus: 'COMPLETED', lastSyncedAt: finishedAt },
       }),
     ]);
-    const after = await rareCards(userId);
-    const platforms = new Map<string, Set<string>>();
-    for (const { game } of after.values()) {
-      const key = game.familyKey ?? game.slug;
-      platforms.set(key, (platforms.get(key) ?? new Set()).add(game.platform));
-    }
-    const rewards = newRewards(before, after)
-      .map((card) => ({
-        ...card,
-        tier: tierFor(platforms.get(card.game.familyKey ?? card.game.slug)?.size ?? 1),
-      }))
-      .filter(({ game }) => user.showAdult || !game.adultOnly);
-    if (user.isPublic) {
-      const { displayName, handle, avatarUrl, avatarMotionUrl, frame, frameMotionUrl } = user;
-      for (const { game, unlockedAt } of rewards) {
-        const recent = unlockedAt && Date.now() - unlockedAt.getTime() < LIVE_CARD_MAX_AGE;
-        if (unlockedAt && recent && isPublicGame(game)) {
-          publishCard({
-            user: { displayName, handle, avatarUrl, avatarMotionUrl, frame, frameMotionUrl },
-            game,
-            unlockedAt,
-          });
-        }
-      }
-    }
-    await grantFrames().catch((cause) => console.error('Cadres :', cause));
+    const rewards = await announceCards(user, userId, before);
     publishSync(userId, {
       provider,
       status: 'COMPLETED',
       processed: result.games,
       total: result.games,
       achievements: result.achievements,
+      quiet,
       rewards: rewards.slice(0, MAX_REWARDS),
       moreRewards: Math.max(0, rewards.length - MAX_REWARDS),
     });
@@ -224,7 +317,7 @@ export async function runSync({ userId, provider }: SyncJob) {
       }),
       db.linkedAccount.update({ where, data: { syncStatus: status, syncError: message } }),
     ]);
-    publishSync(userId, { provider, status, processed: 0, total: 0, error: message });
+    publishSync(userId, { provider, status, processed: 0, total: 0, error: message, quiet });
   }
 }
 
@@ -232,6 +325,12 @@ async function sweep() {
   const now = new Date();
   await db.session.deleteMany({ where: { expiresAt: { lt: now } } });
   await db.psnVerification.deleteMany({ where: { expiresAt: { lt: now } } });
+  await db.syncRun.deleteMany({
+    where: { startedAt: { lt: new Date(now.getTime() - RUN_HISTORY) } },
+  });
+  await db.message.deleteMany({
+    where: { createdAt: { lt: new Date(now.getTime() - MESSAGE_RETENTION) } },
+  });
 
   const accounts = await db.linkedAccount.findMany({
     where: {

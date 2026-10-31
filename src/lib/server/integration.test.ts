@@ -9,12 +9,29 @@ import { db } from './db';
 import { familyKey } from './family';
 import { groupLibrary } from './library';
 import { mergeUsers } from './merge';
-import { enqueueSync, runSync, startWorkers } from './sync/queue';
+import { checkLiveGames } from './sync/live';
+import { enqueueSync, refreshAccounts, runSync, startWorkers } from './sync/queue';
 import { isAdultOnly, rateGames } from './sync/content';
 import { onCard, onSync, type SyncEvent } from './sync/events';
 import { parseSteamPage, steamImages } from './sync/steam';
 import { saveAchievements, saveProgress, upsertGame } from './sync/store';
 import { parseGuideFile, syncCuratedGuides } from './curated-guides';
+import {
+  acceptClanInvite,
+  acceptFriend,
+  blockUser,
+  clanPage,
+  createClan,
+  inviteToClan,
+  leaveClan,
+  openDirect,
+  readConversation,
+  relationWith,
+  reportMessage,
+  requestFriend,
+  sendMessage,
+  unreadCount,
+} from './social';
 import { splitText, translateContent } from './translate';
 import { ensureGameTexts, localizeAchievements } from './achievement-texts';
 import { refreshDiscordAccounts } from './sync/discord';
@@ -510,6 +527,35 @@ describe('synchronisation Steam', () => {
 
     vi.stubGlobal('fetch', async () => new Response(null, { status: 200 }));
     expect((await steamImages(42)).headerUrl).toContain('/42/header.jpg');
+  });
+
+  it('fait arriver en direct un succès du jeu lancé', async () => {
+    const unlocked = [{ apiname: 'A', achieved: 1, unlocktime: 1_700_000_000 }];
+    let steamid = '';
+    const api = steamApi(ownedGames);
+    vi.stubGlobal('fetch', async (input: string | URL) => {
+      if (String(input).includes('GetPlayerSummaries')) {
+        return new Response(
+          JSON.stringify({ response: { players: [{ steamid, gameid: '999001' }] } }),
+        );
+      }
+      return String(input).includes('GetPlayerAchievements')
+        ? new Response(JSON.stringify({ playerstats: { achievements: unlocked } }))
+        : api(input);
+    });
+    const userId = await steamUser();
+    await runSync({ userId, provider: 'STEAM' });
+    steamid = (await db.linkedAccount.findFirstOrThrow({ where: { userId } })).providerUserId;
+    const events: SyncEvent[] = [];
+    const stop = onSync(userId, (event) => events.push(event));
+
+    unlocked.push({ apiname: 'B', achieved: 1, unlocktime: 1_700_000_100 });
+    await checkLiveGames();
+    await checkLiveGames();
+    stop();
+
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({ status: 'COMPLETED', achievements: 1, quiet: true });
   });
 
   it('annonce une carte quand un jeu atteint 100 %, une seule fois', async () => {
@@ -1034,6 +1080,204 @@ describe('saison', () => {
 
     const row = (await seasonStats(season)).ranking.find((item) => item.id === userId);
     expect(row).toMatchObject({ points: 10, ignored: 0 });
+  });
+});
+
+describe('rafraîchissement', () => {
+  it('ne relit que les comptes qui n’ont pas été lus récemment', async () => {
+    const result = await resolveIdentity(identity({ provider: 'STEAM' }), null);
+    if (!result.ok) throw new Error('compte non créé');
+    const { userId } = result;
+    const run = await db.syncRun.create({
+      data: { userId, provider: 'STEAM', status: 'COMPLETED' },
+    });
+
+    expect(await refreshAccounts(userId, 60_000)).toBe(0);
+    await db.syncRun.update({
+      where: { id: run.id },
+      data: { startedAt: new Date(Date.now() - 120_000) },
+    });
+    const account = await db.linkedAccount.findFirstOrThrow({ where: { userId } });
+    expect(account.syncStatus).toBe('IDLE');
+    await db.linkedAccount.update({ where: { id: account.id }, data: { syncStatus: 'SYNCING' } });
+    expect(await refreshAccounts(userId, 60_000)).toBe(0);
+  });
+});
+
+describe('amis, clans et discussions', () => {
+  async function players() {
+    const player = async () => {
+      const result = await resolveIdentity(identity(), null);
+      if (!result.ok) throw new Error('compte non créé');
+      return db.user.findUniqueOrThrow({ where: { id: result.userId } });
+    };
+    return [await player(), await player()] as const;
+  }
+
+  it('n’ouvre une discussion qu’entre amis, et le blocage la coupe', async () => {
+    const [a, b] = await players();
+    expect(await openDirect(a.id, b.id)).toBeNull();
+
+    await requestFriend(a.id, b.handle);
+    expect(await relationWith(a.id, b.id)).toBe('sent');
+    expect(await openDirect(a.id, b.id)).toBeNull();
+    await acceptFriend(b.id, a.id);
+
+    const id = await openDirect(a.id, b.id);
+    expect(id).toBeTruthy();
+    expect(await openDirect(b.id, a.id)).toBe(id);
+
+    expect(await sendMessage(a.id, id as string, 'Salut')).toMatchObject({ content: 'Salut' });
+    expect(await unreadCount(b.id)).toBe(1);
+    await readConversation(b.id, id as string);
+    expect(await unreadCount(b.id)).toBe(0);
+
+    await blockUser(b.id, a.id);
+    expect(await sendMessage(a.id, id as string, 'Encore')).toBe('not_friends');
+    expect(await requestFriend(a.id, b.handle)).toBe('not_found');
+  });
+
+  it('garde les discussions fermées aux autres joueurs', async () => {
+    const [a, b] = await players();
+    const [intruder] = await players();
+    await requestFriend(a.id, b.handle);
+    await acceptFriend(b.id, a.id);
+    const id = (await openDirect(a.id, b.id)) as string;
+    const message = await sendMessage(a.id, id, 'Privé');
+    if (typeof message === 'string') throw new Error('message refusé');
+
+    expect(await readConversation(intruder.id, id)).toBeNull();
+    expect(await sendMessage(intruder.id, id, 'Coucou')).toBe('not_found');
+    expect(await reportMessage(intruder.id, message.id, 'Rien')).toBe(false);
+    expect(await reportMessage(b.id, message.id, 'Insulte')).toBe(true);
+  });
+
+  const pendingMerge = async (sourceId: string, targetId: string) => {
+    const provider = 'DISCORD' as const;
+    const providerUserId = `${PREFIX}-${Math.random()}`;
+    await db.linkedAccount.create({
+      data: { userId: sourceId, provider, providerUserId, displayName: 'Preuve' },
+    });
+    await db.linkedAccount.deleteMany({
+      where: { userId: { in: [sourceId, targetId] }, provider: { not: provider } },
+    });
+    return { sourceId, targetId, provider, providerUserId };
+  };
+
+  it('réunit les discussions avec un même ami à la fusion', async () => {
+    const [source, target] = await players();
+    const [friend] = await players();
+    for (const user of [source, target]) {
+      await requestFriend(user.id, friend.handle);
+      await acceptFriend(friend.id, user.id);
+    }
+    const fromSource = (await openDirect(source.id, friend.id)) as string;
+    const fromTarget = (await openDirect(target.id, friend.id)) as string;
+    await sendMessage(source.id, fromSource, 'Ancien profil');
+    await sendMessage(target.id, fromTarget, 'Profil gardé');
+
+    expect(await mergeUsers(await pendingMerge(source.id, target.id))).toBeNull();
+
+    const conversation = await readConversation(target.id, fromTarget);
+    expect(conversation?.messages.map((message) => message.content)).toEqual([
+      'Ancien profil',
+      'Profil gardé',
+    ]);
+    expect(await openDirect(target.id, friend.id)).toBe(fromTarget);
+    expect(await relationWith(target.id, friend.id)).toBe('friends');
+  });
+
+  it('demande quel clan garder, puis garde celui choisi', async () => {
+    const [source, target] = await players();
+    const name = `${PREFIX} ${Math.random()}`;
+    await createClan(source.id, `${name}a`);
+    await createClan(target.id, `${name}b`);
+    const merge = await pendingMerge(source.id, target.id);
+
+    expect(await mergeUsers(merge)).toBe('clan_choice');
+    expect(await mergeUsers(merge, 'source')).toBeNull();
+
+    const clan = await db.clanMember.findUnique({
+      where: { userId: target.id },
+      select: { owner: true, clan: { select: { name: true } } },
+    });
+    expect(clan).toEqual({ owner: true, clan: { name: `${name}a` } });
+    expect(await db.clan.findUnique({ where: { name: `${name}b` } })).toBeNull();
+  });
+
+  it('additionne les succès des membres publics d’un clan', async () => {
+    const [a, b] = await players();
+    const name = `${PREFIX} ${Math.random()}`;
+    await createClan(a.id, name);
+    await requestFriend(a.id, b.handle);
+    await acceptFriend(b.id, a.id);
+    const { id: clanId, slug } = await db.clan.findUniqueOrThrow({ where: { name } });
+    await inviteToClan(a.id, b.id);
+    await acceptClanInvite(b.id, clanId);
+    const game = await db.game.create({
+      data: {
+        platform: 'STEAM',
+        platformGameId: `${PREFIX}-${Math.random()}`,
+        name: `${PREFIX} clan`,
+        slug: `${PREFIX}-${Math.random().toString(36).slice(2)}`,
+      },
+    });
+    const achievement = await db.achievement.create({
+      data: { gameId: game.id, platformAchievementId: '0', name: 'A' },
+    });
+    for (const user of [a, b]) {
+      await db.userAchievement.create({
+        data: { userId: user.id, achievementId: achievement.id, unlockedAt: new Date() },
+      });
+    }
+
+    expect((await clanPage(slug))?.achievements).toBe(2);
+    await db.user.update({ where: { id: b.id }, data: { isPublic: false } });
+    const page = await clanPage(slug);
+    expect(page?.achievements).toBe(1);
+    expect(page?.members).toHaveLength(1);
+  });
+
+  it('transmet le clan au plus ancien membre, puis le supprime quand il est vide', async () => {
+    const [a, b] = await players();
+    expect(await inviteToClan(a.id, b.id)).toBe('owner_only');
+    const name = `${PREFIX} ${Math.random()}`;
+    expect(await createClan(a.id, name)).toBeNull();
+    expect(await createClan(a.id, `${name}2`)).toBe('in_clan');
+
+    expect(await inviteToClan(a.id, b.id)).toBe('not_friends');
+    await requestFriend(a.id, b.handle);
+    await acceptFriend(b.id, a.id);
+    expect(await inviteToClan(a.id, b.id)).toBeNull();
+    const clan = await db.clan.findUniqueOrThrow({ where: { name } });
+    expect(await acceptClanInvite(b.id, clan.id)).toBeNull();
+
+    await leaveClan(a.id);
+    expect(await db.clanMember.findUnique({ where: { userId: b.id } })).toMatchObject({
+      owner: true,
+    });
+    await leaveClan(b.id);
+    expect(await db.clan.findUnique({ where: { name } })).toBeNull();
+  });
+});
+
+describe('création de compte', () => {
+  it('reprend l’avatar animé et le cadre du compte', async () => {
+    const look = {
+      avatarUrl: 'https://exemple.fr/avatar.png',
+      avatarMotionUrl: 'https://exemple.fr/avatar.gif',
+      frameUrl: 'https://exemple.fr/cadre.png',
+      frameMotionUrl: 'https://exemple.fr/cadre.gif',
+    };
+    const result = await resolveIdentity(identity(look), null);
+    if (!result.ok) throw new Error('compte non créé');
+    const user = await db.user.findUniqueOrThrow({ where: { id: result.userId } });
+    expect(user).toMatchObject({
+      avatarUrl: look.avatarUrl,
+      avatarMotionUrl: look.avatarMotionUrl,
+      frame: look.frameUrl,
+      frameMotionUrl: look.frameMotionUrl,
+    });
   });
 });
 

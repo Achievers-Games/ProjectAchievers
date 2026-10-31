@@ -569,6 +569,7 @@ test.describe('membre', () => {
   });
 
   test('publie un guide riche et garde ses cases cochées', async ({ page }) => {
+    const title = `Étapes ${Date.now()}`;
     await login(page);
     await page.goto('/jeux/portal-2');
     await page
@@ -577,12 +578,10 @@ test.describe('membre', () => {
       .click();
     await ready(page);
     await page.getByRole('button', { name: 'Écrire un guide' }).click();
-    await page
-      .getByLabel(/guide/i)
-      .fill(`## Étapes ${Date.now()}\n\n- [ ] Trouver la clé\n- [ ] Ouvrir`);
+    await page.locator('#guide-content').fill(`## ${title}\n\n- [ ] Trouver la clé\n- [ ] Ouvrir`);
     await page.getByRole('button', { name: 'Publier' }).first().click();
 
-    const heading = page.getByRole('heading', { level: 2, name: /^Étapes/ }).last();
+    const heading = page.getByRole('heading', { level: 2, name: title });
     await expect(heading).toBeVisible();
     const box = heading.locator('..').getByRole('checkbox').first();
     const saved = page.waitForResponse((r) => r.url().includes('check'));
@@ -593,12 +592,90 @@ test.describe('membre', () => {
     await ready(page);
     await expect(
       page
-        .getByRole('heading', { level: 2, name: /^Étapes/ })
-        .last()
+        .getByRole('heading', { level: 2, name: title })
         .locator('..')
         .getByRole('checkbox')
         .first(),
     ).toBeChecked();
+  });
+
+  test('garde le bouton d’actualisation sur toutes les pages', async ({ page }) => {
+    await login(page);
+    await page.goto('/communaute');
+    await ready(page);
+    await page.getByRole('button', { name: 'Actualiser mes comptes' }).click();
+    await expect(page.getByText(/réessaie dans quelques minutes/)).toBeVisible();
+  });
+
+  test('montre une pastille sur un joueur présent', async ({ page }) => {
+    await login(page);
+    await page.goto('/u/demo');
+    await ready(page);
+    await expect(page.locator('header .avatar-online').first()).toBeVisible();
+  });
+
+  test('ajoute un ami et discute en direct', async ({ page, browser }) => {
+    await login(page);
+    await page.goto('/u/marco');
+    await ready(page);
+    await page.getByRole('button', { name: 'Ajouter' }).click();
+    await expect(page.getByText('Demande envoyée.')).toBeVisible();
+
+    const other = await browser.newContext();
+    const friend = await other.newPage();
+    await friend.goto('/auth/dev?compte=marco');
+    await friend.goto('/amis');
+    await ready(friend);
+    await friend.getByRole('button', { name: 'Accepter' }).first().click();
+    await friend.getByRole('button', { name: 'Message', exact: true }).first().click();
+    await expect(friend).toHaveURL(/\/messages\/./);
+    await ready(friend);
+
+    await page.goto('/amis');
+    await ready(page);
+    await page
+      .getByRole('listitem')
+      .filter({ hasText: 'Marco' })
+      .getByRole('button', { name: 'Message', exact: true })
+      .click();
+    await expect(page).toHaveURL(/\/messages\/./);
+    await ready(page);
+
+    const text = `Salut ${Date.now()}`;
+    const field = page.getByLabel('Écris un message…');
+    await expect(page.getByText(/Aucun message|Salut/).first()).toBeVisible();
+    await field.fill(text);
+    await field.press('Enter');
+    await expect(friend.getByText(text)).toBeVisible();
+    await other.close();
+
+    await page.goto('/jeux');
+    await ready(page);
+    await page.getByRole('button', { name: 'Messages', exact: true }).click();
+    await page.getByRole('button', { name: /Marco/ }).click();
+    await expect(page.getByRole('region', { name: 'Marco' })).toBeVisible();
+    await page.reload();
+    await ready(page);
+    await expect(page.getByRole('region', { name: 'Marco' })).toBeVisible();
+  });
+
+  test('crée un clan et ouvre sa discussion', async ({ page }) => {
+    await login(page);
+    await page.goto('/clan');
+    await ready(page);
+    const leave = page.getByRole('button', { name: 'Quitter le clan' });
+    if (await leave.isVisible()) await leave.click();
+    const name = `Clan ${Date.now()}`;
+    await page.getByLabel('Nom du clan').fill(name);
+    await page.getByRole('button', { name: 'Créer' }).click();
+    await page.getByRole('link', { name: 'Page publique' }).click();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(name);
+    await page.goto('/clans');
+    await expect(page.getByRole('link', { name: new RegExp(name) })).toBeVisible();
+    await page.goto('/clan');
+    await ready(page);
+    await page.getByRole('button', { name: 'Discussion du clan' }).click();
+    await expect(page).toHaveURL(/\/messages\/./);
   });
 
   test('compare deux profils', async ({ page }) => {
@@ -636,6 +713,9 @@ test.describe('mobile', () => {
       '/u/lea',
       '/compte',
       '/comparer?a=demo&b=lea',
+      '/messages',
+      '/amis',
+      '/clan',
     ]) {
       await page.goto(path);
       await expect(page.getByRole('navigation', { name: 'Navigation mobile' })).toBeVisible();

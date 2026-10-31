@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { enhance } from '$app/forms';
+  import { submitWithToast } from '$lib/forms';
   import { m } from '$lib/paraglide/messages';
   import Link from '@lucide/svelte/icons/link';
   import Avatar from '$lib/components/Avatar.svelte';
@@ -16,6 +18,7 @@
   import { toast } from '$lib/stores/toast';
 
   let { data } = $props();
+  const friendSubmit = submitWithToast();
 
   const profile = $derived(data.profile);
   const isMe = $derived(data.user?.id === profile.user.id);
@@ -67,6 +70,12 @@
       <p class="text-muted">
         {m.member_since({ date: formatDate(profile.user.createdAt) })}
         {#if !profile.user.isPublic}· {m.private_profile()}{/if}
+        {#if profile.user.clanMember}
+          ·
+          <a href="/clans/{profile.user.clanMember.clan.slug}" class="hover:text-ink">
+            {profile.user.clanMember.clan.name}
+          </a>
+        {/if}
       </p>
       <ul class="mt-1 flex gap-3 text-muted">
         {#each profile.user.accounts as account (account.provider)}
@@ -91,6 +100,19 @@
       </button>
       {#if isMe}
         <a class="btn btn-primary" href="/compte">{m.profile_edit()}</a>
+      {/if}
+      {#if data.relation === 'none'}
+        <form method="POST" action="/amis?/add" use:enhance={friendSubmit}>
+          <input type="hidden" name="handle" value={profile.user.handle} />
+          <button class="btn btn-primary">{m.friend_add()}</button>
+        </form>
+      {:else if data.relation === 'friends'}
+        <form method="POST" action="/amis?/message" use:enhance>
+          <input type="hidden" name="id" value={profile.user.id} />
+          <button class="btn btn-primary">{m.friend_message()}</button>
+        </form>
+      {:else if data.relation === 'sent' || data.relation === 'received'}
+        <a class="btn" href="/amis">{m.friends_pending()}</a>
       {/if}
       {#if data.user && !isMe}
         <a class="btn" href="/comparer?a={data.user.handle}&b={profile.user.handle}"

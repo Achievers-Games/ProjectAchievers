@@ -14,6 +14,8 @@ export interface SyncEvent {
   /** Cartes rares obtenues pendant cette synchronisation. */
   rewards?: Reward[];
   moreRewards?: number;
+  /** Synchronisation automatique : rien à annoncer sans nouveauté. */
+  quiet?: boolean;
 }
 
 export interface UnlockEvent {
@@ -36,6 +38,40 @@ export const publishSync = (userId: string, event: SyncEvent) => bus.emit(`sync:
 export function onSync(userId: string, listener: (event: SyncEvent) => void) {
   bus.on(`sync:${userId}`, listener);
   return () => void bus.off(`sync:${userId}`, listener);
+}
+
+/** Les joueurs qui ont une page du site ouverte en ce moment. */
+export const connectedUsers = () =>
+  bus
+    .eventNames()
+    .flatMap((name) =>
+      typeof name === 'string' && name.startsWith('sync:') ? [name.slice('sync:'.length)] : [],
+    );
+
+export interface ChatEvent {
+  type: 'chat';
+  conversationId: string;
+  message: {
+    id: string;
+    content: string;
+    createdAt: Date;
+    author: {
+      id: string;
+      handle: string;
+      displayName: string;
+      avatarUrl: string | null;
+      avatarMotionUrl: string | null;
+      frame: string | null;
+      frameMotionUrl: string | null;
+    };
+  };
+}
+
+export const publishChat = (userId: string, event: ChatEvent) => bus.emit(`chat:${userId}`, event);
+
+export function onChat(userId: string, listener: (event: ChatEvent) => void) {
+  bus.on(`chat:${userId}`, listener);
+  return () => void bus.off(`chat:${userId}`, listener);
 }
 
 export const publishCard = (drop: CardDrop) => bus.emit('card', drop);

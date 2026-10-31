@@ -231,7 +231,7 @@ export async function fillHiddenDescriptions(limit = HIDDEN_BATCH, pause = HIDDE
   return filled;
 }
 
-async function fetchUnlocks(steamId: string, appId: number) {
+export async function fetchUnlocks(steamId: string, appId: number) {
   const response = await steamGet('/ISteamUserStats/GetPlayerAchievements/v1/', {
     steamid: steamId,
     appid: appId,

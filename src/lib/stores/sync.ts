@@ -12,6 +12,7 @@ export interface SyncProgress {
   achievements?: number;
   rewards?: Reward[];
   moreRewards?: number;
+  quiet?: boolean;
 }
 
 export const syncState = writable<Partial<Record<Provider, SyncProgress>>>({});

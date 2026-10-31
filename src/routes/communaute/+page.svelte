@@ -60,6 +60,7 @@
 <div class="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
   <section class="min-w-0 space-y-3" aria-labelledby="activite">
     <h1 id="activite">{m.activity()}</h1>
+    <a href="/clans" class="text-sm text-muted hover:text-ink">{m.clans_all()}</a>
 
     {#if live.length}
       <ul class="space-y-2" aria-live="polite">

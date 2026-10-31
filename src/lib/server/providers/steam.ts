@@ -78,6 +78,26 @@ export async function fetchSteamIdentity(steamId: string): Promise<Identity> {
   };
 }
 
+/**
+ * Les jeux lancés en ce moment, par SteamID : jusqu'à 100 joueurs par appel.
+ * Steam ne le dit que pour un profil public, et pas à un joueur apparaissant hors ligne.
+ */
+export async function fetchPlayingGames(steamIds: string[]) {
+  const url = new URL('https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/');
+  url.searchParams.set('key', env().STEAM_API_KEY ?? '');
+  url.searchParams.set('steamids', steamIds.join(','));
+  const response = await fetch(url, { signal: AbortSignal.timeout(10_000) });
+  if (!response.ok) throw new Error(`Steam a répondu ${response.status}`);
+  const data = (await response.json()) as {
+    response?: { players?: { steamid: string; gameid?: string }[] };
+  };
+  return new Map(
+    (data.response?.players ?? []).flatMap((player) =>
+      player.gameid ? [[player.steamid, player.gameid] as const] : [],
+    ),
+  );
+}
+
 const STEAM_IMAGES = 'https://shared.fastly.steamstatic.com/community_assets/images/';
 
 interface SteamItem {

@@ -1,6 +1,6 @@
 import type { Game, LinkedAccount } from '@prisma/client';
 
-type UnlockedGame = Pick<
+export type UnlockedGame = Pick<
   Game,
   'id' | 'name' | 'slug' | 'platform' | 'adultOnly' | 'contentCheckedAt'
 >;

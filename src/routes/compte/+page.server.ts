@@ -9,6 +9,7 @@ import { clearMerge, mergePreview, mergeUsers, readMerge, saveMerge } from '$lib
 import { availableProviders } from '$lib/server/providers';
 import { bioContainsCode, findPsnProfile, newPsnCode } from '$lib/server/providers/psn';
 import { destroySession } from '$lib/server/session';
+import { leaveClan } from '$lib/server/social';
 import { enqueueSync } from '$lib/server/sync/queue';
 import type { Actions, PageServerLoad } from './$types';
 import { m } from '$lib/paraglide/messages';
@@ -21,6 +22,7 @@ const MERGE_ERRORS = {
   stale: m.merge_stale,
   sync_running: m.merge_busy,
   provider_conflict: m.merge_blocked,
+  clan_choice: m.merge_clan_required,
 };
 
 const PROFILE_ERRORS = {
@@ -168,13 +170,21 @@ export const actions: Actions = {
     return { success: m.account_unlinked() };
   },
 
-  merge: async ({ locals, cookies }) => {
+  merge: async ({ request, locals, cookies }) => {
     const user = requireUser(locals);
     const pending = readMerge(cookies, user.id);
     if (!pending) return fail(410, { error: MERGE_ERRORS.stale() });
 
-    const failure = await mergeUsers(pending);
-    if (failure === 'sync_running' || failure === 'provider_conflict') {
+    const choice = (await request.formData()).get('clan');
+    const failure = await mergeUsers(
+      pending,
+      choice === 'source' || choice === 'target' ? choice : undefined,
+    );
+    if (
+      failure === 'sync_running' ||
+      failure === 'provider_conflict' ||
+      failure === 'clan_choice'
+    ) {
       return fail(409, { error: MERGE_ERRORS[failure]() });
     }
     clearMerge(cookies);
@@ -346,6 +356,7 @@ export const actions: Actions = {
     }
     await destroySession(cookies);
     await db.psnVerification.deleteMany({ where: { userId: user.id } });
+    await leaveClan(user.id);
     await db.user.delete({ where: { id: user.id } });
     redirect(303, '/');
   },

@@ -20,7 +20,9 @@
       <p class="text-xs text-muted">
         {report.targetType === 'GUIDE'
           ? m.mod_reported_guide({ user: report.reporter })
-          : m.mod_reported_comment({ user: report.reporter })}
+          : report.targetType === 'MESSAGE'
+            ? m.mod_reported_message({ user: report.reporter })
+            : m.mod_reported_comment({ user: report.reporter })}
         · {formatRelative(report.createdAt)}
       </p>
       <p class="text-sm font-medium">{report.reason}</p>
@@ -30,9 +32,11 @@
         >
           {report.target.contentMd || m.mod_content_deleted()}
         </blockquote>
-        <a class="text-xs text-muted underline" href="/succes/{report.target.achievementId}">
-          {m.mod_context()}
-        </a>
+        {#if report.target.achievementId}
+          <a class="text-xs text-muted underline" href="/succes/{report.target.achievementId}">
+            {m.mod_context()}
+          </a>
+        {/if}
       {/if}
       <form method="POST" action="?/resolve" use:enhance class="flex gap-2">
         <input type="hidden" name="id" value={report.id} />

@@ -7,11 +7,13 @@ import { env } from '$lib/server/env';
 import { grantFrames } from '$lib/server/frames';
 import { rateLimit } from '$lib/server/rate-limit';
 import { validateSession } from '$lib/server/session';
-import { startWorkers } from '$lib/server/sync/queue';
+import { startLiveGames } from '$lib/server/sync/live';
+import { autoRefresh, startWorkers } from '$lib/server/sync/queue';
 
 export const init: ServerInit = async () => {
   env();
   await startWorkers();
+  startLiveGames();
   await grantFrames().catch((cause) => console.error('Cadres :', cause));
   await syncCuratedGuides().catch((cause) => console.error('Guides officiels :', cause));
 };
@@ -22,6 +24,8 @@ function limitFor(request: Request, path: string): number | null {
   if (path === '/auth/dev') return null;
   if (path.startsWith('/auth/')) return 20;
   if (request.method !== 'GET' && request.method !== 'HEAD') return 60;
+  // La présence est en cache et le flux reste ouvert : ni l'un ni l'autre ne doit bloquer le chat.
+  if (path === '/api/presence' || path === '/api/sync/events') return null;
   return path.startsWith('/api/') ? 120 : null;
 }
 
@@ -56,6 +60,9 @@ const secured: Handle = async ({ event, resolve }) => {
   }
 
   event.locals.user = await validateSession(event.cookies);
+  if (event.locals.user && event.request.method === 'GET' && !path.startsWith('/api/')) {
+    autoRefresh(event.locals.user.id);
+  }
 
   const response = await resolve(event, {
     // Lu au rendu : une action peut avoir changé le cookie pendant cette requête.

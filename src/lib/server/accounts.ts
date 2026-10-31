@@ -196,6 +196,8 @@ export async function resolveIdentity(
       displayName: identity.displayName,
       avatarUrl: identity.avatarUrl,
       avatarMotionUrl: identity.avatarMotionUrl,
+      frame: identity.frameUrl,
+      frameMotionUrl: identity.frameMotionUrl,
       accounts: {
         create: {
           ...accountData(identity),

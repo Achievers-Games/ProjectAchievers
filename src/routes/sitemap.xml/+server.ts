@@ -4,16 +4,19 @@ import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = async () => {
   const origin = env().ORIGIN;
-  const [games, users] = await Promise.all([
+  const [games, users, clans] = await Promise.all([
     db.game.findMany({ where: { adultOnly: false }, select: { slug: true }, take: 40_000 }),
     db.user.findMany({ where: { isPublic: true }, select: { handle: true }, take: 10_000 }),
+    db.clan.findMany({ select: { slug: true }, take: 10_000 }),
   ]);
   const paths = [
     '/',
     '/jeux',
     '/communaute',
+    '/clans',
     ...games.map((g) => `/jeux/${g.slug}`),
     ...users.map((u) => `/u/${u.handle}`),
+    ...clans.map((c) => `/clans/${c.slug}`),
   ];
   const urls = paths.map((path) => `<url><loc>${origin}${path}</loc></url>`).join('');
   return new Response(

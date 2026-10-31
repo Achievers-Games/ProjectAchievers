@@ -99,15 +99,13 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
 
   type RawComment = Omit<(typeof comments)[number], 'replies'>;
   const view = (comment: RawComment) => {
-    const deleted = comment.status === 'DELETED';
     const counts: Partial<Record<ReactionType, number>> = {};
     for (const r of comment.reactions) counts[r.type] = (counts[r.type] ?? 0) + 1;
     return {
       id: comment.id,
       createdAt: comment.createdAt,
-      deleted,
-      html: deleted ? '' : renderMarkdown(comment.contentMd),
-      ...(deleted ? { autoTranslate: false, translatedHtml: null } : translation(comment)),
+      html: renderMarkdown(comment.contentMd),
+      ...translation(comment),
       author: comment.author,
       mine: comment.authorId === viewerId,
       counts,
@@ -310,14 +308,15 @@ export const actions: Actions = {
   deleteComment: async ({ request, locals, url }) => {
     const user = requireUser(locals, url);
     const id = String((await request.formData()).get('id'));
-    await db.contentTranslation.deleteMany({
-      where: { commentId: id, comment: { authorId: user.id } },
-    });
-    // Le contenu est retiré, la ligne reste pour garder le fil des réponses.
-    await db.comment.updateMany({
-      where: { id, authorId: user.id },
-      data: { status: 'DELETED', contentMd: '' },
-    });
+    const own = await db.comment.count({ where: { id, authorId: user.id } });
+    if (!own) return fail(404, { error: m.gone() });
+
+    // Rien n'est gardé ; les réponses des autres survivent en remontant d'un niveau.
+    await db.$transaction([
+      db.comment.updateMany({ where: { parentId: id }, data: { parentId: null } }),
+      db.report.deleteMany({ where: { targetType: 'COMMENT', targetId: id } }),
+      db.comment.delete({ where: { id } }),
+    ]);
     return { success: m.comment_deleted() };
   },
 

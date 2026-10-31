@@ -55,6 +55,7 @@
   /** Aperçu d'un cadre sur l'avatar du joueur, animation comprise. */
   const framed = (frame: string | null, frameMotionUrl: string | null = null) => ({
     ...data.profile,
+    handle: undefined,
     frame,
     frameMotionUrl,
   });
@@ -110,7 +111,20 @@
       {/if}
       <div class="flex gap-2">
         {#if !data.merge.conflicts.length}
-          <form method="POST" action="?/merge" use:enhance={submit}>
+          <form method="POST" action="?/merge" use:enhance={submit} class="space-y-2">
+            {#if data.merge.clans}
+              <fieldset class="space-y-1">
+                <legend class="text-sm">{m.merge_clan_choice()}</legend>
+                <label class="flex items-center gap-2 text-sm">
+                  <input type="radio" name="clan" value="target" required />
+                  {data.merge.clans.target}
+                </label>
+                <label class="flex items-center gap-2 text-sm">
+                  <input type="radio" name="clan" value="source" required />
+                  {data.merge.clans.source}
+                </label>
+              </fieldset>
+            {/if}
             <button class="btn btn-primary">{m.merge_action()}</button>
           </form>
         {/if}
