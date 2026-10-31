@@ -218,6 +218,7 @@
           layout={data.params.vue}
           versions={game.versions}
           tier={game.tier}
+          next={game.next}
         />
       {/each}
     </div>

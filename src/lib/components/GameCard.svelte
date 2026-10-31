@@ -4,7 +4,13 @@
   import Progress from './Progress.svelte';
   import { tilt } from '$lib/actions/tilt';
   import { PLATFORM_LABELS, plural } from '$lib/labels';
-  import { isComplete, stepOf, type CardProgress } from '$lib/collection';
+  import {
+    isComplete,
+    stepOf,
+    TIER_LABELS,
+    type CardProgress,
+    type NextTier,
+  } from '$lib/collection';
 
   interface Props {
     game: {
@@ -18,9 +24,17 @@
     layout?: 'grille' | 'liste';
     versions?: { platform: Platform; slug: string; completion: number }[];
     tier?: number;
+    next?: NextTier | null;
   }
 
-  let { game, progress = null, layout = 'grille', versions = [], tier = 0 }: Props = $props();
+  let {
+    game,
+    progress = null,
+    layout = 'grille',
+    versions = [],
+    tier = 0,
+    next = null,
+  }: Props = $props();
   const list = $derived(layout === 'liste');
   const complete = $derived(isComplete(progress));
   const level = $derived(tier || 1);
@@ -34,6 +48,7 @@
   data-tier={complete ? level : undefined}
   data-step={step || undefined}
   data-owned={progress ? true : undefined}
+  data-next={next?.tier}
   class="game-card card group flex overflow-hidden"
   class:flex-col={!list}
   class:items-center={list}
@@ -67,21 +82,32 @@
       {#if complete && list}<CompleteBadge tier={level} />{/if}
     </div>
     {#if progress}
-      <Progress
-        value={progress.completion}
-        tier={complete ? level : 0}
-        {step}
-        label="Progression sur {game.name}"
-      />
-      {#if versions.length > 1}
+      {#if next}
+        <Progress
+          value={next.completion}
+          tier={next.tier}
+          base={level}
+          label="Progression vers {TIER_LABELS[next.tier]} sur {game.name}"
+        />
         <p class="tabular truncate text-xs text-muted">
-          {versions
-            .map((v) => `${PLATFORM_LABELS[v.platform]} ${Math.round(v.completion)} %`)
-            .join(' · ')}
+          {TIER_LABELS[next.tier]} : {PLATFORM_LABELS[next.platform]}
+          {Math.round(next.completion)} %
         </p>
       {:else}
-        <p class="tabular text-xs text-muted">
-          {progress.unlockedCount} / {game.totalAchievements} · {Math.round(progress.completion)} %
+        <Progress
+          value={progress.completion}
+          tier={complete ? level : 0}
+          {step}
+          label="Progression sur {game.name}"
+        />
+        <p class="tabular truncate text-xs text-muted">
+          {#if versions.length > 1}
+            {versions
+              .map((v) => `${PLATFORM_LABELS[v.platform]} ${Math.round(v.completion)} %`)
+              .join(' · ')}
+          {:else}
+            {progress.unlockedCount} / {game.totalAchievements} · {Math.round(progress.completion)} %
+          {/if}
         </p>
       {/if}
     {:else}

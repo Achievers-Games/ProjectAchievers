@@ -2,13 +2,14 @@
   import { enhance } from '$app/forms';
   import type { SubmitFunction } from '@sveltejs/kit';
   import { Eye, EyeOff, Lock } from '@lucide/svelte';
+  import AchievementIcon from '$lib/components/AchievementIcon.svelte';
   import CompleteBadge from '$lib/components/CompleteBadge.svelte';
   import Progress from '$lib/components/Progress.svelte';
   import TrophyBadge from '$lib/components/TrophyBadge.svelte';
   import { tilt } from '$lib/actions/tilt';
   import { toast } from '$lib/stores/toast';
   import { formatDate, PLATFORM_LABELS, plural } from '$lib/labels';
-  import { isComplete } from '$lib/collection';
+  import { isComplete, TIER_LABELS } from '$lib/collection';
 
   let { data } = $props();
 
@@ -105,6 +106,18 @@
           </button>
         </form>
         <div class="max-w-sm space-y-1 pt-2">
+          {#if data.next}
+            <Progress
+              value={data.next.completion}
+              tier={data.next.tier}
+              base={data.tier}
+              label="Progression vers {TIER_LABELS[data.next.tier]}"
+            />
+            <p class="tabular text-sm text-muted">
+              {TIER_LABELS[data.next.tier]} : {PLATFORM_LABELS[data.next.platform]}
+              {Math.round(data.next.completion)} %
+            </p>
+          {/if}
           <Progress value={data.progress.completion} tier={complete ? data.tier : 0} />
           <p class="tabular text-sm text-muted">
             {data.progress.unlockedCount} / {data.progress.totalCount} · {Math.round(
@@ -145,15 +158,7 @@
           class="flex items-center gap-3 p-3 transition-colors hover:bg-raised"
         >
           {#if achievement.iconUrl}
-            <img
-              src={achievement.iconUrl}
-              alt=""
-              width="40"
-              height="40"
-              loading="lazy"
-              class="rounded"
-              class:opacity-50={!achievement.unlockedAt}
-            />
+            <AchievementIcon src={achievement.iconUrl} size={40} dim={!achievement.unlockedAt} />
           {:else}
             <span class="grid h-10 w-10 shrink-0 place-items-center rounded bg-raised text-muted">
               <Lock size={14} aria-hidden="true" />

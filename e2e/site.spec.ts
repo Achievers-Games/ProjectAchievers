@@ -287,6 +287,16 @@ test.describe('membre', () => {
     await expect(page.getByRole('button', { name: 'Cacher ce jeu' })).toBeVisible();
   });
 
+  test('montre l’avancement vers le niveau suivant', async ({ page }) => {
+    await login(page);
+    await page.goto('/jeux?q=astro');
+    const card = page.locator('main a[data-tier="1"][data-next="2"]');
+    await expect(card).toBeVisible();
+    await expect(card.getByText('Platine : Steam 40 %')).toBeVisible();
+    await expect(card.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '40');
+    await expect(card.getByRole('progressbar')).toHaveAttribute('data-base', '1');
+  });
+
   test('marque les paliers de progression', async ({ page }) => {
     await login(page);
     await page.goto('/jeux?tri=progression');

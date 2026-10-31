@@ -161,6 +161,26 @@ async function main() {
     create: { ...platinumProgress, userId: demo.id, gameId: platinumGame.id },
   });
 
+  // Astro Bot est commencé sur Steam : sa carte montre l'avancement vers le Platine.
+  const astroSteam = await db.game.upsert({
+    where: { platform_platformGameId: { platform: 'STEAM', platformGameId: 'demo-astro' } },
+    update: {},
+    create: {
+      platform: 'STEAM',
+      platformGameId: 'demo-astro',
+      name: 'Astro Bot',
+      slug: 'astro-bot-steam',
+      headerUrl: platinumGame.headerUrl,
+      totalAchievements: 10,
+    },
+  });
+  const astroStarted = { unlockedCount: 4, totalCount: 10, completion: 40 };
+  await db.userGame.upsert({
+    where: { userId_gameId: { userId: demo.id, gameId: astroSteam.id } },
+    update: astroStarted,
+    create: { ...astroStarted, userId: demo.id, gameId: astroSteam.id },
+  });
+
   // Hades existe aussi sur PlayStation : une carte monte à chaque plateforme finie.
   const hadesPsn = await db.game.upsert({
     where: { platform_platformGameId: { platform: 'PSN', platformGameId: 'NPWR-HADES' } },

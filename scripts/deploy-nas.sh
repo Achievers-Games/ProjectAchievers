@@ -27,7 +27,8 @@ echo "Envoi de $(git rev-parse --short "$REF")…"
 git archive "$REF" | nas "tar -xf - -C $DIR"
 
 echo "Construction de l'image, plusieurs minutes…"
-nas "$compose build site"
+# L'écriture du build échoue parfois sur le NAS (ENOENT sur mkdir) : un second essai suffit.
+nas "$compose build site" || nas "$compose build site"
 
 echo "Redémarrage…"
 # Un premier essai peut échouer sur une règle réseau de QTS : le second suffit.

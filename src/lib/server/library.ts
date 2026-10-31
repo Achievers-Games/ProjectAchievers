@@ -1,5 +1,5 @@
 import type { Platform } from '@prisma/client';
-import { tierFor } from '$lib/collection';
+import { nextTier, tierFor, type NextTier } from '$lib/collection';
 
 interface LibraryRow {
   unlockedCount: number;
@@ -30,6 +30,7 @@ export interface LibraryCard {
   lastUnlockedAt: Date | null;
   versions: { platform: Platform; slug: string; completion: number }[];
   tier: number;
+  next: NextTier | null;
 }
 
 /**
@@ -45,6 +46,11 @@ export function groupLibrary(rows: LibraryRow[]): LibraryCard[] {
     const finished = new Set(
       versions.filter((v) => v.completion >= 100).map((v) => v.game.platform),
     );
+    const summary = versions.map((v) => ({
+      platform: v.game.platform,
+      slug: v.game.slug,
+      completion: v.completion,
+    }));
     return {
       id: best.game.id,
       name: best.game.name,
@@ -59,12 +65,9 @@ export function groupLibrary(rows: LibraryRow[]): LibraryCard[] {
         platinum: best.platinum,
       },
       lastUnlockedAt: best.lastUnlockedAt,
-      versions: versions.map((v) => ({
-        platform: v.game.platform,
-        slug: v.game.slug,
-        completion: v.completion,
-      })),
+      versions: summary,
       tier: tierFor(finished.size),
+      next: nextTier(summary),
     };
   });
 }

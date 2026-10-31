@@ -3,7 +3,7 @@ import 'dotenv/config';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { listGames } from './queries';
 import { profileSchema, resolveIdentity, updateProfile, type Identity } from './accounts';
-import { stepOf, tierFor } from '$lib/collection';
+import { nextTier, stepOf, tierFor } from '$lib/collection';
 import { db } from './db';
 import { familyKey } from './family';
 import { groupLibrary } from './library';
@@ -128,6 +128,30 @@ describe('jeux sur plusieurs plateformes', () => {
     expect(card).toMatchObject({ slug: 'steam', tier: 1 });
     expect(card?.progress.completion).toBe(100);
     expect(card?.versions.map((v) => v.platform)).toEqual(['STEAM', 'PSN']);
+  });
+
+  it('montre le niveau suivant dès qu’une autre plateforme est commencée', () => {
+    expect(nextTier([{ platform: 'STEAM', completion: 40 }])).toBeNull();
+    expect(nextTier([{ platform: 'STEAM', completion: 100 }])).toBeNull();
+    expect(
+      nextTier([
+        { platform: 'STEAM', completion: 100 },
+        { platform: 'PSN', completion: 0 },
+      ]),
+    ).toBeNull();
+    expect(
+      nextTier([
+        { platform: 'STEAM', completion: 100 },
+        { platform: 'PSN', completion: 58 },
+      ]),
+    ).toEqual({ tier: 2, platform: 'PSN', completion: 58 });
+    expect(
+      nextTier([
+        { platform: 'STEAM', completion: 100 },
+        { platform: 'PSN', completion: 100 },
+        { platform: 'XBOX', completion: 12 },
+      ]),
+    ).toEqual({ tier: 3, platform: 'XBOX', completion: 12 });
   });
 
   it('fait monter la carte à chaque plateforme finie', () => {

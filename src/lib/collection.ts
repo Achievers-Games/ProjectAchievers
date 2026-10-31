@@ -39,6 +39,32 @@ export const TIER_LABELS: Record<number, string> = {
 
 export const tierFor = (platforms: number) => Math.min(platforms, 4);
 
+export interface NextTier {
+  tier: number;
+  platform: Platform;
+  completion: number;
+}
+
+/**
+ * Avancement vers le niveau suivant : la version commencée la plus avancée sur une plateforme
+ * pas encore finie. Rien tant qu'aucune carte n'est obtenue, ou sans autre version commencée.
+ */
+export function nextTier(versions: { platform: Platform; completion: number }[]): NextTier | null {
+  const finished = new Set(versions.filter((v) => v.completion >= 100).map((v) => v.platform));
+  if (finished.size === 0) return null;
+
+  const started = versions
+    .filter((v) => !finished.has(v.platform) && v.completion > 0)
+    .toSorted((a, b) => b.completion - a.completion)[0];
+  return started
+    ? {
+        tier: tierFor(finished.size + 1),
+        platform: started.platform,
+        completion: started.completion,
+      }
+    : null;
+}
+
 /** Paliers avant le 100 % : la carte s'éclaire à mesure que le joueur avance. */
 export const stepOf = (completion: number) => {
   if (completion >= 100) return 0;

@@ -4,7 +4,8 @@
     label = 'Progression',
     tier = 0,
     step = 0,
-  }: { value: number; label?: string; tier?: number; step?: number } = $props();
+    base = 0,
+  }: { value: number; label?: string; tier?: number; step?: number; base?: number } = $props();
   const percent = $derived(Math.min(100, Math.max(0, value)));
 </script>
 
@@ -15,6 +16,7 @@
   aria-valuemin={0}
   aria-valuemax={100}
   aria-valuenow={Math.round(percent)}
+  data-base={base || undefined}
 >
   <div
     class="progress-fill h-full rounded-full"

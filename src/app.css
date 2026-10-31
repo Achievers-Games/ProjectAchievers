@@ -459,6 +459,22 @@
     transparent calc(75% + 1px)
   );
 }
+/* Le niveau acquis reste en fond : le suivant se remplit par-dessus. */
+.progress-track[data-base='1'] {
+  background-image: linear-gradient(90deg, #b8860b, #ffe08a, #d9a520);
+}
+.progress-track[data-base='2'] {
+  background-image: linear-gradient(90deg, #7f93ad, #f2f8ff, #9fb4cc);
+}
+.progress-track[data-base='3'] {
+  background-image: linear-gradient(90deg, #38bdf8, #a78bfa, #f472b6, #fbbf24, #4ade80);
+}
+.progress-track[data-base] {
+  height: 0.5rem;
+}
+.progress-track[data-base] .progress-fill {
+  box-shadow: 2px 0 4px rgb(0 0 0 / 0.75);
+}
 .progress-fill[data-step='1'] {
   background-image: linear-gradient(90deg, #16a34a, #4ade80);
 }

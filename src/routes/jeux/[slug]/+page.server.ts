@@ -1,5 +1,5 @@
 import { error, fail } from '@sveltejs/kit';
-import { tierFor } from '$lib/collection';
+import { nextTier, tierFor } from '$lib/collection';
 import { db } from '$lib/server/db';
 import { visibleGames } from '$lib/server/queries';
 import type { Actions, PageServerLoad } from './$types';
@@ -80,6 +80,14 @@ export const load: PageServerLoad = async ({ params, locals }) => {
       completion: other.players[0]?.completion ?? null,
     })),
     tier: tierFor(new Set(finished.map((version) => version.platform)).size),
+    next: nextTier([
+      ...(progress ? [{ platform: game.platform, completion: progress.completion }] : []),
+      ...others.flatMap((other) =>
+        other.players[0]
+          ? [{ platform: other.platform, completion: other.players[0].completion }]
+          : [],
+      ),
+    ]),
   };
 };
 

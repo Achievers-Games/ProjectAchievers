@@ -107,7 +107,7 @@ export async function listGames(filters: GameFilters, viewerId: string | null) {
     db.game.count({ where }),
   ]);
   const items = await withProgress(games, viewerId);
-  return { games: items.map((game) => ({ ...game, versions: [], tier: 0 })), total };
+  return { games: items.map((game) => ({ ...game, versions: [], tier: 0, next: null })), total };
 }
 
 async function withProgress<T extends { id: string }>(games: T[], viewerId: string | null) {

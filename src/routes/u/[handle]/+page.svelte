@@ -101,6 +101,7 @@
             progress={card.progress}
             versions={card.versions}
             tier={card.tier}
+            next={card.next}
           />
         {/each}
       </div>
@@ -125,6 +126,7 @@
               progress={card.progress}
               versions={card.versions}
               tier={card.tier}
+              next={card.next}
             />
           {/each}
         </div>

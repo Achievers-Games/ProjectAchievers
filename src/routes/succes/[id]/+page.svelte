@@ -3,6 +3,7 @@
   import { invalidateAll } from '$app/navigation';
   import type { SubmitFunction } from '@sveltejs/kit';
   import { ChevronDown, ChevronUp, Flag } from '@lucide/svelte';
+  import AchievementIcon from '$lib/components/AchievementIcon.svelte';
   import Avatar from '$lib/components/Avatar.svelte';
   import Empty from '$lib/components/Empty.svelte';
   import TrophyBadge from '$lib/components/TrophyBadge.svelte';
@@ -80,7 +81,7 @@
 <div class="mx-auto max-w-3xl space-y-8">
   <header class="flex gap-4">
     {#if data.achievement.iconUrl}
-      <img src={data.achievement.iconUrl} alt="" width="64" height="64" class="rounded" />
+      <AchievementIcon src={data.achievement.iconUrl} size={64} />
     {/if}
     <div class="min-w-0 space-y-1">
       <a href="/jeux/{data.achievement.game.slug}" class="text-sm text-muted hover:text-ink">
