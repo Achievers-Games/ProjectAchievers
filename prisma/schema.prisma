@@ -61,6 +61,17 @@ enum FeedbackKind {
   IDEA
 }
 
+enum FeedbackArea {
+  ACCOUNT
+  SYNC
+  GAMES
+  ACHIEVEMENTS
+  COMMUNITY
+  SEASON
+  NOTIFICATIONS
+  OTHER
+}
+
 enum FeedbackStatus {
   NEW
   PLANNED
@@ -148,6 +159,7 @@ model Feedback {
   userId    String
   user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   kind      FeedbackKind
+  area      FeedbackArea   @default(OTHER)
   status    FeedbackStatus @default(NEW)
   content   String
   /// Le navigateur aide à reproduire un bug.

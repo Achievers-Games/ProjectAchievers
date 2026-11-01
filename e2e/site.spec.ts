@@ -758,6 +758,7 @@ test.describe('membre', () => {
     await login(page);
     await page.goto('/retours');
     await ready(page);
+    await page.getByLabel('Catégorie').selectOption('COMMUNITY');
     await page.getByLabel('Ton message').fill(text);
     await page.getByRole('button', { name: 'Envoyer' }).click();
     await expect(
@@ -773,6 +774,7 @@ test.describe('membre', () => {
     await saved;
     await page.goto('/retours');
     await expect(page.getByRole('listitem').filter({ hasText: text })).toContainText('Prévu');
+    await expect(page.getByRole('listitem').filter({ hasText: text })).toContainText('Communauté');
   });
 
   test('compare deux profils', async ({ page }) => {

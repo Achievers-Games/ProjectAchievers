@@ -1,5 +1,7 @@
 import { fail } from '@sveltejs/kit';
+import { FeedbackArea } from '@prisma/client';
 import { z } from 'zod';
+import { feedbackAreaLabel } from '$lib/feedback';
 import { requireLogin } from '$lib/server/auth';
 import { db } from '$lib/server/db';
 import { notify } from '$lib/server/push';
@@ -13,6 +15,7 @@ const requireUser = (locals: App.Locals) => requireLogin(locals, '/retours');
 
 const feedback = z.object({
   kind: z.enum(['BUG', 'IDEA']),
+  area: z.enum(FeedbackArea),
   content: z
     .string()
     .trim()
@@ -25,7 +28,7 @@ export const load: PageServerLoad = async ({ locals }) => ({
     where: { userId: requireUser(locals).id },
     orderBy: { createdAt: 'desc' },
     take: 50,
-    select: { id: true, kind: true, status: true, content: true, createdAt: true },
+    select: { id: true, kind: true, area: true, status: true, content: true, createdAt: true },
   }),
 });
 
@@ -52,7 +55,7 @@ export const actions: Actions = {
           parsed.data.kind === 'BUG'
             ? m.feedback_bug({}, { locale })
             : m.feedback_idea({}, { locale }),
-        body: `${user.displayName} : ${parsed.data.content.slice(0, 100)}`,
+        body: `${feedbackAreaLabel(parsed.data.area)} · ${user.displayName} : ${parsed.data.content.slice(0, 100)}`,
         url: '/moderation',
       }));
     }

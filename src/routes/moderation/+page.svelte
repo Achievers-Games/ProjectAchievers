@@ -1,5 +1,10 @@
 <script lang="ts">
-  import { FEEDBACK_STATUSES, feedbackKindLabel, feedbackStatusLabel } from '$lib/feedback';
+  import {
+    FEEDBACK_STATUSES,
+    feedbackAreaLabel,
+    feedbackKindLabel,
+    feedbackStatusLabel,
+  } from '$lib/feedback';
   import { m } from '$lib/paraglide/messages';
   import { enhance } from '$app/forms';
   import Empty from '$lib/components/Empty.svelte';
@@ -54,7 +59,7 @@
     {#each data.feedback as item (item.id)}
       <article class="card space-y-2 p-4">
         <p class="text-xs text-muted">
-          {feedbackKindLabel(item.kind)} ·
+          {feedbackKindLabel(item.kind)} · {feedbackAreaLabel(item.area)} ·
           <a href="/u/{item.user.handle}" class="underline">{item.user.displayName}</a>
           · {formatRelative(item.createdAt)}
         </p>

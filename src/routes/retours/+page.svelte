@@ -2,7 +2,12 @@
   import { m } from '$lib/paraglide/messages';
   import { enhance } from '$app/forms';
   import SocialNav from '$lib/components/SocialNav.svelte';
-  import { feedbackKindLabel, feedbackStatusLabel } from '$lib/feedback';
+  import {
+    FEEDBACK_AREAS,
+    feedbackAreaLabel,
+    feedbackKindLabel,
+    feedbackStatusLabel,
+  } from '$lib/feedback';
   import { submitWithToast } from '$lib/forms';
   import { formatRelative } from '$lib/labels';
 
@@ -29,6 +34,15 @@
         {m.feedback_idea()}
       </label>
     </fieldset>
+    <div class="space-y-1">
+      <label for="feedback-area" class="label block">{m.feedback_area()}</label>
+      <select id="feedback-area" name="area" required class="input w-auto">
+        <option value="" disabled selected>{m.feedback_area_pick()}</option>
+        {#each FEEDBACK_AREAS as area (area)}
+          <option value={area}>{feedbackAreaLabel(area)}</option>
+        {/each}
+      </select>
+    </div>
     <textarea
       name="content"
       rows="6"
@@ -49,7 +63,8 @@
         {#each data.sent as item (item.id)}
           <li class="space-y-1 p-3">
             <p class="text-xs text-muted">
-              {feedbackKindLabel(item.kind)} · {feedbackStatusLabel(item.status)} ·
+              {feedbackKindLabel(item.kind)} · {feedbackAreaLabel(item.area)} ·
+              {feedbackStatusLabel(item.status)} ·
               {formatRelative(item.createdAt)}
             </p>
             <p class="whitespace-pre-wrap break-words text-sm">{item.content}</p>

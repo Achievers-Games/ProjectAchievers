@@ -67,6 +67,7 @@ export const load: PageServerLoad = async ({ locals }) => {
     select: {
       id: true,
       kind: true,
+      area: true,
       status: true,
       content: true,
       userAgent: true,
