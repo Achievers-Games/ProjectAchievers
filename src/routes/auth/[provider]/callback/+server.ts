@@ -3,6 +3,7 @@ import { resolveIdentity, type Identity } from '$lib/server/accounts';
 import { saveMerge } from '$lib/server/merge';
 import { OAUTH_PROVIDERS, takeFlow, type OAuthProvider } from '$lib/server/providers';
 import { exchangeDiscordCode } from '$lib/server/providers/discord';
+import { exchangeEpicCode } from '$lib/server/providers/epic';
 import { exchangeGoogleCode } from '$lib/server/providers/google';
 import { fetchSteamIdentity, verifySteamResponse } from '$lib/server/providers/steam';
 import { exchangeXboxCode } from '$lib/server/providers/xbox';
@@ -22,6 +23,7 @@ async function identityFrom(
   }
   const code = query.get('code');
   if (!code || !verifier) return null;
+  if (provider === 'epic') return exchangeEpicCode(code);
   if (provider === 'discord') return exchangeDiscordCode(code, verifier);
   if (provider === 'google') return exchangeGoogleCode(code, verifier);
   return exchangeXboxCode(code, verifier);

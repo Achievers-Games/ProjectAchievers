@@ -16,14 +16,15 @@
 
   let confirmation = $state('');
 
-  const PROVIDERS: Provider[] = ['STEAM', 'PSN', 'XBOX', 'RETRO', 'DISCORD', 'GOOGLE'];
+  const PROVIDERS: Provider[] = ['STEAM', 'PSN', 'XBOX', 'RETRO', 'EPIC', 'DISCORD', 'GOOGLE'];
   const OAUTH: Partial<Record<Provider, string>> = {
     STEAM: 'steam',
     DISCORD: 'discord',
     XBOX: 'xbox',
     GOOGLE: 'google',
+    EPIC: 'epic',
   };
-  const LOGIN_ONLY: Provider[] = ['DISCORD', 'GOOGLE'];
+  const LOGIN_ONLY: Provider[] = ['DISCORD', 'GOOGLE', 'EPIC'];
   /** Discord et Google ne servent qu'à se connecter : ils n'ont rien à ouvrir. */
   const PRIVACY: Partial<Record<Provider, { url: string; hint: () => string }>> = {
     STEAM: { url: 'https://steamcommunity.com/my/edit/settings', hint: m.privacy_fix_steam },
@@ -40,6 +41,7 @@
     XBOX: m.provider_xbox(),
     DISCORD: m.provider_identity(),
     GOOGLE: m.provider_identity(),
+    EPIC: m.provider_identity(),
   };
   const STATUS: Record<SyncStatus, string> = {
     IDLE: m.status_idle(),
@@ -278,7 +280,7 @@
   <section class="space-y-3">
     <h2>{m.linked_accounts()}</h2>
     <ul class="card divide-y divide-line">
-      {#each PROVIDERS as provider (provider)}
+      {#each PROVIDERS.filter((item) => item !== 'EPIC' || data.providers.EPIC) as provider (provider)}
         {@const account = accounts.get(provider)}
         {@const live = $syncState[provider]}
         {@const status = live?.status ?? account?.syncStatus}

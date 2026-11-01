@@ -15,6 +15,7 @@ export const LOCALE_LABELS: Record<Locale, string> = {
 };
 
 export const PROVIDER_LABELS: Record<Provider, string> = {
+  EPIC: 'Epic Games',
   STEAM: 'Steam',
   DISCORD: 'Discord',
   PSN: 'PlayStation',

@@ -12,6 +12,7 @@ import { discordAuthorizeUrl } from '$lib/server/providers/discord';
 import { googleAuthorizeUrl } from '$lib/server/providers/google';
 import { steamAuthorizeUrl } from '$lib/server/providers/steam';
 import { xboxAuthorizeUrl } from '$lib/server/providers/xbox';
+import { epicAuthorizeUrl } from '$lib/server/providers/epic';
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = ({ params, url, cookies }) => {
@@ -31,6 +32,7 @@ export const GET: RequestHandler = ({ params, url, cookies }) => {
   });
 
   if (provider === 'steam') redirect(303, steamAuthorizeUrl(state));
+  if (provider === 'epic') redirect(303, epicAuthorizeUrl(state));
   if (provider === 'discord') redirect(303, discordAuthorizeUrl(state, verifier as string));
   if (provider === 'google') redirect(303, googleAuthorizeUrl(state, verifier as string));
   redirect(303, xboxAuthorizeUrl(state, verifier as string));

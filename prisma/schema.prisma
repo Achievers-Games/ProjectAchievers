@@ -16,6 +16,7 @@ enum Provider {
   XBOX
   GOOGLE
   RETRO
+  EPIC
 }
 
 enum Platform {
