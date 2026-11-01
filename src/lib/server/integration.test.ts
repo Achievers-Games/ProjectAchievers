@@ -1547,7 +1547,7 @@ describe('filtres par niveau', () => {
     for (let index = 0; index < extraCards; index++) await add(`carte ${index}`, 'STEAM', 100);
     return { sort: 'progression', page: 1, ownerId: userId } as const;
   }
-  it('place les cartes Or avancées vers le Platine juste après les Platines', async () => {
+  it('place les cartes Or avancées vers le Diamant juste après les Diamants', async () => {
     const { ownerId } = await library();
     const cards = await userCards(ownerId);
     expect(cards.map((card) => card.name)).toEqual([

@@ -4,7 +4,7 @@ import { m } from '$lib/paraglide/messages';
 import { db } from './db';
 import { listGames, PAGE_SIZE } from './queries';
 
-const TIERS: Record<string, number> = { or: 1, platine: 2, prismatique: 3, legendaire: 4 };
+const TIERS: Record<string, number> = { or: 1, diamant: 2, prismatique: 3, legendaire: 4 };
 
 const query = z.object({
   q: z.string().trim().max(80).optional().catch(undefined),
@@ -13,8 +13,12 @@ const query = z.object({
   tri: z.enum(['nom', 'recent', 'progression', 'succes']).catch('nom'),
   page: z.coerce.number().int().min(1).max(10_000).catch(1),
   vue: z.enum(['grille', 'liste']).catch('grille'),
+  // « platine » était l'ancien nom du niveau : les liens déjà partagés restent valables.
   filtre: z
-    .enum(['restants', 'saison', 'caches', 'or', 'platine', 'prismatique', 'legendaire'])
+    .preprocess(
+      (value) => (value === 'platine' ? 'diamant' : value),
+      z.enum(['restants', 'saison', 'caches', 'or', 'diamant', 'prismatique', 'legendaire']),
+    )
     .optional()
     .catch(undefined),
 });

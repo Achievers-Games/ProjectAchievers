@@ -6,7 +6,9 @@
   import List from '@lucide/svelte/icons/list';
   import Empty from '$lib/components/Empty.svelte';
   import GameCard from '$lib/components/GameCard.svelte';
-  import { tierLabel } from '$lib/labels';
+  import TierDots from '$lib/components/TierDots.svelte';
+  import TierLegend from '$lib/components/TierLegend.svelte';
+  import { PLATFORM_LABELS, tierLabel, tierRule } from '$lib/labels';
   import type { GameListItem } from '$lib/server/queries';
   import type { Snapshot } from './$types';
 
@@ -121,7 +123,7 @@
 
   const tiers = [
     { value: 'or', label: tierLabel(1), tier: 1 },
-    { value: 'platine', label: tierLabel(2), tier: 2 },
+    { value: 'diamant', label: tierLabel(2), tier: 2 },
     { value: 'prismatique', label: tierLabel(3), tier: 3 },
     { value: 'legendaire', label: tierLabel(4), tier: 4 },
   ];
@@ -133,6 +135,13 @@
         ? { filtre, tri: 'progression' }
         : { filtre, tri: null },
     );
+
+  /** La plateforme filtrée n'a rien à montrer parce que le joueur ne l'a pas liée. */
+  const toLink = $derived(
+    !data.player && !data.params.q
+      ? data.unlinked.find((platform) => platform === data.params.plateforme)
+      : undefined,
+  );
 
   const platforms = [
     { value: null, label: m.games_all_platforms() },
@@ -205,11 +214,13 @@
             href={collectionHref(item.value)}
             data-sveltekit-noscroll
             data-tier={item.tier}
+            title={tierRule(item.tier)}
             aria-current={data.params.filtre === item.value ? 'true' : undefined}
             class="stat-value px-3 py-1.5 !text-sm transition-colors"
             class:bg-raised={data.params.filtre === item.value}
           >
             {item.label}
+            <TierDots tier={item.tier} />
           </a>
         {/each}
       </div>
@@ -238,8 +249,17 @@
     </div>
   </div>
 
+  {#if data.params.mine}<TierLegend />{/if}
+
   {#if games.length === 0}
-    {#if data.user && !data.player && !data.params.q && !data.params.plateforme && !data.params.filtre}
+    {#if toLink}
+      <Empty title={m.platform_unlinked_title({ platform: PLATFORM_LABELS[toLink] })}>
+        {m.platform_unlinked_text()}
+        {#snippet action()}<a href={`/compte#${toLink.toLowerCase()}`} class="btn btn-primary"
+            >{m.link_account()}</a
+          >{/snippet}
+      </Empty>
+    {:else if data.user && !data.player && !data.params.q && !data.params.plateforme && !data.params.filtre}
       <Empty title={m.games_empty_title()}>
         {m.games_empty_text()}
         {#snippet action()}<a href="/compte" class="btn btn-primary">{m.link_account()}</a

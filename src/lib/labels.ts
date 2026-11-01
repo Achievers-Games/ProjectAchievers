@@ -41,11 +41,14 @@ export const trophyLabel = (type: TrophyType) => TROPHY_LABELS[type]();
 
 const TIER_LABELS: Record<number, () => string> = {
   1: m.tier_gold,
-  2: m.tier_platinum,
+  2: m.tier_diamond,
   3: m.tier_prismatic,
   4: m.tier_legendary,
 };
 export const tierLabel = (tier: number) => (TIER_LABELS[tier] ?? m.tier_gold)();
+/** Le niveau d'une carte est le nombre de plateformes terminées pour ce jeu. */
+export const tierRule = (tier: number) =>
+  tier > 1 ? m.tier_rule_many({ count: tier }) : m.tier_rule_one();
 
 /** Les erreurs de synchronisation sont stockées par code : chacun les lit dans sa langue. */
 const SYNC_ERRORS: Record<string, () => string> = {

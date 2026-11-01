@@ -26,7 +26,7 @@
     { label: m.stat_games(), value: profile.stats.games },
     { label: m.stat_achievements(), value: profile.stats.unlocked },
     { label: tierLabel(1), value: profile.stats.tiers.or, tier: 1 },
-    { label: tierLabel(2), value: profile.stats.tiers.platine, tier: 2 },
+    { label: tierLabel(2), value: profile.stats.tiers.diamant, tier: 2 },
     { label: tierLabel(3), value: profile.stats.tiers.prismatique, tier: 3 },
     { label: tierLabel(4), value: profile.stats.tiers.legendaire, tier: 4 },
     { label: m.stat_points(), value: profile.stats.points },
@@ -46,7 +46,7 @@
       achievements: m.count_achievements({ count: profile.stats.unlocked }),
       cards:
         profile.stats.tiers.or +
-        profile.stats.tiers.platine +
+        profile.stats.tiers.diamant +
         profile.stats.tiers.prismatique +
         profile.stats.tiers.legendaire,
     })}

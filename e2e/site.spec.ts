@@ -50,7 +50,7 @@ test.describe('visiteur', () => {
     await page.getByRole('link', { name: /Voir les \d+ jeux/ }).click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Jeux de Demo');
     await expect(page.getByRole('link', { name: 'Cachés' })).toHaveCount(0);
-    await expect(page.getByRole('link', { name: 'Platine', exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Diamant', exact: true })).toBeVisible();
   });
 
   test('présente l’événement et son objectif commun', async ({ page }) => {
@@ -344,7 +344,7 @@ test.describe('membre', () => {
     await page.goto('/jeux?q=astro');
     const card = page.locator('main a[data-tier="1"][data-next="2"]');
     await expect(card).toBeVisible();
-    await expect(card.getByText('Platine : Steam 40 %')).toBeVisible();
+    await expect(card.getByText('Diamant : Steam 40 %')).toBeVisible();
     await expect(card.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '40');
     await expect(card.getByRole('progressbar')).toHaveAttribute('data-base', '1');
   });
@@ -366,6 +366,31 @@ test.describe('membre', () => {
     const response = await page.request.get('/compte/export');
     expect(response.status()).toBe(200);
     expect(await response.text()).not.toContain('accessTokenEnc');
+  });
+
+  test('comprend comment monter de niveau', async ({ page }) => {
+    await login(page);
+    await page.goto('/jeux?filtre=platine');
+    await expect(page.getByRole('link', { name: 'Diamant', exact: true })).toHaveAttribute(
+      'aria-current',
+      'true',
+    );
+    const legend = page.getByTestId('tier-legend');
+    await legend.getByText('Comment monter de niveau ?').click();
+    await expect(legend.getByText('100 % sur 3 plateformes')).toBeVisible();
+  });
+
+  test('est invité à lier une plateforme absente', async ({ page }) => {
+    // Marco a déjà un compte lié : l'accueil montre seulement ce qui lui manque.
+    await page.goto('/auth/dev?compte=marco');
+    const missing = page.getByTestId('missing-platforms');
+    await expect(missing.getByRole('link', { name: 'RetroAchievements' })).toBeVisible();
+
+    await page.goto('/jeux?plateforme=RETRO');
+    await expect(page.getByText('Aucun compte RetroAchievements lié')).toBeVisible();
+    await page.getByRole('link', { name: 'Lier un compte' }).click();
+    await expect(page).toHaveURL(/\/compte#retro$/);
+    await expect(page.getByLabel('Pseudo RetroAchievements')).toBeVisible();
   });
 
   test('change son nom affiché et voit les erreurs', async ({ page }) => {

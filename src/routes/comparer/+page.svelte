@@ -16,8 +16,8 @@
     { label: tierLabel(1), left: data.leftStats.tiers.or, right: data.rightStats.tiers.or },
     {
       label: tierLabel(2),
-      left: data.leftStats.tiers.platine,
-      right: data.rightStats.tiers.platine,
+      left: data.leftStats.tiers.diamant,
+      right: data.rightStats.tiers.diamant,
     },
     {
       label: tierLabel(3),

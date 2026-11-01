@@ -70,7 +70,7 @@ const librarySelect = {
 /** Le pourcentage affiché sur la carte : celui du niveau suivant, s'il est en cours. */
 const shownProgress = (card: LibraryCard) => card.next?.completion ?? card.progress.completion;
 
-/** Position sur l'échelle des niveaux : une carte Or à 58 % du Platine vaut 1,58. */
+/** Position sur l'échelle des niveaux : une carte Or à 58 % du Diamant vaut 1,58. */
 const tierProgress = (card: LibraryCard) =>
   card.tier + (card.tier ? (card.next?.completion ?? 0) : card.progress.completion) / 100;
 
@@ -503,11 +503,11 @@ export async function homeBanners(firstCollector: Collector | undefined, userId?
 export async function userStats(userId: string) {
   const [collection, unlocked] = await Promise.all([
     db.$queryRaw<
-      { games: bigint; or: bigint; platine: bigint; prismatique: bigint; legendaire: bigint }[]
+      { games: bigint; or: bigint; diamant: bigint; prismatique: bigint; legendaire: bigint }[]
     >`
       SELECT count(*) AS games,
              count(*) FILTER (WHERE finished = 1) AS "or",
-             count(*) FILTER (WHERE finished = 2) AS platine,
+             count(*) FILTER (WHERE finished = 2) AS diamant,
              count(*) FILTER (WHERE finished = 3) AS prismatique,
              count(*) FILTER (WHERE finished >= 4) AS legendaire
       FROM (
@@ -521,7 +521,7 @@ export async function userStats(userId: string) {
   ]);
   const tiers = {
     or: Number(collection[0]?.or ?? 0),
-    platine: Number(collection[0]?.platine ?? 0),
+    diamant: Number(collection[0]?.diamant ?? 0),
     prismatique: Number(collection[0]?.prismatique ?? 0),
     legendaire: Number(collection[0]?.legendaire ?? 0),
   };
@@ -529,7 +529,7 @@ export async function userStats(userId: string) {
     games: Number(collection[0]?.games ?? 0),
     tiers,
     unlocked,
-    points: cardScore([tiers.or, tiers.platine, tiers.prismatique, tiers.legendaire]),
+    points: cardScore([tiers.or, tiers.diamant, tiers.prismatique, tiers.legendaire]),
   };
 }
 
@@ -641,7 +641,7 @@ async function rankedCollectors(limit: number) {
       frame: string | null;
       frameMotionUrl: string | null;
       or: bigint;
-      platine: bigint;
+      diamant: bigint;
       prismatique: bigint;
       legendaire: bigint;
     }[]
@@ -649,7 +649,7 @@ async function rankedCollectors(limit: number) {
     SELECT u.id, u.handle, u."displayName", u."avatarUrl", u."avatarMotionUrl", u.frame,
            u."frameMotionUrl",
            count(*) FILTER (WHERE finished = 1) AS "or",
-           count(*) FILTER (WHERE finished = 2) AS platine,
+           count(*) FILTER (WHERE finished = 2) AS diamant,
            count(*) FILTER (WHERE finished = 3) AS prismatique,
            count(*) FILTER (WHERE finished >= 4) AS legendaire
     FROM (
@@ -663,8 +663,8 @@ async function rankedCollectors(limit: number) {
     GROUP BY u.id`;
 
   return rows
-    .map(({ or, platine, prismatique, legendaire, ...user }) => {
-      const tiers = [or, platine, prismatique, legendaire].map(Number);
+    .map(({ or, diamant, prismatique, legendaire, ...user }) => {
+      const tiers = [or, diamant, prismatique, legendaire].map(Number);
       return {
         ...user,
         tiers,
@@ -756,7 +756,7 @@ export async function activityFeed(
     .map(({ userId: _userId, ...row }) => row);
 }
 
-/** Chaque plateforme terminée fait monter la carte : Or, puis Platine, Prismatique, Légendaire. */
+/** Chaque plateforme terminée fait monter la carte : Or, puis Diamant, Prismatique, Légendaire. */
 async function tierMoments(showAdult: boolean, limit: number) {
   const rows = await db.$queryRaw<
     {

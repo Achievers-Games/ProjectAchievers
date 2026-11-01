@@ -284,7 +284,11 @@
         {@const status = live?.status ?? account?.syncStatus}
         {@const error = syncErrorText(live?.error ?? account?.syncError)}
         {@const available = data.providers[provider]}
-        <li class="space-y-2 p-4" data-provider={provider}>
+        <li
+          id={provider.toLowerCase()}
+          class="scroll-mt-20 space-y-2 p-4 target:bg-raised"
+          data-provider={provider}
+        >
           <div class="flex flex-wrap items-center gap-3">
             <span class="text-muted"><ProviderIcon {provider} size={20} /></span>
             <div class="min-w-0 flex-1">

@@ -1,9 +1,20 @@
-import { Prisma, type Provider } from '@prisma/client';
+import { Prisma, type Platform, type Provider } from '@prisma/client';
 import { z } from 'zod';
 import { db } from './db';
 import { encrypt } from './crypto';
+import { availableProviders } from './providers';
 import { slugify } from '$lib/slug';
 import { m } from '$lib/paraglide/messages';
+
+const PLATFORMS: Platform[] = ['STEAM', 'PSN', 'XBOX', 'RETRO'];
+
+/** Les plateformes de jeu ouvertes sur ce site que le joueur n'a pas encore liées. */
+export async function unlinkedPlatforms(userId: string) {
+  const available = availableProviders();
+  const linked = await db.linkedAccount.findMany({ where: { userId }, select: { provider: true } });
+  const taken = new Set<Provider>(linked.map((account) => account.provider));
+  return PLATFORMS.filter((platform) => available[platform] && !taken.has(platform));
+}
 
 export const profileSchema = z.object({
   displayName: z

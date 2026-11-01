@@ -4,6 +4,7 @@
   import GameCard from '$lib/components/GameCard.svelte';
   import HomeCarousel from '$lib/components/HomeCarousel.svelte';
   import LiveCards from '$lib/components/LiveCards.svelte';
+  import MissingPlatforms from '$lib/components/MissingPlatforms.svelte';
   import Podium from '$lib/components/Podium.svelte';
   import ProviderIcon from '$lib/components/ProviderIcon.svelte';
   import { formatNumber, tierLabel } from '$lib/labels';
@@ -16,7 +17,7 @@
           { label: m.stat_games(), value: data.home.stats.games },
           { label: m.stat_achievements(), value: data.home.stats.unlocked },
           { label: tierLabel(1), value: data.home.stats.tiers.or, tier: 1 },
-          { label: tierLabel(2), value: data.home.stats.tiers.platine, tier: 2 },
+          { label: tierLabel(2), value: data.home.stats.tiers.diamant, tier: 2 },
           { label: tierLabel(3), value: data.home.stats.tiers.prismatique, tier: 3 },
           { label: tierLabel(4), value: data.home.stats.tiers.legendaire, tier: 4 },
           { label: m.stat_points(), value: data.home.stats.points },
@@ -43,6 +44,8 @@
         {#snippet action()}<a href="/compte" class="btn btn-primary">{m.link_account()}</a
           >{/snippet}
       </Empty>
+    {:else}
+      <MissingPlatforms platforms={data.unlinked} />
     {/if}
 
     <LiveCards initial={data.cards} />
