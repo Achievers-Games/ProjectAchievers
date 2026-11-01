@@ -10,6 +10,7 @@ import { availableProviders } from '$lib/server/providers';
 import { bioContainsCode, findPsnProfile, newPsnCode } from '$lib/server/providers/psn';
 import { destroySession } from '$lib/server/session';
 import { leaveClan } from '$lib/server/social';
+import { forgetPresence } from '$lib/server/presence';
 import { pushPublicKey } from '$lib/server/push';
 import { enqueueSync } from '$lib/server/sync/queue';
 import type { Actions, PageServerLoad } from './$types';
@@ -236,6 +237,7 @@ export const actions: Actions = {
     const user = requireUser(locals);
     const isPublic = (await request.formData()).get('isPublic') === 'on';
     await db.user.update({ where: { id: user.id }, data: { isPublic } });
+    forgetPresence();
     return { success: isPublic ? m.profile_public_ok() : m.profile_private_ok() };
   },
 
@@ -257,6 +259,7 @@ export const actions: Actions = {
     const user = requireUser(locals);
     const showOnline = (await request.formData()).get('showOnline') === 'on';
     await db.user.update({ where: { id: user.id }, data: { showOnline } });
+    forgetPresence();
     return { success: m.online_status_saved() };
   },
 

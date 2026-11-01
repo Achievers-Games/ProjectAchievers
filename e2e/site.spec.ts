@@ -708,6 +708,7 @@ test.describe('membre', () => {
     await ready(page);
     const inPresence = async () =>
       ((await (await page.request.get('/api/presence')).json()) as string[]).includes('lea');
+    await page.getByLabel(/Afficher ma présence/).check();
     await expect.poll(inPresence).toBe(true);
 
     await page.getByLabel(/Afficher ma présence/).uncheck();
