@@ -8,6 +8,7 @@ import { announceSeason } from '../push';
 import { rateLimit } from '../rate-limit';
 import { hasRecentFeat, isPublicGame, publicUser, RARE_CARD } from '../queries';
 import { tierFor, type Reward } from '$lib/collection';
+import { fillWowCatalog, syncBlizzard } from './blizzard';
 import { rateGames } from './content';
 import { refreshDiscordAccounts } from './discord';
 import { SyncError } from './errors';
@@ -29,6 +30,7 @@ const MAX_REWARDS = 10;
 const LIVE_CARD_MAX_AGE = 48 * 60 * 60 * 1000;
 
 const SYNCERS: Partial<Record<Provider, ProviderSync>> = {
+  BLIZZARD: syncBlizzard,
   STEAM: syncSteam,
   PSN: syncPsn,
   RETRO: syncRetro,
@@ -346,6 +348,7 @@ async function sweep() {
   await announceSeason().catch((cause) => console.error('Annonce :', cause));
   await refreshDiscordAccounts().catch((cause) => console.error('Discord :', cause));
   await fillHiddenDescriptions().catch((cause) => console.error('Succès cachés :', cause));
+  await fillWowCatalog().catch((cause) => console.error('Catalogue WoW :', cause));
 }
 
 /** Démarre le traitement des synchronisations dans le processus du site. */

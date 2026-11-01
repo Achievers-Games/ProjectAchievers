@@ -35,7 +35,9 @@ import {
   createClan,
   inviteToClan,
   leaveClan,
+  markInvitesSeen,
   openDirect,
+  pendingInvites,
   readConversation,
   relationWith,
   reportMessage,
@@ -1146,6 +1148,16 @@ describe('amis, clans et discussions', () => {
     await blockUser(b.id, a.id);
     expect(await sendMessage(a.id, id as string, 'Encore')).toBe('not_friends');
     expect(await requestFriend(a.id, b.handle)).toBe('not_found');
+  });
+
+  it('retire du badge une demande vue, sans la refuser', async () => {
+    const [a, b] = await players();
+    await requestFriend(a.id, b.handle);
+    expect((await pendingInvites(b.id)).friends).toBe(1);
+
+    await markInvitesSeen(b.id, 'friends');
+    expect((await pendingInvites(b.id)).friends).toBe(0);
+    expect(await relationWith(b.id, a.id)).toBe('received');
   });
 
   it('garde les discussions fermées aux autres joueurs', async () => {

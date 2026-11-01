@@ -669,8 +669,16 @@ test.describe('membre', () => {
     const other = await browser.newContext();
     const friend = await other.newPage();
     await friend.goto('/auth/dev?compte=marco');
-    await friend.goto('/amis');
+    await friend.goto('/messages');
     await ready(friend);
+    const unseen = friend.getByRole('link', { name: /^Amis\s*1$/ });
+    await expect(unseen).toBeVisible();
+    await unseen.click();
+    await expect(friend).toHaveURL(/\/amis/);
+    await expect(unseen).toHaveCount(0);
+    await friend.reload();
+    await ready(friend);
+    await expect(unseen).toHaveCount(0);
     await friend.getByRole('button', { name: 'Accepter' }).first().click();
     await friend.getByRole('button', { name: 'Message', exact: true }).first().click();
     await expect(friend).toHaveURL(/\/messages\/./);

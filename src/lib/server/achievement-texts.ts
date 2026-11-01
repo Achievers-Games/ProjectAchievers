@@ -2,6 +2,7 @@ import type { Platform } from '@prisma/client';
 import { baseLocale, type Locale } from '$lib/paraglide/runtime';
 import { db } from './db';
 import { rateLimit } from './rate-limit';
+import { fetchBlizzardTexts } from './sync/blizzard';
 import { fetchPsnTexts } from './sync/psn';
 import { fetchSteamTexts } from './sync/steam';
 
@@ -23,6 +24,7 @@ async function fetchTexts(
 ): Promise<AchievementText[]> {
   if (game.platform === 'STEAM') return fetchSteamTexts(game.platformGameId, locale);
   if (game.platform === 'PSN') return fetchPsnTexts(game.platformGameId, locale);
+  if (game.platform === 'BLIZZARD') return fetchBlizzardTexts(game.platformGameId, locale);
   // Xbox n'offre ces textes qu'avec le compte d'un joueur.
   return [];
 }
@@ -66,10 +68,10 @@ export async function ensureGameTexts(
   game: { id: string; platform: Platform; platformGameId: string },
   locale: Locale,
 ) {
-  // Steam et Xbox sont stockés en français, RetroAchievements n'existe qu'en anglais ;
+  // Steam, Xbox et Battle.net sont stockés en français, RetroAchievements n'existe qu'en anglais ;
   // PSN est dans la langue du compte de service.
   if (game.platform === 'XBOX' || game.platform === 'RETRO') return;
-  if (game.platform === 'STEAM' && locale === baseLocale) return;
+  if ((game.platform === 'STEAM' || game.platform === 'BLIZZARD') && locale === baseLocale) return;
 
   const known = await db.gameTranslation.findUnique({
     where: { gameId_locale: { gameId: game.id, locale } },

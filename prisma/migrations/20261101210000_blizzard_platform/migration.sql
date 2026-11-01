@@ -1,0 +1,2 @@
+ALTER TYPE "Platform" ADD VALUE 'BLIZZARD';
+ALTER TABLE "LinkedAccount" ADD COLUMN "characters" JSONB;

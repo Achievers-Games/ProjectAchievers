@@ -5,6 +5,7 @@ import {
   acceptFriend,
   blockUser,
   friendsOverview,
+  markInvitesSeen,
   openDirect,
   removeFriend,
   requestFriend,
@@ -19,7 +20,11 @@ const requireUser = (locals: App.Locals) => requireLogin(locals, '/amis');
 
 const otherId = async (request: Request) => String((await request.formData()).get('id'));
 
-export const load: PageServerLoad = async ({ locals }) => friendsOverview(requireUser(locals).id);
+export const load: PageServerLoad = async ({ locals }) => {
+  const { id } = requireUser(locals);
+  await markInvitesSeen(id, 'friends');
+  return friendsOverview(id);
+};
 
 export const actions: Actions = {
   add: async ({ request, locals }) => {

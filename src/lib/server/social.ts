@@ -117,13 +117,32 @@ export async function unblockUser(userId: string, otherId: string) {
 }
 
 /** Ce qui attend une réponse du joueur : les badges le rappellent tant qu'il n'a pas répondu. */
+/** Seules les invitations pas encore vues comptent : une demande vue reste à traiter, sans badge. */
 export async function pendingInvites(userId: string) {
+  const seen = await db.user.findUnique({
+    where: { id: userId },
+    select: { friendsSeenAt: true, clansSeenAt: true },
+  });
   const [friends, clans] = await Promise.all([
-    db.friendship.count({ where: { addresseeId: userId, accepted: false } }),
-    db.clanInvite.count({ where: { userId } }),
+    db.friendship.count({
+      where: {
+        addresseeId: userId,
+        accepted: false,
+        createdAt: { gt: seen?.friendsSeenAt ?? new Date(0) },
+      },
+    }),
+    db.clanInvite.count({
+      where: { userId, createdAt: { gt: seen?.clansSeenAt ?? new Date(0) } },
+    }),
   ]);
   return { friends, clans };
 }
+
+export const markInvitesSeen = (userId: string, kind: 'friends' | 'clans') =>
+  db.user.update({
+    where: { id: userId },
+    data: kind === 'friends' ? { friendsSeenAt: new Date() } : { clansSeenAt: new Date() },
+  });
 
 export async function friendIds(userId: string) {
   const links = await db.friendship.findMany({

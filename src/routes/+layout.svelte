@@ -2,7 +2,7 @@
   import { m } from '$lib/paraglide/messages';
   import '../app.css';
   import { onMount } from 'svelte';
-  import { invalidateAll, onNavigate } from '$app/navigation';
+  import { afterNavigate, invalidate, invalidateAll, onNavigate } from '$app/navigation';
   import { navigating, page } from '$app/state';
   import Compass from '@lucide/svelte/icons/compass';
   import Flame from '@lucide/svelte/icons/flame';
@@ -56,6 +56,13 @@
 
   $effect(() => {
     invites.set(data.invites);
+  });
+
+  /** Ces pages marquent leurs invitations comme vues : les compteurs sont à relire une fois chargées. */
+  afterNavigate(({ to }) => {
+    if (to?.url.pathname === '/amis' || to?.url.pathname === '/clan') {
+      void invalidate('app:invites');
+    }
   });
 
   const badge = $derived($unread + $invites.friends + $invites.clans);

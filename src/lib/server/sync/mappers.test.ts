@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { mapSc2Achievement, mergeUnlocks, sc2Unlocks, wowUnlocks } from './blizzard';
 import { mapRetroAchievement, retroUnlocks } from './retro';
 import { isComplete } from '$lib/collection';
 import { fetchRetry, mapLimit, SyncError } from './errors';
@@ -161,6 +162,37 @@ describe('Xbox', () => {
       description: 'B',
       points: 20,
     });
+  });
+});
+
+describe('Battle.net', () => {
+  it('fusionne les personnages en gardant la première date', () => {
+    const merged = mergeUnlocks([
+      wowUnlocks([
+        { id: 1, completed_timestamp: 2_000 },
+        { id: 2, completed_timestamp: 1_000 },
+      ]),
+      wowUnlocks([{ id: 1, completed_timestamp: 500 }, { id: 3 }]),
+    ]);
+    expect(merged).toEqual([
+      { platformAchievementId: '1', unlockedAt: new Date(500) },
+      { platformAchievementId: '2', unlockedAt: new Date(1_000) },
+    ]);
+  });
+
+  it('lit les dates StarCraft II en secondes et ignore les succès en cours', () => {
+    expect(
+      sc2Unlocks([
+        { achievementId: '9', completionDate: 1_504_035_656, isComplete: true },
+        { achievementId: '10', isComplete: false },
+      ]),
+    ).toEqual([{ platformAchievementId: '9', unlockedAt: new Date(1_504_035_656_000) }]);
+  });
+
+  it('garde les points réels, zéro compris', () => {
+    const achievement = mapSc2Achievement({ id: '9', title: 'Maîtrise', points: 0 });
+    expect(achievement.points).toBe(0);
+    expect(achievement.description).toBe('');
   });
 });
 

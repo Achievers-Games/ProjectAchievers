@@ -7,6 +7,7 @@ import {
   createClan,
   declineClanInvite,
   friendsOverview,
+  markInvitesSeen,
   inviteToClan,
   kickFromClan,
   leaveClan,
@@ -45,6 +46,7 @@ const field = async (request: Request, name: string) =>
 
 export const load: PageServerLoad = async ({ locals }) => {
   const user = requireUser(locals);
+  await markInvitesSeen(user.id, 'clans');
   const [{ membership, invites }, { friends }] = await Promise.all([
     myClan(user.id),
     friendsOverview(user.id),

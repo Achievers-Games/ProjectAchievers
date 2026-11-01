@@ -1,12 +1,19 @@
-import type { Identity } from '../accounts';
+import type { BlizzardCharacter, Identity } from '../accounts';
 import { env } from '../env';
+import { fetchRetry } from '../sync/errors';
 import { callbackUrl } from './index';
 
 const OAUTH = 'https://oauth.battle.net';
-const API = 'https://eu.api.blizzard.com';
 const SCOPES = 'openid wow.profile sc2.profile';
+/** Chaque région a ses propres personnages WoW : aucune adresse ne les réunit. */
+const REGIONS = ['eu', 'us', 'kr', 'tw'];
 
 const timeout = () => AbortSignal.timeout(10_000);
+
+const basicAuth = () => {
+  const { BLIZZARD_CLIENT_ID: id, BLIZZARD_CLIENT_SECRET: secret } = env();
+  return `Basic ${Buffer.from(`${id}:${secret}`).toString('base64')}`;
+};
 
 export function blizzardAuthorizeUrl(state: string): string {
   const params = new URLSearchParams({
@@ -19,82 +26,76 @@ export function blizzardAuthorizeUrl(state: string): string {
   return `${OAUTH}/authorize?${params}`;
 }
 
-const fieldsOf = (value: unknown) =>
-  value && typeof value === 'object' ? Object.keys(value) : typeof value;
+let appToken: { value: string; expiresAt: number } | null = null;
 
-/** Note ce que l'API donne vraiment : formes et nombres, jamais les valeurs ni le jeton. */
-async function logAccess(token: string, accountId: string) {
-  const read = async (path: string, namespace?: string) => {
-    const url = new URL(`${API}${path}`);
-    if (namespace) url.searchParams.set('namespace', namespace);
-    url.searchParams.set('locale', 'en_GB');
-    const response = await fetch(url, {
-      headers: { Authorization: `Bearer ${token}` },
-      signal: timeout(),
-    });
-    const body: unknown = response.ok ? await response.json() : null;
-    return { status: response.status, body };
+/** Un jeton du site, pas d'un joueur : les profils se relisent sans qu'il revienne. */
+async function siteToken() {
+  if (appToken && appToken.expiresAt > Date.now()) return appToken.value;
+  const response = await fetchRetry(`${OAUTH}/token`, {
+    method: 'POST',
+    headers: {
+      Authorization: basicAuth(),
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: 'grant_type=client_credentials',
+  });
+  if (!response.ok) throw new Error(`Blizzard a refusé le jeton du site (${response.status})`);
+  const { access_token: value, expires_in: lifetime } = (await response.json()) as {
+    access_token: string;
+    expires_in: number;
   };
+  appToken = { value, expiresAt: Date.now() + (lifetime - 60) * 1000 };
+  return value;
+}
 
-  const wow = await read('/profile/user/wow', 'profile-eu');
-  const accounts =
-    (
-      wow.body as {
-        wow_accounts?: { characters?: { name: string; realm: { slug: string } }[] }[];
-      } | null
-    )?.wow_accounts ?? [];
-  const characters = accounts.flatMap((account) => account.characters ?? []);
-  console.info('Blizzard, WoW :', {
-    status: wow.status,
-    fields: fieldsOf(wow.body),
-    accounts: accounts.length,
-    characters: characters.length,
-  });
+export async function blizzardGet(
+  path: string,
+  params: Record<string, string> = {},
+  region = 'eu',
+) {
+  const url = new URL(`https://${region}.api.blizzard.com${path}`);
+  for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
+  return fetchRetry(url, { headers: { Authorization: `Bearer ${await siteToken()}` } });
+}
 
-  const [first] = characters;
-  if (first) {
-    const name = encodeURIComponent(first.name.toLowerCase());
-    const path = `/profile/wow/character/${first.realm.slug}/${name}/achievements`;
-    const done = await read(path, 'profile-eu');
-    const list = (done.body as { achievements?: unknown[]; total_quantity?: number } | null) ?? {};
-    console.info('Blizzard, succès WoW :', {
-      status: done.status,
-      fields: fieldsOf(done.body),
-      total: list.total_quantity,
-      count: list.achievements?.length,
-      entry: fieldsOf(list.achievements?.[0]),
-    });
-  }
+interface WowAccounts {
+  wow_accounts?: { characters?: { name: string; realm: { slug: string } }[] }[];
+}
 
-  const sc2 = await read(`/sc2/player/${accountId}`);
-  const profiles = Array.isArray(sc2.body) ? sc2.body : [];
-  console.info('Blizzard, SC2 :', {
-    status: sc2.status,
-    profiles: profiles.length,
-    entry: fieldsOf(profiles[0]),
-  });
-
-  const [profile] = profiles as { regionId: number; realmId: number; profileId: string }[];
-  if (profile) {
-    const path = `/sc2/profile/${profile.regionId}/${profile.realmId}/${profile.profileId}`;
-    const detail = await read(path);
-    const earned = (detail.body as { earnedAchievements?: unknown[] } | null)?.earnedAchievements;
-    console.info('Blizzard, succès SC2 :', {
-      status: detail.status,
-      fields: fieldsOf(detail.body),
-      earned: earned?.length,
-      entry: fieldsOf(earned?.[0]),
-    });
+/** La liste des personnages n'existe qu'avec le jeton du joueur, donc seulement à la liaison. */
+async function fetchCharacters(token: string): Promise<BlizzardCharacter[] | undefined> {
+  try {
+    const regions = await Promise.all(
+      REGIONS.map(async (region) => {
+        const url = new URL(`https://${region}.api.blizzard.com/profile/user/wow`);
+        url.searchParams.set('namespace', `profile-${region}`);
+        const response = await fetchRetry(url, { headers: { Authorization: `Bearer ${token}` } });
+        // Un 404 veut dire « aucun compte WoW dans cette région ».
+        if (response.status === 404) return [];
+        if (!response.ok) throw new Error(`WoW a répondu ${response.status} (${region})`);
+        const { wow_accounts: accounts = [] } = (await response.json()) as WowAccounts;
+        return accounts.flatMap((account) =>
+          (account.characters ?? []).map(({ name, realm }) => ({
+            region,
+            realm: realm.slug,
+            name: name.toLowerCase(),
+          })),
+        );
+      }),
+    );
+    return regions.flat();
+  } catch (cause) {
+    // La liste connue reste en place : un incident ne doit pas faire oublier les personnages.
+    console.error('Personnages WoW :', cause);
+    return undefined;
   }
 }
 
-/** Battle.net ne sert pour l'instant qu'à mesurer ce que l'API renvoie : aucun jeton n'est conservé. */
 export async function exchangeBlizzardCode(code: string): Promise<Identity> {
-  const { BLIZZARD_CLIENT_ID: id, BLIZZARD_CLIENT_SECRET: secret } = env();
   const tokenResponse = await fetch(`${OAUTH}/token`, {
     method: 'POST',
     headers: {
-      Authorization: `Basic ${Buffer.from(`${id}:${secret}`).toString('base64')}`,
+      Authorization: basicAuth(),
       'Content-Type': 'application/x-www-form-urlencoded',
     },
     body: new URLSearchParams({
@@ -106,20 +107,14 @@ export async function exchangeBlizzardCode(code: string): Promise<Identity> {
     signal: timeout(),
   });
   if (!tokenResponse.ok) throw new Error(`Blizzard a refusé le code (${tokenResponse.status})`);
-  const tokens = (await tokenResponse.json()) as { access_token: string; scope?: string };
-  console.info('Blizzard, jeton :', { fields: Object.keys(tokens), scope: tokens.scope });
+  const { access_token: token } = (await tokenResponse.json()) as { access_token: string };
 
   const userResponse = await fetch(`${OAUTH}/userinfo`, {
-    headers: { Authorization: `Bearer ${tokens.access_token}` },
+    headers: { Authorization: `Bearer ${token}` },
     signal: timeout(),
   });
   if (!userResponse.ok) throw new Error(`Profil Blizzard illisible (${userResponse.status})`);
   const user = (await userResponse.json()) as { sub: string; battletag?: string };
-  console.info('Blizzard, profil :', { fields: Object.keys(user) });
-
-  await logAccess(tokens.access_token, user.sub).catch((cause) =>
-    console.error('Blizzard, exploration :', cause),
-  );
 
   return {
     provider: 'BLIZZARD',
@@ -127,5 +122,6 @@ export async function exchangeBlizzardCode(code: string): Promise<Identity> {
     displayName: user.battletag || 'Battle.net',
     avatarUrl: null,
     profileUrl: null,
+    characters: await fetchCharacters(token),
   };
 }

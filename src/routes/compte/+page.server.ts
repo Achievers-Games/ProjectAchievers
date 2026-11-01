@@ -187,12 +187,7 @@ export const actions: Actions = {
       await tx.linkedAccount.delete({
         where: { userId_provider: { userId: user.id, provider: provider.data } },
       });
-      if (
-        provider.data !== 'DISCORD' &&
-        provider.data !== 'GOOGLE' &&
-        provider.data !== 'EPIC' &&
-        provider.data !== 'BLIZZARD'
-      ) {
+      if (provider.data !== 'DISCORD' && provider.data !== 'GOOGLE' && provider.data !== 'EPIC') {
         const platform = provider.data;
         await tx.pinnedGame.deleteMany({ where: { userId: user.id, game: { platform } } });
         await tx.userAchievement.deleteMany({

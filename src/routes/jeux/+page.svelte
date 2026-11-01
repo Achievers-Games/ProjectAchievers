@@ -149,6 +149,7 @@
     { value: 'PSN', label: 'PlayStation' },
     { value: 'XBOX', label: 'Xbox' },
     { value: 'RETRO', label: 'Retro' },
+    { value: 'BLIZZARD', label: 'Battle.net' },
   ];
 </script>
 
@@ -170,7 +171,11 @@
       class="input sm:w-64"
     />
 
-    <div class="flex rounded border border-line" role="group" aria-label={m.games_platform()}>
+    <div
+      class="flex flex-wrap rounded border border-line"
+      role="group"
+      aria-label={m.games_platform()}
+    >
       {#each platforms as platform (platform.label)}
         <a
           href={hrefWith({ plateforme: platform.value })}

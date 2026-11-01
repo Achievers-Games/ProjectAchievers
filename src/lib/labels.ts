@@ -26,6 +26,7 @@ export const PROVIDER_LABELS: Record<Provider, string> = {
 };
 
 export const PLATFORM_LABELS: Record<Platform, string> = {
+  BLIZZARD: 'Battle.net',
   STEAM: 'Steam',
   PSN: 'PlayStation',
   RETRO: 'RetroAchievements',

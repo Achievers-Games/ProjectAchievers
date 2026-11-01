@@ -8,7 +8,7 @@ import { slugify } from '$lib/slug';
 import { m } from '$lib/paraglide/messages';
 import { getLocale } from '$lib/paraglide/runtime';
 
-const PLATFORMS: Platform[] = ['STEAM', 'PSN', 'XBOX', 'RETRO'];
+const PLATFORMS: Platform[] = ['STEAM', 'PSN', 'XBOX', 'RETRO', 'BLIZZARD'];
 
 /** Les plateformes de jeu ouvertes sur ce site que le joueur n'a pas encore liées. */
 export async function unlinkedPlatforms(userId: string) {
@@ -78,6 +78,8 @@ export interface AccountLook {
   frameMotionUrl: string | null;
 }
 
+export type BlizzardCharacter = { region: string; realm: string; name: string };
+
 export interface Identity {
   provider: Provider;
   providerUserId: string;
@@ -90,6 +92,8 @@ export interface Identity {
   accessToken?: string;
   refreshToken?: string | null;
   tokenExpiresAt?: Date | null;
+  /** Absent : la liste n'a pas pu être lue, celle déjà connue reste en place. */
+  characters?: BlizzardCharacter[];
 }
 
 type LinkResult =
@@ -108,6 +112,7 @@ function accountData(identity: Identity) {
     accessTokenEnc: identity.accessToken ? encrypt(identity.accessToken) : null,
     refreshTokenEnc: identity.refreshToken ? encrypt(identity.refreshToken) : null,
     tokenExpiresAt: identity.tokenExpiresAt ?? null,
+    ...(identity.characters && { characters: identity.characters }),
   };
 }
 

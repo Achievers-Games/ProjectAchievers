@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { censor } from '$lib/profanity';
   import { m } from '$lib/paraglide/messages';
   import Avatar from '$lib/components/Avatar.svelte';
   import Empty from '$lib/components/Empty.svelte';
@@ -21,7 +22,11 @@
             <Avatar name={row.title} person={row.person} size={40} />
             <span class="min-w-0 flex-1">
               <span class="block truncate font-medium">{row.title}</span>
-              <span class="block truncate text-sm text-muted">{row.preview}</span>
+              <span class="block truncate text-sm text-muted"
+                >{data.user?.allowProfanity
+                  ? row.preview
+                  : censor(row.preview, row.previewLocale)}</span
+              >
             </span>
             <span class="shrink-0 text-right text-xs text-muted">
               {#if row.at}{formatRelative(row.at)}{/if}

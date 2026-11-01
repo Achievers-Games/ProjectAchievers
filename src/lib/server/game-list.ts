@@ -9,7 +9,7 @@ const TIERS: Record<string, number> = { or: 1, diamant: 2, prismatique: 3, legen
 const query = z.object({
   q: z.string().trim().max(80).optional().catch(undefined),
   joueur: z.string().trim().max(24).optional().catch(undefined),
-  plateforme: z.enum(['STEAM', 'PSN', 'XBOX', 'RETRO']).optional().catch(undefined),
+  plateforme: z.enum(['STEAM', 'PSN', 'XBOX', 'RETRO', 'BLIZZARD']).optional().catch(undefined),
   tri: z.enum(['nom', 'recent', 'progression', 'succes']).catch('nom'),
   page: z.coerce.number().int().min(1).max(10_000).catch(1),
   vue: z.enum(['grille', 'liste']).catch('grille'),

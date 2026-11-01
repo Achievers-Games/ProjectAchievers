@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { censor, isProfane } from './profanity';
 
@@ -14,6 +15,18 @@ describe('censor', () => {
     expect(censor('你这个傻逼')).toBe('你这个**');
   });
 
+  it('voit à travers les lettres répétées, remplacées ou séparées', () => {
+    expect(censor('espèce de connnnard')).toBe('espèce de *********');
+    expect(censor('CONNAAARD !')).toBe('********* !');
+    expect(censor('un conard')).toBe('un ******');
+    expect(censor('c0nnard')).toBe('*******');
+    expect(censor('c.o.n.n.a.r.d')).toBe('*************');
+    expect(censor('c o n n a r d')).toBe('*************');
+    expect(censor('sh1t')).toBe('****');
+    expect(censor('putaiiiin de boss')).toBe('********* de boss');
+    expect(censor('un cоnnard')).toBe('un *******');
+  });
+
   it('laisse les mots ordinaires tranquilles', () => {
     for (const text of [
       'un trésor unique, niquel',
@@ -22,9 +35,28 @@ describe('censor', () => {
       'the assassin computer',
       'Matsushita, Scunthorpe',
       'カスタム 牛奶',
+      'je suis en retard',
+      'une balade pédestre, un putois',
+      'conocer la Vergangenheit',
+      'ni que toi ni que moi',
+      'a b c d e',
     ]) {
       expect(censor(text)).toBe(text);
     }
+  });
+
+  it('ne touche à aucun texte du site', () => {
+    for (const locale of ['fr', 'en', 'de', 'es', 'pt-BR', 'ru', 'ja', 'zh-CN']) {
+      const texts = JSON.parse(readFileSync(`messages/${locale}.json`, 'utf8')) as object;
+      const hit = Object.values(texts)
+        .filter((text): text is string => typeof text === 'string')
+        .filter((text) => censor(text, locale) !== text);
+      expect(hit).toEqual([]);
+    }
+  });
+
+  it('garde les nombres seuls', () => {
+    expect(censor('455 points', 'en')).toBe('455 points');
   });
 });
 

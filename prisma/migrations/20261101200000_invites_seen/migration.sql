@@ -1,0 +1,1 @@
+ALTER TABLE "User" ADD COLUMN "friendsSeenAt" TIMESTAMP(3), ADD COLUMN "clansSeenAt" TIMESTAMP(3);

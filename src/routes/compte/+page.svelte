@@ -34,7 +34,7 @@
     EPIC: 'epic',
     BLIZZARD: 'blizzard',
   };
-  const LOGIN_ONLY: Provider[] = ['DISCORD', 'GOOGLE', 'EPIC', 'BLIZZARD'];
+  const LOGIN_ONLY: Provider[] = ['DISCORD', 'GOOGLE', 'EPIC'];
   /** Discord et Google ne servent qu'à se connecter : ils n'ont rien à ouvrir. */
   const PRIVACY: Partial<Record<Provider, { url: string; hint: () => string }>> = {
     STEAM: { url: 'https://steamcommunity.com/my/edit/settings', hint: m.privacy_fix_steam },
@@ -52,7 +52,7 @@
     DISCORD: m.provider_identity(),
     GOOGLE: m.provider_identity(),
     EPIC: m.provider_identity(),
-    BLIZZARD: m.provider_identity(),
+    BLIZZARD: m.provider_blizzard(),
   };
   const STATUS: Record<SyncStatus, string> = {
     IDLE: m.status_idle(),

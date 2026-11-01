@@ -39,6 +39,10 @@
       ),
   );
 
+  /** World of Warcraft dépasse 8 000 succès : le navigateur n'en dessine pas tant d'un coup. */
+  const PAGE = 300;
+  let shown = $state(PAGE);
+
   const secrets = $derived(data.achievements.filter((a) => a.secret).length);
 
   const filters: { value: Filter; label: string }[] = [
@@ -185,7 +189,7 @@
   </div>
 
   <ul class="card divide-y divide-line">
-    {#each visible as achievement (achievement.id)}
+    {#each visible.slice(0, shown) as achievement (achievement.id)}
       <li>
         <a
           href="/succes/{achievement.id}{data.revealed && achievement.secret ? '?caches=1' : ''}"
@@ -229,4 +233,7 @@
       </li>
     {/each}
   </ul>
+  {#if visible.length > shown}
+    <button class="btn mx-auto block" onclick={() => (shown += PAGE)}>{m.show_more()}</button>
+  {/if}
 </div>
