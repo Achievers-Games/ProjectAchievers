@@ -280,7 +280,7 @@
   <section class="space-y-3">
     <h2>{m.linked_accounts()}</h2>
     <ul class="card divide-y divide-line">
-      {#each PROVIDERS.filter((item) => item !== 'EPIC' || data.providers.EPIC) as provider (provider)}
+      {#each PROVIDERS as provider (provider)}
         {@const account = accounts.get(provider)}
         {@const live = $syncState[provider]}
         {@const status = live?.status ?? account?.syncStatus}
@@ -302,6 +302,8 @@
                   {#if account.lastSyncedAt && status === 'COMPLETED'}
                     · {formatRelative(account.lastSyncedAt)}
                   {/if}
+                {:else if provider === 'EPIC'}
+                  {m.provider_wip_text()}
                 {:else if !available}
                   {m.provider_disabled()}
                 {:else}
@@ -340,6 +342,10 @@
                 <input type="hidden" name="provider" value={provider} />
                 <button class="btn btn-ghost">{m.unlink()}</button>
               </form>
+            {:else if provider === 'EPIC'}
+              <span class="rounded-full bg-raised px-2.5 py-1 text-xs text-muted">
+                {m.provider_wip()}
+              </span>
             {:else if available && OAUTH[provider]}
               <a class="btn" href="/auth/{OAUTH[provider]}/start" data-sveltekit-reload
                 >{m.link()}</a

@@ -476,6 +476,8 @@
   "profanity_text": "Por padrão, os palavrões são substituídos por **** em mensagens, comentários e guias.",
   "profanity_on": "Filtro de palavrões ativado.",
   "profanity_off": "Filtro de palavrões removido.",
+  "provider_wip": "Em desenvolvimento",
+  "provider_wip_text": "Estamos trabalhando nisso: o acompanhamento da Epic chega assim que possível.",
   "refresh_label": "Atualizar minhas contas",
   "refresh_started": "Atualização iniciada.",
   "refresh_wait": "Suas contas acabaram de ser lidas: tente novamente em alguns minutos.",

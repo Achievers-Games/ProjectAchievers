@@ -476,6 +476,8 @@
   "profanity_text": "Par défaut, les grossièretés sont remplacées par **** dans les messages, les commentaires et les guides.",
   "profanity_on": "Filtre de grossièretés activé.",
   "profanity_off": "Filtre de grossièretés retiré.",
+  "provider_wip": "En cours de développement",
+  "provider_wip_text": "On y travaille : le suivi Epic arrive dès que possible.",
   "refresh_label": "Actualiser mes comptes",
   "refresh_started": "Actualisation lancée.",
   "refresh_wait": "Tes comptes viennent d'être lus : réessaie dans quelques minutes.",

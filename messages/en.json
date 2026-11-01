@@ -476,6 +476,8 @@
   "profanity_text": "By default, profanity is replaced with **** in messages, comments and guides.",
   "profanity_on": "Profanity filter on.",
   "profanity_off": "Profanity filter off.",
+  "provider_wip": "In development",
+  "provider_wip_text": "We're working on it: Epic tracking is coming as soon as possible.",
   "refresh_label": "Refresh my accounts",
   "refresh_started": "Refresh started.",
   "refresh_wait": "Your accounts were just read: try again in a few minutes.",

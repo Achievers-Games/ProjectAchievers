@@ -363,6 +363,7 @@ test.describe('membre', () => {
       await expect(page.getByText(name, { exact: true })).toBeVisible();
     }
     await expect(page.getByLabel('Pseudo RetroAchievements')).toBeVisible();
+    await expect(page.locator('[data-provider="EPIC"]')).toContainText('En cours de développement');
     const response = await page.request.get('/compte/export');
     expect(response.status()).toBe(200);
     expect(await response.text()).not.toContain('accessTokenEnc');

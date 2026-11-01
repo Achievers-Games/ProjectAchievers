@@ -19,20 +19,6 @@ export function epicAuthorizeUrl(state: string): string {
   return `${AUTHORIZE}?${params}`;
 }
 
-/** Note ce qu'Epic donne vraiment : seulement les noms de champs, jamais les valeurs ni le jeton. */
-async function logAccess(accessToken: string, accountId: string) {
-  const friends = await fetch(`${API}/friends/v1/${accountId}`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-    signal: timeout(),
-  });
-  const body: unknown = friends.ok ? await friends.json() : null;
-  console.info('Epic, amis :', {
-    status: friends.status,
-    count: Array.isArray(body) ? body.length : undefined,
-    fields: Array.isArray(body) ? Object.keys(body[0] ?? {}) : Object.keys(body ?? {}),
-  });
-}
-
 /** Epic ne fournit pas de succès ici : ce compte prouve seulement l'identité du joueur. */
 export async function exchangeEpicCode(code: string): Promise<Identity> {
   const { EPIC_CLIENT_ID: id, EPIC_CLIENT_SECRET: secret } = env();
@@ -50,8 +36,7 @@ export async function exchangeEpicCode(code: string): Promise<Identity> {
     signal: timeout(),
   });
   if (!tokenResponse.ok) throw new Error(`Epic a refusé le code (${tokenResponse.status})`);
-  const tokens = (await tokenResponse.json()) as { access_token: string; scope?: string };
-  console.info('Epic, jeton :', { fields: Object.keys(tokens), scope: tokens.scope });
+  const tokens = (await tokenResponse.json()) as { access_token: string };
 
   const userResponse = await fetch(`${API}/oauth/v2/userInfo`, {
     headers: { Authorization: `Bearer ${tokens.access_token}` },
@@ -59,11 +44,6 @@ export async function exchangeEpicCode(code: string): Promise<Identity> {
   });
   if (!userResponse.ok) throw new Error(`Profil Epic illisible (${userResponse.status})`);
   const user = (await userResponse.json()) as { sub: string; preferred_username?: string };
-  console.info('Epic, profil :', { fields: Object.keys(user) });
-
-  await logAccess(tokens.access_token, user.sub).catch((cause) =>
-    console.error('Epic, amis :', cause),
-  );
 
   return {
     provider: 'EPIC',

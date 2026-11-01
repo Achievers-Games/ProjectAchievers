@@ -476,6 +476,8 @@
   "profanity_text": "Standardmäßig wird Vulgärsprache in Nachrichten, Kommentaren und Guides durch **** ersetzt.",
   "profanity_on": "Filter aktiviert.",
   "profanity_off": "Filter deaktiviert.",
+  "provider_wip": "In Entwicklung",
+  "provider_wip_text": "Wir arbeiten daran: Epic-Tracking kommt so bald wie möglich.",
   "refresh_label": "Meine Konten aktualisieren",
   "refresh_started": "Aktualisierung gestartet.",
   "refresh_wait": "Deine Konten wurden gerade gelesen: Versuche es in ein paar Minuten erneut.",

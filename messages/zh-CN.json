@@ -467,6 +467,8 @@
   "profanity_text": "默认情况下，消息、评论和攻略中的不雅用语会被替换为 ****。",
   "profanity_on": "已开启不雅用语过滤。",
   "profanity_off": "已关闭不雅用语过滤。",
+  "provider_wip": "开发中",
+  "provider_wip_text": "我们正在努力：Epic 追踪功能将尽快推出。",
   "refresh_label": "刷新我的账号",
   "refresh_started": "已开始刷新。",
   "refresh_wait": "账号刚刚读取过，请几分钟后再试。",

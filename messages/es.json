@@ -476,6 +476,8 @@
   "profanity_text": "Por defecto, las palabrotas se sustituyen por **** en mensajes, comentarios y guías.",
   "profanity_on": "Filtro de palabrotas activado.",
   "profanity_off": "Filtro de palabrotas quitado.",
+  "provider_wip": "En desarrollo",
+  "provider_wip_text": "Estamos en ello: el seguimiento de Epic llegará lo antes posible.",
   "refresh_label": "Actualizar mis cuentas",
   "refresh_started": "Actualización iniciada.",
   "refresh_wait": "Tus cuentas se acaban de leer: inténtalo de nuevo en unos minutos.",
