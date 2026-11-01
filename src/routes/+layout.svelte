@@ -80,7 +80,7 @@
   }
 
   /** Communauté regroupe ces pages : l'entrée reste allumée sur chacune. */
-  const COMMUNITY = ['/communaute', '/messages', '/amis', '/clan'];
+  const COMMUNITY = ['/communaute', '/messages', '/amis', '/clan', '/retours'];
 
   const isActive = (href: string, exact: boolean) => {
     if (href === '/communaute') return COMMUNITY.some((path) => page.url.pathname.startsWith(path));
@@ -254,6 +254,7 @@
 <footer class="mx-auto hidden max-w-6xl gap-4 px-4 pb-8 text-xs text-muted md:flex">
   <span>Project Achievers</span>
   <a href="/confidentialite" class="hover:text-ink">{m.privacy()}</a>
+  {#if data.user}<a href="/retours" class="hover:text-ink">{m.feedback_title()}</a>{/if}
 </footer>
 
 <nav

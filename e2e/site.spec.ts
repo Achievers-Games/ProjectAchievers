@@ -753,6 +753,28 @@ test.describe('membre', () => {
     await expect(page.getByRole('link', { name: 'Classement des amis' })).toBeVisible();
   });
 
+  test('envoie un retour et le suit depuis la modération', async ({ page }) => {
+    const text = `Le bouton plante ${Date.now()}`;
+    await login(page);
+    await page.goto('/retours');
+    await ready(page);
+    await page.getByLabel('Ton message').fill(text);
+    await page.getByRole('button', { name: 'Envoyer' }).click();
+    await expect(
+      page.getByText('Merci, c’est bien reçu.').or(page.getByText("Merci, c'est bien reçu.")),
+    ).toBeVisible();
+    await expect(page.getByText(text)).toBeVisible();
+
+    await page.goto('/moderation');
+    await ready(page);
+    const entry = page.getByRole('article').filter({ hasText: text });
+    const saved = page.waitForResponse((r) => r.url().includes('feedback'));
+    await entry.getByRole('combobox').selectOption('PLANNED');
+    await saved;
+    await page.goto('/retours');
+    await expect(page.getByRole('listitem').filter({ hasText: text })).toContainText('Prévu');
+  });
+
   test('compare deux profils', async ({ page }) => {
     await login(page);
     await page.goto('/u/lea');

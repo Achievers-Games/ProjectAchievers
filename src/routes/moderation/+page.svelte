@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { FEEDBACK_STATUSES, feedbackKindLabel, feedbackStatusLabel } from '$lib/feedback';
   import { m } from '$lib/paraglide/messages';
   import { enhance } from '$app/forms';
   import Empty from '$lib/components/Empty.svelte';
@@ -47,6 +48,37 @@
   {:else}
     <Empty title={m.mod_empty()} />
   {/each}
+
+  <section class="space-y-3 pt-4">
+    <h2>{m.feedback_title()}</h2>
+    {#each data.feedback as item (item.id)}
+      <article class="card space-y-2 p-4">
+        <p class="text-xs text-muted">
+          {feedbackKindLabel(item.kind)} ·
+          <a href="/u/{item.user.handle}" class="underline">{item.user.displayName}</a>
+          · {formatRelative(item.createdAt)}
+        </p>
+        <p class="whitespace-pre-wrap break-words text-sm">{item.content}</p>
+        {#if item.userAgent}<p class="break-all text-xs text-muted">{item.userAgent}</p>{/if}
+        <form method="POST" action="?/feedback" use:enhance>
+          <input type="hidden" name="id" value={item.id} />
+          <select
+            name="status"
+            class="input w-auto"
+            aria-label={m.feedback_kind()}
+            value={item.status}
+            onchange={(event) => event.currentTarget.form?.requestSubmit()}
+          >
+            {#each FEEDBACK_STATUSES as status (status)}
+              <option value={status}>{feedbackStatusLabel(status)}</option>
+            {/each}
+          </select>
+        </form>
+      </article>
+    {:else}
+      <Empty title={m.feedback_empty()} />
+    {/each}
+  </section>
 
   <section class="space-y-3 pt-4">
     <h2>{m.mod_groups()}</h2>

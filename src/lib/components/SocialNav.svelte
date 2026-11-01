@@ -7,6 +7,7 @@
     { href: '/messages', label: m.nav_messages() },
     { href: '/amis', label: m.nav_friends() },
     { href: '/clan', label: m.nav_clan() },
+    { href: '/retours', label: m.feedback_title() },
   ]);
 
   const current = (href: string) => page.url.pathname.startsWith(href);

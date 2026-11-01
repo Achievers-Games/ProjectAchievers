@@ -56,6 +56,18 @@ enum ReactionType {
   FUNNY
 }
 
+enum FeedbackKind {
+  BUG
+  IDEA
+}
+
+enum FeedbackStatus {
+  NEW
+  PLANNED
+  DONE
+  DECLINED
+}
+
 enum ReportTarget {
   GUIDE
   COMMENT
@@ -107,6 +119,7 @@ model User {
   messages        Message[]
 
   showOnline        Boolean            @default(true)
+  feedback          Feedback[]
   pushMessages      Boolean            @default(true)
   pushInvites       Boolean            @default(true)
   pushEvents        Boolean            @default(true)
@@ -126,6 +139,22 @@ model PushSubscription {
   locale    String
   createdAt DateTime @default(now())
 
+  @@index([userId])
+}
+
+/// Un bug ou une idée envoyés par un joueur à l'équipe.
+model Feedback {
+  id        String         @id @default(cuid())
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      FeedbackKind
+  status    FeedbackStatus @default(NEW)
+  content   String
+  /// Le navigateur aide à reproduire un bug.
+  userAgent String?
+  createdAt DateTime       @default(now())
+
+  @@index([status, createdAt])
   @@index([userId])
 }
 

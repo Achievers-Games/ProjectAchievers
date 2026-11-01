@@ -218,6 +218,7 @@ export async function mergeUsers(
       await tx.userGame.updateMany(owner);
       await tx.userAchievement.updateMany(owner);
       await tx.guideVote.updateMany(owner);
+      await tx.feedback.updateMany(owner);
       await tx.guideCheck.updateMany(owner);
       await tx.commentReaction.updateMany(owner);
       await tx.syncRun.updateMany(owner);

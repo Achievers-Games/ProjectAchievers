@@ -1,4 +1,5 @@
 import { error, fail } from '@sveltejs/kit';
+import { z } from 'zod';
 import { db } from '$lib/server/db';
 import type { Actions, PageServerLoad } from './$types';
 import { m } from '$lib/paraglide/messages';
@@ -60,7 +61,22 @@ export const load: PageServerLoad = async ({ locals }) => {
     games: familyGames.filter((game) => game.familyKey === family.familyKey),
   }));
 
+  const feedback = await db.feedback.findMany({
+    orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
+    take: 100,
+    select: {
+      id: true,
+      kind: true,
+      status: true,
+      content: true,
+      userAgent: true,
+      createdAt: true,
+      user: { select: { handle: true, displayName: true } },
+    },
+  });
+
   return {
+    feedback,
     families,
     reports: reports.map((report) => ({
       id: report.id,
@@ -73,7 +89,20 @@ export const load: PageServerLoad = async ({ locals }) => {
   };
 };
 
+const feedbackStatus = z.enum(['NEW', 'PLANNED', 'DONE', 'DECLINED']);
+
 export const actions: Actions = {
+  feedback: async ({ request, locals }) => {
+    requireModerator(locals);
+    const form = await request.formData();
+    const status = feedbackStatus.safeParse(form.get('status'));
+    if (!status.success) return fail(400, { error: m.action_failed() });
+    await db.feedback.updateMany({
+      where: { id: String(form.get('id')) },
+      data: { status: status.data },
+    });
+  },
+
   separate: async ({ request, locals }) => {
     requireModerator(locals);
     const id = String((await request.formData()).get('id'));
