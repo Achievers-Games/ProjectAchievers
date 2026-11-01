@@ -139,6 +139,7 @@
     { value: 'STEAM', label: 'Steam' },
     { value: 'PSN', label: 'PlayStation' },
     { value: 'XBOX', label: 'Xbox' },
+    { value: 'RETRO', label: 'Retro' },
   ];
 </script>
 

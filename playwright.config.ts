@@ -25,6 +25,7 @@ export default defineConfig({
     env: {
       DATABASE_URL: database.href,
       VAPID_PUBLIC_KEY: 'cle-de-test',
+      RETRO_API_KEY: 'cle-de-test',
       ORIGIN: baseURL,
       DEV_LOGIN: '1',
       CLOUDFLARE_ACCOUNT_ID: 'compte',

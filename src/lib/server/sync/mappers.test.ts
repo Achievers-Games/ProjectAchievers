@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { mapRetroAchievement, retroUnlocks } from './retro';
 import { isComplete } from '$lib/collection';
 import { fetchRetry, mapLimit, SyncError } from './errors';
 import { assertPsnResponse, mapTrophy } from './psn';
@@ -160,5 +161,31 @@ describe('Xbox', () => {
       description: 'B',
       points: 20,
     });
+  });
+});
+
+describe('RetroAchievements', () => {
+  it('calcule la rareté sur les joueurs hardcore', () => {
+    const mapped = mapRetroAchievement(
+      { ID: 7, Title: 'A', Points: 10, BadgeName: '123', NumAwardedHardcore: 5 },
+      200,
+    );
+    expect(mapped).toMatchObject({
+      platformAchievementId: '7',
+      points: 10,
+      globalRarity: 2.5,
+      iconUrl: 'https://media.retroachievements.org/Badge/123.png',
+      iconLockedUrl: 'https://media.retroachievements.org/Badge/123_lock.png',
+    });
+    expect(mapRetroAchievement({ ID: 1, Title: 'A' }, 0).globalRarity).toBeNull();
+  });
+
+  it('ne compte que les déblocages hardcore, en heure UTC', () => {
+    expect(
+      retroUnlocks([
+        { ID: 1, Title: 'A', DateEarnedHardcore: '2016-03-12 17:47:29' },
+        { ID: 2, Title: 'B' },
+      ]),
+    ).toEqual([{ platformAchievementId: '1', unlockedAt: new Date('2016-03-12T17:47:29Z') }]);
   });
 });

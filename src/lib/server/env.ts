@@ -14,6 +14,7 @@ const schema = z.object({
   XBOX_CLIENT_SECRET: z.string().optional(),
   PSN_SERVICE_NPSSO: z.string().optional(),
   DISCORD_BOT_TOKEN: z.string().optional(),
+  RETRO_API_KEY: z.string().optional(),
   VAPID_PUBLIC_KEY: z.string().optional(),
   VAPID_PRIVATE_KEY: z.string().optional(),
   VAPID_CONTACT: z.string().optional(),

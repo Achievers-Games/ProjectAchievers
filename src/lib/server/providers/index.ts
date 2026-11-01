@@ -20,6 +20,7 @@ export function availableProviders(): Record<Provider, boolean> {
     DISCORD: Boolean(e.DISCORD_CLIENT_ID && e.DISCORD_CLIENT_SECRET),
     XBOX: Boolean(e.XBOX_CLIENT_ID && e.XBOX_CLIENT_SECRET),
     PSN: Boolean(e.PSN_SERVICE_NPSSO),
+    RETRO: Boolean(e.RETRO_API_KEY),
     GOOGLE: Boolean(e.GOOGLE_CLIENT_ID && e.GOOGLE_CLIENT_SECRET),
   };
 }

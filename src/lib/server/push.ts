@@ -53,7 +53,9 @@ export function usersWhoLeft() {
 const PUSH_HOSTS = /(^|\.)(googleapis\.com|mozilla\.com|windows\.com|apple\.com)$/;
 
 export const isPushEndpoint = (endpoint: string) =>
-  endpoint.startsWith('https://') && PUSH_HOSTS.test(new URL(endpoint).hostname);
+  URL.canParse(endpoint) &&
+  endpoint.startsWith('https://') &&
+  PUSH_HOSTS.test(new URL(endpoint).hostname);
 
 export const pushPublicKey = () => env().VAPID_PUBLIC_KEY ?? null;
 

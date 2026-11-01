@@ -192,6 +192,7 @@ describe('abonnements aux notifications', () => {
     expect(isPushEndpoint('https://192.168.1.162/x')).toBe(false);
     expect(isPushEndpoint('https://apple.com.evil.test/x')).toBe(false);
     expect(isPushEndpoint('http://fcm.googleapis.com/x')).toBe(false);
+    expect(isPushEndpoint('pas une adresse')).toBe(false);
   });
 });
 

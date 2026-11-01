@@ -103,7 +103,7 @@
             {m.season_game_counts()}
           {:else if data.season.state === 'soon'}
             <span class="text-muted">
-              {m.season_game_soon({ date: formatDate(data.season.startsAt) })}
+              {m.season_game_soon()}
             </span>
           {:else}
             <span class="text-muted">{m.season_game_no()}</span>

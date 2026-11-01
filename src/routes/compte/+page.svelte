@@ -16,7 +16,7 @@
 
   let confirmation = $state('');
 
-  const PROVIDERS: Provider[] = ['STEAM', 'PSN', 'XBOX', 'DISCORD', 'GOOGLE'];
+  const PROVIDERS: Provider[] = ['STEAM', 'PSN', 'XBOX', 'RETRO', 'DISCORD', 'GOOGLE'];
   const OAUTH: Partial<Record<Provider, string>> = {
     STEAM: 'steam',
     DISCORD: 'discord',
@@ -36,6 +36,7 @@
   const DESCRIPTIONS: Record<Provider, string> = {
     STEAM: m.provider_library(),
     PSN: m.provider_trophies(),
+    RETRO: m.provider_retro(),
     XBOX: m.provider_xbox(),
     DISCORD: m.provider_identity(),
     GOOGLE: m.provider_identity(),
@@ -57,6 +58,7 @@
     }),
   );
   const hasPsnSlot = $derived(!accounts.has('PSN') && data.providers.PSN);
+  const hasRetroSlot = $derived(!accounts.has('RETRO') && data.providers.RETRO);
   const avatars = $derived([
     ...new Map(
       data.accounts
@@ -365,6 +367,46 @@
                 {m.privacy_fix_link()}
               </a>
             </p>
+          {/if}
+
+          {#if provider === 'RETRO' && hasRetroSlot}
+            {#if data.retro}
+              <div class="space-y-2 rounded bg-raised p-3 text-sm">
+                <p>
+                  {m.retro_instructions({ name: data.retro.onlineId })}
+                  <a
+                    href="https://retroachievements.org/settings"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="underline"
+                  >
+                    {m.privacy_fix_link()}
+                  </a>
+                </p>
+                <p class="font-mono text-base font-semibold">{data.retro.code}</p>
+                <p class="text-xs text-muted">{m.retro_hardcore_note()}</p>
+                <div class="flex gap-2">
+                  <form method="POST" action="?/retroConfirm" use:enhance={submit}>
+                    <button class="btn btn-primary">{m.verify()}</button>
+                  </form>
+                  <form method="POST" action="?/psnCancel" use:enhance={submit}>
+                    <button class="btn btn-ghost">{m.cancel()}</button>
+                  </form>
+                </div>
+              </div>
+            {:else}
+              <form method="POST" action="?/retroStart" use:enhance={submit} class="flex gap-2">
+                <input
+                  name="username"
+                  required
+                  aria-label={m.retro_id()}
+                  placeholder={m.retro_id()}
+                  autocomplete="off"
+                  class="input max-w-xs"
+                />
+                <button class="btn">{m.link()}</button>
+              </form>
+            {/if}
           {/if}
 
           {#if provider === 'PSN' && hasPsnSlot}

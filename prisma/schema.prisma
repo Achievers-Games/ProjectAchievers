@@ -15,12 +15,14 @@ enum Provider {
   PSN
   XBOX
   GOOGLE
+  RETRO
 }
 
 enum Platform {
   STEAM
   PSN
   XBOX
+  RETRO
 }
 
 enum TrophyType {
@@ -335,8 +337,10 @@ model LinkedAccount {
 
 /// Vérification de propriété d'un identifiant PSN par un code à placer dans
 /// la bio du profil.
+/// Preuve de possession d'un compte sans connexion OAuth : un code à poser sur son profil.
 model PsnVerification {
   userId    String   @id
+  provider  Provider @default(PSN)
   onlineId  String
   accountId String
   code      String

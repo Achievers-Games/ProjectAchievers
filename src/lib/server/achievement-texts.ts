@@ -66,8 +66,10 @@ export async function ensureGameTexts(
   game: { id: string; platform: Platform; platformGameId: string },
   locale: Locale,
 ) {
-  // Steam et Xbox sont stockés en français ; PSN dans la langue du compte de service.
-  if (game.platform === 'XBOX' || (game.platform === 'STEAM' && locale === baseLocale)) return;
+  // Steam et Xbox sont stockés en français, RetroAchievements n'existe qu'en anglais ;
+  // PSN est dans la langue du compte de service.
+  if (game.platform === 'XBOX' || game.platform === 'RETRO') return;
+  if (game.platform === 'STEAM' && locale === baseLocale) return;
 
   const known = await db.gameTranslation.findUnique({
     where: { gameId_locale: { gameId: game.id, locale } },

@@ -49,9 +49,12 @@
     { value: 'global', label: m.activity_global() },
   ];
 
+  // Seul l'onglet compte ici : une mise à jour des données ne doit pas rouvrir les flux.
+  const tab = $derived(data.tab);
+
   // Plusieurs événements peuvent arriver ensemble : la page ne se recharge qu'une fois.
   $effect(() => {
-    if (data.tab !== 'global') return;
+    if (tab !== 'global') return;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const source = new EventSource('/api/global');
     source.onmessage = () => {
@@ -65,7 +68,7 @@
   });
 
   $effect(() => {
-    if (data.tab === 'global') return;
+    if (tab === 'global') return;
     const source = new EventSource('/api/activite');
     source.onmessage = (message) => {
       const event = JSON.parse(message.data) as Omit<LiveEvent, 'key'>;

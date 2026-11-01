@@ -72,7 +72,7 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
   const counts = owned.some((version) => version.completion < 100 && started.has(version.id));
   const season =
     locals.user && state !== 'ended' && game.totalAchievements > 0 && unfinished
-      ? { state, counts, startsAt: SEASON.startsAt }
+      ? { state, counts }
       : null;
 
   const locale = getLocale();

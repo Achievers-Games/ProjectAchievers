@@ -86,7 +86,12 @@
         </header>
         {#if !chat.folded}
           <div class="h-80">
-            <Conversation id={chat.id} {me} onTitle={(title) => renameChat(chat.id, title)} />
+            <Conversation
+              id={chat.id}
+              {me}
+              onTitle={(title) => renameChat(chat.id, title)}
+              onGone={() => closeChat(chat.id)}
+            />
           </div>
         {/if}
       </section>
@@ -102,12 +107,7 @@
                 class="flex w-full items-center gap-2 p-2 text-left hover:bg-raised"
                 onclick={() => open(row)}
               >
-                <Avatar
-                  name={row.title}
-                  src={row.person?.avatarUrl}
-                  person={row.person}
-                  size={28}
-                />
+                <Avatar name={row.title} person={row.person} size={28} />
                 <span class="min-w-0 flex-1">
                   <span class="block truncate text-sm font-medium">{row.title}</span>
                   <span class="block truncate text-xs text-muted">{row.preview}</span>

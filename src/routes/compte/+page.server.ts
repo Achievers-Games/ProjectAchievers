@@ -8,6 +8,7 @@ import { db } from '$lib/server/db';
 import { clearMerge, mergePreview, mergeUsers, readMerge, saveMerge } from '$lib/server/merge';
 import { availableProviders } from '$lib/server/providers';
 import { bioContainsCode, findPsnProfile, newPsnCode } from '$lib/server/providers/psn';
+import { findRetroProfile } from '$lib/server/providers/retro';
 import { destroySession } from '$lib/server/session';
 import { leaveClan } from '$lib/server/social';
 import { forgetPresence } from '$lib/server/presence';
@@ -41,7 +42,7 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
   const user = requireUser(locals);
   const pendingMerge = readMerge(cookies, user.id);
 
-  const [profile, accounts, sessions, psn, merge, earned] = await Promise.all([
+  const [profile, accounts, sessions, pending, merge, earned] = await Promise.all([
     db.user.findUniqueOrThrow({
       where: { id: user.id },
       select: {
@@ -84,6 +85,11 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
     db.userFrame.findMany({ where: { userId: user.id }, select: { frame: true } }),
   ]);
 
+  const activeCheck = (provider: Provider) =>
+    pending?.provider === provider && pending.expiresAt > new Date()
+      ? { onlineId: pending.onlineId, code: pending.code }
+      : null;
+
   return {
     profile,
     pushKey: pushPublicKey(),
@@ -92,7 +98,8 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
     accounts,
     sessions: sessions.map((s) => ({ ...s, current: s.id === user.sessionId })),
     providers: availableProviders(),
-    psn: psn && psn.expiresAt > new Date() ? { onlineId: psn.onlineId, code: psn.code } : null,
+    psn: activeCheck('PSN'),
+    retro: activeCheck('RETRO'),
     welcome: url.searchParams.has('bienvenue'),
     notice: NOTICES[url.searchParams.get('erreur') ?? ''] ?? null,
   };
@@ -103,7 +110,12 @@ const onlineId = z
   .trim()
   .regex(/^[a-zA-Z][a-zA-Z0-9_-]{2,15}$/, { error: () => m.psn_id_invalid() });
 
-const providerSchema = z.enum(['STEAM', 'PSN', 'XBOX', 'DISCORD', 'GOOGLE']);
+const retroName = z
+  .string()
+  .trim()
+  .regex(/^[a-zA-Z0-9]{2,20}$/, { error: () => m.retro_id_invalid() });
+
+const providerSchema = z.enum(['STEAM', 'PSN', 'XBOX', 'DISCORD', 'GOOGLE', 'RETRO']);
 
 export const actions: Actions = {
   profile: async ({ request, locals }) => {
@@ -310,6 +322,7 @@ export const actions: Actions = {
     if (!profile) return fail(404, { error: m.psn_not_found() });
 
     const data = {
+      provider: 'PSN' as const,
       onlineId: profile.onlineId,
       accountId: profile.accountId,
       code: newPsnCode(),
@@ -325,7 +338,7 @@ export const actions: Actions = {
   psnConfirm: async ({ locals, cookies }) => {
     const user = requireUser(locals);
     const pending = await db.psnVerification.findUnique({ where: { userId: user.id } });
-    if (!pending || pending.expiresAt < new Date()) {
+    if (pending?.provider !== 'PSN' || pending.expiresAt < new Date()) {
       return fail(410, { error: m.psn_code_expired() });
     }
 
@@ -372,6 +385,78 @@ export const actions: Actions = {
 
     await enqueueSync(user.id, 'PSN');
     return { success: m.psn_linked() };
+  },
+
+  retroStart: async ({ request, locals }) => {
+    const user = requireUser(locals);
+    const parsed = retroName.safeParse((await request.formData()).get('username'));
+    if (!parsed.success) return fail(400, { error: parsed.error.issues[0]?.message });
+
+    const profile = await findRetroProfile(parsed.data).catch((cause) => {
+      console.error('Recherche RetroAchievements :', cause);
+      return undefined;
+    });
+    if (profile === undefined) return fail(502, { error: m.retro_down() });
+    if (!profile) return fail(404, { error: m.retro_not_found() });
+
+    const data = {
+      provider: 'RETRO' as const,
+      onlineId: profile.username,
+      accountId: profile.ulid,
+      code: newPsnCode(),
+      expiresAt: new Date(Date.now() + PSN_CODE_LIFETIME),
+    };
+    await db.psnVerification.upsert({
+      where: { userId: user.id },
+      update: data,
+      create: { ...data, userId: user.id },
+    });
+  },
+
+  retroConfirm: async ({ locals, cookies }) => {
+    const user = requireUser(locals);
+    const pending = await db.psnVerification.findUnique({ where: { userId: user.id } });
+    if (pending?.provider !== 'RETRO' || pending.expiresAt < new Date()) {
+      return fail(410, { error: m.psn_code_expired() });
+    }
+
+    const profile = await findRetroProfile(pending.accountId).catch((cause) => {
+      console.error('Vérification RetroAchievements :', cause);
+      return undefined;
+    });
+    if (profile === undefined) return fail(502, { error: m.retro_down() });
+    if (!profile) return fail(404, { error: m.retro_not_found() });
+    if (!bioContainsCode(profile.motto, pending.code)) {
+      return fail(409, { error: m.retro_code_missing({ code: pending.code }) });
+    }
+
+    const result = await resolveIdentity(
+      {
+        provider: 'RETRO',
+        providerUserId: profile.ulid,
+        displayName: profile.username,
+        avatarUrl: profile.avatarUrl,
+        profileUrl: `https://retroachievements.org/user/${encodeURIComponent(profile.username)}`,
+      },
+      user.id,
+    );
+    if (!result.ok && result.reason === 'provider_taken') {
+      return fail(409, { error: NOTICES[result.reason]?.() });
+    }
+
+    await db.psnVerification.delete({ where: { userId: user.id } });
+    if (!result.ok) {
+      saveMerge(cookies, {
+        sourceId: result.ownerId,
+        targetId: user.id,
+        provider: 'RETRO',
+        providerUserId: profile.ulid,
+      });
+      return { success: m.psn_other_profile() };
+    }
+
+    await enqueueSync(user.id, 'RETRO');
+    return { success: m.retro_linked() };
   },
 
   psnCancel: async ({ locals }) => {

@@ -18,6 +18,7 @@ export const PROVIDER_LABELS: Record<Provider, string> = {
   STEAM: 'Steam',
   DISCORD: 'Discord',
   PSN: 'PlayStation',
+  RETRO: 'RetroAchievements',
   XBOX: 'Xbox',
   GOOGLE: 'Google',
 };
@@ -25,6 +26,7 @@ export const PROVIDER_LABELS: Record<Provider, string> = {
 export const PLATFORM_LABELS: Record<Platform, string> = {
   STEAM: 'Steam',
   PSN: 'PlayStation',
+  RETRO: 'RetroAchievements',
   XBOX: 'Xbox',
 };
 

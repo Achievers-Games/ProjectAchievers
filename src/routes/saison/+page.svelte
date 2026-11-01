@@ -37,8 +37,7 @@
     ended: m.season_state_ended,
   };
 
-  const deadline = $derived(data.state === 'soon' ? data.startsAt : data.endsAt);
-  const left = $derived(now === null ? null : Math.max(0, deadline.getTime() - now));
+  const left = $derived(now === null ? null : Math.max(0, data.endsAt.getTime() - now));
   const countdown = $derived(
     left === null
       ? ''
@@ -94,10 +93,13 @@
       <p class="label uppercase tracking-wide">{stateLabels[data.state]()}</p>
       <h1>{m.banner_season_title()}</h1>
       <p class="max-w-xl text-muted">{m.season_intro()}</p>
-      <p class="tabular text-sm font-semibold">
-        {formatDate(data.startsAt)} → {formatDate(data.endsAt)}
-        {#if countdown && data.state !== 'ended'}· {countdown}{/if}
-      </p>
+      <!-- Avant l'ouverture, la page annonce seulement « bientôt », sans date ni compte à rebours. -->
+      {#if data.state !== 'soon'}
+        <p class="tabular text-sm font-semibold">
+          {formatDate(data.startsAt)} → {formatDate(data.endsAt)}
+          {#if countdown && data.state !== 'ended'}· {countdown}{/if}
+        </p>
+      {/if}
     </div>
   </header>
 

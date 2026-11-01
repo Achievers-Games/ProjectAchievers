@@ -356,12 +356,13 @@ test.describe('membre', () => {
     await expect(page.locator('main a[data-tier] .step-badge')).toHaveCount(0);
   });
 
-  test('voit les quatre comptes et son export', async ({ page }) => {
+  test('voit ses comptes et son export', async ({ page }) => {
     await login(page);
     await page.goto('/compte');
-    for (const name of ['Steam', 'PlayStation', 'Xbox', 'Discord', 'Google']) {
+    for (const name of ['Steam', 'PlayStation', 'Xbox', 'RetroAchievements', 'Discord', 'Google']) {
       await expect(page.getByText(name, { exact: true })).toBeVisible();
     }
+    await expect(page.getByLabel('Pseudo RetroAchievements')).toBeVisible();
     const response = await page.request.get('/compte/export');
     expect(response.status()).toBe(200);
     expect(await response.text()).not.toContain('accessTokenEnc');

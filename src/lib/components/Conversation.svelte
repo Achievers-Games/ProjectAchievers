@@ -10,7 +10,18 @@
 
   type Message = ChatEvent['message'];
 
-  let { id, me, onTitle }: { id: string; me: string; onTitle?: (title: string) => void } = $props();
+  let {
+    id,
+    me,
+    onTitle,
+    onGone,
+  }: {
+    id: string;
+    me: string;
+    onTitle?: (title: string) => void;
+    /** La discussion n'existe plus pour ce joueur : clan quitté, par exemple. */
+    onGone?: () => void;
+  } = $props();
 
   let messages = $state<Message[]>([]);
   let draft = $state('');
@@ -29,24 +40,28 @@
   }
 
   onMount(() => {
-    void fetch(`/api/messages/${id}`).then(async (response) => {
-      if (!response.ok) return;
-      const conversation = (await response.json()) as {
-        title: string;
-        messages: Message[];
-        unread: number;
-      };
-      messages = conversation.messages;
-      unread.set(conversation.unread);
-      onTitle?.(conversation.title);
-      void scrollDown();
-    });
+    void load();
     return incoming.subscribe((event) => {
       if (event?.conversationId !== id) return;
       add(event.message);
-      void fetch(`/api/messages/${id}`, { method: 'PUT' });
+      void fetch(`/api/messages/${id}`, { method: 'PUT' }).catch(() => {});
     });
   });
+
+  async function load() {
+    const response = await fetch(`/api/messages/${id}`).catch(() => null);
+    if (response?.status === 404) onGone?.();
+    if (!response?.ok) return;
+    const conversation = (await response.json()) as {
+      title: string;
+      messages: Message[];
+      unread: number;
+    };
+    messages = conversation.messages;
+    unread.set(conversation.unread);
+    onTitle?.(conversation.title);
+    void scrollDown();
+  }
 
   async function send(event: SubmitEvent) {
     event.preventDefault();

@@ -14,6 +14,7 @@ import { SyncError } from './errors';
 import { publishCard, publishHighlight, publishSync, publishUnlock } from './events';
 import { grantFrames } from '../frames';
 import { syncPsn } from './psn';
+import { syncRetro } from './retro';
 import { fetchUnlocks, fillHiddenDescriptions, syncSteam } from './steam';
 import { saveProgress } from './store';
 import { syncXbox } from './xbox';
@@ -30,6 +31,7 @@ const LIVE_CARD_MAX_AGE = 48 * 60 * 60 * 1000;
 const SYNCERS: Partial<Record<Provider, ProviderSync>> = {
   STEAM: syncSteam,
   PSN: syncPsn,
+  RETRO: syncRetro,
   XBOX: syncXbox,
 };
 
@@ -333,7 +335,7 @@ async function sweep() {
 
   const accounts = await db.linkedAccount.findMany({
     where: {
-      provider: { in: ['STEAM', 'PSN', 'XBOX'] },
+      provider: { in: Object.keys(SYNCERS) as Provider[] },
       syncStatus: { in: ['IDLE', 'COMPLETED', 'FAILED'] },
       OR: [{ lastSyncedAt: null }, { lastSyncedAt: { lt: new Date(Date.now() - STALE_AFTER) } }],
     },
