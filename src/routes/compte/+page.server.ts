@@ -51,6 +51,7 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
         frame: true,
         frameMotionUrl: true,
         isPublic: true,
+        showOnline: true,
         showAdult: true,
         pushMessages: true,
         pushInvites: true,
@@ -250,6 +251,13 @@ export const actions: Actions = {
       },
     });
     return { success: m.push_saved() };
+  },
+
+  presence: async ({ request, locals }) => {
+    const user = requireUser(locals);
+    const showOnline = (await request.formData()).get('showOnline') === 'on';
+    await db.user.update({ where: { id: user.id }, data: { showOnline } });
+    return { success: m.online_status_saved() };
   },
 
   adult: async ({ request, locals }) => {

@@ -3,7 +3,7 @@
   import { onMount } from 'svelte';
   import { fly } from 'svelte/transition';
   import { sendJson } from '$lib/http';
-  import { currentSubscription, enablePush, pushSupported } from '$lib/push';
+  import { currentSubscription, enablePush, pushFailureText, pushSupported } from '$lib/push';
   import { toast } from '$lib/stores/toast';
 
   /** Deux minutes passées sur le site, onglet visible : le joueur a eu le temps de s'installer. */
@@ -70,8 +70,8 @@
         toast(m.push_denied(), 'error');
       }
       later();
-    } catch {
-      toast(m.action_failed(), 'error');
+    } catch (cause) {
+      toast(pushFailureText(cause), 'error');
     }
     busy = false;
   }

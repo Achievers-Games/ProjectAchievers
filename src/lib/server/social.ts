@@ -113,6 +113,24 @@ export async function unblockUser(userId: string, otherId: string) {
   await db.block.deleteMany({ where: { blockerId: userId, blockedId: otherId } });
 }
 
+export async function friendIds(userId: string) {
+  const links = await db.friendship.findMany({
+    where: { accepted: true, OR: [{ requesterId: userId }, { addresseeId: userId }] },
+    select: { requesterId: true, addresseeId: true },
+  });
+  return links.map((link) => (link.requesterId === userId ? link.addresseeId : link.requesterId));
+}
+
+export async function clanMateIds(userId: string) {
+  const membership = await db.clanMember.findUnique({
+    where: { userId },
+    select: { clan: { select: { members: { select: { userId: true } } } } },
+  });
+  return (
+    membership?.clan.members.map((member) => member.userId).filter((id) => id !== userId) ?? []
+  );
+}
+
 export async function friendsOverview(userId: string) {
   const [links, blocks] = await Promise.all([
     db.friendship.findMany({

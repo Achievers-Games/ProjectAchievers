@@ -702,6 +702,56 @@ test.describe('membre', () => {
     await expect(prompt).toBeHidden();
   });
 
+  test('laisse masquer sa présence', async ({ page }) => {
+    await page.goto('/auth/dev?compte=lea');
+    await page.goto('/compte');
+    await ready(page);
+    const inPresence = async () =>
+      ((await (await page.request.get('/api/presence')).json()) as string[]).includes('lea');
+    await expect.poll(inPresence).toBe(true);
+
+    await page.getByLabel(/Afficher ma présence/).uncheck();
+    await expect(page.getByText('Présence enregistrée.')).toBeVisible();
+    await expect.poll(inPresence).toBe(false);
+
+    await page.getByLabel(/Afficher ma présence/).check();
+    await expect.poll(inPresence).toBe(true);
+  });
+
+  test('donne le lien des réglages de confidentialité', async ({ page }) => {
+    await page.goto('/auth/dev?compte=marco');
+    await page.goto('/compte?bienvenue=1');
+    await expect(page.getByRole('link', { name: 'Steam', exact: true })).toHaveAttribute(
+      'href',
+      'https://steamcommunity.com/my/edit/settings',
+    );
+  });
+
+  test('réunit les amis, les messages et le clan dans Communauté', async ({ page }) => {
+    await login(page);
+    await page.goto('/jeux');
+    await page
+      .getByRole('navigation', { name: 'Navigation principale' })
+      .getByRole('link', { name: 'Communauté' })
+      .click();
+    await expect(page).toHaveURL(/\/communaute/);
+    const tabs = page.getByRole('navigation', { name: 'Communauté' });
+    await tabs.getByRole('link', { name: 'Amis' }).click();
+    await expect(page).toHaveURL(/\/amis/);
+    await page
+      .getByRole('navigation', { name: 'Communauté' })
+      .getByRole('link', { name: 'Activité' })
+      .click();
+    await page
+      .getByRole('group', { name: 'Activité' })
+      .getByRole('link', { name: 'Global' })
+      .click();
+    await expect(page).toHaveURL(/onglet=global/);
+    await expect(page.getByRole('link', { name: 'Classement', exact: true }).first()).toBeVisible();
+    await page.getByRole('group', { name: 'Activité' }).getByRole('link', { name: 'Amis' }).click();
+    await expect(page.getByRole('link', { name: 'Classement des amis' })).toBeVisible();
+  });
+
   test('compare deux profils', async ({ page }) => {
     await login(page);
     await page.goto('/u/lea');

@@ -3,7 +3,13 @@
   import { enhance } from '$app/forms';
   import { onMount } from 'svelte';
   import { submitWithToast } from '$lib/forms';
-  import { currentSubscription, disablePush, enablePush, pushSupported } from '$lib/push';
+  import {
+    currentSubscription,
+    disablePush,
+    enablePush,
+    pushFailureText,
+    pushSupported,
+  } from '$lib/push';
   import { toast } from '$lib/stores/toast';
 
   let {
@@ -36,8 +42,8 @@
         enabled = await enablePush(publicKey);
         if (!enabled) toast(m.push_denied(), 'error');
       }
-    } catch {
-      toast(m.action_failed(), 'error');
+    } catch (cause) {
+      toast(pushFailureText(cause), 'error');
     }
     busy = false;
   }

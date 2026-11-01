@@ -1,14 +1,35 @@
-import { activityFeed, leaderboard, type LeaderboardPeriod } from '$lib/server/queries';
+import { db } from '$lib/server/db';
+import { activityFeed, highlights, leaderboard, type LeaderboardPeriod } from '$lib/server/queries';
+import { clanMateIds, friendIds } from '$lib/server/social';
 import type { PageServerLoad } from './$types';
 
 const PERIODS: LeaderboardPeriod[] = ['semaine', 'mois', 'tout'];
+const TABS = ['amis', 'clan', 'global'] as const;
+type Tab = (typeof TABS)[number];
 
-export const load: PageServerLoad = async ({ url, locals }) => {
+export const load: PageServerLoad = async ({ url, locals, depends }) => {
+  depends('app:communaute');
   const requested = url.searchParams.get('periode') as LeaderboardPeriod;
   const period = PERIODS.includes(requested) ? requested : 'mois';
-  const [ranking, feed] = await Promise.all([
-    leaderboard(period),
-    activityFeed(locals.user?.showAdult),
+  const showAdult = locals.user?.showAdult;
+  const userId = locals.user?.id;
+
+  const [friends, clan] = userId
+    ? await Promise.all([friendIds(userId), clanMateIds(userId)])
+    : [[], []];
+  // Le proche d'abord : le fil de tout le site n'a d'intérêt que s'il reste rare.
+  const fallback: Tab = friends.length ? 'amis' : clan.length ? 'clan' : 'global';
+  const asked = url.searchParams.get('onglet') as Tab;
+  const tab = userId && TABS.includes(asked) ? asked : userId ? fallback : 'global';
+  const circle = tab === 'amis' ? friends : clan;
+
+  const [ranking, feed, moments, handles] = await Promise.all([
+    leaderboard(period, 20, tab === 'global' ? undefined : [...circle, userId as string]),
+    tab === 'global' ? [] : activityFeed(showAdult, { userIds: circle }),
+    tab === 'global' ? highlights(showAdult) : [],
+    tab === 'global'
+      ? []
+      : db.user.findMany({ where: { id: { in: circle } }, select: { handle: true } }),
   ]);
-  return { ranking, feed, period };
+  return { ranking, feed, moments, period, tab, circle: handles.map((user) => user.handle) };
 };

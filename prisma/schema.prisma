@@ -106,6 +106,7 @@ model User {
   conversations   ConversationMember[]
   messages        Message[]
 
+  showOnline        Boolean            @default(true)
   pushMessages      Boolean            @default(true)
   pushInvites       Boolean            @default(true)
   pushEvents        Boolean            @default(true)

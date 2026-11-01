@@ -14,6 +14,7 @@ export const GET: RequestHandler = async ({ locals }) => {
       displayName: true,
       avatarUrl: true,
       avatarMotionUrl: true,
+      showOnline: true,
       pushMessages: true,
       pushInvites: true,
       pushEvents: true,

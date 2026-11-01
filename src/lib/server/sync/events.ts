@@ -74,7 +74,18 @@ export function onChat(userId: string, listener: (event: ChatEvent) => void) {
   return () => void bus.off(`chat:${userId}`, listener);
 }
 
-export const publishCard = (drop: CardDrop) => bus.emit('card', drop);
+export const publishCard = (drop: CardDrop) => {
+  bus.emit('card', drop);
+  publishHighlight();
+};
+
+/** Un gros événement public vient d'arriver : la page Global se recharge d'elle-même. */
+export const publishHighlight = () => bus.emit('highlight');
+
+export function onHighlight(listener: () => void) {
+  bus.on('highlight', listener);
+  return () => void bus.off('highlight', listener);
+}
 
 export function onCard(listener: (drop: CardDrop) => void) {
   bus.on('card', listener);

@@ -1121,6 +1121,36 @@
     width: 22rem;
   }
 }
+.moment {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  overflow: hidden;
+  padding: 0.75rem;
+  background-size: cover;
+  background-position: center;
+}
+.moment-big {
+  background-image:
+    linear-gradient(90deg, rgb(var(--bg) / 0.92) 35%, rgb(var(--bg) / 0.55)),
+    var(--moment-image, none);
+}
+.moment-title {
+  @apply text-sm font-medium;
+}
+.moment[data-size='3'] {
+  padding: 1.25rem;
+}
+.moment[data-size='3'] .moment-title {
+  @apply text-lg font-bold;
+}
+.moment[data-size='4'] {
+  padding: 2.25rem 1.5rem;
+}
+.moment[data-size='4'] .moment-title {
+  @apply text-2xl font-extrabold;
+}
 .social-badge {
   @apply inline-grid h-4 min-w-4 place-items-center rounded-full bg-accent px-1 text-[10px] font-bold text-on-accent;
 }
@@ -1134,7 +1164,7 @@
 }
 .avatar-online {
   position: absolute;
-  right: 0;
+  left: 0;
   bottom: 0;
   z-index: 2;
   width: var(--dot);

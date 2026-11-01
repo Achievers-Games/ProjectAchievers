@@ -1,7 +1,17 @@
 // Tests sur un vrai PostgreSQL : `npm run dev:db` ou le service de la CI.
 import 'dotenv/config';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import { activityFeed, cardFeed, collectors, listGames, seasonStats, userCards } from './queries';
+import {
+  activityFeed,
+  cardFeed,
+  collectors,
+  hasRecentFeat,
+  highlights,
+  leaderboard,
+  listGames,
+  seasonStats,
+  userCards,
+} from './queries';
 import { grantFrames } from './frames';
 import { profileSchema, resolveIdentity, updateProfile, type Identity } from './accounts';
 import { nextTier, stepOf, tierFor } from '$lib/collection';
@@ -1315,6 +1325,116 @@ describe('notifications', () => {
     const { userId, session } = await subscribed();
     await db.session.delete({ where: { id: session.id } });
     expect(await subscribersToNotify(userId, 'event', 'a')).toHaveLength(0);
+  });
+});
+
+describe('fil de la communauté', () => {
+  it('classe uniquement les joueurs demandés', async () => {
+    const rows = await db.user.findMany({
+      where: { handle: { in: ['demo', 'lea'] } },
+      select: { id: true, handle: true },
+    });
+    const lea = rows.find((row) => row.handle === 'lea')?.id as string;
+    const ranking = await leaderboard('tout', 20, [lea]);
+    expect(ranking.map((row) => row.handle)).toEqual(['lea']);
+    expect(await leaderboard('tout', 20, [])).toEqual([]);
+  });
+
+  it('signale un exploit récent, pas un succès banal', async () => {
+    const created = await resolveIdentity(identity(), null);
+    if (!created.ok) throw new Error('compte non créé');
+    const game = await db.game.create({
+      data: {
+        platform: 'PSN',
+        platformGameId: `${PREFIX}-${Math.random()}`,
+        name: `${PREFIX} exploit`,
+        slug: `${PREFIX}-${Math.random().toString(36).slice(2)}`,
+      },
+    });
+    const add = async (id: string, globalRarity: number) => {
+      const achievement = await db.achievement.create({
+        data: { gameId: game.id, platformAchievementId: id, name: id, globalRarity },
+      });
+      await db.userAchievement.create({
+        data: { userId: created.userId, achievementId: achievement.id, unlockedAt: new Date() },
+      });
+    };
+    const since = new Date(Date.now() - 60_000);
+    await add('banal', 40);
+    expect(await hasRecentFeat(created.userId, game.id, since)).toBe(false);
+    await add('rare', 0.5);
+    expect(await hasRecentFeat(created.userId, game.id, since)).toBe(true);
+  });
+
+  it('annonce chaque niveau d’une carte, une fois', async () => {
+    const created = await resolveIdentity(identity(), null);
+    if (!created.ok) throw new Error('compte non créé');
+    const family = `${PREFIX}-${Math.random()}`;
+    const finish = async (platform: 'STEAM' | 'PSN', suffix: string, date: string) => {
+      const game = await db.game.create({
+        data: {
+          platform,
+          platformGameId: `${PREFIX}-${Math.random()}`,
+          name: `${PREFIX} niveaux`,
+          slug: `${PREFIX}-niveaux-${suffix}-${Math.random().toString(36).slice(2)}`,
+          familyKey: family,
+          contentCheckedAt: new Date(),
+        },
+      });
+      await db.userGame.create({
+        data: {
+          userId: created.userId,
+          gameId: game.id,
+          completion: 100,
+          unlockedCount: 1,
+          totalCount: 1,
+          lastUnlockedAt: new Date(date),
+        },
+      });
+    };
+    await finish('STEAM', 'a', '2030-01-01T00:00:00Z');
+    await finish('STEAM', 'b', '2030-01-02T00:00:00Z');
+    await finish('PSN', 'c', '2030-01-03T00:00:00Z');
+
+    const moments = (await highlights(false, 30)).flatMap((item) =>
+      item.kind === 'card' && item.game.name === `${PREFIX} niveaux` ? [item.tier] : [],
+    );
+    expect(moments).toEqual([2, 1]);
+  });
+
+  it('ne garde dans le global que les exploits et les jeux terminés', async () => {
+    const created = await resolveIdentity(identity(), null);
+    if (!created.ok) throw new Error('compte non créé');
+    const userId = created.userId;
+    const game = await db.game.create({
+      data: {
+        platform: 'PSN',
+        platformGameId: `${PREFIX}-${Math.random()}`,
+        name: `${PREFIX} fil`,
+        slug: `${PREFIX}-${Math.random().toString(36).slice(2)}`,
+      },
+    });
+    const add = async (name: string, globalRarity: number, trophyType: 'BRONZE' | 'PLATINUM') => {
+      const achievement = await db.achievement.create({
+        data: { gameId: game.id, platformAchievementId: name, name, globalRarity, trophyType },
+      });
+      await db.userAchievement.create({
+        data: { userId, achievementId: achievement.id, unlockedAt: new Date(Date.now() + 60_000) },
+      });
+    };
+    await add(`${PREFIX}-banal`, 40, 'BRONZE');
+    await add(`${PREFIX}-rare`, 0.5, 'BRONZE');
+    await add(`${PREFIX}-platine`, 30, 'PLATINUM');
+
+    const names = (await activityFeed(false, { feats: true, limit: 200 })).map(
+      (row) => row.achievement.name,
+    );
+    expect(names).toContain(`${PREFIX}-rare`);
+    expect(names).toContain(`${PREFIX}-platine`);
+    expect(names).not.toContain(`${PREFIX}-banal`);
+
+    expect(await activityFeed(false, { userIds: [] })).toEqual([]);
+    expect(await activityFeed(false, { userIds: [userId] })).toHaveLength(3);
   });
 });
 

@@ -603,7 +603,7 @@ const PERIOD_DAYS: Record<LeaderboardPeriod, number | null> = {
   tout: null,
 };
 
-export async function leaderboard(period: LeaderboardPeriod, limit = 20) {
+export async function leaderboard(period: LeaderboardPeriod, limit = 20, userIds?: string[]) {
   const days = PERIOD_DAYS[period];
   const since = days ? new Date(Date.now() - days * 86_400_000) : new Date(0);
   const rows = await db.$queryRaw<
@@ -622,6 +622,7 @@ export async function leaderboard(period: LeaderboardPeriod, limit = 20) {
     FROM "UserAchievement" ua
     JOIN "User" u ON u.id = ua."userId" AND u."isPublic"
     WHERE ua."unlockedAt" >= ${since}
+      ${userIds ? Prisma.sql`AND u.id = ANY(${userIds}::text[])` : Prisma.empty}
     GROUP BY u.id
     ORDER BY unlocked DESC, u.handle
     LIMIT ${limit}`;
@@ -685,9 +686,43 @@ export const allCollectors = () => rankedCollectors(Number.MAX_SAFE_INTEGER);
 
 export type Collector = Awaited<ReturnType<typeof collectors>>[number];
 
-export async function activityFeed(showAdult = false, limit = 30) {
+interface FeedFilter {
+  /** Seuls ces joueurs : les amis ou le clan. */
+  userIds?: string[];
+  /** Seulement les exploits : un platine ou un succès très rare. */
+  feats?: boolean;
+  limit?: number;
+}
+
+/** Sous ce pourcentage de joueurs, un succès mérite d'apparaître dans le fil de tout le site. */
+const FEAT_RARITY = 1;
+
+const FEAT_ACHIEVEMENT = {
+  OR: [{ trophyType: 'PLATINUM' }, { globalRarity: { lt: FEAT_RARITY } }],
+} satisfies Prisma.AchievementWhereInput;
+
+/** Un jeu vient de donner un exploit à ce joueur ? Seuls les succès récents comptent. */
+export async function hasRecentFeat(userId: string, gameId: string, since: Date) {
+  const feats = await db.userAchievement.count({
+    where: { userId, unlockedAt: { gte: since }, achievement: { gameId, ...FEAT_ACHIEVEMENT } },
+  });
+  return feats > 0;
+}
+
+export async function activityFeed(
+  showAdult = false,
+  { userIds, feats, limit = 30 }: FeedFilter = {},
+) {
+  if (userIds?.length === 0) return [];
   const rows = await db.userAchievement.findMany({
-    where: { user: { isPublic: true }, achievement: { game: showAdult ? {} : publicGames } },
+    where: {
+      user: { isPublic: true },
+      ...(userIds && { userId: { in: userIds } }),
+      achievement: {
+        game: showAdult ? {} : publicGames,
+        ...(feats && FEAT_ACHIEVEMENT),
+      },
+    },
     orderBy: { unlockedAt: 'desc' },
     // De la marge : les jeux cachés par leur joueur sont retirés ensuite.
     take: limit * 3,
@@ -719,6 +754,76 @@ export async function activityFeed(showAdult = false, limit = 30) {
     .filter((row) => !secret.has(`${row.userId}:${row.achievement.gameId}`))
     .slice(0, limit)
     .map(({ userId: _userId, ...row }) => row);
+}
+
+/** Chaque plateforme terminée fait monter la carte : Or, puis Platine, Prismatique, Légendaire. */
+async function tierMoments(showAdult: boolean, limit: number) {
+  const rows = await db.$queryRaw<
+    {
+      handle: string;
+      displayName: string;
+      avatarUrl: string | null;
+      avatarMotionUrl: string | null;
+      frame: string | null;
+      frameMotionUrl: string | null;
+      name: string;
+      slug: string;
+      headerUrl: string | null;
+      at: Date;
+      tier: bigint;
+    }[]
+  >`
+    WITH finished AS (
+      SELECT ug."userId", ug."lastUnlockedAt" AS at, g.name, g.slug, g."headerUrl", g.platform,
+             g."adultOnly", g."contentCheckedAt",
+             COALESCE(g."familyKey", g.id) AS family,
+             min(ug."lastUnlockedAt") OVER (
+               PARTITION BY ug."userId", COALESCE(g."familyKey", g.id), g.platform
+             ) AS reached
+      FROM "UserGame" ug
+      JOIN "Game" g ON g.id = ug."gameId"
+      JOIN "User" u ON u.id = ug."userId" AND u."isPublic"
+      WHERE ug.completion >= 100 AND NOT ug.hidden AND ug."lastUnlockedAt" IS NOT NULL
+    ), ranked AS (
+      SELECT *, dense_rank() OVER (PARTITION BY "userId", family ORDER BY reached, platform) AS tier
+      FROM finished
+    )
+    SELECT u.handle, u."displayName", u."avatarUrl", u."avatarMotionUrl", u.frame,
+           u."frameMotionUrl", r.name, r.slug, r."headerUrl", r.at, r.tier
+    FROM ranked r
+    JOIN "User" u ON u.id = r."userId"
+    WHERE r.at = r.reached
+      AND (${showAdult} OR (NOT r."adultOnly"
+        AND (r.platform <> 'STEAM' OR r."contentCheckedAt" IS NOT NULL)))
+    ORDER BY r.at DESC
+    LIMIT ${limit}`;
+  return rows.map(({ name, slug, headerUrl, at, tier, ...user }) => ({
+    kind: 'card' as const,
+    key: `${user.handle}-${slug}-${tier}`,
+    user,
+    game: { name, slug, headerUrl },
+    tier: Number(tier),
+    at,
+  }));
+}
+
+/** Le fil de tout le site : les cartes obtenues et les exploits, pas chaque succès. */
+export async function highlights(showAdult = false, limit = 30) {
+  const [cards, feats] = await Promise.all([
+    tierMoments(showAdult, limit),
+    activityFeed(showAdult, { feats: true, limit }),
+  ]);
+  return [
+    ...cards,
+    ...feats.map((feat) => ({
+      ...feat,
+      kind: 'feat' as const,
+      key: `${feat.user.handle}-${feat.achievement.id}`,
+      at: feat.unlockedAt,
+    })),
+  ]
+    .sort((a, b) => b.at.getTime() - a.at.getTime())
+    .slice(0, limit);
 }
 
 /** Compare deux joueurs sur les jeux qu'ils possèdent tous les deux. */

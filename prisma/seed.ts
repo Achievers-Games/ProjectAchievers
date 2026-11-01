@@ -108,6 +108,18 @@ async function main() {
 
   // Une carte de chaque rareté.
   const demo = users[0] as (typeof users)[number];
+  const marco = await db.user.findUniqueOrThrow({ where: { handle: 'marco' } });
+  await db.linkedAccount.upsert({
+    where: { provider_providerUserId: { provider: 'STEAM', providerUserId: 'marco-steam' } },
+    update: {},
+    create: {
+      userId: marco.id,
+      provider: 'STEAM',
+      providerUserId: 'marco-steam',
+      displayName: 'Marco',
+    },
+  });
+
   const perfect = await db.game.findUniqueOrThrow({ where: { slug: 'hades' } });
   const steps = await db.achievement.findMany({ where: { gameId: perfect.id } });
   await db.userAchievement.createMany({

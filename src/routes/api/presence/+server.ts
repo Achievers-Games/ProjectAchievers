@@ -9,7 +9,7 @@ const MAX_AGE = 15_000;
 
 let cached: { connected: string; handles: string[]; expiresAt: number } | undefined;
 
-/** Seuls les profils publics apparaissent : un profil privé reste invisible, ici aussi. */
+/** Un profil privé reste invisible ici aussi, comme un joueur qui a masqué sa présence. */
 export const GET: RequestHandler = async ({ locals }) => {
   // Seul un onglet visible interroge cette liste : ce joueur n'a pas besoin de notification.
   if (locals.user) markActive(locals.user.id);
@@ -17,7 +17,7 @@ export const GET: RequestHandler = async ({ locals }) => {
   const connected = ids.toSorted().join();
   if (!cached || cached.connected !== connected || cached.expiresAt <= Date.now()) {
     const users = await db.user.findMany({
-      where: { id: { in: ids }, isPublic: true },
+      where: { id: { in: ids }, isPublic: true, showOnline: true },
       select: { handle: true },
     });
     cached = {

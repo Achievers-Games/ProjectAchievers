@@ -6,12 +6,12 @@ import { availableProviders } from '../providers';
 import { fillFamilies } from '../family';
 import { announceSeason } from '../push';
 import { rateLimit } from '../rate-limit';
-import { isPublicGame, publicUser, RARE_CARD } from '../queries';
+import { hasRecentFeat, isPublicGame, publicUser, RARE_CARD } from '../queries';
 import { tierFor, type Reward } from '$lib/collection';
 import { rateGames } from './content';
 import { refreshDiscordAccounts } from './discord';
 import { SyncError } from './errors';
-import { publishCard, publishSync, publishUnlock } from './events';
+import { publishCard, publishHighlight, publishSync, publishUnlock } from './events';
 import { grantFrames } from '../frames';
 import { syncPsn } from './psn';
 import { fetchUnlocks, fillHiddenDescriptions, syncSteam } from './steam';
@@ -162,8 +162,11 @@ const syncUser = (userId: string) =>
 
 type SyncUser = Awaited<ReturnType<typeof syncUser>>;
 
-function announceUnlock(user: SyncUser, game: UnlockedGame, count: number) {
+function announceUnlock(user: SyncUser, userId: string, game: UnlockedGame, count: number) {
   if (!user.isPublic || !isPublicGame(game)) return;
+  void hasRecentFeat(userId, game.id, new Date(Date.now() - LIVE_CARD_MAX_AGE))
+    .then((feat) => feat && publishHighlight())
+    .catch((cause) => console.error('Fil global :', cause));
   publishUnlock({
     user: user.displayName,
     handle: user.handle,
@@ -227,7 +230,7 @@ export async function runLiveGame(userId: string, steamId: string, appId: string
   if (gained === 0) return 0;
 
   const user = await syncUser(userId);
-  if (!owned.hidden) announceUnlock(user, owned.game, gained);
+  if (!owned.hidden) announceUnlock(user, userId, owned.game, gained);
   const rewards = await announceCards(user, userId, before);
   publishSync(userId, {
     provider: 'STEAM',
@@ -274,7 +277,7 @@ export async function runSync({ userId, provider, quiet }: SyncJob) {
       report: (processed, total, game) =>
         publishSync(userId, { provider, status: 'SYNCING', processed, total, game }),
       onUnlocked: (game, count) => {
-        if (!hidden.has(game.id)) announceUnlock(user, game, count);
+        if (!hidden.has(game.id)) announceUnlock(user, userId, game, count);
       },
     });
 

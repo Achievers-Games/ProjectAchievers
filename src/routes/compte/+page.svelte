@@ -24,6 +24,15 @@
     GOOGLE: 'google',
   };
   const LOGIN_ONLY: Provider[] = ['DISCORD', 'GOOGLE'];
+  /** Discord et Google ne servent qu'à se connecter : ils n'ont rien à ouvrir. */
+  const PRIVACY: Partial<Record<Provider, { url: string; hint: () => string }>> = {
+    STEAM: { url: 'https://steamcommunity.com/my/edit/settings', hint: m.privacy_fix_steam },
+    PSN: {
+      url: 'https://www.playstation.com/support/account/privacy-settings/',
+      hint: m.privacy_fix_psn,
+    },
+    XBOX: { url: 'https://account.xbox.com/settings', hint: m.privacy_fix_xbox },
+  };
   const DESCRIPTIONS: Record<Provider, string> = {
     STEAM: m.provider_library(),
     PSN: m.provider_trophies(),
@@ -41,6 +50,12 @@
   };
 
   const accounts = $derived(new Map(data.accounts.map((a) => [a.provider, a])));
+  const toOpen = $derived(
+    data.accounts.flatMap((account) => {
+      const privacy = PRIVACY[account.provider];
+      return privacy ? [{ ...privacy, provider: account.provider }] : [];
+    }),
+  );
   const hasPsnSlot = $derived(!accounts.has('PSN') && data.providers.PSN);
   const avatars = $derived([
     ...new Map(
@@ -76,9 +91,22 @@
   <h1>{m.my_account()}</h1>
 
   {#if data.welcome}
-    <p class="card px-3 py-2 text-sm">
-      {m.account_welcome()}
-    </p>
+    <div class="card space-y-2 px-3 py-2 text-sm">
+      <p>{m.account_welcome()}</p>
+      {#if toOpen.length}
+        <p class="font-medium">{m.privacy_fix_title()}</p>
+        <ul class="space-y-1">
+          {#each toOpen as item (item.provider)}
+            <li>
+              <a href={item.url} target="_blank" rel="noopener noreferrer" class="underline">
+                {PROVIDER_LABELS[item.provider]}
+              </a>
+              : {item.hint()}
+            </li>
+          {/each}
+        </ul>
+      {/if}
+    </div>
   {/if}
   {#if data.notice}
     <p role="alert" class="card px-3 py-2 text-sm text-danger">{data.notice}</p>
@@ -324,6 +352,21 @@
             <p class="text-xs text-danger">{error}</p>
           {/if}
 
+          {#if account && PRIVACY[provider]}
+            <p class="text-xs text-muted">
+              {PRIVACY[provider].hint()}
+              <a
+                href={PRIVACY[provider].url}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="underline"
+                class:text-danger={Boolean(error)}
+              >
+                {m.privacy_fix_link()}
+              </a>
+            </p>
+          {/if}
+
           {#if provider === 'PSN' && hasPsnSlot}
             {#if data.psn}
               <div class="space-y-2 rounded bg-raised p-3 text-sm">
@@ -384,6 +427,24 @@
           name="isPublic"
           type="checkbox"
           checked={data.profile.isPublic}
+          onchange={(event) => event.currentTarget.form?.requestSubmit()}
+        />
+      </form>
+      <form
+        method="POST"
+        action="?/presence"
+        use:enhance={submit}
+        class="flex items-center justify-between gap-4 p-4"
+      >
+        <label for="show-online" class="text-sm">
+          <span class="font-medium">{m.online_status()}</span>
+          <span class="block text-xs text-muted">{m.online_status_text()}</span>
+        </label>
+        <input
+          id="show-online"
+          name="showOnline"
+          type="checkbox"
+          checked={data.profile.showOnline}
           onchange={(event) => event.currentTarget.form?.requestSubmit()}
         />
       </form>

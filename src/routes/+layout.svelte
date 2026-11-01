@@ -8,7 +8,6 @@
   import Flame from '@lucide/svelte/icons/flame';
   import Gamepad2 from '@lucide/svelte/icons/gamepad-2';
   import Languages from '@lucide/svelte/icons/languages';
-  import MessageCircle from '@lucide/svelte/icons/message-circle';
   import RefreshCw from '@lucide/svelte/icons/refresh-cw';
   import Search from '@lucide/svelte/icons/search';
   import Trophy from '@lucide/svelte/icons/trophy';
@@ -43,17 +42,11 @@
     },
   ]);
 
-  // Sur mobile, un membre retrouve la communauté dans Social, avec ses messages.
-  const mobileLinks = $derived(
-    [
-      ...links.slice(0, 2),
-      { href: '/saison', label: m.nav_season(), icon: Flame, exact: false },
-      data.user
-        ? { href: '/messages', label: m.nav_social(), icon: MessageCircle, exact: false }
-        : links[2],
-      links[3],
-    ].flatMap((link) => (link ? [link] : [])),
-  );
+  const mobileLinks = $derived([
+    ...links.slice(0, 2),
+    { href: '/saison', label: m.nav_season(), icon: Flame, exact: false },
+    ...links.slice(2),
+  ]);
 
   const inSocial = $derived(page.url.pathname.startsWith('/messages'));
 
@@ -86,8 +79,13 @@
     toast(started > 0 ? m.refresh_started() : m.refresh_wait());
   }
 
-  const isActive = (href: string, exact: boolean) =>
-    exact ? page.url.pathname === href : page.url.pathname.startsWith(href);
+  /** Communauté regroupe ces pages : l'entrée reste allumée sur chacune. */
+  const COMMUNITY = ['/communaute', '/messages', '/amis', '/clan'];
+
+  const isActive = (href: string, exact: boolean) => {
+    if (href === '/communaute') return COMMUNITY.some((path) => page.url.pathname.startsWith(path));
+    return exact ? page.url.pathname === href : page.url.pathname.startsWith(href);
+  };
 
   onMount(() => {
     document.documentElement.dataset.ready = 'true';
@@ -179,6 +177,9 @@
           class:bg-raised={isActive(link.href, link.exact)}
         >
           {link.label}
+          {#if link.href === '/communaute' && $unread}
+            <span class="social-badge ml-1">{$unread}</span>
+          {/if}
         </a>
       {/each}
       <a
@@ -270,7 +271,7 @@
     >
       <span class="relative">
         <Icon size={18} aria-hidden="true" />
-        {#if link.href === '/messages' && $unread}
+        {#if link.href === '/communaute' && $unread}
           <span class="social-badge absolute -right-2 -top-1">{$unread}</span>
         {/if}
       </span>

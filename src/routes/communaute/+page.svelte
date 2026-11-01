@@ -1,10 +1,13 @@
 <script lang="ts">
   import { m } from '$lib/paraglide/messages';
+  import { invalidate } from '$app/navigation';
   import { fly } from 'svelte/transition';
   import Avatar from '$lib/components/Avatar.svelte';
+  import CompleteBadge from '$lib/components/CompleteBadge.svelte';
   import Empty from '$lib/components/Empty.svelte';
+  import SocialNav from '$lib/components/SocialNav.svelte';
   import TrophyBadge from '$lib/components/TrophyBadge.svelte';
-  import { formatNumber, formatRelative } from '$lib/labels';
+  import { formatNumber, formatRelative, tierLabel } from '$lib/labels';
 
   let { data } = $props();
 
@@ -21,10 +24,48 @@
     count: number;
   }
 
+  const RELOAD_DELAY = 1_500;
+
+  /** Plus la carte est rare, plus elle prend de place. */
+  const MOMENT_AVATAR: Record<number, number> = { 2: 36, 3: 48, 4: 64 };
+
   let live = $state<LiveEvent[]>([]);
   let nextKey = 0;
 
+  // Le global ne suit pas chaque succès : seuls les proches arrivent ici en direct.
+  const shownLive = $derived(live.filter((event) => data.circle.includes(event.handle)));
+
+  const rankingTitle = $derived(
+    data.tab === 'amis'
+      ? m.ranking_friends()
+      : data.tab === 'clan'
+        ? m.ranking_clan()
+        : m.ranking(),
+  );
+
+  const tabs = [
+    { value: 'amis', label: m.nav_friends() },
+    { value: 'clan', label: m.nav_clan() },
+    { value: 'global', label: m.activity_global() },
+  ];
+
+  // Plusieurs événements peuvent arriver ensemble : la page ne se recharge qu'une fois.
   $effect(() => {
+    if (data.tab !== 'global') return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const source = new EventSource('/api/global');
+    source.onmessage = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => void invalidate('app:communaute'), RELOAD_DELAY);
+    };
+    return () => {
+      clearTimeout(timer);
+      source.close();
+    };
+  });
+
+  $effect(() => {
+    if (data.tab === 'global') return;
     const source = new EventSource('/api/activite');
     source.onmessage = (message) => {
       const event = JSON.parse(message.data) as Omit<LiveEvent, 'key'>;
@@ -59,12 +100,31 @@
 
 <div class="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
   <section class="min-w-0 space-y-3" aria-labelledby="activite">
-    <h1 id="activite">{m.activity()}</h1>
-    <a href="/clans" class="text-sm text-muted hover:text-ink">{m.clans_all()}</a>
+    <h1 id="activite">{m.nav_community()}</h1>
+    {#if data.user}
+      <SocialNav />
+      <div class="flex flex-wrap items-center gap-2">
+        <div class="flex rounded border border-line text-sm" role="group" aria-label={m.activity()}>
+          {#each tabs as tab (tab.value)}
+            <a
+              href="?onglet={tab.value}&periode={data.period}"
+              data-sveltekit-noscroll
+              aria-current={data.tab === tab.value ? 'true' : undefined}
+              class="px-3 py-1.5"
+              class:bg-raised={data.tab === tab.value}
+              class:text-muted={data.tab !== tab.value}
+            >
+              {tab.label}
+            </a>
+          {/each}
+        </div>
+      </div>
+    {/if}
+    <a href="/clans" class="block text-sm text-muted hover:text-ink">{m.clans_all()}</a>
 
-    {#if live.length}
+    {#if shownLive.length}
       <ul class="space-y-2" aria-live="polite">
-        {#each live as event (event.key)}
+        {#each shownLive as event (event.key)}
           <li class="card flex items-center gap-3 p-3" in:fly={{ y: -8, duration: 150 }}>
             <Avatar
               name={event.user}
@@ -90,8 +150,62 @@
       </ul>
     {/if}
 
-    {#if data.feed.length === 0}
-      <Empty title={m.activity_empty()}>{m.activity_empty_text()}</Empty>
+    {#if data.tab === 'global'}
+      {#if data.moments.length === 0}
+        <Empty title={m.activity_empty()}>{m.activity_empty_global()}</Empty>
+      {:else}
+        <ul class="space-y-2">
+          {#each data.moments as item (item.key)}
+            {#if item.kind === 'card'}
+              <li in:fly={{ y: -12, duration: 250 }}>
+                <a
+                  href="/jeux/{item.game.slug}"
+                  data-complete={item.tier > 1 || undefined}
+                  data-tier={item.tier > 1 ? item.tier : undefined}
+                  class="moment game-card card"
+                  class:moment-big={item.tier > 1}
+                  style:--moment-image={item.tier > 1 && item.game.headerUrl
+                    ? `url("${item.game.headerUrl}")`
+                    : undefined}
+                  data-size={item.tier}
+                >
+                  <Avatar person={item.user} size={MOMENT_AVATAR[item.tier] ?? 28} play="always" />
+                  <span class="min-w-0 flex-1">
+                    <span class="moment-title block truncate">
+                      {item.user.displayName} — {item.game.name}
+                    </span>
+                    <span class="block text-xs">
+                      {m.activity_tier({ tier: tierLabel(item.tier) })} · {formatRelative(item.at)}
+                    </span>
+                  </span>
+                  <CompleteBadge tier={item.tier} />
+                  {#if item.tier > 1}<span class="foil" aria-hidden="true"></span>{/if}
+                </a>
+              </li>
+            {:else}
+              <li class="card flex items-center gap-3 p-3" in:fly={{ y: -12, duration: 250 }}>
+                <Avatar person={item.user} size={28} />
+                <div class="min-w-0 flex-1">
+                  <p class="truncate text-sm">
+                    <a href="/u/{item.user.handle}" class="font-medium">{item.user.displayName}</a>
+                    —
+                    <a href="/succes/{item.achievement.id}">{item.achievement.name}</a>
+                  </p>
+                  <p class="truncate text-xs text-muted">{item.achievement.game.name}</p>
+                </div>
+                <div class="shrink-0 text-right">
+                  <TrophyBadge type={item.achievement.trophyType} />
+                  <p class="text-xs text-muted">{formatRelative(item.at)}</p>
+                </div>
+              </li>
+            {/if}
+          {/each}
+        </ul>
+      {/if}
+    {:else if data.feed.length === 0}
+      <Empty title={m.activity_empty()}>
+        {data.tab === 'amis' ? m.activity_empty_friends() : m.activity_empty_clan()}
+      </Empty>
     {:else}
       <ul class="card divide-y divide-line">
         {#each data.feed as item (`${item.user.handle}-${item.achievement.id}`)}
@@ -117,11 +231,11 @@
 
   <section class="min-w-0 space-y-3" aria-labelledby="classement">
     <div class="flex items-center justify-between gap-2">
-      <h2 id="classement"><a href="/classement" class="hover:text-accent">{m.ranking()}</a></h2>
+      <h2 id="classement"><a href="/classement" class="hover:text-accent">{rankingTitle}</a></h2>
       <div class="flex rounded border border-line text-xs" role="group" aria-label={m.period()}>
         {#each periods as period (period.value)}
           <a
-            href="?periode={period.value}"
+            href="?onglet={data.tab}&periode={period.value}"
             data-sveltekit-noscroll
             aria-current={data.period === period.value ? 'true' : undefined}
             class="px-2 py-1"
