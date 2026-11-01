@@ -1,0 +1,2 @@
+ALTER TABLE "User" ADD COLUMN "allowProfanity" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "Message" ADD COLUMN "locale" TEXT;

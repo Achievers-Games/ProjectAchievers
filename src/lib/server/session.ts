@@ -49,6 +49,7 @@ export async function validateSession(cookies: Cookies) {
           frameMotionUrl: true,
           role: true,
           showAdult: true,
+          allowProfanity: true,
         },
       },
     },

@@ -380,6 +380,23 @@ test.describe('membre', () => {
     await expect(legend.getByText('100 % sur 3 plateformes')).toBeVisible();
   });
 
+  test('ne peut pas prendre un nom grossier et choisit son filtre', async ({ page }) => {
+    await login(page);
+    await page.goto('/compte');
+    await ready(page);
+    await page.getByLabel(/Nom affiché/).fill('Gros connard');
+    await page.getByRole('button', { name: 'Enregistrer' }).first().click();
+    await expect(page.getByText('Ce nom contient une grossièreté.').first()).toBeVisible();
+
+    await page.getByLabel(/Retirer le filtre de grossièretés/).check();
+    await expect(page.getByText('Filtre de grossièretés retiré.').first()).toBeVisible();
+    await page.reload();
+    await expect(page.getByLabel(/Retirer le filtre de grossièretés/)).toBeChecked();
+    await ready(page);
+    await page.getByLabel(/Retirer le filtre de grossièretés/).uncheck();
+    await expect(page.getByText('Filtre de grossièretés activé.').first()).toBeVisible();
+  });
+
   test('est invité à lier une plateforme absente', async ({ page }) => {
     // Marco a déjà un compte lié : l'accueil montre seulement ce qui lui manque.
     await page.goto('/auth/dev?compte=marco');

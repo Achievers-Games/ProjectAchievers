@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { page } from '$app/state';
+  import { censor } from '$lib/profanity';
   import { m } from '$lib/paraglide/messages';
   import { onMount, tick } from 'svelte';
   import Flag from '@lucide/svelte/icons/flag';
@@ -47,6 +49,9 @@
       void fetch(`/api/messages/${id}`, { method: 'PUT' }).catch(() => {});
     });
   });
+
+  const shown = ({ content, locale }: Message) =>
+    page.data.user?.allowProfanity ? content : censor(content, locale);
 
   async function load() {
     const response = await fetch(`/api/messages/${id}`).catch(() => null);
@@ -114,7 +119,7 @@
           class:bg-accent={message.author.id === me}
           class:text-on-accent={message.author.id === me}
         >
-          {message.content}
+          {shown(message)}
         </p>
         {#if message.author.id !== me}
           <button

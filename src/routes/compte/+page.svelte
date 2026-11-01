@@ -518,6 +518,25 @@
 
       <form
         method="POST"
+        action="?/profanity"
+        use:enhance={submit}
+        class="flex items-center justify-between gap-4 p-4"
+      >
+        <label for="profanity" class="text-sm">
+          <span class="font-medium">{m.profanity_toggle()}</span>
+          <span class="block text-xs text-muted">{m.profanity_text()}</span>
+        </label>
+        <input
+          id="profanity"
+          name="allowProfanity"
+          type="checkbox"
+          checked={data.profile.allowProfanity}
+          onchange={(event) => event.currentTarget.form?.requestSubmit()}
+        />
+      </form>
+
+      <form
+        method="POST"
         action="?/theme"
         use:enhance={applyTheme}
         class="flex items-center justify-between gap-4 p-4"

@@ -14,6 +14,8 @@ import {
   type SocialFailure,
 } from '$lib/server/social';
 import { m } from '$lib/paraglide/messages';
+import { getLocale } from '$lib/paraglide/runtime';
+import { isProfane } from '$lib/profanity';
 import type { Actions, PageServerLoad } from './$types';
 
 const INVITES_PER_HOUR = 30;
@@ -35,7 +37,8 @@ const clanName = z
   .trim()
   .min(3, { error: () => m.too_short() })
   .max(32)
-  .regex(/^[^\p{C}]+$/u, { error: () => m.profile_name_invalid() });
+  .regex(/^[^\p{C}]+$/u, { error: () => m.profile_name_invalid() })
+  .refine((name) => !isProfane(name, getLocale()), { error: () => m.name_profane() });
 
 const field = async (request: Request, name: string) =>
   String((await request.formData()).get(name) ?? '');

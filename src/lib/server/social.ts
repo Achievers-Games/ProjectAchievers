@@ -1,11 +1,13 @@
 import { Prisma, type PrismaClient } from '@prisma/client';
 import { randomToken } from './crypto';
 import { db } from './db';
+import { censor } from '$lib/profanity';
 import { slugify } from '$lib/slug';
 import { notify } from './push';
 import { publicUser } from './queries';
 import { publishChat } from './sync/events';
 import { m } from '$lib/paraglide/messages';
+import { getLocale } from '$lib/paraglide/runtime';
 
 const MESSAGES_SHOWN = 100;
 const PUSH_PREVIEW = 120;
@@ -205,7 +207,7 @@ export async function listConversations(userId: string) {
           messages: {
             orderBy: { createdAt: 'desc' },
             take: 1,
-            select: { content: true, createdAt: true },
+            select: { content: true, locale: true, createdAt: true },
           },
         },
       },
@@ -221,6 +223,7 @@ export async function listConversations(userId: string) {
         title: conversation.clan?.name ?? person?.displayName ?? '',
         person: conversation.clan ? null : person,
         preview: last?.content ?? '',
+        previewLocale: last?.locale ?? null,
         at: last?.createdAt ?? null,
         unread: unread.get(conversation.id) ?? 0,
       };
@@ -280,6 +283,7 @@ export async function readConversation(userId: string, conversationId: string) {
     select: {
       id: true,
       content: true,
+      locale: true,
       createdAt: true,
       author: { select: personSelect },
     },
@@ -306,7 +310,7 @@ export async function sendMessage(
     select: {
       directKey: true,
       clan: { select: { name: true } },
-      members: { select: { userId: true } },
+      members: { select: { userId: true, user: { select: { allowProfanity: true } } } },
     },
   });
   if (!conversation) return 'not_found';
@@ -317,15 +321,22 @@ export async function sendMessage(
   }
 
   const message = await db.message.create({
-    data: { conversationId, authorId: userId, content, createdAt: new Date() },
-    select: { id: true, content: true, createdAt: true, author: { select: personSelect } },
+    data: { conversationId, authorId: userId, content, locale: getLocale(), createdAt: new Date() },
+    select: {
+      id: true,
+      content: true,
+      locale: true,
+      createdAt: true,
+      author: { select: personSelect },
+    },
   });
+  const censored = censor(content, message.locale);
   for (const member of conversation.members) {
     publishChat(member.userId, { type: 'chat', conversationId, message });
     if (member.userId === userId) continue;
     notify(member.userId, 'message', conversationId, () => ({
       title: conversation.clan?.name ?? message.author.displayName,
-      body: content.slice(0, PUSH_PREVIEW),
+      body: (member.user.allowProfanity ? content : censored).slice(0, PUSH_PREVIEW),
       url: `/messages/${conversationId}`,
     }));
   }

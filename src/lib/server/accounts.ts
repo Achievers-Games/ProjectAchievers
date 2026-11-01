@@ -3,8 +3,10 @@ import { z } from 'zod';
 import { db } from './db';
 import { encrypt } from './crypto';
 import { availableProviders } from './providers';
+import { isProfane } from '$lib/profanity';
 import { slugify } from '$lib/slug';
 import { m } from '$lib/paraglide/messages';
+import { getLocale } from '$lib/paraglide/runtime';
 
 const PLATFORMS: Platform[] = ['STEAM', 'PSN', 'XBOX', 'RETRO'];
 
@@ -22,12 +24,14 @@ export const profileSchema = z.object({
     .trim()
     .min(2, { error: () => m.profile_name_short() })
     .max(32, { error: () => m.profile_name_long() })
-    .regex(/^[^\p{C}]+$/u, { error: () => m.profile_name_invalid() }),
+    .regex(/^[^\p{C}]+$/u, { error: () => m.profile_name_invalid() })
+    .refine((name) => !isProfane(name, getLocale()), { error: () => m.name_profane() }),
   handle: z
     .string()
     .trim()
     .toLowerCase()
-    .regex(/^[a-z0-9](?:[a-z0-9-]{1,22})[a-z0-9]$/, { error: () => m.profile_handle_invalid() }),
+    .regex(/^[a-z0-9](?:[a-z0-9-]{1,22})[a-z0-9]$/, { error: () => m.profile_handle_invalid() })
+    .refine((handle) => !isProfane(handle, getLocale()), { error: () => m.name_profane() }),
   /** Absent quand l'image actuelle ne correspond plus à un compte lié : elle est conservée. */
   avatarUrl: z.string().optional(),
 });
@@ -201,10 +205,14 @@ export async function resolveIdentity(
     return { ok: true, userId: currentUserId, created: false };
   }
 
+  // Le nom vient de la plateforme : le joueur le choisira lui-même s'il est refusé ici.
+  const displayName = isProfane(identity.displayName, getLocale())
+    ? 'Chasseur'
+    : identity.displayName;
   const user = await db.user.create({
     data: {
-      handle: await uniqueHandle(identity.displayName),
-      displayName: identity.displayName,
+      handle: await uniqueHandle(displayName),
+      displayName,
       avatarUrl: identity.avatarUrl,
       avatarMotionUrl: identity.avatarMotionUrl,
       frame: identity.frameUrl,

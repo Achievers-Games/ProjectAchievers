@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type { ReactionType } from '@prisma/client';
 import { requireLogin } from '$lib/server/auth';
 import { db } from '$lib/server/db';
+import { censor } from '$lib/profanity';
 import { renderGuide, renderMarkdown } from '$lib/server/markdown';
 import { publicUser } from '$lib/server/queries';
 import { ensureGameTexts, localizeAchievements } from '$lib/server/achievement-texts';
@@ -12,8 +13,13 @@ import { getLocale } from '$lib/paraglide/runtime';
 import type { Actions, PageServerLoad } from './$types';
 import { m } from '$lib/paraglide/messages';
 
+/** Les visiteurs ont le filtre : seul un membre peut choisir de le retirer. */
+const forViewer = (user: App.Locals['user']) => (text: string, locale: string | null) =>
+  user?.allowProfanity ? text : censor(text, locale);
+
 export const load: PageServerLoad = async ({ params, locals, url }) => {
   const viewerId = locals.user?.id;
+  const clean = forViewer(locals.user);
   const revealed = url.searchParams.has('caches');
   const achievement = await db.achievement.findUnique({
     where: { id: params.id },
@@ -55,7 +61,7 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
       item.locale !== locale &&
       item.authorId !== viewerId;
     const cached = autoTranslate ? item.translations[0]?.contentMd : undefined;
-    return { autoTranslate, translatedHtml: cached ? render(cached) : null };
+    return { autoTranslate, translatedHtml: cached ? render(clean(cached, locale)) : null };
   };
 
   const [guides, comments, unlockers] = await Promise.all([
@@ -104,7 +110,7 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
     return {
       id: comment.id,
       createdAt: comment.createdAt,
-      html: renderMarkdown(comment.contentMd),
+      html: renderMarkdown(clean(comment.contentMd, comment.locale)),
       ...translation(comment),
       author: comment.author,
       mine: comment.authorId === viewerId,
@@ -137,7 +143,7 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
     masked,
     guides: (masked ? [] : guides).map((guide) => ({
       id: guide.id,
-      html: renderGuide(guide.contentMd),
+      html: renderGuide(clean(guide.contentMd, guide.locale)),
       ...translation(guide, renderGuide),
       official: guide.curatedKey !== null,
       checked: guide.checks?.map((check) => check.item) ?? [],
@@ -333,7 +339,7 @@ export const actions: Actions = {
     return { success: m.guide_deleted() };
   },
 
-  translate: async ({ request, params }) => {
+  translate: async ({ request, params, locals }) => {
     const parsed = translateSchema.safeParse(Object.fromEntries(await request.formData()));
     if (!parsed.success || !canTranslate()) return fail(400, { error: m.translate_failed() });
 
@@ -350,7 +356,8 @@ export const actions: Actions = {
     try {
       const translated = await translateContent(target, source.contentMd, getLocale());
       if (translated === null) return fail(429, { error: m.translate_failed() });
-      return { html: (targetType === 'GUIDE' ? renderGuide : renderMarkdown)(translated) };
+      const html = targetType === 'GUIDE' ? renderGuide : renderMarkdown;
+      return { html: html(forViewer(locals.user)(translated, getLocale())) };
     } catch (cause) {
       console.error('Traduction :', cause);
       return fail(503, { error: m.translate_failed() });

@@ -22,6 +22,7 @@ export const GET: RequestHandler = async ({ locals }) => {
       frameMotionUrl: true,
       isPublic: true,
       showAdult: true,
+      allowProfanity: true,
       createdAt: true,
       accounts: {
         select: {

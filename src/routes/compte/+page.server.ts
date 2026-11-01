@@ -55,6 +55,7 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
         isPublic: true,
         showOnline: true,
         showAdult: true,
+        allowProfanity: true,
         pushMessages: true,
         pushInvites: true,
         pushEvents: true,
@@ -273,6 +274,13 @@ export const actions: Actions = {
     await db.user.update({ where: { id: user.id }, data: { showOnline } });
     forgetPresence();
     return { success: m.online_status_saved() };
+  },
+
+  profanity: async ({ request, locals }) => {
+    const user = requireUser(locals);
+    const allowProfanity = (await request.formData()).get('allowProfanity') === 'on';
+    await db.user.update({ where: { id: user.id }, data: { allowProfanity } });
+    return { success: allowProfanity ? m.profanity_off() : m.profanity_on() };
   },
 
   adult: async ({ request, locals }) => {

@@ -15,6 +15,7 @@ export const load: LayoutServerLoad = async ({ locals, cookies }) => ({
     frame: locals.user.frame,
     frameMotionUrl: locals.user.frameMotionUrl,
     role: locals.user.role,
+    allowProfanity: locals.user.allowProfanity,
   },
   theme: cookies.get('pa_theme') === 'light' ? ('light' as const) : ('dark' as const),
 });

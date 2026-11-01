@@ -54,6 +54,7 @@ export interface ChatEvent {
   message: {
     id: string;
     content: string;
+    locale: string | null;
     createdAt: Date;
     author: {
       id: string;

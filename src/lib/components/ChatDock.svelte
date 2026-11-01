@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { page } from '$app/state';
+  import { censor } from '$lib/profanity';
   import { m } from '$lib/paraglide/messages';
   import { onMount } from 'svelte';
   import MessageCircle from '@lucide/svelte/icons/message-circle';
@@ -22,6 +24,7 @@
     title: string;
     person: { displayName: string; avatarUrl: string | null; handle: string } | null;
     preview: string;
+    previewLocale: string | null;
     unread: number;
   }
 
@@ -110,7 +113,11 @@
                 <Avatar name={row.title} person={row.person} size={28} />
                 <span class="min-w-0 flex-1">
                   <span class="block truncate text-sm font-medium">{row.title}</span>
-                  <span class="block truncate text-xs text-muted">{row.preview}</span>
+                  <span class="block truncate text-xs text-muted"
+                    >{page.data.user?.allowProfanity
+                      ? row.preview
+                      : censor(row.preview, row.previewLocale)}</span
+                  >
                 </span>
                 {#if row.unread}<span class="social-badge">{row.unread}</span>{/if}
               </button>
