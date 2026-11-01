@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { TIERS } from '$lib/collection';
   import { m } from '$lib/paraglide/messages';
   import Avatar from '$lib/components/Avatar.svelte';
   import Empty from '$lib/components/Empty.svelte';
@@ -41,7 +42,7 @@
             <Avatar person={row} size={28} />
             <span class="min-w-0 flex-1 truncate text-sm font-medium">{row.displayName}</span>
             <span class="hidden gap-3 text-xs sm:flex">
-              {#each [1, 2, 3, 4] as tier (tier)}
+              {#each TIERS as tier (tier)}
                 {#if row.tiers[tier - 1]}
                   <span class="stat-value !text-xs" data-tier={tier} title={tierLabel(tier)}>
                     {row.tiers[tier - 1]}

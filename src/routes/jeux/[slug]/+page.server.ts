@@ -1,5 +1,5 @@
 import { error, fail } from '@sveltejs/kit';
-import { nextTier, tierFor } from '$lib/collection';
+import { copiesFor, nextCopy } from '$lib/collection';
 import { db } from '$lib/server/db';
 import { ensureGameTexts, localizeAchievements } from '$lib/server/achievement-texts';
 import { seasonStartedGames, visibleGames } from '$lib/server/queries';
@@ -46,6 +46,7 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
             id: true,
             slug: true,
             platform: true,
+            tier: true,
             players: {
               where: { userId: locals.user?.id ?? '' },
               select: { completion: true },
@@ -59,12 +60,20 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
 
   const owned = [
     ...(progress
-      ? [{ id: game.id, platform: game.platform, completion: progress.completion }]
+      ? [
+          {
+            id: game.id,
+            platform: game.platform,
+            tier: game.tier,
+            completion: progress.completion,
+          },
+        ]
       : []),
-    ...others.flatMap(({ id, platform, players: [player] }) =>
-      player ? [{ id, platform, completion: player.completion }] : [],
+    ...others.flatMap(({ id, platform, tier, players: [player] }) =>
+      player ? [{ id, platform, tier, completion: player.completion }] : [],
     ),
   ];
+  const finished = owned.filter((version) => version.completion >= 100);
 
   const state = seasonState(SEASON);
   const started = locals.user ? await seasonStartedGames(locals.user.id) : new Set<string>();
@@ -106,8 +115,9 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
       platform: other.platform,
       completion: other.players[0]?.completion ?? null,
     })),
-    tier: tierFor(new Set(owned.filter((v) => v.completion >= 100).map((v) => v.platform)).size),
-    next: nextTier(owned),
+    tier: Math.max(0, ...finished.map((version) => version.tier ?? 1)),
+    copies: copiesFor(new Set(finished.map((version) => version.platform)).size),
+    next: nextCopy(owned),
   };
 };
 

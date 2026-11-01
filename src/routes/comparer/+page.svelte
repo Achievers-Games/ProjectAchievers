@@ -13,22 +13,11 @@
       left: data.leftStats.unlocked,
       right: data.rightStats.unlocked,
     },
-    { label: tierLabel(1), left: data.leftStats.tiers.or, right: data.rightStats.tiers.or },
-    {
-      label: tierLabel(2),
-      left: data.leftStats.tiers.diamant,
-      right: data.rightStats.tiers.diamant,
-    },
-    {
-      label: tierLabel(3),
-      left: data.leftStats.tiers.prismatique,
-      right: data.rightStats.tiers.prismatique,
-    },
-    {
-      label: tierLabel(4),
-      left: data.leftStats.tiers.legendaire,
-      right: data.rightStats.tiers.legendaire,
-    },
+    ...data.leftStats.tiers.map((left, index) => ({
+      label: tierLabel(index + 1),
+      left,
+      right: data.rightStats.tiers[index] ?? 0,
+    })),
     { label: m.stat_points(), left: data.leftStats.points, right: data.rightStats.points },
   ]);
 </script>

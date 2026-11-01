@@ -199,6 +199,7 @@
             progress={game.progress}
             versions={game.versions}
             tier={game.tier}
+            copies={game.copies}
             next={game.next}
             seasonEligible={game.seasonEligible}
           />

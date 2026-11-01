@@ -3,11 +3,12 @@
   import type { Platform } from '@prisma/client';
   import Flame from '@lucide/svelte/icons/flame';
   import Gamepad2 from '@lucide/svelte/icons/gamepad-2';
+  import CardFx from './CardFx.svelte';
   import CompleteBadge from './CompleteBadge.svelte';
   import Progress from './Progress.svelte';
   import { tilt } from '$lib/actions/tilt';
-  import { formatPercent, PLATFORM_LABELS, tierLabel } from '$lib/labels';
-  import { isComplete, stepOf, type CardProgress, type NextTier } from '$lib/collection';
+  import { formatPercent, PLATFORM_LABELS } from '$lib/labels';
+  import { HOLO_TIER, isComplete, stepOf, type CardProgress, type NextCopy } from '$lib/collection';
 
   interface Props {
     game: {
@@ -21,8 +22,11 @@
     layout?: 'grille' | 'liste';
     versions?: { platform: Platform; slug: string; completion: number }[];
     tier?: number;
-    next?: NextTier | null;
+    copies?: number;
+    next?: NextCopy | null;
     seasonEligible?: boolean;
+    /** Vitrine et révélation : l'animation tourne sans attendre le survol. */
+    live?: boolean;
   }
 
   let {
@@ -31,8 +35,10 @@
     layout = 'grille',
     versions = [],
     tier = 0,
+    copies = 1,
     next = null,
     seasonEligible = false,
+    live = false,
   }: Props = $props();
   const list = $derived(layout === 'liste');
   const complete = $derived(isComplete(progress));
@@ -62,7 +68,9 @@
   data-tier={complete ? level : undefined}
   data-step={step || undefined}
   data-owned={progress ? true : undefined}
-  data-next={next?.tier}
+  data-next={next?.copies}
+  data-copies={complete && copies > 1 ? copies : undefined}
+  data-live={live || undefined}
   style:--phase={phase}
   class="game-card card group flex overflow-hidden"
   class:flex-col={!list}
@@ -96,9 +104,10 @@
       <span class="step-badge absolute right-2 top-2">{formatPercent(step * 25)}</span>
     {/if}
     {#if complete}
-      <span class="foil" aria-hidden="true"></span>
+      {#if level >= HOLO_TIER}<span class="foil" aria-hidden="true"></span>{/if}
+      {#if copies > 1 && !list}<CardFx {copies} image={game.headerUrl} />{/if}
       {#if !list}
-        <span class="absolute right-2 top-2"><CompleteBadge tier={level} /></span>
+        <span class="absolute right-2 top-2"><CompleteBadge tier={level} {copies} /></span>
       {/if}
     {/if}
   </div>
@@ -111,19 +120,18 @@
           {m.nav_season()}
         </span>
       {/if}
-      {#if complete && list}<CompleteBadge tier={level} />{/if}
+      {#if complete && list}<CompleteBadge tier={level} {copies} />{/if}
     </div>
     {#if progress}
       {#if next}
         <Progress
           value={next.completion}
-          tier={next.tier}
-          base={level}
-          label={m.progress_toward_on({ tier: tierLabel(next.tier), game: game.name })}
+          tier={level}
+          label={m.progress_toward_on({ tier: `×${next.copies}`, game: game.name })}
         />
         <p class="tabular truncate text-xs text-muted">
           {m.next_tier({
-            tier: tierLabel(next.tier),
+            tier: `×${next.copies}`,
             platform: PLATFORM_LABELS[next.platform],
             percent: Math.round(next.completion),
           })}

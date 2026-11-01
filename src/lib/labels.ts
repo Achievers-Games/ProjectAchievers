@@ -1,3 +1,4 @@
+import { RARITY_STEPS } from '$lib/collection';
 import type { Platform, Provider, TrophyType } from '@prisma/client';
 import { m } from '$lib/paraglide/messages';
 import { getLocale, type Locale } from '$lib/paraglide/runtime';
@@ -43,15 +44,27 @@ const TROPHY_LABELS: Record<TrophyType, () => string> = {
 export const trophyLabel = (type: TrophyType) => TROPHY_LABELS[type]();
 
 const TIER_LABELS: Record<number, () => string> = {
-  1: m.tier_gold,
-  2: m.tier_diamond,
-  3: m.tier_prismatic,
-  4: m.tier_legendary,
+  1: m.tier_bronze,
+  2: m.tier_silver,
+  3: m.tier_gold,
+  4: m.tier_diamond,
+  5: m.tier_prismatic,
+  6: m.tier_legendary,
 };
-export const tierLabel = (tier: number) => (TIER_LABELS[tier] ?? m.tier_gold)();
-/** Le niveau d'une carte est le nombre de plateformes terminées pour ce jeu. */
-export const tierRule = (tier: number) =>
-  tier > 1 ? m.tier_rule_many({ count: tier }) : m.tier_rule_one();
+export const tierLabel = (tier: number) => (TIER_LABELS[tier] ?? m.tier_bronze)();
+
+/** Le niveau d'une carte vient de la rareté du succès le plus dur du jeu. */
+export function tierRule(tier: number) {
+  const low = RARITY_STEPS[tier - 1];
+  const high = RARITY_STEPS[tier - 2];
+  const number = (value: number) =>
+    m.percent({
+      value: new Intl.NumberFormat(getLocale(), { maximumFractionDigits: 1 }).format(value),
+    });
+  if (high === undefined) return m.tier_rule_above({ percent: number(low as number) });
+  if (low === undefined) return m.tier_rule_below({ percent: number(high) });
+  return m.tier_rule_between({ low: number(low), high: number(high) });
+}
 
 /** Les erreurs de synchronisation sont stockées par code : chacun les lit dans sa langue. */
 const SYNC_ERRORS: Record<string, () => string> = {

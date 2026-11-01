@@ -26,6 +26,7 @@ export const load: PageServerLoad = async ({ locals }) => {
           platform: true,
           headerUrl: true,
           totalAchievements: true,
+          tier: true,
         },
       },
     },
@@ -34,6 +35,7 @@ export const load: PageServerLoad = async ({ locals }) => {
     game,
     progress,
     unlockedAt: lastUnlockedAt,
+    tier: game.tier ?? 1,
   }));
   return { cards };
 };

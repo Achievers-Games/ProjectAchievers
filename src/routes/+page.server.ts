@@ -26,7 +26,7 @@ export const load: PageServerLoad = async ({ locals }) => {
     const { games, tiers } = home.stats;
     const { text: tagline, barelyPlayed: aboutBarelyPlayed } = randomTagline({
       games,
-      finished: tiers.or + tiers.diamant + tiers.prismatique + tiers.legendaire,
+      finished: tiers.reduce((sum, count) => sum + count, 0),
       closest: banners.season?.completion ?? null,
       closestName: banners.season?.name ?? null,
       barelyPlayed,

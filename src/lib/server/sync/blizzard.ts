@@ -6,6 +6,7 @@ import { blizzardGet } from '../providers/blizzard';
 import { mapLimit, syncGames } from './errors';
 import {
   saveAchievements,
+  refreshGameTier,
   saveProgress,
   upsertGame,
   type AchievementInput,
@@ -93,6 +94,30 @@ export function mergeUnlocks(lists: UnlockInput[][]): UnlockInput[] {
   }));
 }
 
+/** Noms techniques de Blizzard, repérés en anglais : « Day9VoicePackPurchase », « Nova Criteria 1 ». */
+const SC2_INTERNAL =
+  /Criteria \d|%userName%|Achievement\/|_|Temp Tournament|Global Invitational|[a-z][A-Z]/;
+/** Les vrais noms où deux majuscules se suivent ainsi. */
+const SC2_BRANDS =
+  /StarCraft|StarJeweled|WarCraft|BlizzCon|DreamHack|HotS|LotV|WoL|MinedCraft|StarTours/g;
+
+/**
+ * Le catalogue mêle les succès à des récompenses internes (portraits, achats, à zéro point),
+ * et certaines fiches ont le titre d'une autre : une vraie fiche a un titre court, sans point
+ * final, et une description rédigée en phrase. Comparé au wiki StarCraft : 623 fiches gardées
+ * y figurent, les hauts faits à zéro point restent écartés car trop mêlés aux achats.
+ */
+export function isRealSc2Achievement({ title, description = '', points }: Sc2Achievement) {
+  const text = `${title} ${description}`.replace(SC2_BRANDS, '');
+  return (
+    Boolean(points) &&
+    !SC2_INTERNAL.test(text) &&
+    !/[a-z]\.$/.test(title) &&
+    !/^[a-z]+\d+$/.test(title) &&
+    (/[.!?"”)]$/.test(description.trim()) || description.trim().split(/\s+/).length >= 6)
+  );
+}
+
 export const mapSc2Achievement = (a: Sc2Achievement): AchievementInput => ({
   platformAchievementId: a.id,
   name: a.title,
@@ -155,6 +180,7 @@ async function refreshWowCatalog() {
     where: { id: game.id },
     data: { totalAchievements: names.size, schemaSyncedAt: new Date() },
   });
+  await refreshGameTier(game.id);
   return game;
 }
 
@@ -258,7 +284,15 @@ async function syncSc2({ userId, account, onUnlocked }: SyncContext) {
 
   const game = await upsertGame({ platform: 'BLIZZARD', platformGameId: SC2_GAME, name: SC2_NAME });
   if (!game.schemaSyncedAt || Date.now() - game.schemaSyncedAt.getTime() >= CATALOG_MAX_AGE) {
-    await saveAchievements(game.id, (await fetchSc2Catalog(BASE_LOCALE)).map(mapSc2Achievement));
+    const [catalog, english] = await Promise.all([
+      fetchSc2Catalog(BASE_LOCALE),
+      fetchSc2Catalog('en_GB'),
+    ]);
+    const kept = new Set(english.filter(isRealSc2Achievement).map((a) => a.id));
+    await db.achievement.deleteMany({
+      where: { gameId: game.id, platformAchievementId: { notIn: [...kept] } },
+    });
+    await saveAchievements(game.id, catalog.filter((a) => kept.has(a.id)).map(mapSc2Achievement));
   }
   const lists = await Promise.all(
     profiles.map(async ({ regionId, realmId, profileId }) => {

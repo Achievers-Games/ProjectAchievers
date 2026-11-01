@@ -6,7 +6,6 @@
   import List from '@lucide/svelte/icons/list';
   import Empty from '$lib/components/Empty.svelte';
   import GameCard from '$lib/components/GameCard.svelte';
-  import TierDots from '$lib/components/TierDots.svelte';
   import TierLegend from '$lib/components/TierLegend.svelte';
   import { PLATFORM_LABELS, tierLabel, tierRule } from '$lib/labels';
   import type { GameListItem } from '$lib/server/queries';
@@ -122,10 +121,12 @@
   ];
 
   const tiers = [
-    { value: 'or', label: tierLabel(1), tier: 1 },
-    { value: 'diamant', label: tierLabel(2), tier: 2 },
-    { value: 'prismatique', label: tierLabel(3), tier: 3 },
-    { value: 'legendaire', label: tierLabel(4), tier: 4 },
+    { value: 'bronze', label: tierLabel(1), tier: 1 },
+    { value: 'argent', label: tierLabel(2), tier: 2 },
+    { value: 'or', label: tierLabel(3), tier: 3 },
+    { value: 'diamant', label: tierLabel(4), tier: 4 },
+    { value: 'prismatique', label: tierLabel(5), tier: 5 },
+    { value: 'legendaire', label: tierLabel(6), tier: 6 },
   ];
 
   /** « Non 100 % » sert à voir ce qui est presque fini : les plus avancés passent devant. */
@@ -225,7 +226,6 @@
             class:bg-raised={data.params.filtre === item.value}
           >
             {item.label}
-            <TierDots tier={item.tier} />
           </a>
         {/each}
       </div>
@@ -286,6 +286,7 @@
           layout={data.params.vue}
           versions={game.versions}
           tier={game.tier}
+          copies={game.copies}
           next={game.next}
           seasonEligible={game.seasonEligible}
         />

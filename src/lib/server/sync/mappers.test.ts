@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
-import { mapSc2Achievement, mergeUnlocks, sc2Unlocks, wowUnlocks } from './blizzard';
+import {
+  isRealSc2Achievement,
+  mapSc2Achievement,
+  mergeUnlocks,
+  sc2Unlocks,
+  wowUnlocks,
+} from './blizzard';
 import { mapRetroAchievement, retroUnlocks } from './retro';
 import { isComplete } from '$lib/collection';
 import { fetchRetry, mapLimit, SyncError } from './errors';
@@ -187,6 +193,42 @@ describe('Battle.net', () => {
         { achievementId: '10', isComplete: false },
       ]),
     ).toEqual([{ platformAchievementId: '9', unlockedAt: new Date(1_504_035_656_000) }]);
+  });
+
+  it('écarte les récompenses internes de StarCraft II', () => {
+    const entry = (title: string, description: string, points = 10) => ({
+      id: '1',
+      title,
+      description,
+      points,
+    });
+    expect(
+      isRealSc2Achievement(
+        entry('Zero Hour', 'Complete all objectives in the "Zero Hour" mission.'),
+      ),
+    ).toBe(true);
+    expect(isRealSc2Achievement(entry('Tychus: Level 10', 'Reach level 10 with Tychus.'))).toBe(
+      true,
+    );
+    expect(
+      isRealSc2Achievement(entry('5 Wins Streak: 2v2 Elite A.I.', 'Win 5 StarCraft II games.')),
+    ).toBe(true);
+    expect(
+      isRealSc2Achievement(entry('No Time for Games', 'Secure 2 Stabilizers on Normal difficulty')),
+    ).toBe(true);
+    for (const fake of [
+      entry('ffa25', 'Win 25 games.'),
+      entry('250 Wins: Solo Protoss', '25 Wins: Solo Protoss'),
+      entry('Reach level 5 with Fenix in Co-op Missions.', 'Win 3 games.'),
+      entry('Zero Hour', 'Complete all objectives.', 0),
+      entry('Day9VoicePackPurchase', 'Win 5 games.'),
+      entry('Exploration_Co-op_Missions_Achievement_4 Criteria 2', 'Participant.'),
+      entry('Commander Abathur Level 15 Criteria 1', 'Abathur: Level 14'),
+      entry('Master Finals', '%userName% reached the finals'),
+      entry('Hard: 1', 'Achievement/Description/DifficultyVeteran1'),
+    ]) {
+      expect(isRealSc2Achievement(fake)).toBe(false);
+    }
   });
 
   it('garde les points réels, zéro compris', () => {

@@ -4,7 +4,7 @@ import { m } from '$lib/paraglide/messages';
 import { db } from './db';
 import { listGames, PAGE_SIZE } from './queries';
 
-const TIERS: Record<string, number> = { or: 1, diamant: 2, prismatique: 3, legendaire: 4 };
+export const TIER_FILTERS = ['bronze', 'argent', 'or', 'diamant', 'prismatique', 'legendaire'];
 
 const query = z.object({
   q: z.string().trim().max(80).optional().catch(undefined),
@@ -17,7 +17,17 @@ const query = z.object({
   filtre: z
     .preprocess(
       (value) => (value === 'platine' ? 'diamant' : value),
-      z.enum(['restants', 'saison', 'caches', 'or', 'diamant', 'prismatique', 'legendaire']),
+      z.enum([
+        'restants',
+        'saison',
+        'caches',
+        'bronze',
+        'argent',
+        'or',
+        'diamant',
+        'prismatique',
+        'legendaire',
+      ]),
     )
     .optional()
     .catch(undefined),
@@ -51,7 +61,7 @@ export async function gamesFromUrl(url: URL, user: App.Locals['user']) {
       ownerId,
       unfinished,
       seasonOnly: own && mine && params.filtre === 'saison',
-      tier: mine ? TIERS[params.filtre ?? ''] : undefined,
+      tier: mine ? TIER_FILTERS.indexOf(params.filtre ?? '') + 1 || undefined : undefined,
       // Les jeux cachés ne regardent que leur propriétaire.
       hidden: own && mine && params.filtre === 'caches',
       showAdult: user?.showAdult,

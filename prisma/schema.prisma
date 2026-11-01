@@ -340,6 +340,10 @@ model LinkedAccount {
   syncStatus      SyncStatus @default(IDLE)
   syncError       String?
   lastSyncedAt    DateTime?
+  /// Steam : dernière recherche des jeux joués hors bibliothèque, partagés en famille surtout.
+  sharedCheckedAt DateTime?
+  /// Steam : dernier balayage de toute la boutique pour cette recherche.
+  storeSweptAt    DateTime?
   linkedAt        DateTime   @default(now())
 
   @@unique([provider, providerUserId])
@@ -361,6 +365,8 @@ model PsnVerification {
 // ── Catalogue ──────────────────────────────────────────────────────────
 
 model Game {
+  /// Niveau de difficulté de 1 (Bronze) à 6 (Légendaire), calculé depuis ses succès.
+  tier             Int?
   id                String            @id @default(cuid())
   platform          Platform
   platformGameId    String

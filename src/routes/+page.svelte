@@ -11,15 +11,16 @@
 
   let { data } = $props();
 
-  const stats = $derived(
+  const stats = $derived<{ label: string; value: number; tier?: number }[]>(
     data.home
       ? [
           { label: m.stat_games(), value: data.home.stats.games },
           { label: m.stat_achievements(), value: data.home.stats.unlocked },
-          { label: tierLabel(1), value: data.home.stats.tiers.or, tier: 1 },
-          { label: tierLabel(2), value: data.home.stats.tiers.diamant, tier: 2 },
-          { label: tierLabel(3), value: data.home.stats.tiers.prismatique, tier: 3 },
-          { label: tierLabel(4), value: data.home.stats.tiers.legendaire, tier: 4 },
+          ...data.home.stats.tiers.map((value, index) => ({
+            label: tierLabel(index + 1),
+            value,
+            tier: index + 1,
+          })),
           { label: m.stat_points(), value: data.home.stats.points },
         ]
       : [],
@@ -52,7 +53,7 @@
 
     <Podium collectors={data.podium} />
 
-    <dl class="card grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 sm:divide-x sm:divide-line">
+    <dl class="card grid grid-cols-3 sm:grid-cols-5 xl:grid-cols-9 sm:divide-x sm:divide-line">
       {#each stats as stat (stat.label)}
         <div class="p-4">
           <dt class="label">{stat.label}</dt>

@@ -1,4 +1,5 @@
 // Données de démonstration, pour le développement uniquement.
+import { difficultyTier } from '../src/lib/collection';
 import { PrismaClient, type TrophyType } from '@prisma/client';
 
 const db = new PrismaClient();
@@ -58,6 +59,11 @@ async function main() {
         totalAchievements: g.count,
         schemaSyncedAt: new Date(),
       },
+    });
+
+    await db.game.update({
+      where: { id: game.id },
+      data: { tier: difficultyTier(Math.max(0.6, 92 - ((g.count - 1) * 90) / g.count), g.count) },
     });
 
     const achievements = [];
@@ -174,7 +180,7 @@ async function main() {
     create: { ...platinumProgress, userId: demo.id, gameId: platinumGame.id },
   });
 
-  // Astro Bot est commencé sur Steam : sa carte montre l'avancement vers le Platine.
+  // Astro Bot est commencé sur Steam : sa carte montre l'avancement vers le ×2.
   const astroSteam = await db.game.upsert({
     where: { platform_platformGameId: { platform: 'STEAM', platformGameId: 'demo-astro' } },
     update: {},
@@ -185,6 +191,7 @@ async function main() {
       slug: 'astro-bot-steam',
       headerUrl: platinumGame.headerUrl,
       totalAchievements: 10,
+      tier: 1,
     },
   });
   const astroStarted = { unlockedCount: 4, totalCount: 10, completion: 40 };
@@ -194,7 +201,7 @@ async function main() {
     create: { ...astroStarted, userId: demo.id, gameId: astroSteam.id },
   });
 
-  // Hades existe aussi sur PlayStation : une carte monte à chaque plateforme finie.
+  // Hades existe aussi sur PlayStation : chaque plateforme finie ajoute un exemplaire.
   const hadesPsn = await db.game.upsert({
     where: { platform_platformGameId: { platform: 'PSN', platformGameId: 'NPWR-HADES' } },
     update: {},
@@ -205,6 +212,7 @@ async function main() {
       slug: 'hades-psn',
       headerUrl: perfect.headerUrl,
       totalAchievements: 1,
+      tier: 5,
     },
   });
   const hadesDouble = {
@@ -219,7 +227,7 @@ async function main() {
     create: { ...hadesDouble, userId: demo.id, gameId: hadesPsn.id },
   });
 
-  // Et sur Xbox : trois plateformes à 100 % donnent une carte Prismatique.
+  // Et sur Xbox : trois plateformes à 100 % donnent un ×3.
   const hadesXbox = await db.game.upsert({
     where: { platform_platformGameId: { platform: 'XBOX', platformGameId: 'XBOX-HADES' } },
     update: {},

@@ -12,7 +12,9 @@
   import TrophyBadge from '$lib/components/TrophyBadge.svelte';
   import { tilt } from '$lib/actions/tilt';
   import { submitWithToast } from '$lib/forms';
-  import { formatDate, formatPercent, formatRarity, PLATFORM_LABELS, tierLabel } from '$lib/labels';
+  import { HOLO_TIER } from '$lib/collection';
+  import CardFx from '$lib/components/CardFx.svelte';
+  import { formatDate, formatPercent, formatRarity, PLATFORM_LABELS } from '$lib/labels';
   import { getLocale } from '$lib/paraglide/runtime';
   import { isComplete } from '$lib/collection';
 
@@ -72,12 +74,17 @@
         use:tilt
         data-complete={complete || undefined}
         data-tier={complete ? data.tier : undefined}
+        data-copies={complete && data.copies > 1 ? data.copies : undefined}
+        data-live
         class="game-card relative w-full shrink-0 self-start overflow-hidden rounded-md sm:w-72"
       >
         <img src={data.game.headerUrl} alt="" class="w-full" />
         {#if complete}
-          <span class="foil" aria-hidden="true"></span>
-          <span class="absolute right-2 top-2"><CompleteBadge tier={data.tier} /></span>
+          {#if data.tier >= HOLO_TIER}<span class="foil" aria-hidden="true"></span>{/if}
+          {#if data.copies > 1}<CardFx copies={data.copies} image={data.game.headerUrl} />{/if}
+          <span class="absolute right-2 top-2">
+            <CompleteBadge tier={data.tier} copies={data.copies} />
+          </span>
         {/if}
       </div>
     {/if}
@@ -129,13 +136,12 @@
           {#if data.next}
             <Progress
               value={data.next.completion}
-              tier={data.next.tier}
-              base={data.tier}
-              label={m.progress_toward({ tier: tierLabel(data.next.tier) })}
+              tier={data.tier}
+              label={m.progress_toward({ tier: `×${data.next.copies}` })}
             />
             <p class="tabular text-sm text-muted">
               {m.next_tier({
-                tier: tierLabel(data.next.tier),
+                tier: `×${data.next.copies}`,
                 platform: PLATFORM_LABELS[data.next.platform],
                 percent: Math.round(data.next.completion),
               })}

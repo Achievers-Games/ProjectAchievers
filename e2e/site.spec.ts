@@ -50,7 +50,7 @@ test.describe('visiteur', () => {
     await page.getByRole('link', { name: /Voir les \d+ jeux/ }).click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Jeux de Demo');
     await expect(page.getByRole('link', { name: 'Cachés' })).toHaveCount(0);
-    await expect(page.getByRole('link', { name: 'Diamant', exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Légendaire', exact: true })).toBeVisible();
   });
 
   test('présente l’événement et son objectif commun', async ({ page }) => {
@@ -211,10 +211,11 @@ test.describe('membre', () => {
     await login(page);
     await page.goto('/u/demo');
     const showcase = page.getByRole('region', { name: 'Vitrine' });
-    // Hades, fini sur trois plateformes, passe en tête sous une seule carte Prismatique.
+    // Hades, fini sur trois plateformes, forme une seule carte en trois exemplaires.
     await expect(showcase.locator('a[data-tier]')).toHaveCount(2);
-    await expect(showcase.locator('a[data-tier="3"]')).toHaveCount(1);
+    await expect(showcase.locator('a[data-copies="3"]')).toHaveCount(1);
     await expect(showcase.getByText('Prismatique')).toBeVisible();
+    await expect(showcase.locator('a[data-copies="3"] .fx-aurora')).toHaveCount(1);
 
     const cards = Array.from({ length: 12 }, (_, index) => ({
       game: {
@@ -339,14 +340,13 @@ test.describe('membre', () => {
     await expect(page.getByRole('button', { name: 'Cacher ce jeu' })).toBeVisible();
   });
 
-  test('montre l’avancement vers le niveau suivant', async ({ page }) => {
+  test('montre l’avancement vers l’exemplaire suivant', async ({ page }) => {
     await login(page);
     await page.goto('/jeux?q=astro');
-    const card = page.locator('main a[data-tier="1"][data-next="2"]');
+    const card = page.locator('main a[data-tier][data-next="2"]');
     await expect(card).toBeVisible();
-    await expect(card.getByText('Diamant : Steam 40 %')).toBeVisible();
+    await expect(card.getByText('×2 : Steam 40 %')).toBeVisible();
     await expect(card.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '40');
-    await expect(card.getByRole('progressbar')).toHaveAttribute('data-base', '1');
   });
 
   test('marque les paliers de progression', async ({ page }) => {
@@ -378,7 +378,7 @@ test.describe('membre', () => {
     );
     const legend = page.getByTestId('tier-legend');
     await legend.getByText('Comment monter de niveau ?').click();
-    await expect(legend.getByText('100 % sur 3 plateformes')).toBeVisible();
+    await expect(legend.getByText(/moins de 0,3/)).toBeVisible();
   });
 
   test('ne peut pas prendre un nom grossier et choisit son filtre', async ({ page }) => {

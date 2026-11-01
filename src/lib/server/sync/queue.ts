@@ -7,7 +7,7 @@ import { fillFamilies } from '../family';
 import { announceSeason } from '../push';
 import { rateLimit } from '../rate-limit';
 import { hasRecentFeat, isPublicGame, publicUser, RARE_CARD } from '../queries';
-import { tierFor, type Reward } from '$lib/collection';
+import { copiesFor, type Reward } from '$lib/collection';
 import { fillWowCatalog, syncBlizzard } from './blizzard';
 import { rateGames } from './content';
 import { refreshDiscordAccounts } from './discord';
@@ -16,8 +16,8 @@ import { publishCard, publishHighlight, publishSync, publishUnlock } from './eve
 import { grantFrames } from '../frames';
 import { syncPsn } from './psn';
 import { syncRetro } from './retro';
-import { fetchUnlocks, fillHiddenDescriptions, syncSteam } from './steam';
-import { saveProgress } from './store';
+import { fetchUnlocks, fillHiddenDescriptions, sweepSteamStore, syncSteam } from './steam';
+import { fillGameTiers, saveProgress } from './store';
 import { syncXbox } from './xbox';
 import type { ProviderSync, UnlockedGame } from './types';
 
@@ -38,7 +38,7 @@ const SYNCERS: Partial<Record<Provider, ProviderSync>> = {
 };
 
 type CardReward = Reward & {
-  game: Parameters<typeof isPublicGame>[0];
+  game: Parameters<typeof isPublicGame>[0] & { tier: number | null };
 };
 
 interface SyncJob {
@@ -141,6 +141,7 @@ async function rareCards(userId: string) {
           adultOnly: true,
           contentCheckedAt: true,
           familyKey: true,
+          tier: true,
         },
       },
     },
@@ -187,16 +188,16 @@ function announceUnlock(user: SyncUser, userId: string, game: UnlockedGame, coun
 /** Annonce les cartes apparues depuis `before` et renvoie celles à révéler au joueur. */
 async function announceCards(user: SyncUser, userId: string, before: Map<string, CardReward>) {
   const after = await rareCards(userId);
-  const platforms = new Map<string, Set<string>>();
-  for (const { game } of after.values()) {
-    const key = game.familyKey ?? game.slug;
-    platforms.set(key, (platforms.get(key) ?? new Set()).add(game.platform));
-  }
+  const families = Map.groupBy(after.values(), ({ game }) => game.familyKey ?? game.slug);
   const rewards = newRewards(before, after)
-    .map((card) => ({
-      ...card,
-      tier: tierFor(platforms.get(card.game.familyKey ?? card.game.slug)?.size ?? 1),
-    }))
+    .map((card) => {
+      const family = families.get(card.game.familyKey ?? card.game.slug) ?? [card];
+      return {
+        ...card,
+        tier: Math.max(...family.map(({ game }) => game.tier ?? 1)),
+        copies: copiesFor(new Set(family.map(({ game }) => game.platform)).size),
+      };
+    })
     .filter(({ game }) => user.showAdult || !game.adultOnly);
   if (user.isPublic) {
     const { displayName, handle, avatarUrl, avatarMotionUrl, frame, frameMotionUrl } = user;
@@ -349,12 +350,14 @@ async function sweep() {
   await refreshDiscordAccounts().catch((cause) => console.error('Discord :', cause));
   await fillHiddenDescriptions().catch((cause) => console.error('Succès cachés :', cause));
   await fillWowCatalog().catch((cause) => console.error('Catalogue WoW :', cause));
+  await sweepSteamStore().catch((cause) => console.error('Boutique Steam :', cause));
 }
 
 /** Démarre le traitement des synchronisations dans le processus du site. */
 export async function startWorkers() {
   const instance = await boss();
   await fillFamilies();
+  await fillGameTiers();
 
   // Un arrêt brutal peut laisser des comptes bloqués en cours de synchronisation.
   await db.linkedAccount.updateMany({

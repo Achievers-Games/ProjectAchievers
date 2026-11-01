@@ -1,5 +1,5 @@
 import type { Platform } from '@prisma/client';
-import { nextTier, tierFor, type NextTier } from '$lib/collection';
+import { copiesFor, nextCopy, type NextCopy } from '$lib/collection';
 
 interface LibraryRow {
   unlockedCount: number;
@@ -15,6 +15,7 @@ interface LibraryRow {
     headerUrl: string | null;
     totalAchievements: number;
     familyKey: string | null;
+    tier?: number | null;
   };
 }
 
@@ -30,12 +31,14 @@ export interface LibraryCard {
   lastUnlockedAt: Date | null;
   versions: { platform: Platform; name: string; slug: string; completion: number }[];
   tier: number;
-  next: NextTier | null;
+  copies: number;
+  next: NextCopy | null;
 }
 
 /**
  * Réunit les versions d'un jeu en une seule carte, celle de la version la plus avancée.
- * Finir une seule version suffit à obtenir la carte ; chaque autre plateforme la fait monter.
+ * Finir une seule version suffit à obtenir la carte, au niveau de la version finie la plus dure ;
+ * chaque autre plateforme lui ajoute un exemplaire.
  */
 export function groupLibrary(rows: LibraryRow[]): LibraryCard[] {
   const families = Map.groupBy(rows, (row) => row.game.familyKey ?? row.game.id);
@@ -43,9 +46,8 @@ export function groupLibrary(rows: LibraryRow[]): LibraryCard[] {
   return [...families.values()].map((family) => {
     const versions = family.toSorted((a, b) => b.completion - a.completion);
     const best = versions[0] as LibraryRow;
-    const finished = new Set(
-      versions.filter((v) => v.completion >= 100).map((v) => v.game.platform),
-    );
+    const done = versions.filter((v) => v.completion >= 100);
+    const finished = new Set(done.map((v) => v.game.platform));
     const summary = versions.map((v) => ({
       platform: v.game.platform,
       name: v.game.name,
@@ -67,8 +69,9 @@ export function groupLibrary(rows: LibraryRow[]): LibraryCard[] {
       },
       lastUnlockedAt: best.lastUnlockedAt,
       versions: summary,
-      tier: tierFor(finished.size),
-      next: nextTier(summary),
+      tier: Math.max(0, ...done.map((v) => v.game.tier ?? 1)),
+      copies: copiesFor(finished.size),
+      next: nextCopy(summary),
     };
   });
 }

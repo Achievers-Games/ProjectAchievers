@@ -18,8 +18,10 @@ export interface Reward {
   };
   progress: CardProgress;
   unlockedAt: Date | null;
-  /** Rareté de la carte, selon le nombre de plateformes à 100 %. */
+  /** Niveau de la carte, selon la difficulté du jeu. */
   tier?: number;
+  /** Nombre de plateformes terminées : ×2, ×3 ou ×4. */
+  copies?: number;
 }
 
 /** Une carte obtenue, affichée dans le fil en direct. */
@@ -36,20 +38,38 @@ export interface CardDrop {
   unlockedAt: Date | string;
 }
 
-/** Une plateforme à 100 % donne l'Or, chaque plateforme de plus fait monter la carte. */
-export const tierFor = (platforms: number) => Math.min(platforms, 4);
+export const TIERS = [1, 2, 3, 4, 5, 6];
+/** Les effets holographiques commencent à l'Or. */
+export const HOLO_TIER = 3;
 
-export interface NextTier {
-  tier: number;
+/** Part de joueurs ayant le succès le plus rare, du Bronze au Prismatique ; en dessous, Légendaire. */
+export const RARITY_STEPS = [10, 4, 2, 1, 0.3];
+/** Sans rareté publiée (Xbox, Battle.net), le nombre de succès mesure l'effort demandé. */
+const SIZE_STEPS = [20, 40, 70, 120, 300];
+
+/** Le niveau d'un jeu vient de sa difficulté, jamais du nombre de plateformes où il existe. */
+export function difficultyTier(rarest: number | null, achievements: number) {
+  const step =
+    rarest === null
+      ? SIZE_STEPS.findIndex((size) => achievements < size)
+      : RARITY_STEPS.findIndex((rarity) => rarest >= rarity);
+  return step < 0 ? TIERS.length : step + 1;
+}
+
+/** Terminer une autre version ne change pas le niveau : la carte gagne un exemplaire de plus. */
+export const copiesFor = (platforms: number) => Math.min(platforms, 4);
+
+export interface NextCopy {
+  copies: number;
   platform: Platform;
   completion: number;
 }
 
 /**
- * Avancement vers le niveau suivant : la version commencée la plus avancée sur une plateforme
+ * Avancement vers l'exemplaire suivant : la version commencée la plus avancée sur une plateforme
  * pas encore finie. Rien tant qu'aucune carte n'est obtenue, ou sans autre version commencée.
  */
-export function nextTier(versions: { platform: Platform; completion: number }[]): NextTier | null {
+export function nextCopy(versions: { platform: Platform; completion: number }[]): NextCopy | null {
   const finished = new Set(versions.filter((v) => v.completion >= 100).map((v) => v.platform));
   if (finished.size === 0) return null;
 
@@ -58,7 +78,7 @@ export function nextTier(versions: { platform: Platform; completion: number }[])
     .toSorted((a, b) => b.completion - a.completion)[0];
   return started
     ? {
-        tier: tierFor(finished.size + 1),
+        copies: copiesFor(finished.size + 1),
         platform: started.platform,
         completion: started.completion,
       }

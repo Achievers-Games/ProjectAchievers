@@ -1,6 +1,7 @@
 import type { Platform, Prisma, TrophyType } from '@prisma/client';
 import { db } from '../db';
 import { familyKey } from '../family';
+import { difficultyTier } from '$lib/collection';
 import { slugify } from '$lib/slug';
 
 const POINTS: Record<TrophyType, number> = {
@@ -61,6 +62,27 @@ export async function upsertGame(input: GameInput) {
   });
 }
 
+/** Un taux de 0 % veut dire « aucune donnée » : il ne compte pas comme une rareté. */
+export async function refreshGameTier(gameId: string) {
+  const [count, { _min }] = await Promise.all([
+    db.achievement.count({ where: { gameId } }),
+    db.achievement.aggregate({
+      where: { gameId, globalRarity: { gt: 0 } },
+      _min: { globalRarity: true },
+    }),
+  ]);
+  await db.game.update({
+    where: { id: gameId },
+    data: { tier: difficultyTier(_min.globalRarity, count) },
+  });
+}
+
+/** Rattrape les jeux déjà connus, une fois, au démarrage. */
+export async function fillGameTiers() {
+  const games = await db.game.findMany({ where: { tier: null }, select: { id: true } });
+  for (const { id } of games) await refreshGameTier(id);
+}
+
 /** Remplace le catalogue de succès d'un jeu. Les succès déjà connus gardent leur identifiant. */
 export async function saveAchievements(gameId: string, achievements: AchievementInput[]) {
   const writes: Prisma.PrismaPromise<unknown>[] = achievements.map((a) => {
@@ -93,6 +115,7 @@ export async function saveAchievements(gameId: string, achievements: Achievement
     }),
   );
   await db.$transaction(writes);
+  await refreshGameTier(gameId);
 }
 
 /**

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { m } from '$lib/paraglide/messages';
   import CompleteBadge from '$lib/components/CompleteBadge.svelte';
+  import { TIERS } from '$lib/collection';
   import { tierRule } from '$lib/labels';
 </script>
 
@@ -9,7 +10,7 @@
   <div class="card mt-2 space-y-3 p-4">
     <p class="text-muted">{m.tiers_how_text()}</p>
     <ul class="grid gap-2 sm:grid-cols-2">
-      {#each [1, 2, 3, 4] as tier (tier)}
+      {#each TIERS as tier (tier)}
         <li class="flex flex-wrap items-center gap-2">
           <CompleteBadge {tier} />
           <span>{tierRule(tier)}</span>

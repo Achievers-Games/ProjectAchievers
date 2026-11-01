@@ -44,6 +44,7 @@
                   progress={card.progress}
                   versions={card.versions}
                   tier={card.tier}
+                  copies={card.copies}
                   next={card.next}
                   layout="liste"
                 />
@@ -109,6 +110,7 @@
                   progress={card.progress}
                   versions={card.versions}
                   tier={card.tier}
+                  copies={card.copies}
                   next={card.next}
                   layout="liste"
                 />

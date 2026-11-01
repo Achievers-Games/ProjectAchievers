@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { HOLO_TIER } from '$lib/collection';
   import { m } from '$lib/paraglide/messages';
   import { invalidate } from '$app/navigation';
   import { fly } from 'svelte/transition';
@@ -28,6 +29,9 @@
 
   /** Plus la carte est rare, plus elle prend de place. */
   const MOMENT_AVATAR: Record<number, number> = { 2: 36, 3: 48, 4: 64 };
+  /** Un moment grandit avec le niveau de la carte, ou avec ses exemplaires. */
+  const momentSize = ({ tier, copies }: { tier: number; copies: number }) =>
+    Math.max(tier - 2, copies, 1);
 
   let live = $state<LiveEvent[]>([]);
   let nextKey = 0;
@@ -163,16 +167,21 @@
               <li in:fly={{ y: -12, duration: 250 }}>
                 <a
                   href="/jeux/{item.game.slug}"
-                  data-complete={item.tier > 1 || undefined}
-                  data-tier={item.tier > 1 ? item.tier : undefined}
+                  data-complete={momentSize(item) > 1 || undefined}
+                  data-tier={momentSize(item) > 1 ? item.tier : undefined}
+                  data-copies={item.copies > 1 ? item.copies : undefined}
                   class="moment game-card card"
-                  class:moment-big={item.tier > 1}
-                  style:--moment-image={item.tier > 1 && item.game.headerUrl
+                  class:moment-big={momentSize(item) > 1}
+                  style:--moment-image={momentSize(item) > 1 && item.game.headerUrl
                     ? `url("${item.game.headerUrl}")`
                     : undefined}
-                  data-size={item.tier}
+                  data-size={momentSize(item)}
                 >
-                  <Avatar person={item.user} size={MOMENT_AVATAR[item.tier] ?? 28} play="always" />
+                  <Avatar
+                    person={item.user}
+                    size={MOMENT_AVATAR[momentSize(item)] ?? 28}
+                    play="always"
+                  />
                   <span class="min-w-0 flex-1">
                     <span class="moment-title block truncate">
                       {item.user.displayName} — {item.game.name}
@@ -181,8 +190,8 @@
                       {m.activity_tier({ tier: tierLabel(item.tier) })} · {formatRelative(item.at)}
                     </span>
                   </span>
-                  <CompleteBadge tier={item.tier} />
-                  {#if item.tier > 1}<span class="foil" aria-hidden="true"></span>{/if}
+                  <CompleteBadge tier={item.tier} copies={item.copies} />
+                  {#if item.tier >= HOLO_TIER}<span class="foil" aria-hidden="true"></span>{/if}
                 </a>
               </li>
             {:else}

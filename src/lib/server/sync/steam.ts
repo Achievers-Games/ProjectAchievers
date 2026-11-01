@@ -3,15 +3,20 @@ import { applyAccountLook, identityLook } from '../accounts';
 import { db } from '../db';
 import { env } from '../env';
 import { fetchSteamIdentity } from '../providers/steam';
-import { fetchRetry, sleep, SyncError, syncGames } from './errors';
+import { fetchRetry, mapLimit, sleep, SyncError, syncGames } from './errors';
 import { saveAchievements, saveProgress, upsertGame, type AchievementInput } from './store';
-import type { ProviderSync } from './types';
+import type { ProviderSync, SyncContext } from './types';
 
 const API = 'https://api.steampowered.com';
 const CDN = 'https://cdn.cloudflare.steamstatic.com/steam/apps';
 const STORE = 'https://store.steampowered.com/api/appdetails';
 const SCHEMA_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
 const CONCURRENCY = 4;
+/** Steam refuse 400 jeux d'un coup. */
+const APPS_PER_CALL = 300;
+const SHARED_CHECK_EVERY = 24 * 60 * 60 * 1000;
+const STORE_SWEEP_EVERY = 30 * 24 * 60 * 60 * 1000;
+const MAX_FRIENDS = 300;
 
 interface OwnedGame {
   appid: number;
@@ -53,6 +58,124 @@ async function fetchOwnedGames(steamId: string): Promise<OwnedGame[]> {
     throw new SyncError('sync_steam_private');
   }
   return data.response.games;
+}
+
+async function fetchRecentGames(steamId: string): Promise<OwnedGame[]> {
+  const response = await steamGet('/IPlayerService/GetRecentlyPlayedGames/v1/', {
+    steamid: steamId,
+  });
+  if (!response.ok) return [];
+  const data = (await response.json()) as { response?: { games?: OwnedGame[] } };
+  return data.response?.games ?? [];
+}
+
+/** Les membres d'une famille Steam sont le plus souvent amis, et leur bibliothèque peut être lue. */
+async function fetchFriendGames(steamId: string) {
+  const response = await steamGet('/ISteamUser/GetFriendList/v1/', {
+    steamid: steamId,
+    relationship: 'friend',
+  });
+  // 401 : la liste d'amis est privée.
+  if (!response.ok) return [];
+  const data = (await response.json()) as {
+    friendslist?: { friends?: { steamid: string }[] };
+  };
+  const friends = (data.friendslist?.friends ?? []).slice(0, MAX_FRIENDS);
+  const games: OwnedGame[] = [];
+  await mapLimit(friends, CONCURRENCY, async ({ steamid }) => {
+    games.push(...(await fetchOwnedGames(steamid).catch(() => [])));
+  });
+  return games;
+}
+
+async function fetchStoreApps() {
+  const apps: OwnedGame[] = [];
+  let lastApp = 0;
+  for (;;) {
+    const response = await steamGet('/IStoreService/GetAppList/v1/', {
+      include_games: 'true',
+      include_dlc: 'false',
+      max_results: 50_000,
+      last_appid: lastApp,
+    });
+    if (!response.ok) throw new Error(`GetAppList a répondu ${response.status}`);
+    const { response: page } = (await response.json()) as {
+      response?: { apps?: OwnedGame[]; have_more_results?: boolean; last_appid?: number };
+    };
+    apps.push(...(page?.apps ?? []));
+    if (!page?.have_more_results || !page.last_appid) return apps;
+    lastApp = page.last_appid;
+  }
+}
+
+/**
+ * Steam ne dit pas quels jeux un joueur emprunte, mais cette méthode, non documentée, répond
+ * pour n'importe quel jeu et ne renvoie vide que si le joueur n'y a aucun succès.
+ */
+async function appsWithUnlocks(steamId: string, appIds: number[]) {
+  const batches = Array.from({ length: Math.ceil(appIds.length / APPS_PER_CALL) }, (_, index) =>
+    appIds.slice(index * APPS_PER_CALL, (index + 1) * APPS_PER_CALL),
+  );
+  const found = new Set<number>();
+  await mapLimit(batches, CONCURRENCY, async (batch) => {
+    const params: Record<string, string | number> = { steamid: steamId, max_achievements: 1 };
+    batch.forEach((appId, index) => (params[`appids[${index}]`] = appId));
+    const response = await steamGet('/IPlayerService/GetTopAchievementsForGames/v1/', params);
+    if (!response.ok) throw new Error(`GetTopAchievementsForGames a répondu ${response.status}`);
+    const data = (await response.json()) as {
+      response?: { games?: { appid: number; achievements?: unknown[] }[] };
+    };
+    for (const game of data.response?.games ?? []) {
+      if (game.achievements?.length) found.add(game.appid);
+    }
+  });
+  return found;
+}
+
+/**
+ * Les jeux empruntés n'apparaissent pas dans la bibliothèque du joueur. La synchronisation part
+ * toutes les quelques minutes : seuls les jeux récents sont cherchés à chaque fois.
+ */
+async function findSharedGames(
+  { userId, account }: Pick<SyncContext, 'userId' | 'account'>,
+  owned: Set<number>,
+) {
+  const steamId = account.providerUserId;
+  const recent = await fetchRecentGames(steamId);
+  const candidates = new Map<number, OwnedGame>();
+
+  const daily =
+    !account.sharedCheckedAt ||
+    Date.now() - account.sharedCheckedAt.getTime() >= SHARED_CHECK_EVERY;
+  if (daily) {
+    const [friends, catalog, known] = await Promise.all([
+      fetchFriendGames(steamId),
+      db.game.findMany({
+        where: { platform: 'STEAM', totalAchievements: { gt: 0 } },
+        select: { platformGameId: true, name: true },
+      }),
+      db.userGame.findMany({
+        where: { userId, game: { platform: 'STEAM' } },
+        select: { game: { select: { platformGameId: true, name: true } } },
+      }),
+    ]);
+    const stored = [...catalog, ...known.map(({ game }) => game)];
+    for (const game of friends) candidates.set(game.appid, game);
+    for (const { platformGameId, name } of stored) {
+      candidates.set(Number(platformGameId), { appid: Number(platformGameId), name });
+    }
+  }
+  for (const game of recent) candidates.set(game.appid, game);
+  for (const appId of owned) candidates.delete(appId);
+
+  const played = await appsWithUnlocks(steamId, [...candidates.keys()]);
+  if (daily) {
+    await db.linkedAccount.update({
+      where: { id: account.id },
+      data: { sharedCheckedAt: new Date() },
+    });
+  }
+  return [...played].flatMap((appId) => candidates.get(appId) ?? []);
 }
 
 /**
@@ -254,9 +377,98 @@ export async function fetchUnlocks(steamId: string, appId: number) {
     }));
 }
 
+/** Lit un jeu et les succès du joueur. Sans réponse pour un jeu emprunté, le jeu est laissé. */
+async function syncSteamGame(userId: string, steamId: string, source: OwnedGame, shared: boolean) {
+  const appId = String(source.appid);
+  const game = await upsertGame({
+    platform: 'STEAM',
+    platformGameId: appId,
+    name: source.name,
+    ...(await steamImages(appId)),
+  });
+
+  const stale = !game.schemaSyncedAt || Date.now() - game.schemaSyncedAt.getTime() > SCHEMA_MAX_AGE;
+  if (stale) {
+    const schema = await fetchSchema(source.appid);
+    if (schema) await saveAchievements(game.id, schema);
+  }
+
+  const unlocks = await fetchUnlocks(steamId, source.appid).catch((error: unknown) => {
+    if (shared && error instanceof SyncError) return null;
+    throw error;
+  });
+  if (!unlocks) return { game, gained: 0 };
+
+  const gained = await saveProgress(
+    userId,
+    game.id,
+    unlocks,
+    // La bibliothèque d'un autre ne dit rien du temps passé par ce joueur.
+    shared
+      ? { playtimeMinutes: source.playtime_forever }
+      : {
+          playtimeMinutes: source.playtime_forever ?? 0,
+          lastPlayedAt: source.rtime_last_played ? new Date(source.rtime_last_played * 1000) : null,
+        },
+  );
+  return { game, gained };
+}
+
+/** Rattrape les jeux qu'aucune recherche rapide ne voit, un compte à la fois. */
+export async function sweepSteamStore() {
+  const account = await db.linkedAccount.findFirst({
+    where: {
+      provider: 'STEAM',
+      syncStatus: { notIn: ['QUEUED', 'SYNCING'] },
+      OR: [
+        { storeSweptAt: null },
+        { storeSweptAt: { lt: new Date(Date.now() - STORE_SWEEP_EVERY) } },
+      ],
+    },
+    orderBy: { storeSweptAt: { sort: 'asc', nulls: 'first' } },
+  });
+  if (!account) return 0;
+
+  const steamId = account.providerUserId;
+  const [apps, owned, known] = await Promise.all([
+    fetchStoreApps(),
+    fetchOwnedGames(steamId).catch(() => null),
+    db.userGame.findMany({
+      where: { userId: account.userId, game: { platform: 'STEAM' } },
+      select: { game: { select: { platformGameId: true } } },
+    }),
+  ]);
+  const skipped = new Set([
+    ...(owned ?? []).map((game) => game.appid),
+    ...known.map(({ game }) => Number(game.platformGameId)),
+  ]);
+  const candidates = apps.filter((app) => !skipped.has(app.appid));
+  const played = owned
+    ? await appsWithUnlocks(
+        steamId,
+        candidates.map((app) => app.appid),
+      )
+    : [];
+  const found = new Set(played);
+  for (const app of candidates) {
+    if (found.has(app.appid)) await syncSteamGame(account.userId, steamId, app, true);
+  }
+  await db.linkedAccount.update({
+    where: { id: account.id },
+    data: { storeSweptAt: new Date() },
+  });
+  return found.size;
+}
+
 export const syncSteam: ProviderSync = async ({ userId, account, report, onUnlocked }) => {
   const steamId = account.providerUserId;
   const owned = (await fetchOwnedGames(steamId)).filter((g) => g.has_community_visible_stats);
+  const library = new Set(owned.map((game) => game.appid));
+  // Une méthode non documentée peut disparaître : la bibliothèque reste synchronisée.
+  const shared = await findSharedGames({ userId, account }, library).catch((cause) => {
+    console.error('Jeux partagés Steam :', cause);
+    return [];
+  });
 
   const previous = await db.userGame.findMany({
     where: { userId, game: { platform: 'STEAM' } },
@@ -267,37 +479,20 @@ export const syncSteam: ProviderSync = async ({ userId, account, report, onUnloc
   let achievements = 0;
 
   const games = await syncGames(
-    owned,
+    [...owned, ...shared],
     { platform: 'Steam', concurrency: CONCURRENCY, name: (g) => g.name, report },
     async (ownedGame) => {
       const appId = String(ownedGame.appid);
+      const borrowed = !library.has(ownedGame.appid);
       const playedAt = ownedGame.rtime_last_played
         ? new Date(ownedGame.rtime_last_played * 1000)
         : null;
 
       // Un jeu non relancé depuis la dernière synchronisation ne peut pas avoir changé.
       const known = lastPlayed.get(appId);
-      if (lastPlayed.has(appId) && known?.getTime() === playedAt?.getTime()) return;
+      if (!borrowed && lastPlayed.has(appId) && known?.getTime() === playedAt?.getTime()) return;
 
-      const game = await upsertGame({
-        platform: 'STEAM',
-        platformGameId: appId,
-        name: ownedGame.name,
-        ...(await steamImages(appId)),
-      });
-
-      const stale =
-        !game.schemaSyncedAt || Date.now() - game.schemaSyncedAt.getTime() > SCHEMA_MAX_AGE;
-      if (stale) {
-        const schema = await fetchSchema(ownedGame.appid);
-        if (schema) await saveAchievements(game.id, schema);
-      }
-
-      const unlocks = await fetchUnlocks(steamId, ownedGame.appid);
-      const gained = await saveProgress(userId, game.id, unlocks, {
-        playtimeMinutes: ownedGame.playtime_forever ?? 0,
-        lastPlayedAt: playedAt,
-      });
+      const { game, gained } = await syncSteamGame(userId, steamId, ownedGame, borrowed);
       achievements += gained;
       if (gained > 0) onUnlocked(game, gained);
     },

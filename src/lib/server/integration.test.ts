@@ -14,7 +14,7 @@ import {
 } from './queries';
 import { grantFrames } from './frames';
 import { profileSchema, resolveIdentity, updateProfile, type Identity } from './accounts';
-import { nextTier, stepOf, tierFor } from '$lib/collection';
+import { copiesFor, difficultyTier, nextCopy, stepOf } from '$lib/collection';
 import { db } from './db';
 import { familyKey } from './family';
 import { groupLibrary } from './library';
@@ -24,7 +24,7 @@ import { checkLiveGames } from './sync/live';
 import { enqueueSync, refreshAccounts, runSync, startWorkers } from './sync/queue';
 import { isAdultOnly, rateGames } from './sync/content';
 import { onCard, onSync, type SyncEvent } from './sync/events';
-import { parseSteamPage, steamImages } from './sync/steam';
+import { sweepSteamStore, parseSteamPage, steamImages } from './sync/steam';
 import { saveAchievements, saveProgress, upsertGame } from './sync/store';
 import { parseGuideFile, syncCuratedGuides } from './curated-guides';
 import {
@@ -151,6 +151,7 @@ describe('jeux sur plusieurs plateformes', () => {
       headerUrl: null,
       totalAchievements: 2,
       familyKey: key,
+      tier: null as number | null,
     },
   });
 
@@ -160,42 +161,60 @@ describe('jeux sur plusieurs plateformes', () => {
 
   it('réunit les versions sur la plus avancée, sans pénaliser une version finie', () => {
     const [card] = groupLibrary([row('PSN', 40), row('STEAM', 100)]);
-    expect(card).toMatchObject({ slug: 'steam', tier: 1 });
+    expect(card).toMatchObject({ slug: 'steam', tier: 1, copies: 1 });
     expect(card?.progress.completion).toBe(100);
     expect(card?.versions.map((v) => v.platform)).toEqual(['STEAM', 'PSN']);
   });
 
-  it('montre le niveau suivant dès qu’une autre plateforme est commencée', () => {
-    expect(nextTier([{ platform: 'STEAM', completion: 40 }])).toBeNull();
-    expect(nextTier([{ platform: 'STEAM', completion: 100 }])).toBeNull();
+  it('montre l’exemplaire suivant dès qu’une autre plateforme est commencée', () => {
+    expect(nextCopy([{ platform: 'STEAM', completion: 40 }])).toBeNull();
+    expect(nextCopy([{ platform: 'STEAM', completion: 100 }])).toBeNull();
     expect(
-      nextTier([
+      nextCopy([
         { platform: 'STEAM', completion: 100 },
         { platform: 'PSN', completion: 0 },
       ]),
     ).toBeNull();
     expect(
-      nextTier([
+      nextCopy([
         { platform: 'STEAM', completion: 100 },
         { platform: 'PSN', completion: 58 },
       ]),
-    ).toEqual({ tier: 2, platform: 'PSN', completion: 58 });
+    ).toEqual({ copies: 2, platform: 'PSN', completion: 58 });
     expect(
-      nextTier([
+      nextCopy([
         { platform: 'STEAM', completion: 100 },
         { platform: 'PSN', completion: 100 },
         { platform: 'XBOX', completion: 12 },
       ]),
-    ).toEqual({ tier: 3, platform: 'XBOX', completion: 12 });
+    ).toEqual({ copies: 3, platform: 'XBOX', completion: 12 });
   });
 
-  it('fait monter la carte à chaque plateforme finie', () => {
+  it('ajoute un exemplaire à chaque plateforme finie, sans changer le niveau', () => {
+    const [double] = groupLibrary([row('PSN', 100), row('STEAM', 100)]);
+    expect(double).toMatchObject({ tier: 1, copies: 2 });
     expect(groupLibrary([row('PSN', 100), row('STEAM', 100)])).toHaveLength(1);
-    expect(groupLibrary([row('PSN', 100), row('STEAM', 100)])[0]?.tier).toBe(2);
     expect(groupLibrary([row('PSN', 100, 'a'), row('STEAM', 100, 'b')])).toHaveLength(2);
-    expect(tierFor(3)).toBe(3);
-    expect(tierFor(4)).toBe(4);
-    expect(tierFor(5)).toBe(4);
+    expect(copiesFor(5)).toBe(4);
+  });
+
+  it('garde le niveau de la version finie la plus dure', () => {
+    const version = (platform: 'STEAM' | 'PSN', completion: number, tier: number) => {
+      const version = row(platform, completion);
+      version.game.tier = tier;
+      return version;
+    };
+    expect(groupLibrary([version('PSN', 100, 5), version('STEAM', 100, 2)])[0]?.tier).toBe(5);
+    expect(groupLibrary([version('STEAM', 100, 2), version('PSN', 50, 6)])[0]?.tier).toBe(2);
+  });
+
+  it('classe un jeu selon son succès le plus rare, sinon selon sa taille', () => {
+    expect([40, 10, 5, 2, 1.5, 0.5, 0.2].map((rarity) => difficultyTier(rarity, 30))).toEqual([
+      1, 1, 2, 3, 4, 5, 6,
+    ]);
+    expect([10, 30, 50, 100, 200, 8000].map((size) => difficultyTier(null, size))).toEqual([
+      1, 2, 3, 4, 5, 6,
+    ]);
   });
 });
 
@@ -447,6 +466,10 @@ function steamApi(owned: unknown) {
     const url = String(input);
     const body = (value: unknown) => new Response(JSON.stringify(value));
     if (url.includes('GetOwnedGames')) return body(owned);
+    if (url.includes('GetRecentlyPlayedGames') || url.includes('GetTopAchievementsForGames')) {
+      return body({ response: { games: [] } });
+    }
+    if (url.includes('GetFriendList')) return body({ friendslist: { friends: [] } });
     if (url.includes('GetSchemaForGame')) {
       return body({
         game: {
@@ -527,6 +550,93 @@ describe('synchronisation Steam', () => {
 
     const urls = fetchMock.mock.calls.map(([url]) => String(url));
     expect(urls.some((u) => u.includes('GetPlayerAchievements'))).toBe(false);
+  });
+
+  /** Un ami possède le jeu 999003 ; le joueur y a des succès sans l'avoir en bibliothèque. */
+  function sharedGameApi(calls: string[] = []) {
+    const api = steamApi(ownedGames);
+    const body = (value: unknown) => new Response(JSON.stringify(value));
+    const friend = '76561190000000002';
+    const borrowed = { appid: 999003, name: `${PREFIX} emprunté` };
+    return vi.fn(async (input: string | URL) => {
+      const url = String(input);
+      calls.push(url);
+      if (url.includes('GetFriendList')) {
+        return body({ friendslist: { friends: [{ steamid: friend }] } });
+      }
+      if (url.includes('GetOwnedGames') && url.includes(friend)) {
+        return body({ response: { games: [borrowed] } });
+      }
+      if (url.includes('GetTopAchievementsForGames')) {
+        const asked = url.includes('999003');
+        return body({
+          response: {
+            games: asked ? [{ appid: 999003, achievements: [{ name: 'Alpha' }] }] : [],
+          },
+        });
+      }
+      if (url.includes('GetAppList')) {
+        return body({ response: { apps: [{ appid: 999003, name: borrowed.name }] } });
+      }
+      return api(input);
+    });
+  }
+
+  it('retrouve un jeu partagé en famille grâce à la bibliothèque d’un ami', async () => {
+    vi.stubGlobal('fetch', sharedGameApi());
+    const userId = await steamUser();
+
+    await runSync({ userId, provider: 'STEAM' });
+
+    const row = await db.userGame.findFirstOrThrow({
+      where: { userId, game: { platformGameId: '999003' } },
+    });
+    expect(row).toMatchObject({ unlockedCount: 1, completion: 50, lastPlayedAt: null });
+  });
+
+  it('ne cherche les jeux partagés chez les amis qu’une fois par jour', async () => {
+    const calls: string[] = [];
+    vi.stubGlobal('fetch', sharedGameApi(calls));
+    const userId = await steamUser();
+
+    await runSync({ userId, provider: 'STEAM' });
+    calls.length = 0;
+    await runSync({ userId, provider: 'STEAM' });
+
+    expect(calls.some((url) => url.includes('GetFriendList'))).toBe(false);
+  });
+
+  it('garde la synchronisation si la recherche des jeux partagés échoue', async () => {
+    const api = steamApi(ownedGames);
+    vi.stubGlobal('fetch', async (input: string | URL) =>
+      String(input).includes('GetTopAchievementsForGames')
+        ? new Response('', { status: 403 })
+        : api(input),
+    );
+    const userId = await steamUser();
+
+    await runSync({ userId, provider: 'STEAM' });
+
+    const account = await db.linkedAccount.findFirstOrThrow({ where: { userId } });
+    expect(account.syncStatus).toBe('COMPLETED');
+    expect(account.sharedCheckedAt).toBeNull();
+  });
+
+  it('balaye la boutique pour un compte, puis le laisse tranquille', async () => {
+    const calls: string[] = [];
+    vi.stubGlobal('fetch', sharedGameApi(calls));
+    await db.linkedAccount.updateMany({
+      where: { provider: 'STEAM' },
+      data: { storeSweptAt: new Date() },
+    });
+    const userId = await steamUser();
+
+    expect(await sweepSteamStore()).toBe(1);
+    expect(await db.userGame.count({ where: { userId } })).toBe(1);
+
+    calls.length = 0;
+    expect(await sweepSteamStore()).toBe(0);
+    expect(calls).toEqual([]);
   });
 
   it('demande à la boutique l’image des jeux récents', async () => {
@@ -1421,7 +1531,7 @@ describe('fil de la communauté', () => {
     await finish('PSN', 'c', '2030-01-03T00:00:00Z');
 
     const moments = (await highlights(false, 30)).flatMap((item) =>
-      item.kind === 'card' && item.game.name === `${PREFIX} niveaux` ? [item.tier] : [],
+      item.kind === 'card' && item.game.name === `${PREFIX} niveaux` ? [item.copies] : [],
     );
     expect(moments).toEqual([2, 1]);
   });
@@ -1531,6 +1641,7 @@ describe('filtres par niveau', () => {
       platform: 'STEAM' | 'PSN',
       completion: number,
       familyKey?: string,
+      tier?: number,
     ) => {
       const game = await db.game.create({
         data: {
@@ -1540,6 +1651,7 @@ describe('filtres par niveau', () => {
           slug: `${PREFIX}-${Math.random().toString(36).slice(2)}`,
           totalAchievements: 10,
           familyKey,
+          tier,
         },
       });
       await db.userGame.create({
@@ -1549,8 +1661,8 @@ describe('filtres par niveau', () => {
     const key = () => `${PREFIX}-${Math.random()}`;
     const platinum = key();
     const gold = key();
-    await add('platine', 'STEAM', 100, platinum);
-    await add('platine', 'PSN', 100, platinum);
+    await add('platine', 'STEAM', 100, platinum, 4);
+    await add('platine', 'PSN', 100, platinum, 4);
     await add('or', 'STEAM', 100, gold);
     await add('or', 'PSN', 40, gold);
     await add('or seul', 'STEAM', 100);
@@ -1559,7 +1671,7 @@ describe('filtres par niveau', () => {
     for (let index = 0; index < extraCards; index++) await add(`carte ${index}`, 'STEAM', 100);
     return { sort: 'progression', page: 1, ownerId: userId } as const;
   }
-  it('place les cartes Or avancées vers le Diamant juste après les Diamants', async () => {
+  it('classe les cartes par niveau, puis par avancée vers l’exemplaire suivant', async () => {
     const { ownerId } = await library();
     const cards = await userCards(ownerId);
     expect(cards.map((card) => card.name)).toEqual([
@@ -1597,7 +1709,7 @@ describe('filtres par niveau', () => {
     }
     const { games } = await listGames({ sort: 'nom', page: 1, ownerId, q: 'classique' }, ownerId);
     expect(games).toHaveLength(1);
-    expect(games[0]?.tier).toBe(2);
+    expect(games[0]?.copies).toBe(2);
   });
 
   it('garde les jeux cachés et non classés hors des fils publics', async () => {
@@ -1652,7 +1764,7 @@ describe('filtres par niveau', () => {
     const { ownerId } = await library();
     const user = await db.user.update({ where: { id: ownerId }, data: { isPublic: true } });
     const row = (await collectors(10_000)).find((entry) => entry.handle === user.handle);
-    expect(row).toMatchObject({ cards: 3, tiers: [2, 1, 0, 0], score: 500 });
+    expect(row).toMatchObject({ cards: 3, tiers: [2, 0, 0, 1, 0, 0], score: 350 });
   });
 
   it('attribue une fois les cadres, et les garde', async () => {
@@ -1674,11 +1786,11 @@ describe('filtres par niveau', () => {
 
   it('garde le niveau de la carte quand on filtre par plateforme', async () => {
     const filters = await library();
-    const steam = await listGames({ ...filters, platform: 'STEAM', tier: 2 }, filters.ownerId);
+    const steam = await listGames({ ...filters, platform: 'STEAM', tier: 4 }, filters.ownerId);
     expect(names(steam)).toEqual(['platine']);
   });
 
-  it('place chaque carte selon son avancée vers le niveau suivant', async () => {
+  it('place chaque carte selon son avancée vers l’exemplaire suivant', async () => {
     const filters = await library();
     expect(names(await listGames(filters, filters.ownerId))).toEqual([
       'platine',

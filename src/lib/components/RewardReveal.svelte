@@ -111,7 +111,13 @@
             <div class="reward-flip" class:revealed={index < flipped}>
               <div class="reward-back" aria-hidden="true">Achievers</div>
               <div class="reward-front">
-                <GameCard game={card.game} progress={card.progress} tier={card.tier} />
+                <GameCard
+                  game={card.game}
+                  progress={card.progress}
+                  tier={card.tier}
+                  copies={card.copies}
+                  live
+                />
               </div>
             </div>
           </div>

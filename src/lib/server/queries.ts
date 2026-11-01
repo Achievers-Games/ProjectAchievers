@@ -1,6 +1,7 @@
 import { Prisma, type Platform } from '@prisma/client';
 import { db } from './db';
 import { groupLibrary, type LibraryCard } from './library';
+import { TIERS } from '$lib/collection';
 import { RARITY_POINTS, SEASON, seasonState, type Season } from '$lib/season';
 
 export const PAGE_SIZE = 36;
@@ -63,16 +64,19 @@ const librarySelect = {
       headerUrl: true,
       totalAchievements: true,
       familyKey: true,
+      tier: true,
     },
   },
 } satisfies Prisma.UserGameSelect;
 
-/** Le pourcentage affiché sur la carte : celui du niveau suivant, s'il est en cours. */
+/** Le pourcentage affiché sur la carte : celui de l'exemplaire suivant, s'il est en cours. */
 const shownProgress = (card: LibraryCard) => card.next?.completion ?? card.progress.completion;
 
-/** Position sur l'échelle des niveaux : une carte Or à 58 % du Diamant vaut 1,58. */
+/** Position sur l'échelle : une carte Or à 58 % de son exemplaire suivant vaut 3,58. */
 const tierProgress = (card: LibraryCard) =>
-  card.tier + (card.tier ? (card.next?.completion ?? 0) : card.progress.completion) / 100;
+  card.tier
+    ? card.tier * 10 + card.copies + (card.next?.completion ?? 0) / 100
+    : card.progress.completion / 100;
 
 /** Bibliothèque d'un joueur : les versions d'un même jeu forment une seule carte. */
 async function listLibrary(
@@ -162,6 +166,7 @@ export async function listGames(filters: GameFilters, viewerId: string | null) {
         coverUrl: true,
         headerUrl: true,
         totalAchievements: true,
+        tier: true,
       },
     }),
     db.game.count({ where }),
@@ -171,7 +176,8 @@ export async function listGames(filters: GameFilters, viewerId: string | null) {
     games: items.map((game) => ({
       ...game,
       versions: [],
-      tier: 0,
+      tier: game.tier ?? 1,
+      copies: 1,
       next: null,
       seasonEligible: false,
     })),
@@ -270,12 +276,18 @@ export async function dashboard(userId: string, showAdult = false) {
   return { recent, almost, stats };
 }
 
-/** Chaque niveau vaut trois fois le précédent : une Légendaire pèse 27 cartes Or. */
-const TIER_POINTS = [100, 300, 900, 2700];
+/** Une Légendaire pèse 27 cartes Or. Les exemplaires ne comptent pas : racheter un jeu ne rapporte rien. */
+const TIER_POINTS = [25, 50, 100, 300, 900, 2700];
 
 /** Les seuls points du site : ceux des succès ne seraient pas comparables d'une plateforme à l'autre. */
 const cardScore = (tiers: number[]) =>
   tiers.reduce((sum, count, index) => sum + count * (TIER_POINTS[index] ?? 0), 0);
+
+type TierCounts = Record<'t1' | 't2' | 't3' | 't4' | 't5' | 't6', bigint>;
+
+/** Nombre de cartes par niveau, du Bronze au Légendaire. */
+const tierCounts = (row?: TierCounts) =>
+  TIERS.map((tier) => Number(row?.[`t${tier}` as keyof TierCounts] ?? 0));
 
 const BARELY_PLAYED_MINUTES = 60;
 
@@ -502,16 +514,16 @@ export async function homeBanners(firstCollector: Collector | undefined, userId?
 
 export async function userStats(userId: string) {
   const [collection, unlocked] = await Promise.all([
-    db.$queryRaw<
-      { games: bigint; or: bigint; diamant: bigint; prismatique: bigint; legendaire: bigint }[]
-    >`
+    db.$queryRaw<(TierCounts & { games: bigint })[]>`
       SELECT count(*) AS games,
-             count(*) FILTER (WHERE finished = 1) AS "or",
-             count(*) FILTER (WHERE finished = 2) AS diamant,
-             count(*) FILTER (WHERE finished = 3) AS prismatique,
-             count(*) FILTER (WHERE finished >= 4) AS legendaire
+             count(*) FILTER (WHERE tier = 1) AS t1,
+             count(*) FILTER (WHERE tier = 2) AS t2,
+             count(*) FILTER (WHERE tier = 3) AS t3,
+             count(*) FILTER (WHERE tier = 4) AS t4,
+             count(*) FILTER (WHERE tier = 5) AS t5,
+             count(*) FILTER (WHERE tier = 6) AS t6
       FROM (
-        SELECT count(DISTINCT g.platform) FILTER (WHERE ug.completion >= 100) AS finished
+        SELECT max(COALESCE(g.tier, 1)) FILTER (WHERE ug.completion >= 100) AS tier
         FROM "UserGame" ug
         JOIN "Game" g ON g.id = ug."gameId"
         WHERE ug."userId" = ${userId} AND NOT ug.hidden
@@ -519,17 +531,12 @@ export async function userStats(userId: string) {
       ) families`,
     db.userAchievement.count({ where: { userId } }),
   ]);
-  const tiers = {
-    or: Number(collection[0]?.or ?? 0),
-    diamant: Number(collection[0]?.diamant ?? 0),
-    prismatique: Number(collection[0]?.prismatique ?? 0),
-    legendaire: Number(collection[0]?.legendaire ?? 0),
-  };
+  const tiers = tierCounts(collection[0]);
   return {
     games: Number(collection[0]?.games ?? 0),
     tiers,
     unlocked,
-    points: cardScore([tiers.or, tiers.diamant, tiers.prismatique, tiers.legendaire]),
+    points: cardScore(tiers),
   };
 }
 
@@ -632,7 +639,7 @@ export async function leaderboard(period: LeaderboardPeriod, limit = 20, userIds
 /** Classement des collections : seules les cartes comptent, pas le nombre de succès. */
 async function rankedCollectors(limit: number) {
   const rows = await db.$queryRaw<
-    {
+    ({
       id: string;
       handle: string;
       displayName: string;
@@ -640,20 +647,18 @@ async function rankedCollectors(limit: number) {
       avatarMotionUrl: string | null;
       frame: string | null;
       frameMotionUrl: string | null;
-      or: bigint;
-      diamant: bigint;
-      prismatique: bigint;
-      legendaire: bigint;
-    }[]
+    } & TierCounts)[]
   >`
     SELECT u.id, u.handle, u."displayName", u."avatarUrl", u."avatarMotionUrl", u.frame,
            u."frameMotionUrl",
-           count(*) FILTER (WHERE finished = 1) AS "or",
-           count(*) FILTER (WHERE finished = 2) AS diamant,
-           count(*) FILTER (WHERE finished = 3) AS prismatique,
-           count(*) FILTER (WHERE finished >= 4) AS legendaire
+           count(*) FILTER (WHERE tier = 1) AS t1,
+           count(*) FILTER (WHERE tier = 2) AS t2,
+           count(*) FILTER (WHERE tier = 3) AS t3,
+           count(*) FILTER (WHERE tier = 4) AS t4,
+           count(*) FILTER (WHERE tier = 5) AS t5,
+           count(*) FILTER (WHERE tier = 6) AS t6
     FROM (
-      SELECT ug."userId", count(DISTINCT g.platform) AS finished
+      SELECT ug."userId", max(COALESCE(g.tier, 1)) AS tier
       FROM "UserGame" ug
       JOIN "Game" g ON g.id = ug."gameId"
       WHERE ug.completion >= 100 AND NOT ug.hidden
@@ -663,8 +668,8 @@ async function rankedCollectors(limit: number) {
     GROUP BY u.id`;
 
   return rows
-    .map(({ or, diamant, prismatique, legendaire, ...user }) => {
-      const tiers = [or, diamant, prismatique, legendaire].map(Number);
+    .map(({ t1, t2, t3, t4, t5, t6, ...user }) => {
+      const tiers = tierCounts({ t1, t2, t3, t4, t5, t6 });
       return {
         ...user,
         tiers,
@@ -770,12 +775,13 @@ async function tierMoments(showAdult: boolean, limit: number) {
       slug: string;
       headerUrl: string | null;
       at: Date;
-      tier: bigint;
+      copies: bigint;
+      tier: number | null;
     }[]
   >`
     WITH finished AS (
       SELECT ug."userId", ug."lastUnlockedAt" AS at, g.name, g.slug, g."headerUrl", g.platform,
-             g."adultOnly", g."contentCheckedAt",
+             g."adultOnly", g."contentCheckedAt", g.tier,
              COALESCE(g."familyKey", g.id) AS family,
              min(ug."lastUnlockedAt") OVER (
                PARTITION BY ug."userId", COALESCE(g."familyKey", g.id), g.platform
@@ -785,11 +791,11 @@ async function tierMoments(showAdult: boolean, limit: number) {
       JOIN "User" u ON u.id = ug."userId" AND u."isPublic"
       WHERE ug.completion >= 100 AND NOT ug.hidden AND ug."lastUnlockedAt" IS NOT NULL
     ), ranked AS (
-      SELECT *, dense_rank() OVER (PARTITION BY "userId", family ORDER BY reached, platform) AS tier
+      SELECT *, dense_rank() OVER (PARTITION BY "userId", family ORDER BY reached, platform) AS copies
       FROM finished
     )
     SELECT u.handle, u."displayName", u."avatarUrl", u."avatarMotionUrl", u.frame,
-           u."frameMotionUrl", r.name, r.slug, r."headerUrl", r.at, r.tier
+           u."frameMotionUrl", r.name, r.slug, r."headerUrl", r.at, r.copies, r.tier
     FROM ranked r
     JOIN "User" u ON u.id = r."userId"
     WHERE r.at = r.reached
@@ -797,12 +803,13 @@ async function tierMoments(showAdult: boolean, limit: number) {
         AND (r.platform <> 'STEAM' OR r."contentCheckedAt" IS NOT NULL)))
     ORDER BY r.at DESC
     LIMIT ${limit}`;
-  return rows.map(({ name, slug, headerUrl, at, tier, ...user }) => ({
+  return rows.map(({ name, slug, headerUrl, at, copies, tier, ...user }) => ({
     kind: 'card' as const,
-    key: `${user.handle}-${slug}-${tier}`,
+    key: `${user.handle}-${slug}-${copies}`,
     user,
     game: { name, slug, headerUrl },
-    tier: Number(tier),
+    tier: tier ?? 1,
+    copies: Math.min(Number(copies), 4),
     at,
   }));
 }

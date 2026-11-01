@@ -22,13 +22,14 @@
 
   const profile = $derived(data.profile);
   const isMe = $derived(data.user?.id === profile.user.id);
-  const stats = $derived([
+  const stats = $derived<{ label: string; value: number; tier?: number }[]>([
     { label: m.stat_games(), value: profile.stats.games },
     { label: m.stat_achievements(), value: profile.stats.unlocked },
-    { label: tierLabel(1), value: profile.stats.tiers.or, tier: 1 },
-    { label: tierLabel(2), value: profile.stats.tiers.diamant, tier: 2 },
-    { label: tierLabel(3), value: profile.stats.tiers.prismatique, tier: 3 },
-    { label: tierLabel(4), value: profile.stats.tiers.legendaire, tier: 4 },
+    ...profile.stats.tiers.map((value, index) => ({
+      label: tierLabel(index + 1),
+      value,
+      tier: index + 1,
+    })),
     { label: m.stat_points(), value: profile.stats.points },
   ]);
 
@@ -44,11 +45,7 @@
     name="description"
     content={m.profile_description({
       achievements: m.count_achievements({ count: profile.stats.unlocked }),
-      cards:
-        profile.stats.tiers.or +
-        profile.stats.tiers.diamant +
-        profile.stats.tiers.prismatique +
-        profile.stats.tiers.legendaire,
+      cards: profile.stats.tiers.reduce((sum, count) => sum + count, 0),
     })}
   />
   <meta property="og:title" content={m.profile_og_title({ name: profile.user.displayName })} />
@@ -122,7 +119,7 @@
     </div>
   </header>
 
-  <dl class="card grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 sm:divide-x sm:divide-line">
+  <dl class="card grid grid-cols-3 sm:grid-cols-5 xl:grid-cols-9 sm:divide-x sm:divide-line">
     {#each stats as stat (stat.label)}
       <div class="p-4">
         <dt class="label">{stat.label}</dt>
@@ -150,7 +147,9 @@
             progress={card.progress}
             versions={card.versions}
             tier={card.tier}
+            copies={card.copies}
             next={card.next}
+            live
           />
         {/each}
       </div>
@@ -183,6 +182,7 @@
               progress={card.progress}
               versions={card.versions}
               tier={card.tier}
+              copies={card.copies}
               next={card.next}
             />
           {/each}
