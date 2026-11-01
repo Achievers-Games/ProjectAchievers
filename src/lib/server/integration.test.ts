@@ -24,7 +24,7 @@ import { checkLiveGames } from './sync/live';
 import { enqueueSync, refreshAccounts, runSync, startWorkers } from './sync/queue';
 import { isAdultOnly, rateGames } from './sync/content';
 import { onCard, onSync, type SyncEvent } from './sync/events';
-import { sweepSteamStore, parseSteamPage, steamImages } from './sync/steam';
+import { parseSteamPage, requestStoreSweep, steamImages, sweepSteamStore } from './sync/steam';
 import { saveAchievements, saveProgress, upsertGame } from './sync/store';
 import { parseGuideFile, syncCuratedGuides } from './curated-guides';
 import {
@@ -637,6 +637,22 @@ describe('synchronisation Steam', () => {
     calls.length = 0;
     expect(await sweepSteamStore()).toBe(0);
     expect(calls).toEqual([]);
+  });
+
+  it('avance le balayage à la demande du joueur, au plus une fois par semaine', async () => {
+    const userId = await steamUser();
+    const sweptAt = async () =>
+      (await db.linkedAccount.findFirstOrThrow({ where: { userId } })).storeSweptAt;
+    const recent = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+    await db.linkedAccount.updateMany({ where: { userId }, data: { storeSweptAt: recent } });
+
+    await requestStoreSweep(userId);
+    expect(await sweptAt()).toEqual(recent);
+
+    const old = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000);
+    await db.linkedAccount.updateMany({ where: { userId }, data: { storeSweptAt: old } });
+    await requestStoreSweep(userId);
+    expect(await sweptAt()).toBeNull();
   });
 
   it('demande à la boutique l’image des jeux récents', async () => {

@@ -16,6 +16,8 @@ const CONCURRENCY = 4;
 const APPS_PER_CALL = 300;
 const SHARED_CHECK_EVERY = 24 * 60 * 60 * 1000;
 const STORE_SWEEP_EVERY = 30 * 24 * 60 * 60 * 1000;
+/** Toute la boutique coûte des centaines d'appels : le joueur ne peut pas la relancer à volonté. */
+const STORE_SWEEP_FORCED_EVERY = 7 * 24 * 60 * 60 * 1000;
 const MAX_FRIENDS = 300;
 
 interface OwnedGame {
@@ -112,12 +114,12 @@ async function fetchStoreApps() {
  * Steam ne dit pas quels jeux un joueur emprunte, mais cette méthode, non documentée, répond
  * pour n'importe quel jeu et ne renvoie vide que si le joueur n'y a aucun succès.
  */
-async function appsWithUnlocks(steamId: string, appIds: number[]) {
+async function appsWithUnlocks(steamId: string, appIds: number[], concurrency = CONCURRENCY) {
   const batches = Array.from({ length: Math.ceil(appIds.length / APPS_PER_CALL) }, (_, index) =>
     appIds.slice(index * APPS_PER_CALL, (index + 1) * APPS_PER_CALL),
   );
   const found = new Set<number>();
-  await mapLimit(batches, CONCURRENCY, async (batch) => {
+  await mapLimit(batches, concurrency, async (batch) => {
     const params: Record<string, string | number> = { steamid: steamId, max_achievements: 1 };
     batch.forEach((appId, index) => (params[`appids[${index}]`] = appId));
     const response = await steamGet('/IPlayerService/GetTopAchievementsForGames/v1/', params);
@@ -414,6 +416,18 @@ async function syncSteamGame(userId: string, steamId: string, source: OwnedGame,
   return { game, gained };
 }
 
+/** Une resynchronisation demandée par le joueur avance son prochain balayage. */
+export async function requestStoreSweep(userId: string) {
+  await db.linkedAccount.updateMany({
+    where: {
+      userId,
+      provider: 'STEAM',
+      storeSweptAt: { lt: new Date(Date.now() - STORE_SWEEP_FORCED_EVERY) },
+    },
+    data: { storeSweptAt: null },
+  });
+}
+
 /** Rattrape les jeux qu'aucune recherche rapide ne voit, un compte à la fois. */
 export async function sweepSteamStore() {
   const account = await db.linkedAccount.findFirst({
@@ -447,6 +461,7 @@ export async function sweepSteamStore() {
     ? await appsWithUnlocks(
         steamId,
         candidates.map((app) => app.appid),
+        1,
       )
     : [];
   const found = new Set(played);
