@@ -648,6 +648,10 @@ test.describe('membre', () => {
     await field.fill(text);
     await field.press('Enter');
     await expect(friend.getByText(text)).toBeVisible();
+    await expect(friend.getByRole('link', { name: 'Demo', exact: true }).first()).toHaveAttribute(
+      'href',
+      '/u/demo',
+    );
 
     // Un message reçu se signale sans ouvrir de fenêtre.
     const stream = page.waitForResponse((r) => r.url().includes('/api/sync/events'));

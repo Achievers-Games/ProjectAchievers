@@ -86,7 +86,13 @@
   <ul bind:this={list} class="min-h-0 flex-1 space-y-3 overflow-y-auto p-3" aria-live="polite">
     {#each messages as message (message.id)}
       <li class="group flex gap-2" class:flex-row-reverse={message.author.id === me}>
-        <Avatar person={message.author} size={24} />
+        <a
+          href="/u/{message.author.handle}"
+          class="h-fit shrink-0"
+          aria-label={message.author.displayName}
+        >
+          <Avatar person={message.author} size={24} />
+        </a>
         <p
           class="max-w-[75%] whitespace-pre-wrap break-words rounded px-2 py-1 text-sm"
           class:bg-raised={message.author.id !== me}
