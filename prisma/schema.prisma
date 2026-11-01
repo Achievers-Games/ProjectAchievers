@@ -17,6 +17,7 @@ enum Provider {
   GOOGLE
   RETRO
   EPIC
+  BLIZZARD
 }
 
 enum Platform {

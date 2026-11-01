@@ -116,7 +116,16 @@ const retroName = z
   .trim()
   .regex(/^[a-zA-Z0-9]{2,20}$/, { error: () => m.retro_id_invalid() });
 
-const providerSchema = z.enum(['STEAM', 'PSN', 'XBOX', 'DISCORD', 'GOOGLE', 'RETRO', 'EPIC']);
+const providerSchema = z.enum([
+  'STEAM',
+  'PSN',
+  'XBOX',
+  'DISCORD',
+  'GOOGLE',
+  'RETRO',
+  'EPIC',
+  'BLIZZARD',
+]);
 
 export const actions: Actions = {
   profile: async ({ request, locals }) => {
@@ -178,7 +187,12 @@ export const actions: Actions = {
       await tx.linkedAccount.delete({
         where: { userId_provider: { userId: user.id, provider: provider.data } },
       });
-      if (provider.data !== 'DISCORD' && provider.data !== 'GOOGLE' && provider.data !== 'EPIC') {
+      if (
+        provider.data !== 'DISCORD' &&
+        provider.data !== 'GOOGLE' &&
+        provider.data !== 'EPIC' &&
+        provider.data !== 'BLIZZARD'
+      ) {
         const platform = provider.data;
         await tx.pinnedGame.deleteMany({ where: { userId: user.id, game: { platform } } });
         await tx.userAchievement.deleteMany({

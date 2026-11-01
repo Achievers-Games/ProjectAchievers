@@ -6,6 +6,8 @@ const schema = z.object({
   ORIGIN: z.url(),
   ENCRYPTION_KEY: z.string().regex(/^[0-9a-f]{64}$/i, 'doit contenir 32 octets en hexadécimal'),
   STEAM_API_KEY: z.string().optional(),
+  BLIZZARD_CLIENT_ID: z.string().optional(),
+  BLIZZARD_CLIENT_SECRET: z.string().optional(),
   EPIC_CLIENT_ID: z.string().optional(),
   EPIC_CLIENT_SECRET: z.string().optional(),
   DISCORD_CLIENT_ID: z.string().optional(),

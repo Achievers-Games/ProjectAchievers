@@ -4,7 +4,7 @@ import { secureCookie } from '../cookies';
 import { decrypt, encrypt } from '../crypto';
 import { env } from '../env';
 
-export type OAuthProvider = 'steam' | 'discord' | 'xbox' | 'google' | 'epic';
+export type OAuthProvider = 'steam' | 'discord' | 'xbox' | 'google' | 'epic' | 'blizzard';
 
 export const OAUTH_PROVIDERS: Record<OAuthProvider, Provider> = {
   steam: 'STEAM',
@@ -12,6 +12,7 @@ export const OAUTH_PROVIDERS: Record<OAuthProvider, Provider> = {
   xbox: 'XBOX',
   google: 'GOOGLE',
   epic: 'EPIC',
+  blizzard: 'BLIZZARD',
 };
 
 export function availableProviders(): Record<Provider, boolean> {
@@ -23,6 +24,7 @@ export function availableProviders(): Record<Provider, boolean> {
     PSN: Boolean(e.PSN_SERVICE_NPSSO),
     RETRO: Boolean(e.RETRO_API_KEY),
     EPIC: Boolean(e.EPIC_CLIENT_ID && e.EPIC_CLIENT_SECRET),
+    BLIZZARD: Boolean(e.BLIZZARD_CLIENT_ID && e.BLIZZARD_CLIENT_SECRET),
     GOOGLE: Boolean(e.GOOGLE_CLIENT_ID && e.GOOGLE_CLIENT_SECRET),
   };
 }
