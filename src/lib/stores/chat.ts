@@ -10,7 +10,7 @@ export interface DockChat {
   folded: boolean;
 }
 
-/** Dernier message reçu en direct : chaque discussion ouverte le lit. */
+/** Passage d'un message reçu en direct. Remis à null aussitôt : il n'est jamais rejoué. */
 export const incoming = writable<ChatEvent | null>(null);
 
 /** Messages non lus, sur toutes les discussions. */

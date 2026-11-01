@@ -401,6 +401,7 @@
   "push_prompt_yes": "有効にする",
   "push_prompt_later": "あとで",
   "push_prompt_done": "有効にしました。もう言い訳はできません。",
+  "clan_founded": "{date} に作成",
   "refresh_label": "アカウントを更新",
   "refresh_started": "更新を開始しました。",
   "refresh_wait": "アカウントは読み込まれたばかりです。数分後にもう一度お試しください。",

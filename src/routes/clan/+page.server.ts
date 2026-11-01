@@ -1,6 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { z } from 'zod';
 import { requireLogin } from '$lib/server/auth';
+import { rateLimit } from '$lib/server/rate-limit';
 import {
   acceptClanInvite,
   createClan,
@@ -14,6 +15,8 @@ import {
 } from '$lib/server/social';
 import { m } from '$lib/paraglide/messages';
 import type { Actions, PageServerLoad } from './$types';
+
+const INVITES_PER_HOUR = 30;
 
 const requireUser = (locals: App.Locals) => requireLogin(locals, '/clan');
 
@@ -60,7 +63,11 @@ export const actions: Actions = {
     return failure ? failed(failure) : { success: m.clan_created() };
   },
   invite: async ({ request, locals }) => {
-    const failure = await inviteToClan(requireUser(locals).id, await field(request, 'id'));
+    const user = requireUser(locals);
+    if (!rateLimit(`clan:${user.id}`, INVITES_PER_HOUR, 3_600_000)) {
+      return fail(429, { error: m.too_fast() });
+    }
+    const failure = await inviteToClan(user.id, await field(request, 'id'));
     return failure ? failed(failure) : { success: m.clan_invited() };
   },
   accept: async ({ request, locals }) => {

@@ -19,7 +19,7 @@
   <header class="space-y-1">
     <a href="/clans" class="text-sm text-muted hover:text-ink">{m.clans_title()}</a>
     <h1>{clan.name}</h1>
-    <p class="text-sm text-muted">{m.member_since({ date: formatDate(clan.createdAt) })}</p>
+    <p class="text-sm text-muted">{m.clan_founded({ date: formatDate(clan.createdAt) })}</p>
   </header>
 
   <dl class="card grid grid-cols-2 divide-x divide-line">

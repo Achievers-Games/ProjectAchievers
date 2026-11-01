@@ -92,14 +92,9 @@ export async function refreshAccounts(
       },
       select: { provider: true },
     }),
-    db.syncRun.findMany({
-      where: { userId },
-      orderBy: { startedAt: 'desc' },
-      distinct: ['provider'],
-      select: { provider: true, startedAt: true },
-    }),
+    db.syncRun.groupBy({ by: ['provider'], where: { userId }, _max: { startedAt: true } }),
   ]);
-  const lastRun = new Map(recent.map((run) => [run.provider, run.startedAt.getTime()]));
+  const lastRun = new Map(recent.map((run) => [run.provider, run._max.startedAt?.getTime() ?? 0]));
   const due = accounts.filter(
     ({ provider }) => Date.now() - (lastRun.get(provider) ?? 0) >= wait(provider),
   );

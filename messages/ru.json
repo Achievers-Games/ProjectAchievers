@@ -428,6 +428,7 @@
   "push_prompt_yes": "Включить",
   "push_prompt_later": "Позже",
   "push_prompt_done": "Готово. Больше никаких отговорок.",
+  "clan_founded": "Создан {date}",
   "refresh_label": "Обновить мои аккаунты",
   "refresh_started": "Обновление запущено.",
   "refresh_wait": "Аккаунты только что считаны: попробуйте через несколько минут.",

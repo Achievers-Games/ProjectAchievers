@@ -401,6 +401,7 @@
   "push_prompt_yes": "启用",
   "push_prompt_later": "稍后",
   "push_prompt_done": "已启用，别再找借口了。",
+  "clan_founded": "创建于 {date}",
   "refresh_label": "刷新我的账号",
   "refresh_started": "已开始刷新。",
   "refresh_wait": "账号刚刚读取过，请几分钟后再试。",

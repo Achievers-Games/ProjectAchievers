@@ -1,6 +1,7 @@
 <script lang="ts">
   import { m } from '$lib/paraglide/messages';
   import { enhance } from '$app/forms';
+  import ActionButton from '$lib/components/ActionButton.svelte';
   import Avatar from '$lib/components/Avatar.svelte';
   import Empty from '$lib/components/Empty.svelte';
   import SocialNav from '$lib/components/SocialNav.svelte';
@@ -11,13 +12,6 @@
 </script>
 
 <svelte:head><title>{m.nav_clan()} — Project Achievers</title></svelte:head>
-
-{#snippet action(name: string, id: string, label: string, danger = false)}
-  <form method="POST" action="?/{name}" use:enhance={submit}>
-    <input type="hidden" name="id" value={id} />
-    <button class="btn h-8" class:btn-danger={danger}>{label}</button>
-  </form>
-{/snippet}
 
 <div class="mx-auto max-w-2xl space-y-6">
   <h1>{data.membership?.clan.name ?? m.nav_clan()}</h1>
@@ -31,8 +25,8 @@
         {#each data.invites as clan (clan.id)}
           <li class="flex flex-wrap items-center gap-2 p-3">
             <span class="min-w-0 flex-1 truncate text-sm font-medium">{clan.name}</span>
-            {@render action('accept', clan.id, m.clan_join())}
-            {@render action('decline', clan.id, m.friend_decline())}
+            <ActionButton action="accept" id={clan.id} label={m.clan_join()} />
+            <ActionButton action="decline" id={clan.id} label={m.friend_decline()} />
           </li>
         {/each}
       </ul>
@@ -62,7 +56,7 @@
             {#if member.owner}
               <span class="text-xs text-muted">{m.clan_owner()}</span>
             {:else if data.membership.owner}
-              {@render action('kick', member.user.id, m.clan_kick(), true)}
+              <ActionButton action="kick" id={member.user.id} label={m.clan_kick()} danger />
             {/if}
           </li>
         {/each}
@@ -77,7 +71,7 @@
             <li class="flex items-center gap-2 p-3">
               <Avatar person={friend} size={36} />
               <span class="min-w-0 flex-1 truncate text-sm font-medium">{friend.displayName}</span>
-              {@render action('invite', friend.id, m.clan_invite_action())}
+              <ActionButton action="invite" id={friend.id} label={m.clan_invite_action()} />
             </li>
           {/each}
         </ul>

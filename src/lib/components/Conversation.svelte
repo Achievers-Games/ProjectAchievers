@@ -4,7 +4,8 @@
   import Flag from '@lucide/svelte/icons/flag';
   import Avatar from './Avatar.svelte';
   import type { ChatEvent } from '$lib/server/sync/events';
-  import { incoming } from '$lib/stores/chat';
+  import { sendJson } from '$lib/http';
+  import { incoming, unread } from '$lib/stores/chat';
   import { toast } from '$lib/stores/toast';
 
   type Message = ChatEvent['message'];
@@ -30,8 +31,13 @@
   onMount(() => {
     void fetch(`/api/messages/${id}`).then(async (response) => {
       if (!response.ok) return;
-      const conversation = (await response.json()) as { title: string; messages: Message[] };
+      const conversation = (await response.json()) as {
+        title: string;
+        messages: Message[];
+        unread: number;
+      };
       messages = conversation.messages;
+      unread.set(conversation.unread);
       onTitle?.(conversation.title);
       void scrollDown();
     });
@@ -47,11 +53,7 @@
     const content = draft.trim();
     if (!content || sending) return;
     sending = true;
-    const response = await fetch(`/api/messages/${id}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content }),
-    }).catch(() => null);
+    const response = await sendJson(`/api/messages/${id}`, { content });
     sending = false;
     if (response?.ok) {
       draft = '';
@@ -65,17 +67,16 @@
   async function report(message: Message) {
     const reason = prompt(m.report_prompt());
     if (!reason) return;
-    const response = await fetch('/api/messages/signalement', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messageId: message.id, reason }),
-    }).catch(() => null);
+    const response = await sendJson('/api/messages/signalement', {
+      messageId: message.id,
+      reason,
+    });
     if (response?.ok) toast(m.report_sent());
     else toast(m.report_failed(), 'error');
   }
 
   function onKeydown(event: KeyboardEvent) {
-    if (event.key !== 'Enter' || event.shiftKey) return;
+    if (event.key !== 'Enter' || event.shiftKey || event.isComposing) return;
     event.preventDefault();
     (event.currentTarget as HTMLTextAreaElement).form?.requestSubmit();
   }

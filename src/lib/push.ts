@@ -1,3 +1,5 @@
+import { sendJson } from '$lib/http';
+
 const WORKER = '/push-sw.js';
 
 const toBytes = (key: string) => {
@@ -8,12 +10,7 @@ const toBytes = (key: string) => {
 export const pushSupported = () =>
   'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 
-const save = (subscription: PushSubscription) =>
-  fetch('/api/push', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(subscription),
-  });
+const save = (subscription: PushSubscription) => sendJson('/api/push', subscription);
 
 export async function currentSubscription() {
   const registration = await navigator.serviceWorker.getRegistration(WORKER);
@@ -29,17 +26,13 @@ export async function enablePush(publicKey: string) {
     userVisibleOnly: true,
     applicationServerKey: toBytes(publicKey),
   });
-  return (await save(subscription)).ok;
+  return Boolean((await save(subscription))?.ok);
 }
 
 export async function disablePush() {
   const subscription = await currentSubscription();
   if (!subscription) return;
-  await fetch('/api/push', {
-    method: 'DELETE',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ endpoint: subscription.endpoint }),
-  });
+  await sendJson('/api/push', { endpoint: subscription.endpoint }, 'DELETE');
   await subscription.unsubscribe();
 }
 

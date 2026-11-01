@@ -1,6 +1,7 @@
 <script lang="ts">
   import { m } from '$lib/paraglide/messages';
   import { enhance } from '$app/forms';
+  import ActionButton from '$lib/components/ActionButton.svelte';
   import Avatar from '$lib/components/Avatar.svelte';
   import Empty from '$lib/components/Empty.svelte';
   import SocialNav from '$lib/components/SocialNav.svelte';
@@ -11,13 +12,6 @@
 </script>
 
 <svelte:head><title>{m.nav_friends()} — Project Achievers</title></svelte:head>
-
-{#snippet action(name: string, id: string, label: string, danger = false)}
-  <form method="POST" action="?/{name}" use:enhance={submit}>
-    <input type="hidden" name="id" value={id} />
-    <button class="btn h-8" class:btn-danger={danger}>{label}</button>
-  </form>
-{/snippet}
 
 {#snippet person(user: (typeof data.friends)[number])}
   <a href="/u/{user.handle}" class="flex min-w-0 flex-1 items-center gap-3">
@@ -50,9 +44,9 @@
         {#each data.received as user (user.id)}
           <li class="flex flex-wrap items-center gap-2 p-3">
             {@render person(user)}
-            {@render action('accept', user.id, m.friend_accept())}
-            {@render action('remove', user.id, m.friend_decline())}
-            {@render action('block', user.id, m.friend_block(), true)}
+            <ActionButton action="accept" id={user.id} label={m.friend_accept()} />
+            <ActionButton action="remove" id={user.id} label={m.friend_decline()} />
+            <ActionButton action="block" id={user.id} label={m.friend_block()} danger />
           </li>
         {/each}
       </ul>
@@ -66,9 +60,9 @@
         {#each data.friends as user (user.id)}
           <li class="flex flex-wrap items-center gap-2 p-3">
             {@render person(user)}
-            {@render action('message', user.id, m.friend_message())}
-            {@render action('remove', user.id, m.friend_remove())}
-            {@render action('block', user.id, m.friend_block(), true)}
+            <ActionButton action="message" id={user.id} label={m.friend_message()} />
+            <ActionButton action="remove" id={user.id} label={m.friend_remove()} />
+            <ActionButton action="block" id={user.id} label={m.friend_block()} danger />
           </li>
         {/each}
       </ul>
@@ -84,7 +78,7 @@
         {#each data.sent as user (user.id)}
           <li class="flex items-center gap-2 p-3">
             {@render person(user)}
-            {@render action('remove', user.id, m.cancel())}
+            <ActionButton action="remove" id={user.id} label={m.cancel()} />
           </li>
         {/each}
       </ul>
@@ -98,7 +92,7 @@
         {#each data.blocked as user (user.id)}
           <li class="flex items-center gap-2 p-3">
             {@render person(user)}
-            {@render action('unblock', user.id, m.friend_unblock())}
+            <ActionButton action="unblock" id={user.id} label={m.friend_unblock()} />
           </li>
         {/each}
       </ul>

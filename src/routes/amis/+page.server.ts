@@ -1,5 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { requireLogin } from '$lib/server/auth';
+import { rateLimit } from '$lib/server/rate-limit';
 import {
   acceptFriend,
   blockUser,
@@ -12,6 +13,8 @@ import {
 import { m } from '$lib/paraglide/messages';
 import type { Actions, PageServerLoad } from './$types';
 
+const INVITES_PER_HOUR = 30;
+
 const requireUser = (locals: App.Locals) => requireLogin(locals, '/amis');
 
 const otherId = async (request: Request) => String((await request.formData()).get('id'));
@@ -21,6 +24,9 @@ export const load: PageServerLoad = async ({ locals }) => friendsOverview(requir
 export const actions: Actions = {
   add: async ({ request, locals }) => {
     const user = requireUser(locals);
+    if (!rateLimit(`amis:${user.id}`, INVITES_PER_HOUR, 3_600_000)) {
+      return fail(429, { error: m.too_fast() });
+    }
     const handle = String((await request.formData()).get('handle') ?? '');
     const failure = await requestFriend(user.id, handle);
     if (failure === 'self') return fail(400, { error: m.friend_self() });

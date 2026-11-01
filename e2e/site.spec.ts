@@ -620,6 +620,7 @@ test.describe('membre', () => {
     await ready(page);
     await page.getByRole('button', { name: 'Ajouter' }).click();
     await expect(page.getByText('Demande envoyée.')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Demande en attente' })).toBeVisible();
 
     const other = await browser.newContext();
     const friend = await other.newPage();

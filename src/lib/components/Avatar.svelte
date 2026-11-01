@@ -15,12 +15,12 @@
 
   let {
     person = null,
-    name = person?.displayName ?? '',
-    src = person?.avatarUrl ?? null,
+    name,
+    src,
     size = 32,
-    frame = person?.frame ?? null,
-    motion = person?.avatarMotionUrl ?? null,
-    frameMotion = person?.frameMotionUrl ?? null,
+    frame,
+    motion,
+    frameMotion,
     play = 'hover',
   }: {
     /** Un profil complet ; les autres attributs servent aux aperçus. */
@@ -42,12 +42,20 @@
     allowed = !matchMedia('(prefers-reduced-motion: reduce)').matches;
   });
 
+  // Recalculé : un même avatar peut changer de joueur ou d'apparence sans être recréé.
+  const look = $derived({
+    name: name ?? person?.displayName ?? '',
+    src: src === undefined ? (person?.avatarUrl ?? null) : src,
+    frame: frame === undefined ? (person?.frame ?? null) : frame,
+    motion: motion === undefined ? (person?.avatarMotionUrl ?? null) : motion,
+    frameMotion: frameMotion === undefined ? (person?.frameMotionUrl ?? null) : frameMotion,
+  });
   const isOnline = $derived(Boolean(person?.handle && $online.has(person.handle)));
   const playing = $derived(allowed && (play === 'always' || hovering));
-  const shown = $derived(motion && playing ? motion : src);
+  const shown = $derived(look.motion && playing ? look.motion : look.src);
   /** Un cadre importé est une image ; ceux du site sont dessinés en CSS. */
-  const overlay = $derived(frame?.startsWith('https://') ? frame : null);
-  const overlayShown = $derived(frameMotion && playing ? frameMotion : overlay);
+  const overlay = $derived(look.frame?.startsWith('https://') ? look.frame : null);
+  const overlayShown = $derived(look.frameMotion && playing ? look.frameMotion : overlay);
 </script>
 
 {#snippet picture()}
@@ -66,7 +74,7 @@
       style:height="{size}px"
       aria-hidden="true"
     >
-      {name.charAt(0).toUpperCase()}
+      {look.name.charAt(0).toUpperCase()}
     </span>
   {/if}
 {/snippet}
@@ -78,8 +86,8 @@
   onmouseenter={() => (hovering = true)}
   onmouseleave={() => (hovering = false)}
 >
-  {#if frame && !overlay}
-    <span class="avatar-frame" data-frame={frame}>{@render picture()}</span>
+  {#if look.frame && !overlay}
+    <span class="avatar-frame" data-frame={look.frame}>{@render picture()}</span>
   {:else}
     {@render picture()}
   {/if}

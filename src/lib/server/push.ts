@@ -39,19 +39,25 @@ export function markActive(userId: string, now = Date.now()) {
 
 const isActive = (userId: string) => Date.now() - (activeUsers.get(userId) ?? 0) < ACTIVE_WINDOW;
 
+/** Seuls les services de notification des navigateurs reçoivent des requêtes du serveur. */
+const PUSH_HOSTS = /(^|\.)(googleapis\.com|mozilla\.com|windows\.com|apple\.com)$/;
+
+export const isPushEndpoint = (endpoint: string) =>
+  endpoint.startsWith('https://') && PUSH_HOSTS.test(new URL(endpoint).hostname);
+
 export const pushPublicKey = () => env().VAPID_PUBLIC_KEY ?? null;
 
 /** Les navigateurs à prévenir, après tous les garde-fous contre le spam. */
 export async function subscribersToNotify(userId: string, kind: PushKind, tag: string) {
   if (isActive(userId)) return [];
+  if (kind === 'message' && !rateLimit(`push:${userId}:${tag}`, 1, CONVERSATION_COOLDOWN)) {
+    return [];
+  }
   const user = await db.user.findUnique({
     where: { id: userId },
     select: { pushMessages: true, pushInvites: true, pushEvents: true, pushSubscriptions: true },
   });
   if (!user?.[PREFERENCES[kind]] || !user.pushSubscriptions.length) return [];
-  if (kind === 'message' && !rateLimit(`push:${userId}:${tag}`, 1, CONVERSATION_COOLDOWN)) {
-    return [];
-  }
   if (!rateLimit(`push:${userId}`, MAX_PER_HOUR, 3_600_000)) return [];
   return user.pushSubscriptions;
 }

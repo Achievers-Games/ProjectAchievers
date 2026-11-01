@@ -56,6 +56,7 @@ export const GET: RequestHandler = async ({ locals }) => {
       blocks: { select: { blocked: { select: { handle: true } }, createdAt: true } },
       clanMember: { select: { owner: true, joinedAt: true, clan: { select: { name: true } } } },
       messages: { select: { content: true, createdAt: true, conversationId: true } },
+      pushSubscriptions: { select: { locale: true, createdAt: true } },
       guideChecks: { select: { guideId: true, item: true } },
       reactions: { select: { commentId: true, type: true } },
       reports: { select: { targetType: true, targetId: true, reason: true, createdAt: true } },

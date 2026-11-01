@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Cookies } from '@sveltejs/kit';
 import { decrypt, encrypt, pkceChallenge } from './crypto';
 import { renderGuide, renderMarkdown } from './markdown';
+import { isPushEndpoint } from './push';
 import { safeReturnTo, saveFlow, takeFlow } from './providers';
 import { bioContainsCode } from './providers/psn';
 import { steamAuthorizeUrl, verifySteamResponse } from './providers/steam';
@@ -179,6 +180,18 @@ describe('Markdown des guides', () => {
       '<iframe src="https://evil.test/"></iframe><script>alert(1)</script><img src="http://exemple.fr/a.png" onerror="alert(1)">',
     );
     expect(html).not.toMatch(/evil\.test|script|onerror|http:/);
+  });
+});
+
+describe('abonnements aux notifications', () => {
+  it('n’accepte que les services des navigateurs', () => {
+    expect(isPushEndpoint('https://fcm.googleapis.com/fcm/send/a')).toBe(true);
+    expect(isPushEndpoint('https://updates.push.services.mozilla.com/wpush/v2/a')).toBe(true);
+    expect(isPushEndpoint('https://wns2-par02p.notify.windows.com/w/?token=a')).toBe(true);
+    expect(isPushEndpoint('https://web.push.apple.com/a')).toBe(true);
+    expect(isPushEndpoint('https://192.168.1.162/x')).toBe(false);
+    expect(isPushEndpoint('https://apple.com.evil.test/x')).toBe(false);
+    expect(isPushEndpoint('http://fcm.googleapis.com/x')).toBe(false);
   });
 });
 

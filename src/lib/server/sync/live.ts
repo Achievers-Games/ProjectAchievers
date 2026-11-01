@@ -43,12 +43,25 @@ export async function checkLiveGames() {
   for (const [steamId, appId] of playing) lastGames.set(steamId, appId);
 }
 
+let checking = false;
+
+/** Steam peut être lent : un passage ne commence jamais avant la fin du précédent. */
+async function tick() {
+  if (checking) return;
+  checking = true;
+  try {
+    await checkLiveGames();
+  } catch (cause) {
+    console.error('Succès en direct :', cause);
+  } finally {
+    checking = false;
+  }
+}
+
 const globalForLive = globalThis as unknown as { paLive?: NodeJS.Timeout };
 
 export function startLiveGames() {
   if (globalForLive.paLive || !availableProviders().STEAM) return;
-  globalForLive.paLive = setInterval(() => {
-    checkLiveGames().catch((cause) => console.error('Succès en direct :', cause));
-  }, INTERVAL);
+  globalForLive.paLive = setInterval(() => void tick(), INTERVAL);
   globalForLive.paLive.unref();
 }

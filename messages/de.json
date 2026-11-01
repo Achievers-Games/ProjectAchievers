@@ -410,6 +410,7 @@
   "push_prompt_yes": "Aktivieren",
   "push_prompt_later": "Später",
   "push_prompt_done": "Aktiviert. Keine Ausreden mehr.",
+  "clan_founded": "Gegründet am {date}",
   "refresh_label": "Meine Konten aktualisieren",
   "refresh_started": "Aktualisierung gestartet.",
   "refresh_wait": "Deine Konten wurden gerade gelesen: Versuche es in ein paar Minuten erneut.",

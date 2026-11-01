@@ -410,6 +410,7 @@
   "push_prompt_yes": "Activar",
   "push_prompt_later": "Más tarde",
   "push_prompt_done": "Activado. Se acabaron las excusas.",
+  "clan_founded": "Creado el {date}",
   "refresh_label": "Actualizar mis cuentas",
   "refresh_started": "Actualización iniciada.",
   "refresh_wait": "Tus cuentas se acaban de leer: inténtalo de nuevo en unos minutos.",

@@ -410,6 +410,7 @@
   "push_prompt_yes": "Turn on",
   "push_prompt_later": "Later",
   "push_prompt_done": "Done. No more excuses.",
+  "clan_founded": "Created on {date}",
   "refresh_label": "Refresh my accounts",
   "refresh_started": "Refresh started.",
   "refresh_wait": "Your accounts were just read: try again in a few minutes.",

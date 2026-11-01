@@ -69,6 +69,7 @@
   /** Un message arrive : il s'ajoute aux non-lus, sauf si sa discussion est déjà ouverte. */
   function receive(event: ChatEvent) {
     incoming.set(event);
+    incoming.set(null);
     if (event.message.author.id === userId) return;
     if (page.url.pathname === `/messages/${event.conversationId}`) return;
     if (hasDock() && !inSocial) return;

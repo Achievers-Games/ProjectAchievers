@@ -166,8 +166,9 @@ async function readTitle(session: XboxSession, titleId: string, lastPlayed: Date
   }
 
   const [all, earned] = await Promise.all([
-    fetchPages<Xbox360Achievement>(session, titleId, 'titleachievements', '1'),
-    fetchPages<Xbox360Achievement>(session, titleId, 'achievements', '1'),
+    // Une liste vide peut aussi être un jeu récent sans succès, inconnu de ce service.
+    fetchPages<Xbox360Achievement>(session, titleId, 'titleachievements', '1').catch(() => []),
+    fetchPages<Xbox360Achievement>(session, titleId, 'achievements', '1').catch(() => []),
   ]);
   return {
     achievements: all.map(mapXbox360Achievement),

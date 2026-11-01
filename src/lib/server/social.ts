@@ -75,8 +75,11 @@ export async function requestFriend(userId: string, handle: string): Promise<Soc
 
   const link = await db.friendship.findFirst({ where: { OR: pair(userId, other.id) } });
   if (!link) {
-    await db.friendship.create({ data: { requesterId: userId, addresseeId: other.id } });
-    await inviteNotice(other.id, userId, 'ami');
+    const { count } = await db.friendship.createMany({
+      data: [{ requesterId: userId, addresseeId: other.id }],
+      skipDuplicates: true,
+    });
+    if (count) await inviteNotice(other.id, userId, 'ami');
   } else if (!link.accepted && link.addresseeId === userId) {
     await db.friendship.update({ where: { id: link.id }, data: { accepted: true } });
   }
@@ -162,12 +165,15 @@ export async function listConversations(userId: string) {
   const rows = await db.conversationMember.findMany({
     where: { userId },
     select: {
-      lastReadAt: true,
       conversation: {
         select: {
           id: true,
           clan: { select: { name: true } },
-          members: { where: { NOT: { userId } }, select: { user: { select: personSelect } } },
+          members: {
+            where: { NOT: { userId } },
+            take: 1,
+            select: { user: { select: personSelect } },
+          },
           messages: {
             orderBy: { createdAt: 'desc' },
             take: 1,
@@ -177,19 +183,9 @@ export async function listConversations(userId: string) {
       },
     },
   });
-  const unread = await Promise.all(
-    rows.map(({ conversation, lastReadAt }) =>
-      db.message.count({
-        where: {
-          conversationId: conversation.id,
-          createdAt: { gt: lastReadAt },
-          NOT: { authorId: userId },
-        },
-      }),
-    ),
-  );
+  const unread = await unreadByConversation(userId);
   return rows
-    .map(({ conversation }, index) => {
+    .map(({ conversation }) => {
       const [last] = conversation.messages;
       const person = conversation.members[0]?.user ?? null;
       return {
@@ -198,20 +194,43 @@ export async function listConversations(userId: string) {
         person: conversation.clan ? null : person,
         preview: last?.content ?? '',
         at: last?.createdAt ?? null,
-        unread: unread[index] ?? 0,
+        unread: unread.get(conversation.id) ?? 0,
       };
     })
     .filter((row) => row.title)
     .sort((a, b) => (b.at?.getTime() ?? 0) - (a.at?.getTime() ?? 0));
 }
 
-export async function unreadCount(userId: string) {
-  const [{ count } = { count: 0n }] = await db.$queryRaw<{ count: bigint }[]>`
-    SELECT count(*) AS count
+async function unreadByConversation(userId: string) {
+  const rows = await db.$queryRaw<{ conversationId: string; count: bigint }[]>`
+    SELECT m."conversationId", count(*) AS count
     FROM "ConversationMember" cm
     JOIN "Message" m ON m."conversationId" = cm."conversationId"
-    WHERE cm."userId" = ${userId} AND m."createdAt" > cm."lastReadAt" AND m."authorId" <> ${userId}`;
-  return Number(count);
+    WHERE cm."userId" = ${userId} AND m."createdAt" > cm."lastReadAt" AND m."authorId" <> ${userId}
+    GROUP BY 1`;
+  return new Map(rows.map((row) => [row.conversationId, Number(row.count)]));
+}
+
+export async function unreadCount(userId: string) {
+  const unread = await unreadByConversation(userId);
+  return [...unread.values()].reduce((sum, count) => sum + count, 0);
+}
+
+/** Le nom affiché d'une discussion, ou null si le joueur n'en fait pas partie. */
+export async function conversationTitle(userId: string, conversationId: string) {
+  const conversation = await db.conversation.findFirst({
+    where: { id: conversationId, members: { some: { userId } } },
+    select: {
+      clan: { select: { name: true } },
+      members: {
+        where: { NOT: { userId } },
+        take: 1,
+        select: { user: { select: { displayName: true } } },
+      },
+    },
+  });
+  if (!conversation) return null;
+  return conversation.clan?.name ?? conversation.members[0]?.user.displayName ?? '';
 }
 
 export async function markRead(userId: string, conversationId: string) {
@@ -223,12 +242,9 @@ export async function markRead(userId: string, conversationId: string) {
 
 /** Renvoie les derniers messages, ou null si le joueur n'est pas dans cette discussion. */
 export async function readConversation(userId: string, conversationId: string) {
-  const member = await db.conversationMember.findUnique({
-    where: { conversationId_userId: { conversationId, userId } },
-  });
-  if (!member) return null;
+  const title = await conversationTitle(userId, conversationId);
+  if (title === null) return null;
 
-  const [conversation] = (await listConversations(userId)).filter((c) => c.id === conversationId);
   const messages = await db.message.findMany({
     where: { conversationId },
     orderBy: { createdAt: 'desc' },
@@ -243,8 +259,7 @@ export async function readConversation(userId: string, conversationId: string) {
   await markRead(userId, conversationId);
   return {
     id: conversationId,
-    title: conversation?.title ?? '',
-    person: conversation?.person ?? null,
+    title,
     messages: messages.reverse(),
   };
 }

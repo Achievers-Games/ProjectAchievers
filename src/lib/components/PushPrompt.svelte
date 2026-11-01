@@ -2,6 +2,7 @@
   import { m } from '$lib/paraglide/messages';
   import { onMount } from 'svelte';
   import { fly } from 'svelte/transition';
+  import { sendJson } from '$lib/http';
   import { currentSubscription, enablePush, pushSupported } from '$lib/push';
   import { toast } from '$lib/stores/toast';
 
@@ -63,11 +64,7 @@
     try {
       const enabled = await enablePush(publicKey);
       if (enabled) {
-        await fetch('/api/push', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ messages, invites, events }),
-        });
+        await sendJson('/api/push', { messages, invites, events }, 'PATCH');
         toast(m.push_prompt_done());
       } else {
         toast(m.push_denied(), 'error');

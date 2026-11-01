@@ -1,7 +1,7 @@
 import { error, json } from '@sveltejs/kit';
 import { z } from 'zod';
 import { rateLimit } from '$lib/server/rate-limit';
-import { markRead, readConversation, sendMessage } from '$lib/server/social';
+import { markRead, readConversation, sendMessage, unreadCount } from '$lib/server/social';
 import type { RequestHandler } from './$types';
 import { m } from '$lib/paraglide/messages';
 
@@ -13,7 +13,7 @@ export const GET: RequestHandler = async ({ locals, params }) => {
   if (!locals.user) error(401, m.login_required());
   const conversation = await readConversation(locals.user.id, params.id);
   if (!conversation) error(404, m.gone());
-  return json(conversation);
+  return json({ ...conversation, unread: await unreadCount(locals.user.id) });
 };
 
 export const POST: RequestHandler = async ({ locals, params, request }) => {
