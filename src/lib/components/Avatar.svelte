@@ -81,7 +81,7 @@
 
 <!-- Le survol ne fait que démarrer une animation décorative : rien à reproduire au clavier. -->
 <span
-  class="relative inline-grid shrink-0"
+  class="relative inline-grid h-fit w-fit shrink-0"
   role="presentation"
   onmouseenter={() => (hovering = true)}
   onmouseleave={() => (hovering = false)}

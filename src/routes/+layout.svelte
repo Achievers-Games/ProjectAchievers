@@ -21,11 +21,11 @@
   import { LOCALE_LABELS, PROVIDER_LABELS, syncErrorText } from '$lib/labels';
   import { getLocale, locales, setLocale, type Locale } from '$lib/paraglide/runtime';
   import { restorePush } from '$lib/push';
-  import { hasDock, incoming, unread } from '$lib/stores/chat';
+  import { hasDock, incoming, invites, isChatOpen, unread } from '$lib/stores/chat';
   import { refreshPresence, watchPresence } from '$lib/stores/presence';
   import { rewards, syncState, type SyncProgress } from '$lib/stores/sync';
   import { toast } from '$lib/stores/toast';
-  import type { ChatEvent } from '$lib/server/sync/events';
+  import type { ChatEvent, InviteEvent } from '$lib/server/sync/events';
 
   let { data, children } = $props();
   let paletteOpen = $state(false);
@@ -54,6 +54,12 @@
     unread.set(data.unread);
   });
 
+  $effect(() => {
+    invites.set(data.invites);
+  });
+
+  const badge = $derived($unread + $invites.friends + $invites.clans);
+
   const userId = $derived(data.user?.id);
   const syncing = $derived(
     Object.values($syncState).some((s) => s.status === 'QUEUED' || s.status === 'SYNCING'),
@@ -65,8 +71,17 @@
     incoming.set(null);
     if (event.message.author.id === userId) return;
     if (page.url.pathname === `/messages/${event.conversationId}`) return;
-    if (hasDock() && !inSocial) return;
+    if (hasDock() && !inSocial && isChatOpen(event.conversationId)) return;
     unread.update((count) => count + 1);
+  }
+
+  function receiveInvite({ from, invite }: InviteEvent) {
+    const friend = invite === 'ami';
+    invites.update((count) => ({
+      friends: count.friends + (friend ? 1 : 0),
+      clans: count.clans + (friend ? 0 : 1),
+    }));
+    toast(`${from} ${friend ? m.push_friend_request() : m.push_clan_invite()}`);
   }
 
   async function refresh() {
@@ -100,9 +115,10 @@
     // Le joueur apparaît en ligne dès que ce flux est ouvert.
     source.onopen = () => void refreshPresence();
     source.onmessage = (message) => {
-      const event = JSON.parse(message.data) as SyncProgress | ChatEvent;
+      const event = JSON.parse(message.data) as SyncProgress | ChatEvent | InviteEvent;
       if ('type' in event) {
-        receive(event);
+        if (event.type === 'chat') receive(event);
+        else receiveInvite(event);
         return;
       }
       syncState.update((state) => ({ ...state, [event.provider]: event }));
@@ -163,7 +179,7 @@
   <div class="fixed inset-x-0 top-0 z-50 h-0.5 animate-pulse bg-accent" aria-hidden="true"></div>
 {/if}
 
-<header class="sticky top-0 z-30 border-b border-line bg-bg/95">
+<header class="sticky top-0 z-40 border-b border-line bg-bg">
   <div class="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4">
     <a href="/" class="font-semibold tracking-tight">Achievers</a>
 
@@ -177,8 +193,8 @@
           class:bg-raised={isActive(link.href, link.exact)}
         >
           {link.label}
-          {#if link.href === '/communaute' && $unread}
-            <span class="social-badge ml-1">{$unread}</span>
+          {#if link.href === '/communaute' && badge}
+            <span class="social-badge ml-1">{badge}</span>
           {/if}
         </a>
       {/each}
@@ -272,8 +288,8 @@
     >
       <span class="relative">
         <Icon size={18} aria-hidden="true" />
-        {#if link.href === '/communaute' && $unread}
-          <span class="social-badge absolute -right-2 -top-1">{$unread}</span>
+        {#if link.href === '/communaute' && badge}
+          <span class="social-badge absolute -right-2 -top-1">{badge}</span>
         {/if}
       </span>
       {link.label}

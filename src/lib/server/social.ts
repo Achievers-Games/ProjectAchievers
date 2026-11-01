@@ -57,6 +57,7 @@ async function inviteNotice(userId: string, fromId: string, type: 'ami' | 'clan'
     where: { id: fromId },
     select: { displayName: true },
   });
+  publishChat(userId, { type: 'invite', from: name, invite: type });
   notify(userId, 'invite', `${type}:${fromId}`, (locale) =>
     type === 'ami'
       ? { title: name, body: m.push_friend_request({}, { locale }), url: '/amis' }
@@ -111,6 +112,15 @@ export async function blockUser(userId: string, otherId: string) {
 
 export async function unblockUser(userId: string, otherId: string) {
   await db.block.deleteMany({ where: { blockerId: userId, blockedId: otherId } });
+}
+
+/** Ce qui attend une réponse du joueur : les badges le rappellent tant qu'il n'a pas répondu. */
+export async function pendingInvites(userId: string) {
+  const [friends, clans] = await Promise.all([
+    db.friendship.count({ where: { addresseeId: userId, accepted: false } }),
+    db.clanInvite.count({ where: { userId } }),
+  ]);
+  return { friends, clans };
 }
 
 export async function friendIds(userId: string) {

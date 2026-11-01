@@ -648,11 +648,23 @@ test.describe('membre', () => {
     await field.fill(text);
     await field.press('Enter');
     await expect(friend.getByText(text)).toBeVisible();
+
+    // Un message reçu se signale sans ouvrir de fenêtre.
+    const stream = page.waitForResponse((r) => r.url().includes('/api/sync/events'));
+    await page.goto('/jeux');
+    await stream;
+    await ready(page);
+    const reply = friend.getByLabel('Écris un message…');
+    await reply.fill('Bien reçu');
+    await reply.press('Enter');
+    const bar = page.getByRole('button', { name: /^Messages/ });
+    await expect(bar.locator('.social-badge')).toHaveText('1');
+    await expect(page.getByRole('region', { name: 'Marco' })).toBeHidden();
     await other.close();
 
     await page.goto('/jeux');
     await ready(page);
-    await page.getByRole('button', { name: 'Messages', exact: true }).click();
+    await page.getByRole('button', { name: /^Messages/ }).click();
     await page.getByRole('button', { name: /Marco/ }).click();
     await expect(page.getByRole('region', { name: 'Marco' })).toBeVisible();
     await page.reload();
@@ -775,6 +787,33 @@ test.describe('membre', () => {
     await page.goto('/retours');
     await expect(page.getByRole('listitem').filter({ hasText: text })).toContainText('Prévu');
     await expect(page.getByRole('listitem').filter({ hasText: text })).toContainText('Communauté');
+  });
+
+  test('signale une demande d’ami en direct sur le site', async ({ page, browser }) => {
+    const other = await browser.newContext();
+    const friend = await other.newPage();
+    await friend.goto('/auth/dev?compte=lea');
+    // Le flux en direct doit être ouvert avant la demande.
+    const stream = friend.waitForResponse((r) => r.url().includes('/api/sync/events'));
+    await friend.goto('/jeux');
+    await stream;
+    await ready(friend);
+
+    await page.goto('/auth/dev?compte=marco');
+    await page.goto('/u/lea');
+    await ready(page);
+    await page.getByRole('button', { name: 'Ajouter' }).click();
+
+    await expect(friend.getByText(/Marco veut t.ajouter en ami/)).toBeVisible();
+    const community = friend
+      .getByRole('navigation', { name: 'Navigation principale' })
+      .getByRole('link', { name: /Communauté/ });
+    await expect(community.locator('.social-badge')).toHaveText('1');
+    await friend.goto('/amis');
+    await ready(friend);
+    await friend.getByRole('button', { name: 'Refuser' }).first().click();
+    await expect(community.locator('.social-badge')).toBeHidden();
+    await other.close();
   });
 
   test('compare deux profils', async ({ page }) => {

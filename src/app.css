@@ -1112,7 +1112,7 @@
   left: 1rem;
   right: 1rem;
   bottom: 4.5rem;
-  z-index: 40;
+  z-index: 50;
 }
 @media (min-width: 768px) {
   .push-prompt {
@@ -1150,6 +1150,20 @@
 }
 .moment[data-size='4'] .moment-title {
   @apply text-2xl font-extrabold;
+}
+.chat-waiting {
+  animation: chat-waiting 1.4s ease-in-out infinite;
+}
+@keyframes chat-waiting {
+  50% {
+    background-color: rgb(var(--accent) / 0.35);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chat-waiting {
+    animation: none;
+    background-color: rgb(var(--accent) / 0.25);
+  }
 }
 .social-badge {
   @apply inline-grid h-4 min-w-4 place-items-center rounded-full bg-accent px-1 text-[10px] font-bold text-on-accent;

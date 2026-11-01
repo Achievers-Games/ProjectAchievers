@@ -7,7 +7,7 @@ import { m } from '$lib/paraglide/messages';
 import type { Locale } from '$lib/paraglide/runtime';
 import { SEASON, seasonState, type Season } from '$lib/season';
 
-export type PushKind = 'message' | 'invite' | 'event';
+export type PushKind = 'message' | 'invite' | 'event' | 'digest';
 
 interface PushContent {
   title: string;
@@ -39,6 +39,16 @@ export function markActive(userId: string, now = Date.now()) {
 
 const isActive = (userId: string) => Date.now() - (activeUsers.get(userId) ?? 0) < ACTIVE_WINDOW;
 
+/** Joueurs à qui une notification a été épargnée parce qu'ils regardaient le site. */
+const missedWhileActive = new Set<string>();
+
+/** Ceux qui viennent de partir : c'est le moment de leur résumer ce qu'ils n'ont pas vu. */
+export function usersWhoLeft() {
+  const left = [...missedWhileActive].filter((userId) => !isActive(userId));
+  for (const userId of left) missedWhileActive.delete(userId);
+  return left;
+}
+
 /** Seuls les services de notification des navigateurs reçoivent des requêtes du serveur. */
 const PUSH_HOSTS = /(^|\.)(googleapis\.com|mozilla\.com|windows\.com|apple\.com)$/;
 
@@ -49,6 +59,10 @@ export const pushPublicKey = () => env().VAPID_PUBLIC_KEY ?? null;
 
 /** Les navigateurs à prévenir, après tous les garde-fous contre le spam. */
 export async function subscribersToNotify(userId: string, kind: PushKind, tag: string) {
+  if (kind !== 'digest' && kind !== 'event' && isActive(userId)) {
+    missedWhileActive.add(userId);
+    return [];
+  }
   if (isActive(userId)) return [];
   if (kind === 'message' && !rateLimit(`push:${userId}:${tag}`, 1, CONVERSATION_COOLDOWN)) {
     return [];
@@ -57,7 +71,8 @@ export async function subscribersToNotify(userId: string, kind: PushKind, tag: s
     where: { id: userId },
     select: { pushMessages: true, pushInvites: true, pushEvents: true, pushSubscriptions: true },
   });
-  if (!user?.[PREFERENCES[kind]] || !user.pushSubscriptions.length) return [];
+  if (!user?.pushSubscriptions.length) return [];
+  if (kind !== 'digest' && !user[PREFERENCES[kind]]) return [];
   if (!rateLimit(`push:${userId}`, MAX_PER_HOUR, 3_600_000)) return [];
   return user.pushSubscriptions;
 }

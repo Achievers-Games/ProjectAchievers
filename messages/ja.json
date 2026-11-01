@@ -444,6 +444,7 @@
   "feedback_area_season": "シーズンとイベント",
   "feedback_area_notifications": "通知",
   "feedback_area_other": "その他",
+  "push_digest": "{count} 件の新着があります：メッセージと招待。",
   "refresh_label": "アカウントを更新",
   "refresh_started": "更新を開始しました。",
   "refresh_wait": "アカウントは読み込まれたばかりです。数分後にもう一度お試しください。",

@@ -19,7 +19,7 @@ import { db } from './db';
 import { familyKey } from './family';
 import { groupLibrary } from './library';
 import { mergeUsers } from './merge';
-import { markActive, subscribersToNotify } from './push';
+import { markActive, subscribersToNotify, usersWhoLeft } from './push';
 import { checkLiveGames } from './sync/live';
 import { enqueueSync, refreshAccounts, runSync, startWorkers } from './sync/queue';
 import { isAdultOnly, rateGames } from './sync/content';
@@ -1307,6 +1307,18 @@ describe('notifications', () => {
     const { userId } = await subscribed();
     markActive(userId);
     expect(await subscribersToNotify(userId, 'invite', 'a')).toHaveLength(0);
+  });
+
+  it('prépare un résumé une fois le joueur parti, et une seule fois', async () => {
+    const { userId } = await subscribed();
+    markActive(userId);
+    await subscribersToNotify(userId, 'message', 'c1');
+    expect(usersWhoLeft()).not.toContain(userId);
+
+    markActive(userId, Date.now() - 120_000);
+    expect(usersWhoLeft()).toContain(userId);
+    expect(usersWhoLeft()).not.toContain(userId);
+    expect(await subscribersToNotify(userId, 'digest', 'resume')).toHaveLength(1);
   });
 
   it('respecte les préférences et la limite horaire', async () => {

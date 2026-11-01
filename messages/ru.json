@@ -471,6 +471,7 @@
   "feedback_area_season": "Сезон и события",
   "feedback_area_notifications": "Уведомления",
   "feedback_area_other": "Другое",
+  "push_digest": "Вас ждут новые события ({count}): сообщения и приглашения.",
   "refresh_label": "Обновить мои аккаунты",
   "refresh_started": "Обновление запущено.",
   "refresh_wait": "Аккаунты только что считаны: попробуйте через несколько минут.",

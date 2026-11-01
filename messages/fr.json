@@ -453,6 +453,7 @@
   "feedback_area_season": "Saison et événements",
   "feedback_area_notifications": "Notifications",
   "feedback_area_other": "Autre",
+  "push_digest": "Tu as {count} nouveautés qui t'attendent : messages et invitations.",
   "refresh_label": "Actualiser mes comptes",
   "refresh_started": "Actualisation lancée.",
   "refresh_wait": "Tes comptes viennent d'être lus : réessaie dans quelques minutes.",

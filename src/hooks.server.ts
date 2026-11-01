@@ -5,6 +5,7 @@ import { paraglideMiddleware } from '$lib/paraglide/server';
 import { syncCuratedGuides } from '$lib/server/curated-guides';
 import { env } from '$lib/server/env';
 import { grantFrames } from '$lib/server/frames';
+import { startDigests } from '$lib/server/push-digest';
 import { rateLimit } from '$lib/server/rate-limit';
 import { validateSession } from '$lib/server/session';
 import { startLiveGames } from '$lib/server/sync/live';
@@ -14,6 +15,7 @@ export const init: ServerInit = async () => {
   env();
   await startWorkers();
   startLiveGames();
+  startDigests();
   await grantFrames().catch((cause) => console.error('Cadres :', cause));
   await syncCuratedGuides().catch((cause) => console.error('Guides officiels :', cause));
 };

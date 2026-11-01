@@ -453,6 +453,7 @@
   "feedback_area_season": "Season and events",
   "feedback_area_notifications": "Notifications",
   "feedback_area_other": "Other",
+  "push_digest": "{count} updates are waiting for you: messages and invitations.",
   "refresh_label": "Refresh my accounts",
   "refresh_started": "Refresh started.",
   "refresh_wait": "Your accounts were just read: try again in a few minutes.",

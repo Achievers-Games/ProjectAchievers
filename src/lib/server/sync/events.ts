@@ -67,9 +67,17 @@ export interface ChatEvent {
   };
 }
 
-export const publishChat = (userId: string, event: ChatEvent) => bus.emit(`chat:${userId}`, event);
+/** Une demande d'ami ou une invitation de clan, à montrer tout de suite sur le site. */
+export interface InviteEvent {
+  type: 'invite';
+  from: string;
+  invite: 'ami' | 'clan';
+}
 
-export function onChat(userId: string, listener: (event: ChatEvent) => void) {
+export const publishChat = (userId: string, event: ChatEvent | InviteEvent) =>
+  bus.emit(`chat:${userId}`, event);
+
+export function onChat(userId: string, listener: (event: ChatEvent | InviteEvent) => void) {
   bus.on(`chat:${userId}`, listener);
   return () => void bus.off(`chat:${userId}`, listener);
 }

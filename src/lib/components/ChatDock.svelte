@@ -10,6 +10,7 @@
     dockChats,
     hasDock,
     incoming,
+    noteFoldedChat,
     openChat,
     persistChats,
     renameChat,
@@ -34,10 +35,9 @@
     shown = hasDock();
     if (!shown) return;
     const stopSaving = persistChats(me);
-    // Comme sur Messenger : un message reçu ouvre sa discussion.
+    // Comme sur Messenger : un message reçu se signale, il n'interrompt pas ce que fait le joueur.
     const stopListening = incoming.subscribe((event) => {
-      if (!event || event.message.author.id === me) return;
-      openChat(event.conversationId, event.message.author.displayName);
+      if (event && event.message.author.id !== me) noteFoldedChat(event.conversationId);
     });
     return () => {
       stopSaving();
@@ -62,7 +62,10 @@
 {#if shown}<div class="fixed bottom-0 right-4 z-30 hidden items-end gap-2 md:flex">
     {#each $dockChats as chat (chat.id)}
       <section class="card w-72 overflow-hidden rounded-b-none shadow-lg" aria-label={chat.title}>
-        <header class="flex items-center gap-2 border-b border-line px-3 py-2">
+        <header
+          class="flex items-center gap-2 border-b border-line px-3 py-2"
+          class:chat-waiting={chat.pending}
+        >
           <button
             type="button"
             class="min-w-0 flex-1 truncate text-left text-sm font-medium"
@@ -71,6 +74,7 @@
           >
             {chat.title}
           </button>
+          {#if chat.pending}<span class="social-badge">{chat.pending}</span>{/if}
           <button
             type="button"
             class="text-muted hover:text-ink"
@@ -119,6 +123,7 @@
       <button
         type="button"
         class="card flex w-full items-center gap-2 rounded-b-none px-3 py-2 text-sm font-medium shadow-lg"
+        class:chat-waiting={$unread}
         aria-expanded={listOpen}
         onclick={toggleList}
       >

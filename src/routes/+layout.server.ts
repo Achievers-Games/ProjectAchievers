@@ -1,9 +1,10 @@
 import { pushPublicKey } from '$lib/server/push';
-import { unreadCount } from '$lib/server/social';
+import { pendingInvites, unreadCount } from '$lib/server/social';
 import type { LayoutServerLoad } from './$types';
 
 export const load: LayoutServerLoad = async ({ locals, cookies }) => ({
   unread: locals.user ? await unreadCount(locals.user.id) : 0,
+  invites: locals.user ? await pendingInvites(locals.user.id) : { friends: 0, clans: 0 },
   pushKey: pushPublicKey(),
   user: locals.user && {
     id: locals.user.id,
