@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { EVENT_CODES, SITE_CATEGORIES, SITE_CODES } from '$lib/site-achievements';
 import {
   earnedCodes,
+  evaluateSite,
   localClock,
   markBursts,
   type GameFact,
@@ -33,11 +34,11 @@ const facts = (extra: Partial<SiteFacts> = {}): SiteFacts => ({
   upheldReport: false,
   doneFeedback: false,
   season: null,
-  soulmates: false,
-  twins: false,
+  soulmates: null,
+  twins: null,
   perfectClan: false,
-  firstEver: false,
-  onlyOne: false,
+  firstEver: null,
+  onlyOne: null,
   ...extra,
 });
 
@@ -57,6 +58,7 @@ const game = (gameId: string, extra: Partial<GameFact> = {}): GameFact => ({
 const unlock = (gameId: string, at: number, extra: Partial<UnlockFact> = {}): UnlockFact => ({
   at,
   gameId,
+  achievementId: `${gameId}-${at}`,
   platform: 'STEAM',
   rarity: 50,
   ...extra,
@@ -213,6 +215,27 @@ describe('succès du site', () => {
     const unlocks = [unlock('a', NOW - 40 * DAY), unlock('a', NOW)];
     expect(earned({ unlocks })).toContain('withdrawal');
     expect(earned({ unlocks: [unlock('a', NOW)] })).not.toContain('withdrawal');
+  });
+
+  it('retrouve ce qui a déclenché un succès', () => {
+    const cards = [1, 2, 3].map((day) => ({
+      gameId: `g${day}`,
+      tier: 1,
+      copies: 1,
+      lastAt: NOW + day * DAY,
+      next: false,
+    }));
+    const { proof } = evaluateSite(facts({ cards: [...cards, ...cards, ...cards, cards[0]!] }));
+    expect(proof('cards_1')).toEqual({ games: ['g1'] });
+    expect(proof('cards_10')).toEqual({ games: ['g3'] });
+
+    const rare = evaluateSite(
+      facts({
+        unlocks: [unlock('a', NOW, { rarity: 50 }), unlock('b', NOW + DAY, { rarity: 0.05 })],
+      }),
+    );
+    expect(rare.proof('ultra_rare')).toEqual({ achievements: [`b-${NOW + DAY}`] });
+    expect(rare.proof('friend_1')).toBeNull();
   });
 
   it('classe la saison sur les jeux déjà commencés', () => {

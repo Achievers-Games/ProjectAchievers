@@ -955,5 +955,14 @@ test.describe('succès du site', () => {
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     await expect(page.locator('main li.card')).toHaveCount(101);
     await expect(page.locator('main section').last().locator('li.card')).toHaveCount(26);
+
+    await expect(async () => {
+      await page.reload();
+      await expect(page.locator('main details').first()).toBeVisible({ timeout: 1000 });
+    }).toPass();
+    await ready(page);
+    const proof = page.locator('main details').first();
+    await proof.locator('summary').click();
+    await expect(proof.getByRole('link').first()).toBeVisible();
   });
 });

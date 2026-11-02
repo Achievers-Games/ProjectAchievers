@@ -5,6 +5,7 @@ const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
 const WEEK = 7 * DAY;
 const YEAR = 365 * DAY;
+const MAX_PROOF = 6;
 
 export interface GameFact {
   gameId: string;
@@ -22,6 +23,7 @@ export interface GameFact {
 export interface UnlockFact {
   at: number;
   gameId: string;
+  achievementId: string;
   platform: Platform;
   rarity: number | null;
   /** Rafale : un outil ou une synchronisation plutôt qu'une partie. */
@@ -68,11 +70,18 @@ export interface SiteFacts {
   upheldReport: boolean;
   doneFeedback: boolean;
   season: SeasonFacts | null;
-  soulmates: boolean;
-  twins: boolean;
+  /** Le succès partagé avec un ami, le jeu fini le même jour, le jeu ouvert ou gardé pour soi. */
+  soulmates: string | null;
+  twins: string | null;
   perfectClan: boolean;
-  firstEver: boolean;
-  onlyOne: boolean;
+  firstEver: string | null;
+  onlyOne: string | null;
+}
+
+/** Ce qui a déclenché un succès, pour l'expliquer au joueur. */
+export interface SiteProof {
+  games?: string[];
+  achievements?: string[];
 }
 
 /** Attribués par un geste, ou après tous les autres : aucune règle à relire ici. */
@@ -143,6 +152,16 @@ function longestRun(values: number[]) {
   return best;
 }
 
+/** La première valeur qui complète une suite de `length` valeurs consécutives. */
+function runEnd(values: number[], length: number) {
+  const sorted = [...new Set(values)].toSorted((a, b) => a - b);
+  let run = 0;
+  return sorted.find((value, index) => {
+    run = value - 1 === sorted[index - 1] ? run + 1 : 1;
+    return run === length;
+  });
+}
+
 const initial = (name: string) =>
   name
     .normalize('NFD')
@@ -151,7 +170,7 @@ const initial = (name: string) =>
     .toUpperCase();
 
 /** Les conditions, sans accès à la base : chaque succès tient en une ligne testable. */
-export function earnedCodes(facts: SiteFacts): SiteCode[] {
+export function evaluateSite(facts: SiteFacts) {
   const { games, unlocks, cards, platforms, season } = facts;
   const clock = localClock(facts.timeZone);
   const finished = games.filter(
@@ -179,14 +198,15 @@ export function earnedCodes(facts: SiteFacts): SiteCode[] {
   const busiestDay = Math.max(0, ...[...days.values()].map((day) => day.length));
   const streak = longestRun(dates.map((date) => Math.floor(date.getTime() / DAY)));
 
-  const rare = (limit: number) =>
-    unlocks.filter((u) => u.rarity !== null && u.rarity > 0 && u.rarity < limit).length;
+  const rareUnlock = (limit: number) => (u: UnlockFact) =>
+    u.rarity !== null && u.rarity > 0 && u.rarity < limit;
+  const rare = (limit: number) => unlocks.filter(rareUnlock(limit)).length;
   const copies = (count: number) => cards.filter((card) => card.copies >= count);
   const tierCards = (tier: number) => cards.filter((card) => card.tier >= tier).length;
   // Une carte sortie d'une rafale ne prouve rien pour les combinaisons de niveaux.
-  const earnedCards = cards.flatMap(({ tier, gameId, lastAt }) => {
+  const earnedCards = cards.flatMap(({ tier, gameId, lastAt, copies: count }) => {
     const steady = !byGame.get(gameId)?.some((u) => u.burst);
-    return steady && lastAt !== null ? [{ tier, date: clock(lastAt) }] : [];
+    return steady && lastAt !== null ? [{ gameId, tier, count, date: clock(lastAt) }] : [];
   });
   const sameTierDay = Map.groupBy(earnedCards, ({ tier, date }) => `${tier}:${dayKey(date)}`);
   const cardDays = Map.groupBy(earnedCards, ({ date }) => dayKey(date));
@@ -196,12 +216,36 @@ export function earnedCodes(facts: SiteFacts): SiteCode[] {
   const unlockCount = unlocks.length;
   const longest = Math.max(0, ...games.map((g) => g.playtime));
   const doneOn = new Set(finished.map((g) => g.platform));
-  const seasonFinishes = season
+  const seasonGames = season
     ? finished.filter((g) => {
         const started = (firstAt(g) ?? Infinity) < season.startsAt;
         return started && clean(g) && g.lastAt >= season.startsAt && g.lastAt < season.endsAt;
-      }).length
-    : 0;
+      })
+    : [];
+  const seasonFinishes = seasonGames.length;
+  const isHare = (g: GameFact & { lastAt: number }) => {
+    const first = firstAt(g);
+    return g.total >= 30 && clean(g) && first !== undefined && g.lastAt - first < DAY;
+  };
+  const isNewGame = (g: GameFact) => {
+    const first = firstAt(g);
+    return g.completion < 80 && first !== undefined && facts.now - first <= WEEK;
+  };
+  const rarestLast = (g: GameFact) => {
+    const group = byGame.get(g.gameId) ?? [];
+    const last = group.at(-1)?.rarity;
+    const known = last !== null && last !== undefined;
+    return (
+      known &&
+      group.length >= 3 &&
+      clean(g) &&
+      group.every((u) => u.rarity !== null && u.rarity >= last)
+    );
+  };
+  const byTime = unlocks.toSorted((a, b) => a.at - b.at);
+  const returnIndex = byTime.findIndex(
+    (u, index) => index > 0 && u.at - byTime[index - 1]!.at >= 30 * DAY,
+  );
 
   const rules: Record<Exclude<SiteCode, DirectCode>, boolean> = {
     first_account: platforms.length >= 1,
@@ -272,16 +316,8 @@ export function earnedCodes(facts: SiteFacts): SiteCode[] {
     one_left: finished.some((g) => g.total >= 5 && gapBeforeLast(g) >= WEEK),
     one_more_10: busiestDay >= 10,
     one_more_50: busiestDay >= 50,
-    withdrawal: unlocks
-      .map((u) => u.at)
-      .toSorted((a, b) => a - b)
-      .some((at, index, sorted) => index > 0 && at - sorted[index - 1]! >= 30 * DAY),
-    yet_another:
-      stalled >= 5 &&
-      games.some((g) => {
-        const first = firstAt(g);
-        return g.completion < 80 && first !== undefined && facts.now - first <= WEEK;
-      }),
+    withdrawal: returnIndex >= 0,
+    yet_another: stalled >= 5 && games.some(isNewGame),
 
     friend_1: facts.friends >= 1,
     friends_10: facts.friends >= 10,
@@ -316,27 +352,13 @@ export function earnedCodes(facts: SiteFacts): SiteCode[] {
       dates.some((date) => date.getUTCHours() >= 3 && date.getUTCHours() < 5),
     monk: streak >= 30,
     world_tour: [...days.values()].some((day) => new Set(day.map((u) => u.platform)).size >= 3),
-    hare: finished.some((g) => {
-      const first = firstAt(g);
-      return g.total >= 30 && clean(g) && first !== undefined && g.lastAt - first < DAY;
-    }),
+    hare: finished.some(isHare),
     alphabet: new Set(finished.map((g) => initial(g.name)).filter(Boolean)).size >= 20,
-    rarest_last:
-      finished.filter((g) => {
-        const group = byGame.get(g.gameId) ?? [];
-        const last = group.at(-1)?.rarity;
-        const known = last !== null && last !== undefined;
-        return (
-          known &&
-          group.length >= 3 &&
-          clean(g) &&
-          group.every((u) => u.rarity !== null && u.rarity >= last)
-        );
-      }).length >= 5,
+    rarest_last: finished.filter(rarestLast).length >= 5,
     nights_1001: unlockCount > 0 && unlockCount % 1001 === 0,
     forty_two: cardCount > 0 && cardCount % 42 === 0,
-    soulmates: facts.soulmates,
-    twins: facts.twins,
+    soulmates: facts.soulmates !== null,
+    twins: facts.twins !== null,
     perfect_clan: facts.perfectClan,
     grand_slam: copies(2).some(({ lastAt }) => {
       if (lastAt === null) return false;
@@ -349,9 +371,202 @@ export function earnedCodes(facts: SiteFacts): SiteCode[] {
     straight: [...monthTiers.values()].some((month) => new Set(month.map((c) => c.tier)).size >= 5),
     legend_double: copies(2).some((card) => card.tier >= 6),
     six_months: longestRun(finishDates.map(monthIndex)) >= 6,
-    first_ever: facts.firstEver,
-    only_one: facts.onlyOne,
+    first_ever: facts.firstEver !== null,
+    only_one: facts.onlyOne !== null,
   };
 
-  return (Object.keys(rules) as (keyof typeof rules)[]).filter((code) => rules[code]);
+  const gameProof = (ids: string[]): SiteProof => ({
+    games: [...new Set(ids)].slice(0, MAX_PROOF),
+  });
+  const unlockProof = (list: UnlockFact[]): SiteProof => ({
+    achievements: list.slice(0, MAX_PROOF).map((u) => u.achievementId),
+  });
+  const gamesOf = (list: { gameId: string }[]) => gameProof(list.map((g) => g.gameId));
+
+  const cardsByTime = cards
+    .filter((card) => card.lastAt !== null)
+    .toSorted((a, b) => a.lastAt! - b.lastAt!);
+  const finishedByTime = finished.toSorted((a, b) => a.lastAt - b.lastAt);
+  /** Le palier se franchit avec la carte, le jeu ou le succès de ce rang. */
+  const nthCard = (rank: number, keep: (card: CardFact) => boolean = () => true) =>
+    gamesOf(cardsByTime.filter(keep).slice(rank - 1, rank));
+  const nthFinished = (rank: number, keep: (game: GameFact) => boolean = () => true) =>
+    gamesOf(finishedByTime.filter(keep).slice(rank - 1, rank));
+  const nthUnlock = (rank: number, keep: (u: UnlockFact) => boolean = () => true) =>
+    unlockProof(byTime.filter(keep).slice(rank - 1, rank));
+  const atLeast = (tier: number) => (card: CardFact) => card.tier >= tier;
+  const doubled = (card: CardFact) => card.copies >= 2;
+  const isQuick = (g: GameFact) => g.playtime >= 1 && g.playtime < 60;
+  const finishedOn = (test: (date: Date) => boolean) => () =>
+    nthFinished(1, (g) => g.lastAt !== null && test(clock(g.lastAt)));
+  const firstDay = <T>(groups: Iterable<T[]>, test: (day: T[]) => boolean) =>
+    [...groups].find(test) ?? [];
+  const busiest = [...days.values()].toSorted((a, b) => b.length - a.length)[0] ?? [];
+  const onePerPlatform = (day: UnlockFact[]) =>
+    [...Map.groupBy(day, (u) => u.platform).values()].map((list) => list[0]!);
+  const dayNumber = (at: number) => Math.floor(clock(at).getTime() / DAY);
+  const streakProof = (length: number) => () => {
+    const end = runEnd(
+      unlocks.map((u) => dayNumber(u.at)),
+      length,
+    );
+    return unlockProof(byTime.filter((u) => dayNumber(u.at) === end).slice(0, 1));
+  };
+  const stalledGames = () =>
+    gamesOf(
+      games
+        .filter((g) => g.completion >= 80 && g.completion < 100)
+        .toSorted((a, b) => b.completion - a.completion),
+    );
+  const longestGame = () => gamesOf(games.toSorted((a, b) => b.playtime - a.playtime).slice(0, 1));
+  const firstDeepGap = (gap: number) => () =>
+    gamesOf(finishedByTime.filter((g) => gapBeforeLast(g) >= gap).slice(0, 1));
+  const lastLetter = () => {
+    const letters = new Set<string>();
+    return gamesOf(
+      finishedByTime
+        .filter((g) => {
+          letters.add(initial(g.name));
+          letters.delete('');
+          return letters.size === 20;
+        })
+        .slice(0, 1),
+    );
+  };
+
+  const proofs: Partial<Record<SiteCode, () => SiteProof>> = {
+    cards_1: () => nthCard(1),
+    cards_10: () => nthCard(10),
+    cards_50: () => nthCard(50),
+    cards_100: () => nthCard(100),
+    cards_250: () => nthCard(250),
+    gold_1: () => nthCard(1, atLeast(3)),
+    gold_10: () => nthCard(10, atLeast(3)),
+    gold_25: () => nthCard(25, atLeast(3)),
+    diamond_1: () => nthCard(1, atLeast(4)),
+    prismatic_1: () => nthCard(1, atLeast(5)),
+    bronze_25: () => nthCard(25, (card) => card.tier === 1),
+    copies2_1: () => nthCard(1, doubled),
+    copies2_5: () => nthCard(5, doubled),
+    shiny_double: () => nthCard(1, (card) => doubled(card) && card.tier >= 3),
+    legend_double: () => nthCard(1, (card) => doubled(card) && card.tier >= 6),
+    second_helping: () => nthCard(1, (card) => card.next),
+    legendary: () => nthCard(1, atLeast(6)),
+    wide_gap: () =>
+      gamesOf(
+        firstDay(
+          cardDays.values(),
+          (day) => day.some((c) => c.tier === 1) && day.some((c) => c.tier === 6),
+        ),
+      ),
+    reverse_gear: () => {
+      const start = ordered.findIndex(({ tier }, index) => {
+        const next = ordered.slice(index + 1, index + 6);
+        return tier >= 4 && next.length === 5 && next.every((card) => card.tier === 1);
+      });
+      return gamesOf(ordered.slice(start, start + 6));
+    },
+    game_100: () => nthFinished(1, (g) => g.total >= 100 && clean(g)),
+    game_500: () => nthFinished(1, (g) => g.total >= 500 && clean(g)),
+    small_10: () => nthFinished(10, (g) => g.total <= 10),
+    borderless: () =>
+      gamesOf([...Map.groupBy(finishedByTime, (g) => g.platform).values()].map((list) => list[0]!)),
+
+    unlocks_100: () => nthUnlock(100),
+    unlocks_1000: () => nthUnlock(1000),
+    unlocks_5000: () => nthUnlock(5000),
+    unlocks_10000: () => nthUnlock(10_000),
+    unlocks_20000: () => nthUnlock(20_000),
+    rare_1: () => nthUnlock(1, rareUnlock(1)),
+    rare_50: () => nthUnlock(50, rareUnlock(1)),
+    ultra_rare: () => nthUnlock(1, rareUnlock(0.1)),
+
+    hours_100: longestGame,
+    hours_1000: longestGame,
+    quick_1: () => nthFinished(1, isQuick),
+    quick_5: () => nthFinished(5, isQuick),
+
+    stalled_5: stalledGames,
+    almost: () =>
+      gamesOf(games.filter((g) => g.completion >= 95 && g.completion < 100).slice(0, 1)),
+    stalled_25: stalledGames,
+    resurrection: firstDeepGap(YEAR + 1),
+    one_left: () =>
+      gamesOf(finishedByTime.filter((g) => g.total >= 5 && gapBeforeLast(g) >= WEEK).slice(0, 1)),
+    one_more_10: () => unlockProof(busiest),
+    one_more_50: () => unlockProof(busiest),
+    withdrawal: () => unlockProof(byTime.slice(returnIndex, returnIndex + 1)),
+    yet_another: () => gamesOf(games.filter(isNewGame).slice(0, 1)),
+
+    season_finish_1: () => gamesOf(seasonGames),
+    season_finish_3: () => gamesOf(seasonGames),
+
+    midnight: () => nthUnlock(1, (u) => u.at % DAY < 60_000),
+    friday13: finishedOn((date) => date.getUTCDay() === 5 && date.getUTCDate() === 13),
+    birthday: finishedOn((date) => {
+      const created = clock(facts.createdAt);
+      const anniversary = dayKey(created).slice(4) === dayKey(date).slice(4);
+      return anniversary && date.getUTCFullYear() > created.getUTCFullYear();
+    }),
+    christmas: finishedOn((date) => date.getUTCMonth() === 11 && date.getUTCDate() === 25),
+    new_year: () => nthUnlock(1, (u) => dayKey(clock(u.at)).endsWith('-01-01')),
+    night_owl: () =>
+      nthUnlock(1, (u) => {
+        const hour = clock(u.at).getUTCHours();
+        return hour >= 3 && hour < 5;
+      }),
+    monk: streakProof(30),
+    world_tour: () =>
+      unlockProof(
+        onePerPlatform(firstDay(days.values(), (day) => onePerPlatform(day).length >= 3)),
+      ),
+    hare: () => gamesOf(finishedByTime.filter(isHare).slice(0, 1)),
+    alphabet: lastLetter,
+    rarest_last: () => gamesOf(finishedByTime.filter(rarestLast)),
+    nights_1001: () => nthUnlock(unlockCount),
+    forty_two: () => nthCard(cardCount),
+    soulmates: () => ({ achievements: facts.soulmates ? [facts.soulmates] : [] }),
+    twins: () => gameProof(facts.twins ? [facts.twins] : []),
+    grand_slam: () => {
+      const near = (a: CardFact, b: CardFact) => Math.abs(a.lastAt! - b.lastAt!) <= WEEK;
+      const pair = cardsByTime
+        .filter(doubled)
+        .find((a) => cardsByTime.some((b) => atLeast(3)(b) && near(a, b)));
+      const gold = pair && cardsByTime.find((b) => atLeast(3)(b) && near(pair, b));
+      return gamesOf(pair && gold ? [pair, gold] : []);
+    },
+    full_set: () =>
+      gamesOf([...Map.groupBy(cardsByTime, (card) => card.tier).values()].map((list) => list[0]!)),
+    four_of_a_kind: () => gamesOf(firstDay(sameTierDay.values(), (day) => day.length >= 4)),
+    straight: () => {
+      const month = firstDay(
+        monthTiers.values(),
+        (list) => new Set(list.map((c) => c.tier)).size >= 5,
+      );
+      return gamesOf([...Map.groupBy(month, (card) => card.tier).values()].map((list) => list[0]!));
+    },
+    six_months: () => {
+      const end = runEnd(finishDates.map(monthIndex), 6) ?? 0;
+      return gamesOf(
+        finished.filter((g) => {
+          const month = monthIndex(clock(g.lastAt));
+          return month > end - 6 && month <= end;
+        }),
+      );
+    },
+    first_ever: () => gameProof(facts.firstEver ? [facts.firstEver] : []),
+    only_one: () => gameProof(facts.onlyOne ? [facts.onlyOne] : []),
+  };
+
+  return {
+    codes: (Object.keys(rules) as (keyof typeof rules)[]).filter(
+      (code) => rules[code],
+    ) as SiteCode[],
+    proof: (code: SiteCode) => {
+      const proof = proofs[code]?.();
+      return proof?.games?.length || proof?.achievements?.length ? proof : null;
+    },
+  };
 }
+
+export const earnedCodes = (facts: SiteFacts) => evaluateSite(facts).codes;

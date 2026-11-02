@@ -302,6 +302,8 @@ model SiteUnlock {
   userId     String
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   code       String
+  /// Ce qui a déclenché le succès : identifiants de jeux et de succès de jeu.
+  proof      Json?
   unlockedAt DateTime @default(now())
 
   @@id([userId, code])

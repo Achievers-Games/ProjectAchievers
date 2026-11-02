@@ -14,7 +14,7 @@ import { refreshDiscordAccounts } from './discord';
 import { SyncError } from './errors';
 import { publishCard, publishHighlight, publishSync, publishUnlock } from './events';
 import { grantFrames } from '../frames';
-import { checkSiteAchievements } from '../site-achievements';
+import { checkSiteAchievements, reviewNewPlayers } from '../site-achievements';
 import { syncPsn } from './psn';
 import { syncRetro } from './retro';
 import { fetchUnlocks, fillHiddenDescriptions, sweepSteamStore, syncSteam } from './steam';
@@ -354,6 +354,7 @@ async function sweep() {
     take: 500,
   });
   for (const account of accounts) await enqueueSync(account.userId, account.provider);
+  await reviewNewPlayers().catch((cause) => console.error('Succès du site :', cause));
   await announceSeason().catch((cause) => console.error('Annonce :', cause));
   await refreshDiscordAccounts().catch((cause) => console.error('Discord :', cause));
   await fillHiddenDescriptions().catch((cause) => console.error('Succès cachés :', cause));

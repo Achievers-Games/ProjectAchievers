@@ -12,5 +12,8 @@ export const load: PageServerLoad = async ({ params, locals }) => {
     select: { id: true, ...publicUser },
   });
   if (!user) error(404, m.profile_not_found());
-  return { player: user, board: await siteAchievementBoard(user.id, viewerId) };
+  return {
+    player: user,
+    board: await siteAchievementBoard(user.id, viewerId, locals.user?.showAdult),
+  };
 };

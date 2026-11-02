@@ -15,6 +15,7 @@ import {
 import { grantFrames } from './frames';
 import {
   checkSiteAchievements,
+  reviewNewPlayers,
   grantSiteAchievement,
   siteAchievementBoard,
 } from './site-achievements';
@@ -1938,6 +1939,55 @@ describe('succès du site', () => {
 
     const seenByOwner = await siteAchievementBoard(owner.id, owner.id);
     expect(find(seenByOwner, 'secret').filter((item) => item.title)).toHaveLength(1);
+  });
+
+  it('compte tous les joueurs, même ceux qui ne reviennent pas', async () => {
+    const active = await withAccount(`${PREFIX}-succes7`);
+    const absent = await withAccount(`${PREFIX}-succes8`);
+    await checkSiteAchievements(active.id);
+
+    const rate = async () => {
+      const board = await siteAchievementBoard(active.id, active.id);
+      const [first] = board.categories.find((entry) => entry.category === 'start')?.items ?? [];
+      return first?.rarity ?? 0;
+    };
+    expect(await rate()).toBeLessThan(100);
+
+    await db.siteUnlock.deleteMany({ where: { userId: absent.id } });
+    await reviewNewPlayers();
+    expect(await db.siteUnlock.count({ where: { userId: absent.id } })).toBeGreaterThan(0);
+  });
+
+  it("montre les jeux d'un autre joueur, et ses secrets seulement à qui les a aussi", async () => {
+    const owner = await player(`${PREFIX}-succes9`);
+    const viewer = await player(`${PREFIX}-succes10`);
+    const game = await db.game.create({
+      data: {
+        platform: 'STEAM',
+        platformGameId: `${PREFIX}-succes`,
+        name: `${PREFIX} preuve`,
+        slug: `${PREFIX}-preuve`,
+      },
+    });
+    const proof = { games: [game.id] };
+    await db.siteUnlock.createMany({
+      data: [
+        { userId: owner.id, code: 'cards_1', proof },
+        { userId: owner.id, code: 'friday13', proof },
+      ],
+    });
+    const items = async (viewerId: string | null) => {
+      const { categories } = await siteAchievementBoard(owner.id, viewerId);
+      return categories.flatMap((entry) => entry.items).filter((item) => item.unlockedAt);
+    };
+    const slugs = (list: Awaited<ReturnType<typeof items>>) =>
+      list.map((item) => item.proof?.games[0]?.slug ?? null);
+
+    expect(slugs(await items(viewer.id)).toSorted()).toEqual([game.slug, null].toSorted());
+    expect(slugs(await items(null)).filter(Boolean)).toEqual([game.slug]);
+
+    await db.siteUnlock.create({ data: { userId: viewer.id, code: 'friday13' } });
+    expect(slugs(await items(viewer.id))).toEqual([game.slug, game.slug]);
   });
 
   it('accorde les dix secrets au Dernier mot', async () => {
