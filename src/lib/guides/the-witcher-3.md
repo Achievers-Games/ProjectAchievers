@@ -10,12 +10,14 @@ Le plus manquable du jeu : il faut **sept alliés** à Kaer Morhen pour la batai
 
 Les noms de quêtes sont ceux de la version anglaise du jeu.
 
-- [ ] Keira Metz : finir sa quête « For the Advancement of Learning » et l'envoyer à Kaer Morhen, sans la tuer
-- [ ] Triss Merigold : au port, à la fin de « Now or Never », lui demander de rester et lui dire que tu l'aimes
-- [ ] Vernon Roche et Ves : finir « An Eye for an Eye » avec Ves vivante, puis les recruter
-- [ ] Zoltan Chivay : le recruter dans « Brothers in Arms » à Novigrad
-- [ ] Hjalmar : aider Hjalmar ou Cerys dans « King's Gambit », jamais la troisième réponse
-- [ ] Ermion : le recruter dans « Brothers in Arms » à Skellige
+- [ ] Keira Metz : finir sa quête « For the Advancement of Learning » et l'envoyer à Kaer Morhen, sans la tuer · [vidéo](https://youtu.be/JWAmuDCJtjM?t=5)
+- [ ] Triss Merigold : l'embrasser dans les jardins pendant « A Matter of Life and Death », puis au port, à la fin de « Now or Never », lui demander de rester et lui dire que tu l'aimes · [vidéo](https://youtu.be/JWAmuDCJtjM?t=128)
+- [ ] Vernon Roche et Ves : finir « An Eye for an Eye » avec Ves vivante, puis les recruter · [vidéo](https://youtu.be/JWAmuDCJtjM?t=232)
+- [ ] Zoltan Chivay : le recruter dans « Brothers in Arms » à Novigrad · [vidéo](https://youtu.be/JWAmuDCJtjM?t=305)
+- [ ] Hjalmar : aider Hjalmar ou Cerys dans « King's Gambit », jamais la troisième réponse · [vidéo](https://youtu.be/JWAmuDCJtjM?t=368)
+- [ ] Ermion : le recruter dans « Brothers in Arms » à Skellige · [vidéo](https://youtu.be/JWAmuDCJtjM?t=335)
+
+![Tous présents !, PowerPyx](https://youtu.be/JWAmuDCJtjM)
 
 ## Attention
 

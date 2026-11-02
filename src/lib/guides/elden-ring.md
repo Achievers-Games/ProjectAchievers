@@ -37,6 +37,8 @@ La fin « Âge des étoiles » demande d'aller **au bout de la quête de Ranni**
 - [ ] Suivre [sa quête](https://eldenring.wiki.fextralife.com/Ranni+the+Witch) jusqu'à la Cathédrale de Manus Celes
 - [ ] Vaincre la Bête d'Elden, puis toucher le **signe d'invocation bleu** de Ranni
 
+![Quête de Ranni et fin « Âge des étoiles », PowerPyx](https://youtu.be/L8-uHaH7TSg)
+
 ## Attention
 
 Si tu as ouvert la porte des Trois Doigts, le signe de Ranni n'apparaît pas : il faut d'abord éteindre la flamme avec l'aiguille de Miquella, dans l'arène de Placidusax.
@@ -79,17 +81,19 @@ La **Dark Moon Greatsword** se gagne au bout de la quête de Ranni : ne la laiss
 
 ## Ta liste
 
-Les noms sont ceux de la version anglaise du jeu. Chaque lien mène à l'emplacement détaillé, avec sa carte.
+Les noms sont ceux de la version anglaise du jeu. Chaque lien mène à l'emplacement détaillé, avec sa carte. Le lien « vidéo » démarre directement sur l'objet.
 
-- [ ] [Ruins Greatsword](https://eldenring.wiki.fextralife.com/Ruins+Greatsword) : Château de Redmane, sur le Misbegotten Warrior et le Crucible Knight
-- [ ] [Eclipse Shotel](https://eldenring.wiki.fextralife.com/Eclipse+Shotel) : coffre du Château Sol
-- [ ] [Grafted Blade Greatsword](https://eldenring.wiki.fextralife.com/Grafted+Blade+Greatsword) : Château Morne, sur le Leonine Misbegotten
-- [ ] [Sword of Night and Flame](https://eldenring.wiki.fextralife.com/Sword+of+Night+and+Flame) : coffre du Manoir de Caria
-- [ ] [Marais Executioner's Sword](https://eldenring.wiki.fextralife.com/Marais+Executioner's+Sword) : Château ombragé, sur Elemer of the Briar
-- [ ] [Dark Moon Greatsword](https://eldenring.wiki.fextralife.com/Dark+Moon+Greatsword) : fin de la quête de Ranni, à l'autel du Clair de lune
-- [ ] [Devourer's Scepter](https://eldenring.wiki.fextralife.com/Devourer's+Scepter) : Farum Azula, sur l'envahisseur Knight Bernahl
-- [ ] [Golden Order Greatsword](https://eldenring.wiki.fextralife.com/Golden+Order+Greatsword) : Cave of the Forlorn, sur le Misbegotten Crusader
-- [ ] [Bolt of Gransax](https://eldenring.wiki.fextralife.com/Bolt+of+Gransax) : la lance géante plantée dans Leyndell, Capitale royale
+![Toutes les armes légendaires, PowerPyx](https://youtu.be/1UWsi0LY4G8)
+
+- [ ] [Ruins Greatsword](https://eldenring.wiki.fextralife.com/Ruins+Greatsword) : Château de Redmane, sur le Misbegotten Warrior et le Crucible Knight · [vidéo](https://youtu.be/1UWsi0LY4G8?t=138)
+- [ ] [Eclipse Shotel](https://eldenring.wiki.fextralife.com/Eclipse+Shotel) : coffre du Château Sol · [vidéo](https://youtu.be/1UWsi0LY4G8?t=360)
+- [ ] [Grafted Blade Greatsword](https://eldenring.wiki.fextralife.com/Grafted+Blade+Greatsword) : Château Morne, sur le Leonine Misbegotten · [vidéo](https://youtu.be/1UWsi0LY4G8?t=48)
+- [ ] [Sword of Night and Flame](https://eldenring.wiki.fextralife.com/Sword+of+Night+and+Flame) : coffre du Manoir de Caria · [vidéo](https://youtu.be/1UWsi0LY4G8?t=78)
+- [ ] [Marais Executioner's Sword](https://eldenring.wiki.fextralife.com/Marais+Executioner's+Sword) : Château ombragé, sur Elemer of the Briar · [vidéo](https://youtu.be/1UWsi0LY4G8?t=201)
+- [ ] [Dark Moon Greatsword](https://eldenring.wiki.fextralife.com/Dark+Moon+Greatsword) : fin de la quête de Ranni, à l'autel du Clair de lune · [vidéo](https://youtu.be/1UWsi0LY4G8?t=773)
+- [ ] [Devourer's Scepter](https://eldenring.wiki.fextralife.com/Devourer's+Scepter) : Farum Azula, sur l'envahisseur Knight Bernahl · [vidéo](https://youtu.be/1UWsi0LY4G8)
+- [ ] [Golden Order Greatsword](https://eldenring.wiki.fextralife.com/Golden+Order+Greatsword) : Cave of the Forlorn, sur le Misbegotten Crusader · [vidéo](https://youtu.be/1UWsi0LY4G8?t=462)
+- [ ] [Bolt of Gransax](https://eldenring.wiki.fextralife.com/Bolt+of+Gransax) : la lance géante plantée dans Leyndell, Capitale royale · [vidéo](https://youtu.be/1UWsi0LY4G8?t=290)
 
 ## Si le succès ne tombe pas
 
@@ -108,14 +112,16 @@ Il faut posséder les **six cendres légendaires** dans une même partie. Aucune
 
 ## Ta liste
 
-Les noms sont ceux de la version anglaise du jeu. Chaque lien mène à l'emplacement détaillé, avec sa carte.
+Les noms sont ceux de la version anglaise du jeu. Chaque lien mène à l'emplacement détaillé, avec sa carte. Le lien « vidéo » démarre directement sur l'objet.
 
-- [ ] [Lhutel the Headless](https://eldenring.wiki.fextralife.com/Lhutel+the+Headless) : Tombsward Catacombs, sur le Cemetery Shade
-- [ ] [Black Knife Tiche](https://eldenring.wiki.fextralife.com/Black+Knife+Tiche) : Ringleader's Evergaol, sur Alecto
-- [ ] [Redmane Knight Ogha](https://eldenring.wiki.fextralife.com/Redmane+Knight+Ogha) : War-Dead Catacombs, sur le Putrid Tree Spirit
-- [ ] [Mimic Tear](https://eldenring.wiki.fextralife.com/Mimic+Tear+Ashes) : coffre de Night's Sacred Ground, derrière une porte à statue
-- [ ] [Ancient Dragon Knight Kristoff](https://eldenring.wiki.fextralife.com/Ancient+Dragon+Knight+Kristoff) : Sainted Hero's Grave, sur l'Ancient Hero of Zamor
-- [ ] [Cleanrot Knight Finlay](https://eldenring.wiki.fextralife.com/Cleanrot+Knight+Finlay) : coffre gardé d'Elphael, Brace of the Haligtree
+![Toutes les cendres légendaires, PowerPyx](https://youtu.be/0Ag3DOpLa3k)
+
+- [ ] [Lhutel the Headless](https://eldenring.wiki.fextralife.com/Lhutel+the+Headless) : Tombsward Catacombs, sur le Cemetery Shade · [vidéo](https://youtu.be/0Ag3DOpLa3k)
+- [ ] [Black Knife Tiche](https://eldenring.wiki.fextralife.com/Black+Knife+Tiche) : Ringleader's Evergaol, sur Alecto · [vidéo](https://youtu.be/0Ag3DOpLa3k?t=936)
+- [ ] [Redmane Knight Ogha](https://eldenring.wiki.fextralife.com/Redmane+Knight+Ogha) : War-Dead Catacombs, sur le Putrid Tree Spirit · [vidéo](https://youtu.be/0Ag3DOpLa3k?t=129)
+- [ ] [Mimic Tear](https://eldenring.wiki.fextralife.com/Mimic+Tear+Ashes) : coffre de Night's Sacred Ground, derrière une porte à statue · [vidéo](https://youtu.be/0Ag3DOpLa3k?t=243)
+- [ ] [Ancient Dragon Knight Kristoff](https://eldenring.wiki.fextralife.com/Ancient+Dragon+Knight+Kristoff) : Sainted Hero's Grave, sur l'Ancient Hero of Zamor · [vidéo](https://youtu.be/0Ag3DOpLa3k?t=573)
+- [ ] [Cleanrot Knight Finlay](https://eldenring.wiki.fextralife.com/Cleanrot+Knight+Finlay) : coffre gardé d'Elphael, Brace of the Haligtree · [vidéo](https://youtu.be/0Ag3DOpLa3k?t=878)
 
 ## Sources
 
@@ -130,15 +136,17 @@ Il faut apprendre les **sept sorts légendaires** : sorcelleries et incantations
 
 ## Ta liste
 
-Les noms sont ceux de la version anglaise du jeu. Chaque lien mène à l'emplacement détaillé, avec sa carte.
+Les noms sont ceux de la version anglaise du jeu. Chaque lien mène à l'emplacement détaillé, avec sa carte. Le lien « vidéo » démarre directement sur l'objet.
 
-- [ ] [Flame of the Fell God](https://eldenring.wiki.fextralife.com/Flame+of+the+Fell+God) : sur Adan, Thief of Fire, à Malefactor's Evergaol
-- [ ] [Greyoll's Roar](https://eldenring.wiki.fextralife.com/Greyoll's+Roar) : Cathédrale de la Communion draconique, trois cœurs de dragon après Elder Dragon Greyoll
-- [ ] [Elden Stars](https://eldenring.wiki.fextralife.com/Elden+Stars) : Deeproot Depths, près du site Great Waterfall Crest
-- [ ] [Founding Rain of Stars](https://eldenring.wiki.fextralife.com/Founding+Rain+of+Stars) : coffre de Heretical Rise, Mountaintops of the Giants
-- [ ] [Ranni's Dark Moon](https://eldenring.wiki.fextralife.com/Ranni's+Dark+Moon) : coffre en haut de Chelona's Rise
-- [ ] [Comet Azur](https://eldenring.wiki.fextralife.com/Comet+Azur) : Primeval Sorcerer Azur, au nord-est de Hermit Village
-- [ ] [Stars of Ruin](https://eldenring.wiki.fextralife.com/Stars+of+Ruin) : Master Lusat, au fond de Sellia Hideaway
+![Tous les sorts légendaires, PowerPyx](https://youtu.be/A7h8lg4aZRg)
+
+- [ ] [Flame of the Fell God](https://eldenring.wiki.fextralife.com/Flame+of+the+Fell+God) : sur Adan, Thief of Fire, à Malefactor's Evergaol · [vidéo](https://youtu.be/A7h8lg4aZRg)
+- [ ] [Greyoll's Roar](https://eldenring.wiki.fextralife.com/Greyoll's+Roar) : Cathédrale de la Communion draconique, trois cœurs de dragon après Elder Dragon Greyoll · [vidéo](https://youtu.be/A7h8lg4aZRg?t=42)
+- [ ] [Elden Stars](https://eldenring.wiki.fextralife.com/Elden+Stars) : Deeproot Depths, près du site Great Waterfall Crest · [vidéo](https://youtu.be/A7h8lg4aZRg?t=582)
+- [ ] [Founding Rain of Stars](https://eldenring.wiki.fextralife.com/Founding+Rain+of+Stars) : coffre de Heretical Rise, Mountaintops of the Giants · [vidéo](https://youtu.be/A7h8lg4aZRg?t=854)
+- [ ] [Ranni's Dark Moon](https://eldenring.wiki.fextralife.com/Ranni's+Dark+Moon) : coffre en haut de Chelona's Rise · [vidéo](https://youtu.be/A7h8lg4aZRg?t=929)
+- [ ] [Comet Azur](https://eldenring.wiki.fextralife.com/Comet+Azur) : Primeval Sorcerer Azur, au nord-est de Hermit Village · [vidéo](https://youtu.be/A7h8lg4aZRg?t=120)
+- [ ] [Stars of Ruin](https://eldenring.wiki.fextralife.com/Stars+of+Ruin) : Master Lusat, au fond de Sellia Hideaway · [vidéo](https://youtu.be/A7h8lg4aZRg?t=284)
 
 ## Sources
 
@@ -153,16 +161,18 @@ Il faut posséder les **huit talismans légendaires** dans une même partie. Un 
 
 ## Ta liste
 
-Les noms sont ceux de la version anglaise du jeu. Chaque lien mène à l'emplacement détaillé, avec sa carte.
+Les noms sont ceux de la version anglaise du jeu. Chaque lien mène à l'emplacement détaillé, avec sa carte. Le lien « vidéo » démarre directement sur l'objet.
 
-- [ ] [Radagon Icon](https://eldenring.wiki.fextralife.com/Radagon+Icon) : coffre à l'étage du site Debate Parlor, Académie de Raya Lucaria
-- [ ] [Radagon's Soreseal](https://eldenring.wiki.fextralife.com/Radagon's+Soreseal) : sur un cadavre de Fort Faroth
-- [ ] [Godfrey Icon](https://eldenring.wiki.fextralife.com/Godfrey+Icon) : Golden Lineage Evergaol, sur Godefroy the Grafted
-- [ ] [Moon of Nokstella](https://eldenring.wiki.fextralife.com/Moon+of+Nokstella) : coffre sous le trône géant de Nokstella, Eternal City
-- [ ] [Dragoncrest Greatshield Talisman](https://eldenring.wiki.fextralife.com/Dragoncrest+Greatshield+Talisman) : coffre près du site Drainage Channel, Elphael
-- [ ] [Marika's Soreseal](https://eldenring.wiki.fextralife.com/Marika's+Soreseal) : autel d'Elphael, derrière une porte à clé d'épée de pierre
-- [ ] [Old Lord's Talisman](https://eldenring.wiki.fextralife.com/Old+Lord's+Talisman) : coffre de Crumbling Farum Azula
-- [ ] [Erdtree's Favor +2](https://eldenring.wiki.fextralife.com/Erdtree's+Favor+%2B2) : Leyndell, Capitale cendrée, dans une cour gardée par trois Ulcerated Tree Spirits, en fin de jeu
+![Tous les talismans légendaires, PowerPyx](https://youtu.be/_154OB_h5uI)
+
+- [ ] [Radagon Icon](https://eldenring.wiki.fextralife.com/Radagon+Icon) : coffre à l'étage du site Debate Parlor, Académie de Raya Lucaria · [vidéo](https://youtu.be/_154OB_h5uI)
+- [ ] [Radagon's Soreseal](https://eldenring.wiki.fextralife.com/Radagon's+Soreseal) : sur un cadavre de Fort Faroth · [vidéo](https://youtu.be/_154OB_h5uI?t=58)
+- [ ] [Godfrey Icon](https://eldenring.wiki.fextralife.com/Godfrey+Icon) : Golden Lineage Evergaol, sur Godefroy the Grafted · [vidéo](https://youtu.be/_154OB_h5uI?t=129)
+- [ ] [Moon of Nokstella](https://eldenring.wiki.fextralife.com/Moon+of+Nokstella) : coffre sous le trône géant de Nokstella, Eternal City · [vidéo](https://youtu.be/_154OB_h5uI?t=190)
+- [ ] [Dragoncrest Greatshield Talisman](https://eldenring.wiki.fextralife.com/Dragoncrest+Greatshield+Talisman) : coffre près du site Drainage Channel, Elphael · [vidéo](https://youtu.be/_154OB_h5uI?t=441)
+- [ ] [Marika's Soreseal](https://eldenring.wiki.fextralife.com/Marika's+Soreseal) : autel d'Elphael, derrière une porte à clé d'épée de pierre · [vidéo](https://youtu.be/_154OB_h5uI?t=361)
+- [ ] [Old Lord's Talisman](https://eldenring.wiki.fextralife.com/Old+Lord's+Talisman) : coffre de Crumbling Farum Azula · [vidéo](https://youtu.be/_154OB_h5uI?t=298)
+- [ ] [Erdtree's Favor +2](https://eldenring.wiki.fextralife.com/Erdtree's+Favor+%2B2) : Leyndell, Capitale cendrée, dans une cour gardée par trois Ulcerated Tree Spirits, en fin de jeu · [vidéo](https://youtu.be/_154OB_h5uI?t=498)
 
 ## Sources
 
