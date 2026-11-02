@@ -286,6 +286,7 @@
           layout={data.params.vue}
           versions={game.versions}
           tier={game.tier}
+          target={game.target}
           copies={game.copies}
           next={game.next}
           seasonEligible={game.seasonEligible}

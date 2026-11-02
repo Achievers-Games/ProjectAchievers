@@ -22,7 +22,7 @@ import {
 import { profileSchema, resolveIdentity, updateProfile, type Identity } from './accounts';
 import { copiesFor, difficultyTier, nextCopy, stepOf } from '$lib/collection';
 import { db } from './db';
-import { familyKey } from './family';
+import { familyKey, matchFamilies } from './family';
 import { groupLibrary } from './library';
 import { mergeUsers } from './merge';
 import { markActive, subscribersToNotify, usersWhoLeft } from './push';
@@ -143,6 +143,67 @@ describe('jeux sur plusieurs plateformes', () => {
     expect(familyKey('Persona 5 Royal')).not.toBe(familyKey('Persona 4 Golden'));
     expect(familyKey('Hotline Miami 2: Wrong Number')).not.toBe(familyKey('Hotline Miami'));
     expect(familyKey('Remastered')).not.toBe('');
+  });
+
+  it('réunit deux noms différents quand leurs listes de succès sont identiques', async () => {
+    const tag = `${PREFIX}${Math.random().toString(36).slice(2, 8)}`;
+    const names = [
+      'Premier pas',
+      'Deuxième acte',
+      'Troisième vague',
+      'Quatre saisons',
+      'Cinq sur cinq',
+    ];
+    const list = (extra: string[] = []) =>
+      [...names, ...extra].map((name, i) => ({
+        platformAchievementId: `${tag}-${i}`,
+        name: `${tag} ${name}`,
+        description: '',
+        hidden: false,
+        trophyType: 'BRONZE' as const,
+      }));
+    const game = (platform: 'STEAM' | 'PSN' | 'XBOX', name: string) =>
+      upsertGame({ platform, platformGameId: `${tag}-${platform}`, name });
+    const steam = await game('STEAM', `${tag} Saison Deux`);
+    const psn = await game('PSN', `${tag} Season 2 Trophies`);
+    const xbox = await game('XBOX', `${tag} Saison Deux Bis`);
+    await saveAchievements(steam.id, list());
+    // Le Platine n'existe que sur PSN : il ne compte pas dans la comparaison.
+    await saveAchievements(psn.id, [
+      ...list(),
+      {
+        platformAchievementId: `${tag}-platine`,
+        name: `${tag} Platine`,
+        description: '',
+        hidden: false,
+        trophyType: 'PLATINUM',
+      },
+    ]);
+    // Un succès de plus : ce n'est plus le même jeu.
+    await saveAchievements(xbox.id, list(['Bonus']));
+    // Une réédition sur la même plateforme, avec la même liste, reste le même jeu.
+    const remaster = await upsertGame({
+      platform: 'STEAM',
+      platformGameId: `${tag}-legacy`,
+      name: `${tag} Saison Deux Legacy`,
+    });
+    await saveAchievements(remaster.id, list());
+
+    await matchFamilies();
+    const key = async (id: string) =>
+      (await db.game.findUniqueOrThrow({ where: { id }, select: { familyKey: true } })).familyKey;
+    expect(await key(psn.id)).toBe(await key(steam.id));
+    expect(await key(remaster.id)).toBe(await key(steam.id));
+    expect(await key(xbox.id)).not.toBe(await key(steam.id));
+
+    // La synchronisation suivante ne défait pas la famille trouvée par les succès.
+    await game('PSN', `${tag} Season 2 Trophies`);
+    expect(await key(psn.id)).toBe(await key(steam.id));
+
+    // Une liste qui change rend au jeu la famille de son nom.
+    await saveAchievements(psn.id, list(['Nouveau DLC']));
+    await matchFamilies();
+    expect(await key(psn.id)).toBe(familyKey(`${tag} Season 2 Trophies`));
   });
 
   const row = (platform: 'STEAM' | 'PSN', completion: number, key: string | null = 'jeu') => ({

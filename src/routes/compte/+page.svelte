@@ -64,10 +64,17 @@
   };
 
   const accounts = $derived(new Map(data.accounts.map((a) => [a.provider, a])));
+  /** Le dernier échec du compte : celui du direct, sinon celui de la dernière synchronisation. */
+  const errorOf = (provider: Provider) =>
+    $syncState[provider]?.error ?? accounts.get(provider)?.syncError ?? null;
+  /** Le réglage de confidentialité ne se montre qu'au compte que la plateforme nous ferme. */
+  const isClosed = (provider: Provider) => errorOf(provider)?.endsWith('_private') ?? false;
   const toOpen = $derived(
     data.accounts.flatMap((account) => {
       const privacy = PRIVACY[account.provider];
-      return privacy ? [{ ...privacy, provider: account.provider }] : [];
+      return privacy && isClosed(account.provider)
+        ? [{ ...privacy, provider: account.provider }]
+        : [];
     }),
   );
   const hasPsnSlot = $derived(!accounts.has('PSN') && data.providers.PSN);
@@ -377,15 +384,14 @@
             <p class="text-xs text-danger">{error}</p>
           {/if}
 
-          {#if account && PRIVACY[provider]}
+          {#if account && PRIVACY[provider] && isClosed(provider)}
             <p class="text-xs text-muted">
               {PRIVACY[provider].hint()}
               <a
                 href={PRIVACY[provider].url}
                 target="_blank"
                 rel="noopener noreferrer"
-                class="underline"
-                class:text-danger={Boolean(error)}
+                class="underline text-danger"
               >
                 {m.privacy_fix_link()}
               </a>

@@ -867,6 +867,7 @@
   "ach_genres_note": "Genres come from Steam store tags, including for games on other platforms.",
   "ach_pop_heading": "Achievement unlocked!",
   "ach_pop_many": "{count} achievements unlocked!",
+  "card_goal_help": "{tier} card to win by getting 100% on this game ({rule})",
   "refresh_label": "Refresh my accounts",
   "refresh_started": "Refresh started.",
   "refresh_wait": "Your accounts were just read: try again in a few minutes.",

@@ -298,6 +298,33 @@
   background: linear-gradient(120deg, #1a0500, #7f1d1d, #1a0500);
   border: 1px solid #ffb547;
 }
+/* La carte à gagner : même couleur, en creux, pour ne pas la confondre avec une carte obtenue. */
+.complete-badge[data-goal] {
+  --goal: 232 177 132;
+  color: rgb(var(--goal));
+  background: rgb(12 11 22 / 0.78);
+  border: 1px dashed rgb(var(--goal) / 0.9);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.45);
+  backdrop-filter: blur(4px);
+}
+.complete-badge[data-goal][data-tier='2'] {
+  --goal: 214 220 228;
+}
+.complete-badge[data-goal][data-tier='3'] {
+  --goal: 255 214 102;
+}
+.complete-badge[data-goal][data-tier='4'] {
+  --goal: 200 225 255;
+}
+.complete-badge[data-goal][data-tier='5'] {
+  --goal: 196 170 255;
+}
+.complete-badge[data-goal][data-tier='6'] {
+  --goal: 255 160 70;
+  box-shadow:
+    0 2px 8px rgb(0 0 0 / 0.45),
+    0 0 10px rgb(255 110 40 / 0.45);
+}
 .game-card {
   --rx: 0deg;
   --ry: 0deg;

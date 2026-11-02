@@ -85,6 +85,10 @@
           <span class="absolute right-2 top-2">
             <CompleteBadge tier={data.tier} copies={data.copies} />
           </span>
+        {:else if data.game.totalAchievements > 0}
+          <span class="absolute bottom-2 left-2">
+            <CompleteBadge tier={data.game.tier ?? 1} goal />
+          </span>
         {/if}
       </div>
     {/if}

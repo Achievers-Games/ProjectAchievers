@@ -788,13 +788,20 @@ test.describe('membre', () => {
     await expect.poll(inPresence).toBe(true);
   });
 
-  test('donne le lien des réglages de confidentialité', async ({ page }) => {
+  test('donne le lien des réglages de confidentialité au seul compte fermé', async ({ page }) => {
+    const settings = 'a[href="https://steamcommunity.com/my/edit/settings"]';
+    await login(page);
+    await page.goto('/compte?bienvenue=1');
+    await ready(page);
+    await expect(page.locator(settings)).toHaveCount(0);
+
     await page.goto('/auth/dev?compte=marco');
     await page.goto('/compte?bienvenue=1');
     await expect(page.getByRole('link', { name: 'Steam', exact: true })).toHaveAttribute(
       'href',
       'https://steamcommunity.com/my/edit/settings',
     );
+    await expect(page.locator()).toBeVisible();
   });
 
   test('réunit les amis, les messages et le clan dans Communauté', async ({ page }) => {

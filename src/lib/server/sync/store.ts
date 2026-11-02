@@ -49,7 +49,8 @@ export async function upsertGame(input: GameInput) {
   const fields = { name: input.name, coverUrl: input.coverUrl, headerUrl: input.headerUrl };
 
   if (existing) {
-    const family = existing.familyLocked ? {} : { familyKey: familyKey(input.name) };
+    const family =
+      existing.familyLocked || existing.familyMatched ? {} : { familyKey: familyKey(input.name) };
     return db.game.update({ where: { id: existing.id }, data: { ...fields, ...family } });
   }
   return db.game.create({

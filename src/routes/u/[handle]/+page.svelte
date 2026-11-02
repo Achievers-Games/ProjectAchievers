@@ -186,6 +186,7 @@
               progress={card.progress}
               versions={card.versions}
               tier={card.tier}
+              target={card.target}
               copies={card.copies}
               next={card.next}
             />

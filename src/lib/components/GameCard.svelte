@@ -22,6 +22,8 @@
     layout?: 'grille' | 'liste';
     versions?: { platform: Platform; slug: string; completion: number }[];
     tier?: number;
+    /** Le niveau à gagner, quand la carte n'est pas finie ; sinon `tier`. */
+    target?: number;
     copies?: number;
     next?: NextCopy | null;
     seasonEligible?: boolean;
@@ -35,6 +37,7 @@
     layout = 'grille',
     versions = [],
     tier = 0,
+    target = 0,
     copies = 1,
     next = null,
     seasonEligible = false,
@@ -44,6 +47,7 @@
   const complete = $derived(isComplete(progress));
   const level = $derived(tier || 1);
   const step = $derived(progress ? stepOf(progress.completion) : 0);
+  const goal = $derived(progress && !complete ? target || tier : 0);
   let imageFailed = $state(false);
 
   /** L'image peut avoir déjà échoué avant que Svelte ne prenne la main sur la page. */
@@ -103,6 +107,9 @@
     {#if step && !list}
       <span class="step-badge absolute right-2 top-2">{formatPercent(step * 25)}</span>
     {/if}
+    {#if goal && !list}
+      <span class="absolute bottom-2 left-2"><CompleteBadge tier={goal} goal /></span>
+    {/if}
     {#if complete}
       {#if level >= HOLO_TIER}<span class="foil" aria-hidden="true"></span>{/if}
       {#if copies > 1 && !list}<CardFx {copies} image={game.headerUrl} />{/if}
@@ -121,6 +128,7 @@
         </span>
       {/if}
       {#if complete && list}<CompleteBadge tier={level} {copies} />{/if}
+      {#if goal && list}<CompleteBadge tier={goal} goal />{/if}
     </div>
     {#if progress}
       {#if next}

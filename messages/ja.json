@@ -858,6 +858,7 @@
   "ach_genres_note": "ジャンルはSteamストアのタグから取得しています。ほかのプラットフォームのゲームも同様です。",
   "ach_pop_heading": "実績解除！",
   "ach_pop_many": "実績を{count}個解除！",
+  "card_goal_help": "このゲームを100%にすると{tier}カードを獲得（{rule}）",
   "refresh_label": "アカウントを更新",
   "refresh_started": "更新を開始しました。",
   "refresh_wait": "アカウントは読み込まれたばかりです。数分後にもう一度お試しください。",

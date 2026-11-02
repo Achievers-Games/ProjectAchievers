@@ -858,6 +858,7 @@
   "ach_genres_note": "游戏类型来自Steam商店的标签，其他平台的游戏也一样。",
   "ach_pop_heading": "成就解锁！",
   "ach_pop_many": "解锁了{count}个成就！",
+  "card_goal_help": "100%完成这款游戏即可获得{tier}卡牌（{rule}）",
   "refresh_label": "刷新我的账号",
   "refresh_started": "已开始刷新。",
   "refresh_wait": "账号刚刚读取过，请几分钟后再试。",

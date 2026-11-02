@@ -867,6 +867,7 @@
   "ach_genres_note": "Los géneros vienen de las etiquetas de la tienda de Steam, también para los juegos de otras plataformas.",
   "ach_pop_heading": "¡Logro desbloqueado!",
   "ach_pop_many": "¡{count} logros desbloqueados!",
+  "card_goal_help": "Carta {tier} para ganar al completar este juego al 100 % ({rule})",
   "refresh_label": "Actualizar mis cuentas",
   "refresh_started": "Actualización iniciada.",
   "refresh_wait": "Tus cuentas se acaban de leer: inténtalo de nuevo en unos minutos.",

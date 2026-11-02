@@ -177,6 +177,7 @@ export async function listGames(filters: GameFilters, viewerId: string | null) {
       ...game,
       versions: [],
       tier: game.tier ?? 1,
+      target: game.tier ?? 1,
       copies: 1,
       next: null,
       seasonEligible: false,
@@ -212,6 +213,7 @@ const profileGameSelect = {
       coverUrl: true,
       headerUrl: true,
       totalAchievements: true,
+      tier: true,
     },
   },
 } satisfies Prisma.UserGameSelect;

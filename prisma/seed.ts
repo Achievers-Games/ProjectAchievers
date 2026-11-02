@@ -115,14 +115,32 @@ async function main() {
   // Une carte de chaque rareté.
   const demo = users[0] as (typeof users)[number];
   const marco = await db.user.findUniqueOrThrow({ where: { handle: 'marco' } });
+  // Un profil Steam privé : le compte doit montrer comment l'ouvrir.
+  const closed = {
+    syncStatus: 'FAILED' as const,
+    syncError: 'sync_steam_private',
+    lastSyncedAt: new Date(),
+  };
+  // Un essai récent : le balayage ne le resynchronise pas pendant les tests.
+  await db.syncRun.deleteMany({ where: { userId: marco.id, provider: 'STEAM' } });
+  await db.syncRun.create({
+    data: {
+      userId: marco.id,
+      provider: 'STEAM',
+      status: 'FAILED',
+      error: 'sync_steam_private',
+      finishedAt: new Date(),
+    },
+  });
   await db.linkedAccount.upsert({
     where: { provider_providerUserId: { provider: 'STEAM', providerUserId: 'marco-steam' } },
-    update: {},
+    update: closed,
     create: {
       userId: marco.id,
       provider: 'STEAM',
       providerUserId: 'marco-steam',
       displayName: 'Marco',
+      ...closed,
     },
   });
 

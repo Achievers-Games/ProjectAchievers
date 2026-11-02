@@ -1,0 +1,1 @@
+ALTER TABLE "Game" ADD COLUMN "familyMatched" BOOLEAN NOT NULL DEFAULT false;

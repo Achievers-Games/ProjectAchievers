@@ -404,6 +404,8 @@ model Game {
   familyKey         String?
   /// Corrigée par la modération : la synchronisation n'y touche plus.
   familyLocked      Boolean           @default(false)
+  /// Rattaché à sa famille par une liste de succès identique : le nom ne la recalcule plus.
+  familyMatched     Boolean           @default(false)
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
 

@@ -69,7 +69,7 @@
         <h2>{m.home_almost()}</h2>
         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {#each data.home.almost as row (row.game.id)}
-            <GameCard game={row.game} progress={row} />
+            <GameCard game={row.game} progress={row} target={row.game.tier ?? 1} />
           {/each}
         </div>
       </section>
@@ -80,7 +80,7 @@
         <h2>{m.home_recent()}</h2>
         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {#each data.home.recent as row (row.game.id)}
-            <GameCard game={row.game} progress={row} />
+            <GameCard game={row.game} progress={row} target={row.game.tier ?? 1} />
           {/each}
         </div>
       </section>

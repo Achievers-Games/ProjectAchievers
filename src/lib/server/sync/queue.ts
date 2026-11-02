@@ -3,7 +3,7 @@ import type { Provider } from '@prisma/client';
 import { db } from '../db';
 import { env } from '../env';
 import { availableProviders } from '../providers';
-import { fillFamilies } from '../family';
+import { fillFamilies, matchFamilies } from '../family';
 import { announceSeason } from '../push';
 import { rateLimit } from '../rate-limit';
 import { hasRecentFeat, isPublicGame, publicUser, RARE_CARD } from '../queries';
@@ -360,12 +360,14 @@ async function sweep() {
   await fillHiddenDescriptions().catch((cause) => console.error('Succès cachés :', cause));
   await fillWowCatalog().catch((cause) => console.error('Catalogue WoW :', cause));
   await sweepSteamStore().catch((cause) => console.error('Boutique Steam :', cause));
+  await matchFamilies().catch((cause) => console.error('Familles :', cause));
 }
 
 /** Démarre le traitement des synchronisations dans le processus du site. */
 export async function startWorkers() {
   const instance = await boss();
   await fillFamilies();
+  await matchFamilies().catch((cause) => console.error('Familles :', cause));
   await fillGameTiers();
 
   // Un arrêt brutal peut laisser des comptes bloqués en cours de synchronisation.

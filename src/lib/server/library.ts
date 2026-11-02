@@ -31,6 +31,8 @@ export interface LibraryCard {
   lastUnlockedAt: Date | null;
   versions: { platform: Platform; name: string; slug: string; completion: number }[];
   tier: number;
+  /** Le niveau de la carte à gagner en finissant la version la plus avancée. */
+  target: number;
   copies: number;
   next: NextCopy | null;
 }
@@ -70,6 +72,7 @@ export function groupLibrary(rows: LibraryRow[]): LibraryCard[] {
       lastUnlockedAt: best.lastUnlockedAt,
       versions: summary,
       tier: Math.max(0, ...done.map((v) => v.game.tier ?? 1)),
+      target: best.game.tier ?? 1,
       copies: copiesFor(finished.size),
       next: nextCopy(summary),
     };

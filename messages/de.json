@@ -867,6 +867,7 @@
   "ach_genres_note": "Die Genres stammen aus den Tags des Steam-Shops, auch für Spiele anderer Plattformen.",
   "ach_pop_heading": "Erfolg freigeschaltet!",
   "ach_pop_many": "{count} Erfolge freigeschaltet!",
+  "card_goal_help": "{tier}-Karte zu gewinnen, wenn du dieses Spiel zu 100 % abschließt ({rule})",
   "refresh_label": "Meine Konten aktualisieren",
   "refresh_started": "Aktualisierung gestartet.",
   "refresh_wait": "Deine Konten wurden gerade gelesen: Versuche es in ein paar Minuten erneut.",
