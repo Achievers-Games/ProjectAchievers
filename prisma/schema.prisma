@@ -397,6 +397,9 @@ model Game {
   /// Classification Steam : nudité fréquente ou contenu réservé aux adultes.
   adultOnly         Boolean           @default(false)
   contentCheckedAt  DateTime?
+  /// Étiquettes Steam les plus votées, par ordre de poids : les genres des succès du site.
+  tags              Int[]             @default([])
+  tagsCheckedAt     DateTime?
   /// Clé commune aux versions d'un même jeu sur plusieurs plateformes.
   familyKey         String?
   /// Corrigée par la modération : la synchronisation n'y touche plus.

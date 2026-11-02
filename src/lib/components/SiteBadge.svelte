@@ -1,16 +1,29 @@
 <script lang="ts">
   /** `icon` : tracé game-icons.net (512 × 512) fourni par le serveur, jamais saisi par un joueur. */
-  let { icon, category, unlocked }: { icon: string; category: string; unlocked: boolean } =
-    $props();
+  let {
+    icon,
+    category,
+    unlocked,
+    level = 0,
+    size = 2.5,
+  }: {
+    icon: string;
+    category: string;
+    unlocked: boolean;
+    level?: number;
+    size?: number;
+  } = $props();
 </script>
 
 <span
   class="site-badge"
   data-category={category}
   data-unlocked={unlocked || undefined}
+  data-level={level || undefined}
+  style:--size="{size}rem"
   aria-hidden="true"
 >
-  <svg viewBox="0 0 512 512" width="26" height="26">
+  <svg viewBox="0 0 512 512" width="65%" height="65%">
     <!-- eslint-disable-next-line svelte/no-at-html-tags -->
     {@html icon}
   </svg>
@@ -22,8 +35,8 @@
     --to: 90 90 110;
     display: grid;
     place-items: center;
-    width: 2.5rem;
-    height: 2.5rem;
+    width: var(--size);
+    height: var(--size);
     flex-shrink: 0;
     border-radius: 9999px;
     background: rgb(var(--line));
@@ -36,6 +49,24 @@
     color: white;
     filter: none;
     box-shadow: 0 4px 14px rgb(var(--from) / 0.35);
+  }
+
+  /* Les paliers d'un genre : bronze, argent, or. */
+  .site-badge[data-level] {
+    outline: 2px solid rgb(var(--ring) / 0.45);
+    outline-offset: 2px;
+  }
+  .site-badge[data-unlocked][data-level] {
+    outline-color: rgb(var(--ring));
+  }
+  [data-level='1'] {
+    --ring: var(--bronze);
+  }
+  [data-level='2'] {
+    --ring: var(--silver);
+  }
+  [data-level='3'] {
+    --ring: var(--gold);
   }
 
   [data-category='start'] {
@@ -73,6 +104,14 @@
   [data-category='event'] {
     --from: 34 211 238;
     --to: 59 130 246;
+  }
+  [data-category='genres'] {
+    --from: 251 113 133;
+    --to: 234 88 12;
+  }
+  [data-category='themes'] {
+    --from: 52 211 153;
+    --to: 8 145 178;
   }
   [data-category='secret'] {
     --from: 192 132 252;

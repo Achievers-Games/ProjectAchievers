@@ -105,6 +105,59 @@ const ICONS = {
   first_ever: 'rocket',
   only_one: 'palm-tree',
   deserter: 'exit-door',
+  mood_swing: 'drama-masks',
+  dark_hours: 'candle-flame',
+  comfort_zone: 'armchair',
+  genre_tour_10: 'swiss-army-knife',
+  genre_tour_20: 'toolbox',
+};
+
+/** Un dessin par genre ou thème, commun à tous ses paliers. */
+const GENRE_ICONS = {
+  horror: 'haunting',
+  roguelike: 'dice-twenty-faces-twenty',
+  platformer: 'jump-across',
+  puzzle: 'puzzle',
+  rpg: 'sword-in-stone',
+  shooter: 'crosshair',
+  racing: 'race-car',
+  sports: 'soccer-ball',
+  strategy: 'chess-knight',
+  simulation: 'gears',
+  survival: 'campfire',
+  cozy: 'teapot',
+  cute: 'bear-face',
+  open_world: 'compass',
+  short: 'hourglass',
+  pixel: 'retro-controller',
+  anime: 'katana',
+  deck: 'card-exchange',
+  point_click: 'click',
+  stealth: 'hood',
+  fighting: 'boxing-glove',
+  rhythm: 'musical-notes',
+  visual_novel: 'book-cover',
+  shmup: 'starfighter',
+  zombies: 'shambling-zombie',
+  difficult: 'skull-crack',
+  soulslike: 'fire-bowl',
+  metroidvania: 'treasure-map',
+  jrpg: 'crystal-ball',
+  cats: 'cat',
+  dinosaurs: 'dinosaur-rex',
+  pirates: 'pirate-flag',
+  space: 'ringed-planet',
+  vampires: 'vampire-dracula',
+  ninja: 'ninja-head',
+  lovecraft: 'floating-tentacles',
+  robots: 'robot-golem',
+  dragons: 'dragon-head',
+  cooking: 'cooking-pot',
+  fishing: 'fishing-hook',
+  farming: 'farm-tractor',
+  western: 'outback-hat',
+  time_travel: 'backward-time',
+  detective: 'magnifying-glass',
 };
 const UNKNOWN = 'uncertainty';
 
@@ -112,40 +165,40 @@ const require = createRequire(import.meta.url);
 const set = JSON.parse(
   readFileSync(require.resolve('@iconify-json/game-icons/icons.json'), 'utf8'),
 );
-const body = (name) => {
-  const icon = set.icons[name] ?? set.icons[set.aliases?.[name]?.parent];
-  if (!icon) throw new Error(`Icône inconnue : ${name}`);
-  return icon.body;
-};
-const missing = [...Object.values(ICONS), UNKNOWN].filter((name) => {
-  try {
-    body(name);
-    return false;
-  } catch {
-    return true;
-  }
-});
+const names = [...new Set([...Object.values(ICONS), ...Object.values(GENRE_ICONS), UNKNOWN])];
+const missing = names.filter((name) => !set.icons[name]);
 if (missing.length) {
   console.error('Icônes introuvables :', missing.join(', '));
   process.exit(1);
 }
 
-const lines = Object.entries(ICONS).map(
-  ([code, name]) => `  ${code}: ${JSON.stringify(body(name))},`,
-);
+const record = (map) =>
+  Object.entries(map)
+    .map(([key, name]) => `  ${key}: '${name}',`)
+    .join('\n');
 writeFileSync(
   'src/lib/server/site-icons.ts',
   `// Généré par scripts/site-icons.mjs : ne pas modifier à la main.
 // Icônes de game-icons.net (Lorc, Delapouite et contributeurs), sous licence CC BY 3.0.
-import type { SiteCode } from '$lib/site-achievements';
+import type { BaseCode, GenreKey } from '$lib/site-achievements';
 
-/** Le dessin de chaque succès, en tracé SVG sur 512 × 512. Il ne part qu'une fois le succès révélé. */
-export const SITE_ICONS: Record<SiteCode, string> = {
-${lines.join('\n')}
+/** Les dessins, en tracé SVG sur 512 × 512. */
+export const ICON_PATHS = {
+${names.map((name) => `  '${name}': ${JSON.stringify(set.icons[name].body)},`).join('\n')}
+};
+
+export type IconName = keyof typeof ICON_PATHS;
+
+export const SITE_ICON: Record<BaseCode, IconName> = {
+${record(ICONS)}
+};
+
+export const GENRE_ICON: Record<GenreKey, IconName> = {
+${record(GENRE_ICONS)}
 };
 
 /** Un secret pas encore découvert : rien ne doit trahir sa condition. */
-export const UNKNOWN_ICON = ${JSON.stringify(body(UNKNOWN))};
+export const UNKNOWN_ICON: IconName = '${UNKNOWN}';
 `,
 );
-console.log(`${lines.length} icônes écrites`);
+console.log(`${names.length} dessins écrits`);

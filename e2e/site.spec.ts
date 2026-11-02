@@ -1,4 +1,5 @@
 import { expect, test as base, type Page } from '@playwright/test';
+import { SITE_CATEGORIES, SITE_TOTAL } from '../src/lib/site-achievements';
 
 /** Tout test échoue si la page journalise une erreur : un écran vide ne passe plus inaperçu. */
 const test = base.extend<{ consoleGuard: void }>({
@@ -946,15 +947,17 @@ test.describe('langues', () => {
 });
 
 test.describe('succès du site', () => {
-  test('le tableau montre les 100 succès et cache les secrets', async ({ page }) => {
+  test('le tableau montre tous les succès et cache les secrets', async ({ page }) => {
     await login(page);
     await page.goto('/compte');
     const handle = await page.locator('input[name="handle"]').inputValue();
     await page.goto(`/u/${handle}`);
-    await page.getByRole('link', { name: /\/100/ }).click();
+    await page.getByRole('link', { name: new RegExp(`/${SITE_TOTAL}$`) }).click();
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-    await expect(page.locator('main li.card')).toHaveCount(101);
-    await expect(page.locator('main section').last().locator('li.card')).toHaveCount(26);
+    await expect(page.locator('main li.card')).toHaveCount(SITE_TOTAL + 1);
+    await expect(page.locator('main section').last().locator('li.card')).toHaveCount(
+      SITE_CATEGORIES.secret.length,
+    );
 
     await expect(async () => {
       await page.reload();

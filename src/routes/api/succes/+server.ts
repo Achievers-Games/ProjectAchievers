@@ -1,12 +1,12 @@
 import { error, json } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
-import { siteTitle } from '$lib/server/site-achievements';
+import { sitePop } from '$lib/server/site-achievements';
 import { m } from '$lib/paraglide/messages';
 import type { RequestHandler } from './$types';
 
 const MAX_ZONE = 64;
 
-/** Les titres à annoncer : seulement ceux que le joueur a réellement obtenus. */
+/** Les succès à fêter : seulement ceux que le joueur a réellement obtenus. */
 export const GET: RequestHandler = async ({ locals, url }) => {
   if (!locals.user) error(401, m.login_required());
   const codes = (url.searchParams.get('codes') ?? '').split(',').slice(0, 100);
@@ -14,7 +14,7 @@ export const GET: RequestHandler = async ({ locals, url }) => {
     where: { userId: locals.user.id, code: { in: codes } },
     select: { code: true },
   });
-  return json(rows.map((row) => siteTitle(row.code)));
+  return json(rows.map((row) => sitePop(row.code)));
 };
 
 function isTimeZone(zone: string) {

@@ -18,6 +18,8 @@
   import PushPrompt from '$lib/components/PushPrompt.svelte';
   import RewardReveal from '$lib/components/RewardReveal.svelte';
   import Toasts from '$lib/components/Toasts.svelte';
+  import AchievementPop from '$lib/components/AchievementPop.svelte';
+  import { celebrate, type SitePop } from '$lib/stores/achievement-pop';
   import { LOCALE_LABELS, PROVIDER_LABELS, syncErrorText } from '$lib/labels';
   import { getLocale, locales, setLocale, type Locale } from '$lib/paraglide/runtime';
   import { restorePush } from '$lib/push';
@@ -95,9 +97,7 @@
   async function announceAchievements(codes: string[]) {
     const response = await fetch(`/api/succes?codes=${codes.join(',')}`).catch(() => null);
     if (!response?.ok) return;
-    const titles = (await response.json()) as string[];
-    if (titles.length > 3) toast(m.ach_unlocked_many({ count: titles.length }));
-    else titles.forEach((title) => toast(m.ach_unlocked({ title })));
+    celebrate((await response.json()) as SitePop[]);
   }
 
   async function refresh() {
@@ -323,3 +323,4 @@
 <CommandPalette bind:open={paletteOpen} />
 <RewardReveal />
 <Toasts />
+<AchievementPop />

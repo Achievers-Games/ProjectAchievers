@@ -16,6 +16,7 @@
     tierLabel,
   } from '$lib/labels';
   import { toast } from '$lib/stores/toast';
+  import { SITE_TOTAL } from '$lib/site-achievements';
 
   let { data } = $props();
   const friendSubmit = submitWithToast();
@@ -92,7 +93,7 @@
     </div>
     <div class="ml-auto flex flex-wrap justify-end gap-2">
       <a class="btn" href="/u/{profile.user.handle}/succes">
-        {m.ach_profile_link({ count: data.siteAchievements })}
+        {m.ach_profile_link({ count: data.siteAchievements, total: SITE_TOTAL })}
       </a>
       <button type="button" class="btn" onclick={share}>
         <Link size={14} aria-hidden="true" />

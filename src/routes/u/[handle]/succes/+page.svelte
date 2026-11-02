@@ -19,6 +19,8 @@
     season: m.ach_cat_season,
     event: m.ach_cat_event,
     secret: m.ach_cat_secret,
+    genres: m.ach_cat_genres,
+    themes: m.ach_cat_themes,
   };
 </script>
 
@@ -28,7 +30,12 @@
 
 {#snippet line(item: Item, category: string)}
   <div class="flex gap-3">
-    <SiteBadge icon={item.icon} {category} unlocked={item.unlockedAt !== null} />
+    <SiteBadge
+      icon={board.icons[item.icon] ?? ''}
+      {category}
+      level={item.level}
+      unlocked={item.unlockedAt !== null}
+    />
     <div class="min-w-0">
       <p class="font-medium">{item.title ?? m.ach_secret_title()}</p>
       <p class="text-sm text-muted">{item.text ?? m.ach_secret_text()}</p>
@@ -60,6 +67,9 @@
           {items.filter((item) => item.unlockedAt).length}/{items.length}
         </span>
       </h2>
+      {#if category === 'genres'}
+        <p class="text-sm text-muted">{m.ach_genres_note()}</p>
+      {/if}
       <ul class="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
         {#each items as item (item.key)}
           <li class="card p-3" class:opacity-70={!item.unlockedAt}>

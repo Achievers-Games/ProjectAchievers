@@ -1,6 +1,13 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { EVENT_CODES, SITE_CATEGORIES, SITE_CODES } from '$lib/site-achievements';
+import {
+  EVENT_CODES,
+  GENRES,
+  SITE_CATEGORIES,
+  SITE_CODES,
+  THEMES,
+  genreOf,
+} from '$lib/site-achievements';
 import {
   earnedCodes,
   evaluateSite,
@@ -52,8 +59,12 @@ const game = (gameId: string, extra: Partial<GameFact> = {}): GameFact => ({
   playtime: 120,
   played: true,
   lastAt: NOW,
+  tags: [],
   ...extra,
 });
+
+const HORROR = GENRES.horror.tags[0];
+const CUTE = GENRES.cute.tags[0];
 
 const unlock = (gameId: string, at: number, extra: Partial<UnlockFact> = {}): UnlockFact => ({
   at,
@@ -67,15 +78,19 @@ const unlock = (gameId: string, at: number, extra: Partial<UnlockFact> = {}): Un
 const earned = (extra: Partial<SiteFacts>) => earnedCodes(facts(extra));
 
 describe('succès du site', () => {
-  it('compte 100 succès permanents, dont 26 secrets, tous traduits', () => {
-    expect(SITE_CODES.filter((code) => !EVENT_CODES.has(code))).toHaveLength(100);
+  it('compte 207 succès permanents, dont 29 secrets, tous traduits', () => {
+    expect(SITE_CODES.filter((code) => !EVENT_CODES.has(code))).toHaveLength(207);
     expect(new Set(SITE_CODES).size).toBe(SITE_CODES.length);
-    expect(SITE_CATEGORIES.secret).toHaveLength(26);
+    expect(SITE_CATEGORIES.secret).toHaveLength(29);
     for (const locale of ['fr', 'en', 'de', 'es', 'pt-BR', 'ru', 'ja', 'zh-CN']) {
       const messages = JSON.parse(readFileSync(`messages/${locale}.json`, 'utf8'));
       for (const code of SITE_CODES) {
         expect(messages[`ach_${code}_title`], `${locale} ${code}`).toBeTruthy();
-        expect(messages[`ach_${code}_text`], `${locale} ${code}`).toBeTruthy();
+        // Le texte d'un genre vient d'un modèle commun.
+        if (!genreOf(code)) expect(messages[`ach_${code}_text`], `${locale} ${code}`).toBeTruthy();
+      }
+      for (const key of [...Object.keys(GENRES), ...Object.keys(THEMES)]) {
+        expect(messages[`genre_${key}`], `${locale} ${key}`).toBeTruthy();
       }
     }
   });
@@ -265,5 +280,59 @@ describe('succès du site', () => {
     );
     expect(earned(started)).not.toContain('season_tier3');
     expect(earned({ ...started, unlocks: [unlock('a', lastAt)] })).not.toContain('season_finish_1');
+  });
+
+  it('compte les jeux finis par genre, avec le jeu qui franchit le palier', () => {
+    const horror = Array.from({ length: 5 }, (_, i) =>
+      game(`h${i}`, { tags: [492, HORROR], lastAt: NOW - (5 - i) * DAY }),
+    );
+    const started = game('h-open', { tags: [HORROR], completion: 50 });
+    const result = evaluateSite(facts({ games: [...horror, started, game('x')] }));
+    expect(result.codes).toEqual(expect.arrayContaining(['g_horror_1', 'g_horror_5']));
+    expect(result.codes).not.toContain('g_horror_15');
+    expect(result.codes).not.toContain('g_cute_1');
+    expect(result.proof('g_horror_5')).toEqual({ games: ['h4'] });
+    expect(result.proof('g_horror_1')).toEqual({ games: ['h0'] });
+  });
+
+  it('fait le tour des genres', () => {
+    const keys = Object.keys(GENRES) as (keyof typeof GENRES)[];
+    const games = keys
+      .slice(0, 10)
+      .map((key, i) => game(key, { tags: [GENRES[key].tags[0]], lastAt: NOW - (10 - i) * DAY }));
+    const result = evaluateSite(facts({ games }));
+    expect(result.codes).toContain('genre_tour_10');
+    expect(result.codes).not.toContain('genre_tour_20');
+    expect(result.proof('genre_tour_10')).toEqual({ games: [keys[9]] });
+    expect(earned({ games: games.slice(1) })).not.toContain('genre_tour_10');
+  });
+
+  it('passe de la peur à la douceur, et joue à l’horreur la nuit', () => {
+    const day = Date.UTC(2026, 9, 10, 20);
+    const games = [
+      game('scary', { tags: [HORROR], lastAt: day }),
+      game('sweet', { tags: [CUTE], lastAt: day + 3_600_000 }),
+    ];
+    expect(earned({ games })).toContain('mood_swing');
+    expect(earned({ games: [games[0]!, { ...games[1]!, lastAt: day + 2 * DAY }] })).not.toContain(
+      'mood_swing',
+    );
+
+    const night = Date.UTC(2026, 9, 10, 1, 30);
+    const unlocks = [unlock('scary', night)];
+    expect(earned({ games, unlocks })).not.toContain('dark_hours');
+    expect(earned({ games, unlocks, timeZone: 'UTC' })).toContain('dark_hours');
+    expect(earned({ games, unlocks: [unlock('sweet', night)], timeZone: 'UTC' })).not.toContain(
+      'dark_hours',
+    );
+  });
+
+  it('reste dans sa zone de confort dix jeux de suite', () => {
+    const games = Array.from({ length: 10 }, (_, i) =>
+      game(`c${i}`, { tags: [CUTE], lastAt: NOW - (10 - i) * DAY }),
+    );
+    expect(earned({ games })).toContain('comfort_zone');
+    const broken = games.with(4, game('other', { lastAt: NOW - 6 * DAY }));
+    expect(earned({ games: broken })).not.toContain('comfort_zone');
   });
 });

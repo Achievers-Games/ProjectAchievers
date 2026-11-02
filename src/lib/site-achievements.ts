@@ -1,5 +1,89 @@
-/** Les succès du site, par catégorie : 100 permanents, plus ceux des événements. Les textes sont les messages `ach_<code>_title` et `_text`. */
-export const SITE_CATEGORIES = {
+interface GenreDef {
+  tags: readonly number[];
+  steps: readonly number[];
+}
+
+/**
+ * Les genres, d'après les étiquettes Steam (numéros de `IStoreService/GetTagList`) : un jeu en fait
+ * partie si l'une d'elles figure parmi ses plus votées. Chaque palier est un succès `g_<genre>_<n>`.
+ */
+export const GENRES = {
+  horror: { tags: [1667, 1721, 3978, 42089], steps: [1, 5, 15] },
+  roguelike: { tags: [1716, 3959, 42804, 454187, 1091588], steps: [1, 5, 15] },
+  platformer: { tags: [1625, 5379, 5395, 3877], steps: [1, 5, 15] },
+  puzzle: { tags: [1664, 6129, 5537], steps: [1, 5, 15] },
+  rpg: { tags: [122, 4231, 4474, 10695, 21725], steps: [1, 5, 15] },
+  shooter: { tags: [1663, 1774, 3814], steps: [1, 5, 15] },
+  racing: { tags: [699], steps: [1, 5, 15] },
+  sports: { tags: [701], steps: [1, 5, 15] },
+  strategy: { tags: [9, 1676, 1741], steps: [1, 5, 15] },
+  simulation: { tags: [599], steps: [1, 5, 15] },
+  survival: { tags: [1662, 1100689], steps: [1, 5, 15] },
+  cozy: { tags: [1654, 97376, 552282], steps: [1, 5, 15] },
+  cute: { tags: [4726], steps: [1, 5, 15] },
+  open_world: { tags: [1695], steps: [1, 5, 15] },
+  short: { tags: [4234], steps: [1, 5, 15] },
+  pixel: { tags: [3964], steps: [1, 5, 15] },
+  anime: { tags: [4085], steps: [1, 5, 15] },
+  deck: { tags: [1666, 32322, 791774], steps: [1, 5, 15] },
+  point_click: { tags: [1698], steps: [1, 5, 15] },
+  stealth: { tags: [1687], steps: [1, 5, 15] },
+  fighting: { tags: [1743, 4736], steps: [1, 5, 15] },
+  rhythm: { tags: [1752], steps: [1, 5, 15] },
+  visual_novel: { tags: [3799], steps: [1, 5, 15] },
+  shmup: { tags: [4255, 4885, 723991], steps: [1, 5, 15] },
+  zombies: { tags: [1659], steps: [1, 5, 15] },
+  difficult: { tags: [4026, 1733], steps: [1, 5, 15] },
+  soulslike: { tags: [29482], steps: [1, 3, 10] },
+  metroidvania: { tags: [1628], steps: [1, 3, 10] },
+  jrpg: { tags: [4434], steps: [1, 3, 10] },
+} as const satisfies Record<string, GenreDef>;
+
+/** Les thèmes : un seul jeu suffit, pour le clin d'œil. */
+export const THEMES = {
+  cats: { tags: [17894], steps: [1] },
+  dinosaurs: { tags: [5160], steps: [1] },
+  pirates: { tags: [1681], steps: [1] },
+  space: { tags: [1755, 4291, 16598], steps: [1] },
+  vampires: { tags: [12686], steps: [1] },
+  ninja: { tags: [1688], steps: [1] },
+  lovecraft: { tags: [7432], steps: [1] },
+  robots: { tags: [5752, 4821], steps: [1] },
+  dragons: { tags: [4046], steps: [1] },
+  cooking: { tags: [3920], steps: [1] },
+  fishing: { tags: [15564], steps: [1] },
+  farming: { tags: [22602, 87918, 4520], steps: [1] },
+  western: { tags: [1647], steps: [1] },
+  time_travel: { tags: [10679, 6625], steps: [1] },
+  detective: { tags: [5613, 8369], steps: [1] },
+} as const satisfies Record<string, GenreDef>;
+
+type StepCodes<T> = {
+  [K in keyof T]: T[K] extends { steps: readonly (infer N extends number)[] }
+    ? `g_${K & string}_${N}`
+    : never;
+}[keyof T];
+export type GenreKey = keyof typeof GENRES | keyof typeof THEMES;
+export type GenreCode = StepCodes<typeof GENRES> | StepCodes<typeof THEMES>;
+
+const ALL_GENRES: Record<string, GenreDef> = { ...GENRES, ...THEMES };
+
+const stepCodes = <T extends Record<string, GenreDef>>(list: T) =>
+  Object.entries(list).flatMap(([key, { steps }]) =>
+    steps.map((step) => `g_${key}_${step}`),
+  ) as StepCodes<T>[];
+
+/** Le genre et le palier d'un succès de genre ; `level` va de 1 à 3. */
+export function genreOf(code: string) {
+  const match = /^g_(\w+)_(\d+)$/.exec(code);
+  const def = match && ALL_GENRES[match[1]!];
+  if (!match || !def) return null;
+  const count = Number(match[2]);
+  return { key: match[1] as GenreKey, count, level: def.steps.indexOf(count) + 1, tags: def.tags };
+}
+
+/** Les succès du site, par catégorie, plus ceux des événements. Les textes sont les messages `ach_<code>_title` et `_text`. */
+const BASE_CATEGORIES = {
   start: [
     'first_account',
     'two_platforms',
@@ -95,12 +179,32 @@ export const SITE_CATEGORIES = {
     'first_ever',
     'only_one',
     'deserter',
+    'mood_swing',
+    'dark_hours',
+    'comfort_zone',
   ],
 } as const;
 
+const GENRE_TOURS = ['genre_tour_10', 'genre_tour_20'] as const;
+
+const { secret, ...visible } = BASE_CATEGORIES;
+
+/** Les secrets ferment la marche. */
+export const SITE_CATEGORIES = {
+  ...visible,
+  genres: [...stepCodes(GENRES), ...GENRE_TOURS],
+  themes: stepCodes(THEMES),
+  secret,
+};
+
 export type SiteCategory = keyof typeof SITE_CATEGORIES;
-export type SiteCode = (typeof SITE_CATEGORIES)[SiteCategory][number];
+/** Les succès à une règle propre ; ceux des genres se lisent avec `genreOf`. */
+export type BaseCode =
+  (typeof BASE_CATEGORIES)[keyof typeof BASE_CATEGORIES][number] | (typeof GENRE_TOURS)[number];
+export type SiteCode = BaseCode | GenreCode;
 
 export const SITE_CODES = Object.values(SITE_CATEGORIES).flat() as SiteCode[];
 export const EVENT_CODES = new Set<string>(SITE_CATEGORIES.event);
 export const SECRET_CODES = new Set<string>(SITE_CATEGORIES.secret);
+/** Les succès permanents, ceux du compteur : les événements s'y ajoutent sans compter. */
+export const SITE_TOTAL = SITE_CODES.filter((code) => !EVENT_CODES.has(code)).length;

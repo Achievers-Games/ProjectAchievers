@@ -1,5 +1,11 @@
 import type { Platform } from '@prisma/client';
-import type { SiteCode } from '$lib/site-achievements';
+import {
+  GENRES,
+  SITE_CATEGORIES,
+  genreOf,
+  type BaseCode,
+  type SiteCode,
+} from '$lib/site-achievements';
 
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
@@ -18,6 +24,8 @@ export interface GameFact {
   played: boolean;
   /** Date du dernier succès, donc de la fin du jeu à 100 %. */
   lastAt: number | null;
+  /** Étiquettes Steam du jeu, ou de sa version Steam. */
+  tags: number[];
 }
 
 export interface UnlockFact {
@@ -247,7 +255,36 @@ export function evaluateSite(facts: SiteFacts) {
     (u, index) => index > 0 && u.at - byTime[index - 1]!.at >= 30 * DAY,
   );
 
-  const rules: Record<Exclude<SiteCode, DirectCode>, boolean> = {
+  const finishedByTime = finished.toSorted((a, b) => a.lastAt - b.lastAt);
+  const tagged = (tags: readonly number[]) => (g: { gameId: string }) =>
+    gameTags.get(g.gameId)?.some((tag) => tags.includes(tag)) ?? false;
+  const gameTags = new Map(games.map((g) => [g.gameId, g.tags]));
+  const genreKeys = Object.keys(GENRES) as (keyof typeof GENRES)[];
+  const genresOf = (g: { gameId: string }) =>
+    genreKeys.filter((key) => tagged(GENRES[key].tags)(g));
+  /** Le jeu qui fait atteindre `count` genres différents finis à 100 %. */
+  const tourGame = (count: number) => {
+    const seen = new Set<string>();
+    return finishedByTime.find((g) => {
+      const before = seen.size;
+      for (const key of genresOf(g)) seen.add(key);
+      return before < count && seen.size >= count;
+    });
+  };
+  const horror = tagged(GENRES.horror.tags);
+  const gentle = (g: GameFact) => tagged(GENRES.cozy.tags)(g) || tagged(GENRES.cute.tags)(g);
+  const moodDay = [...Map.groupBy(finished, (g) => dayKey(clock(g.lastAt))).values()].find(
+    (day) => day.some(horror) && day.some(gentle),
+  );
+  const darkUnlock = facts.timeZone
+    ? byTime.find((u) => clock(u.at).getUTCHours() < 4 && horror(u))
+    : undefined;
+  const comfortRun = finishedByTime.findIndex((_, index) => {
+    const run = finishedByTime.slice(index, index + 10);
+    return run.length === 10 && genreKeys.some((key) => run.every(tagged(GENRES[key].tags)));
+  });
+
+  const rules: Record<Exclude<BaseCode, DirectCode>, boolean> = {
     first_account: platforms.length >= 1,
     two_platforms: platforms.length >= 2,
     three_platforms: platforms.length >= 3,
@@ -373,7 +410,16 @@ export function evaluateSite(facts: SiteFacts) {
     six_months: longestRun(finishDates.map(monthIndex)) >= 6,
     first_ever: facts.firstEver !== null,
     only_one: facts.onlyOne !== null,
+    mood_swing: moodDay !== undefined,
+    dark_hours: darkUnlock !== undefined,
+    comfort_zone: comfortRun >= 0,
+    genre_tour_10: tourGame(10) !== undefined,
+    genre_tour_20: tourGame(20) !== undefined,
   };
+  const genreCodes = [...SITE_CATEGORIES.genres, ...SITE_CATEGORIES.themes].flatMap((code) => {
+    const genre = genreOf(code);
+    return genre ? [{ code: code as SiteCode, ...genre }] : [];
+  });
 
   const gameProof = (ids: string[]): SiteProof => ({
     games: [...new Set(ids)].slice(0, MAX_PROOF),
@@ -386,7 +432,6 @@ export function evaluateSite(facts: SiteFacts) {
   const cardsByTime = cards
     .filter((card) => card.lastAt !== null)
     .toSorted((a, b) => a.lastAt! - b.lastAt!);
-  const finishedByTime = finished.toSorted((a, b) => a.lastAt - b.lastAt);
   /** Le palier se franchit avec la carte, le jeu ou le succès de ce rang. */
   const nthCard = (rank: number, keep: (card: CardFact) => boolean = () => true) =>
     gamesOf(cardsByTime.filter(keep).slice(rank - 1, rank));
@@ -435,6 +480,15 @@ export function evaluateSite(facts: SiteFacts) {
   };
 
   const proofs: Partial<Record<SiteCode, () => SiteProof>> = {
+    mood_swing: () =>
+      gamesOf([moodDay?.find(horror), moodDay?.find(gentle)].flatMap((g) => g ?? [])),
+    dark_hours: () => unlockProof(darkUnlock ? [darkUnlock] : []),
+    comfort_zone: () => gamesOf(finishedByTime.slice(comfortRun, comfortRun + 10)),
+    genre_tour_10: () => gamesOf([tourGame(10)].flatMap((g) => g ?? [])),
+    genre_tour_20: () => gamesOf([tourGame(20)].flatMap((g) => g ?? [])),
+    ...Object.fromEntries(
+      genreCodes.map(({ code, count, tags }) => [code, () => nthFinished(count, tagged(tags))]),
+    ),
     cards_1: () => nthCard(1),
     cards_10: () => nthCard(10),
     cards_50: () => nthCard(50),
@@ -558,10 +612,14 @@ export function evaluateSite(facts: SiteFacts) {
     only_one: () => gameProof(facts.onlyOne ? [facts.onlyOne] : []),
   };
 
+  const earnedGenres = genreCodes
+    .filter(({ count, tags }) => finished.filter(tagged(tags)).length >= count)
+    .map(({ code }) => code);
   return {
-    codes: (Object.keys(rules) as (keyof typeof rules)[]).filter(
-      (code) => rules[code],
-    ) as SiteCode[],
+    codes: [
+      ...(Object.keys(rules) as (keyof typeof rules)[]).filter((code) => rules[code]),
+      ...earnedGenres,
+    ] as SiteCode[],
     proof: (code: SiteCode) => {
       const proof = proofs[code]?.();
       return proof?.games?.length || proof?.achievements?.length ? proof : null;

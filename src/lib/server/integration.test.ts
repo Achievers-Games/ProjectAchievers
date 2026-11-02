@@ -28,7 +28,7 @@ import { mergeUsers } from './merge';
 import { markActive, subscribersToNotify, usersWhoLeft } from './push';
 import { checkLiveGames } from './sync/live';
 import { enqueueSync, refreshAccounts, runSync, startWorkers } from './sync/queue';
-import { isAdultOnly, rateGames } from './sync/content';
+import { isAdultOnly, rateGames, tagGames } from './sync/content';
 import { onCard, onChat, onSync, type SyncEvent } from './sync/events';
 import { parseSteamPage, requestStoreSweep, steamImages, sweepSteamStore } from './sync/steam';
 import { saveAchievements, saveProgress, upsertGame } from './sync/store';
@@ -55,6 +55,7 @@ import { splitText, translateContent } from './translate';
 import { ensureGameTexts, localizeAchievements } from './achievement-texts';
 import { refreshDiscordAccounts } from './sync/discord';
 import { UNKNOWN_ICON } from './site-icons';
+import { SITE_TOTAL } from '$lib/site-achievements';
 
 const PREFIX = 'zz-test';
 const STEAM_ID = '76561190000000001';
@@ -834,6 +835,64 @@ describe('synchronisation Steam', () => {
     expect((await listGames(filters, null)).games).toEqual([]);
     expect((await listGames({ ...filters, showAdult: true }, null)).games).toHaveLength(1);
     expect(await rateGames(10, 0)).toBe(0);
+  });
+
+  it('lit les genres des jeux Steam, et les prête aux autres plateformes', async () => {
+    const appId = String(900_000_000 + Math.floor(Math.random() * 1_000_000));
+    const steam = await upsertGame({
+      platform: 'STEAM',
+      platformGameId: appId,
+      name: `${PREFIX} Peur`,
+    });
+    const sibling = await upsertGame({
+      platform: 'PSN',
+      platformGameId: `${PREFIX}-${Math.random()}`,
+      name: `${PREFIX} Peur`,
+    });
+    const found = await upsertGame({
+      platform: 'XBOX',
+      platformGameId: `${PREFIX}-${Math.random()}`,
+      name: `${PREFIX} Mignon`,
+    });
+    const lost = await upsertGame({
+      platform: 'XBOX',
+      platformGameId: `${PREFIX}-${Math.random()}`,
+      name: `${PREFIX} Introuvable`,
+    });
+    const cuteId = appId + '1';
+    vi.stubGlobal('fetch', async (url: string) => {
+      if (url.includes('storesearch')) {
+        const hit = url.includes('Mignon')
+          ? [{ id: Number(cuteId), name: `${PREFIX} Mignon™` }]
+          : [];
+        return new Response(JSON.stringify({ items: hit }));
+      }
+      const items = [
+        {
+          appid: Number(appId),
+          tags: [
+            { tagid: 492, weight: 50 },
+            { tagid: 1667, weight: 900 },
+          ],
+        },
+        { appid: Number(cuteId), tags: [{ tagid: 4726, weight: 300 }] },
+      ];
+      return new Response(JSON.stringify({ response: { store_items: items } }));
+    });
+    await db.game.updateMany({
+      where: { tagsCheckedAt: null, id: { notIn: [steam.id, sibling.id, found.id, lost.id] } },
+      data: { tagsCheckedAt: new Date() },
+    });
+
+    expect(await tagGames(10, 0)).toBe(4);
+
+    const tags = async (id: string) =>
+      (await db.game.findUniqueOrThrow({ where: { id }, select: { tags: true } })).tags;
+    expect(await tags(steam.id)).toEqual([1667, 492]);
+    expect(await tags(sibling.id)).toEqual([1667, 492]);
+    expect(await tags(found.id)).toEqual([4726]);
+    expect(await tags(lost.id)).toEqual([]);
+    expect(await tagGames(10, 0)).toBe(0);
   });
 
   it('accepte un texte hors de l’alphabet latin', async () => {
@@ -1933,7 +1992,7 @@ describe('succès du site', () => {
 
     const seenByViewer = await siteAchievementBoard(owner.id, viewer.id);
     expect(seenByViewer.earned).toBe(2);
-    expect(seenByViewer.total).toBe(100);
+    expect(seenByViewer.total).toBe(SITE_TOTAL);
     expect(find(seenByViewer, 'start')[0]?.unlockedAt).toBeTruthy();
     const hidden = find(seenByViewer, 'secret').filter((item) => item.unlockedAt);
     expect(hidden).toEqual([

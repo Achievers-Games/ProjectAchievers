@@ -9,7 +9,7 @@ import { rateLimit } from '../rate-limit';
 import { hasRecentFeat, isPublicGame, publicUser, RARE_CARD } from '../queries';
 import { copiesFor, type Reward } from '$lib/collection';
 import { fillWowCatalog, syncBlizzard } from './blizzard';
-import { rateGames } from './content';
+import { rateGames, tagGames } from './content';
 import { refreshDiscordAccounts } from './discord';
 import { SyncError } from './errors';
 import { publishCard, publishHighlight, publishSync, publishUnlock } from './events';
@@ -387,6 +387,9 @@ export async function startWorkers() {
   );
   await instance.work(SWEEP_QUEUE, async () => sweep());
   await instance.schedule(SWEEP_QUEUE, '0 * * * *');
-  await instance.work(CONTENT_QUEUE, async () => void (await rateGames()));
+  await instance.work(CONTENT_QUEUE, async () => {
+    await rateGames();
+    await tagGames();
+  });
   await instance.schedule(CONTENT_QUEUE, '*/5 * * * *');
 }

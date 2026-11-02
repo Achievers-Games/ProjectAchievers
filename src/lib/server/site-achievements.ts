@@ -6,12 +6,14 @@ import {
   SECRET_CODES,
   SITE_CATEGORIES,
   SITE_CODES,
+  genreOf,
+  type BaseCode,
   type SiteCode,
 } from '$lib/site-achievements';
 import { getLocale } from '$lib/paraglide/runtime';
 import { localizeAchievements } from './achievement-texts';
 import { db } from './db';
-import { SITE_ICONS, UNKNOWN_ICON } from './site-icons';
+import { GENRE_ICON, ICON_PATHS, SITE_ICON, UNKNOWN_ICON, type IconName } from './site-icons';
 import { seasonStats, userCards } from './queries';
 import { publishChat } from './sync/events';
 import {
@@ -166,7 +168,7 @@ async function loadFacts(userId: string, earned: Set<string>): Promise<SiteFacts
         playtimeMinutes: true,
         lastPlayedAt: true,
         lastUnlockedAt: true,
-        game: { select: { name: true, platform: true } },
+        game: { select: { name: true, platform: true, tags: true } },
       },
     }),
     db.$queryRaw<
@@ -242,6 +244,7 @@ async function loadFacts(userId: string, earned: Set<string>): Promise<SiteFacts
       playtime: g.playtimeMinutes,
       played: g.lastPlayedAt !== null,
       lastAt: g.lastUnlockedAt?.getTime() ?? null,
+      tags: g.game.tags,
     })),
     unlocks: markBursts(
       unlocks.map((u) => ({
@@ -341,8 +344,36 @@ export async function grantSiteAchievement(userId: string, code: SiteCode) {
   if (count > 0) publishChat(userId, { type: 'site-achievement', codes: [code] });
 }
 
-const message = (key: string) => (m as unknown as Record<string, () => string>)[key]!();
+type Message = (params?: Record<string, string | number>) => string;
+const message = (key: string, params?: Record<string, string | number>) =>
+  (m as unknown as Record<string, Message>)[key]!(params);
 export const siteTitle = (code: string) => message(`ach_${code}_title`);
+
+/** Les genres partagent un modèle de texte ; les autres succès ont le leur. */
+function siteText(code: string) {
+  const genre = genreOf(code);
+  if (!genre) return message(`ach_${code}_text`);
+  const params = { genre: message(`genre_${genre.key}`), count: genre.count };
+  return message(genre.count === 1 ? 'ach_genre_one_text' : 'ach_genre_many_text', params);
+}
+
+const iconOf = (code: string): IconName => {
+  const genre = genreOf(code);
+  return genre ? GENRE_ICON[genre.key] : SITE_ICON[code as BaseCode];
+};
+const CATEGORY_OF = new Map(
+  Object.entries(SITE_CATEGORIES).flatMap(([category, codes]) =>
+    codes.map((code) => [code as string, category]),
+  ),
+);
+
+/** Ce qu'il faut pour fêter un succès à l'écran : il appartient déjà au joueur. */
+export const sitePop = (code: string) => ({
+  title: siteTitle(code),
+  icon: ICON_PATHS[iconOf(code)],
+  category: CATEGORY_OF.get(code) ?? 'start',
+  level: genreOf(code)?.level ?? 0,
+});
 
 export const siteAchievementCount = (userId: string) =>
   db.siteUnlock.count({ where: { userId, code: { notIn: [...EVENT_CODES] } } });
@@ -405,17 +436,21 @@ export async function siteAchievementBoard(
   };
 
   let index = 0;
+  const icons = new Set<IconName>([UNKNOWN_ICON]);
   const categories = Object.entries(SITE_CATEGORIES).map(([category, codes]) => ({
     category,
     items: codes.map((code) => {
       const revealed = revealedCode(code);
+      const icon = revealed ? iconOf(code) : UNKNOWN_ICON;
+      icons.add(icon);
       return {
         // Le numéro n'apprend rien, contrairement au code d'un secret.
         key: index++,
         title: revealed ? siteTitle(code) : null,
-        text: revealed ? message(`ach_${code}_text`) : null,
+        text: revealed ? siteText(code) : null,
         unlockedAt: dates.get(code) ?? null,
-        icon: revealed ? SITE_ICONS[code] : UNKNOWN_ICON,
+        icon,
+        level: revealed ? (genreOf(code)?.level ?? 0) : 0,
         proof: proofOf(code),
         rarity: revealed ? share(code) : null,
       };
@@ -424,6 +459,8 @@ export async function siteAchievementBoard(
   const permanent = SITE_CODES.filter((code) => !EVENT_CODES.has(code));
   return {
     categories,
+    // Chaque dessin ne part qu'une fois, même partagé par plusieurs succès.
+    icons: Object.fromEntries([...icons].map((name) => [name, ICON_PATHS[name]])),
     earned: permanent.filter((code) => dates.has(code)).length,
     total: permanent.length,
   };
