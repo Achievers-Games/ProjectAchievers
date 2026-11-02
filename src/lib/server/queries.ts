@@ -116,7 +116,9 @@ async function listLibrary(
               (!filters.consoles ||
                 consolesOf(v.console).some((name) => filters.consoles?.includes(name))),
           )) &&
-        (!filters.tier || card.tier === filters.tier) &&
+        // Un jeu à finir se range au niveau de la carte qu'il rapportera.
+        (!filters.tier ||
+          (filters.unfinished || filters.seasonOnly ? card.target : card.tier) === filters.tier) &&
         (!filters.seasonOnly || card.seasonEligible) &&
         (!filters.unfinished ||
           Boolean(card.next) ||
@@ -131,8 +133,9 @@ async function listLibrary(
     }
     if (filters.sort === 'progression') {
       // Dans « Non 100 % », seul compte ce qui est presque fini.
-      const rank = filters.unfinished ? shownProgress : tierProgress;
-      return rank(b) - rank(a) || byName(a, b);
+      if (filters.unfinished) return shownProgress(b) - shownProgress(a) || byName(a, b);
+      // Les exemplaires d'abord (×4, ×3, ×2) : la rareté a son propre tri.
+      return b.copies - a.copies || tierProgress(b) - tierProgress(a) || byName(a, b);
     }
     if (filters.sort === 'rarete') {
       // La carte à gagner d'abord, puis celle qui est le plus près d'être finie.

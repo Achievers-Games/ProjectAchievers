@@ -1,5 +1,6 @@
 <script lang="ts">
   import { m } from '$lib/paraglide/messages';
+  import { enhance } from '$app/forms';
   import Avatar from '$lib/components/Avatar.svelte';
   import { formatDate, formatNumber } from '$lib/labels';
 
@@ -20,6 +21,13 @@
     <a href="/clans" class="text-sm text-muted hover:text-ink">{m.clans_title()}</a>
     <h1>{clan.name}</h1>
     <p class="text-sm text-muted">{m.clan_founded({ date: formatDate(clan.createdAt) })}</p>
+    {#if data.moderator}
+      <form method="POST" action="?/flagName" use:enhance>
+        <button class="btn btn-danger text-xs" title={m.clan_flag_help()}>
+          {m.clan_flag()}
+        </button>
+      </form>
+    {/if}
   </header>
 
   <dl class="card grid grid-cols-2 divide-x divide-line">

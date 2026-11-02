@@ -216,10 +216,12 @@ model Block {
 }
 
 model Clan {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  slug      String   @unique
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  createdAt   DateTime @default(now())
+  /// Le nom retiré par la modération : tant qu'il est là, le chef doit en choisir un autre.
+  flaggedName String?
 
   members      ClanMember[]
   invites      ClanInvite[]

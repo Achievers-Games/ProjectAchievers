@@ -1,16 +1,19 @@
 <script lang="ts">
   import SiteBadge from '$lib/components/SiteBadge.svelte';
   import { m } from '$lib/paraglide/messages';
-  import { dismissPop, popQueue } from '$lib/stores/achievement-pop';
+  import { dismissAllPops, dismissPop, popQueue } from '$lib/stores/achievement-pop';
 
   const DURATION = 5200;
   const PARTICLES = 16;
+  /** Les cartes visibles derrière la première : au-delà, le compteur suffit. */
+  const LAYERS = 2;
 
   const current = $derived($popQueue[0]);
+  const waiting = $derived($popQueue.length - 1);
 
-  // Une annonce à la fois : la suivante attend que celle-ci s'efface.
+  // Seul le dernier succès s'efface tout seul : une pile attend qu'on la parcoure.
   $effect(() => {
-    if (!current) return;
+    if (!current || waiting > 0) return;
     const id = current.id;
     const timer = setTimeout(() => dismissPop(id), DURATION);
     return () => clearTimeout(timer);
@@ -26,15 +29,24 @@
 </script>
 
 <div class="pop-zone" aria-live="polite">
+  {#each $popQueue.slice(1, LAYERS + 1) as item, index (item.id)}
+    <span
+      class="layer"
+      data-category={item.pop.category}
+      style:--depth={index + 1}
+      aria-hidden="true"
+    ></span>
+  {/each}
   {#key current?.id}
     {#if current}
-      {@const many = current.pops.length > 1}
-      {@const first = current.pops[0]!}
+      {@const pop = current.pop}
       <button
         type="button"
         class="pop"
-        data-category={first.category}
+        class:last={waiting === 0}
+        data-category={pop.category}
         style:--duration="{DURATION}ms"
+        title={waiting > 0 ? m.ach_pop_next() : undefined}
         onclick={() => dismissPop(current.id)}
       >
         <span class="shine" aria-hidden="true"></span>
@@ -50,37 +62,34 @@
               style:--delay="{particle.delay}ms"
             ></span>
           {/each}
-          <span class="stack">
-            {#each current.pops.slice(0, 3) as pop, index (index)}
-              <span class="badge" style:--index={index}>
-                <SiteBadge
-                  icon={pop.icon}
-                  category={pop.category}
-                  level={pop.level}
-                  unlocked
-                  size={3.25}
-                />
-              </span>
-            {/each}
+          <span class="badge">
+            <SiteBadge
+              icon={pop.icon}
+              category={pop.category}
+              level={pop.level}
+              unlocked
+              size={3.25}
+            />
           </span>
         </span>
         <span class="words">
-          <span class="heading">
-            {many ? m.ach_pop_many({ count: current.pops.length }) : m.ach_pop_heading()}
-          </span>
-          <span class="title">
-            {many
-              ? current.pops
-                  .slice(0, 3)
-                  .map((pop) => pop.title)
-                  .join(' · ')
-              : first.title}
-          </span>
+          <span class="heading">{m.ach_pop_heading()}</span>
+          <span class="title">{pop.title}</span>
+          {#if waiting > 0}
+            <span class="more">{m.ach_pop_more({ count: waiting })}</span>
+          {/if}
         </span>
-        <span class="timer" aria-hidden="true"></span>
+        {#if waiting === 0}
+          <span class="timer" aria-hidden="true"></span>
+        {/if}
       </button>
     {/if}
   {/key}
+  {#if waiting > 0}
+    <button type="button" class="close-all" onclick={dismissAllPops}>
+      {m.ach_pop_close_all()}
+    </button>
+  {/if}
 </div>
 
 <style>
@@ -92,6 +101,23 @@
     transform: translateX(-50%);
     width: min(24rem, calc(100vw - 2rem));
     pointer-events: none;
+  }
+
+  /* Les succès suivants dépassent derrière, un peu plus petits à chaque rang. */
+  .layer {
+    --from: 139 108 255;
+    position: absolute;
+    inset: 0;
+    border: 1px solid rgb(var(--from) / 0.8);
+    border-radius: 1rem;
+    background:
+      linear-gradient(rgb(var(--from) / 0.22), rgb(var(--from) / 0.08)), rgb(var(--raised));
+    box-shadow: 0 10px 24px -12px rgb(0 0 0 / 0.5);
+    transform-origin: top center;
+    transform: translateY(calc(var(--depth) * -0.7rem)) scale(calc(1 - var(--depth) * 0.06));
+    opacity: calc(1 - var(--depth) * 0.2);
+    transition: transform 300ms ease;
+    animation: fade-in 300ms ease-out both;
   }
   @media (min-width: 768px) {
     .pop-zone {
@@ -122,9 +148,34 @@
     text-align: left;
     pointer-events: auto;
     cursor: pointer;
+    animation: pop-in 650ms cubic-bezier(0.2, 1.4, 0.4, 1) both;
+  }
+  .pop.last {
     animation:
       pop-in 650ms cubic-bezier(0.2, 1.4, 0.4, 1) both,
       pop-out 450ms ease-in calc(var(--duration) - 450ms) forwards;
+  }
+
+  .more {
+    font-size: 0.75rem;
+    color: rgb(var(--muted));
+    animation: slide-in 450ms ease-out 450ms both;
+  }
+
+  .close-all {
+    position: absolute;
+    right: 0.25rem;
+    bottom: calc(100% + 1.9rem);
+    padding: 0.15rem 0.6rem;
+    border-radius: 9999px;
+    border: 1px solid rgb(var(--line));
+    background: rgb(var(--surface) / 0.95);
+    font-size: 0.75rem;
+    color: rgb(var(--muted));
+    pointer-events: auto;
+  }
+  .close-all:hover {
+    color: rgb(var(--ink));
   }
 
   .medal {
@@ -168,16 +219,9 @@
     animation: burst 900ms cubic-bezier(0.15, 0.7, 0.3, 1) calc(300ms + var(--delay)) both;
   }
 
-  .stack {
-    position: relative;
-    display: grid;
-  }
-
   .badge {
-    grid-area: 1 / 1;
-    transform: translate(calc(var(--index) * 0.45rem), calc(var(--index) * -0.3rem))
-      rotate(calc(var(--index) * 8deg));
-    animation: badge-in 700ms cubic-bezier(0.2, 1.6, 0.4, 1) calc(150ms + var(--index) * 120ms) both;
+    display: grid;
+    animation: badge-in 700ms cubic-bezier(0.2, 1.6, 0.4, 1) 150ms both;
   }
 
   .words {
@@ -300,9 +344,12 @@
 
   @media (prefers-reduced-motion: reduce) {
     .pop,
+    .pop.last,
+    .layer,
     .badge,
     .heading,
-    .title {
+    .title,
+    .more {
       animation: fade-in 200ms ease-out both;
     }
     .rays,

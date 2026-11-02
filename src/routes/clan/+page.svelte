@@ -33,6 +33,33 @@
     </section>
   {/if}
 
+  {#if data.membership?.clan.flaggedName}
+    {#if data.membership.owner}
+      <section class="card space-y-3 border-danger/60 p-4" data-testid="clan-rename">
+        <h2 class="text-base">{m.clan_rename_title()}</h2>
+        <p class="text-sm text-muted">
+          {m.clan_rename_text({ name: data.membership.clan.flaggedName })}
+        </p>
+        <form method="POST" action="?/rename" use:enhance={submit} class="flex gap-2">
+          <!-- svelte-ignore a11y_autofocus -->
+          <input
+            name="name"
+            required
+            minlength="3"
+            maxlength="32"
+            autofocus
+            aria-label={m.clan_rename_label()}
+            placeholder={m.clan_rename_label()}
+            class="input flex-1"
+          />
+          <button class="btn btn-primary">{m.clan_rename_action()}</button>
+        </form>
+      </section>
+    {:else}
+      <p class="card p-3 text-sm text-muted">{m.clan_rename_waiting()}</p>
+    {/if}
+  {/if}
+
   {#if data.membership}
     <div class="flex flex-wrap gap-2">
       <a class="btn" href="/clans/{data.membership.clan.slug}">{m.clan_public_page()}</a>

@@ -57,11 +57,26 @@ const query = z.object({
     )
     .optional()
     .catch(undefined),
+  // Le niveau se combine avec le filtre de collection : « Non 100 % » et « Légendaire ».
+  niveau: z
+    .preprocess(
+      (value) => (value === 'platine' ? 'diamant' : value),
+      z.enum(['bronze', 'argent', 'or', 'diamant', 'prismatique', 'legendaire']),
+    )
+    .optional()
+    .catch(undefined),
 });
 
 /** Lecture commune à la page Jeux et au chargement au défilement. */
 export async function gamesFromUrl(url: URL, user: App.Locals['user']) {
-  const params = query.parse(Object.fromEntries(url.searchParams));
+  const parsed = query.parse(Object.fromEntries(url.searchParams));
+  // Les anciens liens passaient le niveau dans « filtre ».
+  const legacy = TIER_FILTERS.includes(parsed.filtre ?? '') ? parsed.filtre : undefined;
+  const params = {
+    ...parsed,
+    filtre: legacy ? undefined : parsed.filtre,
+    niveau: parsed.niveau ?? (legacy as typeof parsed.niveau),
+  };
   // Un membre voit ses jeux ; le catalogue complet reste pour les visiteurs.
   const player = params.joueur
     ? await db.user.findFirst({
@@ -90,7 +105,7 @@ export async function gamesFromUrl(url: URL, user: App.Locals['user']) {
       ownerId,
       unfinished,
       seasonOnly: own && mine && params.filtre === 'saison',
-      tier: mine ? TIER_FILTERS.indexOf(params.filtre ?? '') + 1 || undefined : undefined,
+      tier: mine ? TIER_FILTERS.indexOf(params.niveau ?? '') + 1 || undefined : undefined,
       // Les jeux cachés ne regardent que leur propriétaire.
       hidden: own && mine && params.filtre === 'caches',
       showAdult: user?.showAdult,
@@ -101,7 +116,13 @@ export async function gamesFromUrl(url: URL, user: App.Locals['user']) {
   return {
     games,
     total,
-    params: { ...params, tri, mine, filtre: mine ? params.filtre : undefined },
+    params: {
+      ...params,
+      tri,
+      mine,
+      filtre: mine ? params.filtre : undefined,
+      niveau: mine ? params.niveau : undefined,
+    },
     player: own ? null : player,
     pages: Math.ceil(total / PAGE_SIZE),
   };

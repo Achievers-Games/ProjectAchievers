@@ -14,6 +14,7 @@ import {
   kickFromClan,
   leaveClan,
   myClan,
+  renameClan,
   type SocialFailure,
 } from '$lib/server/social';
 import { m } from '$lib/paraglide/messages';
@@ -68,6 +69,13 @@ export const actions: Actions = {
     if (!name.success) return fail(400, { error: name.error.issues[0]?.message });
     const failure = await createClan(user.id, name.data);
     return failure ? failed(failure) : { success: m.clan_created() };
+  },
+  rename: async ({ request, locals }) => {
+    const user = requireUser(locals);
+    const name = clanName.safeParse(await field(request, 'name'));
+    if (!name.success) return fail(400, { error: name.error.issues[0]?.message });
+    const failure = await renameClan(user.id, name.data);
+    return failure ? failed(failure) : { success: m.clan_renamed() };
   },
   invite: async ({ request, locals }) => {
     const user = requireUser(locals);

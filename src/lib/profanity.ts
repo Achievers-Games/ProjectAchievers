@@ -9,7 +9,8 @@ const WORDS = [
   // Français : « nique* » toucherait « niquel ».
   'bâtard*', 'bougnoule*', 'conard*', 'conasse*', 'connard*', 'connasse*', 'conne', 'couille*',
   'encul*', 'enfoiré*', 'fdp', 'merde*', 'nègre*', 'nique', 'niquer', 'niquez', 'ntm', 'pédé',
-  'pédés', 'putain*', 'pute', 'putes', 'salaud*', 'salope*', 'ta gueule', 'youpin*',
+  'pédés', 'pétasse*', 'pouffiasse*', 'putain*', 'pute', 'putes', 'salaud*', 'salope*', 'ta gueule',
+  'tepu*', 'youpin*', 'zboub*', 'zgeg*',
   // Anglais : « retard » est un mot ordinaire en français.
   'asshole*', 'bastard*', 'bitch*', 'bullshit*', 'cock', 'cunt*', 'dickhead*', 'fag', 'faggot*',
   'fuck*', 'kys', 'motherf*', 'nigga*', 'nigger*', 'pussy', 'shit', 'shitty', 'slut*', 'wanker*',
@@ -52,7 +53,7 @@ const UNSPACED = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u;
 // prettier-ignore
 const ROOTS = [
   'arschloch', 'bitch', 'caralho', 'connard', 'encule', 'faggot', 'fotze', 'fuck', 'hurensohn',
-  'nigga', 'nigger', 'pussy', 'putain', 'salope', 'пизд', 'хуи',
+  'nigga', 'nigger', 'pussy', 'putain', 'salope', 'zboub', 'zgeg', 'пизд', 'хуи',
 ];
 
 const LEET: Record<string, string> = {

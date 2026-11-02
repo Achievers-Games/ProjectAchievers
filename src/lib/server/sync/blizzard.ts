@@ -28,6 +28,11 @@ const SC2_REGION = 2;
 const WOW_NAME = 'World of Warcraft';
 const SC2_NAME = 'StarCraft II';
 
+/** Battle.net ne donne pas d'image de jeu : les visuels officiels des sites de Blizzard. */
+const ART = 'https://blz-contentstack-images.akamaized.net/v3/assets/blt9c12f249ac15c7ec';
+const WOW_IMAGE = `${ART}/bltb5a24e5ab1e2cfb0/6a88e3589b942efdb6f74110/wow-thumbnail-homepage.jpg`;
+const SC2_IMAGE = `${ART}/bltbe2068a317e02d9f/6966bac0fb2fd910dbda4a26/og_image.webp`;
+
 /** Blizzard ne traduit pas ces succès en japonais : l'anglais y remplace le français stocké. */
 const LOCALES: Record<Exclude<Locale, 'fr'>, string> = {
   en: 'en_GB',
@@ -159,7 +164,13 @@ async function fetchWowCatalog() {
 
 /** Les noms d'abord, en une fois ; description et icône demandent une requête par succès. */
 async function refreshWowCatalog() {
-  const game = await upsertGame({ platform: 'BLIZZARD', platformGameId: WOW_GAME, name: WOW_NAME });
+  const game = await upsertGame({
+    platform: 'BLIZZARD',
+    platformGameId: WOW_GAME,
+    name: WOW_NAME,
+    coverUrl: WOW_IMAGE,
+    headerUrl: WOW_IMAGE,
+  });
   if (game.schemaSyncedAt && Date.now() - game.schemaSyncedAt.getTime() < CATALOG_MAX_AGE) {
     return game;
   }
@@ -282,7 +293,13 @@ async function syncSc2({ userId, account, onUnlocked }: SyncContext) {
   );
   if (!profiles.length) return 0;
 
-  const game = await upsertGame({ platform: 'BLIZZARD', platformGameId: SC2_GAME, name: SC2_NAME });
+  const game = await upsertGame({
+    platform: 'BLIZZARD',
+    platformGameId: SC2_GAME,
+    name: SC2_NAME,
+    coverUrl: SC2_IMAGE,
+    headerUrl: SC2_IMAGE,
+  });
   if (!game.schemaSyncedAt || Date.now() - game.schemaSyncedAt.getTime() >= CATALOG_MAX_AGE) {
     const [catalog, english] = await Promise.all([
       fetchSc2Catalog(BASE_LOCALE),

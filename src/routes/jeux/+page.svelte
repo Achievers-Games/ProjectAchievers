@@ -234,13 +234,13 @@
       >
         {#each tiers as item (item.value)}
           <a
-            href={collectionHref(item.value)}
+            href={hrefWith({ niveau: data.params.niveau === item.value ? null : item.value })}
             data-sveltekit-noscroll
             data-tier={item.tier}
             title={tierRule(item.tier)}
-            aria-current={data.params.filtre === item.value ? 'true' : undefined}
+            aria-current={data.params.niveau === item.value ? 'true' : undefined}
             class="stat-value px-3 py-1.5 !text-sm transition-colors"
-            class:bg-raised={data.params.filtre === item.value}
+            class:bg-raised={data.params.niveau === item.value}
           >
             {item.label}
           </a>
@@ -282,7 +282,7 @@
             >{m.link_account()}</a
           >{/snippet}
       </Empty>
-    {:else if data.user && !data.player && !data.params.q && !data.params.plateforme && !data.params.filtre}
+    {:else if data.user && !data.player && !data.params.q && !data.params.plateforme && !data.params.filtre && !data.params.niveau}
       <Empty title={m.games_empty_title()}>
         {m.games_empty_text()}
         {#snippet action()}<a href="/compte" class="btn btn-primary">{m.link_account()}</a

@@ -8,28 +8,26 @@ export interface SitePop {
   level: number;
 }
 
-/** Une annonce : un succès, ou un lot quand il en arrive trop d'un coup. */
+/** Une annonce de la pile : un succès à la fois. */
 export interface PopItem {
   id: number;
-  pops: SitePop[];
+  pop: SitePop;
 }
 
-/** Au-delà, les succès arrivent ensemble dans une seule annonce. */
-const GROUP_FROM = 4;
-
+/** La pile des succès à montrer : le premier est devant, les autres attendent derrière. */
 export const popQueue = writable<PopItem[]>([]);
 
 let nextId = 1;
 
 export function celebrate(pops: SitePop[]) {
   if (!pops.length) return;
-  const items =
-    pops.length >= GROUP_FROM
-      ? [{ id: nextId++, pops }]
-      : pops.map((pop) => ({ id: nextId++, pops: [pop] }));
-  popQueue.update((queue) => [...queue, ...items]);
+  popQueue.update((queue) => [...queue, ...pops.map((pop) => ({ id: nextId++, pop }))]);
 }
 
 export function dismissPop(id: number) {
   popQueue.update((queue) => queue.filter((item) => item.id !== id));
+}
+
+export function dismissAllPops() {
+  popQueue.set([]);
 }

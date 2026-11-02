@@ -377,6 +377,14 @@ test.describe('membre', () => {
       'aria-current',
       'true',
     );
+    // Les deux groupes se combinent : « Non 100 % » garde le niveau choisi.
+    await page.goto('/jeux?filtre=restants&niveau=diamant');
+    for (const name of ['Diamant', 'Non 100 %']) {
+      await expect(page.getByRole('link', { name, exact: true })).toHaveAttribute(
+        'aria-current',
+        'true',
+      );
+    }
     const legend = page.getByTestId('tier-legend');
     await legend.getByText('Comment monter de niveau ?').click();
     await expect(legend.getByText(/moins de 0,3/)).toBeVisible();
@@ -742,8 +750,22 @@ test.describe('membre', () => {
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(name);
     await page.goto('/clans');
     await expect(page.getByRole('link', { name: new RegExp(name) })).toBeVisible();
+
+    // La modération retire le nom : le chef doit en choisir un autre.
+    await page.getByRole('link', { name: new RegExp(name) }).click();
+    await page.getByRole('button', { name: 'Nom inapproprié' }).click();
+    await expect(page).toHaveURL(/\/clans$/);
+    await expect(page.getByRole('link', { name: new RegExp(name) })).toHaveCount(0);
     await page.goto('/clan');
     await ready(page);
+    const rename = page.getByTestId('clan-rename');
+    await expect(rename).toContainText(name);
+    const renamed = `${name} bis`;
+    await rename.getByLabel('Nouveau nom du clan').fill(renamed);
+    await rename.getByRole('button', { name: 'Renommer' }).click();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(renamed);
+    await expect(rename).toHaveCount(0);
+
     await page.getByRole('button', { name: 'Discussion du clan' }).click();
     await expect(page).toHaveURL(/\/messages\/./);
   });

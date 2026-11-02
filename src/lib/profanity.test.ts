@@ -82,7 +82,14 @@ describe('filtre par langue', () => {
 
 describe('isProfane', () => {
   it('refuse les noms déguisés', () => {
-    for (const name of ['sh1t', 'F.U.C.K', 'xXfuckerXx', 'la salope 2000', 'p u t a i n']) {
+    for (const name of [
+      'sh1t',
+      'F.U.C.K',
+      'xXfuckerXx',
+      'la salope 2000',
+      'p u t a i n',
+      'ZgegGames',
+    ]) {
       expect(isProfane(name)).toBe(true);
     }
   });

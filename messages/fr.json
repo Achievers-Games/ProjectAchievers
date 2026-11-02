@@ -866,7 +866,6 @@
   "ach_cat_themes": "Thèmes",
   "ach_genres_note": "Les genres viennent des étiquettes de la boutique Steam, y compris pour les jeux des autres plateformes.",
   "ach_pop_heading": "Succès débloqué !",
-  "ach_pop_many": "{count} succès débloqués !",
   "card_goal_help": "Carte {tier} à gagner en finissant ce jeu à 100 % ({rule})",
   "mod_psn_token": "Jeton PSN du site",
   "mod_psn_token_ok": "En service depuis le {since}, expire au plus tard vers le {until} (dans {days} jours).",
@@ -1041,6 +1040,25 @@
   "ach_genre_tour_40_title": "Tour du monde en 40 genres",
   "ach_genre_tour_40_text": "Finir à 100 % des jeux de 40 genres différents",
   "sort_tier": "Rareté de la carte",
+  "ach_pop_more": [
+    {
+      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
+      "selectors": ["c"],
+      "match": { "c=one": "+ {n} autre derrière", "c=*": "+ {n} autres derrière" }
+    }
+  ],
+  "ach_pop_next": "Voir le suivant",
+  "ach_pop_close_all": "Tout fermer",
+  "clan_flag": "Nom inapproprié",
+  "clan_flag_help": "Retire ce nom : le clan prend un nom neutre et son chef doit en choisir un autre.",
+  "clan_renamed": "Clan renommé.",
+  "clan_rename_title": "Ton clan doit changer de nom",
+  "clan_rename_text": "« {name} » ne respecte pas les règles du site. Le clan porte un nom provisoire en attendant : choisis-en un nouveau.",
+  "clan_rename_label": "Nouveau nom du clan",
+  "clan_rename_action": "Renommer",
+  "clan_rename_waiting": "Le nom du clan a été retiré par la modération. Le chef doit en choisir un nouveau.",
+  "clan_rename_push_title": "Ton clan doit changer de nom",
+  "clan_rename_push_body": "« {name} » ne respecte pas les règles du site. Choisis un nouveau nom.",
   "refresh_label": "Actualiser mes comptes",
   "refresh_started": "Actualisation lancée.",
   "refresh_wait": "Tes comptes viennent d'être lus : réessaie dans quelques minutes.",

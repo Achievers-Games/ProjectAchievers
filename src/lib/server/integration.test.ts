@@ -47,6 +47,8 @@ import {
   blockUser,
   clanPage,
   createClan,
+  flagClanName,
+  flagProfaneClans,
   inviteToClan,
   leaveClan,
   markInvitesSeen,
@@ -54,6 +56,7 @@ import {
   pendingInvites,
   readConversation,
   relationWith,
+  renameClan,
   reportMessage,
   requestFriend,
   sendMessage,
@@ -1598,6 +1601,34 @@ describe('amis, clans et discussions', () => {
     await leaveClan(b.id);
     expect(await db.clan.findUnique({ where: { name } })).toBeNull();
   });
+
+  it('retire un nom grossier et laisse le chef en choisir un autre', async () => {
+    const [a, b] = await players();
+    const name = `Zgeg ${Math.random().toString(36).slice(2, 8)}`;
+    expect(await createClan(a.id, name)).toBeNull();
+    const { id } = await db.clan.findUniqueOrThrow({ where: { name } });
+    await requestFriend(a.id, b.handle);
+    await acceptFriend(b.id, a.id);
+    await inviteToClan(a.id, b.id);
+    await acceptClanInvite(b.id, id);
+
+    expect(await flagProfaneClans()).toBeGreaterThanOrEqual(1);
+    const flagged = await db.clan.findUniqueOrThrow({ where: { id } });
+    expect(flagged).toMatchObject({ flaggedName: name });
+    expect(flagged.name).toMatch(/^Clan #/);
+    expect(await flagClanName(id)).toBe(false);
+    expect((await pendingInvites(a.id)).clans).toBeGreaterThanOrEqual(1);
+
+    expect(await renameClan(b.id, `${PREFIX} propre`)).toBe('owner_only');
+    const fresh = `${PREFIX} ${Math.random()}`;
+    expect(await renameClan(a.id, fresh)).toBeNull();
+    expect(await db.clan.findUniqueOrThrow({ where: { id } })).toMatchObject({
+      name: fresh,
+      flaggedName: null,
+    });
+    await leaveClan(b.id);
+    await leaveClan(a.id);
+  });
 });
 
 describe('notifications', () => {
@@ -1919,6 +1950,56 @@ describe('filtres par niveau', () => {
       `${PREFIX} prismatique loin`,
       `${PREFIX} presque`,
     ]);
+  });
+
+  it('met les exemplaires multiples devant une carte rare seule', async () => {
+    const { ownerId } = await library();
+    const game = await db.game.create({
+      data: {
+        platform: 'STEAM',
+        platformGameId: `${PREFIX}-${Math.random()}`,
+        name: `${PREFIX} prismatique seul`,
+        slug: `${PREFIX}-${Math.random().toString(36).slice(2)}`,
+        totalAchievements: 10,
+        tier: 5,
+      },
+    });
+    await db.userGame.create({
+      data: {
+        userId: ownerId,
+        gameId: game.id,
+        completion: 100,
+        unlockedCount: 10,
+        totalCount: 10,
+      },
+    });
+    const { games } = await listGames({ sort: 'progression', page: 1, ownerId }, ownerId);
+    expect(games.slice(0, 2).map((card) => card.name)).toEqual([
+      `${PREFIX} platine`,
+      `${PREFIX} prismatique seul`,
+    ]);
+  });
+
+  it('combine « Non 100 % » et un niveau : la carte à gagner compte', async () => {
+    const { ownerId } = await library();
+    const game = await db.game.create({
+      data: {
+        platform: 'STEAM',
+        platformGameId: `${PREFIX}-${Math.random()}`,
+        name: `${PREFIX} légendaire à finir`,
+        slug: `${PREFIX}-${Math.random().toString(36).slice(2)}`,
+        totalAchievements: 10,
+        tier: 6,
+      },
+    });
+    await db.userGame.create({
+      data: { userId: ownerId, gameId: game.id, completion: 30, unlockedCount: 3, totalCount: 10 },
+    });
+    const { games } = await listGames(
+      { sort: 'progression', page: 1, ownerId, unfinished: true, tier: 6 },
+      ownerId,
+    );
+    expect(games.map((card) => card.name)).toEqual([`${PREFIX} légendaire à finir`]);
   });
 
   it('filtre par console PlayStation, une liste partagée comptant pour chacune', async () => {

@@ -1,7 +1,7 @@
 import { Prisma, type PrismaClient } from '@prisma/client';
 import { randomToken } from './crypto';
 import { db } from './db';
-import { censor } from '$lib/profanity';
+import { censor, isProfane } from '$lib/profanity';
 import { slugify } from '$lib/slug';
 import { notify } from './push';
 import { publicUser } from './queries';
@@ -135,7 +135,11 @@ export async function pendingInvites(userId: string) {
       where: { userId, createdAt: { gt: seen?.clansSeenAt ?? new Date(0) } },
     }),
   ]);
-  return { friends, clans };
+  // Un nom retiré reste signalé au chef tant qu'il n'en a pas choisi un autre.
+  const rename = await db.clanMember.count({
+    where: { userId, owner: true, clan: { flaggedName: { not: null } } },
+  });
+  return { friends, clans: clans + rename };
 }
 
 /** La date d'une invitation vient de la base : son horloge peut avoir quelques millisecondes d'avance. */
@@ -402,6 +406,7 @@ export async function myClan(userId: string) {
           id: true,
           name: true,
           slug: true,
+          flaggedName: true,
           conversation: { select: { id: true } },
           members: {
             orderBy: [{ owner: 'desc' }, { joinedAt: 'asc' }],
@@ -436,6 +441,66 @@ export async function createClan(userId: string, name: string): Promise<SocialFa
     }
     throw cause;
   }
+}
+
+/** Le chef donne un nouveau nom au clan, et lève ainsi une demande de la modération. */
+export async function renameClan(userId: string, name: string): Promise<SocialFailure | null> {
+  const membership = await db.clanMember.findUnique({ where: { userId } });
+  if (!membership?.owner) return 'owner_only';
+  try {
+    await db.clan.update({
+      where: { id: membership.clanId },
+      data: {
+        name,
+        slug: slugify(name) || `clan-${randomToken(6).toLowerCase()}`,
+        flaggedName: null,
+      },
+    });
+    return null;
+  } catch (cause) {
+    if (cause instanceof Prisma.PrismaClientKnownRequestError && cause.code === 'P2002') {
+      return 'name_taken';
+    }
+    throw cause;
+  }
+}
+
+/**
+ * Retire un nom contraire aux règles : le clan prend aussitôt un nom neutre,
+ * et son chef est prévenu qu'il doit en choisir un autre.
+ */
+export async function flagClanName(clanId: string) {
+  const clan = await db.clan.findUnique({
+    where: { id: clanId },
+    select: { name: true, flaggedName: true, members: { where: { owner: true } } },
+  });
+  if (!clan || clan.flaggedName) return false;
+  const token = randomToken(6).toLowerCase();
+  await db.clan.update({
+    where: { id: clanId },
+    data: { name: `Clan #${token}`, slug: `clan-${token}`, flaggedName: clan.name },
+  });
+  for (const owner of clan.members) {
+    notify(owner.userId, 'digest', `clan-nom:${clanId}`, (locale) => ({
+      title: m.clan_rename_push_title({}, { locale }),
+      body: m.clan_rename_push_body({ name: clan.name }, { locale }),
+      url: '/clan',
+    }));
+  }
+  return true;
+}
+
+/** Les noms créés avant qu'un mot entre dans le filtre : ils sont retirés au balayage suivant. */
+export async function flagProfaneClans() {
+  const clans = await db.clan.findMany({
+    where: { flaggedName: null },
+    select: { id: true, name: true },
+  });
+  let flagged = 0;
+  for (const clan of clans) {
+    if (isProfane(clan.name) && (await flagClanName(clan.id))) flagged++;
+  }
+  return flagged;
 }
 
 /** Le chef invite ses amis ; personne n'entre dans un clan sans l'avoir accepté. */
