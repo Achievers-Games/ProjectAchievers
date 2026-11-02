@@ -100,7 +100,8 @@ export const THEMES = {
   flight: { tags: [15045, 92092], steps: [1] },
   naval: { tags: [6910, 19780], steps: [1] },
   heist: { tags: [1680, 6378], steps: [1] },
-  assassin: { tags: [4376], steps: [1] },
+  // Steam a deux étiquettes : « Assassin » et « Assassins », celle des Assassin's Creed.
+  assassin: { tags: [4376, 97070], steps: [1] },
   martial_arts: { tags: [6915, 12190, 47827], steps: [1] },
   football: { tags: [1254546, 1254552, 49213], steps: [1] },
   golf: { tags: [7038, 22955], steps: [1] },

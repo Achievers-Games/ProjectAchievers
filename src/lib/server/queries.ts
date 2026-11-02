@@ -32,6 +32,14 @@ export const publicUser = {
   frameMotionUrl: true,
 } satisfies Prisma.UserSelect;
 
+/**
+ * - `termines` : au moins une version à 100 %, la carte est obtenue ;
+ * - `restants` : il reste une version commencée à finir ;
+ * - `saison` : les jeux qui rapportent des points cette saison ;
+ * - `caches` : les jeux cachés par le joueur, et seulement eux.
+ */
+export type GameStatus = 'termines' | 'restants' | 'saison' | 'caches';
+
 interface GameFilters {
   q?: string;
   platform?: Platform;
@@ -40,14 +48,10 @@ interface GameFilters {
   sort: 'nom' | 'recent' | 'progression' | 'succes' | 'rarete';
   page: number;
   ownerId?: string;
-  /** Avec `ownerId` : seulement les jeux qui ont encore une version à terminer. */
-  unfinished?: boolean;
-  /** Avec `ownerId` : seulement les jeux qui comptent pour la saison en cours. */
-  seasonOnly?: boolean;
-  /** Avec `ownerId` : seulement les cartes de ce niveau. */
+  /** Avec `ownerId` : où en est le joueur sur le jeu. */
+  status?: GameStatus;
+  /** Rareté du jeu : la carte qu'il donne, obtenue ou non. */
   tier?: number;
-  /** Avec `ownerId` : montre les jeux cachés par le joueur, et seulement eux. */
-  hidden?: boolean;
   showAdult?: boolean;
 }
 
@@ -81,6 +85,13 @@ const tierProgress = (card: LibraryCard) =>
     ? card.tier * 10 + card.copies + (card.next?.completion ?? 0) / 100
     : card.progress.completion / 100;
 
+/** La rareté du jeu : la carte obtenue, sinon celle qu'il rapportera. */
+const rarityOf = (card: LibraryCard) => card.tier || card.target;
+
+/** Il reste une version commencée à finir : vers la carte, ou vers l'exemplaire suivant. */
+const isUnfinished = (card: LibraryCard) =>
+  Boolean(card.next) || (card.progress.completion < 100 && card.totalAchievements > 0);
+
 /** Bibliothèque d'un joueur : les versions d'un même jeu forment une seule carte. */
 async function listLibrary(
   filters: GameFilters,
@@ -89,7 +100,7 @@ async function listLibrary(
   viewerId: string | null,
 ) {
   const rows = await db.userGame.findMany({
-    where: { userId: ownerId, hidden: Boolean(filters.hidden), game: where },
+    where: { userId: ownerId, hidden: filters.status === 'caches', game: where },
     select: librarySelect,
   });
   const search = filters.q?.toLowerCase();
@@ -116,14 +127,12 @@ async function listLibrary(
               (!filters.consoles ||
                 consolesOf(v.console).some((name) => filters.consoles?.includes(name))),
           )) &&
-        // Un jeu à finir se range au niveau de la carte qu'il rapportera.
-        (!filters.tier ||
-          (filters.unfinished || filters.seasonOnly ? card.target : card.tier) === filters.tier) &&
-        (!filters.seasonOnly || card.seasonEligible) &&
-        (!filters.unfinished ||
-          Boolean(card.next) ||
-          (card.progress.completion < 100 && card.totalAchievements > 0)),
+        (!filters.tier || rarityOf(card) === filters.tier) &&
+        (filters.status !== 'termines' || card.tier > 0) &&
+        (filters.status !== 'restants' || isUnfinished(card)) &&
+        (filters.status !== 'saison' || card.seasonEligible),
     );
+  const ongoing = filters.status === 'restants' || filters.status === 'saison';
 
   const byName = (a: (typeof cards)[number], b: (typeof cards)[number]) =>
     a.name.localeCompare(b.name, 'fr');
@@ -132,14 +141,14 @@ async function listLibrary(
       return b.totalAchievements - a.totalAchievements || byName(a, b);
     }
     if (filters.sort === 'progression') {
-      // Dans « Non 100 % », seul compte ce qui est presque fini.
-      if (filters.unfinished) return shownProgress(b) - shownProgress(a) || byName(a, b);
+      // Parmi les jeux à finir, seul compte ce qui est presque fini.
+      if (ongoing) return shownProgress(b) - shownProgress(a) || byName(a, b);
       // Les exemplaires d'abord (×4, ×3, ×2) : la rareté a son propre tri.
       return b.copies - a.copies || tierProgress(b) - tierProgress(a) || byName(a, b);
     }
     if (filters.sort === 'rarete') {
-      // La carte à gagner d'abord, puis celle qui est le plus près d'être finie.
-      return b.target - a.target || shownProgress(b) - shownProgress(a) || byName(a, b);
+      // La carte la plus rare d'abord, puis celle qui est le plus près d'être finie.
+      return rarityOf(b) - rarityOf(a) || shownProgress(b) - shownProgress(a) || byName(a, b);
     }
     if (filters.sort === 'recent') {
       const time = (card: typeof a) => card.lastUnlockedAt?.getTime() ?? 0;
@@ -157,9 +166,14 @@ export async function listGames(filters: GameFilters, viewerId: string | null) {
   if (filters.ownerId) return listLibrary(filters, filters.ownerId, where, viewerId);
   if (filters.q) where.name = { contains: filters.q, mode: 'insensitive' };
   if (filters.platform) where.platform = filters.platform;
+  const and: Prisma.GameWhereInput[] = [];
+  // Un jeu pas encore classé compte comme Bronze, comme sur sa carte.
+  if (filters.tier)
+    and.push(filters.tier === 1 ? { OR: [{ tier: 1 }, { tier: null }] } : { tier: filters.tier });
   if (filters.consoles) {
-    where.AND = [{ OR: filters.consoles.map((name) => ({ console: { contains: name } })) }];
+    and.push({ OR: filters.consoles.map((name) => ({ console: { contains: name } })) });
   }
+  if (and.length) where.AND = and;
 
   // L'identifiant départage les égalités : sans lui, un jeu pourrait passer d'une page à l'autre.
   const orderBy: Prisma.GameOrderByWithRelationInput[] = [
@@ -494,7 +508,7 @@ export const toBanner = (game: {
 /** Le jeu le plus avancé du joueur ; à défaut, ou pour un invité, un jeu au hasard. */
 async function seasonBanner(userId?: string) {
   const library = userId
-    ? await listGames({ sort: 'progression', page: 1, ownerId: userId, unfinished: true }, userId)
+    ? await listGames({ sort: 'progression', page: 1, ownerId: userId, status: 'restants' }, userId)
     : null;
   const closest = library?.games.find((game) => game.headerUrl);
   if (closest?.headerUrl) {

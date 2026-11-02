@@ -78,12 +78,32 @@ async function storeTags(appIds: number[]) {
   );
 }
 
+const ROMAN: Record<string, string> = {
+  ii: '2',
+  iii: '3',
+  iv: '4',
+  v: '5',
+  vi: '6',
+  vii: '7',
+  viii: '8',
+  ix: '9',
+  x: '10',
+};
+
+/** « Assassin's Creed II » sur console, « Assassin's Creed 2 » sur Steam : le même épisode. */
+export const episodeKey = (key: string | null) =>
+  key
+    ?.split(' ')
+    .map((word) => ROMAN[word] ?? word)
+    .join(' ') ?? null;
+
 /** Le même jeu sur Steam, retrouvé par son nom. `undefined` : la boutique n'a pas répondu. */
 async function steamTwin(name: string, key: string | null) {
   const response = await fetchRetry(`${SEARCH}?term=${encodeURIComponent(name)}&cc=US&l=english`);
   if (!response.ok) return undefined;
   const data = (await response.json()) as { items?: { id: number; name: string }[] };
-  return data.items?.find((item) => familyKey(item.name) === key)?.id ?? null;
+  const wanted = episodeKey(key);
+  return data.items?.find((item) => episodeKey(familyKey(item.name)) === wanted)?.id ?? null;
 }
 
 /**

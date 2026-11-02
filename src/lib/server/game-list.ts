@@ -3,7 +3,7 @@ import { z } from 'zod';
 import type { Platform } from '@prisma/client';
 import { m } from '$lib/paraglide/messages';
 import { db } from './db';
-import { listGames, PAGE_SIZE } from './queries';
+import { listGames, PAGE_SIZE, type GameStatus } from './queries';
 
 /** Les consoles se filtrent à part : chacune donne son propre exemplaire. */
 const CONSOLES: Record<string, { platform: Platform; consoles: string[] }> = {
@@ -36,7 +36,8 @@ const query = z.object({
     ])
     .optional()
     .catch(undefined),
-  tri: z.enum(['nom', 'recent', 'progression', 'succes', 'rarete']).catch('nom'),
+  // Sans tri choisi, les jeux à finir se rangent par avancée, les autres par nom.
+  tri: z.enum(['nom', 'recent', 'progression', 'succes', 'rarete']).optional().catch(undefined),
   page: z.coerce.number().int().min(1).max(10_000).catch(1),
   vue: z.enum(['grille', 'liste']).catch('grille'),
   // « platine » était l'ancien nom du niveau : les liens déjà partagés restent valables.
@@ -44,6 +45,7 @@ const query = z.object({
     .preprocess(
       (value) => (value === 'platine' ? 'diamant' : value),
       z.enum([
+        'termines',
         'restants',
         'saison',
         'caches',
@@ -57,7 +59,7 @@ const query = z.object({
     )
     .optional()
     .catch(undefined),
-  // Le niveau se combine avec le filtre de collection : « Non 100 % » et « Légendaire ».
+  // La rareté du jeu se combine avec tout le reste : « Non 100 % » et « Légendaire ».
   niveau: z
     .preprocess(
       (value) => (value === 'platine' ? 'diamant' : value),
@@ -89,9 +91,17 @@ export async function gamesFromUrl(url: URL, user: App.Locals['user']) {
   const ownerId = player?.id ?? user?.id;
   const own = ownerId === user?.id;
   const mine = Boolean(ownerId);
-  const unfinished = mine && params.filtre === 'restants';
+  // La saison et les jeux cachés ne regardent que leur propriétaire.
+  const status: GameStatus | undefined =
+    !mine || ((params.filtre === 'saison' || params.filtre === 'caches') && !own)
+      ? undefined
+      : (params.filtre as GameStatus | undefined);
+  const ongoing = status === 'restants' || status === 'saison';
   // La progression n'existe que pour les jeux du joueur.
-  const tri = params.tri === 'progression' && !mine ? 'nom' : params.tri;
+  const tri =
+    params.tri === 'progression' && !mine
+      ? 'nom'
+      : (params.tri ?? (ongoing ? 'progression' : 'nom'));
   const chosen = params.plateforme ? CONSOLES[params.plateforme] : undefined;
   const platform = chosen?.platform ?? (params.plateforme as Platform | undefined);
 
@@ -103,11 +113,8 @@ export async function gamesFromUrl(url: URL, user: App.Locals['user']) {
       sort: tri,
       page: params.page,
       ownerId,
-      unfinished,
-      seasonOnly: own && mine && params.filtre === 'saison',
-      tier: mine ? TIER_FILTERS.indexOf(params.niveau ?? '') + 1 || undefined : undefined,
-      // Les jeux cachés ne regardent que leur propriétaire.
-      hidden: own && mine && params.filtre === 'caches',
+      status,
+      tier: TIER_FILTERS.indexOf(params.niveau ?? '') + 1 || undefined,
       showAdult: user?.showAdult,
     },
     user?.id ?? null,
@@ -120,8 +127,7 @@ export async function gamesFromUrl(url: URL, user: App.Locals['user']) {
       ...params,
       tri,
       mine,
-      filtre: mine ? params.filtre : undefined,
-      niveau: mine ? params.niveau : undefined,
+      filtre: status,
     },
     player: own ? null : player,
     pages: Math.ceil(total / PAGE_SIZE),

@@ -385,6 +385,13 @@ test.describe('membre', () => {
         'true',
       );
     }
+    // « Tout effacer » remet chaque groupe à zéro.
+    await page.getByRole('link', { name: 'Tout effacer' }).click();
+    await expect(page).toHaveURL(/\/jeux$/);
+    await expect(page.getByRole('link', { name: 'Tous mes jeux', exact: true })).toHaveAttribute(
+      'aria-current',
+      'true',
+    );
     const legend = page.getByTestId('tier-legend');
     await legend.getByText('Comment monter de niveau ?').click();
     await expect(legend.getByText(/moins de 0,3/)).toBeVisible();

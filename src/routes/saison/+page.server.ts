@@ -14,7 +14,7 @@ export const load: PageServerLoad = async ({ locals }) => {
             sort: 'progression',
             page: 1,
             ownerId: userId,
-            seasonOnly: true,
+            status: 'saison',
             showAdult: locals.user?.showAdult,
           },
           userId,

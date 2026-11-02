@@ -1963,7 +1963,7 @@ describe('filtres par niveau', () => {
       });
     }
     const { games } = await listGames(
-      { sort: 'rarete', page: 1, ownerId, unfinished: true },
+      { sort: 'rarete', page: 1, ownerId, status: 'restants' },
       ownerId,
     );
     expect(games.slice(0, 4).map((game) => game.name)).toEqual([
@@ -2018,10 +2018,39 @@ describe('filtres par niveau', () => {
       data: { userId: ownerId, gameId: game.id, completion: 30, unlockedCount: 3, totalCount: 10 },
     });
     const { games } = await listGames(
-      { sort: 'progression', page: 1, ownerId, unfinished: true, tier: 6 },
+      { sort: 'progression', page: 1, ownerId, status: 'restants', tier: 6 },
       ownerId,
     );
     expect(games.map((card) => card.name)).toEqual([`${PREFIX} légendaire à finir`]);
+  });
+
+  it('range un jeu selon sa rareté, fini ou non, quel que soit le statut', async () => {
+    const { ownerId } = await library();
+    for (const [name, completion] of [
+      ['légendaire fini', 100],
+      ['légendaire commencé', 40],
+    ] as const) {
+      const game = await db.game.create({
+        data: {
+          platform: 'STEAM',
+          platformGameId: `${PREFIX}-${Math.random()}`,
+          name: `${PREFIX} ${name}`,
+          slug: `${PREFIX}-${Math.random().toString(36).slice(2)}`,
+          totalAchievements: 10,
+          tier: 6,
+        },
+      });
+      await db.userGame.create({
+        data: { userId: ownerId, gameId: game.id, completion, unlockedCount: 4, totalCount: 10 },
+      });
+    }
+    const list = async (status?: 'termines' | 'restants') =>
+      (await listGames({ sort: 'nom', page: 1, ownerId, status, tier: 6 }, ownerId)).games.map(
+        (card) => card.name.replace(`${PREFIX} `, ''),
+      );
+    expect(await list()).toEqual(['légendaire commencé', 'légendaire fini']);
+    expect(await list('termines')).toEqual(['légendaire fini']);
+    expect(await list('restants')).toEqual(['légendaire commencé']);
   });
 
   it('filtre par console PlayStation, une liste partagée comptant pour chacune', async () => {
@@ -2183,7 +2212,7 @@ describe('filtres par niveau', () => {
 
   it('garde dans « Non 100 % » les cartes dont une autre version avance', async () => {
     const filters = await library();
-    const unfinished = await listGames({ ...filters, unfinished: true }, filters.ownerId);
+    const unfinished = await listGames({ ...filters, status: 'restants' }, filters.ownerId);
     expect(names(unfinished)).toEqual(['presque', 'or', 'debut']);
   });
 });

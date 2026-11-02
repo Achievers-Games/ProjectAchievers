@@ -115,6 +115,7 @@
 
   const collections = [
     { value: null, label: m.games_all_mine() },
+    { value: 'termines', label: m.games_finished() },
     { value: 'restants', label: m.games_unfinished() },
     { value: 'saison', label: m.nav_season() },
     { value: 'caches', label: m.games_hidden() },
@@ -129,13 +130,20 @@
     { value: 'legendaire', label: tierLabel(6), tier: 6 },
   ];
 
-  /** « Non 100 % » sert à voir ce qui est presque fini : les plus avancés passent devant. */
-  const collectionHref = (filtre: string | null) =>
-    hrefWith(
-      filtre === 'restants' || filtre === 'saison'
-        ? { filtre, tri: 'progression' }
-        : { filtre, tri: null },
-    );
+  /** Chaque groupe de filtres est indépendant : changer l'un garde les autres. */
+  const filtered = $derived(
+    ['q', 'plateforme', 'filtre', 'niveau', 'tri'].some((key) => page.url.searchParams.has(key)),
+  );
+  const clearHref = $derived.by(() => {
+    const vue = page.url.searchParams.get('vue');
+    const joueur = page.url.searchParams.get('joueur');
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity -- copie locale, jamais observée
+    const next = new URLSearchParams();
+    if (joueur) next.set('joueur', joueur);
+    if (vue) next.set('vue', vue);
+    const search = next.toString();
+    return search ? `/jeux?${search}` : '/jeux';
+  });
 
   const CONSOLE_PLATFORMS: Record<string, string> = {
     PS3: 'PSN',
@@ -216,7 +224,7 @@
       >
         {#each collections.filter((item) => !data.player || (item.value !== 'caches' && item.value !== 'saison')) as item (item.label)}
           <a
-            href={collectionHref(item.value)}
+            href={hrefWith({ filtre: item.value })}
             data-sveltekit-noscroll
             aria-current={(data.params.filtre ?? null) === item.value ? 'true' : undefined}
             class="whitespace-nowrap px-3 py-1.5 text-sm transition-colors"
@@ -227,28 +235,33 @@
           </a>
         {/each}
       </div>
-      <div
-        class="flex flex-wrap rounded border border-line"
-        role="group"
-        aria-label={m.games_tier()}
-      >
-        {#each tiers as item (item.value)}
-          <a
-            href={hrefWith({ niveau: data.params.niveau === item.value ? null : item.value })}
-            data-sveltekit-noscroll
-            data-tier={item.tier}
-            title={tierRule(item.tier)}
-            aria-current={data.params.niveau === item.value ? 'true' : undefined}
-            class="stat-value px-3 py-1.5 !text-sm transition-colors"
-            class:bg-raised={data.params.niveau === item.value}
-          >
-            {item.label}
-          </a>
-        {/each}
-      </div>
     {/if}
+    <div
+      class="flex flex-wrap rounded border border-line"
+      role="group"
+      aria-label={m.games_rarity()}
+    >
+      {#each tiers as item (item.value)}
+        <a
+          href={hrefWith({ niveau: data.params.niveau === item.value ? null : item.value })}
+          data-sveltekit-noscroll
+          data-tier={item.tier}
+          title={tierRule(item.tier)}
+          aria-current={data.params.niveau === item.value ? 'true' : undefined}
+          class="stat-value px-3 py-1.5 !text-sm transition-colors"
+          class:bg-raised={data.params.niveau === item.value}
+        >
+          {item.label}
+        </a>
+      {/each}
+    </div>
 
     <div class="ml-auto flex items-center gap-2">
+      {#if filtered}
+        <a href={clearHref} data-sveltekit-noscroll class="text-sm text-muted hover:text-ink">
+          {m.games_clear()}
+        </a>
+      {/if}
       <select
         class="input w-auto"
         aria-label={m.games_sort()}
