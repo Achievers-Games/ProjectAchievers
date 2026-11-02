@@ -47,6 +47,25 @@
     </section>
   {/if}
 
+  {#if data.emblems.length}
+    <section class="space-y-2" data-testid="mod-emblems">
+      <h2 class="text-base">{m.mod_emblems()}</h2>
+      <ul class="card divide-y divide-line">
+        {#each data.emblems as clan (clan.id)}
+          <li class="flex flex-wrap items-center gap-3 p-3">
+            <img src={clan.url} alt="" class="h-16 w-16 rounded-full object-cover" />
+            <a href="/clans/{clan.slug}" class="min-w-0 flex-1 truncate">{clan.name}</a>
+            <form method="POST" action="?/emblem" use:enhance class="flex gap-2">
+              <input type="hidden" name="id" value={clan.id} />
+              <button class="btn" name="keep" value="1">{m.mod_emblem_keep()}</button>
+              <button class="btn btn-danger" name="keep" value="0">{m.mod_emblem_remove()}</button>
+            </form>
+          </li>
+        {/each}
+      </ul>
+    </section>
+  {/if}
+
   {#each data.reports as report (report.id)}
     <article class="card space-y-2 p-4">
       <p class="text-xs text-muted">

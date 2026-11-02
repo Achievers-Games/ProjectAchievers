@@ -1,5 +1,5 @@
 import { expect, test as base, type Page } from '@playwright/test';
-import { SITE_CATEGORIES, SITE_TOTAL } from '../src/lib/site-achievements';
+import { SITE_CATEGORIES, SITE_TOTAL, groupSeries } from '../src/lib/site-achievements';
 
 /** Tout test échoue si la page journalise une erreur : un écran vide ne passe plus inaperçu. */
 const test = base.extend<{ consoleGuard: void }>({
@@ -766,6 +766,30 @@ test.describe('membre', () => {
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(renamed);
     await expect(rename).toHaveCount(0);
 
+    // Un emblème envoyé sans analyse automatique attend la modération, visible du seul clan.
+    const emblem = page.getByTestId('clan-emblem');
+    await emblem.locator('input[type="file"]').setInputFiles({
+      name: 'emblem.png',
+      mimeType: 'image/png',
+      buffer: Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+        'base64',
+      ),
+    });
+    await expect(page.getByText(/Emblème reçu/).first()).toBeVisible();
+    await expect(emblem).toContainText('attend la modération');
+    await page.goto('/moderation');
+    await expect(page.getByTestId('mod-emblems')).toContainText(renamed);
+    await page
+      .getByTestId('mod-emblems')
+      .getByRole('listitem')
+      .filter({ hasText: renamed })
+      .getByRole('button', { name: 'Publier' })
+      .click();
+    await expect(page.getByTestId('mod-emblems').filter({ hasText: renamed })).toHaveCount(0);
+    await page.goto('/clan');
+    await ready(page);
+
     await page.getByRole('button', { name: 'Discussion du clan' }).click();
     await expect(page).toHaveURL(/\/messages\/./);
   });
@@ -983,7 +1007,12 @@ test.describe('succès du site', () => {
     await page.goto(`/u/${handle}`);
     await page.getByRole('link', { name: new RegExp(`/${SITE_TOTAL}$`) }).click();
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-    await expect(page.locator('main li.card')).toHaveCount(SITE_TOTAL + 1);
+    // Les paliers d'un même succès ne font qu'une carte.
+    const cards = Object.values(SITE_CATEGORIES).reduce(
+      (sum, codes) => sum + groupSeries(codes as readonly string[]).length,
+      0,
+    );
+    await expect(page.locator('main li.card')).toHaveCount(cards);
     await expect(page.locator('main section').last().locator('li.card')).toHaveCount(
       SITE_CATEGORIES.secret.length,
     );
@@ -996,6 +1025,11 @@ test.describe('succès du site', () => {
     const proof = page.locator('main li details').first();
     await proof.locator('summary').click();
     await expect(proof.getByRole('link').first()).toBeVisible();
+
+    // Une carte à viser propose des jeux pour y arriver.
+    const next = page.locator('#ach-cards li details').first();
+    await next.locator('summary').click();
+    await expect(next.getByTestId('ach-ideas')).toContainText(/%|Aucun jeu/);
 
     // Les filtres et les sections repliables.
     const earned = await page.locator('main li.card:not(.opacity-70)').count();

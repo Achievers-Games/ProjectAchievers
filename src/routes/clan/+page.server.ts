@@ -1,6 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { z } from 'zod';
 import { requireLogin } from '$lib/server/auth';
+import { removeClanImage, setClanImage, type ImageFailure } from '$lib/server/clan-image';
 import { db } from '$lib/server/db';
 import { rateLimit } from '$lib/server/rate-limit';
 import { grantSiteAchievement } from '$lib/server/site-achievements';
@@ -23,6 +24,8 @@ import { isProfane } from '$lib/profanity';
 import type { Actions, PageServerLoad } from './$types';
 
 const INVITES_PER_HOUR = 30;
+/** Chaque envoi passe par l'analyse d'image : pas question d'en faire une boucle. */
+const IMAGES_PER_HOUR = 10;
 
 const requireUser = (locals: App.Locals) => requireLogin(locals, '/clan');
 
@@ -35,6 +38,13 @@ const ERRORS: Partial<Record<SocialFailure, () => string>> = {
 };
 
 const failed = (failure: SocialFailure) => fail(409, { error: (ERRORS[failure] ?? m.gone)() });
+
+const IMAGE_ERRORS: Record<ImageFailure, () => string> = {
+  owner_only: m.clan_owner_only,
+  image_invalid: m.clan_image_invalid,
+  image_too_big: m.clan_image_too_big,
+  image_refused: m.clan_image_refused,
+};
 
 const clanName = z
   .string()
@@ -55,7 +65,10 @@ export const load: PageServerLoad = async ({ locals }) => {
     friendsOverview(user.id),
   ]);
   const members = new Set(membership?.clan.members.map((member) => member.user.id));
+  const clan = membership?.clan;
   return {
+    // Ses membres voient l'emblème même quand il attend la modération.
+    emblem: clan?.imageAt ? `/clans/${clan.slug}/image?v=${clan.imageAt.getTime()}` : null,
     membership,
     invites,
     invitable: membership?.owner ? friends.filter((friend) => !members.has(friend.id)) : [],
@@ -76,6 +89,21 @@ export const actions: Actions = {
     if (!name.success) return fail(400, { error: name.error.issues[0]?.message });
     const failure = await renameClan(user.id, name.data);
     return failure ? failed(failure) : { success: m.clan_renamed() };
+  },
+  image: async ({ request, locals }) => {
+    const user = requireUser(locals);
+    if (!rateLimit(`clan-image:${user.id}`, IMAGES_PER_HOUR, 3_600_000)) {
+      return fail(429, { error: m.too_fast() });
+    }
+    const file = (await request.formData()).get('image');
+    if (!(file instanceof File) || !file.size) return fail(400, { error: m.clan_image_invalid() });
+    const result = await setClanImage(user.id, file);
+    if ('failure' in result) return fail(400, { error: IMAGE_ERRORS[result.failure]() });
+    return { success: result.pending ? m.clan_image_pending() : m.clan_image_saved() };
+  },
+  removeImage: async ({ locals }) => {
+    const failure = await removeClanImage(requireUser(locals).id);
+    if (failure) return failed(failure);
   },
   invite: async ({ request, locals }) => {
     const user = requireUser(locals);

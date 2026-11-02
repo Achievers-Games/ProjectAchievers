@@ -1419,3 +1419,21 @@
 .game-card *::after {
   animation-delay: calc(var(--phase, 0) * -6s);
 }
+
+/* Les cadres de clan : un blason qui tourne, du bronze à l'or. */
+.avatar-frame[data-frame='clan-1'] {
+  --frame: repeating-conic-gradient(from var(--spin, 0deg), #6b4fd8 0 30deg, #c08457 30deg 60deg);
+  animation: frame-spin 12s linear infinite;
+}
+.avatar-frame[data-frame='clan-2'] {
+  --ring: 3px;
+  --frame: repeating-conic-gradient(from var(--spin, 0deg), #6b4fd8 0 30deg, #d9e2ec 30deg 60deg);
+  animation: frame-spin 10s linear infinite;
+  box-shadow: 0 0 8px rgb(129 140 248 / 0.45);
+}
+.avatar-frame[data-frame='clan-3'] {
+  --ring: 3px;
+  --frame: repeating-conic-gradient(from var(--spin, 0deg), #4338ca 0 30deg, #f7c448 30deg 60deg);
+  animation: frame-spin 8s linear infinite;
+  box-shadow: 0 0 12px rgb(247 196 72 / 0.55);
+}

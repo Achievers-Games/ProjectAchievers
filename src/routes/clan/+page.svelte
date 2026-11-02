@@ -3,18 +3,66 @@
   import { enhance } from '$app/forms';
   import ActionButton from '$lib/components/ActionButton.svelte';
   import Avatar from '$lib/components/Avatar.svelte';
+  import { frameLabel, isFrame } from '$lib/frames';
   import Empty from '$lib/components/Empty.svelte';
   import SocialNav from '$lib/components/SocialNav.svelte';
   import { submitWithToast } from '$lib/forms';
 
   let { data } = $props();
   const submit = submitWithToast();
+
+  const EMBLEM_SIZE = 256;
+  /** Le navigateur recadre et réduit l'image : le serveur ne reçoit qu'un petit carré. */
+  async function shrink(file: File) {
+    const bitmap = await createImageBitmap(file);
+    const side = Math.min(bitmap.width, bitmap.height);
+    const canvas = document.createElement('canvas');
+    canvas.width = EMBLEM_SIZE;
+    canvas.height = EMBLEM_SIZE;
+    canvas
+      .getContext('2d')
+      ?.drawImage(
+        bitmap,
+        (bitmap.width - side) / 2,
+        (bitmap.height - side) / 2,
+        side,
+        side,
+        0,
+        0,
+        EMBLEM_SIZE,
+        EMBLEM_SIZE,
+      );
+    const blob = await new Promise<Blob | null>((done) => canvas.toBlob(done, 'image/webp', 0.85));
+    return blob ? new File([blob], 'emblem', { type: blob.type }) : file;
+  }
+
+  async function pick(event: Event & { currentTarget: HTMLInputElement }) {
+    const input = event.currentTarget;
+    const file = input.files?.[0];
+    if (!file) return;
+    const small = await shrink(file).catch(() => file);
+    const transfer = new DataTransfer();
+    transfer.items.add(small);
+    input.files = transfer.files;
+    input.form?.requestSubmit();
+  }
 </script>
 
 <svelte:head><title>{m.nav_clan()} — Project Achievers</title></svelte:head>
 
 <div class="mx-auto max-w-2xl space-y-6">
-  <h1>{data.membership?.clan.name ?? m.nav_clan()}</h1>
+  <div class="flex items-center gap-3">
+    {#if data.membership}
+      <Avatar
+        name={data.membership.clan.name}
+        src={data.emblem}
+        frame={data.membership.clan.frame}
+        size={56}
+        play="always"
+      />
+    {/if}
+    <h1>{data.membership?.clan.name ?? m.nav_clan()}</h1>
+  </div>
   <SocialNav />
   <a href="/clans" class="text-sm text-muted hover:text-ink">{m.clans_all()}</a>
 
@@ -70,6 +118,42 @@
         <button class="btn btn-danger">{m.clan_leave()}</button>
       </form>
     </div>
+
+    {#if data.membership.owner}
+      <section class="card space-y-2 p-4" data-testid="clan-emblem">
+        <h2 class="text-base">{m.clan_image_title()}</h2>
+        <p class="text-sm text-muted">{m.clan_image_help()}</p>
+        {#if data.membership.clan.imagePending}
+          <p class="text-sm text-muted">{m.clan_image_waiting()}</p>
+        {/if}
+        <div class="flex flex-wrap items-center gap-2">
+          <form method="POST" action="?/image" enctype="multipart/form-data" use:enhance={submit}>
+            <label class="btn">
+              {m.clan_image_choose()}
+              <input
+                type="file"
+                name="image"
+                accept="image/png,image/jpeg,image/webp,image/gif"
+                class="sr-only"
+                onchange={pick}
+              />
+            </label>
+          </form>
+          {#if data.emblem}
+            <form method="POST" action="?/removeImage" use:enhance={submit}>
+              <button class="btn btn-danger">{m.clan_image_remove()}</button>
+            </form>
+          {/if}
+        </div>
+        {#if data.membership.clan.frame && isFrame(data.membership.clan.frame)}
+          <p class="text-xs text-muted">
+            {m.clan_frame_current({ frame: frameLabel(data.membership.clan.frame) })}
+          </p>
+        {:else}
+          <p class="text-xs text-muted">{m.clan_frame_none()}</p>
+        {/if}
+      </section>
+    {/if}
 
     <section class="space-y-2">
       <h2>{m.clan_members()}</h2>

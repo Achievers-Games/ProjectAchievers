@@ -216,16 +216,35 @@ model Block {
 }
 
 model Clan {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  slug        String   @unique
-  createdAt   DateTime @default(now())
+  id           String    @id @default(cuid())
+  name         String    @unique
+  slug         String    @unique
+  createdAt    DateTime  @default(now())
   /// Le nom retiré par la modération : tant qu'il est là, le chef doit en choisir un autre.
-  flaggedName String?
+  flaggedName  String?
+  /// L'emblème, déjà réduit à 256 px par le navigateur ; servi par /clans/<slug>/image.
+  image        Bytes?
+  imageType    String?
+  imageAt      DateTime?
+  /// L'analyse automatique n'a pas su trancher : l'emblème attend la modération.
+  imagePending Boolean   @default(false)
+  /// Le plus beau cadre gagné par le clan, porté par l'emblème.
+  frame        String?
 
   members      ClanMember[]
   invites      ClanInvite[]
+  unlocks      ClanUnlock[]
   conversation Conversation?
+}
+
+/// Un succès gagné par le clan entier : ses membres du moment le reçoivent aussi.
+model ClanUnlock {
+  clanId     String
+  clan       Clan     @relation(fields: [clanId], references: [id], onDelete: Cascade)
+  code       String
+  unlockedAt DateTime @default(now())
+
+  @@id([clanId, code])
 }
 
 /// Un joueur appartient à un seul clan à la fois.

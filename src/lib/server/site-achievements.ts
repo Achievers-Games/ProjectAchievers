@@ -2,19 +2,33 @@ import { Prisma, type Platform, type Provider } from '@prisma/client';
 import { m } from '$lib/paraglide/messages';
 import { SEASON, seasonState } from '$lib/season';
 import {
+  CLAN_CODES,
   EVENT_CODES,
   SECRET_CODES,
   SITE_CATEGORIES,
   SITE_CODES,
   genreOf,
+  groupSeries,
+  seriesOf,
+  stepLevel,
   type BaseCode,
+  type ClanKey,
   type SiteCode,
 } from '$lib/site-achievements';
 import { getLocale } from '$lib/paraglide/runtime';
 import { localizeAchievements } from './achievement-texts';
+import { checkClanAchievements, clanFacts } from './clan-achievements';
+import { rateLimit } from './rate-limit';
 import { db } from './db';
-import { GENRE_ICON, ICON_PATHS, SITE_ICON, UNKNOWN_ICON, type IconName } from './site-icons';
-import { seasonStats, userCards } from './queries';
+import {
+  GENRE_ICON,
+  ICON_PATHS,
+  SERIES_ICON,
+  SITE_ICON,
+  UNKNOWN_ICON,
+  type IconName,
+} from './site-icons';
+import { seasonStats, userCards, visibleGames } from './queries';
 import { publishChat } from './sync/events';
 import {
   evaluateSite,
@@ -34,6 +48,7 @@ const MIN_PLAYERS = 5;
 const FIRST_REAL_DATE = new Date('2000-01-01T00:00:00Z');
 const SECRETS_FOR_LAST_WORD = 10;
 const SEASON_CACHE = 10 * 60 * 1000;
+const CLAN_CHECK_EVERY = 10 * 60 * 1000;
 const WEEK = 7 * 24 * 60 * 60 * 1000;
 const CHECKBOX = /^\s*[-*] \[[ x]\]/gim;
 
@@ -97,6 +112,93 @@ async function sharedFinish(userId: string, friends: string[]) {
      AND other."lastUnlockedAt"::date = mine."lastUnlockedAt"::date
     WHERE mine."userId" = ${userId} AND mine.completion >= 100
       AND other."userId" IN (${Prisma.join(friends)})
+    LIMIT 1`;
+  return rows[0]?.id ?? null;
+}
+
+const NO_FRIEND_COUNTS: SiteFacts['friendCounts'] = {
+  duo: 0,
+  revenge: 0,
+  teammates: 0,
+  synchro: 0,
+  prescriber: 0,
+  same_taste: 0,
+};
+
+/** Ce que le joueur a fait avec ses amis : jeux finis à deux, revanches, jours en synchro… */
+async function friendCounts(userId: string, friends: string[]) {
+  if (!friends.length) return NO_FRIEND_COUNTS;
+  const ids = Prisma.join(friends);
+  const [finishes, synchro, prescriber, taste] = await Promise.all([
+    db.$queryRaw<{ duo: number; revenge: number; teammates: number }[]>`
+      SELECT count(DISTINCT mine."gameId")::int AS duo,
+        (count(DISTINCT mine."gameId")
+          FILTER (WHERE other."lastUnlockedAt" < mine."lastUnlockedAt"))::int AS revenge,
+        (count(DISTINCT mine."gameId") FILTER (
+          WHERE abs(extract(epoch FROM other."lastUnlockedAt" - mine."lastUnlockedAt")) <= 604800
+        ))::int AS teammates
+      FROM "UserGame" mine
+      JOIN "UserGame" other ON other."gameId" = mine."gameId" AND other.completion >= 100
+       AND other."userId" IN (${ids})
+      WHERE mine."userId" = ${userId} AND mine.completion >= 100 AND NOT mine.hidden`,
+    db.$queryRaw<{ n: number }[]>`
+      SELECT count(DISTINCT mine."unlockedAt"::date)::int AS n
+      FROM "UserAchievement" mine
+      JOIN "Achievement" a ON a.id = mine."achievementId"
+      WHERE mine."userId" = ${userId} AND mine."unlockedAt" >= ${FIRST_REAL_DATE}
+        AND EXISTS (
+          SELECT 1 FROM "UserAchievement" o
+          JOIN "Achievement" b ON b.id = o."achievementId"
+          WHERE o."userId" IN (${ids}) AND b."gameId" = a."gameId"
+            AND o."unlockedAt"::date = mine."unlockedAt"::date
+        )`,
+    db.$queryRaw<{ n: number }[]>`
+      SELECT count(DISTINCT mine."gameId")::int AS n
+      FROM "UserGame" mine
+      WHERE mine."userId" = ${userId} AND mine.completion >= 100 AND NOT mine.hidden
+        AND mine."lastUnlockedAt" IS NOT NULL
+        AND EXISTS (
+          SELECT 1 FROM "UserGame" other
+          WHERE other."gameId" = mine."gameId" AND other."userId" IN (${ids})
+            AND other."unlockedCount" > 0
+            AND (
+              SELECT min(ua."unlockedAt") FROM "UserAchievement" ua
+              JOIN "Achievement" a ON a.id = ua."achievementId"
+              WHERE ua."userId" = other."userId" AND a."gameId" = other."gameId"
+            ) > mine."lastUnlockedAt"
+        )`,
+    db.$queryRaw<{ n: number }[]>`
+      SELECT coalesce(max(shared), 0)::int AS n FROM (
+        SELECT count(*) AS shared FROM "UserGame" mine
+        JOIN "UserGame" other ON other."gameId" = mine."gameId" AND other."userId" IN (${ids})
+        WHERE mine."userId" = ${userId}
+        GROUP BY other."userId"
+      ) pairs`,
+  ]);
+  return {
+    duo: finishes[0]?.duo ?? 0,
+    revenge: finishes[0]?.revenge ?? 0,
+    teammates: finishes[0]?.teammates ?? 0,
+    synchro: synchro[0]?.n ?? 0,
+    prescriber: prescriber[0]?.n ?? 0,
+    same_taste: taste[0]?.n ?? 0,
+  };
+}
+
+/** Un jeu laissé à moins de 10 %, qu'un ami commence plus d'un mois après l'abandon. */
+async function badInfluence(userId: string, friends: string[]) {
+  if (!friends.length) return null;
+  const rows = await db.$queryRaw<{ id: string }[]>`
+    SELECT mine."gameId" AS id FROM "UserGame" mine
+    WHERE mine."userId" = ${userId} AND mine.completion < 10 AND mine."unlockedCount" > 0
+      AND NOT mine.hidden AND mine."lastUnlockedAt" IS NOT NULL
+      AND EXISTS (
+        SELECT 1 FROM "UserAchievement" ua
+        JOIN "Achievement" a ON a.id = ua."achievementId"
+        WHERE ua."userId" IN (${Prisma.join(friends)}) AND a."gameId" = mine."gameId"
+        GROUP BY ua."userId"
+        HAVING min(ua."unlockedAt") > mine."lastUnlockedAt" + interval '30 days'
+      )
     LIMIT 1`;
   return rows[0]?.id ?? null;
 }
@@ -211,6 +313,8 @@ async function loadFacts(userId: string, earned: Set<string>): Promise<SiteFacts
     firstEver,
     onlyOne,
     season,
+    withFriends,
+    influence,
   ] = await Promise.all([
     clan ? db.clanMember.count({ where: { clanId: clan.clanId } }) : 0,
     db.message.count({ where: { authorId: userId } }),
@@ -226,6 +330,16 @@ async function loadFacts(userId: string, earned: Set<string>): Promise<SiteFacts
     missing('first_ever') ? pioneer(userId, false) : null,
     missing('only_one') ? pioneer(userId, true) : null,
     seasonFacts(userId, now),
+    // Inutile de recompter ce qui a déjà atteint son dernier palier.
+    missing('duo_15') ||
+    missing('revenge_15') ||
+    missing('teammates_10') ||
+    missing('synchro_50') ||
+    missing('prescriber_15') ||
+    missing('same_taste_100')
+      ? friendCounts(userId, friends)
+      : null,
+    missing('bad_influence') ? badInfluence(userId, friends) : null,
   ]);
 
   const providers = user.accounts.map((account) => account.provider);
@@ -281,6 +395,8 @@ async function loadFacts(userId: string, earned: Set<string>): Promise<SiteFacts
     perfectClan,
     firstEver,
     onlyOne,
+    friendCounts: withFriends ?? NO_FRIEND_COUNTS,
+    badInfluence: influence,
   };
 }
 
@@ -289,6 +405,13 @@ async function loadFacts(userId: string, earned: Set<string>): Promise<SiteFacts
  * reste muette, pour ne pas inonder un joueur qui arrive avec tout son historique.
  */
 export async function checkSiteAchievements(userId: string) {
+  // Le clan se relit avec ses membres, mais pas à chaque synchro de chacun d'eux.
+  const member = await db.clanMember.findUnique({ where: { userId }, select: { clanId: true } });
+  if (member && rateLimit(`clan-succes:${member.clanId}`, 1, CLAN_CHECK_EVERY)) {
+    await checkClanAchievements(member.clanId).catch((cause) =>
+      console.error('Succès de clan :', cause),
+    );
+  }
   const rows = await db.siteUnlock.findMany({
     where: { userId },
     select: { code: true, proof: true },
@@ -347,10 +470,13 @@ export async function grantSiteAchievement(userId: string, code: SiteCode) {
 type Message = (params?: Record<string, string | number>) => string;
 const message = (key: string, params?: Record<string, string | number>) =>
   (m as unknown as Record<string, Message>)[key]!(params);
-export const siteTitle = (code: string) => message(`ach_${code}_title`);
+/** Les paliers d'une série d'amis ou de clan partagent un titre. */
+export const siteTitle = (code: string) => message(`ach_${seriesOf(code)?.key ?? code}_title`);
 
 /** Les genres partagent un modèle de texte ; les autres succès ont le leur. */
 function siteText(code: string) {
+  const series = seriesOf(code);
+  if (series) return message(`ach_${series.key}_text`, { count: series.count });
   const genre = genreOf(code);
   if (!genre) return message(`ach_${code}_text`);
   const params = { genre: message(`genre_${genre.key}`), count: genre.count };
@@ -359,7 +485,9 @@ function siteText(code: string) {
 
 const iconOf = (code: string): IconName => {
   const genre = genreOf(code);
-  return genre ? GENRE_ICON[genre.key] : SITE_ICON[code as BaseCode];
+  const series = seriesOf(code);
+  if (genre) return GENRE_ICON[genre.key];
+  return series ? SERIES_ICON[series.key] : SITE_ICON[code as BaseCode];
 };
 const CATEGORY_OF = new Map(
   Object.entries(SITE_CATEGORIES).flatMap(([category, codes]) =>
@@ -372,7 +500,7 @@ export const sitePop = (code: string) => ({
   title: siteTitle(code),
   icon: ICON_PATHS[iconOf(code)],
   category: CATEGORY_OF.get(code) ?? 'start',
-  level: genreOf(code)?.level ?? 0,
+  level: genreOf(code)?.level ?? seriesOf(code)?.level ?? 0,
 });
 
 export const siteAchievementCount = (userId: string) =>
@@ -439,20 +567,42 @@ export async function siteAchievementBoard(
   const icons = new Set<IconName>([UNKNOWN_ICON]);
   const categories = Object.entries(SITE_CATEGORIES).map(([category, codes]) => ({
     category,
-    items: codes.map((code) => {
-      const revealed = revealedCode(code);
-      const icon = revealed ? iconOf(code) : UNKNOWN_ICON;
+    earned: codes.filter((code) => dates.has(code)).length,
+    size: codes.length,
+    // Les paliers d'un même succès forment une carte : le dernier obtenu, puis le suivant à viser.
+    items: groupSeries(codes as readonly string[]).map((steps) => {
+      const reached = steps.findLastIndex((code) => dates.has(code));
+      const target = steps.find((code) => !dates.has(code)) ?? steps.at(-1)!;
+      const shown = steps.indexOf(target);
+      const revealed = revealedCode(target);
+      const icon = revealed ? iconOf(target) : UNKNOWN_ICON;
       icons.add(icon);
+      const levelOf = (code: string, at: number) =>
+        genreOf(code)?.level ?? seriesOf(code)?.level ?? stepLevel(at, steps.length);
       return {
         // Le numéro n'apprend rien, contrairement au code d'un secret.
         key: index++,
-        title: revealed ? siteTitle(code) : null,
-        text: revealed ? siteText(code) : null,
-        unlockedAt: dates.get(code) ?? null,
+        code: revealed ? target : null,
+        title: revealed ? siteTitle(target) : null,
+        text: revealed ? siteText(target) : null,
+        // La date et le badge sont ceux du dernier palier obtenu.
+        unlockedAt: reached >= 0 ? (dates.get(steps[reached]!) ?? null) : null,
+        complete: dates.has(target),
         icon,
-        level: revealed ? (genreOf(code)?.level ?? 0) : 0,
-        proof: proofOf(code),
-        rarity: revealed ? share(code) : null,
+        level: revealed && reached >= 0 ? levelOf(steps[reached]!, reached) : 0,
+        proof: reached >= 0 ? proofOf(steps[reached]!) : null,
+        rarity: revealed ? share(target) : null,
+        // Seul le joueur lui-même reçoit des idées de jeux, chargées à la demande.
+        suggest: userId === viewerId && !dates.has(target) && suggestable(target),
+        steps:
+          steps.length > 1
+            ? steps.map((code, at) => ({
+                title: siteTitle(code),
+                earned: dates.has(code),
+                level: levelOf(code, at),
+                current: at === shown,
+              }))
+            : [],
       };
     }),
   }));
@@ -463,5 +613,112 @@ export async function siteAchievementBoard(
     icons: Object.fromEntries([...icons].map((name) => [name, ICON_PATHS[name]])),
     earned: permanent.filter((code) => dates.has(code)).length,
     total: permanent.length,
+  };
+}
+
+const SUGGESTED = 3;
+/** Ces succès se gagnent en finissant n'importe quel jeu : le plus avancé est le meilleur choix. */
+const ANY_FINISH = /^(cards_\d+|game_\d+|season_finish_\d+)$/;
+const suggestable = (code: string) => genreOf(code) !== null || ANY_FINISH.test(code);
+
+/**
+ * Les jeux qui rapprochent d'un succès du site : d'abord ceux de la bibliothèque, du plus avancé
+ * au moins avancé ; sinon les plus joués du site, sur une plateforme déjà liée.
+ */
+export async function siteSuggestions(userId: string, code: string, showAdult = false) {
+  const genre = genreOf(code);
+  if (!suggestable(code)) return null;
+  const game = {
+    ...visibleGames(showAdult),
+    ...(genre ? { tags: { hasSome: [...genre.tags] } } : {}),
+    totalAchievements: { gt: 0 },
+  } satisfies Prisma.GameWhereInput;
+  const gameSelect = { name: true, slug: true, coverUrl: true, headerUrl: true } as const;
+
+  const mine = await db.userGame.findMany({
+    where: { userId, hidden: false, completion: { lt: 100 }, game },
+    orderBy: [{ completion: 'desc' }, { unlockedCount: 'desc' }],
+    take: SUGGESTED,
+    select: {
+      completion: true,
+      unlockedCount: true,
+      totalCount: true,
+      game: { select: gameSelect },
+    },
+  });
+  if (mine.length || !genre) {
+    return {
+      owned: true,
+      games: mine.map((row) => ({
+        ...row.game,
+        completion: row.completion,
+        left: Math.max(0, row.totalCount - row.unlockedCount),
+      })),
+    };
+  }
+
+  const accounts = await db.linkedAccount.findMany({
+    where: { userId, provider: { in: GAME_PROVIDERS } },
+    select: { provider: true },
+  });
+  const platforms = [...new Set(accounts.map((account) => account.provider))] as Platform[];
+  const others = await db.game.findMany({
+    where: { ...game, platform: { in: platforms }, players: { none: { userId } } },
+    orderBy: { players: { _count: 'desc' } },
+    take: SUGGESTED,
+    select: { ...gameSelect, totalAchievements: true },
+  });
+  return {
+    owned: false,
+    games: others.map(({ totalAchievements, ...row }) => ({
+      ...row,
+      completion: null,
+      left: totalAchievements,
+    })),
+  };
+}
+
+/** Les succès d'un clan, avec l'avancée de chaque série ; un secret n'apparaît qu'une fois gagné. */
+export async function clanAchievementBoard(clanId: string) {
+  const [owned, facts] = await Promise.all([
+    db.clanUnlock.findMany({ where: { clanId }, select: { code: true, unlockedAt: true } }),
+    clanFacts(clanId),
+  ]);
+  const dates = new Map(owned.map((row) => [row.code, row.unlockedAt]));
+  const secrets = [...CLAN_CODES].filter((code) => SECRET_CODES.has(code) && dates.has(code));
+  const icons = new Set<IconName>();
+  const items = groupSeries([...SITE_CATEGORIES.clan, ...secrets]).map((steps) => {
+    const reached = steps.findLastIndex((code) => dates.has(code));
+    const target = steps.find((code) => !dates.has(code)) ?? steps.at(-1)!;
+    const series = seriesOf(target);
+    const icon = iconOf(target);
+    icons.add(icon);
+    return {
+      code: target,
+      title: siteTitle(target),
+      text: siteText(target),
+      icon,
+      secret: SECRET_CODES.has(target),
+      unlockedAt: reached >= 0 ? (dates.get(steps[reached]!) ?? null) : null,
+      complete: dates.has(target),
+      level: reached >= 0 ? (seriesOf(steps[reached]!)?.level ?? 0) : 0,
+      // L'avancée vers le palier visé : 1 234 succès sur 10 000.
+      progress:
+        series && facts && !dates.has(target)
+          ? { value: facts.counts[series.key as ClanKey], goal: series.count }
+          : null,
+      steps:
+        steps.length > 1
+          ? steps.map((code) => ({
+              title: siteText(code),
+              earned: dates.has(code),
+              level: seriesOf(code)?.level ?? 0,
+            }))
+          : [],
+    };
+  });
+  return {
+    items,
+    icons: Object.fromEntries([...icons].map((name) => [name, ICON_PATHS[name]])),
   };
 }

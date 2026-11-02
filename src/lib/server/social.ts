@@ -3,6 +3,7 @@ import { randomToken } from './crypto';
 import { db } from './db';
 import { censor, isProfane } from '$lib/profanity';
 import { slugify } from '$lib/slug';
+import { clanImageUrl } from './clan-image';
 import { notify } from './push';
 import { publicUser } from './queries';
 import { publishChat } from './sync/events';
@@ -407,6 +408,9 @@ export async function myClan(userId: string) {
           name: true,
           slug: true,
           flaggedName: true,
+          imageAt: true,
+          imagePending: true,
+          frame: true,
           conversation: { select: { id: true } },
           members: {
             orderBy: [{ owner: 'desc' }, { joinedAt: 'asc' }],
@@ -455,6 +459,7 @@ export async function renameClan(userId: string, name: string): Promise<SocialFa
         slug: slugify(name) || `clan-${randomToken(6).toLowerCase()}`,
         flaggedName: null,
       },
+      select: { id: true },
     });
     return null;
   } catch (cause) {
@@ -479,6 +484,7 @@ export async function flagClanName(clanId: string) {
   await db.clan.update({
     where: { id: clanId },
     data: { name: `Clan #${token}`, slug: `clan-${token}`, flaggedName: clan.name },
+    select: { id: true },
   });
   for (const owner of clan.members) {
     notify(owner.userId, 'digest', `clan-nom:${clanId}`, (locale) => ({
@@ -577,17 +583,27 @@ const publicMembers = { user: { isPublic: true } };
 /** Les clans classés par succès cumulés : seuls les profils publics comptent. */
 export async function listClans() {
   const rows = await db.$queryRaw<
-    { name: string; slug: string; members: bigint; achievements: bigint }[]
+    {
+      name: string;
+      slug: string;
+      imageAt: Date | null;
+      imagePending: boolean;
+      frame: string | null;
+      members: bigint;
+      achievements: bigint;
+    }[]
   >`
-    SELECT c.name, c.slug, count(DISTINCT cm."userId") AS members, count(ua."achievementId") AS achievements
+    SELECT c.name, c.slug, c."imageAt", c."imagePending", c.frame,
+      count(DISTINCT cm."userId") AS members, count(ua."achievementId") AS achievements
     FROM "Clan" c
     JOIN "ClanMember" cm ON cm."clanId" = c.id
     JOIN "User" u ON u.id = cm."userId" AND u."isPublic"
     LEFT JOIN "UserAchievement" ua ON ua."userId" = cm."userId"
     GROUP BY c.id
     ORDER BY achievements DESC, c.name`;
-  return rows.map((row) => ({
+  return rows.map(({ imageAt, imagePending, ...row }) => ({
     ...row,
+    image: clanImageUrl({ slug: row.slug, imageAt, imagePending }),
     members: Number(row.members),
     achievements: Number(row.achievements),
   }));
@@ -599,7 +615,11 @@ export async function clanPage(slug: string) {
     where: { slug },
     select: {
       name: true,
+      slug: true,
       createdAt: true,
+      imageAt: true,
+      imagePending: true,
+      frame: true,
       members: {
         where: publicMembers,
         orderBy: { joinedAt: 'asc' },
@@ -625,6 +645,8 @@ export async function clanPage(slug: string) {
   return {
     name: clan.name,
     createdAt: clan.createdAt,
+    image: clanImageUrl(clan),
+    frame: clan.frame,
     members,
     achievements: members.reduce((sum, member) => sum + member.achievements, 0),
   };

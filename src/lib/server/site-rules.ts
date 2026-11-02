@@ -1,9 +1,12 @@
 import type { Platform } from '@prisma/client';
 import {
+  FRIEND_SERIES,
   GENRES,
   SITE_CATEGORIES,
   genreOf,
   type BaseCode,
+  type ClanCode,
+  type FriendKey,
   type SiteCode,
 } from '$lib/site-achievements';
 
@@ -84,6 +87,10 @@ export interface SiteFacts {
   perfectClan: boolean;
   firstEver: string | null;
   onlyOne: string | null;
+  /** Les comptes des séries entre amis : jeux finis à deux, revanches, jours en synchro… */
+  friendCounts: Record<FriendKey, number>;
+  /** Un ami a commencé un jeu que le joueur avait laissé tomber. */
+  badInfluence: string | null;
 }
 
 /** Ce qui a déclenché un succès, pour l'expliquer au joueur. */
@@ -284,7 +291,7 @@ export function evaluateSite(facts: SiteFacts) {
     return run.length === 10 && genreKeys.some((key) => run.every(tagged(GENRES[key].tags)));
   });
 
-  const rules: Record<Exclude<BaseCode, DirectCode>, boolean> = {
+  const rules: Record<Exclude<BaseCode, DirectCode | ClanCode>, boolean> = {
     first_account: platforms.length >= 1,
     two_platforms: platforms.length >= 2,
     three_platforms: platforms.length >= 3,
@@ -395,6 +402,7 @@ export function evaluateSite(facts: SiteFacts) {
     nights_1001: unlockCount > 0 && unlockCount % 1001 === 0,
     forty_two: cardCount > 0 && cardCount % 42 === 0,
     soulmates: facts.soulmates !== null,
+    bad_influence: facts.badInfluence !== null,
     twins: facts.twins !== null,
     perfect_clan: facts.perfectClan,
     grand_slam: copies(2).some(({ lastAt }) => {
@@ -614,15 +622,21 @@ export function evaluateSite(facts: SiteFacts) {
     },
     first_ever: () => gameProof(facts.firstEver ? [facts.firstEver] : []),
     only_one: () => gameProof(facts.onlyOne ? [facts.onlyOne] : []),
+    bad_influence: () => gameProof(facts.badInfluence ? [facts.badInfluence] : []),
   };
 
   const earnedGenres = genreCodes
     .filter(({ count, tags }) => finished.filter(tagged(tags)).length >= count)
     .map(({ code }) => code);
+  const earnedWithFriends = (Object.entries(FRIEND_SERIES) as [FriendKey, readonly number[]][])
+    .flatMap(([key, steps]) => steps.map((step) => ({ code: `${key}_${step}`, key, step })))
+    .filter(({ key, step }) => facts.friendCounts[key] >= step)
+    .map(({ code }) => code);
   return {
     codes: [
       ...(Object.keys(rules) as (keyof typeof rules)[]).filter((code) => rules[code]),
       ...earnedGenres,
+      ...earnedWithFriends,
     ] as SiteCode[],
     proof: (code: SiteCode) => {
       const proof = proofs[code]?.();

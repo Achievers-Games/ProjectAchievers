@@ -77,7 +77,19 @@ export const load: PageServerLoad = async ({ locals }) => {
     },
   });
 
+  // Les emblèmes sur lesquels l'analyse automatique n'a pas su trancher.
+  const emblems = await db.clan.findMany({
+    where: { imagePending: true, imageAt: { not: null } },
+    orderBy: { imageAt: 'asc' },
+    take: 50,
+    select: { id: true, name: true, slug: true, imageAt: true },
+  });
+
   return {
+    emblems: emblems.map((clan) => ({
+      ...clan,
+      url: `/clans/${clan.slug}/image?v=${clan.imageAt!.getTime()}`,
+    })),
     // Le jeton du site ne regarde que les administrateurs, qui le renouvellent.
     psnToken: moderator.role === 'ADMIN' ? await psnTokenState() : undefined,
     feedback,
@@ -104,6 +116,19 @@ export const actions: Actions = {
     await db.feedback.updateMany({
       where: { id: String(form.get('id')) },
       data: { status: status.data },
+    });
+  },
+
+  emblem: async ({ request, locals }) => {
+    requireModerator(locals);
+    const form = await request.formData();
+    const id = String(form.get('id'));
+    await db.clan.updateMany({
+      where: { id, imagePending: true },
+      data:
+        form.get('keep') === '1'
+          ? { imagePending: false }
+          : { image: null, imageType: null, imageAt: null, imagePending: false },
     });
   },
 

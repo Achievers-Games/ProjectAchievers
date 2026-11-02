@@ -15,10 +15,13 @@ import {
 import { grantFrames } from './frames';
 import {
   checkSiteAchievements,
+  clanAchievementBoard,
   reviewNewPlayers,
   grantSiteAchievement,
   siteAchievementBoard,
+  siteSuggestions,
 } from './site-achievements';
+import { checkClanAchievements } from './clan-achievements';
 import { profileSchema, resolveIdentity, updateProfile, type Identity } from './accounts';
 import {
   consolesOf,
@@ -67,7 +70,7 @@ import { ensureGameTexts, localizeAchievements } from './achievement-texts';
 import { refreshDiscordAccounts } from './sync/discord';
 import { UNKNOWN_ICON } from './site-icons';
 import { notePsnToken, psnTokenState, warnPsnToken } from './service-token';
-import { SITE_TOTAL } from '$lib/site-achievements';
+import { GENRES, SITE_TOTAL } from '$lib/site-achievements';
 
 const PREFIX = 'zz-test';
 const STEAM_ID = '76561190000000001';
@@ -2332,6 +2335,147 @@ describe('succès du site', () => {
       ].map((code) => ({ userId: user.id, code })),
     });
     expect(await checkSiteAchievements(user.id)).toEqual(['last_word']);
+  });
+
+  const gameFor = (name: string, tags: number[] = []) =>
+    db.game.create({
+      data: {
+        platform: 'STEAM',
+        platformGameId: `${PREFIX}-${Math.random()}`,
+        name: `${PREFIX} ${name}`,
+        slug: `${PREFIX}-${Math.random().toString(36).slice(2)}`,
+        totalAchievements: 10,
+        tags,
+      },
+    });
+  const unique = (name: string) => `${PREFIX}-${name}-${Math.random().toString(36).slice(2, 8)}`;
+
+  it('regroupe les paliers et propose des jeux pour avancer', async () => {
+    const owner = await withAccount(unique('paliers'));
+    const zombie = GENRES.zombies.tags[0];
+    const near = await gameFor('zombies proche', [zombie]);
+    const far = await gameFor('zombies loin', [zombie]);
+    const other = await gameFor('autre');
+    for (const [game, completion] of [
+      [near, 80],
+      [far, 20],
+      [other, 90],
+    ] as const) {
+      await db.userGame.create({
+        data: {
+          userId: owner.id,
+          gameId: game.id,
+          completion,
+          unlockedCount: completion / 10,
+          totalCount: 10,
+        },
+      });
+    }
+    await db.siteUnlock.create({ data: { userId: owner.id, code: 'g_zombies_1' } });
+
+    const { categories } = await siteAchievementBoard(owner.id, owner.id);
+    const genres = categories.find((entry) => entry.category === 'genres')!;
+    const zombies = genres.items.filter((item) => item.code?.startsWith('g_zombies_'));
+    expect(zombies).toHaveLength(1);
+    expect(zombies[0]).toMatchObject({ code: 'g_zombies_5', suggest: true, complete: false });
+    expect(zombies[0]?.steps.map((step) => step.earned)).toEqual([true, false, false]);
+    expect(
+      (await siteAchievementBoard(owner.id, null)).categories.flatMap((c) => c.items),
+    ).not.toContainEqual(expect.objectContaining({ suggest: true }));
+
+    const ideas = await siteSuggestions(owner.id, 'g_zombies_5');
+    expect(ideas?.owned).toBe(true);
+    expect(ideas?.games.map((game) => game.name)).toEqual([
+      `${PREFIX} zombies proche`,
+      `${PREFIX} zombies loin`,
+    ]);
+    expect(await siteSuggestions(owner.id, 'makeover')).toBeNull();
+  });
+
+  it('compte les jeux finis à deux entre amis', async () => {
+    const me = await withAccount(unique('duo-a'));
+    const friend = await player(unique('duo-b'));
+    await db.friendship.create({
+      data: { requesterId: me.id, addresseeId: friend.id, accepted: true },
+    });
+    const game = await gameFor('duo');
+    const day = 24 * 60 * 60 * 1000;
+    for (const [userId, ago] of [
+      [me.id, 0],
+      [friend.id, 2 * day],
+    ] as const) {
+      await db.userGame.create({
+        data: {
+          userId,
+          gameId: game.id,
+          completion: 100,
+          unlockedCount: 10,
+          totalCount: 10,
+          lastUnlockedAt: new Date(Date.now() - ago),
+        },
+      });
+    }
+    await checkSiteAchievements(me.id);
+    const codes = (await db.siteUnlock.findMany({ where: { userId: me.id } })).map(
+      (row) => row.code,
+    );
+    expect(codes).toEqual(expect.arrayContaining(['duo_1', 'revenge_1', 'teammates_1']));
+    expect(codes).not.toContain('duo_5');
+  });
+
+  it('donne les succès de clan aux membres du moment, pas aux suivants', async () => {
+    const [a, b, c, late] = await Promise.all(
+      ['a', 'b', 'c', 'late'].map((name) => player(unique(`clan-${name}`))),
+    );
+    const clan = await db.clan.create({
+      data: {
+        name: unique('clan'),
+        slug: unique('clan'),
+        members: {
+          create: [a!, b!, c!].map((user, index) => ({ userId: user.id, owner: index === 0 })),
+        },
+      },
+    });
+    const game = await gameFor('raid');
+    for (const user of [a!, b!, c!]) {
+      await db.userGame.create({
+        data: {
+          userId: user.id,
+          gameId: game.id,
+          completion: 100,
+          unlockedCount: 10,
+          totalCount: 10,
+          lastUnlockedAt: new Date(),
+        },
+      });
+    }
+    // Quatre succès déjà gagnés : le cinquième apporte le premier cadre.
+    await db.clanUnlock.createMany({
+      data: ['guild_50000', 'band_25', 'loyal', 'marathon_100'].map((code) => ({
+        clanId: clan.id,
+        code,
+      })),
+    });
+    const gained = await checkClanAchievements(clan.id);
+    expect(gained).toEqual(expect.arrayContaining(['band_3', 'raid_3', 'nobody_behind']));
+    expect(
+      await db.clan.findUniqueOrThrow({ where: { id: clan.id }, select: { frame: true } }),
+    ).toEqual({
+      frame: 'clan-1',
+    });
+    expect(await db.userFrame.count({ where: { userId: c!.id, frame: 'clan-1' } })).toBe(1);
+    expect(gained).not.toContain('raid_5');
+    expect(await db.siteUnlock.count({ where: { userId: b!.id, code: 'raid_3' } })).toBe(1);
+
+    await db.clanMember.create({ data: { userId: late!.id, clanId: clan.id } });
+    await checkClanAchievements(clan.id);
+    expect(await db.siteUnlock.count({ where: { userId: late!.id, code: 'raid_3' } })).toBe(0);
+
+    const board = await clanAchievementBoard(clan.id);
+    expect(board.items.find((item) => item.code.startsWith('band_'))).toMatchObject({
+      code: 'band_10',
+      progress: { value: 4, goal: 10 },
+    });
   });
 });
 

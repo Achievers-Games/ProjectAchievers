@@ -399,6 +399,14 @@
     --from: 192 132 252;
     --to: 76 29 149;
   }
+  [data-category='friends'] {
+    --from: 244 114 182;
+    --to: 190 24 93;
+  }
+  [data-category='clan'] {
+    --from: 129 140 248;
+    --to: 67 56 202;
+  }
   [data-category='genres'] {
     --from: 251 113 133;
     --to: 234 88 12;

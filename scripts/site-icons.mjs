@@ -112,6 +112,11 @@ const ICONS = {
   genre_tour_20: 'toolbox',
   genre_tour_30: 'backpack',
   genre_tour_40: 'world',
+  bad_influence: 'devil-mask',
+  insomniacs: 'barn-owl',
+  ghost_clan: 'floating-ghost',
+  nobody_behind: 'meeple-circle',
+  loyal: 'laurel-crown',
 };
 
 /** Un dessin par genre ou thème, commun à tous ses paliers. */
@@ -215,13 +220,38 @@ const GENRE_ICONS = {
   words: 'quill-ink',
   music: 'musical-notes',
 };
+/** Un dessin par série d'amis ou de clan, commun à tous ses paliers. */
+const SERIES_ICONS = {
+  duo: 'high-five',
+  revenge: 'fist',
+  teammates: 'team-idea',
+  synchro: 'time-synchronization',
+  prescriber: 'megaphone',
+  same_taste: 'mirror-mirror',
+  guild: 'knight-banner',
+  clan_collection: 'open-treasure-chest',
+  clan_range: 'rainbow-star',
+  raid: 'dragon-head',
+  clan_night: 'campfire',
+  all_in: 'meeple-group',
+  marathon: 'running-shoe',
+  together_season: 'calendar',
+  band: 'meeple-army',
+};
 const UNKNOWN = 'uncertainty';
 
 const require = createRequire(import.meta.url);
 const set = JSON.parse(
   readFileSync(require.resolve('@iconify-json/game-icons/icons.json'), 'utf8'),
 );
-const names = [...new Set([...Object.values(ICONS), ...Object.values(GENRE_ICONS), UNKNOWN])];
+const names = [
+  ...new Set([
+    ...Object.values(ICONS),
+    ...Object.values(GENRE_ICONS),
+    ...Object.values(SERIES_ICONS),
+    UNKNOWN,
+  ]),
+];
 const missing = names.filter((name) => !set.icons[name]);
 if (missing.length) {
   console.error('Icônes introuvables :', missing.join(', '));
@@ -236,7 +266,7 @@ writeFileSync(
   'src/lib/server/site-icons.ts',
   `// Généré par scripts/site-icons.mjs : ne pas modifier à la main.
 // Icônes de game-icons.net (Lorc, Delapouite et contributeurs), sous licence CC BY 3.0.
-import type { BaseCode, GenreKey } from '$lib/site-achievements';
+import type { BaseCode, GenreKey, SeriesKey } from '$lib/site-achievements';
 
 /** Les dessins, en tracé SVG sur 512 × 512. */
 export const ICON_PATHS = {
@@ -251,6 +281,10 @@ ${record(ICONS)}
 
 export const GENRE_ICON: Record<GenreKey, IconName> = {
 ${record(GENRE_ICONS)}
+};
+
+export const SERIES_ICON: Record<SeriesKey, IconName> = {
+${record(SERIES_ICONS)}
 };
 
 /** Un secret pas encore découvert : rien ne doit trahir sa condition. */

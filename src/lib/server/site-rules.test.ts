@@ -7,6 +7,7 @@ import {
   SITE_CODES,
   THEMES,
   genreOf,
+  seriesOf,
 } from '$lib/site-achievements';
 import {
   earnedCodes,
@@ -46,6 +47,8 @@ const facts = (extra: Partial<SiteFacts> = {}): SiteFacts => ({
   perfectClan: false,
   firstEver: null,
   onlyOne: null,
+  friendCounts: { duo: 0, revenge: 0, teammates: 0, synchro: 0, prescriber: 0, same_taste: 0 },
+  badInfluence: null,
   ...extra,
 });
 
@@ -78,21 +81,34 @@ const unlock = (gameId: string, at: number, extra: Partial<UnlockFact> = {}): Un
 const earned = (extra: Partial<SiteFacts>) => earnedCodes(facts(extra));
 
 describe('succès du site', () => {
-  it('compte 311 succès permanents, dont 29 secrets, tous traduits', () => {
-    expect(SITE_CODES.filter((code) => !EVENT_CODES.has(code))).toHaveLength(311);
+  it('compte 361 succès permanents, dont 32 secrets, tous traduits', () => {
+    expect(SITE_CODES.filter((code) => !EVENT_CODES.has(code))).toHaveLength(361);
     expect(new Set(SITE_CODES).size).toBe(SITE_CODES.length);
-    expect(SITE_CATEGORIES.secret).toHaveLength(29);
+    expect(SITE_CATEGORIES.secret).toHaveLength(32);
     for (const locale of ['fr', 'en', 'de', 'es', 'pt-BR', 'ru', 'ja', 'zh-CN']) {
       const messages = JSON.parse(readFileSync(`messages/${locale}.json`, 'utf8'));
       for (const code of SITE_CODES) {
-        expect(messages[`ach_${code}_title`], `${locale} ${code}`).toBeTruthy();
+        // Les paliers d'une série partagent un titre et un texte.
+        const key = seriesOf(code)?.key ?? code;
+        expect(messages[`ach_${key}_title`], `${locale} ${code}`).toBeTruthy();
         // Le texte d'un genre vient d'un modèle commun.
-        if (!genreOf(code)) expect(messages[`ach_${code}_text`], `${locale} ${code}`).toBeTruthy();
+        if (!genreOf(code)) expect(messages[`ach_${key}_text`], `${locale} ${code}`).toBeTruthy();
       }
       for (const key of [...Object.keys(GENRES), ...Object.keys(THEMES)]) {
         expect(messages[`genre_${key}`], `${locale} ${key}`).toBeTruthy();
       }
     }
+  });
+
+  it('gagne les paliers entre amis selon leurs comptes', () => {
+    const counts = { duo: 5, revenge: 0, teammates: 3, synchro: 0, prescriber: 0, same_taste: 49 };
+    const codes = earnedCodes(facts({ friendCounts: counts }));
+    expect(codes).toEqual(
+      expect.arrayContaining(['duo_1', 'duo_5', 'teammates_1', 'teammates_3', 'same_taste_10']),
+    );
+    expect(codes).not.toContain('duo_15');
+    expect(codes).not.toContain('same_taste_50');
+    expect(codes).not.toContain('revenge_1');
   });
 
   it("n'accorde rien à un profil vide", () => {

@@ -122,6 +122,55 @@ export type GenreCode = StepCodes<typeof GENRES> | StepCodes<typeof THEMES>;
 
 const ALL_GENRES: Record<string, GenreDef> = { ...GENRES, ...THEMES };
 
+/** Les succès entre amis, à paliers : `<série>_<n>` se gagne quand le compte atteint `n`. */
+export const FRIEND_SERIES = {
+  duo: [1, 5, 15],
+  revenge: [1, 5, 15],
+  teammates: [1, 3, 10],
+  synchro: [1, 10, 50],
+  prescriber: [1, 5, 15],
+  same_taste: [10, 50, 100],
+} as const;
+
+/** Les succès de clan : le clan les gagne, ses membres du moment les reçoivent. */
+export const CLAN_SERIES = {
+  guild: [1000, 10000, 50000],
+  clan_collection: [25, 100, 250],
+  clan_range: [5, 10, 20],
+  raid: [3, 5, 10],
+  clan_night: [1, 10, 25],
+  all_in: [1, 4, 12],
+  marathon: [7, 30, 100],
+  together_season: [10, 50, 150],
+  band: [3, 10, 25],
+} as const;
+
+type SeriesCodes<T> = {
+  [K in keyof T]: T[K] extends readonly (infer N extends number)[] ? `${K & string}_${N}` : never;
+}[keyof T];
+export type FriendKey = keyof typeof FRIEND_SERIES;
+export type ClanKey = keyof typeof CLAN_SERIES;
+export type SeriesKey = FriendKey | ClanKey;
+export type FriendCode = SeriesCodes<typeof FRIEND_SERIES>;
+export type ClanSeriesCode = SeriesCodes<typeof CLAN_SERIES>;
+
+const ALL_SERIES: Record<string, readonly number[]> = { ...FRIEND_SERIES, ...CLAN_SERIES };
+
+const seriesCodes = <T extends Record<string, readonly number[]>>(list: T) =>
+  Object.entries(list).flatMap(([key, steps]) =>
+    steps.map((step) => `${key}_${step}`),
+  ) as SeriesCodes<T>[];
+
+/** La série et le palier d'un succès d'amis ou de clan ; `level` va de 1 à 3. */
+export function seriesOf(code: string) {
+  const match = /^([a-z_]+)_(\d+)$/.exec(code);
+  const steps = match && ALL_SERIES[match[1]!];
+  if (!match || !steps) return null;
+  const count = Number(match[2]);
+  const level = steps.indexOf(count) + 1;
+  return level ? { key: match[1] as SeriesKey, count, level } : null;
+}
+
 const stepCodes = <T extends Record<string, GenreDef>>(list: T) =>
   Object.entries(list).flatMap(([key, { steps }]) =>
     steps.map((step) => `g_${key}_${step}`),
@@ -236,8 +285,14 @@ const BASE_CATEGORIES = {
     'mood_swing',
     'dark_hours',
     'comfort_zone',
+    'bad_influence',
+    'insomniacs',
+    'ghost_clan',
   ],
 } as const;
+
+/** Les succès de clan sans palier. */
+const CLAN_SINGLES = ['nobody_behind', 'loyal'] as const;
 
 const GENRE_TOURS = ['genre_tour_10', 'genre_tour_20', 'genre_tour_30', 'genre_tour_40'] as const;
 
@@ -246,6 +301,8 @@ const { secret, ...visible } = BASE_CATEGORIES;
 /** Les secrets ferment la marche. */
 export const SITE_CATEGORIES = {
   ...visible,
+  friends: seriesCodes(FRIEND_SERIES),
+  clan: [...seriesCodes(CLAN_SERIES), ...CLAN_SINGLES],
   genres: [...stepCodes(GENRES), ...GENRE_TOURS],
   themes: stepCodes(THEMES),
   secret,
@@ -254,11 +311,62 @@ export const SITE_CATEGORIES = {
 export type SiteCategory = keyof typeof SITE_CATEGORIES;
 /** Les succès à une règle propre ; ceux des genres se lisent avec `genreOf`. */
 export type BaseCode =
-  (typeof BASE_CATEGORIES)[keyof typeof BASE_CATEGORIES][number] | (typeof GENRE_TOURS)[number];
-export type SiteCode = BaseCode | GenreCode;
+  | (typeof BASE_CATEGORIES)[keyof typeof BASE_CATEGORIES][number]
+  | (typeof GENRE_TOURS)[number]
+  | (typeof CLAN_SINGLES)[number];
+export type SiteCode = BaseCode | GenreCode | FriendCode | ClanSeriesCode;
+/** Gagnés par le clan entier, jamais par un joueur seul : voir `checkClanAchievements`. */
+export type ClanCode = ClanSeriesCode | (typeof CLAN_SINGLES)[number] | 'insomniacs' | 'ghost_clan';
+export const CLAN_CODES = new Set<string>([...SITE_CATEGORIES.clan, 'insomniacs', 'ghost_clan']);
 
 export const SITE_CODES = Object.values(SITE_CATEGORIES).flat() as SiteCode[];
 export const EVENT_CODES = new Set<string>(SITE_CATEGORIES.event);
 export const SECRET_CODES = new Set<string>(SITE_CATEGORIES.secret);
 /** Les succès permanents, ceux du compteur : les événements s'y ajoutent sans compter. */
 export const SITE_TOTAL = SITE_CODES.filter((code) => !EVENT_CODES.has(code)).length;
+
+/** Les succès à paliers hors genres : une seule carte, qui montre le palier suivant. */
+const BASE_SERIES: readonly (readonly SiteCode[])[] = [
+  ['two_platforms', 'three_platforms'],
+  ['cards_1', 'cards_10', 'cards_50', 'cards_100', 'cards_250'],
+  ['gold_1', 'gold_10', 'gold_25'],
+  ['copies2_1', 'copies2_5'],
+  ['game_100', 'game_500'],
+  ['unlocks_100', 'unlocks_1000', 'unlocks_5000', 'unlocks_10000', 'unlocks_20000'],
+  ['rare_1', 'rare_50'],
+  ['hours_100', 'hours_1000'],
+  ['quick_1', 'quick_5'],
+  ['library_500', 'library_1000'],
+  ['stalled_5', 'stalled_25'],
+  ['unfinished_100', 'unfinished_500'],
+  ['one_more_10', 'one_more_50'],
+  ['friend_1', 'friends_10'],
+  ['clan_join', 'clan_5'],
+  ['comment_1', 'comments_50'],
+  ['season_tier2', 'season_tier3'],
+  ['season_finish_1', 'season_finish_3'],
+  GENRE_TOURS,
+];
+const SERIES_OF = new Map(
+  BASE_SERIES.flatMap((codes, index) => codes.map((code) => [code as string, `s${index}`])),
+);
+
+/** Réunit les paliers d'un même succès, dans l'ordre de la liste : `[[cards_1, cards_10…], [makeover]…]`. */
+export function groupSeries<T extends string>(codes: readonly T[]) {
+  const groups = new Map<string, T[]>();
+  for (const code of codes) {
+    const genre = genreOf(code);
+    const series = seriesOf(code);
+    const key = genre
+      ? `g_${genre.key}`
+      : series
+        ? `s_${series.key}`
+        : (SERIES_OF.get(code) ?? code);
+    groups.set(key, [...(groups.get(key) ?? []), code]);
+  }
+  return [...groups.values()];
+}
+
+/** La couleur d'un palier : bronze, argent, or, quel que soit le nombre de paliers. */
+export const stepLevel = (index: number, steps: number) =>
+  steps <= 1 ? 0 : steps <= 3 ? index + 1 : Math.ceil(((index + 1) * 3) / steps);

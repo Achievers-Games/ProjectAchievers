@@ -16,6 +16,8 @@
     time: m.ach_cat_time,
     habits: m.ach_cat_habits,
     social: m.ach_cat_social,
+    friends: m.ach_cat_friends,
+    clan: m.ach_cat_clan,
     season: m.ach_cat_season,
     event: m.ach_cat_event,
     secret: m.ach_cat_secret,
@@ -30,11 +32,34 @@
     { value: 'missing', label: m.ach_filter_missing },
   ];
   let filter = $state<Filter>('all');
+  // Une carte à paliers est à la fois obtenue (ses premiers paliers) et à obtenir (la suite).
   const keep = (item: Item) =>
-    filter === 'all' || (filter === 'earned') === (item.unlockedAt !== null);
+    filter === 'all' || (filter === 'earned' ? item.unlockedAt !== null : !item.complete);
+  interface Suggestion {
+    name: string;
+    slug: string;
+    coverUrl: string | null;
+    headerUrl: string | null;
+    completion: number | null;
+    left: number;
+  }
+  type Suggestions = { owned: boolean; games: Suggestion[] } | null | 'error';
+  // Les idées de jeux ne se chargent qu'à l'ouverture d'une carte, une fois par succès.
+  const suggestions = $state<Record<string, Suggestions | 'loading'>>({});
+  async function loadSuggestions(code: string | null) {
+    if (!code || code in suggestions) return;
+    suggestions[code] = 'loading';
+    try {
+      const response = await fetch(`/api/succes/suggestions?code=${encodeURIComponent(code)}`);
+      suggestions[code] = response.ok ? await response.json() : 'error';
+    } catch {
+      suggestions[code] = 'error';
+    }
+  }
+
   const shown = $derived(
     board.categories
-      .map(({ category, items }) => ({ category, items, visible: items.filter(keep) }))
+      .map((entry) => ({ ...entry, visible: entry.items.filter(keep) }))
       .filter(({ visible }) => visible.length > 0),
   );
 </script>
@@ -54,6 +79,27 @@
     <div class="min-w-0">
       <p class="font-medium">{item.title ?? m.ach_secret_title()}</p>
       <p class="text-sm text-muted">{item.text ?? m.ach_secret_text()}</p>
+      {#if item.steps.length}
+        <ol class="mt-1.5 flex flex-wrap items-center gap-1" aria-label={m.ach_steps_label()}>
+          {#each item.steps as step, at (at)}
+            <li
+              class="step"
+              data-level={step.level || undefined}
+              class:earned={step.earned}
+              class:current={step.current && !item.complete}
+              title={step.title}
+            >
+              <span class="sr-only">{step.title}{step.earned ? ' ✓' : ''}</span>
+            </li>
+          {/each}
+          <li class="ml-1 text-xs text-muted">
+            {m.ach_steps({
+              done: item.steps.filter((step) => step.earned).length,
+              total: item.steps.length,
+            })}
+          </li>
+        </ol>
+      {/if}
       {#if item.unlockedAt || item.rarity !== null}
         <p class="mt-1 text-xs text-muted">
           {#if item.unlockedAt}{formatDate(item.unlockedAt)}{/if}
@@ -64,6 +110,46 @@
         </p>
       {/if}
     </div>
+  </div>
+{/snippet}
+
+{#snippet ideas(state: Suggestions | 'loading' | undefined)}
+  <div class="mt-2 border-t border-line pt-2 text-sm" data-testid="ach-ideas">
+    <p class="label">{m.ach_ideas_label()}</p>
+    {#if state === undefined || state === 'loading'}
+      <p class="mt-1 text-muted">{m.ach_ideas_loading()}</p>
+    {:else if state === 'error' || state === null}
+      <p class="mt-1 text-muted">{m.action_failed()}</p>
+    {:else if !state.games.length}
+      <p class="mt-1 text-muted">{m.ach_ideas_none()}</p>
+    {:else}
+      {#if !state.owned}
+        <p class="mt-1 text-xs text-muted">{m.ach_ideas_catalog()}</p>
+      {/if}
+      <ul class="mt-1 space-y-1">
+        {#each state.games as game (game.slug)}
+          <li class="flex items-center gap-2">
+            {#if game.coverUrl ?? game.headerUrl}
+              <img
+                src={game.coverUrl ?? game.headerUrl}
+                alt=""
+                loading="lazy"
+                class="h-6 w-6 shrink-0 rounded object-cover"
+              />
+            {/if}
+            <a class="min-w-0 flex-1 truncate hover:text-ink" href="/jeux/{game.slug}">
+              {game.name}
+            </a>
+            <span class="tabular shrink-0 text-xs text-muted">
+              {#if game.completion !== null}
+                {formatNumber(Math.floor(game.completion))} % ·
+              {/if}
+              {m.ach_ideas_left({ count: game.left })}
+            </span>
+          </li>
+        {/each}
+      </ul>
+    {/if}
   </div>
 {/snippet}
 
@@ -99,14 +185,14 @@
     </nav>
   </header>
 
-  {#each shown as { category, items, visible } (category)}
+  {#each shown as { category, earned, size, visible } (category)}
     <section class="scroll-mt-20" id="ach-{category}" aria-labelledby="ach-title-{category}">
       <details open class="group space-y-3">
         <summary class="flex cursor-pointer list-none items-center gap-2">
           <h2 id="ach-title-{category}">
             {CATEGORY_LABELS[category]?.()}
             <span class="tabular text-sm text-muted">
-              {items.filter((item) => item.unlockedAt).length}/{items.length}
+              {earned}/{size}
             </span>
           </h2>
           <span class="text-muted transition-transform group-open:rotate-90" aria-hidden="true"
@@ -119,43 +205,52 @@
         <ul class="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
           {#each visible as item (item.key)}
             <li class="card p-3" class:opacity-70={!item.unlockedAt}>
-              {#if item.proof}
-                <details>
+              {#if item.proof || item.suggest}
+                <details
+                  ontoggle={(event) => {
+                    if (item.suggest && event.currentTarget.open) loadSuggestions(item.code);
+                  }}
+                >
                   <summary class="cursor-pointer list-none">{@render line(item, category)}</summary>
-                  <div class="mt-2 border-t border-line pt-2 text-sm">
-                    <p class="label">{m.ach_proof_label()}</p>
-                    <ul class="mt-1 space-y-1">
-                      {#each item.proof.games as game (game.slug)}
-                        <li class="flex items-center gap-2">
-                          {#if game.coverUrl ?? game.headerUrl}
-                            <img
-                              src={game.coverUrl ?? game.headerUrl}
-                              alt=""
-                              loading="lazy"
-                              class="h-6 w-6 shrink-0 rounded object-cover"
-                            />
-                          {/if}
-                          <a class="hover:text-ink" href="/jeux/{game.slug}">{game.name}</a>
-                        </li>
-                      {/each}
-                      {#each item.proof.achievements as achievement (achievement.id)}
-                        <li class="flex items-center gap-2">
-                          {#if achievement.iconUrl}
-                            <img
-                              src={achievement.iconUrl}
-                              alt=""
-                              loading="lazy"
-                              class="h-6 w-6 shrink-0 rounded object-cover"
-                            />
-                          {/if}
-                          <a class="hover:text-ink" href="/succes/{achievement.id}">
-                            {achievement.name}
-                          </a>
-                          <span class="text-muted">· {achievement.game.name}</span>
-                        </li>
-                      {/each}
-                    </ul>
-                  </div>
+                  {#if item.suggest && item.code}
+                    {@render ideas(suggestions[item.code])}
+                  {/if}
+                  {#if item.proof}
+                    <div class="mt-2 border-t border-line pt-2 text-sm">
+                      <p class="label">{m.ach_proof_label()}</p>
+                      <ul class="mt-1 space-y-1">
+                        {#each item.proof.games as game (game.slug)}
+                          <li class="flex items-center gap-2">
+                            {#if game.coverUrl ?? game.headerUrl}
+                              <img
+                                src={game.coverUrl ?? game.headerUrl}
+                                alt=""
+                                loading="lazy"
+                                class="h-6 w-6 shrink-0 rounded object-cover"
+                              />
+                            {/if}
+                            <a class="hover:text-ink" href="/jeux/{game.slug}">{game.name}</a>
+                          </li>
+                        {/each}
+                        {#each item.proof.achievements as achievement (achievement.id)}
+                          <li class="flex items-center gap-2">
+                            {#if achievement.iconUrl}
+                              <img
+                                src={achievement.iconUrl}
+                                alt=""
+                                loading="lazy"
+                                class="h-6 w-6 shrink-0 rounded object-cover"
+                              />
+                            {/if}
+                            <a class="hover:text-ink" href="/succes/{achievement.id}">
+                              {achievement.name}
+                            </a>
+                            <span class="text-muted">· {achievement.game.name}</span>
+                          </li>
+                        {/each}
+                      </ul>
+                    </div>
+                  {/if}
                 </details>
               {:else}
                 {@render line(item, category)}
@@ -182,3 +277,30 @@
     >
   </p>
 </div>
+
+<style>
+  /* Un point par palier : plein une fois obtenu, cerclé pour celui à viser. */
+  .step {
+    --ring: var(--muted);
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 9999px;
+    border: 1.5px solid rgb(var(--ring) / 0.7);
+  }
+  .step[data-level='1'] {
+    --ring: var(--bronze);
+  }
+  .step[data-level='2'] {
+    --ring: var(--silver);
+  }
+  .step[data-level='3'] {
+    --ring: var(--gold);
+  }
+  .step.earned {
+    background: rgb(var(--ring));
+    border-color: rgb(var(--ring));
+  }
+  .step.current {
+    box-shadow: 0 0 0 2px rgb(var(--ink) / 0.35);
+  }
+</style>

@@ -2,10 +2,12 @@
   import { m } from '$lib/paraglide/messages';
   import { enhance } from '$app/forms';
   import Avatar from '$lib/components/Avatar.svelte';
+  import SiteBadge from '$lib/components/SiteBadge.svelte';
   import { formatDate, formatNumber } from '$lib/labels';
 
   let { data } = $props();
   const clan = $derived(data.clan);
+  const achievements = $derived(data.achievements);
 </script>
 
 <svelte:head>
@@ -19,14 +21,24 @@
 <div class="mx-auto max-w-2xl space-y-6">
   <header class="space-y-1">
     <a href="/clans" class="text-sm text-muted hover:text-ink">{m.clans_title()}</a>
-    <h1>{clan.name}</h1>
+    <div class="flex items-center gap-3">
+      <Avatar name={clan.name} src={clan.image} frame={clan.frame} size={56} play="always" />
+      <h1>{clan.name}</h1>
+    </div>
     <p class="text-sm text-muted">{m.clan_founded({ date: formatDate(clan.createdAt) })}</p>
     {#if data.moderator}
-      <form method="POST" action="?/flagName" use:enhance>
-        <button class="btn btn-danger text-xs" title={m.clan_flag_help()}>
-          {m.clan_flag()}
-        </button>
-      </form>
+      <div class="flex flex-wrap gap-2">
+        <form method="POST" action="?/flagName" use:enhance>
+          <button class="btn btn-danger text-xs" title={m.clan_flag_help()}>
+            {m.clan_flag()}
+          </button>
+        </form>
+        {#if clan.image}
+          <form method="POST" action="?/removeImage" use:enhance>
+            <button class="btn btn-danger text-xs">{m.clan_image_remove_mod()}</button>
+          </form>
+        {/if}
+      </div>
     {/if}
   </header>
 
@@ -57,5 +69,53 @@
         </li>
       {/each}
     </ol>
+  </section>
+
+  <section class="space-y-2" data-testid="clan-achievements">
+    <h2>
+      {m.clan_ach_title()}
+      <span class="tabular text-sm text-muted">
+        {achievements.items.filter((item) => item.unlockedAt).length}/{achievements.items.length}
+      </span>
+    </h2>
+    <p class="text-sm text-muted">{m.clan_ach_note()}</p>
+    <ul class="grid gap-2 sm:grid-cols-2">
+      {#each achievements.items as item (item.code)}
+        <li class="card flex gap-3 p-3" class:opacity-70={!item.unlockedAt}>
+          <SiteBadge
+            icon={achievements.icons[item.icon] ?? ''}
+            category={item.secret ? 'secret' : 'clan'}
+            level={item.level}
+            unlocked={item.unlockedAt !== null}
+          />
+          <div class="min-w-0 flex-1">
+            <p class="font-medium">{item.title}</p>
+            <p class="text-sm text-muted">{item.text}</p>
+            {#if item.progress}
+              <div
+                class="mt-1.5 h-1.5 overflow-hidden rounded-full bg-raised"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={item.progress.goal}
+                aria-valuenow={Math.min(item.progress.value, item.progress.goal)}
+                aria-label={item.title}
+              >
+                <div
+                  class="h-full bg-accent"
+                  style:width="{Math.min(100, (item.progress.value / item.progress.goal) * 100)}%"
+                ></div>
+              </div>
+              <p class="tabular mt-0.5 text-xs text-muted">
+                {formatNumber(Math.min(item.progress.value, item.progress.goal))} / {formatNumber(
+                  item.progress.goal,
+                )}
+              </p>
+            {:else if item.unlockedAt}
+              <p class="mt-1 text-xs text-muted">{formatDate(item.unlockedAt)}</p>
+            {/if}
+          </div>
+        </li>
+      {/each}
+    </ul>
   </section>
 </div>
