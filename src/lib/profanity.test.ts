@@ -89,6 +89,8 @@ describe('isProfane', () => {
       'la salope 2000',
       'p u t a i n',
       'ZgegGames',
+      'Nike',
+      'nik ta race',
     ]) {
       expect(isProfane(name)).toBe(true);
     }

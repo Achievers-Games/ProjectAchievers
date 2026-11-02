@@ -3,6 +3,7 @@ import { randomToken } from './crypto';
 import { db } from './db';
 import { censor, isProfane } from '$lib/profanity';
 import { slugify } from '$lib/slug';
+import { checkClanAchievements } from './clan-achievements';
 import { clanImageUrl } from './clan-image';
 import { notify } from './push';
 import { publicUser } from './queries';
@@ -430,14 +431,17 @@ export async function myClan(userId: string) {
 export async function createClan(userId: string, name: string): Promise<SocialFailure | null> {
   if (await db.clanMember.count({ where: { userId } })) return 'in_clan';
   try {
-    await db.clan.create({
+    const clan = await db.clan.create({
       data: {
         name,
         slug: slugify(name) || `clan-${randomToken(6).toLowerCase()}`,
         members: { create: { userId, owner: true } },
         conversation: { create: { members: { create: { userId } } } },
       },
+      select: { id: true },
     });
+    // Le clan hérite tout de suite de l'historique de son fondateur.
+    await checkClanAchievements(clan.id);
     return null;
   } catch (cause) {
     if (cause instanceof Prisma.PrismaClientKnownRequestError && cause.code === 'P2002') {
@@ -543,6 +547,8 @@ export async function acceptClanInvite(
     db.clanMember.create({ data: { clanId, userId } }),
     db.conversationMember.create({ data: { conversationId: conversation.id, userId } }),
   ]);
+  // Un nouveau membre peut faire franchir un palier au clan : il le partage alors avec lui.
+  await checkClanAchievements(clanId);
   return null;
 }
 

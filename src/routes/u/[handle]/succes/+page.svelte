@@ -1,5 +1,6 @@
 <script lang="ts">
   import SiteBadge from '$lib/components/SiteBadge.svelte';
+  import StepDots from '$lib/components/StepDots.svelte';
   import { formatDate, formatNumber } from '$lib/labels';
   import { m } from '$lib/paraglide/messages';
 
@@ -80,25 +81,7 @@
       <p class="font-medium">{item.title ?? m.ach_secret_title()}</p>
       <p class="text-sm text-muted">{item.text ?? m.ach_secret_text()}</p>
       {#if item.steps.length}
-        <ol class="mt-1.5 flex flex-wrap items-center gap-1" aria-label={m.ach_steps_label()}>
-          {#each item.steps as step, at (at)}
-            <li
-              class="step"
-              data-level={step.level || undefined}
-              class:earned={step.earned}
-              class:current={step.current && !item.complete}
-              title={step.title}
-            >
-              <span class="sr-only">{step.title}{step.earned ? ' ✓' : ''}</span>
-            </li>
-          {/each}
-          <li class="ml-1 text-xs text-muted">
-            {m.ach_steps({
-              done: item.steps.filter((step) => step.earned).length,
-              total: item.steps.length,
-            })}
-          </li>
-        </ol>
+        <StepDots steps={item.steps} />
       {/if}
       {#if item.unlockedAt || item.rarity !== null}
         <p class="mt-1 text-xs text-muted">
@@ -277,30 +260,3 @@
     >
   </p>
 </div>
-
-<style>
-  /* Un point par palier : plein une fois obtenu, cerclé pour celui à viser. */
-  .step {
-    --ring: var(--muted);
-    width: 0.6rem;
-    height: 0.6rem;
-    border-radius: 9999px;
-    border: 1.5px solid rgb(var(--ring) / 0.7);
-  }
-  .step[data-level='1'] {
-    --ring: var(--bronze);
-  }
-  .step[data-level='2'] {
-    --ring: var(--silver);
-  }
-  .step[data-level='3'] {
-    --ring: var(--gold);
-  }
-  .step.earned {
-    background: rgb(var(--ring));
-    border-color: rgb(var(--ring));
-  }
-  .step.current {
-    box-shadow: 0 0 0 2px rgb(var(--ink) / 0.35);
-  }
-</style>

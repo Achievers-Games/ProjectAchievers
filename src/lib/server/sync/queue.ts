@@ -7,6 +7,7 @@ import { fillFamilies, matchFamilies } from '../family';
 import { announceSeason } from '../push';
 import { warnPsnToken } from '../service-token';
 import { flagProfaneClans } from '../social';
+import { checkAllClans } from '../clan-achievements';
 import { rateLimit } from '../rate-limit';
 import { hasRecentFeat, isPublicGame, publicUser, RARE_CARD } from '../queries';
 import { copiesFor, copyKey, type Reward } from '$lib/collection';
@@ -361,6 +362,7 @@ async function sweep() {
   await announceSeason().catch((cause) => console.error('Annonce :', cause));
   await warnPsnToken().catch((cause) => console.error('Jeton PSN :', cause));
   await flagProfaneClans().catch((cause) => console.error('Noms de clan :', cause));
+  await checkAllClans().catch((cause) => console.error('Succès de clan :', cause));
   await refreshDiscordAccounts().catch((cause) => console.error('Discord :', cause));
   await fillHiddenDescriptions().catch((cause) => console.error('Succès cachés :', cause));
   await fillWowCatalog().catch((cause) => console.error('Catalogue WoW :', cause));

@@ -1605,6 +1605,25 @@ describe('amis, clans et discussions', () => {
     expect(await db.clan.findUnique({ where: { name } })).toBeNull();
   });
 
+  it('accorde un palier de clan dès l’arrivée du membre qui le fait franchir', async () => {
+    const [a, b] = await players();
+    const [c] = await players();
+    const name = `${PREFIX} ${Math.random()}`;
+    expect(await createClan(a.id, name)).toBeNull();
+    const { id } = await db.clan.findUniqueOrThrow({ where: { name } });
+    for (const friend of [b, c]) {
+      await requestFriend(a.id, friend.handle);
+      await acceptFriend(friend.id, a.id);
+      await inviteToClan(a.id, friend.id);
+      expect(await acceptClanInvite(friend.id, id)).toBeNull();
+    }
+    expect(await db.clanUnlock.count({ where: { clanId: id, code: 'band_3' } })).toBe(1);
+    for (const member of [a, b, c]) {
+      expect(await db.siteUnlock.count({ where: { userId: member.id, code: 'band_3' } })).toBe(1);
+    }
+    for (const member of [c, b, a]) await leaveClan(member.id);
+  });
+
   it('retire un nom grossier et laisse le chef en choisir un autre', async () => {
     const [a, b] = await players();
     const name = `Zgeg ${Math.random().toString(36).slice(2, 8)}`;

@@ -6,9 +6,10 @@
  */
 // prettier-ignore
 const WORDS = [
-  // Français : « nique* » toucherait « niquel ».
+  // Français : « nique* » toucherait « niquel ». « Nike » s'écrit comme la marque, mais se lit « nique ».
   'bâtard*', 'bougnoule*', 'conard*', 'conasse*', 'connard*', 'connasse*', 'conne', 'couille*',
-  'encul*', 'enfoiré*', 'fdp', 'merde*', 'nègre*', 'nique', 'niquer', 'niquez', 'ntm', 'pédé',
+  'encul*', 'enfoiré*', 'fdp', 'merde*', 'nègre*', 'nik', 'nike', 'niker', 'nikez', 'nique', 'niqué', 'niquer',
+  'niquent', 'niques', 'niquez', 'ntm', 'pédé',
   'pédés', 'pétasse*', 'pouffiasse*', 'putain*', 'pute', 'putes', 'salaud*', 'salope*', 'ta gueule',
   'tepu*', 'youpin*', 'zboub*', 'zgeg*',
   // Anglais : « retard » est un mot ordinaire en français.

@@ -3,6 +3,7 @@
   import { enhance } from '$app/forms';
   import Avatar from '$lib/components/Avatar.svelte';
   import SiteBadge from '$lib/components/SiteBadge.svelte';
+  import StepDots from '$lib/components/StepDots.svelte';
   import { formatDate, formatNumber } from '$lib/labels';
 
   let { data } = $props();
@@ -75,7 +76,7 @@
     <h2>
       {m.clan_ach_title()}
       <span class="tabular text-sm text-muted">
-        {achievements.items.filter((item) => item.unlockedAt).length}/{achievements.items.length}
+        {achievements.earned}/{achievements.total}
       </span>
     </h2>
     <p class="text-sm text-muted">{m.clan_ach_note()}</p>
@@ -91,6 +92,9 @@
           <div class="min-w-0 flex-1">
             <p class="font-medium">{item.title}</p>
             <p class="text-sm text-muted">{item.text}</p>
+            {#if item.steps.length}
+              <StepDots steps={item.steps} />
+            {/if}
             {#if item.progress}
               <div
                 class="mt-1.5 h-1.5 overflow-hidden rounded-full bg-raised"

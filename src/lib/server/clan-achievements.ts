@@ -200,3 +200,11 @@ export async function checkClanAchievements(clanId: string, now = Date.now()) {
   }
   return gained;
 }
+
+/** Le balayage horaire relit chaque clan : un succès peut tomber sans qu'aucun membre se synchronise. */
+export async function checkAllClans() {
+  const clans = await db.clan.findMany({ select: { id: true } });
+  for (const { id } of clans) {
+    await checkClanAchievements(id).catch((cause) => console.error('Succès de clan :', cause));
+  }
+}

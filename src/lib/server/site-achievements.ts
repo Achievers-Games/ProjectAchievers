@@ -573,7 +573,6 @@ export async function siteAchievementBoard(
     items: groupSeries(codes as readonly string[]).map((steps) => {
       const reached = steps.findLastIndex((code) => dates.has(code));
       const target = steps.find((code) => !dates.has(code)) ?? steps.at(-1)!;
-      const shown = steps.indexOf(target);
       const revealed = revealedCode(target);
       const icon = revealed ? iconOf(target) : UNKNOWN_ICON;
       icons.add(icon);
@@ -600,7 +599,6 @@ export async function siteAchievementBoard(
                 title: siteTitle(code),
                 earned: dates.has(code),
                 level: levelOf(code, at),
-                current: at === shown,
               }))
             : [],
       };
@@ -717,8 +715,11 @@ export async function clanAchievementBoard(clanId: string) {
           : [],
     };
   });
+  const permanent = SITE_CATEGORIES.clan as readonly string[];
   return {
     items,
     icons: Object.fromEntries([...icons].map((name) => [name, ICON_PATHS[name]])),
+    earned: permanent.filter((code) => dates.has(code)).length,
+    total: permanent.length,
   };
 }
