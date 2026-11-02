@@ -34,6 +34,10 @@ export const PLATFORM_LABELS: Record<Platform, string> = {
   XBOX: 'Xbox',
 };
 
+/** Une version de jeu : sa console quand on la connaît (PS3, PS4/PS5…), sinon sa plateforme. */
+export const editionLabel = (version: { platform: Platform; console?: string | null }) =>
+  version.console ?? PLATFORM_LABELS[version.platform];
+
 const TROPHY_LABELS: Record<TrophyType, () => string> = {
   PLATINUM: m.trophy_platinum,
   GOLD: m.trophy_gold,

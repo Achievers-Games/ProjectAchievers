@@ -59,9 +59,52 @@ export function difficultyTier(rarest: number | null, achievements: number) {
 /** Terminer une autre version ne change pas le niveau : la carte gagne un exemplaire de plus. */
 export const copiesFor = (platforms: number) => Math.min(platforms, 4);
 
+/** Ce qui fait un exemplaire : la plateforme, ou la console d'une liste PSN (PS3, PS4, PS5…). */
+export const copyKey = (version: { platform: Platform; console?: string | null }) =>
+  version.console ?? version.platform;
+
+const PSN_CONSOLES = ['PS3', 'PS4', 'PS5', 'Vita'];
+
+/** « PS5,PS4 » devient « PS4/PS5 » : une seule liste partagée reste un seul exemplaire. */
+export function psnConsole(raw: string | null | undefined) {
+  const consoles = (raw ?? '')
+    .split(',')
+    .map((name) => (name.trim().toUpperCase() === 'PSVITA' ? 'Vita' : name.trim()))
+    .filter((name) => PSN_CONSOLES.includes(name))
+    .toSorted((a, b) => PSN_CONSOLES.indexOf(a) - PSN_CONSOLES.indexOf(b));
+  return consoles.length ? [...new Set(consoles)].join('/') : null;
+}
+
+const XBOX_DEVICES: Record<string, string> = {
+  Xbox360: '360',
+  XboxOne: 'One',
+  XboxSeries: 'Series',
+  Scarlett: 'Series',
+};
+const XBOX_ORDER = ['360', 'One', 'Series'];
+
+/**
+ * Les appareils d'une liste Xbox : « Xbox 360 » est toujours une liste à part, alors que One,
+ * Series et PC partagent presque toujours la leur. Une liste PC seule reste « PC ».
+ */
+export function xboxConsole(devices: readonly string[] | null | undefined) {
+  const consoles = [...new Set((devices ?? []).flatMap((device) => XBOX_DEVICES[device] ?? []))];
+  if (consoles.length) {
+    return (
+      'Xbox ' + consoles.toSorted((a, b) => XBOX_ORDER.indexOf(a) - XBOX_ORDER.indexOf(b)).join('/')
+    );
+  }
+  return devices?.some((device) => device === 'PC' || device === 'Win32') ? 'PC' : null;
+}
+
+/** Les consoles d'une version, une à une : « Xbox One/Series » donne One et Series. */
+export const consolesOf = (console: string | null | undefined) =>
+  console ? console.replace(/^Xbox /, '').split('/') : [];
+
 export interface NextCopy {
   copies: number;
   platform: Platform;
+  console: string | null;
   completion: number;
 }
 
@@ -69,17 +112,20 @@ export interface NextCopy {
  * Avancement vers l'exemplaire suivant : la version commencée la plus avancée sur une plateforme
  * pas encore finie. Rien tant qu'aucune carte n'est obtenue, ou sans autre version commencée.
  */
-export function nextCopy(versions: { platform: Platform; completion: number }[]): NextCopy | null {
-  const finished = new Set(versions.filter((v) => v.completion >= 100).map((v) => v.platform));
+export function nextCopy(
+  versions: { platform: Platform; console?: string | null; completion: number }[],
+): NextCopy | null {
+  const finished = new Set(versions.filter((v) => v.completion >= 100).map(copyKey));
   if (finished.size === 0) return null;
 
   const started = versions
-    .filter((v) => !finished.has(v.platform) && v.completion > 0)
+    .filter((v) => !finished.has(copyKey(v)) && v.completion > 0)
     .toSorted((a, b) => b.completion - a.completion)[0];
   return started
     ? {
         copies: copiesFor(finished.size + 1),
         platform: started.platform,
+        console: started.console ?? null,
         completion: started.completion,
       }
     : null;

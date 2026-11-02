@@ -1,5 +1,5 @@
 import type { Platform } from '@prisma/client';
-import { copiesFor, nextCopy, type NextCopy } from '$lib/collection';
+import { copiesFor, copyKey, nextCopy, type NextCopy } from '$lib/collection';
 
 interface LibraryRow {
   unlockedCount: number;
@@ -11,6 +11,7 @@ interface LibraryRow {
     name: string;
     slug: string;
     platform: Platform;
+    console?: string | null;
     coverUrl: string | null;
     headerUrl: string | null;
     totalAchievements: number;
@@ -29,7 +30,13 @@ export interface LibraryCard {
   totalAchievements: number;
   progress: { unlockedCount: number; completion: number; platinum: boolean };
   lastUnlockedAt: Date | null;
-  versions: { platform: Platform; name: string; slug: string; completion: number }[];
+  versions: {
+    platform: Platform;
+    console: string | null;
+    name: string;
+    slug: string;
+    completion: number;
+  }[];
   tier: number;
   /** Le niveau de la carte à gagner en finissant la version la plus avancée. */
   target: number;
@@ -40,7 +47,7 @@ export interface LibraryCard {
 /**
  * Réunit les versions d'un jeu en une seule carte, celle de la version la plus avancée.
  * Finir une seule version suffit à obtenir la carte, au niveau de la version finie la plus dure ;
- * chaque autre plateforme lui ajoute un exemplaire.
+ * chaque autre plateforme ou console lui ajoute un exemplaire.
  */
 export function groupLibrary(rows: LibraryRow[]): LibraryCard[] {
   const families = Map.groupBy(rows, (row) => row.game.familyKey ?? row.game.id);
@@ -49,9 +56,10 @@ export function groupLibrary(rows: LibraryRow[]): LibraryCard[] {
     const versions = family.toSorted((a, b) => b.completion - a.completion);
     const best = versions[0] as LibraryRow;
     const done = versions.filter((v) => v.completion >= 100);
-    const finished = new Set(done.map((v) => v.game.platform));
+    const finished = new Set(done.map((v) => copyKey(v.game)));
     const summary = versions.map((v) => ({
       platform: v.game.platform,
+      console: v.game.console ?? null,
       name: v.game.name,
       slug: v.game.slug,
       completion: v.completion,

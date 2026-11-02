@@ -5,11 +5,18 @@ import {
   type TrophyTitle,
 } from 'psn-api';
 import type { TrophyType } from '@prisma/client';
+import { psnConsole } from '$lib/collection';
 import type { Locale } from '$lib/paraglide/runtime';
 import { db } from '../db';
 import { psnAuthorization } from '../providers/psn';
 import { SyncError, syncGames } from './errors';
-import { saveAchievements, saveProgress, upsertGame, type AchievementInput } from './store';
+import {
+  fillConsoles,
+  saveAchievements,
+  saveProgress,
+  upsertGame,
+  type AchievementInput,
+} from './store';
 import type { ProviderSync } from './types';
 
 const PAGE = 800;
@@ -103,6 +110,10 @@ export const syncPsn: ProviderSync = async ({ userId, account, report, onUnlocke
     select: { unlockedCount: true, game: { select: { platformGameId: true } } },
   });
   const known = new Map(previous.map((p) => [p.game.platformGameId, p.unlockedCount]));
+  await fillConsoles(
+    'PSN',
+    new Map(titles.map((t) => [t.npCommunicationId, psnConsole(t.trophyTitlePlatform)])),
+  );
 
   let achievements = 0;
 
@@ -122,6 +133,7 @@ export const syncPsn: ProviderSync = async ({ userId, account, report, onUnlocke
         name: title.trophyTitleName,
         coverUrl: title.trophyTitleIconUrl,
         headerUrl: title.trophyTitleIconUrl,
+        console: psnConsole(title.trophyTitlePlatform),
       });
 
       const catalog = await getTitleTrophies(

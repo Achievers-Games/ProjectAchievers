@@ -18,6 +18,7 @@ export interface GameInput {
   name: string;
   coverUrl?: string | null;
   headerUrl?: string | null;
+  console?: string | null;
 }
 
 export interface AchievementInput {
@@ -46,7 +47,12 @@ async function availableSlug(name: string, platform: Platform, platformGameId: s
 export async function upsertGame(input: GameInput) {
   const key = { platform: input.platform, platformGameId: input.platformGameId };
   const existing = await db.game.findUnique({ where: { platform_platformGameId: key } });
-  const fields = { name: input.name, coverUrl: input.coverUrl, headerUrl: input.headerUrl };
+  const fields = {
+    name: input.name,
+    coverUrl: input.coverUrl,
+    headerUrl: input.headerUrl,
+    console: input.console,
+  };
 
   if (existing) {
     const family =
@@ -61,6 +67,18 @@ export async function upsertGame(input: GameInput) {
       slug: await availableSlug(input.name, input.platform, input.platformGameId),
     },
   });
+}
+
+/** Les jeux déjà connus sans console la reçoivent, même sans nouveau succès à lire. */
+export async function fillConsoles(platform: Platform, consoles: Map<string, string | null>) {
+  const missing = await db.game.findMany({
+    where: { platform, console: null, platformGameId: { in: [...consoles.keys()] } },
+    select: { id: true, platformGameId: true },
+  });
+  for (const game of missing) {
+    const label = consoles.get(game.platformGameId);
+    if (label) await db.game.update({ where: { id: game.id }, data: { console: label } });
+  }
 }
 
 /** Un taux de 0 % veut dire « aucune donnée » : il ne compte pas comme une rareté. */

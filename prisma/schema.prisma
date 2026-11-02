@@ -386,6 +386,8 @@ model Game {
   id                String            @id @default(cuid())
   platform          Platform
   platformGameId    String
+  /// Les consoles d'une liste PSN (« PS4/PS5 ») : chacune compte pour un exemplaire à part.
+  console           String?
   pinnedBy          PinnedGame[]
   translations      GameTranslation[]
   name              String

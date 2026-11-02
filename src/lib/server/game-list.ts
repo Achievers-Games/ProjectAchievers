@@ -1,15 +1,41 @@
 import { error } from '@sveltejs/kit';
 import { z } from 'zod';
+import type { Platform } from '@prisma/client';
 import { m } from '$lib/paraglide/messages';
 import { db } from './db';
 import { listGames, PAGE_SIZE } from './queries';
+
+/** Les consoles se filtrent à part : chacune donne son propre exemplaire. */
+const CONSOLES: Record<string, { platform: Platform; consoles: string[] }> = {
+  PS3: { platform: 'PSN', consoles: ['PS3'] },
+  PS4: { platform: 'PSN', consoles: ['PS4'] },
+  PS5: { platform: 'PSN', consoles: ['PS5'] },
+  VITA: { platform: 'PSN', consoles: ['Vita'] },
+  X360: { platform: 'XBOX', consoles: ['360'] },
+  XONE: { platform: 'XBOX', consoles: ['One', 'Series'] },
+};
 
 export const TIER_FILTERS = ['bronze', 'argent', 'or', 'diamant', 'prismatique', 'legendaire'];
 
 const query = z.object({
   q: z.string().trim().max(80).optional().catch(undefined),
   joueur: z.string().trim().max(24).optional().catch(undefined),
-  plateforme: z.enum(['STEAM', 'PSN', 'XBOX', 'RETRO', 'BLIZZARD']).optional().catch(undefined),
+  plateforme: z
+    .enum([
+      'STEAM',
+      'PSN',
+      'PS3',
+      'PS4',
+      'PS5',
+      'VITA',
+      'XBOX',
+      'X360',
+      'XONE',
+      'RETRO',
+      'BLIZZARD',
+    ])
+    .optional()
+    .catch(undefined),
   tri: z.enum(['nom', 'recent', 'progression', 'succes', 'rarete']).catch('nom'),
   page: z.coerce.number().int().min(1).max(10_000).catch(1),
   vue: z.enum(['grille', 'liste']).catch('grille'),
@@ -51,11 +77,14 @@ export async function gamesFromUrl(url: URL, user: App.Locals['user']) {
   const unfinished = mine && params.filtre === 'restants';
   // La progression n'existe que pour les jeux du joueur.
   const tri = params.tri === 'progression' && !mine ? 'nom' : params.tri;
+  const chosen = params.plateforme ? CONSOLES[params.plateforme] : undefined;
+  const platform = chosen?.platform ?? (params.plateforme as Platform | undefined);
 
   const { games, total } = await listGames(
     {
       q: params.q || undefined,
-      platform: params.plateforme,
+      platform,
+      consoles: chosen?.consoles,
       sort: tri,
       page: params.page,
       ownerId,

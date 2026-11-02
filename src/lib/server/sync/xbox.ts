@@ -11,10 +11,12 @@ import {
   saveAchievements,
   saveProgress,
   upsertGame,
+  fillConsoles,
   type AchievementInput,
   type UnlockInput,
 } from './store';
 import type { ProviderSync } from './types';
+import { xboxConsole } from '$lib/collection';
 
 const CONCURRENCY = 3;
 const MAX_TITLES = 10_000;
@@ -212,6 +214,7 @@ export const syncXbox: ProviderSync = async ({ userId, account, report, onUnlock
     select: { unlockedCount: true, game: { select: { platformGameId: true } } },
   });
   const known = new Map(previous.map((p) => [p.game.platformGameId, p.unlockedCount]));
+  await fillConsoles('XBOX', new Map(titles.map((t) => [t.titleId, xboxConsole(t.devices)])));
 
   let achievements = 0;
   const states = new Map<string, number>();
@@ -228,6 +231,7 @@ export const syncXbox: ProviderSync = async ({ userId, account, report, onUnlock
         name: title.name,
         coverUrl: xboxImage(title.displayImage),
         headerUrl: xboxImage(title.displayImage),
+        console: xboxConsole(title.devices),
       });
 
       const played = title.titleHistory?.lastTimePlayed;

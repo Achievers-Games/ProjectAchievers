@@ -14,7 +14,7 @@
   import { submitWithToast } from '$lib/forms';
   import { HOLO_TIER } from '$lib/collection';
   import CardFx from '$lib/components/CardFx.svelte';
-  import { formatDate, formatPercent, formatRarity, PLATFORM_LABELS } from '$lib/labels';
+  import { editionLabel, formatDate, formatPercent, formatRarity } from '$lib/labels';
   import { getLocale } from '$lib/paraglide/runtime';
   import { isComplete } from '$lib/collection';
 
@@ -95,7 +95,7 @@
     <div class="min-w-0 flex-1 space-y-2">
       <h1>{data.game.name}</h1>
       <p class="text-sm text-muted">
-        {PLATFORM_LABELS[data.game.platform]} · {m.count_achievements({
+        {editionLabel(data.game)} · {m.count_achievements({
           count: data.achievements.length,
         })}
         · {m.count_players({ count: data.players })}
@@ -104,7 +104,7 @@
         <p class="flex flex-wrap gap-2 text-sm">
           {#each data.versions as version (version.slug)}
             <a href="/jeux/{version.slug}" class="btn h-8">
-              {m.version_of({ platform: PLATFORM_LABELS[version.platform] })}
+              {m.version_of({ platform: editionLabel(version) })}
               {#if version.completion !== null}· {formatPercent(version.completion)}{/if}
             </a>
           {/each}
@@ -146,7 +146,7 @@
             <p class="tabular text-sm text-muted">
               {m.next_tier({
                 tier: `×${data.next.copies}`,
-                platform: PLATFORM_LABELS[data.next.platform],
+                platform: editionLabel(data.next),
                 percent: Math.round(data.next.completion),
               })}
             </p>

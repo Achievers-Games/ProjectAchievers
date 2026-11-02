@@ -137,18 +137,35 @@
         : { filtre, tri: null },
     );
 
+  const CONSOLE_PLATFORMS: Record<string, string> = {
+    PS3: 'PSN',
+    PS4: 'PSN',
+    PS5: 'PSN',
+    VITA: 'PSN',
+    X360: 'XBOX',
+    XONE: 'XBOX',
+  };
+
   /** La plateforme filtrée n'a rien à montrer parce que le joueur ne l'a pas liée. */
   const toLink = $derived(
     !data.player && !data.params.q
-      ? data.unlinked.find((platform) => platform === data.params.plateforme)
+      ? data.unlinked.find(
+          (platform) =>
+            platform ===
+            (CONSOLE_PLATFORMS[data.params.plateforme ?? ''] ?? data.params.plateforme),
+        )
       : undefined,
   );
 
   const platforms = [
     { value: null, label: m.games_all_platforms() },
     { value: 'STEAM', label: 'Steam' },
-    { value: 'PSN', label: 'PlayStation' },
-    { value: 'XBOX', label: 'Xbox' },
+    { value: 'PS5', label: 'PS5' },
+    { value: 'PS4', label: 'PS4' },
+    { value: 'PS3', label: 'PS3' },
+    { value: 'VITA', label: 'Vita' },
+    { value: 'XONE', label: 'Xbox One/Series' },
+    { value: 'X360', label: 'Xbox 360' },
     { value: 'RETRO', label: 'Retro' },
     { value: 'BLIZZARD', label: 'Battle.net' },
   ];

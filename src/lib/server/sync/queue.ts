@@ -8,7 +8,7 @@ import { announceSeason } from '../push';
 import { warnPsnToken } from '../service-token';
 import { rateLimit } from '../rate-limit';
 import { hasRecentFeat, isPublicGame, publicUser, RARE_CARD } from '../queries';
-import { copiesFor, type Reward } from '$lib/collection';
+import { copiesFor, copyKey, type Reward } from '$lib/collection';
 import { fillWowCatalog, syncBlizzard } from './blizzard';
 import { rateGames, tagGames } from './content';
 import { refreshDiscordAccounts } from './discord';
@@ -40,7 +40,7 @@ const SYNCERS: Partial<Record<Provider, ProviderSync>> = {
 };
 
 type CardReward = Reward & {
-  game: Parameters<typeof isPublicGame>[0] & { tier: number | null };
+  game: Parameters<typeof isPublicGame>[0] & { tier: number | null; console?: string | null };
 };
 
 interface SyncJob {
@@ -144,6 +144,7 @@ async function rareCards(userId: string) {
           name: true,
           slug: true,
           platform: true,
+          console: true,
           headerUrl: true,
           totalAchievements: true,
           adultOnly: true,
@@ -203,7 +204,7 @@ async function announceCards(user: SyncUser, userId: string, before: Map<string,
       return {
         ...card,
         tier: Math.max(...family.map(({ game }) => game.tier ?? 1)),
-        copies: copiesFor(new Set(family.map(({ game }) => game.platform)).size),
+        copies: copiesFor(new Set(family.map(({ game }) => copyKey(game))).size),
       };
     })
     .filter(({ game }) => user.showAdult || !game.adultOnly);

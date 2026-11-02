@@ -20,7 +20,15 @@ import {
   siteAchievementBoard,
 } from './site-achievements';
 import { profileSchema, resolveIdentity, updateProfile, type Identity } from './accounts';
-import { copiesFor, difficultyTier, nextCopy, stepOf } from '$lib/collection';
+import {
+  consolesOf,
+  copiesFor,
+  difficultyTier,
+  nextCopy,
+  psnConsole,
+  stepOf,
+  xboxConsole,
+} from '$lib/collection';
 import { db } from './db';
 import { familyKey, matchFamilies } from './family';
 import { groupLibrary } from './library';
@@ -250,14 +258,14 @@ describe('jeux sur plusieurs plateformes', () => {
         { platform: 'STEAM', completion: 100 },
         { platform: 'PSN', completion: 58 },
       ]),
-    ).toEqual({ copies: 2, platform: 'PSN', completion: 58 });
+    ).toEqual({ copies: 2, platform: 'PSN', console: null, completion: 58 });
     expect(
       nextCopy([
         { platform: 'STEAM', completion: 100 },
         { platform: 'PSN', completion: 100 },
         { platform: 'XBOX', completion: 12 },
       ]),
-    ).toEqual({ copies: 3, platform: 'XBOX', completion: 12 });
+    ).toEqual({ copies: 3, platform: 'XBOX', console: null, completion: 12 });
   });
 
   it('ajoute un exemplaire à chaque plateforme finie, sans changer le niveau', () => {
@@ -266,6 +274,46 @@ describe('jeux sur plusieurs plateformes', () => {
     expect(groupLibrary([row('PSN', 100), row('STEAM', 100)])).toHaveLength(1);
     expect(groupLibrary([row('PSN', 100, 'a'), row('STEAM', 100, 'b')])).toHaveLength(2);
     expect(copiesFor(5)).toBe(4);
+  });
+
+  it('compte chaque console PlayStation comme un exemplaire à part', () => {
+    expect(['PS4', 'PS5,PS4', 'PSVITA', 'PS4,PSVITA', 'PSPC', '', null].map(psnConsole)).toEqual([
+      'PS4',
+      'PS4/PS5',
+      'Vita',
+      'PS4/Vita',
+      null,
+      null,
+      null,
+    ]);
+    const on = (console: string, completion: number) => {
+      const version = row('PSN', completion);
+      return { ...version, game: { ...version.game, id: console, console } };
+    };
+    const [card] = groupLibrary([on('PS3', 100), on('PS4', 100), row('STEAM', 100)]);
+    expect(card?.copies).toBe(3);
+    expect(card?.versions.map((v) => v.console)).toEqual(['PS3', 'PS4', null]);
+    expect(
+      nextCopy([
+        { platform: 'PSN', console: 'PS3', completion: 100 },
+        { platform: 'PSN', console: 'PS4', completion: 30 },
+      ]),
+    ).toEqual({ copies: 2, platform: 'PSN', console: 'PS4', completion: 30 });
+  });
+
+  it('sépare Xbox 360 des listes One, Series et PC qu’elles partagent', () => {
+    expect(
+      [
+        ['Xbox360'],
+        ['XboxOne', 'XboxSeries', 'PC'],
+        ['XboxSeries', 'PC'],
+        ['PC'],
+        ['Mobile'],
+        [],
+      ].map(xboxConsole),
+    ).toEqual(['Xbox 360', 'Xbox One/Series', 'Xbox Series', 'PC', null, null]);
+    expect(consolesOf('Xbox One/Series')).toEqual(['One', 'Series']);
+    expect(consolesOf('PS4/PS5')).toEqual(['PS4', 'PS5']);
   });
 
   it('garde le niveau de la version finie la plus dure', () => {
@@ -1871,6 +1919,44 @@ describe('filtres par niveau', () => {
       `${PREFIX} prismatique loin`,
       `${PREFIX} presque`,
     ]);
+  });
+
+  it('filtre par console PlayStation, une liste partagée comptant pour chacune', async () => {
+    const { ownerId } = await library();
+    for (const [name, console] of [
+      ['cross-gen', 'PS4/PS5'],
+      ['ancien', 'PS3'],
+    ] as const) {
+      const game = await db.game.create({
+        data: {
+          platform: 'PSN',
+          console,
+          platformGameId: `${PREFIX}-${Math.random()}`,
+          name: `${PREFIX} ${name}`,
+          slug: `${PREFIX}-${Math.random().toString(36).slice(2)}`,
+          totalAchievements: 10,
+        },
+      });
+      await db.userGame.create({
+        data: {
+          userId: ownerId,
+          gameId: game.id,
+          completion: 50,
+          unlockedCount: 5,
+          totalCount: 10,
+        },
+      });
+    }
+    const names = async (console: string) =>
+      (
+        await listGames(
+          { sort: 'nom', page: 1, ownerId, platform: 'PSN', consoles: [console] },
+          ownerId,
+        )
+      ).games.map((game) => game.name);
+    expect(await names('PS5')).toEqual([`${PREFIX} cross-gen`]);
+    expect(await names('PS4')).toEqual([`${PREFIX} cross-gen`]);
+    expect(await names('PS3')).toEqual([`${PREFIX} ancien`]);
   });
 
   it('garde le niveau d’une carte quand la recherche ne vise qu’une version', async () => {

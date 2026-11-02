@@ -1,7 +1,7 @@
 import { Prisma, type Platform } from '@prisma/client';
 import { db } from './db';
 import { groupLibrary, type LibraryCard } from './library';
-import { TIERS } from '$lib/collection';
+import { consolesOf, TIERS } from '$lib/collection';
 import { RARITY_POINTS, SEASON, seasonState, type Season } from '$lib/season';
 
 export const PAGE_SIZE = 36;
@@ -35,6 +35,8 @@ export const publicUser = {
 interface GameFilters {
   q?: string;
   platform?: Platform;
+  /** Des consoles précises de la plateforme : PS4, ou One et Series pour Xbox. */
+  consoles?: string[];
   sort: 'nom' | 'recent' | 'progression' | 'succes' | 'rarete';
   page: number;
   ownerId?: string;
@@ -60,6 +62,7 @@ const librarySelect = {
       name: true,
       slug: true,
       platform: true,
+      console: true,
       coverUrl: true,
       headerUrl: true,
       totalAchievements: true,
@@ -106,7 +109,13 @@ async function listLibrary(
     .filter(
       (card) =>
         (!search || card.versions.some((v) => v.name.toLowerCase().includes(search))) &&
-        (!filters.platform || card.versions.some((v) => v.platform === filters.platform)) &&
+        (!filters.platform ||
+          card.versions.some(
+            (v) =>
+              v.platform === filters.platform &&
+              (!filters.consoles ||
+                consolesOf(v.console).some((name) => filters.consoles?.includes(name))),
+          )) &&
         (!filters.tier || card.tier === filters.tier) &&
         (!filters.seasonOnly || card.seasonEligible) &&
         (!filters.unfinished ||
@@ -145,6 +154,9 @@ export async function listGames(filters: GameFilters, viewerId: string | null) {
   if (filters.ownerId) return listLibrary(filters, filters.ownerId, where, viewerId);
   if (filters.q) where.name = { contains: filters.q, mode: 'insensitive' };
   if (filters.platform) where.platform = filters.platform;
+  if (filters.consoles) {
+    where.AND = [{ OR: filters.consoles.map((name) => ({ console: { contains: name } })) }];
+  }
 
   // L'identifiant départage les égalités : sans lui, un jeu pourrait passer d'une page à l'autre.
   const orderBy: Prisma.GameOrderByWithRelationInput[] = [
@@ -791,15 +803,17 @@ async function tierMoments(showAdult: boolean, limit: number) {
       SELECT ug."userId", ug."lastUnlockedAt" AS at, g.name, g.slug, g."headerUrl", g.platform,
              g."adultOnly", g."contentCheckedAt", g.tier,
              COALESCE(g."familyKey", g.id) AS family,
+             COALESCE(g.console, g.platform::text) AS edition,
              min(ug."lastUnlockedAt") OVER (
-               PARTITION BY ug."userId", COALESCE(g."familyKey", g.id), g.platform
+               PARTITION BY ug."userId", COALESCE(g."familyKey", g.id),
+                 COALESCE(g.console, g.platform::text)
              ) AS reached
       FROM "UserGame" ug
       JOIN "Game" g ON g.id = ug."gameId"
       JOIN "User" u ON u.id = ug."userId" AND u."isPublic"
       WHERE ug.completion >= 100 AND NOT ug.hidden AND ug."lastUnlockedAt" IS NOT NULL
     ), ranked AS (
-      SELECT *, dense_rank() OVER (PARTITION BY "userId", family ORDER BY reached, platform) AS copies
+      SELECT *, dense_rank() OVER (PARTITION BY "userId", family ORDER BY reached, edition) AS copies
       FROM finished
     )
     SELECT u.handle, u."displayName", u."avatarUrl", u."avatarMotionUrl", u.frame,

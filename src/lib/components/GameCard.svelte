@@ -7,7 +7,7 @@
   import CompleteBadge from './CompleteBadge.svelte';
   import Progress from './Progress.svelte';
   import { tilt } from '$lib/actions/tilt';
-  import { formatPercent, PLATFORM_LABELS } from '$lib/labels';
+  import { editionLabel, formatPercent } from '$lib/labels';
   import { HOLO_TIER, isComplete, stepOf, type CardProgress, type NextCopy } from '$lib/collection';
 
   interface Props {
@@ -15,12 +15,13 @@
       name: string;
       slug: string;
       platform: Platform;
+      console?: string | null;
       headerUrl: string | null;
       totalAchievements: number;
     };
     progress?: CardProgress | null;
     layout?: 'grille' | 'liste';
-    versions?: { platform: Platform; slug: string; completion: number }[];
+    versions?: { platform: Platform; console?: string | null; slug: string; completion: number }[];
     tier?: number;
     /** Le niveau à gagner, quand la carte n'est pas finie ; sinon `tier`. */
     target?: number;
@@ -140,7 +141,7 @@
         <p class="tabular truncate text-xs text-muted">
           {m.next_tier({
             tier: `×${next.copies}`,
-            platform: PLATFORM_LABELS[next.platform],
+            platform: editionLabel(next),
             percent: Math.round(next.completion),
           })}
         </p>
@@ -153,9 +154,7 @@
         />
         <p class="tabular truncate text-xs text-muted">
           {#if versions.length > 1}
-            {versions
-              .map((v) => `${PLATFORM_LABELS[v.platform]} ${formatPercent(v.completion)}`)
-              .join(' · ')}
+            {versions.map((v) => `${editionLabel(v)} ${formatPercent(v.completion)}`).join(' · ')}
           {:else}
             {progress.unlockedCount} / {game.totalAchievements} · {formatPercent(
               progress.completion,
@@ -165,7 +164,7 @@
       {/if}
     {:else}
       <p class="text-xs text-muted">
-        {PLATFORM_LABELS[game.platform]} · {m.count_achievements({ count: game.totalAchievements })}
+        {editionLabel(game)} · {m.count_achievements({ count: game.totalAchievements })}
       </p>
     {/if}
   </div>

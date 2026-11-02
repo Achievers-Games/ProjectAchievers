@@ -1,5 +1,5 @@
 import { error, fail } from '@sveltejs/kit';
-import { copiesFor, nextCopy } from '$lib/collection';
+import { copiesFor, copyKey, nextCopy } from '$lib/collection';
 import { db } from '$lib/server/db';
 import { ensureGameTexts, localizeAchievements } from '$lib/server/achievement-texts';
 import { seasonStartedGames, visibleGames } from '$lib/server/queries';
@@ -46,6 +46,7 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
             id: true,
             slug: true,
             platform: true,
+            console: true,
             tier: true,
             players: {
               where: { userId: locals.user?.id ?? '' },
@@ -64,13 +65,14 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
           {
             id: game.id,
             platform: game.platform,
+            console: game.console,
             tier: game.tier,
             completion: progress.completion,
           },
         ]
       : []),
-    ...others.flatMap(({ id, platform, tier, players: [player] }) =>
-      player ? [{ id, platform, tier, completion: player.completion }] : [],
+    ...others.flatMap(({ id, platform, console, tier, players: [player] }) =>
+      player ? [{ id, platform, console, tier, completion: player.completion }] : [],
     ),
   ];
   const finished = owned.filter((version) => version.completion >= 100);
@@ -113,10 +115,11 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
     versions: others.map((other) => ({
       slug: other.slug,
       platform: other.platform,
+      console: other.console,
       completion: other.players[0]?.completion ?? null,
     })),
     tier: Math.max(0, ...finished.map((version) => version.tier ?? 1)),
-    copies: copiesFor(new Set(finished.map((version) => version.platform)).size),
+    copies: copiesFor(new Set(finished.map(copyKey)).size),
     next: nextCopy(owned),
   };
 };
