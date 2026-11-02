@@ -54,6 +54,7 @@ import {
 import { splitText, translateContent } from './translate';
 import { ensureGameTexts, localizeAchievements } from './achievement-texts';
 import { refreshDiscordAccounts } from './sync/discord';
+import { UNKNOWN_ICON } from './site-icons';
 
 const PREFIX = 'zz-test';
 const STEAM_ID = '76561190000000001';
@@ -1935,7 +1936,9 @@ describe('succès du site', () => {
     expect(seenByViewer.total).toBe(100);
     expect(find(seenByViewer, 'start')[0]?.unlockedAt).toBeTruthy();
     const hidden = find(seenByViewer, 'secret').filter((item) => item.unlockedAt);
-    expect(hidden).toEqual([expect.objectContaining({ title: null, text: null, rarity: null })]);
+    expect(hidden).toEqual([
+      expect.objectContaining({ title: null, text: null, rarity: null, icon: UNKNOWN_ICON }),
+    ]);
 
     const seenByOwner = await siteAchievementBoard(owner.id, owner.id);
     expect(find(seenByOwner, 'secret').filter((item) => item.title)).toHaveLength(1);

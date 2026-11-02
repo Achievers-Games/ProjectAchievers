@@ -1,11 +1,12 @@
 <script lang="ts">
-  import Lock from '@lucide/svelte/icons/lock';
-  import Trophy from '@lucide/svelte/icons/trophy';
+  import SiteBadge from '$lib/components/SiteBadge.svelte';
   import { formatDate, formatNumber } from '$lib/labels';
   import { m } from '$lib/paraglide/messages';
 
   let { data } = $props();
   const { player, board } = $derived(data);
+
+  type Item = (typeof board.categories)[number]['items'][number];
 
   const CATEGORY_LABELS: Record<string, () => string> = {
     start: m.ach_cat_start,
@@ -25,15 +26,9 @@
   <title>{m.ach_page_title({ name: player.displayName })}</title>
 </svelte:head>
 
-{#snippet line(item: (typeof board.categories)[number]['items'][number])}
+{#snippet line(item: Item, category: string)}
   <div class="flex gap-3">
-    <span class="mt-0.5 shrink-0">
-      {#if item.unlockedAt}
-        <Trophy size={18} aria-hidden="true" />
-      {:else}
-        <Lock size={18} aria-hidden="true" />
-      {/if}
-    </span>
+    <SiteBadge icon={item.icon} {category} unlocked={item.unlockedAt !== null} />
     <div class="min-w-0">
       <p class="font-medium">{item.title ?? m.ach_secret_title()}</p>
       <p class="text-sm text-muted">{item.text ?? m.ach_secret_text()}</p>
@@ -67,18 +62,36 @@
       </h2>
       <ul class="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
         {#each items as item (item.key)}
-          <li class="card p-3" class:opacity-60={!item.unlockedAt}>
+          <li class="card p-3" class:opacity-70={!item.unlockedAt}>
             {#if item.proof}
               <details>
-                <summary class="cursor-pointer list-none">{@render line(item)}</summary>
+                <summary class="cursor-pointer list-none">{@render line(item, category)}</summary>
                 <div class="mt-2 border-t border-line pt-2 text-sm">
                   <p class="label">{m.ach_proof_label()}</p>
                   <ul class="mt-1 space-y-1">
                     {#each item.proof.games as game (game.slug)}
-                      <li><a class="hover:text-ink" href="/jeux/{game.slug}">{game.name}</a></li>
+                      <li class="flex items-center gap-2">
+                        {#if game.coverUrl ?? game.headerUrl}
+                          <img
+                            src={game.coverUrl ?? game.headerUrl}
+                            alt=""
+                            loading="lazy"
+                            class="h-6 w-6 shrink-0 rounded object-cover"
+                          />
+                        {/if}
+                        <a class="hover:text-ink" href="/jeux/{game.slug}">{game.name}</a>
+                      </li>
                     {/each}
                     {#each item.proof.achievements as achievement (achievement.id)}
-                      <li>
+                      <li class="flex items-center gap-2">
+                        {#if achievement.iconUrl}
+                          <img
+                            src={achievement.iconUrl}
+                            alt=""
+                            loading="lazy"
+                            class="h-6 w-6 shrink-0 rounded object-cover"
+                          />
+                        {/if}
                         <a class="hover:text-ink" href="/succes/{achievement.id}">
                           {achievement.name}
                         </a>
@@ -89,11 +102,24 @@
                 </div>
               </details>
             {:else}
-              {@render line(item)}
+              {@render line(item, category)}
             {/if}
           </li>
         {/each}
       </ul>
     </section>
   {/each}
+
+  <p class="text-xs text-muted">
+    {m.ach_icons_credit()}
+    <a class="underline hover:text-ink" href="https://game-icons.net" rel="noopener"
+      >game-icons.net</a
+    >
+    ·
+    <a
+      class="underline hover:text-ink"
+      href="https://creativecommons.org/licenses/by/3.0/"
+      rel="license noopener">CC BY 3.0</a
+    >
+  </p>
 </div>

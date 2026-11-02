@@ -11,6 +11,7 @@ import {
 import { getLocale } from '$lib/paraglide/runtime';
 import { localizeAchievements } from './achievement-texts';
 import { db } from './db';
+import { SITE_ICONS, UNKNOWN_ICON } from './site-icons';
 import { seasonStats, userCards } from './queries';
 import { publishChat } from './sync/events';
 import {
@@ -352,11 +353,11 @@ async function proofLabels(proofs: SiteProof[], showAdult: boolean) {
   const [games, achievements] = await Promise.all([
     db.game.findMany({
       where: { id: { in: proofs.flatMap((proof) => proof.games ?? []) }, ...game },
-      select: { id: true, name: true, slug: true },
+      select: { id: true, name: true, slug: true, coverUrl: true, headerUrl: true },
     }),
     db.achievement.findMany({
       where: { id: { in: proofs.flatMap((proof) => proof.achievements ?? []) }, game },
-      select: { id: true, name: true, game: { select: { name: true } } },
+      select: { id: true, name: true, iconUrl: true, game: { select: { name: true } } },
     }),
   ]);
   const localized = await localizeAchievements(achievements, getLocale());
@@ -414,6 +415,7 @@ export async function siteAchievementBoard(
         title: revealed ? siteTitle(code) : null,
         text: revealed ? message(`ach_${code}_text`) : null,
         unlockedAt: dates.get(code) ?? null,
+        icon: revealed ? SITE_ICONS[code] : UNKNOWN_ICON,
         proof: proofOf(code),
         rarity: revealed ? share(code) : null,
       };
