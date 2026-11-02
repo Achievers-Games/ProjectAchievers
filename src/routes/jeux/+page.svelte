@@ -241,6 +241,7 @@
         <option value="nom">{m.sort_name()}</option>
         <option value="succes">{m.sort_achievements()}</option>
         <option value="recent">{m.sort_recent()}</option>
+        <option value="rarete">{m.sort_tier()}</option>
         {#if data.params.mine}<option value="progression">{m.sort_progress()}</option>{/if}
       </select>
       <a

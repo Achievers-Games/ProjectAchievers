@@ -121,15 +121,17 @@ async function main() {
     syncError: 'sync_steam_private',
     lastSyncedAt: new Date(),
   };
-  // Un essai récent : le balayage ne le resynchronise pas pendant les tests.
+  // Un essai daté d'avance : le site ne le relance jamais, même longtemps après le seed.
+  const later = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
   await db.syncRun.deleteMany({ where: { userId: marco.id, provider: 'STEAM' } });
   await db.syncRun.create({
     data: {
       userId: marco.id,
       provider: 'STEAM',
+      startedAt: later,
       status: 'FAILED',
       error: 'sync_steam_private',
-      finishedAt: new Date(),
+      finishedAt: later,
     },
   });
   await db.linkedAccount.upsert({

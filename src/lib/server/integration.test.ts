@@ -1840,6 +1840,39 @@ describe('filtres par niveau', () => {
     expect(cards[1]?.next?.completion).toBe(40);
   });
 
+  it('trie les jeux à finir par carte à gagner, la plus proche d’abord', async () => {
+    const { ownerId } = await library();
+    for (const [name, tier, completion] of [
+      ['légendaire', 6, 20],
+      ['prismatique loin', 5, 30],
+      ['prismatique proche', 5, 80],
+    ] as const) {
+      const game = await db.game.create({
+        data: {
+          platform: 'STEAM',
+          platformGameId: `${PREFIX}-${Math.random()}`,
+          name: `${PREFIX} ${name}`,
+          slug: `${PREFIX}-${Math.random().toString(36).slice(2)}`,
+          totalAchievements: 10,
+          tier,
+        },
+      });
+      await db.userGame.create({
+        data: { userId: ownerId, gameId: game.id, completion, unlockedCount: 1, totalCount: 10 },
+      });
+    }
+    const { games } = await listGames(
+      { sort: 'rarete', page: 1, ownerId, unfinished: true },
+      ownerId,
+    );
+    expect(games.slice(0, 4).map((game) => game.name)).toEqual([
+      `${PREFIX} légendaire`,
+      `${PREFIX} prismatique proche`,
+      `${PREFIX} prismatique loin`,
+      `${PREFIX} presque`,
+    ]);
+  });
+
   it('garde le niveau d’une carte quand la recherche ne vise qu’une version', async () => {
     const { ownerId } = await library();
     const family = `${PREFIX}-${Math.random()}`;

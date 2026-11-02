@@ -35,7 +35,7 @@ export const publicUser = {
 interface GameFilters {
   q?: string;
   platform?: Platform;
-  sort: 'nom' | 'recent' | 'progression' | 'succes';
+  sort: 'nom' | 'recent' | 'progression' | 'succes' | 'rarete';
   page: number;
   ownerId?: string;
   /** Avec `ownerId` : seulement les jeux qui ont encore une version à terminer. */
@@ -125,6 +125,10 @@ async function listLibrary(
       const rank = filters.unfinished ? shownProgress : tierProgress;
       return rank(b) - rank(a) || byName(a, b);
     }
+    if (filters.sort === 'rarete') {
+      // La carte à gagner d'abord, puis celle qui est le plus près d'être finie.
+      return b.target - a.target || shownProgress(b) - shownProgress(a) || byName(a, b);
+    }
     if (filters.sort === 'recent') {
       const time = (card: typeof a) => card.lastUnlockedAt?.getTime() ?? 0;
       return time(b) - time(a) || byName(a, b);
@@ -148,7 +152,9 @@ export async function listGames(filters: GameFilters, viewerId: string | null) {
       ? { totalAchievements: 'desc' }
       : filters.sort === 'recent'
         ? { updatedAt: 'desc' }
-        : { name: 'asc' },
+        : filters.sort === 'rarete'
+          ? { tier: { sort: 'desc', nulls: 'last' } }
+          : { name: 'asc' },
     { id: 'asc' },
   ];
 
