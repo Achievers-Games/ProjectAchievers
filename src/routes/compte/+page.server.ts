@@ -10,6 +10,7 @@ import { availableProviders } from '$lib/server/providers';
 import { bioContainsCode, findPsnProfile, newPsnCode } from '$lib/server/providers/psn';
 import { findRetroProfile } from '$lib/server/providers/retro';
 import { destroySession } from '$lib/server/session';
+import { grantSiteAchievement } from '$lib/server/site-achievements';
 import { leaveClan } from '$lib/server/social';
 import { forgetPresence } from '$lib/server/presence';
 import { pushPublicKey } from '$lib/server/push';
@@ -141,6 +142,13 @@ export const actions: Actions = {
 
     const failure = await updateProfile(user.id, parsed.data);
     if (failure) return fail(409, { error: PROFILE_ERRORS[failure]() });
+    const { handle, displayName, avatarUrl } = parsed.data;
+    if (handle !== user.handle || displayName !== user.displayName) {
+      await grantSiteAchievement(user.id, 'stage_name');
+    }
+    if (avatarUrl !== undefined && (avatarUrl || null) !== user.avatarUrl) {
+      await grantSiteAchievement(user.id, 'makeover');
+    }
     return { success: m.profile_saved() };
   },
 

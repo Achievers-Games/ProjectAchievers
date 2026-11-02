@@ -50,6 +50,7 @@ export async function validateSession(cookies: Cookies) {
           role: true,
           showAdult: true,
           allowProfanity: true,
+          timeZone: true,
         },
       },
     },

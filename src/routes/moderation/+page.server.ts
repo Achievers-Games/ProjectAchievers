@@ -151,7 +151,7 @@ export const actions: Actions = {
       }
       await tx.report.updateMany({
         where: { targetType: report.targetType, targetId: report.targetId, resolvedAt: null },
-        data: { resolvedAt: new Date() },
+        data: { resolvedAt: new Date(), upheld: form.get('hide') === '1' },
       });
     });
   },

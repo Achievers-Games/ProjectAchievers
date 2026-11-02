@@ -111,6 +111,8 @@ model User {
   showAdult       Boolean  @default(false)
   /// Montre les messages tels qu'ils ont été écrits ; sinon, les grossièretés sont masquées.
   allowProfanity  Boolean  @default(false)
+  /// Fuseau du navigateur : certains succès du site dépendent de l'heure du joueur.
+  timeZone        String?
   friendsSeenAt   DateTime?
   clansSeenAt     DateTime?
   role            Role     @default(USER)
@@ -129,6 +131,7 @@ model User {
   reports      Report[]
   syncRuns     SyncRun[]
   frames       UserFrame[]
+  siteUnlocks  SiteUnlock[]
   pinned       PinnedGame[]
 
   friendRequests  Friendship[]         @relation("FriendRequester")
@@ -292,6 +295,17 @@ model PinnedGame {
   position Int
 
   @@id([userId, gameId])
+}
+
+/// Un succès du site obtenu ; le catalogue est dans `$lib/site-achievements`.
+model SiteUnlock {
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  code       String
+  unlockedAt DateTime @default(now())
+
+  @@id([userId, code])
+  @@index([code])
 }
 
 model UserFrame {
@@ -588,6 +602,8 @@ model Report {
   targetType ReportTarget
   targetId   String
   reason     String
+  /// La modération a retiré le contenu signalé.
+  upheld     Boolean      @default(false)
   resolvedAt DateTime?
   createdAt  DateTime     @default(now())
 

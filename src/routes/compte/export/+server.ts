@@ -23,6 +23,7 @@ export const GET: RequestHandler = async ({ locals }) => {
       isPublic: true,
       showAdult: true,
       allowProfanity: true,
+      timeZone: true,
       createdAt: true,
       accounts: {
         select: {
@@ -51,6 +52,7 @@ export const GET: RequestHandler = async ({ locals }) => {
       guides: { select: { contentMd: true, createdAt: true } },
       comments: { select: { contentMd: true, createdAt: true } },
       frames: { select: { frame: true, earnedAt: true } },
+      siteUnlocks: { select: { code: true, unlockedAt: true } },
       pinned: { select: { position: true, game: { select: { name: true } } } },
       guideVotes: { select: { guideId: true, value: true } },
       friendRequests: { select: { addressee: { select: { handle: true } }, accepted: true } },

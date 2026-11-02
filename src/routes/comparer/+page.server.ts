@@ -1,6 +1,7 @@
 import { error } from '@sveltejs/kit';
 import { compareUsers, publicUser, userStats } from '$lib/server/queries';
 import { db } from '$lib/server/db';
+import { grantSiteAchievement } from '$lib/server/site-achievements';
 import type { PageServerLoad } from './$types';
 import { m } from '$lib/paraglide/messages';
 
@@ -27,6 +28,11 @@ export const load: PageServerLoad = async ({ url, locals }) => {
     userStats(left.id),
     userStats(right.id),
   ]);
+
+  const me = locals.user?.id;
+  if (me && left.id !== right.id && (me === left.id || me === right.id)) {
+    await grantSiteAchievement(me, 'painful_compare');
+  }
 
   return { left, right, games, leftStats, rightStats };
 };

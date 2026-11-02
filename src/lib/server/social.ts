@@ -138,11 +138,21 @@ export async function pendingInvites(userId: string) {
   return { friends, clans };
 }
 
-export const markInvitesSeen = (userId: string, kind: 'friends' | 'clans') =>
-  db.user.update({
+/** La date d'une invitation vient de la base : son horloge peut avoir quelques millisecondes d'avance. */
+export async function markInvitesSeen(userId: string, kind: 'friends' | 'clans') {
+  const friends = kind === 'friends';
+  const { _max: latest } = friends
+    ? await db.friendship.aggregate({
+        where: { addresseeId: userId, accepted: false },
+        _max: { createdAt: true },
+      })
+    : await db.clanInvite.aggregate({ where: { userId }, _max: { createdAt: true } });
+  const seenAt = new Date(Math.max(Date.now(), latest.createdAt?.getTime() ?? 0));
+  await db.user.update({
     where: { id: userId },
-    data: kind === 'friends' ? { friendsSeenAt: new Date() } : { clansSeenAt: new Date() },
+    data: friends ? { friendsSeenAt: seenAt } : { clansSeenAt: seenAt },
   });
+}
 
 export async function friendIds(userId: string) {
   const links = await db.friendship.findMany({

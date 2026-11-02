@@ -1,7 +1,9 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { z } from 'zod';
 import { requireLogin } from '$lib/server/auth';
+import { db } from '$lib/server/db';
 import { rateLimit } from '$lib/server/rate-limit';
+import { grantSiteAchievement } from '$lib/server/site-achievements';
 import {
   acceptClanInvite,
   createClan,
@@ -83,7 +85,10 @@ export const actions: Actions = {
     await declineClanInvite(requireUser(locals).id, await field(request, 'id'));
   },
   leave: async ({ locals }) => {
-    await leaveClan(requireUser(locals).id);
+    const user = requireUser(locals);
+    const member = await db.clanMember.count({ where: { userId: user.id } });
+    await leaveClan(user.id);
+    if (member) await grantSiteAchievement(user.id, 'deserter');
   },
   kick: async ({ request, locals }) => {
     const failure = await kickFromClan(requireUser(locals).id, await field(request, 'id'));

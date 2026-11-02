@@ -10,6 +10,7 @@ const MERGE_COOKIE = 'pa_merge';
 /** Tables qui n'acceptent qu'une ligne par utilisateur et par élément. */
 const PER_USER_TABLES = [
   ['UserFrame', 'frame'],
+  ['SiteUnlock', 'code'],
   ['PinnedGame', 'gameId'],
   ['UserGame', 'gameId'],
   ['UserAchievement', 'achievementId'],
@@ -223,6 +224,7 @@ export async function mergeUsers(
       await tx.commentReaction.updateMany(owner);
       await tx.syncRun.updateMany(owner);
       await tx.userFrame.updateMany(owner);
+      await tx.siteUnlock.updateMany(owner);
       await tx.pinnedGame.updateMany(owner);
 
       const author = { where: { authorId: sourceId }, data: { authorId: targetId } };

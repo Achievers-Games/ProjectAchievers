@@ -75,10 +75,17 @@ export interface InviteEvent {
   invite: 'ami' | 'clan';
 }
 
-export const publishChat = (userId: string, event: ChatEvent | InviteEvent) =>
-  bus.emit(`chat:${userId}`, event);
+/** Un ou plusieurs succès du site : le navigateur demande leur titre dans sa langue. */
+export interface SiteAchievementEvent {
+  type: 'site-achievement';
+  codes: string[];
+}
 
-export function onChat(userId: string, listener: (event: ChatEvent | InviteEvent) => void) {
+export type LiveEvent = ChatEvent | InviteEvent | SiteAchievementEvent;
+
+export const publishChat = (userId: string, event: LiveEvent) => bus.emit(`chat:${userId}`, event);
+
+export function onChat(userId: string, listener: (event: LiveEvent) => void) {
   bus.on(`chat:${userId}`, listener);
   return () => void bus.off(`chat:${userId}`, listener);
 }

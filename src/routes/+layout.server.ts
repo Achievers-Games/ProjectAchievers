@@ -12,6 +12,7 @@ export const load: LayoutServerLoad = async ({ locals, cookies, depends }) => {
       id: locals.user.id,
       handle: locals.user.handle,
       displayName: locals.user.displayName,
+      timeZone: locals.user.timeZone,
       avatarUrl: locals.user.avatarUrl,
       avatarMotionUrl: locals.user.avatarMotionUrl,
       frame: locals.user.frame,

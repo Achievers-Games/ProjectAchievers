@@ -90,7 +90,10 @@
         {/each}
       </ul>
     </div>
-    <div class="ml-auto flex gap-2">
+    <div class="ml-auto flex flex-wrap justify-end gap-2">
+      <a class="btn" href="/u/{profile.user.handle}/succes">
+        {m.ach_profile_link({ count: data.siteAchievements })}
+      </a>
       <button type="button" class="btn" onclick={share}>
         <Link size={14} aria-hidden="true" />
         {m.share()}

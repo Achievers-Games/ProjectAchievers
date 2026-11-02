@@ -25,7 +25,7 @@
   import { refreshPresence, watchPresence } from '$lib/stores/presence';
   import { rewards, syncState, type SyncProgress } from '$lib/stores/sync';
   import { toast } from '$lib/stores/toast';
-  import type { ChatEvent, InviteEvent } from '$lib/server/sync/events';
+  import type { ChatEvent, InviteEvent, LiveEvent } from '$lib/server/sync/events';
 
   let { data, children } = $props();
   let paletteOpen = $state(false);
@@ -91,6 +91,15 @@
     toast(`${from} ${friend ? m.push_friend_request() : m.push_clan_invite()}`);
   }
 
+  /** Les textes restent sur le serveur : ils sont nombreux, et les secrets doivent le rester. */
+  async function announceAchievements(codes: string[]) {
+    const response = await fetch(`/api/succes?codes=${codes.join(',')}`).catch(() => null);
+    if (!response?.ok) return;
+    const titles = (await response.json()) as string[];
+    if (titles.length > 3) toast(m.ach_unlocked_many({ count: titles.length }));
+    else titles.forEach((title) => toast(m.ach_unlocked({ title })));
+  }
+
   async function refresh() {
     const response = await fetch('/api/sync', { method: 'POST' }).catch(() => null);
     if (!response?.ok) {
@@ -112,6 +121,10 @@
   onMount(() => {
     document.documentElement.dataset.ready = 'true';
     if (data.user) void restorePush().catch(() => {});
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (data.user && data.user.timeZone !== timeZone) {
+      void fetch('/api/succes', { method: 'POST', body: timeZone }).catch(() => {});
+    }
     return watchPresence();
   });
 
@@ -122,10 +135,11 @@
     // Le joueur apparaît en ligne dès que ce flux est ouvert.
     source.onopen = () => void refreshPresence();
     source.onmessage = (message) => {
-      const event = JSON.parse(message.data) as SyncProgress | ChatEvent | InviteEvent;
+      const event = JSON.parse(message.data) as SyncProgress | LiveEvent;
       if ('type' in event) {
         if (event.type === 'chat') receive(event);
-        else receiveInvite(event);
+        else if (event.type === 'invite') receiveInvite(event);
+        else void announceAchievements(event.codes);
         return;
       }
       syncState.update((state) => ({ ...state, [event.provider]: event }));

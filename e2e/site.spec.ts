@@ -944,3 +944,16 @@ test.describe('langues', () => {
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('ゲーム');
   });
 });
+
+test.describe('succès du site', () => {
+  test('le tableau montre les 100 succès et cache les secrets', async ({ page }) => {
+    await login(page);
+    await page.goto('/compte');
+    const handle = await page.locator('input[name="handle"]').inputValue();
+    await page.goto(`/u/${handle}`);
+    await page.getByRole('link', { name: /\/100/ }).click();
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    await expect(page.locator('main li.card')).toHaveCount(101);
+    await expect(page.locator('main section').last().locator('li.card')).toHaveCount(26);
+  });
+});

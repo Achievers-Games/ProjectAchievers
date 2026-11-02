@@ -14,6 +14,7 @@ import { refreshDiscordAccounts } from './discord';
 import { SyncError } from './errors';
 import { publishCard, publishHighlight, publishSync, publishUnlock } from './events';
 import { grantFrames } from '../frames';
+import { checkSiteAchievements } from '../site-achievements';
 import { syncPsn } from './psn';
 import { syncRetro } from './retro';
 import { fetchUnlocks, fillHiddenDescriptions, sweepSteamStore, syncSteam } from './steam';
@@ -113,14 +114,20 @@ const autoInterval = (provider: Provider) => (provider === 'STEAM' ? 5 : 15) * 6
 const RUN_HISTORY = 30 * 24 * 60 * 60 * 1000;
 const MESSAGE_RETENTION = 365 * 24 * 60 * 60 * 1000;
 const AUTO_CHECK = 60_000;
+const SITE_CHECK = 10 * 60 * 1000;
 
 /** À chaque visite, sans la ralentir : au plus une vérification par minute et par joueur. */
 export function autoRefresh(userId: string) {
   if (!rateLimit(`rafraichissement:${userId}`, 1, AUTO_CHECK)) return;
+  if (rateLimit(`succes-site:${userId}`, 1, SITE_CHECK)) void reviewSiteAchievements(userId);
   void refreshAccounts(userId, autoInterval, true).catch((cause) =>
     console.error('Rafraîchissement :', cause),
   );
 }
+
+/** Un calcul de succès raté ne doit jamais faire échouer ce qui l'a déclenché. */
+const reviewSiteAchievements = (userId: string) =>
+  checkSiteAchievements(userId).catch((cause) => console.error('Succès du site :', cause));
 
 async function rareCards(userId: string) {
   const rows = await db.userGame.findMany({
@@ -308,6 +315,7 @@ export async function runSync({ userId, provider, quiet }: SyncJob) {
       rewards: rewards.slice(0, MAX_REWARDS),
       moreRewards: Math.max(0, rewards.length - MAX_REWARDS),
     });
+    if (result.achievements > 0) await reviewSiteAchievements(userId);
   } catch (error) {
     const known = error instanceof SyncError;
     if (!known) console.error(`Synchronisation ${provider} :`, error);

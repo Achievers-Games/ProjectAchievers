@@ -13,6 +13,11 @@ import {
   userCards,
 } from './queries';
 import { grantFrames } from './frames';
+import {
+  checkSiteAchievements,
+  grantSiteAchievement,
+  siteAchievementBoard,
+} from './site-achievements';
 import { profileSchema, resolveIdentity, updateProfile, type Identity } from './accounts';
 import { copiesFor, difficultyTier, nextCopy, stepOf } from '$lib/collection';
 import { db } from './db';
@@ -23,7 +28,7 @@ import { markActive, subscribersToNotify, usersWhoLeft } from './push';
 import { checkLiveGames } from './sync/live';
 import { enqueueSync, refreshAccounts, runSync, startWorkers } from './sync/queue';
 import { isAdultOnly, rateGames } from './sync/content';
-import { onCard, onSync, type SyncEvent } from './sync/events';
+import { onCard, onChat, onSync, type SyncEvent } from './sync/events';
 import { parseSteamPage, requestStoreSweep, steamImages, sweepSteamStore } from './sync/steam';
 import { saveAchievements, saveProgress, upsertGame } from './sync/store';
 import { parseGuideFile, syncCuratedGuides } from './curated-guides';
@@ -363,6 +368,20 @@ describe('fusion de profils', () => {
       steam,
     };
   }
+
+  it('garde les succès du site des deux profils', async () => {
+    const { sourceId, targetId, merge } = await twoProfiles();
+    await db.siteUnlock.createMany({
+      data: [
+        { userId: sourceId, code: 'deserter' },
+        { userId: sourceId, code: 'stage_name' },
+        { userId: targetId, code: 'deserter' },
+      ],
+    });
+    expect(await mergeUsers(merge)).toBeNull();
+    const rows = await db.siteUnlock.findMany({ where: { userId: targetId } });
+    expect(rows.map((row) => row.code).toSorted()).toEqual(['deserter', 'stage_name']);
+  });
 
   async function guideFor(authorId: string) {
     const game = await upsertGame({
@@ -1864,5 +1883,80 @@ describe('textes officiels des succès', () => {
     expect(text).toMatchObject({ name: 'The boss', description: 'Beat it' });
     const [french] = await localizeAchievements([achievement], 'fr');
     expect(french?.name).toBe('Le boss');
+  });
+});
+
+describe('succès du site', () => {
+  async function player(handle: string) {
+    return db.user.create({ data: { handle, displayName: handle } });
+  }
+
+  async function withAccount(handle: string) {
+    const user = await player(handle);
+    await db.linkedAccount.create({
+      data: { userId: user.id, provider: 'STEAM', providerUserId: handle, displayName: handle },
+    });
+    return user;
+  }
+
+  it('reste muet la première fois, puis annonce la suite', async () => {
+    const user = await withAccount(`${PREFIX}-succes1`);
+    const heard: unknown[] = [];
+    const stop = onChat(user.id, (event) => heard.push(event));
+
+    expect(await checkSiteAchievements(user.id)).toContain('first_account');
+    expect(heard).toEqual([]);
+    expect(await checkSiteAchievements(user.id)).toEqual([]);
+
+    await db.user.update({ where: { id: user.id }, data: { showcaseCustom: true } });
+    expect(await checkSiteAchievements(user.id)).toEqual(['storefront']);
+    expect(heard).toEqual([{ type: 'site-achievement', codes: ['storefront'] }]);
+
+    await grantSiteAchievement(user.id, 'deserter');
+    await grantSiteAchievement(user.id, 'deserter');
+    expect(heard).toHaveLength(2);
+    stop();
+  });
+
+  it('garde un succès acquis et le secret de celui qui ne le connaît pas', async () => {
+    const owner = await withAccount(`${PREFIX}-succes2`);
+    const viewer = await player(`${PREFIX}-succes3`);
+    await checkSiteAchievements(owner.id);
+    await grantSiteAchievement(owner.id, 'deserter');
+    await db.linkedAccount.deleteMany({ where: { userId: owner.id } });
+    await checkSiteAchievements(owner.id);
+
+    const find = (board: Awaited<ReturnType<typeof siteAchievementBoard>>, category: string) =>
+      board.categories.find((entry) => entry.category === category)?.items ?? [];
+
+    const seenByViewer = await siteAchievementBoard(owner.id, viewer.id);
+    expect(seenByViewer.earned).toBe(2);
+    expect(seenByViewer.total).toBe(100);
+    expect(find(seenByViewer, 'start')[0]?.unlockedAt).toBeTruthy();
+    const hidden = find(seenByViewer, 'secret').filter((item) => item.unlockedAt);
+    expect(hidden).toEqual([expect.objectContaining({ title: null, text: null, rarity: null })]);
+
+    const seenByOwner = await siteAchievementBoard(owner.id, owner.id);
+    expect(find(seenByOwner, 'secret').filter((item) => item.title)).toHaveLength(1);
+  });
+
+  it('accorde les dix secrets au Dernier mot', async () => {
+    const user = await withAccount(`${PREFIX}-succes4`);
+    await checkSiteAchievements(user.id);
+    await db.siteUnlock.createMany({
+      data: [
+        'midnight',
+        'friday13',
+        'birthday',
+        'grand_slam',
+        'christmas',
+        'new_year',
+        'monk',
+        'forty_two',
+        'hare',
+        'twins',
+      ].map((code) => ({ userId: user.id, code })),
+    });
+    expect(await checkSiteAchievements(user.id)).toEqual(['last_word']);
   });
 });
