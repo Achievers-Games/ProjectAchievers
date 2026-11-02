@@ -88,7 +88,14 @@
           {#if item.unlockedAt}{formatDate(item.unlockedAt)}{/if}
           {#if item.unlockedAt && item.rarity !== null}·{/if}
           {#if item.rarity !== null}
-            {m.ach_rarity({ percent: formatNumber(Math.round(item.rarity)) })}
+            {m.ach_rarity({
+              // Sous 1 %, une décimale : un succès obtenu n'affiche jamais 0 %.
+              percent: formatNumber(
+                item.rarity > 0 && item.rarity < 1
+                  ? Math.max(0.1, Math.round(item.rarity * 10) / 10)
+                  : Math.round(item.rarity),
+              ),
+            })}
           {/if}
         </p>
       {/if}

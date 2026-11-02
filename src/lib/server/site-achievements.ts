@@ -590,7 +590,8 @@ export async function siteAchievementBoard(
         icon,
         level: revealed && reached >= 0 ? levelOf(steps[reached]!, reached) : 0,
         proof: reached >= 0 ? proofOf(steps[reached]!) : null,
-        rarity: revealed ? share(target) : null,
+        // Comme la date : la part des joueurs qui ont le palier obtenu, pas celui à viser.
+        rarity: revealed ? share(reached >= 0 ? steps[reached]! : target) : null,
         // Seul le joueur lui-même reçoit des idées de jeux, chargées à la demande.
         suggest: userId === viewerId && !dates.has(target) && suggestable(target),
         steps:

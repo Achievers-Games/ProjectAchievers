@@ -2333,6 +2333,19 @@ describe('succès du site', () => {
     expect(await db.siteUnlock.count({ where: { userId: absent.id } })).toBeGreaterThan(0);
   });
 
+  it('donne la part des joueurs du palier obtenu, pas du suivant', async () => {
+    const owner = await withAccount(`${PREFIX}-succes-palier`);
+    await db.siteUnlock.createMany({
+      data: ['guild_1000', 'guild_10000'].map((code) => ({ userId: owner.id, code })),
+    });
+    const board = await siteAchievementBoard(owner.id, owner.id);
+    const guild = board.categories
+      .flatMap((entry) => entry.items)
+      .find((item) => item.code === 'guild_50000');
+    expect(guild?.complete).toBe(false);
+    expect(guild?.rarity).toBeGreaterThan(0);
+  });
+
   it("montre les jeux d'un autre joueur, et ses secrets seulement à qui les a aussi", async () => {
     const owner = await player(`${PREFIX}-succes9`);
     const viewer = await player(`${PREFIX}-succes10`);
