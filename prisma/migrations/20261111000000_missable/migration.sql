@@ -1,0 +1,2 @@
+ALTER TABLE "Achievement" ADD COLUMN "missable" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "Game" ADD COLUMN "guideReviewedAt" TIMESTAMP(3);

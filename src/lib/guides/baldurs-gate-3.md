@@ -1,4 +1,4 @@
-STEAM 1086940
+STEAM 1086940 partiel
 
 @@ BG3_Quest28
 

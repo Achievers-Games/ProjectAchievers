@@ -47,7 +47,9 @@ const guideMarked = new Marked({
     image({ href, text }) {
       const youtube = YOUTUBE.exec(href)?.[1];
       if (youtube) {
-        const src = `https://www.youtube-nocookie.com/embed/${youtube}`;
+        // `&t=95` ou `?t=95s` : la vidéo démarre au bon moment, sur l'objet ou le passage visé.
+        const start = /[?&]t=(\d+)s?(?:&|$)/.exec(href)?.[1];
+        const src = `https://www.youtube-nocookie.com/embed/${youtube}${start ? `?start=${start}` : ''}`;
         return `<iframe src="${src}" title="${attribute(text)}" allowfullscreen loading="lazy"></iframe>`;
       }
       if (VIDEO.test(href)) {

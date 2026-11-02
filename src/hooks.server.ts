@@ -1,4 +1,5 @@
 import type { Handle, RequestEvent, ServerInit } from '@sveltejs/kit';
+import { themeOf } from '$lib/theme';
 import { m } from '$lib/paraglide/messages';
 import { getLocale } from '$lib/paraglide/runtime';
 import { paraglideMiddleware } from '$lib/paraglide/server';
@@ -71,7 +72,7 @@ const secured: Handle = async ({ event, resolve }) => {
     transformPageChunk: ({ html }) =>
       html
         .replace('%lang%', getLocale())
-        .replace('%theme%', event.cookies.get('pa_theme') === 'light' ? 'light' : 'dark'),
+        .replace('%theme%', themeOf(event.cookies.get('pa_theme'))),
   });
 
   response.headers.set('X-Content-Type-Options', 'nosniff');

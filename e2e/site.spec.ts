@@ -466,6 +466,16 @@ test.describe('membre', () => {
     await ready(page);
     await page.getByRole('button', { name: 'Sombre' }).click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+
+    // « Système » suit la machine, y compris quand elle change de réglage.
+    const background = () =>
+      page.evaluate(() => getComputedStyle(document.documentElement).backgroundColor);
+    await page.emulateMedia({ colorScheme: 'light' });
+    await page.getByRole('button', { name: 'Système' }).click();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'system');
+    await expect.poll(background).toBe('rgb(247, 245, 253)');
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await expect.poll(background).toBe('rgb(12, 11, 22)');
   });
 
   test('publie un commentaire assaini', async ({ page }) => {
@@ -1029,13 +1039,19 @@ test.describe('succès du site', () => {
       await expect(page.locator('main li details').first()).toBeVisible({ timeout: 1000 });
     }).toPass();
     await ready(page);
+    // Un premier échec, comme pendant un redéploiement : « Réessayer » relance la demande.
+    // Une réponse illisible plutôt qu'une coupure, qui journaliserait une erreur réseau.
+    let failed = false;
+    await page.route('**/api/succes/suggestions**', (route) =>
+      failed ? route.continue() : ((failed = true), route.fulfill({ body: 'Bad Gateway' })),
+    );
     const proof = page.locator('main li details').first();
     await proof.locator('summary').click();
     await expect(proof.getByRole('link').first()).toBeVisible();
 
     // Une carte à viser propose des jeux pour y arriver.
     const next = page.locator('#ach-cards li details').first();
-    await next.locator('summary').click();
+    await next.getByRole('button', { name: 'Réessayer' }).click();
     await expect(next.getByTestId('ach-ideas')).toContainText(/%|Aucun jeu/);
 
     // Les filtres et les sections repliables.

@@ -423,6 +423,8 @@ model Game {
   /// Étiquettes Steam les plus votées, par ordre de poids : les genres des succès du site.
   tags              Int[]             @default([])
   tagsCheckedAt     DateTime?
+  /// Les succès manquables du jeu ont été relevés par un guide officiel.
+  guideReviewedAt   DateTime?
   /// Clé commune aux versions d'un même jeu sur plusieurs plateformes.
   familyKey         String?
   /// Corrigée par la modération : la synchronisation n'y touche plus.
@@ -475,6 +477,8 @@ model Achievement {
   trophyType            TrophyType @default(ACHIEVEMENT)
   globalRarity          Float?
   points                Int        @default(10)
+  /// Peut être perdu pour la partie en cours : signalé par un guide officiel.
+  missable              Boolean    @default(false)
 
   unlocks      UserAchievement[]
   translations AchievementTranslation[]

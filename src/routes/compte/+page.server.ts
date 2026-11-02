@@ -1,4 +1,5 @@
 import { fail, redirect } from '@sveltejs/kit';
+import { themeOf } from '$lib/theme';
 import { z } from 'zod';
 import type { Provider } from '@prisma/client';
 import { profileSchema, resolveIdentity, updateProfile } from '$lib/server/accounts';
@@ -310,7 +311,7 @@ export const actions: Actions = {
   },
 
   theme: async ({ request, cookies }) => {
-    const theme = (await request.formData()).get('theme') === 'light' ? 'light' : 'dark';
+    const theme = themeOf((await request.formData()).get('theme'));
     cookies.set('pa_theme', theme, {
       ...secureCookie,
       path: '/',

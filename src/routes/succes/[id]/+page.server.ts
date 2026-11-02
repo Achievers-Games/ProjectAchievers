@@ -133,6 +133,7 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
       iconUrl: masked ? null : achievement.iconUrl,
       trophyType: achievement.trophyType,
       globalRarity: achievement.globalRarity,
+      missable: achievement.missable,
       game: { name: achievement.game.name, slug: achievement.game.slug },
     },
     unlockedAt: unlock,

@@ -172,6 +172,9 @@ describe('Markdown des guides', () => {
     const youtube = renderGuide('![démo](https://www.youtube.com/watch?v=dQw4w9WgXcQ)');
     expect(youtube).toContain('<iframe');
     expect(youtube).toContain('https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ');
+    expect(renderGuide('![lieu](https://youtu.be/dQw4w9WgXcQ?t=95)')).toContain(
+      'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?start=95',
+    );
     expect(renderGuide('![clip](https://exemple.fr/a.mp4)')).toContain('<video');
   });
 

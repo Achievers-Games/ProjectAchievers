@@ -6,6 +6,8 @@
   import EyeOff from '@lucide/svelte/icons/eye-off';
   import Flame from '@lucide/svelte/icons/flame';
   import Lock from '@lucide/svelte/icons/lock';
+  import BookOpen from '@lucide/svelte/icons/book-open';
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
   import AchievementIcon from '$lib/components/AchievementIcon.svelte';
   import CompleteBadge from '$lib/components/CompleteBadge.svelte';
   import Progress from '$lib/components/Progress.svelte';
@@ -20,7 +22,7 @@
 
   let { data } = $props();
 
-  type Filter = 'tous' | 'obtenus' | 'restants';
+  type Filter = 'tous' | 'obtenus' | 'restants' | 'manquables';
   const complete = $derived(isComplete(data.progress));
   const toggleHidden = submitWithToast({ reset: false });
 
@@ -32,6 +34,7 @@
       .filter((a) => {
         if (filter === 'obtenus') return a.unlockedAt;
         if (filter === 'restants') return !a.unlockedAt;
+        if (filter === 'manquables') return a.missable;
         return true;
       })
       .toSorted((a, b) =>
@@ -47,11 +50,17 @@
 
   const secrets = $derived(data.achievements.filter((a) => a.secret).length);
 
-  const filters: { value: Filter; label: string }[] = [
+  const filters: { value: Filter; label: string }[] = $derived([
     { value: 'tous', label: m.filter_all() },
     { value: 'obtenus', label: m.filter_unlocked() },
     { value: 'restants', label: m.filter_remaining() },
-  ];
+    ...(data.achievements.some((a) => a.missable)
+      ? [{ value: 'manquables' as const, label: m.filter_missable() }]
+      : []),
+  ]);
+  const missingMissables = $derived(
+    data.achievements.filter((a) => a.missable && !a.unlockedAt).length,
+  );
 </script>
 
 <svelte:head>
@@ -162,6 +171,40 @@
     </div>
   </header>
 
+  {#if data.missables}
+    <div
+      class="card flex items-start gap-3 p-3 text-sm"
+      class:missables-alert={data.missables.count > 0}
+      data-testid="missables"
+    >
+      {#if data.missables.count > 0}
+        <TriangleAlert size={18} class="mt-0.5 shrink-0 text-danger" aria-hidden="true" />
+      {:else}
+        <Check size={18} class="mt-0.5 shrink-0 text-success" aria-hidden="true" />
+      {/if}
+      <div class="min-w-0 space-y-1">
+        <p class="font-medium">
+          {data.missables.count > 0
+            ? m.missables_title({ count: data.missables.count })
+            : m.missables_none()}
+        </p>
+        <p class="text-muted">
+          {#if data.missables.elsewhere}
+            {m.missables_elsewhere()}
+            <a class="underline hover:text-ink" href="/jeux/{data.missables.elsewhere}">
+              {m.missables_elsewhere_link()}
+            </a>
+          {:else if data.missables.count > 0}
+            {missingMissables > 0 || !data.user ? m.missables_text() : m.missables_done()}
+            {#if data.missables.partial}{m.missables_partial()}{/if}
+          {:else}
+            {m.missables_none_text()}
+          {/if}
+        </p>
+      </div>
+    </div>
+  {/if}
+
   <div class="flex flex-wrap items-center gap-2">
     <div class="flex rounded border border-line" role="group" aria-label={m.filter_achievements()}>
       {#each filters as item (item.value)}
@@ -225,6 +268,15 @@
               </span>
               {#if achievement.secret && data.revealed}
                 <EyeOff size={12} class="shrink-0 text-muted" aria-label={m.achievement_hidden()} />
+              {/if}
+              {#if achievement.missable}
+                <span class="missable-badge" title={m.missable_hint()}>
+                  <TriangleAlert size={11} aria-hidden="true" />
+                  {m.missable_badge()}
+                </span>
+              {/if}
+              {#if achievement.guided}
+                <BookOpen size={12} class="shrink-0 text-accent" aria-label={m.guide_badge()} />
               {/if}
             </p>
             <p class="truncate text-xs text-muted">{achievement.description}</p>

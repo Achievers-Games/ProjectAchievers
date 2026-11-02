@@ -574,6 +574,9 @@
           <button name="theme" value="light" class="btn" aria-pressed={data.theme === 'light'}>
             {m.theme_light()}
           </button>
+          <button name="theme" value="system" class="btn" aria-pressed={data.theme === 'system'}>
+            {m.theme_system()}
+          </button>
         </div>
       </form>
     </div>

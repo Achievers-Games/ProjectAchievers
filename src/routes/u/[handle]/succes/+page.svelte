@@ -48,7 +48,8 @@
   // Les idées de jeux ne se chargent qu'à l'ouverture d'une carte, une fois par succès.
   const suggestions = $state<Record<string, Suggestions | 'loading'>>({});
   async function loadSuggestions(code: string | null) {
-    if (!code || code in suggestions) return;
+    // Un échec ne reste pas en mémoire : rouvrir la carte, ou « Réessayer », relance la demande.
+    if (!code || (code in suggestions && suggestions[code] !== 'error')) return;
     suggestions[code] = 'loading';
     try {
       const response = await fetch(`/api/succes/suggestions?code=${encodeURIComponent(code)}`);
@@ -103,13 +104,22 @@
   </div>
 {/snippet}
 
-{#snippet ideas(state: Suggestions | 'loading' | undefined)}
+{#snippet ideas(code: string, state: Suggestions | 'loading' | undefined)}
   <div class="mt-2 border-t border-line pt-2 text-sm" data-testid="ach-ideas">
     <p class="label">{m.ach_ideas_label()}</p>
     {#if state === undefined || state === 'loading'}
       <p class="mt-1 text-muted">{m.ach_ideas_loading()}</p>
     {:else if state === 'error' || state === null}
-      <p class="mt-1 text-muted">{m.action_failed()}</p>
+      <p class="mt-1 text-muted">
+        {m.action_failed()}
+        <button
+          type="button"
+          class="ml-1 underline hover:text-ink"
+          onclick={() => loadSuggestions(code)}
+        >
+          {m.retry()}
+        </button>
+      </p>
     {:else if !state.games.length}
       <p class="mt-1 text-muted">{m.ach_ideas_none()}</p>
     {:else}
@@ -203,7 +213,7 @@
                 >
                   <summary class="cursor-pointer list-none">{@render line(item, category)}</summary>
                   {#if item.suggest && item.code}
-                    {@render ideas(suggestions[item.code])}
+                    {@render ideas(item.code, suggestions[item.code])}
                   {/if}
                   {#if item.proof}
                     <div class="mt-2 border-t border-line pt-2 text-sm">

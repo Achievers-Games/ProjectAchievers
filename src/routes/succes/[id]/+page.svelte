@@ -8,6 +8,7 @@
   import Eye from '@lucide/svelte/icons/eye';
   import EyeOff from '@lucide/svelte/icons/eye-off';
   import Flag from '@lucide/svelte/icons/flag';
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
   import AchievementIcon from '$lib/components/AchievementIcon.svelte';
   import Avatar from '$lib/components/Avatar.svelte';
   import Empty from '$lib/components/Empty.svelte';
@@ -206,6 +207,22 @@
       {/if}
     </div>
   </header>
+
+  {#if data.achievement.missable}
+    <div class="card missables-alert flex items-start gap-3 p-3 text-sm" role="note">
+      <TriangleAlert size={18} class="mt-0.5 shrink-0 text-danger" aria-hidden="true" />
+      <div class="space-y-1">
+        <p class="font-medium">{m.missable_title()}</p>
+        <p class="text-muted">
+          {data.unlockedAt
+            ? m.missable_done()
+            : data.secret && !data.revealed
+              ? m.missable_secret()
+              : m.missable_text()}
+        </p>
+      </div>
+    </div>
+  {/if}
 
   <section class="space-y-3">
     <div class="flex items-center justify-between">

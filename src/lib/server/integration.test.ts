@@ -1855,12 +1855,13 @@ describe('guides officiels', () => {
   const file = (text: string) => `STEAM ${PREFIX}-guides\n\n@@ A1\n${text}\n\n@@ INCONNU\nRien.\n`;
 
   it('lit un fichier de guides', () => {
-    expect(parseGuideFile('STEAM 42\n@@ A\n## Un\n\ntexte\n\n@@ B\nDeux\n')).toEqual({
+    expect(parseGuideFile('STEAM 42\n@@ A\n## Un\n\ntexte\n\n@@ B manquable\nDeux\n')).toEqual({
       platform: 'STEAM',
       gameId: '42',
+      partial: false,
       guides: [
-        { achievementId: 'A', content: '## Un\n\ntexte' },
-        { achievementId: 'B', content: 'Deux' },
+        { achievementId: 'A', content: '## Un\n\ntexte', missable: false },
+        { achievementId: 'B', content: 'Deux', missable: true },
       ],
     });
   });
@@ -1887,6 +1888,46 @@ describe('guides officiels', () => {
 
     await syncCuratedGuides([]);
     expect(await guides()).toEqual([]);
+  });
+
+  it('marque les manquables du jeu relevé, et les retire avec son fichier', async () => {
+    const game = await db.game.create({
+      data: {
+        platform: 'STEAM',
+        platformGameId: `${PREFIX}-manquables`,
+        name: `${PREFIX} manquables`,
+        slug: `${PREFIX}-manquables`,
+      },
+    });
+    for (const id of ['M1', 'M2']) {
+      await db.achievement.create({
+        data: { gameId: game.id, platformAchievementId: id, name: id },
+      });
+    }
+    const state = async () => ({
+      reviewed:
+        (await db.game.findUniqueOrThrow({ where: { id: game.id } })).guideReviewedAt !== null,
+      missable: (await db.achievement.findMany({ where: { gameId: game.id, missable: true } })).map(
+        (a) => a.platformAchievementId,
+      ),
+    });
+    const head = `STEAM ${PREFIX}-manquables\n\n`;
+
+    await syncCuratedGuides([`${head}@@ M1 manquable\nÀ faire avant le chapitre 3.\n`]);
+    expect(await state()).toEqual({ reviewed: true, missable: ['M1'] });
+
+    await syncCuratedGuides([`${head}@@ M1\nPlus manquable depuis un patch.\n`]);
+    expect(await state()).toEqual({ reviewed: true, missable: [] });
+
+    // Un relevé partiel signale ses manquables sans valoir relevé complet.
+    await syncCuratedGuides([
+      `STEAM ${PREFIX}-manquables partiel\n\n@@ M2 manquable\nUn choix de dialogue.\n`,
+    ]);
+    expect(await state()).toEqual({ reviewed: false, missable: ['M2'] });
+
+    await syncCuratedGuides([`${head}@@ M2 manquable\nUn choix de dialogue.\n`]);
+    await syncCuratedGuides([]);
+    expect(await state()).toEqual({ reviewed: false, missable: [] });
   });
 });
 

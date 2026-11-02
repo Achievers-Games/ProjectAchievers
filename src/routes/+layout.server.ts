@@ -1,4 +1,5 @@
 import { pushPublicKey } from '$lib/server/push';
+import { themeOf } from '$lib/theme';
 import { pendingInvites, unreadCount } from '$lib/server/social';
 import type { LayoutServerLoad } from './$types';
 
@@ -20,6 +21,6 @@ export const load: LayoutServerLoad = async ({ locals, cookies, depends }) => {
       role: locals.user.role,
       allowProfanity: locals.user.allowProfanity,
     },
-    theme: cookies.get('pa_theme') === 'light' ? ('light' as const) : ('dark' as const),
+    theme: themeOf(cookies.get('pa_theme')),
   };
 };

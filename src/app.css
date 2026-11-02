@@ -5,7 +5,8 @@
 @tailwind utilities;
 
 :root,
-[data-theme='dark'] {
+[data-theme='dark'],
+[data-theme='system'] {
   --bg: 12 11 22;
   --surface: 21 20 36;
   --raised: 32 30 52;
@@ -41,6 +42,28 @@
   --silver: 95 104 112;
   --bronze: 140 80 40;
   color-scheme: light;
+}
+
+/* « Système » : les couleurs claires quand la machine est réglée en clair. */
+@media (prefers-color-scheme: light) {
+  [data-theme='system'] {
+    --bg: 247 245 253;
+    --surface: 255 255 255;
+    --raised: 238 234 250;
+    --line: 220 214 240;
+    --ink: 26 22 44;
+    --muted: 92 86 118;
+    --accent: 98 62 226;
+    --accent-2: 200 40 130;
+    --on-accent: 255 255 255;
+    --danger: 185 50 40;
+    --success: 22 120 70;
+    --platinum: 40 110 150;
+    --gold: 140 100 10;
+    --silver: 95 104 112;
+    --bronze: 140 80 40;
+    color-scheme: light;
+  }
 }
 
 @layer base {
@@ -86,6 +109,14 @@
   }
   .btn-danger {
     @apply border-danger/40 text-danger hover:bg-danger/10;
+  }
+  /* Un succès manquable se voit de loin : c'est avant de jouer qu'il faut le savoir. */
+  .missable-badge {
+    @apply inline-flex shrink-0 items-center gap-1 rounded border border-danger/50 bg-danger/10 px-1.5 text-[11px] font-semibold uppercase tracking-wide text-danger;
+  }
+  /* Plus précis que `.card`, déclaré après : la bordure rouge l'emporte. */
+  .card.missables-alert {
+    @apply border-danger/60 bg-danger/10;
   }
   .input {
     @apply h-9 w-full rounded border border-line bg-surface px-3 text-sm placeholder:text-muted;

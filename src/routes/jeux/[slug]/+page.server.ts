@@ -8,6 +8,24 @@ import { getLocale } from '$lib/paraglide/runtime';
 import type { Actions, PageServerLoad } from './$types';
 import { m } from '$lib/paraglide/messages';
 
+const OFFICIAL_GUIDE = { curatedKey: { not: null }, status: 'PUBLISHED' } as const;
+
+/**
+ * Le relevé des manquables : celui de cette version, sinon celui d'une autre version du jeu,
+ * que la page signale avec un lien.
+ */
+function missablesOf(
+  game: { guideReviewedAt: Date | null; achievements: { missable: boolean }[] },
+  others: { slug: string; guideReviewedAt: Date | null; _count: { achievements: number } }[],
+) {
+  const count = game.achievements.filter((a) => a.missable).length;
+  if (game.guideReviewedAt) return { count, elsewhere: null, partial: false };
+  const other = others.find((version) => version.guideReviewedAt);
+  if (other) return { count: other._count.achievements, elsewhere: other.slug, partial: false };
+  // Un relevé en cours signale déjà ses manquables, sans promettre qu'il n'y en a pas d'autres.
+  return count ? { count, elsewhere: null, partial: true } : null;
+}
+
 export const load: PageServerLoad = async ({ params, locals, url }) => {
   const revealed = url.searchParams.has('caches');
   const game = await db.game.findUnique({
@@ -15,6 +33,7 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
     include: {
       achievements: {
         orderBy: [{ globalRarity: { sort: 'desc', nulls: 'last' } }, { name: 'asc' }],
+        include: { _count: { select: { guides: { where: OFFICIAL_GUIDE } } } },
       },
     },
   });
@@ -48,6 +67,8 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
             platform: true,
             console: true,
             tier: true,
+            guideReviewedAt: true,
+            _count: { select: { achievements: { where: { missable: true } } } },
             players: {
               where: { userId: locals.user?.id ?? '' },
               select: { completion: true },
@@ -106,9 +127,13 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
         description: masked ? '' : a.description,
         iconUrl: masked ? null : unlocked ? a.iconUrl : (a.iconLockedUrl ?? a.iconUrl),
         unlockedAt: unlocked,
+        // Même caché, un succès manquable se signale : c'est avant de jouer qu'il faut le savoir.
+        missable: a.missable,
+        guided: a._count.guides > 0,
       };
     }),
     revealed,
+    missables: missablesOf(game, others),
     progress,
     season,
     players,
