@@ -5,6 +5,7 @@ import { env } from '../env';
 import { availableProviders } from '../providers';
 import { fillFamilies, matchFamilies } from '../family';
 import { announceSeason } from '../push';
+import { warnPsnToken } from '../service-token';
 import { rateLimit } from '../rate-limit';
 import { hasRecentFeat, isPublicGame, publicUser, RARE_CARD } from '../queries';
 import { copiesFor, type Reward } from '$lib/collection';
@@ -356,6 +357,7 @@ async function sweep() {
   for (const account of accounts) await enqueueSync(account.userId, account.provider);
   await reviewNewPlayers().catch((cause) => console.error('Succès du site :', cause));
   await announceSeason().catch((cause) => console.error('Annonce :', cause));
+  await warnPsnToken().catch((cause) => console.error('Jeton PSN :', cause));
   await refreshDiscordAccounts().catch((cause) => console.error('Discord :', cause));
   await fillHiddenDescriptions().catch((cause) => console.error('Succès cachés :', cause));
   await fillWowCatalog().catch((cause) => console.error('Catalogue WoW :', cause));

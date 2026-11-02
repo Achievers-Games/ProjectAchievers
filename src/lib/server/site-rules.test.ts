@@ -78,8 +78,8 @@ const unlock = (gameId: string, at: number, extra: Partial<UnlockFact> = {}): Un
 const earned = (extra: Partial<SiteFacts>) => earnedCodes(facts(extra));
 
 describe('succès du site', () => {
-  it('compte 207 succès permanents, dont 29 secrets, tous traduits', () => {
-    expect(SITE_CODES.filter((code) => !EVENT_CODES.has(code))).toHaveLength(207);
+  it('compte 311 succès permanents, dont 29 secrets, tous traduits', () => {
+    expect(SITE_CODES.filter((code) => !EVENT_CODES.has(code))).toHaveLength(311);
     expect(new Set(SITE_CODES).size).toBe(SITE_CODES.length);
     expect(SITE_CATEGORIES.secret).toHaveLength(29);
     for (const locale of ['fr', 'en', 'de', 'es', 'pt-BR', 'ru', 'ja', 'zh-CN']) {

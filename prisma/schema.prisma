@@ -95,8 +95,8 @@ enum ReportTarget {
 // ── Comptes ────────────────────────────────────────────────────────────
 
 model User {
-  id              String   @id @default(cuid())
-  handle          String   @unique
+  id              String    @id @default(cuid())
+  handle          String    @unique
   displayName     String
   avatarUrl       String?
   /// Version animée de `avatarUrl`, chargée seulement quand elle doit jouer.
@@ -104,20 +104,20 @@ model User {
   /// Cadre équipé : un identifiant de `frames`, ou l'image d'un cadre importé d'un compte.
   frameMotionUrl  String?
   frame           String?
-  isPublic        Boolean  @default(true)
+  isPublic        Boolean   @default(true)
   /// Vitrine choisie à la main ; sinon, les meilleures cartes.
-  showcaseCustom Boolean @default(false)
+  showcaseCustom  Boolean   @default(false)
   /// Affiche les jeux centrés sur le contenu sexuel, masqués par défaut.
-  showAdult       Boolean  @default(false)
+  showAdult       Boolean   @default(false)
   /// Montre les messages tels qu'ils ont été écrits ; sinon, les grossièretés sont masquées.
-  allowProfanity  Boolean  @default(false)
+  allowProfanity  Boolean   @default(false)
   /// Fuseau du navigateur : certains succès du site dépendent de l'heure du joueur.
   timeZone        String?
   friendsSeenAt   DateTime?
   clansSeenAt     DateTime?
-  role            Role     @default(USER)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  role            Role      @default(USER)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   accounts     LinkedAccount[]
   sessions     Session[]
@@ -134,14 +134,14 @@ model User {
   siteUnlocks  SiteUnlock[]
   pinned       PinnedGame[]
 
-  friendRequests  Friendship[]         @relation("FriendRequester")
-  friendReceived  Friendship[]         @relation("FriendAddressee")
-  blocks          Block[]              @relation("Blocker")
-  blockedBy       Block[]              @relation("Blocked")
-  clanMember      ClanMember?
-  clanInvites     ClanInvite[]
-  conversations   ConversationMember[]
-  messages        Message[]
+  friendRequests Friendship[]         @relation("FriendRequester")
+  friendReceived Friendship[]         @relation("FriendAddressee")
+  blocks         Block[]              @relation("Blocker")
+  blockedBy      Block[]              @relation("Blocked")
+  clanMember     ClanMember?
+  clanInvites    ClanInvite[]
+  conversations  ConversationMember[]
+  messages       Message[]
 
   showOnline        Boolean            @default(true)
   feedback          Feedback[]
@@ -330,10 +330,10 @@ model Session {
   createdAt  DateTime @default(now())
   lastUsedAt DateTime @default(now())
 
+  pushSubscriptions PushSubscription[]
+
   @@index([userId])
   @@index([expiresAt])
-
-  pushSubscriptions PushSubscription[]
 }
 
 model LinkedAccount {
@@ -382,7 +382,7 @@ model PsnVerification {
 
 model Game {
   /// Niveau de difficulté de 1 (Bronze) à 6 (Légendaire), calculé depuis ses succès.
-  tier             Int?
+  tier              Int?
   id                String            @id @default(cuid())
   platform          Platform
   platformGameId    String
@@ -616,4 +616,15 @@ model Report {
 
   @@unique([reporterId, targetType, targetId])
   @@index([resolvedAt])
+}
+
+/// Un jeton de service posé à la main sur le serveur (le NPSSO du PSN) : il expire sans prévenir.
+model ServiceToken {
+  name        String    @id
+  /// Empreinte du jeton, jamais le jeton : elle repère son remplacement.
+  fingerprint String
+  since       DateTime  @default(now())
+  okAt        DateTime?
+  failedAt    DateTime?
+  error       String?
 }

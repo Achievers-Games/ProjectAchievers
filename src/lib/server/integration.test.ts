@@ -55,6 +55,7 @@ import { splitText, translateContent } from './translate';
 import { ensureGameTexts, localizeAchievements } from './achievement-texts';
 import { refreshDiscordAccounts } from './sync/discord';
 import { UNKNOWN_ICON } from './site-icons';
+import { notePsnToken, psnTokenState, warnPsnToken } from './service-token';
 import { SITE_TOTAL } from '$lib/site-achievements';
 
 const PREFIX = 'zz-test';
@@ -2131,5 +2132,46 @@ describe('succès du site', () => {
       ].map((code) => ({ userId: user.id, code })),
     });
     expect(await checkSiteAchievements(user.id)).toEqual(['last_word']);
+  });
+});
+
+describe('jeton PSN du site', () => {
+  const DAY = 24 * 60 * 60 * 1000;
+  afterEach(async () => {
+    await db.serviceToken.deleteMany();
+    await db.announcement.deleteMany({ where: { key: { startsWith: 'jeton:' } } });
+  });
+
+  it('compte ses 60 jours depuis sa mise en service, et repart à zéro avec un nouveau', async () => {
+    const start = new Date('2026-11-01T00:00:00Z');
+    await notePsnToken('ancien', undefined, start);
+    await notePsnToken('ancien', undefined, new Date(start.getTime() + 10 * DAY));
+
+    const state = await psnTokenState(start.getTime() + 10 * DAY);
+    expect(state).toMatchObject({ since: start, daysLeft: 50, failing: false, warn: false });
+    expect((await psnTokenState(start.getTime() + 40 * DAY))?.warn).toBe(true);
+
+    // L'empreinte seule est gardée : jamais le jeton.
+    const row = await db.serviceToken.findFirstOrThrow();
+    expect(JSON.stringify(row)).not.toContain('ancien');
+
+    const later = new Date(start.getTime() + 45 * DAY);
+    await notePsnToken('nouveau', undefined, later);
+    expect(await psnTokenState(later.getTime())).toMatchObject({ since: later, daysLeft: 60 });
+  });
+
+  it('signale un refus de Sony, puis le lève au prochain échange réussi', async () => {
+    await notePsnToken('jeton', 'Is your NPSSO code valid?');
+    expect(await psnTokenState()).toMatchObject({ failing: true, warn: true });
+    await notePsnToken('jeton');
+    expect(await psnTokenState()).toMatchObject({ failing: false, warn: false });
+  });
+
+  it("ne prévient qu'une fois par étape", async () => {
+    await notePsnToken('jeton', 'Is your NPSSO code valid?');
+    await warnPsnToken();
+    await warnPsnToken();
+    const keys = await db.announcement.findMany({ where: { key: { startsWith: 'jeton:' } } });
+    expect(keys.map((a) => a.key)).toEqual([expect.stringMatching(/^jeton:[0-9a-f]{16}:refuse$/)]);
   });
 });

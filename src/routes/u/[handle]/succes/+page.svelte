@@ -22,6 +22,21 @@
     genres: m.ach_cat_genres,
     themes: m.ach_cat_themes,
   };
+
+  type Filter = 'all' | 'earned' | 'missing';
+  const FILTERS: { value: Filter; label: () => string }[] = [
+    { value: 'all', label: m.ach_filter_all },
+    { value: 'earned', label: m.ach_filter_earned },
+    { value: 'missing', label: m.ach_filter_missing },
+  ];
+  let filter = $state<Filter>('all');
+  const keep = (item: Item) =>
+    filter === 'all' || (filter === 'earned') === (item.unlockedAt !== null);
+  const shown = $derived(
+    board.categories
+      .map(({ category, items }) => ({ category, items, visible: items.filter(keep) }))
+      .filter(({ visible }) => visible.length > 0),
+  );
 </script>
 
 <svelte:head>
@@ -57,67 +72,101 @@
     <a class="text-sm text-muted hover:text-ink" href="/u/{player.handle}">{player.displayName}</a>
     <h1>{m.ach_heading()}</h1>
     <p class="text-muted">{m.ach_progress({ earned: board.earned, total: board.total })}</p>
+    <div
+      class="flex rounded border border-line text-sm w-fit"
+      role="group"
+      aria-label={m.ach_filter_label()}
+    >
+      {#each FILTERS as option (option.value)}
+        <button
+          type="button"
+          class="px-3 py-1.5"
+          aria-pressed={filter === option.value}
+          class:bg-raised={filter === option.value}
+          class:text-muted={filter !== option.value}
+          onclick={() => (filter = option.value)}
+        >
+          {option.label()}
+        </button>
+      {/each}
+    </div>
+    <nav class="flex flex-wrap gap-x-3 gap-y-1 text-sm" aria-label={m.ach_jump_label()}>
+      {#each shown as { category } (category)}
+        <a class="text-muted hover:text-ink" href="#ach-{category}"
+          >{CATEGORY_LABELS[category]?.()}</a
+        >
+      {/each}
+    </nav>
   </header>
 
-  {#each board.categories as { category, items } (category)}
-    <section class="space-y-3" aria-labelledby="ach-{category}">
-      <h2 id="ach-{category}">
-        {CATEGORY_LABELS[category]?.()}
-        <span class="tabular text-sm text-muted">
-          {items.filter((item) => item.unlockedAt).length}/{items.length}
-        </span>
-      </h2>
-      {#if category === 'genres'}
-        <p class="text-sm text-muted">{m.ach_genres_note()}</p>
-      {/if}
-      <ul class="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-        {#each items as item (item.key)}
-          <li class="card p-3" class:opacity-70={!item.unlockedAt}>
-            {#if item.proof}
-              <details>
-                <summary class="cursor-pointer list-none">{@render line(item, category)}</summary>
-                <div class="mt-2 border-t border-line pt-2 text-sm">
-                  <p class="label">{m.ach_proof_label()}</p>
-                  <ul class="mt-1 space-y-1">
-                    {#each item.proof.games as game (game.slug)}
-                      <li class="flex items-center gap-2">
-                        {#if game.coverUrl ?? game.headerUrl}
-                          <img
-                            src={game.coverUrl ?? game.headerUrl}
-                            alt=""
-                            loading="lazy"
-                            class="h-6 w-6 shrink-0 rounded object-cover"
-                          />
-                        {/if}
-                        <a class="hover:text-ink" href="/jeux/{game.slug}">{game.name}</a>
-                      </li>
-                    {/each}
-                    {#each item.proof.achievements as achievement (achievement.id)}
-                      <li class="flex items-center gap-2">
-                        {#if achievement.iconUrl}
-                          <img
-                            src={achievement.iconUrl}
-                            alt=""
-                            loading="lazy"
-                            class="h-6 w-6 shrink-0 rounded object-cover"
-                          />
-                        {/if}
-                        <a class="hover:text-ink" href="/succes/{achievement.id}">
-                          {achievement.name}
-                        </a>
-                        <span class="text-muted">· {achievement.game.name}</span>
-                      </li>
-                    {/each}
-                  </ul>
-                </div>
-              </details>
-            {:else}
-              {@render line(item, category)}
-            {/if}
-          </li>
-        {/each}
-      </ul>
+  {#each shown as { category, items, visible } (category)}
+    <section class="scroll-mt-20" id="ach-{category}" aria-labelledby="ach-title-{category}">
+      <details open class="group space-y-3">
+        <summary class="flex cursor-pointer list-none items-center gap-2">
+          <h2 id="ach-title-{category}">
+            {CATEGORY_LABELS[category]?.()}
+            <span class="tabular text-sm text-muted">
+              {items.filter((item) => item.unlockedAt).length}/{items.length}
+            </span>
+          </h2>
+          <span class="text-muted transition-transform group-open:rotate-90" aria-hidden="true"
+            >›</span
+          >
+        </summary>
+        {#if category === 'genres'}
+          <p class="text-sm text-muted">{m.ach_genres_note()}</p>
+        {/if}
+        <ul class="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+          {#each visible as item (item.key)}
+            <li class="card p-3" class:opacity-70={!item.unlockedAt}>
+              {#if item.proof}
+                <details>
+                  <summary class="cursor-pointer list-none">{@render line(item, category)}</summary>
+                  <div class="mt-2 border-t border-line pt-2 text-sm">
+                    <p class="label">{m.ach_proof_label()}</p>
+                    <ul class="mt-1 space-y-1">
+                      {#each item.proof.games as game (game.slug)}
+                        <li class="flex items-center gap-2">
+                          {#if game.coverUrl ?? game.headerUrl}
+                            <img
+                              src={game.coverUrl ?? game.headerUrl}
+                              alt=""
+                              loading="lazy"
+                              class="h-6 w-6 shrink-0 rounded object-cover"
+                            />
+                          {/if}
+                          <a class="hover:text-ink" href="/jeux/{game.slug}">{game.name}</a>
+                        </li>
+                      {/each}
+                      {#each item.proof.achievements as achievement (achievement.id)}
+                        <li class="flex items-center gap-2">
+                          {#if achievement.iconUrl}
+                            <img
+                              src={achievement.iconUrl}
+                              alt=""
+                              loading="lazy"
+                              class="h-6 w-6 shrink-0 rounded object-cover"
+                            />
+                          {/if}
+                          <a class="hover:text-ink" href="/succes/{achievement.id}">
+                            {achievement.name}
+                          </a>
+                          <span class="text-muted">· {achievement.game.name}</span>
+                        </li>
+                      {/each}
+                    </ul>
+                  </div>
+                </details>
+              {:else}
+                {@render line(item, category)}
+              {/if}
+            </li>
+          {/each}
+        </ul>
+      </details>
     </section>
+  {:else}
+    <p class="text-muted">{m.ach_filter_empty()}</p>
   {/each}
 
   <p class="text-xs text-muted">

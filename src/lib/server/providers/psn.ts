@@ -7,6 +7,7 @@ import {
 } from 'psn-api';
 import { randomBytes } from 'node:crypto';
 import { env } from '../env';
+import { notePsnToken } from '../service-token';
 
 interface ServiceTokens {
   accessToken: string;
@@ -16,8 +17,22 @@ interface ServiceTokens {
 
 let tokens: ServiceTokens | undefined;
 
-const fromNpsso = async () =>
-  exchangeAccessCodeForAuthTokens(await exchangeNpssoForAccessCode(env().PSN_SERVICE_NPSSO ?? ''));
+/** Seul le refus du NPSSO compte comme un jeton mort : une panne réseau ne dit rien de lui. */
+async function fromNpsso() {
+  const npsso = env().PSN_SERVICE_NPSSO ?? '';
+  let code: string;
+  try {
+    code = await exchangeNpssoForAccessCode(npsso);
+  } catch (error) {
+    if (npsso && error instanceof Error && /npsso/i.test(error.message)) {
+      await notePsnToken(npsso, error.message).catch(() => {});
+    }
+    throw error;
+  }
+  const response = await exchangeAccessCodeForAuthTokens(code);
+  await notePsnToken(npsso).catch(() => {});
+  return response;
+}
 
 /**
  * Autorisation du compte de service PSN.

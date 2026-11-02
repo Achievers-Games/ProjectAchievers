@@ -8,7 +8,7 @@
   import { m } from '$lib/paraglide/messages';
   import { enhance } from '$app/forms';
   import Empty from '$lib/components/Empty.svelte';
-  import { formatRelative, PLATFORM_LABELS } from '$lib/labels';
+  import { formatDate, formatRelative, PLATFORM_LABELS } from '$lib/labels';
 
   let { data } = $props();
 </script>
@@ -20,6 +20,32 @@
 
 <div class="mx-auto max-w-3xl space-y-4">
   <h1>{m.moderation()}</h1>
+
+  {#if data.psnToken !== undefined}
+    {@const token = data.psnToken}
+    <section
+      class="card space-y-1 p-4 text-sm {token?.warn ? 'border-danger' : ''}"
+      data-testid="psn-token"
+    >
+      <h2 class="text-base">{m.mod_psn_token()}</h2>
+      {#if !token}
+        <p class="text-muted">{m.mod_psn_token_unknown()}</p>
+      {:else if token.failing}
+        <p class="text-danger">{m.mod_psn_token_failing()}</p>
+      {:else}
+        <p class={token.warn ? 'text-danger' : 'text-muted'}>
+          {m.mod_psn_token_ok({
+            since: formatDate(token.since),
+            until: formatDate(token.expiresAt),
+            days: token.daysLeft,
+          })}
+        </p>
+      {/if}
+      {#if token?.warn}
+        <p class="text-muted">{m.mod_psn_token_help()}</p>
+      {/if}
+    </section>
+  {/if}
 
   {#each data.reports as report (report.id)}
     <article class="card space-y-2 p-4">

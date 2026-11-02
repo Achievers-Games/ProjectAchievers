@@ -968,11 +968,20 @@ test.describe('succès du site', () => {
 
     await expect(async () => {
       await page.reload();
-      await expect(page.locator('main details').first()).toBeVisible({ timeout: 1000 });
+      await expect(page.locator('main li details').first()).toBeVisible({ timeout: 1000 });
     }).toPass();
     await ready(page);
-    const proof = page.locator('main details').first();
+    const proof = page.locator('main li details').first();
     await proof.locator('summary').click();
     await expect(proof.getByRole('link').first()).toBeVisible();
+
+    // Les filtres et les sections repliables.
+    const earned = await page.locator('main li.card:not(.opacity-70)').count();
+    await page.getByRole('button', { name: 'Obtenus' }).click();
+    await expect(page.locator('main li.card')).toHaveCount(earned);
+    await page.getByRole('button', { name: 'Tous' }).click();
+    const first = page.locator('main section').first();
+    await first.locator('summary').first().click();
+    await expect(first.locator('li.card').first()).toBeHidden();
   });
 });

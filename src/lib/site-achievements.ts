@@ -37,6 +37,30 @@ export const GENRES = {
   soulslike: { tags: [29482], steps: [1, 3, 10] },
   metroidvania: { tags: [1628], steps: [1, 3, 10] },
   jrpg: { tags: [4434], steps: [1, 3, 10] },
+  story_rich: { tags: [1742], steps: [1, 5, 15] },
+  choices: { tags: [6426, 6971], steps: [1, 5, 15] },
+  arcade: { tags: [1773], steps: [1, 5, 15] },
+  retro: { tags: [4004], steps: [1, 5, 15] },
+  comedy: { tags: [1719, 4136, 5923], steps: [1, 5, 15] },
+  sci_fi: { tags: [3942], steps: [1, 5, 15] },
+  fantasy: { tags: [1684, 4604], steps: [1, 5, 15] },
+  exploration: { tags: [3834], steps: [1, 5, 15] },
+  atmospheric: { tags: [4166], steps: [1, 5, 15] },
+  psychological: { tags: [5186, 1710], steps: [1, 5, 15] },
+  sandbox: { tags: [3810, 1702], steps: [1, 5, 15] },
+  city_builder: { tags: [4328, 220585, 7332], steps: [1, 3, 10] },
+  tower_defense: { tags: [1645], steps: [1, 3, 10] },
+  hack_slash: { tags: [1646, 4777, 3955], steps: [1, 3, 10] },
+  beat_em_up: { tags: [4158], steps: [1, 3, 10] },
+  tactics: { tags: [14139], steps: [1, 3, 10] },
+  walking_sim: { tags: [5900], steps: [1, 3, 10] },
+  mystery: { tags: [5716, 6052], steps: [1, 3, 10] },
+  post_apo: { tags: [3835], steps: [1, 3, 10] },
+  management: { tags: [12472], steps: [1, 3, 10] },
+  casual_puzzle: { tags: [1738, 1665], steps: [1, 3, 10] },
+  idle: { tags: [615955, 379975], steps: [1, 3, 10] },
+  dungeon_crawler: { tags: [1720, 198631], steps: [1, 3, 10] },
+  military: { tags: [4168, 4150, 13276], steps: [1, 3, 10] },
 } as const satisfies Record<string, GenreDef>;
 
 /** Les thèmes : un seul jeu suffit, pour le clin d'œil. */
@@ -56,6 +80,36 @@ export const THEMES = {
   western: { tags: [1647], steps: [1] },
   time_travel: { tags: [10679, 6625], steps: [1] },
   detective: { tags: [5613, 8369], steps: [1] },
+  cyberpunk: { tags: [4115], steps: [1] },
+  steampunk: { tags: [1777], steps: [1] },
+  mythology: { tags: [16094], steps: [1] },
+  aliens: { tags: [1673], steps: [1] },
+  superhero: { tags: [1671], steps: [1] },
+  magic: { tags: [4057], steps: [1] },
+  demons: { tags: [9541], steps: [1] },
+  werewolves: { tags: [17015], steps: [1] },
+  gothic: { tags: [3952], steps: [1] },
+  samurai: { tags: [10617], steps: [1] },
+  vikings: { tags: [11634], steps: [1] },
+  dogs: { tags: [1638], steps: [1] },
+  horses: { tags: [6041], steps: [1] },
+  underwater: { tags: [9157], steps: [1] },
+  snow: { tags: [9803], steps: [1] },
+  mars: { tags: [6702], steps: [1] },
+  trains: { tags: [1616], steps: [1] },
+  flight: { tags: [15045, 92092], steps: [1] },
+  naval: { tags: [6910, 19780], steps: [1] },
+  heist: { tags: [1680, 6378], steps: [1] },
+  assassin: { tags: [4376], steps: [1] },
+  martial_arts: { tags: [6915, 12190, 47827], steps: [1] },
+  football: { tags: [1254546, 1254552, 49213], steps: [1] },
+  golf: { tags: [7038, 22955], steps: [1] },
+  skate: { tags: [1753, 28444], steps: [1] },
+  hunting: { tags: [9564], steps: [1] },
+  pinball: { tags: [6621], steps: [1] },
+  board_games: { tags: [4184, 1770], steps: [1] },
+  words: { tags: [24003, 10437, 1674], steps: [1] },
+  music: { tags: [1621], steps: [1] },
 } as const satisfies Record<string, GenreDef>;
 
 type StepCodes<T> = {
@@ -185,7 +239,7 @@ const BASE_CATEGORIES = {
   ],
 } as const;
 
-const GENRE_TOURS = ['genre_tour_10', 'genre_tour_20'] as const;
+const GENRE_TOURS = ['genre_tour_10', 'genre_tour_20', 'genre_tour_30', 'genre_tour_40'] as const;
 
 const { secret, ...visible } = BASE_CATEGORIES;
 

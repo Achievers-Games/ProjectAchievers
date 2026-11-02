@@ -415,6 +415,8 @@ export function evaluateSite(facts: SiteFacts) {
     comfort_zone: comfortRun >= 0,
     genre_tour_10: tourGame(10) !== undefined,
     genre_tour_20: tourGame(20) !== undefined,
+    genre_tour_30: tourGame(30) !== undefined,
+    genre_tour_40: tourGame(40) !== undefined,
   };
   const genreCodes = [...SITE_CATEGORIES.genres, ...SITE_CATEGORIES.themes].flatMap((code) => {
     const genre = genreOf(code);
@@ -486,6 +488,8 @@ export function evaluateSite(facts: SiteFacts) {
     comfort_zone: () => gamesOf(finishedByTime.slice(comfortRun, comfortRun + 10)),
     genre_tour_10: () => gamesOf([tourGame(10)].flatMap((g) => g ?? [])),
     genre_tour_20: () => gamesOf([tourGame(20)].flatMap((g) => g ?? [])),
+    genre_tour_30: () => gamesOf([tourGame(30)].flatMap((g) => g ?? [])),
+    genre_tour_40: () => gamesOf([tourGame(40)].flatMap((g) => g ?? [])),
     ...Object.fromEntries(
       genreCodes.map(({ code, count, tags }) => [code, () => nthFinished(count, tagged(tags))]),
     ),

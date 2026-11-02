@@ -1,6 +1,7 @@
 import { error, fail } from '@sveltejs/kit';
 import { z } from 'zod';
 import { db } from '$lib/server/db';
+import { psnTokenState } from '$lib/server/service-token';
 import type { Actions, PageServerLoad } from './$types';
 import { m } from '$lib/paraglide/messages';
 
@@ -10,7 +11,7 @@ function requireModerator(locals: App.Locals) {
 }
 
 export const load: PageServerLoad = async ({ locals }) => {
-  requireModerator(locals);
+  const moderator = requireModerator(locals);
 
   const reports = await db.report.findMany({
     where: { resolvedAt: null },
@@ -77,6 +78,8 @@ export const load: PageServerLoad = async ({ locals }) => {
   });
 
   return {
+    // Le jeton du site ne regarde que les administrateurs, qui le renouvellent.
+    psnToken: moderator.role === 'ADMIN' ? await psnTokenState() : undefined,
     feedback,
     families,
     reports: reports.map((report) => ({
