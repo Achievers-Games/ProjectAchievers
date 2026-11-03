@@ -34,7 +34,8 @@ export interface CardDrop {
     frame?: string | null;
     frameMotionUrl?: string | null;
   };
-  game: { name: string; slug: string; headerUrl: string | null };
+  /** Le niveau de la carte, du Bronze (1) au Légendaire (6). */
+  game: { name: string; slug: string; headerUrl: string | null; tier: number };
   unlockedAt: Date | string;
 }
 

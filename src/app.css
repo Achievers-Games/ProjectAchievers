@@ -263,18 +263,62 @@
 }
 .drop-tile {
   @apply block w-56 shrink-0 overflow-hidden rounded-md;
+  /* Le cadre, le fond et le halo suivent le niveau de la carte, comme les badges. */
+  --drop-ink: #f7c448;
+  --drop-line: #fff1bf, #d9a520, #b8860b, #ffe08a;
+  --drop-back: #5c420c, #261c08;
+  --drop-glow: 247 196 72;
   border: 2px solid transparent;
   background:
-    linear-gradient(160deg, rgb(92 66 12), rgb(38 28 8)) padding-box,
-    linear-gradient(135deg, #fff1bf, #d9a520, #b8860b, #ffe08a) border-box;
-  box-shadow: 0 0 12px rgb(247 196 72 / 0.3);
+    linear-gradient(160deg, var(--drop-back)) padding-box,
+    linear-gradient(135deg, var(--drop-line)) border-box;
+  box-shadow: 0 0 12px rgb(var(--drop-glow) / 0.3);
   transition:
     box-shadow 180ms,
     transform 180ms;
 }
+.drop-tile[data-tier='1'] {
+  --drop-ink: #cd8b4e;
+  --drop-line: #f0c8a0, #b0743c, #e8b184;
+  --drop-back: #4a2e17, #24160a;
+  --drop-glow: 205 139 78;
+}
+.drop-tile[data-tier='2'] {
+  --drop-ink: #c4ccd6;
+  --drop-line: #f2f4f7, #8d97a3, #eef1f5;
+  --drop-back: #3b424a, #1c2229;
+  --drop-glow: 196 204 214;
+}
+.drop-tile[data-tier='3'] {
+  --drop-ink: #f7c448;
+  --drop-line: #fff1bf, #d9a520, #b8860b, #ffe08a;
+  --drop-back: #5c420c, #261c08;
+  --drop-glow: 247 196 72;
+}
+.drop-tile[data-tier='4'] {
+  --drop-ink: #d9e8fb;
+  --drop-line: #f2f8ff, #7f93ad, #e8f2ff;
+  --drop-back: #33425a, #14202e;
+  --drop-glow: 200 225 255;
+}
+.drop-tile[data-tier='5'] {
+  --drop-ink: #c4b5fd;
+  --drop-line: #38bdf8, #a78bfa, #f472b6, #fbbf24, #4ade80, #38bdf8;
+  --drop-back: #2e1f52, #120d24;
+  --drop-glow: 196 150 255;
+}
+.drop-tile[data-tier='6'] {
+  --drop-ink: #ff7a3d;
+  --drop-line: #7f1d1d, #ff5a1f, #ffd76e, #ff5a1f, #7f1d1d;
+  --drop-back: #4a0d0d, #1a0500;
+  --drop-glow: 255 110 40;
+}
 .drop-tile:hover {
   transform: translateY(-2px);
-  box-shadow: 0 0 22px rgb(247 196 72 / 0.6);
+  box-shadow: 0 0 22px rgb(var(--drop-glow) / 0.6);
+}
+.drop-title {
+  color: var(--drop-ink);
 }
 .drop-image {
   @apply aspect-[460/215] w-full object-cover;

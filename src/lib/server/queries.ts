@@ -277,11 +277,12 @@ export async function cardFeed(showAdult = false, limit = 12) {
       user: {
         select: publicUser,
       },
-      game: { select: { name: true, slug: true, headerUrl: true } },
+      game: { select: { name: true, slug: true, headerUrl: true, tier: true } },
     },
   });
   return rows.map(({ lastUnlockedAt, ...row }) => ({
     ...row,
+    game: { ...row.game, tier: row.game.tier ?? 1 },
     unlockedAt: lastUnlockedAt as Date,
   }));
 }

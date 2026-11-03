@@ -3,6 +3,7 @@
   import { flip } from 'svelte/animate';
   import { fly } from 'svelte/transition';
   import Avatar from './Avatar.svelte';
+  import CompleteBadge from './CompleteBadge.svelte';
   import type { CardDrop } from '$lib/collection';
   import { formatRelative } from '$lib/labels';
 
@@ -13,6 +14,8 @@
   let live = $state<CardDrop[]>([]);
 
   const keyOf = (drop: CardDrop) => `${drop.user.handle}-${drop.game.slug}`;
+  /** Une carte diffusée sans niveau (ancien flux encore ouvert) reste une carte Bronze. */
+  const tierOf = (drop: CardDrop) => drop.game.tier ?? 1;
 
   // Une carte reçue en direct passe devant celles déjà connues, sans doublon.
   const drops = $derived(
@@ -44,7 +47,7 @@
     <ul class="live-rail" aria-live="polite">
       {#each drops as drop (keyOf(drop))}
         <li animate:flip={{ duration: 250 }} in:fly={{ x: -40, duration: 300 }}>
-          <a href="/jeux/{drop.game.slug}" class="drop-tile">
+          <a href="/jeux/{drop.game.slug}" class="drop-tile" data-tier={tierOf(drop)}>
             {#if drop.game.headerUrl}
               <img src={drop.game.headerUrl} alt="" loading="lazy" class="drop-image" />
             {/if}
@@ -53,8 +56,11 @@
                 <Avatar person={drop.user} size={18} />
                 <span class="truncate text-xs font-semibold">{drop.user.displayName}</span>
               </span>
-              <span class="block truncate text-sm font-bold text-gold">{drop.game.name}</span>
-              <span class="block text-xs text-muted">{formatRelative(drop.unlockedAt)}</span>
+              <span class="drop-title block truncate text-sm font-bold">{drop.game.name}</span>
+              <span class="flex items-center justify-between gap-2">
+                <CompleteBadge tier={tierOf(drop)} />
+                <span class="text-xs text-muted">{formatRelative(drop.unlockedAt)}</span>
+              </span>
             </span>
           </a>
         </li>

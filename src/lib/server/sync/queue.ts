@@ -217,7 +217,7 @@ async function announceCards(user: SyncUser, userId: string, before: Map<string,
       if (unlockedAt && recent && isPublicGame(game)) {
         publishCard({
           user: { displayName, handle, avatarUrl, avatarMotionUrl, frame, frameMotionUrl },
-          game,
+          game: { ...game, tier: game.tier ?? 1 },
           unlockedAt,
         });
       }
