@@ -26,6 +26,12 @@ const schema = z.object({
   CLOUDFLARE_AI_TOKEN: z.string().optional(),
   DEV_LOGIN: z.string().optional(),
   SYNC_CONCURRENCY: z.coerce.number().int().min(1).default(2),
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().int().min(1).max(65535).optional(),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  SMTP_FROM: z.string().optional(),
+  SMTP_FROM_NAME: z.string().optional(),
 });
 
 type Env = z.infer<typeof schema>;
