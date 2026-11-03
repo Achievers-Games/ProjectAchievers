@@ -3,6 +3,7 @@
   import { flip } from 'svelte/animate';
   import { fly } from 'svelte/transition';
   import Avatar from './Avatar.svelte';
+  import CardFx from './CardFx.svelte';
   import CompleteBadge from './CompleteBadge.svelte';
   import type { CardDrop } from '$lib/collection';
   import { formatRelative } from '$lib/labels';
@@ -16,6 +17,7 @@
   const keyOf = (drop: CardDrop) => `${drop.user.handle}-${drop.game.slug}`;
   /** Une carte diffusée sans niveau (ancien flux encore ouvert) reste une carte Bronze. */
   const tierOf = (drop: CardDrop) => drop.game.tier ?? 1;
+  const copiesOf = (drop: CardDrop) => drop.copies ?? 1;
 
   // Une carte reçue en direct passe devant celles déjà connues, sans doublon.
   const drops = $derived(
@@ -47,9 +49,17 @@
     <ul class="live-rail" aria-live="polite">
       {#each drops as drop (keyOf(drop))}
         <li animate:flip={{ duration: 250 }} in:fly={{ x: -40, duration: 300 }}>
-          <a href="/jeux/{drop.game.slug}" class="drop-tile" data-tier={tierOf(drop)}>
+          <a
+            href="/jeux/{drop.game.slug}"
+            class="drop-tile"
+            data-tier={tierOf(drop)}
+            data-copies={copiesOf(drop) > 1 ? copiesOf(drop) : undefined}
+          >
             {#if drop.game.headerUrl}
               <img src={drop.game.headerUrl} alt="" loading="lazy" class="drop-image" />
+            {/if}
+            {#if copiesOf(drop) > 1}
+              <CardFx copies={copiesOf(drop)} image={drop.game.headerUrl} />
             {/if}
             <span class="drop-body">
               <span class="flex items-center gap-1.5">
@@ -58,7 +68,7 @@
               </span>
               <span class="drop-title block truncate text-sm font-bold">{drop.game.name}</span>
               <span class="flex items-center justify-between gap-2">
-                <CompleteBadge tier={tierOf(drop)} />
+                <CompleteBadge tier={tierOf(drop)} copies={copiesOf(drop)} />
                 <span class="text-xs text-muted">{formatRelative(drop.unlockedAt)}</span>
               </span>
             </span>

@@ -1,7 +1,7 @@
 import { Prisma, type Platform } from '@prisma/client';
 import { db } from './db';
 import { groupLibrary, type LibraryCard } from './library';
-import { consolesOf, TIERS } from '$lib/collection';
+import { consolesOf, copiesFor, TIERS } from '$lib/collection';
 import { RARITY_POINTS, SEASON, seasonState, type Season } from '$lib/season';
 
 export const PAGE_SIZE = 36;
@@ -260,6 +260,28 @@ export const RARE_CARD = {
   completion: { gte: 100 },
 } satisfies Prisma.UserGameWhereInput;
 
+/**
+ * Les exemplaires de chaque carte du fil : une édition terminée par plateforme ou console, comme
+ * au moment de la révélation. Une seule requête pour toutes les cartes affichées.
+ */
+async function copiesInFeed(
+  rows: { userId: string; game: { slug: string; familyKey: string | null } }[],
+) {
+  const userIds = [...new Set(rows.map((row) => row.userId))];
+  if (userIds.length === 0) return new Map<string, number>();
+  const counts = await db.$queryRaw<{ userId: string; family: string; copies: bigint }[]>`
+    SELECT ug."userId", COALESCE(g."familyKey", g."slug") AS family,
+           count(DISTINCT COALESCE(g."console", g."platform"::text)) AS copies
+    FROM "UserGame" ug
+    JOIN "Game" g ON g.id = ug."gameId"
+    WHERE ug."completion" >= 100 AND NOT ug.hidden
+      AND ug."userId" IN (${Prisma.join(userIds)})
+    GROUP BY 1, 2`;
+  return new Map(
+    counts.map((row) => [`${row.userId}|${row.family}`, copiesFor(Number(row.copies))]),
+  );
+}
+
 /** Dernières cartes obtenues par les profils publics, à la date du dernier succès. */
 export async function cardFeed(showAdult = false, limit = 12) {
   const rows = await db.userGame.findMany({
@@ -274,15 +296,20 @@ export async function cardFeed(showAdult = false, limit = 12) {
     take: limit,
     select: {
       lastUnlockedAt: true,
+      userId: true,
       user: {
         select: publicUser,
       },
-      game: { select: { name: true, slug: true, headerUrl: true, tier: true } },
+      game: {
+        select: { name: true, slug: true, headerUrl: true, tier: true, familyKey: true },
+      },
     },
   });
-  return rows.map(({ lastUnlockedAt, ...row }) => ({
-    ...row,
-    game: { ...row.game, tier: row.game.tier ?? 1 },
+  const copies = await copiesInFeed(rows);
+  return rows.map(({ lastUnlockedAt, userId, user, game: { familyKey, ...game } }) => ({
+    user,
+    game: { ...game, tier: game.tier ?? 1 },
+    copies: copies.get(`${userId}|${familyKey ?? game.slug}`) ?? 1,
     unlockedAt: lastUnlockedAt as Date,
   }));
 }

@@ -262,7 +262,9 @@
   scrollbar-width: thin;
 }
 .drop-tile {
-  @apply block w-56 shrink-0 overflow-hidden rounded-md;
+  @apply relative block w-56 shrink-0 overflow-hidden rounded-md;
+  /* Les effets d'exemplaires reprennent la couleur du niveau. */
+  --glow: var(--drop-glow);
   /* Le cadre, le fond et le halo suivent le niveau de la carte, comme les badges. */
   --drop-ink: #f7c448;
   --drop-line: #fff1bf, #d9a520, #b8860b, #ffe08a;
@@ -319,6 +321,34 @@
 }
 .drop-title {
   color: var(--drop-ink);
+}
+/* Mêmes exemplaires que les cartes de la collection : ×2 étincelles, ×3 fond vivant,
+   ×4 sujet détaché. Ils s'animent au survol, pour que la page reste calme. */
+.drop-tile[data-copies='3'] > .drop-image,
+.drop-tile[data-copies='4'] > .drop-image {
+  animation: fx-drift 9s ease-in-out infinite alternate;
+  animation-play-state: paused;
+}
+.drop-tile[data-copies='4'] > .drop-image {
+  filter: brightness(0.3) saturate(1.3) blur(2px);
+}
+.drop-tile[data-copies='3'] .card-fx::after,
+.drop-tile[data-copies='4'] .card-fx::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 22px 3px rgb(var(--glow, 247 196 72));
+  animation: fx-pulse 2.2s ease-in-out infinite alternate;
+}
+.drop-tile:hover .card-fx,
+.drop-tile:hover .card-fx *,
+.drop-tile:hover .card-fx::after,
+.drop-tile:hover > .drop-image,
+.drop-tile:focus-visible .card-fx,
+.drop-tile:focus-visible .card-fx *,
+.drop-tile:focus-visible .card-fx::after,
+.drop-tile:focus-visible > .drop-image {
+  animation-play-state: running;
 }
 .drop-image {
   @apply aspect-[460/215] w-full object-cover;
