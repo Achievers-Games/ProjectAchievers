@@ -6,6 +6,7 @@
   import CardFx from './CardFx.svelte';
   import CompleteBadge from './CompleteBadge.svelte';
   import { dragScroll } from '$lib/actions/drag-scroll';
+  import { subscribeJson } from '$lib/sse';
   import type { CardDrop } from '$lib/collection';
   import { formatRelative } from '$lib/labels';
 
@@ -28,13 +29,11 @@
     ),
   );
 
-  $effect(() => {
-    const source = new EventSource('/api/cartes');
-    source.onmessage = (message) => {
-      live = [JSON.parse(message.data) as CardDrop, ...live].slice(0, MAX_DROPS);
-    };
-    return () => source.close();
-  });
+  $effect(() =>
+    subscribeJson<CardDrop>('/api/cartes', (drop) => {
+      live = [drop, ...live].slice(0, MAX_DROPS);
+    }),
+  );
 </script>
 
 <section class="space-y-3" aria-labelledby="direct">

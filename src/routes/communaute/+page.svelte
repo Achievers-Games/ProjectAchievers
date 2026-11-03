@@ -9,6 +9,7 @@
   import SocialNav from '$lib/components/SocialNav.svelte';
   import TrophyBadge from '$lib/components/TrophyBadge.svelte';
   import { formatNumber, formatRelative, tierLabel } from '$lib/labels';
+  import { subscribeJson } from '$lib/sse';
 
   let { data } = $props();
 
@@ -73,12 +74,9 @@
 
   $effect(() => {
     if (tab === 'global') return;
-    const source = new EventSource('/api/activite');
-    source.onmessage = (message) => {
-      const event = JSON.parse(message.data) as Omit<LiveEvent, 'key'>;
+    return subscribeJson<Omit<LiveEvent, 'key'>>('/api/activite', (event) => {
       live = [{ ...event, key: nextKey++ }, ...live].slice(0, 10);
-    };
-    return () => source.close();
+    });
   });
 
   /** Les liens gardent la place que chaque langue leur donne dans la phrase. */

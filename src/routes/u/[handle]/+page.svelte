@@ -35,8 +35,13 @@
   ]);
 
   async function share() {
-    await navigator.clipboard.writeText(location.href);
-    toast(m.share_copied());
+    try {
+      await navigator.clipboard.writeText(location.href);
+      toast(m.share_copied());
+    } catch {
+      // Presse-papiers refusé (contexte non sécurisé, permission) : on donne le lien à la main.
+      toast(location.href);
+    }
   }
 </script>
 

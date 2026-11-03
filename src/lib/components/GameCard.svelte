@@ -56,7 +56,9 @@
     const image = frame.querySelector('img');
     if (image?.complete && image.naturalWidth === 0) imageFailed = true;
     // Sur le cadre : une action sur l'image ajouterait un gestionnaire en ligne, refusé par la CSP.
-    frame.addEventListener('error', () => (imageFailed = true), true);
+    const onError = () => (imageFailed = true);
+    frame.addEventListener('error', onError, true);
+    return { destroy: () => frame.removeEventListener('error', onError, true) };
   }
 
   /** Tirée du jeu pour rester stable : les cartes d'une page ne brillent pas en même temps. */

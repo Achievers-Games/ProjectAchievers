@@ -47,6 +47,15 @@
   /** World of Warcraft dépasse 8 000 succès : le navigateur n'en dessine pas tant d'un coup. */
   const PAGE = 300;
   let shown = $state(PAGE);
+  let view = $state('');
+
+  // Changer de filtre ou de tri repart du début de la liste.
+  $effect(() => {
+    const next = `${filter}|${sort}`;
+    if (next === view) return;
+    view = next;
+    shown = PAGE;
+  });
 
   const secrets = $derived(data.achievements.filter((a) => a.secret).length);
 
@@ -267,7 +276,12 @@
                 {achievement.name}
               </span>
               {#if achievement.secret && data.revealed}
-                <EyeOff size={12} class="shrink-0 text-muted" aria-label={m.achievement_hidden()} />
+                <EyeOff
+                  size={12}
+                  role="img"
+                  class="shrink-0 text-muted"
+                  aria-label={m.achievement_hidden()}
+                />
               {/if}
               {#if achievement.missable}
                 <span class="missable-badge" title={m.missable_hint()}>
@@ -276,7 +290,12 @@
                 </span>
               {/if}
               {#if achievement.guided}
-                <BookOpen size={12} class="shrink-0 text-accent" aria-label={m.guide_badge()} />
+                <BookOpen
+                  size={12}
+                  role="img"
+                  class="shrink-0 text-accent"
+                  aria-label={m.guide_badge()}
+                />
               {/if}
             </p>
             <p class="truncate text-xs text-muted">{achievement.description}</p>
@@ -296,6 +315,8 @@
     {/each}
   </ul>
   {#if visible.length > shown}
-    <button class="btn mx-auto block" onclick={() => (shown += PAGE)}>{m.show_more()}</button>
+    <button type="button" class="btn mx-auto block" onclick={() => (shown += PAGE)}>
+      {m.show_more()}
+    </button>
   {/if}
 </div>

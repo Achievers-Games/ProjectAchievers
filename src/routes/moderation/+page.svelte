@@ -115,7 +115,7 @@
           <select
             name="status"
             class="input w-auto"
-            aria-label={m.feedback_kind()}
+            aria-label={m.feedback_status()}
             value={item.status}
             onchange={(event) => event.currentTarget.form?.requestSubmit()}
           >

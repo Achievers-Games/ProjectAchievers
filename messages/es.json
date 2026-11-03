@@ -431,6 +431,7 @@
   "feedback_title": "Comentarios",
   "feedback_intro": "¿Un error o una idea? Cuéntanoslo aquí, el equipo lo lee todo. Tu navegador se adjunta para ayudar a reproducir el problema.",
   "feedback_kind": "Tipo de comentario",
+  "feedback_status": "Estado del comentario",
   "feedback_bug": "Error",
   "feedback_idea": "Idea",
   "feedback_content": "Tu mensaje",

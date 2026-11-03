@@ -121,8 +121,11 @@
         aria-selected={index === active}
         class="flex cursor-pointer items-center justify-between px-3 py-2 text-sm"
         class:bg-raised={index === active}
+        tabindex="-1"
         onclick={() => select(result)}
-        onkeydown={onKey}
+        onkeydown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') select(result);
+        }}
         onmouseenter={() => (active = index)}
       >
         <span class="truncate">{result.name}</span>

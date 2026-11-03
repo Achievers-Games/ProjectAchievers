@@ -431,6 +431,7 @@
   "feedback_title": "Feedback",
   "feedback_intro": "Ein Fehler oder eine Idee? Sag es uns hier, das Team liest alles. Dein Browser wird mitgesendet, um das Problem nachzustellen.",
   "feedback_kind": "Art des Feedbacks",
+  "feedback_status": "Status des Feedbacks",
   "feedback_bug": "Fehler",
   "feedback_idea": "Idee",
   "feedback_content": "Deine Nachricht",

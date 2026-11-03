@@ -431,6 +431,7 @@
   "feedback_title": "Retours",
   "feedback_intro": "Un bug, une idée ? Dis-le ici, l'équipe lit tout. Ton navigateur est joint pour aider à reproduire le problème.",
   "feedback_kind": "Type de retour",
+  "feedback_status": "Statut du retour",
   "feedback_bug": "Bug",
   "feedback_idea": "Idée",
   "feedback_content": "Ton message",

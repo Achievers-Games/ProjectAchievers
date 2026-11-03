@@ -431,6 +431,7 @@
   "feedback_title": "Feedback",
   "feedback_intro": "A bug or an idea? Tell us here, the team reads everything. Your browser is attached to help reproduce the issue.",
   "feedback_kind": "Feedback type",
+  "feedback_status": "Feedback status",
   "feedback_bug": "Bug",
   "feedback_idea": "Idea",
   "feedback_content": "Your message",

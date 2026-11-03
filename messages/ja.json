@@ -422,6 +422,7 @@
   "feedback_title": "フィードバック",
   "feedback_intro": "バグやアイデアはこちらへ。チームがすべて読みます。問題の再現に役立つよう、ブラウザー情報が添付されます。",
   "feedback_kind": "種類",
+  "feedback_status": "フィードバックの状態",
   "feedback_bug": "バグ",
   "feedback_idea": "アイデア",
   "feedback_content": "メッセージ",

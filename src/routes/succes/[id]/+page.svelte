@@ -46,14 +46,19 @@
     },
   });
 
+  /** Le vote optimiste vit ici : `data` appartient à la route et serait écrasé au moindre rechargement. */
+  let votes = $state<Record<string, { score: number; myVote: number }>>({});
+  const scoreOf = (guide: { id: string; score: number }) => votes[guide.id]?.score ?? guide.score;
+  const voteOf = (guide: { id: string; myVote: number }) => votes[guide.id]?.myVote ?? guide.myVote;
+
   /** Vote optimiste : le score bouge tout de suite, le serveur tranche ensuite. */
   const vote: SubmitFunction = ({ formData }) => {
     const guide = data.guides.find((g) => g.id === formData.get('guideId'));
     const value = Number(formData.get('value'));
     if (guide) {
-      const next = guide.myVote === value ? 0 : value;
-      guide.score += next - guide.myVote;
-      guide.myVote = next;
+      const current = voteOf(guide);
+      const next = current === value ? 0 : value;
+      votes = { ...votes, [guide.id]: { score: scoreOf(guide) + next - current, myVote: next } };
     }
     return async ({ result }) => {
       if (result.type === 'redirect') location.assign(result.location);
@@ -116,20 +121,25 @@
   }
 
   /** Une par une, et discrètement : un quota épuisé laisse simplement les textes d'origine. */
-  async function translatePage(pending: [Target, Translatable][]) {
+  async function translatePage(pending: [Target, Translatable][], cancelled: () => boolean) {
     for (const [type, item] of pending.slice(0, MAX_AUTO_TRANSLATIONS)) {
       attempted.add(item.id);
+      if (cancelled()) return;
       if (await fetchTranslation(type, item)) return;
     }
   }
 
   $effect(() => {
+    let cancelled = false;
     const replies = data.comments.flatMap((comment) => comment.replies);
     const pending = [
       ...data.guides.map((guide): [Target, Translatable] => ['GUIDE', guide]),
       ...[...data.comments, ...replies].map((item): [Target, Translatable] => ['COMMENT', item]),
     ].filter(([, item]) => item.autoTranslate && !item.translatedHtml && !attempted.has(item.id));
-    void translatePage(pending);
+    void translatePage(pending, () => cancelled);
+    return () => {
+      cancelled = true;
+    };
   });
 
   async function report(type: 'GUIDE' | 'COMMENT', id: string) {
@@ -256,21 +266,21 @@
           <button
             name="value"
             value="1"
-            class="btn-ghost rounded p-1"
-            class:text-accent={guide.myVote === 1}
+            class="btn btn-ghost h-7 w-7 px-1"
+            class:text-accent={voteOf(guide) === 1}
             aria-label={m.vote_up()}
-            aria-pressed={guide.myVote === 1}
+            aria-pressed={voteOf(guide) === 1}
           >
             <ChevronUp size={18} />
           </button>
-          <span class="tabular text-sm font-medium">{guide.score}</span>
+          <span class="tabular text-sm font-medium">{scoreOf(guide)}</span>
           <button
             name="value"
             value="-1"
-            class="btn-ghost rounded p-1"
-            class:text-danger={guide.myVote === -1}
+            class="btn btn-ghost h-7 w-7 px-1"
+            class:text-danger={voteOf(guide) === -1}
             aria-label={m.vote_down()}
-            aria-pressed={guide.myVote === -1}
+            aria-pressed={voteOf(guide) === -1}
           >
             <ChevronDown size={18} />
           </button>

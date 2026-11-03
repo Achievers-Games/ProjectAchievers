@@ -422,6 +422,7 @@
   "feedback_title": "反馈",
   "feedback_intro": "遇到问题或有想法？请在这里告诉我们，团队会逐条阅读。系统会附上你的浏览器信息以便重现问题。",
   "feedback_kind": "反馈类型",
+  "feedback_status": "反馈状态",
   "feedback_bug": "问题",
   "feedback_idea": "建议",
   "feedback_content": "你的留言",

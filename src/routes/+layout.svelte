@@ -23,6 +23,7 @@
   import { LOCALE_LABELS, PROVIDER_LABELS, syncErrorText } from '$lib/labels';
   import { getLocale, locales, setLocale, type Locale } from '$lib/paraglide/runtime';
   import { restorePush } from '$lib/push';
+  import { subscribeJson } from '$lib/sse';
   import { hasDock, incoming, invites, isChatOpen, unread } from '$lib/stores/chat';
   import { refreshPresence, watchPresence } from '$lib/stores/presence';
   import { rewards, syncState, type SyncProgress } from '$lib/stores/sync';
@@ -131,42 +132,42 @@
   // Progression des synchronisations : suivie partout, pour notifier la fin sur toute page.
   $effect(() => {
     if (!userId) return;
-    const source = new EventSource('/api/sync/events');
     // Le joueur apparaît en ligne dès que ce flux est ouvert.
-    source.onopen = () => void refreshPresence();
-    source.onmessage = (message) => {
-      const event = JSON.parse(message.data) as SyncProgress | LiveEvent;
-      if ('type' in event) {
-        if (event.type === 'chat') receive(event);
-        else if (event.type === 'invite') receiveInvite(event);
-        else void announceAchievements(event.codes);
-        return;
-      }
-      syncState.update((state) => ({ ...state, [event.provider]: event }));
-      if (event.status === 'COMPLETED') {
-        const gained = event.achievements ?? 0;
-        if (event.quiet && gained === 0 && !event.rewards?.length) return;
-        toast(
-          gained > 0
-            ? m.sync_gained({ count: gained, platform: PROVIDER_LABELS[event.provider] })
-            : m.sync_done({ platform: PROVIDER_LABELS[event.provider] }),
-        );
-        if (event.rewards?.length) {
-          const cards = event.rewards;
-          rewards.update((pending) => ({
-            cards: [...pending.cards, ...cards],
-            more: pending.more + (event.moreRewards ?? 0),
-          }));
+    return subscribeJson<SyncProgress | LiveEvent>(
+      '/api/sync/events',
+      (event) => {
+        if ('type' in event) {
+          if (event.type === 'chat') receive(event);
+          else if (event.type === 'invite') receiveInvite(event);
+          else void announceAchievements(event.codes);
+          return;
         }
-        void invalidateAll();
-      } else if (event.quiet) {
-        return;
-      } else if (event.status === 'FAILED' || event.status === 'NEEDS_RELINK') {
-        toast(syncErrorText(event.error) ?? m.sync_failed(), 'error');
-        void invalidateAll();
-      }
-    };
-    return () => source.close();
+        syncState.update((state) => ({ ...state, [event.provider]: event }));
+        if (event.status === 'COMPLETED') {
+          const gained = event.achievements ?? 0;
+          if (event.quiet && gained === 0 && !event.rewards?.length) return;
+          toast(
+            gained > 0
+              ? m.sync_gained({ count: gained, platform: PROVIDER_LABELS[event.provider] })
+              : m.sync_done({ platform: PROVIDER_LABELS[event.provider] }),
+          );
+          if (event.rewards?.length) {
+            const cards = event.rewards;
+            rewards.update((pending) => ({
+              cards: [...pending.cards, ...cards],
+              more: pending.more + (event.moreRewards ?? 0),
+            }));
+          }
+          void invalidateAll();
+        } else if (event.quiet) {
+          return;
+        } else if (event.status === 'FAILED' || event.status === 'NEEDS_RELINK') {
+          toast(syncErrorText(event.error) ?? m.sync_failed(), 'error');
+          void invalidateAll();
+        }
+      },
+      () => void refreshPresence(),
+    );
   });
 
   onNavigate((navigation) => {
