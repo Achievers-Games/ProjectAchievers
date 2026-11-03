@@ -257,9 +257,30 @@
   background: rgb(var(--danger));
   animation: live-pulse 1.6s ease-out infinite;
 }
+/* On fait glisser le fil au doigt comme à la souris : aucune barre de défilement. */
 .live-rail {
   @apply flex gap-3 overflow-x-auto pb-2;
-  scrollbar-width: thin;
+  scrollbar-width: none;
+  scroll-snap-type: x proximity;
+  overscroll-behavior-x: contain;
+}
+.live-rail::-webkit-scrollbar {
+  display: none;
+}
+.live-rail > li {
+  scroll-snap-align: start;
+}
+@media (hover: hover) and (pointer: fine) {
+  .live-rail,
+  .carousel-track {
+    cursor: grab;
+  }
+  /* Le pointeur tient le rail : le défilement suit exactement le geste, sans se recaler. */
+  .live-rail[data-dragging],
+  .carousel-track[data-dragging] {
+    cursor: grabbing;
+    scroll-snap-type: none;
+  }
 }
 .drop-tile {
   @apply relative block w-56 shrink-0 overflow-hidden rounded-md;

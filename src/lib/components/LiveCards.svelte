@@ -5,6 +5,7 @@
   import Avatar from './Avatar.svelte';
   import CardFx from './CardFx.svelte';
   import CompleteBadge from './CompleteBadge.svelte';
+  import { dragScroll } from '$lib/actions/drag-scroll';
   import type { CardDrop } from '$lib/collection';
   import { formatRelative } from '$lib/labels';
 
@@ -46,7 +47,7 @@
   {#if drops.length === 0}
     <p class="text-sm text-muted">{m.live_empty()}</p>
   {:else}
-    <ul class="live-rail" aria-live="polite">
+    <ul class="live-rail" aria-live="polite" use:dragScroll>
       {#each drops as drop (keyOf(drop))}
         <li animate:flip={{ duration: 250 }} in:fly={{ x: -40, duration: 300 }}>
           <a

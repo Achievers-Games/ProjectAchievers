@@ -5,6 +5,7 @@
   import { formatPercent } from '$lib/labels';
   import { FRAMES } from '$lib/frames';
   import Avatar from './Avatar.svelte';
+  import { dragScroll } from '$lib/actions/drag-scroll';
   import type { BannerGame, Collector } from '$lib/server/queries';
 
   const AUTOPLAY = 7_000;
@@ -33,6 +34,7 @@
   let track = $state<HTMLDivElement>();
   let active = $state(0);
   let paused = $state(false);
+  let dragging = $state(false);
 
   const signIn = '/connexion';
   const slides = $derived([
@@ -82,7 +84,7 @@
   }
 
   $effect(() => {
-    if (paused || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (paused || dragging || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const timer = setInterval(() => shift(1), AUTOPLAY);
     return () => clearInterval(timer);
   });
@@ -97,7 +99,12 @@
   onfocusin={() => (paused = true)}
   onfocusout={() => (paused = false)}
 >
-  <div class="carousel-track" bind:this={track} onscroll={onScroll}>
+  <div
+    class="carousel-track"
+    bind:this={track}
+    onscroll={onScroll}
+    use:dragScroll={{ onDrag: (value) => (dragging = value) }}
+  >
     {#each slides as slide, index (slide.id)}
       <article
         class="carousel-slide"
