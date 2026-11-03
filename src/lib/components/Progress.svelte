@@ -2,11 +2,12 @@
   import { m } from '$lib/paraglide/messages';
   let {
     value,
+    max = 100,
     label = m.progress(),
     tier = 0,
     step = 0,
-  }: { value: number; label?: string; tier?: number; step?: number } = $props();
-  const percent = $derived(Math.min(100, Math.max(0, value)));
+  }: { value: number; max?: number; label?: string; tier?: number; step?: number } = $props();
+  const percent = $derived(max > 0 ? Math.min(100, Math.max(0, (value / max) * 100)) : 0);
 </script>
 
 <div
@@ -14,8 +15,8 @@
   role="progressbar"
   aria-label={label}
   aria-valuemin={0}
-  aria-valuemax={100}
-  aria-valuenow={Math.round(percent)}
+  aria-valuemax={max}
+  aria-valuenow={Math.min(value, max)}
 >
   <div
     class="progress-fill h-full rounded-full"

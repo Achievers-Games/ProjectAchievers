@@ -8,13 +8,8 @@
   import GameCard from '$lib/components/GameCard.svelte';
   import ProviderIcon from '$lib/components/ProviderIcon.svelte';
   import TrophyBadge from '$lib/components/TrophyBadge.svelte';
-  import {
-    formatDate,
-    formatNumber,
-    formatRelative,
-    PROVIDER_LABELS,
-    tierLabel,
-  } from '$lib/labels';
+  import StatGrid from '$lib/components/StatGrid.svelte';
+  import { formatDate, formatRelative, PROVIDER_LABELS } from '$lib/labels';
   import { toast } from '$lib/stores/toast';
   import { SITE_TOTAL } from '$lib/site-achievements';
 
@@ -23,17 +18,6 @@
 
   const profile = $derived(data.profile);
   const isMe = $derived(data.user?.id === profile.user.id);
-  const stats = $derived<{ label: string; value: number; tier?: number }[]>([
-    { label: m.stat_games(), value: profile.stats.games },
-    { label: m.stat_achievements(), value: profile.stats.unlocked },
-    ...profile.stats.tiers.map((value, index) => ({
-      label: tierLabel(index + 1),
-      value,
-      tier: index + 1,
-    })),
-    { label: m.stat_points(), value: profile.stats.points },
-  ]);
-
   async function share() {
     try {
       await navigator.clipboard.writeText(location.href);
@@ -128,16 +112,12 @@
     </div>
   </header>
 
-  <dl class="card grid grid-cols-3 sm:grid-cols-5 xl:grid-cols-9 sm:divide-x sm:divide-line">
-    {#each stats as stat (stat.label)}
-      <div class="p-4">
-        <dt class="label">{stat.label}</dt>
-        <dd class="stat-value tabular mt-1" data-tier={stat.tier}>
-          {formatNumber(stat.value)}
-        </dd>
-      </div>
-    {/each}
-  </dl>
+  <StatGrid
+    games={profile.stats.games}
+    unlocked={profile.stats.unlocked}
+    tiers={profile.stats.tiers}
+    points={profile.stats.points}
+  />
 
   {#if profile.showcase.length}
     <section class="space-y-3" aria-labelledby="vitrine">

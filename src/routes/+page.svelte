@@ -7,24 +7,9 @@
   import MissingPlatforms from '$lib/components/MissingPlatforms.svelte';
   import Podium from '$lib/components/Podium.svelte';
   import ProviderIcon from '$lib/components/ProviderIcon.svelte';
-  import { formatNumber, tierLabel } from '$lib/labels';
+  import StatGrid from '$lib/components/StatGrid.svelte';
 
   let { data } = $props();
-
-  const stats = $derived<{ label: string; value: number; tier?: number }[]>(
-    data.home
-      ? [
-          { label: m.stat_games(), value: data.home.stats.games },
-          { label: m.stat_achievements(), value: data.home.stats.unlocked },
-          ...data.home.stats.tiers.map((value, index) => ({
-            label: tierLabel(index + 1),
-            value,
-            tier: index + 1,
-          })),
-          { label: m.stat_points(), value: data.home.stats.points },
-        ]
-      : [],
-  );
 </script>
 
 {#if data.home && data.user}
@@ -53,16 +38,12 @@
 
     <Podium collectors={data.podium} />
 
-    <dl class="card grid grid-cols-3 sm:grid-cols-5 xl:grid-cols-9 sm:divide-x sm:divide-line">
-      {#each stats as stat (stat.label)}
-        <div class="p-4">
-          <dt class="label">{stat.label}</dt>
-          <dd class="stat-value tabular mt-1" data-tier={stat.tier}>
-            {formatNumber(stat.value)}
-          </dd>
-        </div>
-      {/each}
-    </dl>
+    <StatGrid
+      games={data.home.stats.games}
+      unlocked={data.home.stats.unlocked}
+      tiers={data.home.stats.tiers}
+      points={data.home.stats.points}
+    />
 
     {#if data.home.almost.length}
       <section class="space-y-3">

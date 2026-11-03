@@ -2,6 +2,7 @@
   import { m } from '$lib/paraglide/messages';
   import { enhance } from '$app/forms';
   import { onMount } from 'svelte';
+  import PushChannels from '$lib/components/PushChannels.svelte';
   import { submitWithToast } from '$lib/forms';
   import {
     currentSubscription,
@@ -23,6 +24,13 @@
   let supported = $state(false);
   let enabled = $state(false);
   let busy = $state(false);
+  // Les cases partent du réglage enregistré, puis vivent leur vie jusqu'à l'envoi du formulaire.
+  // svelte-ignore state_referenced_locally
+  const channels = $state({
+    messages: profile.pushMessages,
+    invites: profile.pushInvites,
+    events: profile.pushEvents,
+  });
 
   const submit = submitWithToast({ reset: false });
 
@@ -59,18 +67,12 @@
       </button>
       {#if enabled}
         <form method="POST" action="?/notifications" use:enhance={submit} class="space-y-2">
-          <label class="flex items-center gap-2 text-sm">
-            <input type="checkbox" name="messages" checked={profile.pushMessages} />
-            {m.push_messages()}
-          </label>
-          <label class="flex items-center gap-2 text-sm">
-            <input type="checkbox" name="invites" checked={profile.pushInvites} />
-            {m.push_invites()}
-          </label>
-          <label class="flex items-center gap-2 text-sm">
-            <input type="checkbox" name="events" checked={profile.pushEvents} />
-            {m.push_events()}
-          </label>
+          <PushChannels
+            bind:messages={channels.messages}
+            bind:invites={channels.invites}
+            bind:events={channels.events}
+            named
+          />
           <button class="btn btn-primary">{m.save()}</button>
         </form>
       {/if}

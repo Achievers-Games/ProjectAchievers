@@ -19,12 +19,17 @@
     return () => clearTimeout(timer);
   });
 
-  /** Des confettis lancés dans toutes les directions, un peu au hasard. */
+  /**
+   * Des confettis lancés dans toutes les directions, irréguliers mais reproductibles :
+   * un tirage au hasard au rendu ferait sauter les particules à chaque mise à jour.
+   */
+  const jitter = (index: number, salt: number) =>
+    (((Math.imul(index + 1, 2654435761) ^ salt) >>> 0) % 1000) / 1000;
   const particles = Array.from({ length: PARTICLES }, (_, index) => ({
-    angle: (360 / PARTICLES) * index + Math.random() * 14,
-    distance: 46 + Math.random() * 34,
+    angle: (360 / PARTICLES) * index + jitter(index, 1) * 14,
+    distance: 46 + jitter(index, 2) * 34,
     hue: [262, 330, 45, 190][index % 4],
-    delay: Math.random() * 120,
+    delay: jitter(index, 3) * 120,
   }));
 </script>
 

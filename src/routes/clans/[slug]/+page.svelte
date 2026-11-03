@@ -2,6 +2,7 @@
   import { m } from '$lib/paraglide/messages';
   import { enhance } from '$app/forms';
   import Avatar from '$lib/components/Avatar.svelte';
+  import Progress from '$lib/components/Progress.svelte';
   import SiteBadge from '$lib/components/SiteBadge.svelte';
   import StepDots from '$lib/components/StepDots.svelte';
   import { formatDate, formatNumber } from '$lib/labels';
@@ -96,18 +97,8 @@
               <StepDots steps={item.steps} />
             {/if}
             {#if item.progress}
-              <div
-                class="mt-1.5 h-1.5 overflow-hidden rounded-full bg-raised"
-                role="progressbar"
-                aria-valuemin={0}
-                aria-valuemax={item.progress.goal}
-                aria-valuenow={Math.min(item.progress.value, item.progress.goal)}
-                aria-label={item.title}
-              >
-                <div
-                  class="h-full bg-accent"
-                  style:width="{Math.min(100, (item.progress.value / item.progress.goal) * 100)}%"
-                ></div>
+              <div class="mt-1.5">
+                <Progress value={item.progress.value} max={item.progress.goal} label={item.title} />
               </div>
               <p class="tabular mt-0.5 text-xs text-muted">
                 {formatNumber(Math.min(item.progress.value, item.progress.goal))} / {formatNumber(

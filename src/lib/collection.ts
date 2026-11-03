@@ -42,6 +42,8 @@ export interface CardDrop {
 }
 
 export const TIERS = [1, 2, 3, 4, 5, 6];
+/** Segment d'URL de chaque niveau, dans le même ordre que `TIERS`. */
+export const TIER_SLUGS = ['bronze', 'argent', 'or', 'diamant', 'prismatique', 'legendaire'];
 /** Les effets holographiques commencent à l'Or. */
 export const HOLO_TIER = 3;
 

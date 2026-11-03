@@ -8,6 +8,7 @@
   import GameCard from '$lib/components/GameCard.svelte';
   import TierLegend from '$lib/components/TierLegend.svelte';
   import { PLATFORM_LABELS, tierLabel, tierRule } from '$lib/labels';
+  import { TIERS, TIER_SLUGS } from '$lib/collection';
   import type { GameListItem } from '$lib/server/queries';
   import type { Snapshot } from './$types';
 
@@ -121,14 +122,11 @@
     { value: 'caches', label: m.games_hidden() },
   ];
 
-  const tiers = [
-    { value: 'bronze', label: tierLabel(1), tier: 1 },
-    { value: 'argent', label: tierLabel(2), tier: 2 },
-    { value: 'or', label: tierLabel(3), tier: 3 },
-    { value: 'diamant', label: tierLabel(4), tier: 4 },
-    { value: 'prismatique', label: tierLabel(5), tier: 5 },
-    { value: 'legendaire', label: tierLabel(6), tier: 6 },
-  ];
+  const tiers = TIERS.map((tier) => ({
+    value: TIER_SLUGS[tier - 1],
+    label: tierLabel(tier),
+    tier,
+  }));
 
   /** Chaque groupe de filtres est indépendant : changer l'un garde les autres. */
   const filtered = $derived(
@@ -165,17 +163,18 @@
       : undefined,
   );
 
+  /** Les consoles se filtrent séparément : un joueur cherche « PS3 », pas « PlayStation ». */
   const platforms = [
     { value: null, label: m.games_all_platforms() },
-    { value: 'STEAM', label: 'Steam' },
+    { value: 'STEAM', label: PLATFORM_LABELS.STEAM },
     { value: 'PS5', label: 'PS5' },
     { value: 'PS4', label: 'PS4' },
     { value: 'PS3', label: 'PS3' },
     { value: 'VITA', label: 'Vita' },
     { value: 'XONE', label: 'Xbox One/Series' },
     { value: 'X360', label: 'Xbox 360' },
-    { value: 'RETRO', label: 'Retro' },
-    { value: 'BLIZZARD', label: 'Battle.net' },
+    { value: 'RETRO', label: PLATFORM_LABELS.RETRO },
+    { value: 'BLIZZARD', label: PLATFORM_LABELS.BLIZZARD },
   ];
 </script>
 

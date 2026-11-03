@@ -57,14 +57,47 @@ const TIER_LABELS: Record<number, () => string> = {
 };
 export const tierLabel = (tier: number) => (TIER_LABELS[tier] ?? m.tier_bronze)();
 
+/**
+ * Construire un formateur `Intl` coûte cher et ces fonctions sont appelées par ligne de liste :
+ * un formateur par langue et par usage suffit pour toute la session.
+ */
+const formats = new Map<
+  string,
+  Intl.NumberFormat | Intl.DateTimeFormat | Intl.RelativeTimeFormat
+>();
+
+function cached<T extends Intl.NumberFormat | Intl.DateTimeFormat | Intl.RelativeTimeFormat>(
+  key: string,
+  create: () => T,
+): T {
+  const id = `${getLocale()}|${key}`;
+  let format = formats.get(id) as T | undefined;
+  if (!format) {
+    format = create();
+    formats.set(id, format);
+  }
+  return format;
+}
+
+const numberFormat = () => cached('number', () => new Intl.NumberFormat(getLocale()));
+const dateFormat = () =>
+  cached('date', () => new Intl.DateTimeFormat(getLocale(), { dateStyle: 'medium' }));
+const decimalFormat = () =>
+  cached(
+    'decimal',
+    () =>
+      new Intl.NumberFormat(getLocale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 }),
+  );
+const ruleFormat = () =>
+  cached('rule', () => new Intl.NumberFormat(getLocale(), { maximumFractionDigits: 1 }));
+const relativeFormat = () =>
+  cached('relative', () => new Intl.RelativeTimeFormat(getLocale(), { numeric: 'auto' }));
+
 /** Le niveau d'une carte vient de la rareté du succès le plus dur du jeu. */
 export function tierRule(tier: number) {
   const low = RARITY_STEPS[tier - 1];
   const high = RARITY_STEPS[tier - 2];
-  const number = (value: number) =>
-    m.percent({
-      value: new Intl.NumberFormat(getLocale(), { maximumFractionDigits: 1 }).format(value),
-    });
+  const number = (value: number) => m.percent({ value: ruleFormat().format(value) });
   if (high === undefined) return m.tier_rule_above({ percent: number(low as number) });
   if (low === undefined) return m.tier_rule_below({ percent: number(high) });
   return m.tier_rule_between({ low: number(low), high: number(high) });
@@ -81,17 +114,13 @@ const SYNC_ERRORS: Record<string, () => string> = {
 export const syncErrorText = (code: string | null | undefined) =>
   code ? (SYNC_ERRORS[code] ?? m.sync_failed_retry)() : null;
 
-export const formatNumber = (value: number) => new Intl.NumberFormat(getLocale()).format(value);
-export const formatDate = (value: Date | string) =>
-  new Intl.DateTimeFormat(getLocale(), { dateStyle: 'medium' }).format(new Date(value));
+export const formatNumber = (value: number) => numberFormat().format(value);
+export const formatDate = (value: Date | string) => dateFormat().format(new Date(value));
 export const formatPercent = (value: number) => m.percent({ value: Math.round(value) });
-export const formatRarity = (value: number) =>
-  new Intl.NumberFormat(getLocale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(
-    value,
-  );
+export const formatRarity = (value: number) => decimalFormat().format(value);
 
 export function formatRelative(value: Date | string, now = Date.now()): string {
-  const relativeFormat = new Intl.RelativeTimeFormat(getLocale(), { numeric: 'auto' });
+  const format = relativeFormat();
   const seconds = Math.round((new Date(value).getTime() - now) / 1000);
   const steps: [Intl.RelativeTimeFormatUnit, number][] = [
     ['year', 31_536_000],
@@ -101,7 +130,7 @@ export function formatRelative(value: Date | string, now = Date.now()): string {
     ['minute', 60],
   ];
   for (const [unit, size] of steps) {
-    if (Math.abs(seconds) >= size) return relativeFormat.format(Math.round(seconds / size), unit);
+    if (Math.abs(seconds) >= size) return format.format(Math.round(seconds / size), unit);
   }
   return m.just_now();
 }

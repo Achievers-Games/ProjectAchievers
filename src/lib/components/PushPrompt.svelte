@@ -2,6 +2,7 @@
   import { m } from '$lib/paraglide/messages';
   import { onMount } from 'svelte';
   import { fly } from 'svelte/transition';
+  import PushChannels from '$lib/components/PushChannels.svelte';
   import { sendJson } from '$lib/http';
   import { currentSubscription, enablePush, pushFailureText, pushSupported } from '$lib/push';
   import { toast } from '$lib/stores/toast';
@@ -86,20 +87,7 @@
   >
     <p class="font-semibold">{m.push_prompt_title()}</p>
     <p class="text-sm text-muted">{m.push_prompt_text()}</p>
-    <div class="space-y-1">
-      <label class="flex items-center gap-2 text-sm">
-        <input type="checkbox" bind:checked={messages} />
-        {m.push_messages()}
-      </label>
-      <label class="flex items-center gap-2 text-sm">
-        <input type="checkbox" bind:checked={invites} />
-        {m.push_invites()}
-      </label>
-      <label class="flex items-center gap-2 text-sm">
-        <input type="checkbox" bind:checked={events} />
-        {m.push_events()}
-      </label>
-    </div>
+    <PushChannels bind:messages bind:invites bind:events />
     <div class="flex gap-2">
       <button type="button" class="btn btn-primary flex-1" disabled={busy} onclick={activate}>
         {m.push_prompt_yes()}

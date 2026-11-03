@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from '$app/state';
-  import { censor } from '$lib/profanity';
+  import { displayText } from '$lib/profanity';
   import { m } from '$lib/paraglide/messages';
   import { onMount, tick } from 'svelte';
   import Flag from '@lucide/svelte/icons/flag';
@@ -51,7 +51,7 @@
   });
 
   const shown = ({ content, locale }: Message) =>
-    page.data.user?.allowProfanity ? content : censor(content, locale);
+    displayText(content, page.data.user?.allowProfanity, locale);
 
   async function load() {
     const response = await fetch(`/api/messages/${id}`).catch(() => null);

@@ -139,6 +139,13 @@ export function censor(text: string, locale?: string | null) {
   );
 }
 
+/** Ce que voit le lecteur : le texte brut s'il a accepté les grossièretés, censuré sinon. */
+export const displayText = (
+  text: string,
+  allowProfanity: boolean | undefined,
+  locale?: string | null,
+) => (allowProfanity ? text : censor(text, locale));
+
 /** Pour un nom, plus strict qu'un message : « sh1t » ou « f.u.c.k » ne passent pas. */
 export function isProfane(name: string, locale?: string | null) {
   const pattern = patternFor(locale);
