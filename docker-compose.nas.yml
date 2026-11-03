@@ -75,6 +75,44 @@ services:
       SMTP_FROM_NAME: ${SMTP_FROM_NAME:-}
       CONTACT_INBOX: ${CONTACT_INBOX:-}
 
+  # Met le site à jour tout seul dès que la CI publie une image de `main` : c'est le NAS qui tire,
+  # donc la CI n'a pas besoin de joindre le réseau local. Le code voyage dans l'image ; un
+  # changement de ce fichier ou du `.env` passe encore par scripts/deploy-nas.sh.
+  deployer:
+    image: docker:cli
+    restart: unless-stopped
+    mem_limit: 96m
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - .:/app
+    environment:
+      DOCKER_CONFIG: /app/.docker
+    working_dir: /app
+    # Résolution directe, comme pour le site : celle du NAS échoue par moments.
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
+    entrypoint: ['/bin/sh', '-c']
+    command:
+      - |
+        image=ghcr.io/rbasic/projectachievers:latest
+        state=/app/.deployed-image
+        # Premier passage : on note l'image déjà en place, sans redémarrer le site pour rien.
+        if [ ! -f "$$state" ]; then
+          docker compose pull -q site >/dev/null 2>&1 || true
+          docker image inspect -f '{{index .RepoDigests 0}}' "$$image" > "$$state" 2>/dev/null || true
+        fi
+        while true; do
+          before=$$(cat "$$state" 2>/dev/null)
+          docker compose pull -q site >/dev/null 2>&1 || true
+          after=$$(docker image inspect -f '{{index .RepoDigests 0}}' "$$image" 2>/dev/null)
+          if [ -n "$$after" ] && [ "$$after" != "$$before" ]; then
+            echo "Nouvelle image : $$after"
+            docker compose up -d --no-build site && echo "$$after" > "$$state"
+          fi
+          sleep 180
+        done
+
   # Une sauvegarde par jour, 14 jours conservés.
   backup:
     image: postgres:17-alpine

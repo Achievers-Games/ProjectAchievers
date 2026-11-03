@@ -127,8 +127,13 @@ La production tourne sur un QNAP TS-233 avec `docker-compose.nas.yml`, exposée 
 sans port ouvert. Le code, le fichier `.env` et les sauvegardes sont dans
 `/share/CACHEDEV1_DATA/project-achievers`.
 
-La CI publie une image ARM64 pour chaque commit de `main` qui passe les tests. Pour la mettre en
-ligne, avec la clé SSH `~/.ssh/pa_nas` :
+La CI publie une image ARM64 pour chaque commit de `main` qui passe les tests, et le NAS la tire
+lui-même : le service `deployer` de `docker-compose.nas.yml` interroge le registre toutes les trois
+minutes et redémarre le site quand l'image `latest` change. Un commit de `main` validé par la CI est
+donc en ligne quelques minutes plus tard, sans intervention.
+
+Pour mettre en ligne à la main — nécessaire pour un changement de ce fichier compose ou du `.env`,
+que le déploiement automatique ne transporte pas — avec la clé SSH `~/.ssh/pa_nas` :
 
 ```bash
 bash scripts/deploy-nas.sh
@@ -137,6 +142,10 @@ bash scripts/deploy-nas.sh
 Le NAS doit avoir été autorisé une fois avec un jeton GitHub `read:packages`, par
 `bash scripts/nas-ghcr-login.sh`. Pour tester du code non commité, ou si GitHub est indisponible,
 `NAS_BUILD=1 bash scripts/deploy-nas.sh <ref>` reconstruit l'image sur le NAS.
+
+`bash scripts/deploy-nas.sh <sha>` épingle une image plus ancienne : c'est le retour en arrière, que
+le prochain commit de `main` remplacera. Pour suspendre le déploiement automatique sur le NAS :
+`docker compose -f docker-compose.nas.yml --profile tunnel stop deployer`.
 
 Une sauvegarde de la base est écrite chaque jour dans `backups/`, 14 jours sont conservés. Sur le NAS,
 c'est **Hybrid Backup Sync 3 (HBS 3)** qui écrit vers votre Google Drive : les 14 derniers dump sont
