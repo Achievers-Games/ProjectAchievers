@@ -484,7 +484,7 @@
       <form
         method="POST"
         action="?/visibility"
-        use:enhance={submit}
+        use:enhance={submitKeeping}
         class="flex items-center justify-between gap-4 p-4"
       >
         <label for="public" class="text-sm">
@@ -504,7 +504,7 @@
       <form
         method="POST"
         action="?/presence"
-        use:enhance={submit}
+        use:enhance={submitKeeping}
         class="flex items-center justify-between gap-4 p-4"
       >
         <label for="show-online" class="text-sm">
@@ -523,7 +523,7 @@
       <form
         method="POST"
         action="?/adult"
-        use:enhance={submit}
+        use:enhance={submitKeeping}
         class="flex items-center justify-between gap-4 p-4"
       >
         <label for="adult" class="text-sm">
@@ -544,7 +544,7 @@
       <form
         method="POST"
         action="?/profanity"
-        use:enhance={submit}
+        use:enhance={submitKeeping}
         class="flex items-center justify-between gap-4 p-4"
       >
         <label for="profanity" class="text-sm">
