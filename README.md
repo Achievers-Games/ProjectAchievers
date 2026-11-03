@@ -1,7 +1,6 @@
 # Project Achievers
 
-Site web communautaire pour les chasseurs de succès : la progression Steam, PlayStation et Xbox se
-synchronise automatiquement, avec profils publics, comparaison, classement, guides et discussions.
+Site web communautaire pour les chasseurs de succès : la progression se synchronise automatiquement depuis Steam, Discord, Google, Xbox, PlayStation, RetroAchievements, Epic et Blizzard, avec profils publics, comparaison, classement, guides et discussions.
 
 ## Stack
 
@@ -56,6 +55,9 @@ Un fournisseur sans configuration est simplement masqué ou indiqué comme non a
 | Google      | OpenID Connect + PKCE              | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`   | `{ORIGIN}/auth/google/callback`  |
 | Xbox        | Microsoft Entra + PKCE             | `XBOX_CLIENT_ID`, `XBOX_CLIENT_SECRET`       | `{ORIGIN}/auth/xbox/callback`    |
 | PlayStation | Identifiant PSN + code dans la bio | `PSN_SERVICE_NPSSO`                          | aucune                           |
+| RetroAchievements | OpenID             | `RETRO_API_KEY`                              | aucune                           |
+| Epic        | OAuth 2 + PKCE                     | `EPIC_CLIENT_ID`, `EPIC_CLIENT_SECRET`       | `{ORIGIN}/auth/epic/callback`    |
+| Blizzard    | OAuth 2                           | `BLIZZARD_CLIENT_ID`, `BLIZZARD_CLIENT_SECRET`| `{ORIGIN}/auth/blizzard/callback`|
 
 Les comptes se synchronisent à la liaison, puis automatiquement toutes les 24 heures.
 
@@ -84,11 +86,13 @@ et `XFF_DEPTH=1` pour que les limites de débit voient la vraie adresse des visi
 
 Le site tourne en **un seul processus** : limites de débit et événements temps réel vivent en mémoire.
 
-Avant une ouverture publique :
+### Déjà prêt pour l'ouverture publique
 
-- complète `src/routes/confidentialite` avec l'identité de l'éditeur ;
-- prévois des sauvegardes de la base ;
-- donne le rôle `MODERATOR` ou `ADMIN` à un compte, dans la table `User`, pour accéder à `/moderation`.
+✅ `src/routes/confidentialite` est complet — toutes les sections (données, droits, traduction, etc.) sont traduites en 8 langues et affichent l'identité de l'éditeur (`gamefeelstudio@gmail.com`).
+
+✅ Sauvegardes quotidiennes — sur le NAS, **Hybrid Backup Sync 3 (HBS 3)** écrit vers votre Google Drive ; 14 derniers dump sont conservés et restaurables avec `pg_restore`.
+
+✅ Rôle moderator — votre compte `Basic` dispose déjà du rôle `MODERATOR` pour accéder à `/moderation`.
 
 ### Sur le NAS
 
@@ -107,8 +111,9 @@ Le NAS doit avoir été autorisé une fois avec un jeton GitHub `read:packages`,
 `bash scripts/nas-ghcr-login.sh`. Pour tester du code non commité, ou si GitHub est indisponible,
 `NAS_BUILD=1 bash scripts/deploy-nas.sh <ref>` reconstruit l'image sur le NAS.
 
-Une sauvegarde de la base est écrite chaque jour dans `backups/`, 14 jours sont conservés. Pour en
-restaurer une sur une base vide :
+Une sauvegarde de la base est écrite chaque jour dans `backups/`, 14 jours sont conservés. Sur le NAS,
+c'est **Hybrid Backup Sync 3 (HBS 3)** qui écrit vers votre Google Drive : les 14 derniers dump sont
+conservés et peuvent être restaurés avec la commande `pg_restore` indiquée ci‑dessous.
 
 ```bash
 docker exec -i project-achievers-db-1 pg_restore -U achievers -d achievers --clean --if-exists < backups/achievers-AAAA-MM-JJ.dump
@@ -119,7 +124,7 @@ docker exec -i project-achievers-db-1 pg_restore -U achievers -d achievers --cle
 ```
 prisma/                    Schéma et migrations
 src/hooks.server.ts        Sessions, limites de débit, en-têtes, démarrage des tâches
-src/lib/server/providers/  Authentification Steam, Discord, Xbox, PSN
+src/lib/server/providers/  Authentification Steam, Discord, Google, Xbox, PSN, Retro, Epic, Blizzard
 src/lib/server/sync/       Synchronisation par plateforme et file de tâches
 src/lib/server/queries.ts  Lectures partagées entre les pages
 src/routes/                Pages et points d'accès
