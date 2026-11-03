@@ -115,7 +115,14 @@ describe('succès du site', () => {
     const steps = (ids: string[]) => ids.map((id) => ({ id, user: `ami-${id}` }));
     const { proof } = evaluateSite(
       facts({
-        friendCounts: { duo: 5, revenge: 2, teammates: 0, synchro: 1, prescriber: 0, same_taste: 0 },
+        friendCounts: {
+          duo: 5,
+          revenge: 2,
+          teammates: 0,
+          synchro: 1,
+          prescriber: 0,
+          same_taste: 0,
+        },
         friendProofs: {
           duo: { kind: 'games', steps: steps(['d1', 'd2', 'd3', 'd4', 'd5']) },
           revenge: { kind: 'games', steps: steps(['r1', 'r2']) },

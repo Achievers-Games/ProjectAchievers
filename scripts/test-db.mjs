@@ -16,5 +16,6 @@ await admin.end();
 
 url.pathname = `/${testDatabase}`;
 const env = { ...process.env, DATABASE_URL: url.href };
-execSync('npx prisma migrate deploy', { env, stdio: 'ignore' });
-execSync('npm run db:seed', { env, stdio: 'ignore' });
+// Les binaires locaux, sans repasser par npx/npm qui redémarrent un processus à chaque fois.
+execSync('node node_modules/prisma/build/index.js migrate deploy', { env, stdio: 'ignore' });
+execSync('node --import tsx prisma/seed.ts', { env, stdio: 'ignore' });

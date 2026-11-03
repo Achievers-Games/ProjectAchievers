@@ -6,14 +6,16 @@
   "engines": {
     "node": ">=20"
   },
+  "packageManager": "npm@10.9.2",
   "scripts": {
     "dev": "vite dev",
     "dev:db": "node scripts/dev-db.mjs",
     "build": "vite build",
     "start": "node build",
     "check": "paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
-    "lint": "eslint src e2e",
+    "lint": "eslint .",
     "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "test": "node scripts/test-db.mjs && vitest run",
     "test:e2e": "node scripts/test-db.mjs && playwright test",
     "db:migrate": "prisma migrate dev",

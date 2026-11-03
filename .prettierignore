@@ -1,0 +1,11 @@
+build
+.svelte-kit
+node_modules
+.pgdata
+src/lib/paraglide
+project.inlang
+messages
+package-lock.json
+test-results
+playwright-report
+backups

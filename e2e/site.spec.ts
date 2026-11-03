@@ -864,7 +864,6 @@ test.describe('membre', () => {
       'href',
       'https://steamcommunity.com/my/edit/settings',
     );
-    await expect(page.locator()).toBeVisible();
   });
 
   test('réunit les amis, les messages et le clan dans Communauté', async ({ page }) => {

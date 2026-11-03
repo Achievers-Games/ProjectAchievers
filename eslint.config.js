@@ -8,7 +8,13 @@ import globals from 'globals';
 
 export default [
   {
-    ignores: ['build/**', 'src/lib/paraglide/**', '.svelte-kit/**', 'node_modules/**', '.pgdata/**'],
+    ignores: [
+      'build/**',
+      'src/lib/paraglide/**',
+      '.svelte-kit/**',
+      'node_modules/**',
+      '.pgdata/**',
+    ],
   },
   js.configs.recommended,
   ...tsPlugin.configs['flat/recommended'],

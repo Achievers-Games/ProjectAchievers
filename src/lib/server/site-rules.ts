@@ -704,10 +704,10 @@ export function evaluateSite(facts: SiteFacts) {
   const filled = (proof: SiteProof | undefined) =>
     Boolean(
       proof &&
-        (proof.games?.length ||
-          proof.achievements?.length ||
-          proof.users?.length ||
-          proof.clans?.length),
+      (proof.games?.length ||
+        proof.achievements?.length ||
+        proof.users?.length ||
+        proof.clans?.length),
     );
   return {
     codes: [

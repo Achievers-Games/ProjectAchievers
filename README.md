@@ -54,16 +54,16 @@ allumé pendant les tests.
 
 Un fournisseur sans configuration est simplement masqué ou indiqué comme non activé.
 
-| Compte      | Connexion                          | Configuration                                | Redirection à déclarer           |
-| ----------- | ---------------------------------- | -------------------------------------------- | -------------------------------- |
-| Steam       | OpenID                             | `STEAM_API_KEY`                              | aucune                           |
-| Discord     | OAuth 2 + PKCE                     | `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` | `{ORIGIN}/auth/discord/callback` |
-| Google      | OpenID Connect + PKCE              | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`   | `{ORIGIN}/auth/google/callback`  |
-| Xbox        | Microsoft Entra + PKCE             | `XBOX_CLIENT_ID`, `XBOX_CLIENT_SECRET`       | `{ORIGIN}/auth/xbox/callback`    |
-| PlayStation | Identifiant PSN + code dans la bio | `PSN_SERVICE_NPSSO`                          | aucune                           |
-| RetroAchievements | OpenID             | `RETRO_API_KEY`                              | aucune                           |
-| Epic        | OAuth 2 + PKCE                     | `EPIC_CLIENT_ID`, `EPIC_CLIENT_SECRET`       | `{ORIGIN}/auth/epic/callback`    |
-| Blizzard    | OAuth 2                           | `BLIZZARD_CLIENT_ID`, `BLIZZARD_CLIENT_SECRET`| `{ORIGIN}/auth/blizzard/callback`|
+| Compte            | Connexion                          | Configuration                                  | Redirection à déclarer            |
+| ----------------- | ---------------------------------- | ---------------------------------------------- | --------------------------------- |
+| Steam             | OpenID                             | `STEAM_API_KEY`                                | aucune                            |
+| Discord           | OAuth 2 + PKCE                     | `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`   | `{ORIGIN}/auth/discord/callback`  |
+| Google            | OpenID Connect + PKCE              | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`     | `{ORIGIN}/auth/google/callback`   |
+| Xbox              | Microsoft Entra + PKCE             | `XBOX_CLIENT_ID`, `XBOX_CLIENT_SECRET`         | `{ORIGIN}/auth/xbox/callback`     |
+| PlayStation       | Identifiant PSN + code dans la bio | `PSN_SERVICE_NPSSO`                            | aucune                            |
+| RetroAchievements | OpenID                             | `RETRO_API_KEY`                                | aucune                            |
+| Epic              | OAuth 2 + PKCE                     | `EPIC_CLIENT_ID`, `EPIC_CLIENT_SECRET`         | `{ORIGIN}/auth/epic/callback`     |
+| Blizzard          | OAuth 2                            | `BLIZZARD_CLIENT_ID`, `BLIZZARD_CLIENT_SECRET` | `{ORIGIN}/auth/blizzard/callback` |
 
 Les comptes se synchronisent à la liaison, puis automatiquement toutes les 24 heures.
 

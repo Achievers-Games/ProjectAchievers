@@ -2,12 +2,16 @@ import 'dotenv/config';
 import { defineConfig, devices } from '@playwright/test';
 
 const baseURL = 'http://localhost:5174';
-const database = new URL(process.env.DATABASE_URL ?? '');
+const database = new URL(
+  process.env.DATABASE_URL ?? 'postgresql://achievers:achievers@localhost:5433/achievers',
+);
 database.pathname = '/achievers_test';
 
 export default defineConfig({
   testDir: './e2e',
-  fullyParallel: true,
+  // Tous les tests partagent la même base seedée : en parallèle, ils se marcheraient dessus.
+  fullyParallel: false,
+  workers: 1,
   timeout: 30_000,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? 'github' : 'list',
