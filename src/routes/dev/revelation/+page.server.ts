@@ -24,6 +24,7 @@ export const load: PageServerLoad = async ({ locals }) => {
           name: true,
           slug: true,
           platform: true,
+          console: true,
           headerUrl: true,
           totalAchievements: true,
           tier: true,
