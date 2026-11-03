@@ -33,7 +33,8 @@ const schema = z.object({
   SMTP_FROM: z.string().optional(),
   SMTP_FROM_NAME: z.string().optional(),
   /** Boîte qui reçoit les messages du formulaire de contact. Par défaut, SMTP_FROM. */
-  CONTACT_INBOX: z.email().optional(),
+  // Docker Compose transmet une chaîne vide quand la variable n'est pas définie.
+  CONTACT_INBOX: z.preprocess((value) => (value === '' ? undefined : value), z.email().optional()),
 });
 
 type Env = z.infer<typeof schema>;
