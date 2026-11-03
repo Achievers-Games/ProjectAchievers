@@ -14,7 +14,13 @@ Site web communautaire pour les chasseurs de succès : la progression se synchro
 
 ## Démarrer
 
-Node 22 ou plus est requis. Copie `.env.example` vers `.env`, génère `ENCRYPTION_KEY`, puis :
+Node 22 ou plus est requis. Copie `.env.example` vers `.env` et remplis `ENCRYPTION_KEY` avec 32 octets en hexadécimal :
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+Puis :
 
 ```bash
 npm install
