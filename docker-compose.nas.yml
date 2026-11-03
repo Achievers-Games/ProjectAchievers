@@ -87,6 +87,10 @@ services:
       - .:/app
     environment:
       DOCKER_CONFIG: /app/.docker
+      # Sans ces deux variables, Compose prendrait docker-compose.yml et créerait un second
+      # projet (« app ») avec sa propre base.
+      COMPOSE_FILE: /app/docker-compose.nas.yml
+      COMPOSE_PROJECT_NAME: project-achievers
     working_dir: /app
     # Résolution directe, comme pour le site : celle du NAS échoue par moments.
     dns:
@@ -98,13 +102,13 @@ services:
         image=ghcr.io/rbasic/projectachievers:latest
         state=/app/.deployed-image
         # Premier passage : on note l'image déjà en place, sans redémarrer le site pour rien.
-        if [ ! -f "$$state" ]; then
-          docker compose pull -q site >/dev/null 2>&1 || true
+        if [ ! -s "$$state" ]; then
+          docker compose pull -q site >/dev/null || true
           docker image inspect -f '{{index .RepoDigests 0}}' "$$image" > "$$state" 2>/dev/null || true
         fi
         while true; do
           before=$$(cat "$$state" 2>/dev/null)
-          docker compose pull -q site >/dev/null 2>&1 || true
+          docker compose pull -q site >/dev/null || echo "Registre injoignable, nouvel essai dans 3 minutes."
           after=$$(docker image inspect -f '{{index .RepoDigests 0}}' "$$image" 2>/dev/null)
           if [ -n "$$after" ] && [ "$$after" != "$$before" ]; then
             echo "Nouvelle image : $$after"
