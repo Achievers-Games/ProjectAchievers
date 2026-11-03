@@ -4,6 +4,7 @@ import { SEASON, seasonState } from '$lib/season';
 import {
   CLAN_CODES,
   EVENT_CODES,
+  FRIEND_SERIES,
   SECRET_CODES,
   SITE_CATEGORIES,
   SITE_CODES,
@@ -13,6 +14,7 @@ import {
   stepLevel,
   type BaseCode,
   type ClanKey,
+  type FriendKey,
   type SiteCode,
 } from '$lib/site-achievements';
 import { getLocale } from '$lib/paraglide/runtime';
@@ -33,6 +35,7 @@ import { publishChat } from './sync/events';
 import {
   evaluateSite,
   markBursts,
+  type FriendProof,
   type SeasonFacts,
   type SiteFacts,
   type SiteProof,
@@ -81,13 +84,15 @@ async function finishedGuide(userId: string) {
   });
   const guides = await db.guide.findMany({
     where: { id: { in: checked.map((row) => row.guideId) }, status: 'PUBLISHED' },
-    select: { id: true, contentMd: true },
+    select: { id: true, achievementId: true, contentMd: true },
   });
-  return guides.some((guide) => {
-    const items = guide.contentMd.match(CHECKBOX)?.length ?? 0;
-    const done = checked.find((row) => row.guideId === guide.id)?._count._all ?? 0;
-    return items > 0 && done >= items;
-  });
+  return (
+    guides.find((guide) => {
+      const items = guide.contentMd.match(CHECKBOX)?.length ?? 0;
+      const done = checked.find((row) => row.guideId === guide.id)?._count._all ?? 0;
+      return items > 0 && done >= items;
+    }) ?? null
+  );
 }
 
 async function sharedUnlock(userId: string, friends: string[]) {
@@ -125,63 +130,135 @@ const NO_FRIEND_COUNTS: SiteFacts['friendCounts'] = {
   same_taste: 0,
 };
 
-/** Ce que le joueur a fait avec ses amis : jeux finis à deux, revanches, jours en synchro… */
-async function friendCounts(userId: string, friends: string[]) {
-  if (!friends.length) return NO_FRIEND_COUNTS;
+type FriendRow = { id: string; friend: string | null };
+interface FriendFacts {
+  counts: SiteFacts['friendCounts'];
+  proofs: Partial<Record<FriendKey, FriendProof>>;
+}
+
+/**
+ * Ce que le joueur a fait avec ses amis : jeux finis à deux, revanches, jours en synchro… Chaque
+ * série garde ses jeux ou succès dans l'ordre où le compte a monté, avec l'ami concerné, pour
+ * montrer ce qui a débloqué chaque palier. Les listes s'arrêtent au dernier palier.
+ */
+async function friendFacts(userId: string, friends: string[]): Promise<FriendFacts> {
+  if (!friends.length) return { counts: NO_FRIEND_COUNTS, proofs: {} };
   const ids = Prisma.join(friends);
-  const [finishes, synchro, prescriber, taste] = await Promise.all([
-    db.$queryRaw<{ duo: number; revenge: number; teammates: number }[]>`
-      SELECT count(DISTINCT mine."gameId")::int AS duo,
-        (count(DISTINCT mine."gameId")
-          FILTER (WHERE other."lastUnlockedAt" < mine."lastUnlockedAt"))::int AS revenge,
-        (count(DISTINCT mine."gameId") FILTER (
-          WHERE abs(extract(epoch FROM other."lastUnlockedAt" - mine."lastUnlockedAt")) <= 604800
-        ))::int AS teammates
-      FROM "UserGame" mine
-      JOIN "UserGame" other ON other."gameId" = mine."gameId" AND other.completion >= 100
-       AND other."userId" IN (${ids})
-      WHERE mine."userId" = ${userId} AND mine.completion >= 100 AND NOT mine.hidden`,
-    db.$queryRaw<{ n: number }[]>`
-      SELECT count(DISTINCT mine."unlockedAt"::date)::int AS n
-      FROM "UserAchievement" mine
-      JOIN "Achievement" a ON a.id = mine."achievementId"
-      WHERE mine."userId" = ${userId} AND mine."unlockedAt" >= ${FIRST_REAL_DATE}
-        AND EXISTS (
-          SELECT 1 FROM "UserAchievement" o
-          JOIN "Achievement" b ON b.id = o."achievementId"
-          WHERE o."userId" IN (${ids}) AND b."gameId" = a."gameId"
-            AND o."unlockedAt"::date = mine."unlockedAt"::date
-        )`,
-    db.$queryRaw<{ n: number }[]>`
-      SELECT count(DISTINCT mine."gameId")::int AS n
-      FROM "UserGame" mine
-      WHERE mine."userId" = ${userId} AND mine.completion >= 100 AND NOT mine.hidden
-        AND mine."lastUnlockedAt" IS NOT NULL
-        AND EXISTS (
-          SELECT 1 FROM "UserGame" other
-          WHERE other."gameId" = mine."gameId" AND other."userId" IN (${ids})
-            AND other."unlockedCount" > 0
-            AND (
-              SELECT min(ua."unlockedAt") FROM "UserAchievement" ua
-              JOIN "Achievement" a ON a.id = ua."achievementId"
-              WHERE ua."userId" = other."userId" AND a."gameId" = other."gameId"
-            ) > mine."lastUnlockedAt"
-        )`,
-    db.$queryRaw<{ n: number }[]>`
-      SELECT coalesce(max(shared), 0)::int AS n FROM (
-        SELECT count(*) AS shared FROM "UserGame" mine
+  const [duo, revenge, teammates, synchro, prescriber, taste] = await Promise.all([
+    // Un jeu fini à 100 % par les deux : le compte monte quand le second le termine.
+    db.$queryRaw<FriendRow[]>`
+      SELECT id, friend FROM (
+        SELECT DISTINCT ON (mine."gameId") mine."gameId" AS id, other."userId" AS friend,
+          GREATEST(mine."lastUnlockedAt", other."lastUnlockedAt") AS at
+        FROM "UserGame" mine
+        JOIN "UserGame" other ON other."gameId" = mine."gameId" AND other.completion >= 100
+         AND other."userId" IN (${ids})
+        WHERE mine."userId" = ${userId} AND mine.completion >= 100 AND NOT mine.hidden
+        ORDER BY mine."gameId", at DESC
+      ) done ORDER BY at ASC LIMIT ${FRIEND_SERIES.duo.at(-1)!}`,
+    // Un jeu qu'un ami avait fini avant le joueur : le compte monte quand il le dépasse.
+    db.$queryRaw<FriendRow[]>`
+      SELECT id, friend FROM (
+        SELECT DISTINCT ON (mine."gameId") mine."gameId" AS id, other."userId" AS friend,
+          mine."lastUnlockedAt" AS at
+        FROM "UserGame" mine
+        JOIN "UserGame" other ON other."gameId" = mine."gameId" AND other.completion >= 100
+         AND other."userId" IN (${ids}) AND other."lastUnlockedAt" < mine."lastUnlockedAt"
+        WHERE mine."userId" = ${userId} AND mine.completion >= 100 AND NOT mine.hidden
+        ORDER BY mine."gameId", other."lastUnlockedAt" DESC
+      ) overtaken ORDER BY at ASC LIMIT ${FRIEND_SERIES.revenge.at(-1)!}`,
+    // Deux fins à moins d'une semaine d'écart : le compte monte à la seconde fin.
+    db.$queryRaw<FriendRow[]>`
+      SELECT id, friend FROM (
+        SELECT DISTINCT ON (mine."gameId") mine."gameId" AS id, other."userId" AS friend,
+          GREATEST(mine."lastUnlockedAt", other."lastUnlockedAt") AS at
+        FROM "UserGame" mine
+        JOIN "UserGame" other ON other."gameId" = mine."gameId" AND other.completion >= 100
+         AND other."userId" IN (${ids})
+         AND abs(extract(epoch FROM other."lastUnlockedAt" - mine."lastUnlockedAt")) <= 604800
+        WHERE mine."userId" = ${userId} AND mine.completion >= 100 AND NOT mine.hidden
+        ORDER BY mine."gameId", at ASC
+      ) team ORDER BY at ASC LIMIT ${FRIEND_SERIES.teammates.at(-1)!}`,
+    // Un jour où les deux joueurs débloquent dans le même jeu : le compte monte ce jour-là.
+    db.$queryRaw<FriendRow[]>`
+      SELECT id, friend FROM (
+        SELECT DISTINCT ON (mine."unlockedAt"::date) mine."achievementId" AS id,
+          mine."unlockedAt" AS at,
+          (
+            SELECT o."userId" FROM "UserAchievement" o
+            JOIN "Achievement" b ON b.id = o."achievementId"
+            WHERE o."userId" IN (${ids}) AND b."gameId" = a."gameId"
+              AND o."unlockedAt"::date = mine."unlockedAt"::date
+            ORDER BY o."userId" LIMIT 1
+          ) AS friend
+        FROM "UserAchievement" mine
+        JOIN "Achievement" a ON a.id = mine."achievementId"
+        WHERE mine."userId" = ${userId} AND mine."unlockedAt" >= ${FIRST_REAL_DATE}
+          AND EXISTS (
+            SELECT 1 FROM "UserAchievement" o
+            JOIN "Achievement" b ON b.id = o."achievementId"
+            WHERE o."userId" IN (${ids}) AND b."gameId" = a."gameId"
+              AND o."unlockedAt"::date = mine."unlockedAt"::date
+          )
+        ORDER BY mine."unlockedAt"::date, mine."unlockedAt"
+      ) days ORDER BY at ASC LIMIT ${FRIEND_SERIES.synchro.at(-1)!}`,
+    // Un jeu fini avant qu'un ami ne le commence : le compte monte à son premier succès.
+    db.$queryRaw<FriendRow[]>`
+      SELECT id, friend FROM (
+        SELECT DISTINCT ON (mine."gameId") mine."gameId" AS id, other."userId" AS friend,
+          mine."lastUnlockedAt" AS finished,
+          (
+            SELECT min(ua."unlockedAt") FROM "UserAchievement" ua
+            JOIN "Achievement" a ON a.id = ua."achievementId"
+            WHERE ua."userId" = other."userId" AND a."gameId" = other."gameId"
+          ) AS at
+        FROM "UserGame" mine
+        JOIN "UserGame" other ON other."gameId" = mine."gameId" AND other."unlockedCount" > 0
+         AND other."userId" IN (${ids})
+        WHERE mine."userId" = ${userId} AND mine.completion >= 100 AND NOT mine.hidden
+          AND mine."lastUnlockedAt" IS NOT NULL
+        ORDER BY mine."gameId", other."userId"
+      ) started WHERE at > finished ORDER BY at ASC LIMIT ${FRIEND_SERIES.prescriber.at(-1)!}`,
+    // Les jeux en commun avec l'ami qui en partage le plus : le compte monte à chaque jeu partagé.
+    db.$queryRaw<FriendRow[]>`
+      WITH best AS (
+        SELECT other."userId" AS friend, count(*) AS shared
+        FROM "UserGame" mine
         JOIN "UserGame" other ON other."gameId" = mine."gameId" AND other."userId" IN (${ids})
         WHERE mine."userId" = ${userId}
         GROUP BY other."userId"
-      ) pairs`,
+        ORDER BY shared DESC, friend
+        LIMIT 1
+      )
+      SELECT mine."gameId" AS id, best.friend AS friend
+      FROM best
+      JOIN "UserGame" mine ON mine."userId" = ${userId}
+      JOIN "UserGame" other ON other."userId" = best.friend AND other."gameId" = mine."gameId"
+      ORDER BY GREATEST(mine."lastPlayedAt", other."lastPlayedAt") ASC NULLS LAST
+      LIMIT ${FRIEND_SERIES.same_taste.at(-1)!}`,
   ]);
+  const entry = (kind: FriendProof['kind'], rows: FriendRow[]): FriendProof => ({
+    kind,
+    steps: rows.map((row) => ({ id: row.id, user: row.friend })),
+  });
   return {
-    duo: finishes[0]?.duo ?? 0,
-    revenge: finishes[0]?.revenge ?? 0,
-    teammates: finishes[0]?.teammates ?? 0,
-    synchro: synchro[0]?.n ?? 0,
-    prescriber: prescriber[0]?.n ?? 0,
-    same_taste: taste[0]?.n ?? 0,
+    counts: {
+      duo: duo.length,
+      revenge: revenge.length,
+      teammates: teammates.length,
+      synchro: synchro.length,
+      prescriber: prescriber.length,
+      same_taste: taste.length,
+    },
+    proofs: {
+      duo: entry('games', duo),
+      revenge: entry('games', revenge),
+      teammates: entry('games', teammates),
+      // Un jour en synchro se prouve par le succès débloqué ce jour-là.
+      synchro: entry('achievements', synchro),
+      prescriber: entry('games', prescriber),
+      same_taste: entry('games', taste),
+    },
   };
 }
 
@@ -291,6 +368,7 @@ async function loadFacts(userId: string, earned: Set<string>): Promise<SiteFacts
     userCards(userId, true),
     db.friendship.findMany({
       where: { accepted: true, OR: [{ requesterId: userId }, { addresseeId: userId }] },
+      orderBy: { createdAt: 'asc' },
       select: { requesterId: true, addresseeId: true },
     }),
   ]);
@@ -306,7 +384,7 @@ async function loadFacts(userId: string, earned: Set<string>): Promise<SiteFacts
     pushes,
     upheld,
     feedback,
-    guideDone,
+    guide,
     soulmates,
     twins,
     perfectClan,
@@ -318,8 +396,18 @@ async function loadFacts(userId: string, earned: Set<string>): Promise<SiteFacts
   ] = await Promise.all([
     clan ? db.clanMember.count({ where: { clanId: clan.clanId } }) : 0,
     db.message.count({ where: { authorId: userId } }),
-    db.comment.count({ where: { authorId: userId, status: 'PUBLISHED' } }),
-    db.commentReaction.count({ where: { comment: { authorId: userId, status: 'PUBLISHED' } } }),
+    // Le premier commentaire et le cinquantième suffisent : chaque palier montre le sien.
+    db.comment.findMany({
+      where: { authorId: userId, status: 'PUBLISHED' },
+      orderBy: { createdAt: 'asc' },
+      take: 50,
+      select: { achievementId: true },
+    }),
+    db.commentReaction.findMany({
+      where: { comment: { authorId: userId, status: 'PUBLISHED' } },
+      take: 10,
+      select: { comment: { select: { achievementId: true } } },
+    }),
     db.pushSubscription.count({ where: { userId } }),
     db.report.count({ where: { reporterId: userId, upheld: true } }),
     db.feedback.count({ where: { userId, status: 'DONE' } }),
@@ -337,7 +425,7 @@ async function loadFacts(userId: string, earned: Set<string>): Promise<SiteFacts
     missing('synchro_50') ||
     missing('prescriber_15') ||
     missing('same_taste_100')
-      ? friendCounts(userId, friends)
+      ? friendFacts(userId, friends)
       : null,
     missing('bad_influence') ? badInfluence(userId, friends) : null,
   ]);
@@ -382,11 +470,16 @@ async function loadFacts(userId: string, earned: Set<string>): Promise<SiteFacts
     showcase: user.showcaseCustom,
     push: pushes > 0,
     friends: friends.length,
+    friendIds: friends,
     clan: clan && { owner: clan.owner, size: clanSize },
+    clanId: clan?.clanId ?? null,
     messages,
-    comments,
-    reactions,
-    guideDone,
+    comments: comments.length,
+    reactions: reactions.length,
+    guideDone: Boolean(guide),
+    guideAchievementId: guide ? guide.achievementId : null,
+    commentAchievementIds: comments.map((row) => row.achievementId),
+    reactionAchievementId: reactions[0]?.comment.achievementId ?? null,
     upheldReport: upheld > 0,
     doneFeedback: feedback > 0,
     season,
@@ -395,7 +488,8 @@ async function loadFacts(userId: string, earned: Set<string>): Promise<SiteFacts
     perfectClan,
     firstEver,
     onlyOne,
-    friendCounts: withFriends ?? NO_FRIEND_COUNTS,
+    friendCounts: withFriends?.counts ?? NO_FRIEND_COUNTS,
+    friendProofs: withFriends?.proofs,
     badInfluence: influence,
   };
 }
@@ -506,10 +600,13 @@ export const sitePop = (code: string) => ({
 export const siteAchievementCount = (userId: string) =>
   db.siteUnlock.count({ where: { userId, code: { notIn: [...EVENT_CODES] } } });
 
-/** Retrouve les noms derrière les preuves, sans montrer un jeu adulte à qui les masque. */
-async function proofLabels(proofs: SiteProof[], showAdult: boolean) {
+/**
+ * Retrouve les noms derrière les preuves, sans montrer un jeu adulte à qui les masque. Un ami dont
+ * le profil est privé ne se nomme que sur son propre tableau.
+ */
+async function proofLabels(proofs: SiteProof[], showAdult: boolean, own: boolean) {
   const game = showAdult ? {} : { adultOnly: false };
-  const [games, achievements] = await Promise.all([
+  const [games, achievements, users, clans] = await Promise.all([
     db.game.findMany({
       where: { id: { in: proofs.flatMap((proof) => proof.games ?? []) }, ...game },
       select: { id: true, name: true, slug: true, coverUrl: true, headerUrl: true },
@@ -518,11 +615,24 @@ async function proofLabels(proofs: SiteProof[], showAdult: boolean) {
       where: { id: { in: proofs.flatMap((proof) => proof.achievements ?? []) }, game },
       select: { id: true, name: true, iconUrl: true, game: { select: { name: true } } },
     }),
+    db.user.findMany({
+      where: {
+        id: { in: proofs.flatMap((proof) => proof.users ?? []) },
+        ...(own ? {} : { isPublic: true }),
+      },
+      select: { id: true, handle: true, displayName: true, avatarUrl: true },
+    }),
+    db.clan.findMany({
+      where: { id: { in: proofs.flatMap((proof) => proof.clans ?? []) } },
+      select: { id: true, name: true, slug: true },
+    }),
   ]);
   const localized = await localizeAchievements(achievements, getLocale());
   return {
     games: new Map(games.map((row) => [row.id, row])),
     achievements: new Map(localized.map((row) => [row.id, row])),
+    users: new Map(users.map((row) => [row.id, row])),
+    clans: new Map(clans.map((row) => [row.id, row])),
   };
 }
 
@@ -553,14 +663,18 @@ export async function siteAchievementBoard(
       .filter((row) => row.proof !== null && revealedCode(row.code))
       .map((row) => [row.code, row.proof as SiteProof]),
   );
-  const labels = await proofLabels([...proofs.values()], showAdult);
+  const labels = await proofLabels([...proofs.values()], showAdult, viewerId === userId);
   const proofOf = (code: string) => {
     const proof = proofs.get(code);
     const games = (proof?.games ?? []).flatMap((id) => labels.games.get(id) ?? []);
     const achievements = (proof?.achievements ?? []).flatMap(
       (id) => labels.achievements.get(id) ?? [],
     );
-    return games.length || achievements.length ? { games, achievements } : null;
+    const users = (proof?.users ?? []).flatMap((id) => labels.users.get(id) ?? []);
+    const clans = (proof?.clans ?? []).flatMap((id) => labels.clans.get(id) ?? []);
+    return games.length || achievements.length || users.length || clans.length
+      ? { games, achievements, users, clans }
+      : null;
   };
 
   let index = 0;

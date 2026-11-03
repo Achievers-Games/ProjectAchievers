@@ -111,6 +111,53 @@ describe('succès du site', () => {
     expect(codes).not.toContain('revenge_1');
   });
 
+  it('nomme le jeu et l’ami derrière chaque palier entre amis', () => {
+    const steps = (ids: string[]) => ids.map((id) => ({ id, user: `ami-${id}` }));
+    const { proof } = evaluateSite(
+      facts({
+        friendCounts: { duo: 5, revenge: 2, teammates: 0, synchro: 1, prescriber: 0, same_taste: 0 },
+        friendProofs: {
+          duo: { kind: 'games', steps: steps(['d1', 'd2', 'd3', 'd4', 'd5']) },
+          revenge: { kind: 'games', steps: steps(['r1', 'r2']) },
+          // Un jour en synchro se prouve par le succès débloqué ce jour-là.
+          synchro: { kind: 'achievements', steps: steps(['s1']) },
+        },
+      }),
+    );
+    // Le palier 5 montre le cinquième jeu de la série, avec l'ami de ce jour-là.
+    expect(proof('duo_1')).toEqual({ games: ['d1'], users: ['ami-d1'] });
+    expect(proof('duo_5')).toEqual({ games: ['d5'], users: ['ami-d5'] });
+    expect(proof('revenge_1')).toEqual({ games: ['r1'], users: ['ami-r1'] });
+    expect(proof('synchro_1')).toEqual({ achievements: ['s1'], users: ['ami-s1'] });
+  });
+
+  it('nomme les joueurs et le clan derrière les succès sociaux', () => {
+    const friends = Array.from({ length: 10 }, (_, i) => `u${i}`);
+    const comments = Array.from({ length: 50 }, (_, i) => `c${i}`);
+    const { proof } = evaluateSite(
+      facts({
+        friends: 10,
+        friendIds: friends,
+        clan: { owner: true, size: 5 },
+        clanId: 'clan-1',
+        comments: 50,
+        commentAchievementIds: comments,
+        reactions: 10,
+        reactionAchievementId: 'react-1',
+        guideDone: true,
+        guideAchievementId: 'guide-1',
+      }),
+    );
+    expect(proof('friend_1')).toEqual({ users: ['u0'] });
+    expect(proof('friends_10')).toEqual({ users: ['u9'] });
+    expect(proof('clan_join')).toEqual({ clans: ['clan-1'] });
+    expect(proof('clan_5')).toEqual({ clans: ['clan-1'] });
+    expect(proof('comment_1')).toEqual({ achievements: ['c0'] });
+    expect(proof('comments_50')).toEqual({ achievements: ['c49'] });
+    expect(proof('reactions_10')).toEqual({ achievements: ['react-1'] });
+    expect(proof('guide_done')).toEqual({ achievements: ['guide-1'] });
+  });
+
   it("n'accorde rien à un profil vide", () => {
     expect(earnedCodes(facts())).toEqual([]);
   });

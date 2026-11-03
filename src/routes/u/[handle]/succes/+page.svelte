@@ -248,6 +248,24 @@
                             <span class="text-muted">· {achievement.game.name}</span>
                           </li>
                         {/each}
+                        {#each item.proof.users as user (user.id)}
+                          <li class="flex items-center gap-2">
+                            {#if user.avatarUrl}
+                              <img
+                                src={user.avatarUrl}
+                                alt=""
+                                loading="lazy"
+                                class="h-6 w-6 shrink-0 rounded-full object-cover"
+                              />
+                            {/if}
+                            <a class="hover:text-ink" href="/u/{user.handle}">{user.displayName}</a>
+                          </li>
+                        {/each}
+                        {#each item.proof.clans as clan (clan.id)}
+                          <li class="flex items-center gap-2">
+                            <a class="hover:text-ink" href="/clans/{clan.slug}">{clan.name}</a>
+                          </li>
+                        {/each}
                       </ul>
                     </div>
                   {/if}

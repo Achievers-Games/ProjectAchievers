@@ -4,6 +4,7 @@ import {
   GENRES,
   SITE_CATEGORIES,
   genreOf,
+  seriesOf,
   type BaseCode,
   type ClanCode,
   type FriendKey,
@@ -89,14 +90,34 @@ export interface SiteFacts {
   onlyOne: string | null;
   /** Les comptes des séries entre amis : jeux finis à deux, revanches, jours en synchro… */
   friendCounts: Record<FriendKey, number>;
+  /** De quoi montrer chaque compte d'amis : les jeux ou succès, dans l'ordre des paliers. */
+  friendProofs?: Partial<Record<FriendKey, FriendProof>>;
+  /** Les amis acceptés, du plus ancien au plus récent. */
+  friendIds?: string[];
+  /** Le clan du joueur, pour les succès qui en parlent. */
+  clanId?: string | null;
+  /** Le succès de jeu derrière le guide terminé, le commentaire et la réaction qui comptent. */
+  guideAchievementId?: string | null;
+  commentAchievementIds?: string[];
+  reactionAchievementId?: string | null;
   /** Un ami a commencé un jeu que le joueur avait laissé tomber. */
   badInfluence: string | null;
+}
+
+/** Un fait entre amis : les jeux ou succès dans l'ordre où le compte a monté, et l'ami concerné. */
+export interface FriendProof {
+  kind: 'games' | 'achievements';
+  steps: { id: string; user: string | null }[];
 }
 
 /** Ce qui a déclenché un succès, pour l'expliquer au joueur. */
 export interface SiteProof {
   games?: string[];
   achievements?: string[];
+  /** Les joueurs qui ont compté : un ami, un coéquipier. */
+  users?: string[];
+  /** Le clan où le succès a été gagné. */
+  clans?: string[];
 }
 
 /** Attribués par un geste, ou après tous les autres : aucune règle à relire ici. */
@@ -193,7 +214,10 @@ export function evaluateSite(facts: SiteFacts) {
   );
   const stalled = games.filter((g) => g.completion >= 80 && g.completion < 100).length;
   const unfinished = games.filter((g) => g.total > 0 && g.completion < 100).length;
-  const quick = (list: GameFact[]) => list.filter((g) => g.playtime >= 1 && g.playtime < 60).length;
+  /** Un jeu essayé : entre une minute et une heure. */
+  const isQuick = (g: GameFact) => g.playtime >= 1 && g.playtime < 60;
+  const quickGames = (list: GameFact[]) => list.filter(isQuick);
+  const quick = (list: GameFact[]) => quickGames(list).length;
 
   const byGame = Map.groupBy(unlocks, (u) => u.gameId);
   for (const group of byGame.values()) group.sort((a, b) => a.at - b.at);
@@ -438,6 +462,23 @@ export function evaluateSite(facts: SiteFacts) {
     achievements: list.slice(0, MAX_PROOF).map((u) => u.achievementId),
   });
   const gamesOf = (list: { gameId: string }[]) => gameProof(list.map((g) => g.gameId));
+  const userProof = (ids: string[] | undefined): SiteProof => ({ users: ids ?? [] });
+  const clanProof = (id: string | null | undefined): SiteProof => ({ clans: id ? [id] : [] });
+  const achievementProof = (id: string | null | undefined): SiteProof => ({
+    achievements: id ? [id] : [],
+  });
+  /** Ce qui a fait monter une série d'amis : le jeu ou le succès du palier, et l'ami. */
+  const friendProofOf = (code: SiteCode): SiteProof | undefined => {
+    const series = seriesOf(code);
+    if (!series || !(series.key in FRIEND_SERIES)) return undefined;
+    const entry = facts.friendProofs?.[series.key as FriendKey];
+    const step = entry?.steps[Math.min(series.count, entry.steps.length) - 1];
+    if (!entry || !step) return undefined;
+    return {
+      ...(entry.kind === 'games' ? { games: [step.id] } : { achievements: [step.id] }),
+      ...(step.user ? { users: [step.user] } : {}),
+    };
+  };
 
   const cardsByTime = cards
     .filter((card) => card.lastAt !== null)
@@ -451,7 +492,6 @@ export function evaluateSite(facts: SiteFacts) {
     unlockProof(byTime.filter(keep).slice(rank - 1, rank));
   const atLeast = (tier: number) => (card: CardFact) => card.tier >= tier;
   const doubled = (card: CardFact) => card.copies >= 2;
-  const isQuick = (g: GameFact) => g.playtime >= 1 && g.playtime < 60;
   const finishedOn = (test: (date: Date) => boolean) => () =>
     nthFinished(1, (g) => g.lastAt !== null && test(clock(g.lastAt)));
   const firstDay = <T>(groups: Iterable<T[]>, test: (day: T[]) => boolean) =>
@@ -556,6 +596,25 @@ export function evaluateSite(facts: SiteFacts) {
     almost: () =>
       gamesOf(games.filter((g) => g.completion >= 95 && g.completion < 100).slice(0, 1)),
     stalled_25: stalledGames,
+    unfinished_100: () =>
+      gamesOf(
+        games
+          .filter((g) => g.total > 0 && g.completion < 100)
+          .toSorted((a, b) => b.completion - a.completion),
+      ),
+    unfinished_500: () =>
+      gamesOf(
+        games
+          .filter((g) => g.total > 0 && g.completion < 100)
+          .toSorted((a, b) => b.completion - a.completion),
+      ),
+    barely_played_50: () => gamesOf(quickGames(games)),
+    sealed_100: () =>
+      gamesOf(
+        games.filter(
+          (g) => g.platform === 'STEAM' && g.playtime === 0 && g.unlocked === 0 && !g.played,
+        ),
+      ),
     resurrection: firstDeepGap(YEAR + 1),
     one_left: () =>
       gamesOf(finishedByTime.filter((g) => g.total >= 5 && gapBeforeLast(g) >= WEEK).slice(0, 1)),
@@ -623,6 +682,16 @@ export function evaluateSite(facts: SiteFacts) {
     first_ever: () => gameProof(facts.firstEver ? [facts.firstEver] : []),
     only_one: () => gameProof(facts.onlyOne ? [facts.onlyOne] : []),
     bad_influence: () => gameProof(facts.badInfluence ? [facts.badInfluence] : []),
+
+    friend_1: () => userProof(facts.friendIds?.slice(0, 1)),
+    friends_10: () => userProof(facts.friendIds?.slice(9, 10)),
+    clan_join: () => clanProof(facts.clanId),
+    clan_5: () => clanProof(facts.clanId),
+    perfect_clan: () => clanProof(facts.clanId),
+    guide_done: () => achievementProof(facts.guideAchievementId),
+    comment_1: () => achievementProof(facts.commentAchievementIds?.[0]),
+    comments_50: () => achievementProof(facts.commentAchievementIds?.[49]),
+    reactions_10: () => achievementProof(facts.reactionAchievementId),
   };
 
   const earnedGenres = genreCodes
@@ -632,6 +701,14 @@ export function evaluateSite(facts: SiteFacts) {
     .flatMap(([key, steps]) => steps.map((step) => ({ code: `${key}_${step}`, key, step })))
     .filter(({ key, step }) => facts.friendCounts[key] >= step)
     .map(({ code }) => code);
+  const filled = (proof: SiteProof | undefined) =>
+    Boolean(
+      proof &&
+        (proof.games?.length ||
+          proof.achievements?.length ||
+          proof.users?.length ||
+          proof.clans?.length),
+    );
   return {
     codes: [
       ...(Object.keys(rules) as (keyof typeof rules)[]).filter((code) => rules[code]),
@@ -639,8 +716,8 @@ export function evaluateSite(facts: SiteFacts) {
       ...earnedWithFriends,
     ] as SiteCode[],
     proof: (code: SiteCode) => {
-      const proof = proofs[code]?.();
-      return proof?.games?.length || proof?.achievements?.length ? proof : null;
+      const proof = proofs[code]?.() ?? friendProofOf(code);
+      return filled(proof) ? proof! : null;
     },
   };
 }
