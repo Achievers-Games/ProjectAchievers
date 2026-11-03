@@ -113,6 +113,13 @@ services:
           if [ -n "$$after" ] && [ "$$after" != "$$before" ]; then
             echo "Nouvelle image : $$after"
             docker compose up -d --no-build site && echo "$$after" > "$$state"
+            # Une seule version suffit : sans cela, chaque déploiement laisse derrière lui son image.
+            # « rmi » sans -f refuse justement l'image que fait tourner un conteneur.
+            repo=$${image%:latest}
+            docker images "$$repo" --format '{{.ID}} {{.Tag}}' | grep -v latest |
+              cut -d' ' -f1 | sort -u |
+              while read id; do docker rmi "$$id" >/dev/null 2>&1 || true; done
+            docker image prune -f >/dev/null 2>&1 || true
           fi
           sleep 180
         done
