@@ -86,9 +86,30 @@ et `XFF_DEPTH=1` pour que les limites de débit voient la vraie adresse des visi
 
 Le site tourne en **un seul processus** : limites de débit et événements temps réel vivent en mémoire.
 
+### Formulaire de contact et email
+
+`/contact` envoie chaque message par SMTP à `CONTACT_INBOX` (par défaut `SMTP_FROM`) avec l'adresse
+du visiteur en `Reply-To`, pour pouvoir répondre directement. Trois messages par heure et par IP,
+plus un champ piège contre les robots. Sans configuration SMTP, la page invite à écrire directement à
+`contact@achievers.games`.
+
+```dotenv
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=contact@achievers.games
+SMTP_PASS=mot-de-passe-application
+SMTP_FROM=contact@achievers.games
+SMTP_FROM_NAME=Project Achievers
+CONTACT_INBOX=contact@achievers.games
+```
+
+Avec Gmail, `SMTP_PASS` est un **mot de passe d'application** (compte Google avec validation en deux
+étapes), pas le mot de passe du compte. Sur le NAS, `bash scripts/nas-smtp.sh` écrit ces valeurs dans
+le `.env`.
+
 ### Déjà prêt pour l'ouverture publique
 
-✅ `src/routes/confidentialite` est complet — toutes les sections (données, droits, traduction, etc.) sont traduites en 8 langues et affichent l'identité de l'éditeur (`gamefeelstudio@gmail.com`).
+✅ `src/routes/confidentialite` est complet — toutes les sections (données, droits, traduction, etc.) sont traduites en 8 langues et affichent l'identité de l'éditeur (`contact@achievers.games`).
 
 ✅ Sauvegardes quotidiennes — sur le NAS, **Hybrid Backup Sync 3 (HBS 3)** écrit vers votre Google Drive ; 14 derniers dump sont conservés et restaurables avec `pg_restore`.
 

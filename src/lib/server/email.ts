@@ -32,6 +32,7 @@ export interface SendMailOptions {
   text?: string;
   html?: string;
   from?: string;
+  replyTo?: string;
 }
 
 /** Envoie un email. Retourne l'info de transport nodemailer. */
@@ -44,6 +45,7 @@ export async function sendMail(options: SendMailOptions) {
     subject: options.subject,
     text: options.text,
     html: options.html,
+    replyTo: options.replyTo,
   });
 }
 

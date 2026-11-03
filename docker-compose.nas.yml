@@ -73,6 +73,7 @@ services:
       SMTP_PASS: ${SMTP_PASS:-}
       SMTP_FROM: ${SMTP_FROM:-}
       SMTP_FROM_NAME: ${SMTP_FROM_NAME:-}
+      CONTACT_INBOX: ${CONTACT_INBOX:-}
 
   # Une sauvegarde par jour, 14 jours conservés.
   backup:

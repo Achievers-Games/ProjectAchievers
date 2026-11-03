@@ -35,7 +35,7 @@ $content = Get-Content $EnvFile -Raw
 
 # Supprime les anciennes lignes SMTP si elles existent
 $lines = $content -split "`n" | Where-Object {
-    $_ -notmatch '^(SMTP_HOST|SMTP_PORT|SMTP_USER|SMTP_PASS|SMTP_FROM|SMTP_FROM_NAME)='
+    $_ -notmatch '^(SMTP_HOST|SMTP_PORT|SMTP_USER|SMTP_PASS|SMTP_FROM|SMTP_FROM_NAME|CONTACT_INBOX)='
 }
 
 # Reconstruit le contenu sans les anciennes lignes SMTP
@@ -52,6 +52,7 @@ SMTP_USER="$SmtpUser"
 SMTP_PASS="$SmtpPass"
 SMTP_FROM="contact@achievers.games"
 SMTP_FROM_NAME="Project Achievers"
+CONTACT_INBOX="contact@achievers.games"
 "@
 
 # Écrit le fichier

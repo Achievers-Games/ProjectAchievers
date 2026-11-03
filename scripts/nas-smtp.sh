@@ -15,9 +15,9 @@ read -r user
 echo "Mot de passe / clé API (rien ne s'affiche), puis Entrée :" >&2
 read -rs pass
 
-printf 'SMTP_HOST="%s"\nSMTP_PORT=%s\nSMTP_USER="%s"\nSMTP_PASS="%s"\nSMTP_FROM="contact@achievers.games"\nSMTP_FROM_NAME="Project Achievers"\n' "$host" "$port" "$user" "$pass" |
+printf 'SMTP_HOST="%s"\nSMTP_PORT=%s\nSMTP_USER="%s"\nSMTP_PASS="%s"\nSMTP_FROM="contact@achievers.games"\nSMTP_FROM_NAME="Project Achievers"\nCONTACT_INBOX="contact@achievers.games"\n' "$host" "$port" "$user" "$pass" |
   ssh -i "$KEY" -o BatchMode=yes -o IdentitiesOnly=yes "$HOST" \
-    "cd $DIR && sed -i '/^SMTP_\(HOST\|PORT\|USER\|PASS\|FROM\|FROM_NAME\)=/d' .env && { echo; cat; } >> .env"
+    "cd $DIR && sed -i '/^SMTP_\(HOST\|PORT\|USER\|PASS\|FROM\|FROM_NAME\)=/d; /^CONTACT_INBOX=/d' .env && { echo; cat; } >> .env"
 
 ssh -i "$KEY" -o BatchMode=yes -o IdentitiesOnly=yes "$HOST" \
   ". /etc/profile; export HOME=/share/homes/\${USER:-BasicRem} DOCKER_CONFIG=$DIR/.docker; cd $DIR

@@ -8,7 +8,7 @@
   <h1>{m.privacy()}</h1>
   <p>
     {m.privacy_intro()}
-    <a href="mailto:gamefeelstudio@gmail.com">gamefeelstudio@gmail.com</a>
+    <a href="mailto:contact@achievers.games">contact@achievers.games</a>
   </p>
 
   <h2 class="pt-4">{m.privacy_data()}</h2>

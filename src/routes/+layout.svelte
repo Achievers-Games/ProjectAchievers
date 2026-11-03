@@ -288,9 +288,10 @@
   {@render children()}
 </main>
 
-<footer class="mx-auto hidden max-w-6xl gap-4 px-4 pb-8 text-xs text-muted md:flex">
+<footer class="mx-auto flex max-w-6xl flex-wrap gap-4 px-4 pb-20 text-xs text-muted md:pb-8">
   <span>Project Achievers</span>
   <a href="/confidentialite" class="hover:text-ink">{m.privacy()}</a>
+  <a href="/contact" class="hover:text-ink">{m.contact_title()}</a>
   {#if data.user}<a href="/retours" class="hover:text-ink">{m.feedback_title()}</a>{/if}
 </footer>
 

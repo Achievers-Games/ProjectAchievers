@@ -31,7 +31,7 @@ if [ ! -f "$ENV_FILE" ]; then
 fi
 
 # Supprime les anciennes lignes SMTP si elles existent
-grep -v -E '^(SMTP_HOST|SMTP_PORT|SMTP_USER|SMTP_PASS|SMTP_FROM|SMTP_FROM_NAME)=' "$ENV_FILE" > "$ENV_FILE.tmp" || true
+grep -v -E '^(SMTP_HOST|SMTP_PORT|SMTP_USER|SMTP_PASS|SMTP_FROM|SMTP_FROM_NAME|CONTACT_INBOX)=' "$ENV_FILE" > "$ENV_FILE.tmp" || true
 mv "$ENV_FILE.tmp" "$ENV_FILE"
 
 cat >> "$ENV_FILE" <<EOF
@@ -43,6 +43,7 @@ SMTP_USER="$USER"
 SMTP_PASS="$PASS"
 SMTP_FROM="contact@achievers.games"
 SMTP_FROM_NAME="Project Achievers"
+CONTACT_INBOX="contact@achievers.games"
 EOF
 
 echo "✅ Variables SMTP ajoutées à .env :"

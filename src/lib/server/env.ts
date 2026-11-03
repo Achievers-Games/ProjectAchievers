@@ -32,6 +32,8 @@ const schema = z.object({
   SMTP_PASS: z.string().optional(),
   SMTP_FROM: z.string().optional(),
   SMTP_FROM_NAME: z.string().optional(),
+  /** Boîte qui reçoit les messages du formulaire de contact. Par défaut, SMTP_FROM. */
+  CONTACT_INBOX: z.email().optional(),
 });
 
 type Env = z.infer<typeof schema>;
