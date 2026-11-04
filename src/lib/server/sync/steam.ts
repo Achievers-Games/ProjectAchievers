@@ -40,6 +40,19 @@ interface SchemaAchievement {
   icongray: string;
 }
 
+/**
+ * Le jeu n'a pas bougé depuis la dernière synchronisation : ni nouveau lancement, ni temps de jeu
+ * en plus. `GetOwnedGames` n'envoie plus `rtime_last_played` : deux dates absentes ne disaient donc
+ * rien, et le jeu était sauté à chaque passage — plus aucun succès Steam n'arrivait.
+ */
+export const unchangedSince = (
+  known: { lastPlayedAt: Date | null; playtimeMinutes: number },
+  playedAt: Date | null,
+  minutes: number,
+) =>
+  (known.lastPlayedAt?.getTime() ?? null) === (playedAt?.getTime() ?? null) &&
+  known.playtimeMinutes === minutes;
+
 async function steamGet(path: string, params: Record<string, string | number>) {
   const url = new URL(`${API}${path}`);
   url.searchParams.set('key', env().STEAM_API_KEY ?? '');
@@ -490,9 +503,13 @@ export const syncSteam: ProviderSync = async ({ userId, account, report, onUnloc
 
   const previous = await db.userGame.findMany({
     where: { userId, game: { platform: 'STEAM' } },
-    select: { lastPlayedAt: true, game: { select: { platformGameId: true } } },
+    select: {
+      lastPlayedAt: true,
+      playtimeMinutes: true,
+      game: { select: { platformGameId: true } },
+    },
   });
-  const lastPlayed = new Map(previous.map((p) => [p.game.platformGameId, p.lastPlayedAt]));
+  const knownProgress = new Map(previous.map((row) => [row.game.platformGameId, row]));
 
   let achievements = 0;
 
@@ -505,10 +522,11 @@ export const syncSteam: ProviderSync = async ({ userId, account, report, onUnloc
       const playedAt = ownedGame.rtime_last_played
         ? new Date(ownedGame.rtime_last_played * 1000)
         : null;
+      const minutes = ownedGame.playtime_forever ?? 0;
 
       // Un jeu non relancé depuis la dernière synchronisation ne peut pas avoir changé.
-      const known = lastPlayed.get(appId);
-      if (!borrowed && lastPlayed.has(appId) && known?.getTime() === playedAt?.getTime()) return;
+      const known = knownProgress.get(appId);
+      if (!borrowed && known && unchangedSince(known, playedAt, minutes)) return;
 
       const { game, gained } = await syncSteamGame(userId, steamId, ownedGame, borrowed);
       achievements += gained;

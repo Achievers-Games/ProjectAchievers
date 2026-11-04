@@ -10,7 +10,7 @@ import { mapRetroAchievement, retroUnlocks } from './retro';
 import { isComplete } from '#lib/collection';
 import { fetchRetry, mapLimit, SyncError } from './errors';
 import { assertPsnResponse, mapTrophy } from './psn';
-import { mapSchema } from './steam';
+import { mapSchema, unchangedSince } from './steam';
 import {
   hasAchievements,
   mapXbox360Achievement,
@@ -62,6 +62,21 @@ describe('Steam', () => {
       hidden: true,
       globalRarity: 12.5,
     });
+  });
+
+  it('ne saute un jeu que si Steam confirme qu’il n’a pas bougé', () => {
+    const at = new Date('2026-10-31T14:37:00Z');
+    const known = { lastPlayedAt: at, playtimeMinutes: 120 };
+    expect(unchangedSince(known, at, 120)).toBe(true);
+    expect(unchangedSince(known, at, 125)).toBe(false);
+    expect(unchangedSince(known, new Date('2026-11-04T16:30:00Z'), 120)).toBe(false);
+  });
+
+  it('rejoue un jeu quand Steam n’envoie plus la date du dernier lancement', () => {
+    // `GetOwnedGames` a cessé de renvoyer `rtime_last_played` : deux dates absentes ne sont
+    // pas une preuve que rien n'a changé, sinon plus aucun succès n'arrive.
+    expect(unchangedSince({ lastPlayedAt: null, playtimeMinutes: 0 }, null, 0)).toBe(true);
+    expect(unchangedSince({ lastPlayedAt: null, playtimeMinutes: 15882 }, null, 16127)).toBe(false);
   });
 });
 
