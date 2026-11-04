@@ -235,11 +235,13 @@
         type="button"
         class="btn w-9 px-0 text-muted sm:w-56 sm:justify-start sm:px-3"
         onclick={() => (paletteOpen = true)}
-        aria-label={m.search_game()}
+        aria-label={`${m.search_game()} Ctrl K`}
       >
         <Search size={15} aria-hidden="true" />
-        <span class="hidden sm:inline">{m.search_short()}</span>
-        <kbd class="ml-auto hidden text-xs sm:inline">Ctrl K</kbd>
+        <!-- Le texte visible fait partie du nom accessible : c'est ce que les lecteurs d'écran
+             annoncent, et un nom qui le masquerait ferait mentir le bouton. -->
+        <span class="hidden truncate sm:inline">{m.search_game()}</span>
+        <kbd class="ml-auto hidden text-xs sm:inline" aria-hidden="true">Ctrl K</kbd>
       </button>
 
       <span class="btn relative w-9 px-0 text-muted">
