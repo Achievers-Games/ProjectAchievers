@@ -277,7 +277,7 @@ async function syncWow({ userId, account, onUnlocked }: SyncContext) {
     { platform: WOW_NAME, concurrency: CONCURRENCY, name: (c) => c.name, report: () => {} },
     async (character) => void lists.push(await fetchCharacterUnlocks(character)),
   );
-  const gained = await saveProgress(userId, game.id, mergeUnlocks(lists));
+  const { gained } = await saveProgress(userId, game.id, mergeUnlocks(lists));
   if (gained > 0) onUnlocked(game, gained);
   void fillWowCatalog().catch((cause) => log.error('Catalogue WoW :', cause));
   return gained;
@@ -324,7 +324,7 @@ async function syncSc2({ userId, account, onUnlocked }: SyncContext) {
       return sc2Unlocks(earnedAchievements);
     }),
   );
-  const gained = await saveProgress(userId, game.id, mergeUnlocks(lists));
+  const { gained } = await saveProgress(userId, game.id, mergeUnlocks(lists));
   if (gained > 0) onUnlocked(game, gained);
   return gained;
 }

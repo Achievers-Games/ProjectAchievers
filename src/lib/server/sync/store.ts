@@ -137,44 +137,85 @@ export async function saveAchievements(gameId: string, achievements: Achievement
   await refreshGameTier(gameId);
 }
 
+/** Un succès qui vient de tomber : de quoi le montrer au joueur sans recharger sa page. */
+export interface NewUnlock {
+  name: string;
+  iconUrl: string | null;
+}
+
+export interface SaveResult {
+  /** Nombre de succès réellement ajoutés. */
+  gained: number;
+  /** Ceux qu'il vient d'obtenir : la page les fête en direct. */
+  fresh: NewUnlock[];
+}
+
 /**
  * Enregistre les déverrouillages d'un joueur et recalcule sa progression.
- * Renvoie le nombre de succès nouvellement obtenus.
+ * Renvoie le nombre de succès nouvellement obtenus et de quoi les annoncer.
  */
 export async function saveProgress(
   userId: string,
   gameId: string,
   unlocks: UnlockInput[],
   activity: { playtimeMinutes?: number; lastPlayedAt?: Date | null } = {},
-): Promise<number> {
+): Promise<SaveResult> {
   const known = await db.achievement.findMany({
     where: { gameId },
-    select: { id: true, platformAchievementId: true, trophyType: true },
+    select: { id: true, platformAchievementId: true, trophyType: true, name: true, iconUrl: true },
   });
   const byPlatformId = new Map(known.map((a) => [a.platformAchievementId, a]));
 
-  const rows = unlocks.flatMap((unlock) => {
-    const achievement = byPlatformId.get(unlock.platformAchievementId);
-    return achievement
-      ? [{ userId, achievementId: achievement.id, unlockedAt: unlock.unlockedAt }]
-      : [];
+  // L'état d'avant l'écriture : il dit à la fois ce qui est déjà acquis et ce qui est nouveau.
+  const mine = await db.userAchievement.findMany({
+    where: { userId, achievement: { gameId } },
+    select: {
+      achievementId: true,
+      unlockedAt: true,
+      achievement: { select: { trophyType: true } },
+    },
   });
+  const have = new Set(mine.map((row) => row.achievementId));
 
+  // Une plateforme peut répéter un succès : une seule ligne par succès.
+  const pending = new Map<
+    string,
+    {
+      achievementId: string;
+      unlockedAt: Date;
+      trophyType: string;
+      name: string;
+      iconUrl: string | null;
+    }
+  >();
+  for (const unlock of unlocks) {
+    const achievement = byPlatformId.get(unlock.platformAchievementId);
+    if (!achievement || have.has(achievement.id) || pending.has(achievement.id)) continue;
+    pending.set(achievement.id, {
+      achievementId: achievement.id,
+      unlockedAt: unlock.unlockedAt,
+      trophyType: achievement.trophyType,
+      name: achievement.name,
+      iconUrl: achievement.iconUrl,
+    });
+  }
+  const rows = [...pending.values()].map(({ achievementId, unlockedAt }) => ({
+    userId,
+    achievementId,
+    unlockedAt,
+  }));
   const { count } = await db.userAchievement.createMany({ data: rows, skipDuplicates: true });
 
-  const owned = await db.userAchievement.findMany({
-    where: { userId, achievement: { gameId } },
-    select: { unlockedAt: true, achievement: { select: { trophyType: true } } },
-  });
-
   const total = known.length;
-  const unlockedCount = owned.length;
+  const unlockedCount = mine.length + count;
   const completion = total > 0 ? (unlockedCount / total) * 100 : 0;
-  const platinum = owned.some((o) => o.achievement.trophyType === 'PLATINUM');
-  const lastUnlockedAt = owned.reduce<Date | null>(
-    (latest, o) => (!latest || o.unlockedAt > latest ? o.unlockedAt : latest),
-    null,
-  );
+  const platinum =
+    mine.some((o) => o.achievement.trophyType === 'PLATINUM') ||
+    [...pending.values()].some((o) => o.trophyType === 'PLATINUM');
+  const lastUnlockedAt = [
+    ...mine.map((o) => o.unlockedAt),
+    ...pending.values().map((o) => o.unlockedAt),
+  ].reduce<Date | null>((latest, date) => (!latest || date > latest ? date : latest), null);
 
   const data = {
     unlockedCount,
@@ -191,5 +232,8 @@ export async function saveProgress(
     create: { ...data, userId, gameId },
   });
 
-  return count;
+  return {
+    gained: count,
+    fresh: [...pending.values()].map(({ name, iconUrl }) => ({ name, iconUrl })),
+  };
 }

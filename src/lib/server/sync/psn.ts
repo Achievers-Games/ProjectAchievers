@@ -164,7 +164,7 @@ export const syncPsn: ProviderSync = async ({ userId, account, report, onUnlocke
           platformAchievementId: String(t.trophyId),
           unlockedAt: new Date(t.earnedDateTime as string),
         }));
-      const gained = await saveProgress(userId, game.id, unlocks, {
+      const { gained } = await saveProgress(userId, game.id, unlocks, {
         lastPlayedAt: new Date(title.lastUpdatedDateTime),
       });
       achievements += gained;

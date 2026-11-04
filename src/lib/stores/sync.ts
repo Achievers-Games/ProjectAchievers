@@ -2,6 +2,13 @@ import { writable } from 'svelte/store';
 import type { Provider, SyncStatus } from '#prisma';
 import type { Reward } from '#lib/collection';
 
+/** Un succès qui vient de tomber : la page le fête sans être rechargée. */
+export interface UnlockPop {
+  title: string;
+  icon: string | null;
+  game: string;
+}
+
 export interface SyncProgress {
   provider: Provider;
   status: SyncStatus;
@@ -10,6 +17,7 @@ export interface SyncProgress {
   game?: string;
   error?: string | null;
   achievements?: number;
+  unlocks?: UnlockPop[];
   rewards?: Reward[];
   moreRewards?: number;
   quiet?: boolean;

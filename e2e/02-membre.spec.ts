@@ -40,6 +40,34 @@ test.describe('membre', () => {
     await expect(celeste.locator('.fx-aurora')).toHaveCount(1);
   });
 
+  test('fête un succès Steam débloqué sans recharger la page', async ({ page }) => {
+    await login(page);
+    const icon = `data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7`;
+    const event = {
+      provider: 'STEAM',
+      status: 'COMPLETED',
+      processed: 1,
+      total: 1,
+      achievements: 1,
+      quiet: true,
+      unlocks: [{ title: 'Je refuse qu’on m’enferme', icon, game: 'Baldur’s Gate 3' }],
+    };
+    await page.route('**/api/sync/events', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'text/event-stream',
+        body: `data: ${JSON.stringify(event)}\n\n`,
+      }),
+    );
+    await page.goto('/');
+
+    const pop = page.locator('.pop-zone .pop').first();
+    await expect(pop.locator('.title')).toHaveText('Je refuse qu’on m’enferme');
+    await expect(pop.locator('.game')).toHaveText('Baldur’s Gate 3');
+    // La vignette de la plateforme remplace le badge du site.
+    await expect(pop.locator('img.art')).toHaveAttribute('src', icon);
+  });
+
   test('fait glisser le fil en direct à la souris sans ouvrir une carte', async ({ page }) => {
     await login(page);
     // Douze cartes : le rail déborde de l'écran et peut se faire glisser.

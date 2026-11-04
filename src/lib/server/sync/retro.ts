@@ -124,7 +124,7 @@ export const syncRetro: ProviderSync = async ({ userId, account, report, onUnloc
       );
 
       const played = summary.MostRecentAwardedDate;
-      const gained = await saveProgress(userId, game.id, retroUnlocks(catalog), {
+      const { gained } = await saveProgress(userId, game.id, retroUnlocks(catalog), {
         lastPlayedAt: played ? new Date(played) : null,
       });
       achievements += gained;

@@ -1,11 +1,16 @@
 import { writable } from 'svelte/store';
 
-/** Un succès du site à fêter, tel que le renvoie `/api/succes`. */
+/** Un succès à fêter, du site ou d'une plateforme. */
 export interface SitePop {
   title: string;
+  /** Tracé du site ; vide quand le succès vient d'une plateforme, qui envoie son image. */
   icon: string;
   category: string;
   level: number;
+  /** L'image du succès d'une plateforme, déjà dessinée par elle. */
+  image?: string | null;
+  /** Le jeu d'où vient le succès, pour les plateformes. */
+  game?: string;
 }
 
 /** Une annonce de la pile : un succès à la fois. */

@@ -146,6 +146,19 @@
         if (event.status === 'COMPLETED') {
           const gained = event.achievements ?? 0;
           if (event.quiet && gained === 0 && !event.rewards?.length) return;
+          // Un succès tombé en jouant : la page le fête tout de suite, sans rechargement.
+          if (event.unlocks?.length) {
+            celebrate(
+              event.unlocks.map(({ title, icon, game }) => ({
+                title,
+                game,
+                icon: '',
+                category: 'platform',
+                level: 0,
+                image: icon,
+              })),
+            );
+          }
           toast(
             gained > 0
               ? m.sync_gained({ count: gained, platform: PROVIDER_LABELS[event.provider] })

@@ -251,6 +251,40 @@ describe('synchronisation Steam', () => {
     expect(events[0]).toMatchObject({ status: 'COMPLETED', achievements: 1, quiet: true });
   });
 
+  it('rattrape un succès tombé après la fermeture du jeu', async () => {
+    const unlocked = [{ apiname: 'A', achieved: 1, unlocktime: 1_700_000_000 }];
+    let recents: unknown[] = [];
+    const api = steamApi(ownedGames);
+    vi.stubGlobal('fetch', async (input: string | URL) => {
+      const url = String(input);
+      // Le jeu est fermé : Steam ne dit plus lequel tourne.
+      if (url.includes('GetPlayerSummaries')) {
+        return new Response(JSON.stringify({ response: { players: [] } }));
+      }
+      if (url.includes('GetRecentlyPlayedGames')) {
+        return new Response(JSON.stringify({ response: { games: recents } }));
+      }
+      return url.includes('GetPlayerAchievements')
+        ? new Response(JSON.stringify({ playerstats: { achievements: unlocked } }))
+        : api(input);
+    });
+    const userId = await steamUser();
+    await runSync({ userId, provider: 'STEAM' });
+    const events: SyncEvent[] = [];
+    const stop = onSync(userId, (event) => events.push(event));
+
+    // Le joueur a débloqué un succès puis fermé le jeu : seul le temps de jeu a bougé.
+    recents = [{ appid: 999001, playtime_forever: 120 }];
+    unlocked.push({ apiname: 'B', achieved: 1, unlocktime: 1_700_000_100 });
+    await checkLiveGames();
+    stop();
+
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({ status: 'COMPLETED', achievements: 1, quiet: true });
+    // La page du joueur peut fêter le succès tout de suite : elle reçoit son titre et sa vignette.
+    expect(events[0].unlocks).toEqual([{ title: 'Bêta', icon: 'i', game: `${PREFIX} steam` }]);
+  });
+
   it('annonce une carte quand un jeu atteint 100 %, une seule fois', async () => {
     const api = steamApi(ownedGames);
     vi.stubGlobal('fetch', async (input: string | URL) =>

@@ -78,7 +78,7 @@ async function fetchOwnedGames(steamId: string): Promise<OwnedGame[]> {
   return data.response.games;
 }
 
-async function fetchRecentGames(steamId: string): Promise<OwnedGame[]> {
+export async function fetchRecentGames(steamId: string): Promise<OwnedGame[]> {
   const response = await steamGet('/IPlayerService/GetRecentlyPlayedGames/v1/', {
     steamid: steamId,
   });
@@ -417,7 +417,7 @@ async function syncSteamGame(userId: string, steamId: string, source: OwnedGame,
   });
   if (!unlocks) return { game, gained: 0 };
 
-  const gained = await saveProgress(
+  const { gained } = await saveProgress(
     userId,
     game.id,
     unlocks,

@@ -32,6 +32,8 @@ const SWEEP_QUEUE = 'sync-sweep';
 const CONTENT_QUEUE = 'content-rating';
 const STALE_AFTER = 24 * 60 * 60 * 1000;
 const MAX_REWARDS = 10;
+/** Une rafale de succès ne doit pas noyer la page sous les annonces. */
+const MAX_POPS = 5;
 /** Au-delà, la carte est ancienne : lier un compte ne doit pas inonder le fil en direct. */
 const LIVE_CARD_MAX_AGE = 48 * 60 * 60 * 1000;
 
@@ -234,7 +236,12 @@ async function announceCards(user: SyncUser, userId: string, before: Map<string,
  * Relit un seul jeu, celui que le joueur a ouvert : les succès arrivent sur sa page en direct.
  * Un jeu encore inconnu attend la synchronisation complète, qui saura lire son catalogue.
  */
-export async function runLiveGame(userId: string, steamId: string, appId: string) {
+export async function runLiveGame(
+  userId: string,
+  steamId: string,
+  appId: string,
+  playtimeMinutes?: number,
+) {
   const owned = await db.userGame.findFirst({
     where: { userId, game: { platform: 'STEAM', platformGameId: appId } },
     select: { unlockedCount: true, hidden: true, game: true },
@@ -242,10 +249,25 @@ export async function runLiveGame(userId: string, steamId: string, appId: string
   if (!owned) return 0;
 
   const unlocks = await fetchUnlocks(steamId, Number(appId));
-  if (unlocks.length <= owned.unlockedCount) return 0;
+  if (unlocks.length <= owned.unlockedCount) {
+    // Le temps de jeu a bougé sans nouveau succès : on le retient, sinon la relecture des jeux
+    // récents redemanderait ce jeu à chaque passage.
+    if (playtimeMinutes !== undefined) {
+      await db.userGame.updateMany({
+        where: { userId, gameId: owned.game.id },
+        data: { playtimeMinutes },
+      });
+    }
+    return 0;
+  }
 
   const before = await rareCards(userId);
-  const gained = await saveProgress(userId, owned.game.id, unlocks);
+  const { gained, fresh } = await saveProgress(
+    userId,
+    owned.game.id,
+    unlocks,
+    playtimeMinutes === undefined ? {} : { playtimeMinutes },
+  );
   if (gained === 0) return 0;
 
   const user = await syncUser(userId);
@@ -257,6 +279,12 @@ export async function runLiveGame(userId: string, steamId: string, appId: string
     processed: 1,
     total: 1,
     achievements: gained,
+    // Le joueur a la page ouverte : chaque succès s'y fête tout de suite, sans rechargement.
+    unlocks: fresh.slice(0, MAX_POPS).map(({ name, iconUrl }) => ({
+      title: name,
+      icon: iconUrl,
+      game: owned.game.name,
+    })),
     quiet: true,
     rewards: rewards.slice(0, MAX_REWARDS),
     moreRewards: Math.max(0, rewards.length - MAX_REWARDS),

@@ -68,18 +68,26 @@
             ></span>
           {/each}
           <span class="badge">
-            <SiteBadge
-              icon={pop.icon}
-              category={pop.category}
-              level={pop.level}
-              unlocked
-              size={3.25}
-            />
+            {#if pop.image}
+              <!-- Le succès vient d'une plateforme : elle fournit déjà sa vignette. -->
+              <img class="art" src={pop.image} alt="" />
+            {:else}
+              <SiteBadge
+                icon={pop.icon}
+                category={pop.category}
+                level={pop.level}
+                unlocked
+                size={3.25}
+              />
+            {/if}
           </span>
         </span>
         <span class="words">
           <span class="heading">{m.ach_pop_heading()}</span>
           <span class="title">{pop.title}</span>
+          {#if pop.game}
+            <span class="game">{pop.game}</span>
+          {/if}
           {#if waiting > 0}
             <span class="more">{m.ach_pop_more({ count: waiting })}</span>
           {/if}
@@ -229,6 +237,25 @@
     animation: badge-in 700ms cubic-bezier(0.2, 1.6, 0.4, 1) 150ms both;
   }
 
+  /* La vignette d'une plateforme est carrée : même taille que le badge du site. */
+  .art {
+    width: 3.25rem;
+    height: 3.25rem;
+    border-radius: 0.7rem;
+    border: 2px solid rgb(var(--to) / 0.85);
+    background: rgb(var(--raised));
+    box-shadow: 0 0 22px -4px rgb(var(--from) / 0.9);
+  }
+
+  .game {
+    overflow: hidden;
+    font-size: 0.75rem;
+    color: rgb(var(--muted));
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    animation: slide-in 450ms ease-out 450ms both;
+  }
+
   .words {
     display: flex;
     min-width: 0;
@@ -354,6 +381,7 @@
     .badge,
     .heading,
     .title,
+    .game,
     .more {
       animation: fade-in 200ms ease-out both;
     }
@@ -419,5 +447,10 @@
   [data-category='themes'] {
     --from: 52 211 153;
     --to: 8 145 178;
+  }
+  /* Succès d'une plateforme : le bleu Steam, même s'il vient d'ailleurs. */
+  [data-category='platform'] {
+    --from: 102 192 244;
+    --to: 23 105 158;
   }
 </style>

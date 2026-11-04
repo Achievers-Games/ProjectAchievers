@@ -155,8 +155,12 @@ describe('calcul de la progression', () => {
   it('calcule la complétion et reste idempotent', async () => {
     const { userId, gameId } = await fixture(['GOLD', 'GOLD']);
     const unlock = [{ platformAchievementId: '0', unlockedAt: new Date() }];
-    expect(await saveProgress(userId, gameId, unlock)).toBe(1);
-    expect(await saveProgress(userId, gameId, unlock)).toBe(0);
+    const first = await saveProgress(userId, gameId, unlock);
+    expect(first.gained).toBe(1);
+    expect(first.fresh.map((a) => a.name)).toHaveLength(1);
+    const again = await saveProgress(userId, gameId, unlock);
+    expect(again.gained).toBe(0);
+    expect(again.fresh).toEqual([]);
     const row = await db.userGame.findUniqueOrThrow({
       where: { userId_gameId: { userId, gameId } },
     });
@@ -184,9 +188,10 @@ describe('calcul de la progression', () => {
 
   it('ignore un déverrouillage inconnu du catalogue', async () => {
     const { userId, gameId } = await fixture(['GOLD']);
-    expect(
-      await saveProgress(userId, gameId, [{ platformAchievementId: '99', unlockedAt: new Date() }]),
-    ).toBe(0);
+    const result = await saveProgress(userId, gameId, [
+      { platformAchievementId: '99', unlockedAt: new Date() },
+    ]);
+    expect(result).toMatchObject({ gained: 0, fresh: [] });
   });
 });
 

@@ -242,7 +242,7 @@ export const syncXbox: ProviderSync = async ({ userId, account, report, onUnlock
       await saveAchievements(game.id, read.achievements);
       for (const state of read.states) states.set(state, (states.get(state) ?? 0) + 1);
 
-      const gained = await saveProgress(userId, game.id, read.unlocks, {
+      const { gained } = await saveProgress(userId, game.id, read.unlocks, {
         lastPlayedAt: lastPlayed,
       });
       achievements += gained;

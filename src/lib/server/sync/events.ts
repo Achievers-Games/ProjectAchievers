@@ -3,6 +3,13 @@ import type { Provider, SyncStatus } from '#prisma';
 import type { CardDrop, Reward } from '#lib/collection';
 import { globals } from '../globals';
 
+/** Un succès qui vient de tomber : de quoi le fêter sur la page, sans la recharger. */
+export interface UnlockPop {
+  title: string;
+  icon: string | null;
+  game: string;
+}
+
 export interface SyncEvent {
   provider: Provider;
   status: SyncStatus;
@@ -12,6 +19,8 @@ export interface SyncEvent {
   error?: string | null;
   /** Succès gagnés pendant cette synchronisation. */
   achievements?: number;
+  /** Lesquels, quand la page doit les fêter tout de suite. */
+  unlocks?: UnlockPop[];
   /** Cartes rares obtenues pendant cette synchronisation. */
   rewards?: Reward[];
   moreRewards?: number;
