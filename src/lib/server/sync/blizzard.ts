@@ -2,7 +2,10 @@ import type { Locale } from '$lib/paraglide/runtime';
 import type { AchievementText } from '../achievement-texts';
 import type { BlizzardCharacter } from '../accounts';
 import { db } from '../db';
+import { logger } from '$lib/logger';
 import { blizzardGet } from '../providers/blizzard';
+
+const log = logger('WoW');
 import { mapLimit, syncGames } from './errors';
 import {
   saveAchievements,
@@ -246,7 +249,7 @@ export function fillWowCatalog() {
     });
     await mapLimit(missing, DETAIL_CONCURRENCY, (achievement) =>
       fillWowDetail(achievement).catch((cause) =>
-        console.error(`Succès WoW ${achievement.platformAchievementId} :`, cause),
+        log.error(`Succès WoW ${achievement.platformAchievementId} :`, cause),
       ),
     );
   })().finally(() => {
@@ -276,7 +279,7 @@ async function syncWow({ userId, account, onUnlocked }: SyncContext) {
   );
   const gained = await saveProgress(userId, game.id, mergeUnlocks(lists));
   if (gained > 0) onUnlocked(game, gained);
-  void fillWowCatalog().catch((cause) => console.error('Catalogue WoW :', cause));
+  void fillWowCatalog().catch((cause) => log.error('Catalogue WoW :', cause));
   return gained;
 }
 

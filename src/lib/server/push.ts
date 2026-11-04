@@ -2,10 +2,13 @@ import webpush from 'web-push';
 import type { PushSubscription as Subscription } from '@prisma/client';
 import { db } from './db';
 import { env } from './env';
+import { logger } from '$lib/logger';
 import { rateLimit } from './rate-limit';
 import { m } from '$lib/paraglide/messages';
 import type { Locale } from '$lib/paraglide/runtime';
 import { SEASON, seasonState, type Season } from '$lib/season';
+
+const log = logger('Notifications');
 
 export type PushKind = 'message' | 'invite' | 'event' | 'digest';
 
@@ -104,7 +107,7 @@ async function deliver(subscription: Subscription, tag: string, content: PushCon
     if (status === 404 || status === 410) {
       await db.pushSubscription.deleteMany({ where: { id: subscription.id } });
     } else {
-      console.error('Notification :', cause);
+      log.error('Notification :', cause);
     }
   }
 }
@@ -124,7 +127,7 @@ export function notify(
         ),
       ),
     )
-    .catch((cause) => console.error('Notification :', cause));
+    .catch((cause) => log.error('Notification :', cause));
 }
 
 async function announce(key: string, content: (locale: Locale) => PushContent) {

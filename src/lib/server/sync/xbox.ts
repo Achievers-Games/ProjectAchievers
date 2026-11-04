@@ -1,5 +1,6 @@
 import { db } from '../db';
 import { decrypt, encrypt } from '../crypto';
+import { logger } from '$lib/logger';
 import {
   openXboxSession,
   refreshMicrosoftTokens,
@@ -18,6 +19,7 @@ import {
 import type { ProviderSync } from './types';
 import { xboxConsole } from '$lib/collection';
 
+const log = logger('Xbox');
 const CONCURRENCY = 3;
 const MAX_TITLES = 10_000;
 
@@ -249,7 +251,7 @@ export const syncXbox: ProviderSync = async ({ userId, account, report, onUnlock
   );
 
   // Des totaux seulement : assez pour comprendre un import vide, sans donnée du joueur.
-  console.info(
+  log.info(
     `Xbox : ${history.length} titres, ${titles.length} avec succès, états`,
     Object.fromEntries(states),
   );

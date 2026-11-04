@@ -2,7 +2,10 @@ import { baseLocale, type Locale } from '$lib/paraglide/runtime';
 import { applyAccountLook, identityLook } from '../accounts';
 import { db } from '../db';
 import { env } from '../env';
+import { logger } from '$lib/logger';
 import { fetchSteamIdentity } from '../providers/steam';
+
+const log = logger('Steam');
 import { fetchRetry, mapLimit, sleep, SyncError, syncGames } from './errors';
 import { saveAchievements, saveProgress, upsertGame, type AchievementInput } from './store';
 import type { ProviderSync, SyncContext } from './types';
@@ -481,7 +484,7 @@ export const syncSteam: ProviderSync = async ({ userId, account, report, onUnloc
   const library = new Set(owned.map((game) => game.appid));
   // Une méthode non documentée peut disparaître : la bibliothèque reste synchronisée.
   const shared = await findSharedGames({ userId, account }, library).catch((cause) => {
-    console.error('Jeux partagés Steam :', cause);
+    log.error('Jeux partagés Steam :', cause);
     return [];
   });
 

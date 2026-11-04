@@ -3,7 +3,10 @@ import { clanFrameFor, CLAN_FRAMES } from '$lib/frames';
 import { SEASON } from '$lib/season';
 import { m } from '$lib/paraglide/messages';
 import { db } from './db';
+import { logger } from '$lib/logger';
 import { notify } from './push';
+
+const log = logger('Succès de clan');
 import { publishChat } from './sync/events';
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -205,6 +208,6 @@ export async function checkClanAchievements(clanId: string, now = Date.now()) {
 export async function checkAllClans() {
   const clans = await db.clan.findMany({ select: { id: true } });
   for (const { id } of clans) {
-    await checkClanAchievements(id).catch((cause) => console.error('Succès de clan :', cause));
+    await checkClanAchievements(id).catch((cause) => log.error('Succès de clan :', cause));
   }
 }

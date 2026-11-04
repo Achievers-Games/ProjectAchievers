@@ -9,9 +9,12 @@ import { exchangeGoogleCode } from '$lib/server/providers/google';
 import { fetchSteamIdentity, verifySteamResponse } from '$lib/server/providers/steam';
 import { exchangeXboxCode } from '$lib/server/providers/xbox';
 import { createSession } from '$lib/server/session';
+import { logger } from '$lib/logger';
 import { enqueueSync } from '$lib/server/sync/queue';
 import type { RequestHandler } from './$types';
 import { m } from '$lib/paraglide/messages';
+
+const log = logger('Connexion');
 
 async function identityFrom(
   provider: OAuthProvider,
@@ -43,7 +46,7 @@ export const GET: RequestHandler = async ({ params, url, cookies, locals, reques
   try {
     identity = await identityFrom(provider, url.searchParams, flow.verifier);
   } catch (cause) {
-    console.error(`Connexion ${provider} :`, cause);
+    log.error(`Connexion ${provider} :`, cause);
     redirect(303, '/connexion?erreur=fournisseur');
   }
   if (!identity) redirect(303, '/connexion?erreur=refuse');

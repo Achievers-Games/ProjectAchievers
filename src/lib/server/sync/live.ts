@@ -1,4 +1,6 @@
 import { db } from '../db';
+import { globals } from '../globals';
+import { logger } from '$lib/logger';
 import { availableProviders } from '../providers';
 import { fetchPlayingGames } from '../providers/steam';
 import { connectedUsers } from './events';
@@ -7,6 +9,7 @@ import { runLiveGame } from './queue';
 /** Steam n'envoie aucune notification : seuls les joueurs présents sur le site sont surveillés. */
 const INTERVAL = 30_000;
 const STEAM_BATCH = 100;
+const log = logger('Succès en direct');
 
 /** Le dernier jeu vu : il est relu une dernière fois après sa fermeture. */
 const lastGames = new Map<string, string>();
@@ -34,9 +37,7 @@ export async function checkLiveGames() {
   for (const { userId, providerUserId: steamId } of accounts) {
     const appId = playing.get(steamId) ?? lastGames.get(steamId);
     if (!appId) continue;
-    await runLiveGame(userId, steamId, appId).catch((cause) =>
-      console.error('Succès en direct :', cause),
-    );
+    await runLiveGame(userId, steamId, appId).catch((cause) => log.error(cause));
   }
 
   lastGames.clear();
@@ -52,16 +53,14 @@ async function tick() {
   try {
     await checkLiveGames();
   } catch (cause) {
-    console.error('Succès en direct :', cause);
+    log.error(cause);
   } finally {
     checking = false;
   }
 }
 
-const globalForLive = globalThis as unknown as { paLive?: NodeJS.Timeout };
-
 export function startLiveGames() {
-  if (globalForLive.paLive || !availableProviders().STEAM) return;
-  globalForLive.paLive = setInterval(() => void tick(), INTERVAL);
-  globalForLive.paLive.unref();
+  if (globals.paLive || !availableProviders().STEAM) return;
+  globals.paLive = setInterval(() => void tick(), INTERVAL);
+  globals.paLive.unref();
 }

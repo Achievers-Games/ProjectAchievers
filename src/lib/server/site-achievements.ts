@@ -21,6 +21,7 @@ import { getLocale } from '$lib/paraglide/runtime';
 import { localizeAchievements } from './achievement-texts';
 import { checkClanAchievements, clanFacts } from './clan-achievements';
 import { rateLimit } from './rate-limit';
+import { logger } from '$lib/logger';
 import { db } from './db';
 import {
   GENRE_ICON,
@@ -30,7 +31,7 @@ import {
   UNKNOWN_ICON,
   type IconName,
 } from './site-icons';
-import { seasonStats, userCards, visibleGames } from './queries';
+import { publicGames, RARE_CARD, seasonStats, userCards, visibleGames } from './queries';
 import { publishChat } from './sync/events';
 import {
   evaluateSite,
@@ -41,6 +42,7 @@ import {
   type SiteProof,
 } from './site-rules';
 
+const log = logger('Succès du site');
 const GAME_PROVIDERS: Provider[] = ['STEAM', 'PSN', 'XBOX', 'RETRO', 'BLIZZARD'];
 const GAME_PLAYER = { accounts: { some: { provider: { in: GAME_PROVIDERS } } } };
 /** Être le premier ne compte qu'à partir d'ici : les finitions plus anciennes sont de l'histoire. */
@@ -284,7 +286,7 @@ async function badInfluence(userId: string, friends: string[]) {
 async function hasPerfectClan(clanId: string) {
   const rows = await db.userGame.findMany({
     where: {
-      completion: { gte: 100 },
+      ...RARE_CARD,
       hidden: false,
       lastUnlockedAt: { not: null },
       user: { clanMember: { clanId } },
@@ -503,7 +505,7 @@ export async function checkSiteAchievements(userId: string) {
   const member = await db.clanMember.findUnique({ where: { userId }, select: { clanId: true } });
   if (member && rateLimit(`clan-succes:${member.clanId}`, 1, CLAN_CHECK_EVERY)) {
     await checkClanAchievements(member.clanId).catch((cause) =>
-      console.error('Succès de clan :', cause),
+      log.error('Succès de clan :', cause),
     );
   }
   const rows = await db.siteUnlock.findMany({
@@ -562,8 +564,10 @@ export async function grantSiteAchievement(userId: string, code: SiteCode) {
 }
 
 type Message = (params?: Record<string, string | number>) => string;
+const TEXTS = m as unknown as Record<string, Message | undefined>;
+/** Les clés sont construites à partir des codes : la table reste dynamique, mais sans assertion. */
 const message = (key: string, params?: Record<string, string | number>) =>
-  (m as unknown as Record<string, Message>)[key]!(params);
+  TEXTS[key]?.(params) ?? key;
 /** Les paliers d'une série d'amis ou de clan partagent un titre. */
 export const siteTitle = (code: string) => message(`ach_${seriesOf(code)?.key ?? code}_title`);
 
@@ -605,7 +609,8 @@ export const siteAchievementCount = (userId: string) =>
  * le profil est privé ne se nomme que sur son propre tableau.
  */
 async function proofLabels(proofs: SiteProof[], showAdult: boolean, own: boolean) {
-  const game = showAdult ? {} : { adultOnly: false };
+  // Un jeu Steam pas encore classé pourrait être adulte : il reste hors des preuves publiques.
+  const game = showAdult ? {} : publicGames;
   const [games, achievements, users, clans] = await Promise.all([
     db.game.findMany({
       where: { id: { in: proofs.flatMap((proof) => proof.games ?? []) }, ...game },

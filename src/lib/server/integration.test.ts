@@ -2396,6 +2396,8 @@ describe('succès du site', () => {
         platformGameId: `${PREFIX}-succes`,
         name: `${PREFIX} preuve`,
         slug: `${PREFIX}-preuve`,
+        // Classé : sans cela, un jeu Steam reste hors des preuves publiques.
+        contentCheckedAt: new Date(),
       },
     });
     const proof = { games: [game.id] };

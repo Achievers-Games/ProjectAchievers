@@ -48,9 +48,3 @@ export async function sendMail(options: SendMailOptions) {
     replyTo: options.replyTo,
   });
 }
-
-/** Vérifie que la connexion SMTP fonctionne (utile au démarrage ou pour un test). */
-export async function verifySmtpConnection() {
-  const transporter = getTransporter();
-  await transporter.verify();
-}

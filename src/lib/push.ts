@@ -1,5 +1,8 @@
 import { sendJson } from '$lib/http';
 import { m } from '$lib/paraglide/messages';
+import { logger } from '$lib/logger';
+
+const log = logger('Notifications');
 
 const WORKER = '/push-sw.js';
 
@@ -10,7 +13,7 @@ const toBytes = (key: string) => {
 
 /** Brave coupe par défaut le service de notifications : le joueur doit savoir où le rétablir. */
 export function pushFailureText(cause: unknown) {
-  console.error('Notifications :', cause);
+  log.error('Notifications :', cause);
   const unavailable = cause instanceof DOMException && cause.name === 'AbortError';
   if (!unavailable) return m.action_failed();
   return 'brave' in navigator ? m.push_brave() : m.push_service_down();

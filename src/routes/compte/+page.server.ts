@@ -6,6 +6,7 @@ import { profileSchema, resolveIdentity, updateProfile } from '$lib/server/accou
 import { requireLogin } from '$lib/server/auth';
 import { secureCookie } from '$lib/server/cookies';
 import { db } from '$lib/server/db';
+import { logger } from '$lib/logger';
 import { clearMerge, mergePreview, mergeUsers, readMerge, saveMerge } from '$lib/server/merge';
 import { availableProviders } from '$lib/server/providers';
 import { bioContainsCode, findPsnProfile, newPsnCode } from '$lib/server/providers/psn';
@@ -19,6 +20,8 @@ import { enqueueSync } from '$lib/server/sync/queue';
 import { requestStoreSweep } from '$lib/server/sync/steam';
 import type { Actions, PageServerLoad } from './$types';
 import { m } from '$lib/paraglide/messages';
+
+const log = logger('Compte');
 
 const NOTICES: Record<string, () => string> = {
   provider_taken: m.provider_taken,
@@ -344,7 +347,7 @@ export const actions: Actions = {
     try {
       profile = await findPsnProfile(parsed.data);
     } catch (cause) {
-      console.error('Recherche PSN :', cause);
+      log.error('Recherche PSN :', cause);
       return fail(502, { error: m.psn_down() });
     }
     if (!profile) return fail(404, { error: m.psn_not_found() });
@@ -372,9 +375,9 @@ export const actions: Actions = {
 
     let profile;
     try {
-      profile = await findPsnProfile(pending.onlineId);
+      profile = await findPsnProfile(pending.onlineId, true);
     } catch (cause) {
-      console.error('Vérification PSN :', cause);
+      log.error('Vérification PSN :', cause);
       return fail(502, { error: m.psn_down() });
     }
     if (!profile || profile.accountId !== pending.accountId) {
@@ -421,7 +424,7 @@ export const actions: Actions = {
     if (!parsed.success) return fail(400, { error: parsed.error.issues[0]?.message });
 
     const profile = await findRetroProfile(parsed.data).catch((cause) => {
-      console.error('Recherche RetroAchievements :', cause);
+      log.error('Recherche RetroAchievements :', cause);
       return undefined;
     });
     if (profile === undefined) return fail(502, { error: m.retro_down() });
@@ -449,7 +452,7 @@ export const actions: Actions = {
     }
 
     const profile = await findRetroProfile(pending.accountId).catch((cause) => {
-      console.error('Vérification RetroAchievements :', cause);
+      log.error('Vérification RetroAchievements :', cause);
       return undefined;
     });
     if (profile === undefined) return fail(502, { error: m.retro_down() });

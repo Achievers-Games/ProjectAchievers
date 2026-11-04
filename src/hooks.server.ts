@@ -9,16 +9,19 @@ import { grantFramesThrottled } from '$lib/server/frames';
 import { startDigests } from '$lib/server/push-digest';
 import { rateLimit } from '$lib/server/rate-limit';
 import { validateSession } from '$lib/server/session';
+import { logger } from '$lib/logger';
 import { startLiveGames } from '$lib/server/sync/live';
 import { autoRefresh, startWorkers } from '$lib/server/sync/queue';
+
+const log = logger('Serveur');
 
 export const init: ServerInit = async () => {
   env();
   await startWorkers();
   startLiveGames();
   startDigests();
-  await grantFramesThrottled().catch((cause) => console.error('Cadres :', cause));
-  await syncCuratedGuides().catch((cause) => console.error('Guides officiels :', cause));
+  await grantFramesThrottled().catch((cause) => log.error('Cadres :', cause));
+  await syncCuratedGuides().catch((cause) => log.error('Guides officiels :', cause));
 };
 
 const WINDOW = 60_000;
@@ -27,8 +30,8 @@ function limitFor(request: Request, path: string): number | null {
   if (path === '/auth/dev') return null;
   if (path.startsWith('/auth/')) return 20;
   if (request.method !== 'GET' && request.method !== 'HEAD') return 60;
-  // La présence est en cache et le flux reste ouvert : ni l'un ni l'autre ne doit bloquer le chat.
-  if (path === '/api/presence' || path === '/api/sync/events') return null;
+  // Le flux reste ouvert : il ne doit pas bloquer le chat.
+  if (path === '/api/sync/events') return null;
   return path.startsWith('/api/') ? 120 : null;
 }
 

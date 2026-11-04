@@ -4,7 +4,10 @@ import { m } from '$lib/paraglide/messages';
 import { sendMail } from '$lib/server/email';
 import { env } from '$lib/server/env';
 import { rateLimit } from '$lib/server/rate-limit';
+import { logger } from '$lib/logger';
 import type { Actions, PageServerLoad } from './$types';
+
+const log = logger('Contact');
 
 const PER_HOUR = 3;
 
@@ -78,7 +81,7 @@ export const actions: Actions = {
         html: `<p>${escapeHtml(message).replace(/\n/g, '<br>')}</p><p>— ${escapeHtml(cleanName)} &lt;${escapeHtml(email)}&gt;</p>`,
       });
     } catch (error) {
-      console.error('contact: envoi impossible', error);
+      log.error('contact: envoi impossible', error);
       return fail(503, { error: m.contact_unavailable() });
     }
 

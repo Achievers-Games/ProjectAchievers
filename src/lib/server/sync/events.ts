@@ -1,6 +1,7 @@
 import { EventEmitter } from 'node:events';
 import type { Provider, SyncStatus } from '@prisma/client';
 import type { CardDrop, Reward } from '$lib/collection';
+import { globals } from '../globals';
 
 export interface SyncEvent {
   provider: Provider;
@@ -30,8 +31,7 @@ export interface UnlockEvent {
   count: number;
 }
 
-const globalForEvents = globalThis as unknown as { paEvents?: EventEmitter };
-const bus = (globalForEvents.paEvents ??= new EventEmitter().setMaxListeners(0));
+const bus = (globals.paEvents ??= new EventEmitter().setMaxListeners(0));
 
 export const publishSync = (userId: string, event: SyncEvent) => bus.emit(`sync:${userId}`, event);
 

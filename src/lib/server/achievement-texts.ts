@@ -2,6 +2,9 @@ import type { Platform } from '@prisma/client';
 import { baseLocale, type Locale } from '$lib/paraglide/runtime';
 import { db } from './db';
 import { rateLimit } from './rate-limit';
+import { logger } from '$lib/logger';
+
+const log = logger('Textes');
 import { fetchBlizzardTexts } from './sync/blizzard';
 import { fetchPsnTexts } from './sync/psn';
 import { fetchSteamTexts } from './sync/steam';
@@ -83,7 +86,7 @@ export async function ensureGameTexts(
   if (!task) {
     if (!rateLimit(`textes:${game.platform}`, REQUESTS_PER_MINUTE, 60_000)) return;
     task = loadTexts(game, locale)
-      .catch((cause) => console.error(`Textes ${game.platform} (${locale}) :`, cause))
+      .catch((cause) => log.error(`Textes ${game.platform} (${locale}) :`, cause))
       .finally(() => pending.delete(key));
     pending.set(key, task);
   }

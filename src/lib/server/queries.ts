@@ -55,8 +55,10 @@ interface GameFilters {
   showAdult?: boolean;
 }
 
-const librarySelect = {
+/** Les cartes d'un joueur : la bibliothèque les regroupe, un profil les range par date. */
+const cardSelect = {
   unlockedCount: true,
+  totalCount: true,
   completion: true,
   platinum: true,
   lastUnlockedAt: true,
@@ -101,7 +103,7 @@ async function listLibrary(
 ) {
   const rows = await db.userGame.findMany({
     where: { userId: ownerId, hidden: filters.status === 'caches', game: where },
-    select: librarySelect,
+    select: cardSelect,
   });
   const search = filters.q?.toLowerCase();
   const started = ownerId === viewerId ? await seasonStartedGames(ownerId) : new Set<string>();
@@ -234,31 +236,23 @@ async function withProgress<T extends { id: string }>(games: T[], viewerId: stri
 
 export type GameListItem = Awaited<ReturnType<typeof listGames>>['games'][number];
 
-const profileGameSelect = {
-  unlockedCount: true,
-  totalCount: true,
-  completion: true,
-  platinum: true,
-  lastUnlockedAt: true,
-  game: {
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-      platform: true,
-      console: true,
-      coverUrl: true,
-      headerUrl: true,
-      totalAchievements: true,
-      tier: true,
-    },
-  },
-} satisfies Prisma.UserGameSelect;
-
 /** Les jeux terminés : 100 % des succès, DLC compris. */
 export const RARE_CARD = {
   completion: { gte: 100 },
 } satisfies Prisma.UserGameWhereInput;
+
+/**
+ * Une ligne par édition terminée (plateforme ou console) : le fil compte les exemplaires ainsi et
+ * les moments de niveau s'y datent. `where` restreint les joueurs lus.
+ */
+const finishedEditions = (where: Prisma.Sql) => Prisma.sql`
+  SELECT ug."userId", ug."lastUnlockedAt" AS at, g.name, g.slug, g."headerUrl", g.platform,
+         g."adultOnly", g."contentCheckedAt", g.tier,
+         COALESCE(g."familyKey", g."slug") AS family,
+         COALESCE(g."console", g.platform::text) AS edition
+  FROM "UserGame" ug
+  JOIN "Game" g ON g.id = ug."gameId"
+  WHERE ug."completion" >= 100 AND NOT ug.hidden AND ${where}`;
 
 /**
  * Les exemplaires de chaque carte du fil : une édition terminée par plateforme ou console, comme
@@ -270,12 +264,9 @@ async function copiesInFeed(
   const userIds = [...new Set(rows.map((row) => row.userId))];
   if (userIds.length === 0) return new Map<string, number>();
   const counts = await db.$queryRaw<{ userId: string; family: string; copies: bigint }[]>`
-    SELECT ug."userId", COALESCE(g."familyKey", g."slug") AS family,
-           count(DISTINCT COALESCE(g."console", g."platform"::text)) AS copies
-    FROM "UserGame" ug
-    JOIN "Game" g ON g.id = ug."gameId"
-    WHERE ug."completion" >= 100 AND NOT ug.hidden
-      AND ug."userId" IN (${Prisma.join(userIds)})
+    WITH finished AS (${finishedEditions(Prisma.sql`ug."userId" IN (${Prisma.join(userIds)})`)})
+    SELECT "userId", family, count(DISTINCT edition) AS copies
+    FROM finished
     GROUP BY 1, 2`;
   return new Map(
     counts.map((row) => [`${row.userId}|${row.family}`, copiesFor(Number(row.copies))]),
@@ -325,7 +316,7 @@ export async function dashboard(userId: string, showAdult = false) {
       },
       orderBy: { lastUnlockedAt: 'desc' },
       take: 4,
-      select: profileGameSelect,
+      select: cardSelect,
     }),
     db.userGame.findMany({
       where: {
@@ -336,7 +327,7 @@ export async function dashboard(userId: string, showAdult = false) {
       },
       orderBy: { completion: 'desc' },
       take: 4,
-      select: profileGameSelect,
+      select: cardSelect,
     }),
     userStats(userId),
   ]);
@@ -405,7 +396,7 @@ async function visibleLibrary(userId: string, showAdult: boolean) {
   const rows = await db.userGame.findMany({
     where: { userId, hidden: false, game: visibleGames(showAdult) },
     orderBy: [{ lastUnlockedAt: { sort: 'desc', nulls: 'last' } }],
-    select: librarySelect,
+    select: cardSelect,
   });
   return groupLibrary(rows);
 }
@@ -856,21 +847,14 @@ async function tierMoments(showAdult: boolean, limit: number) {
     }[]
   >`
     WITH finished AS (
-      SELECT ug."userId", ug."lastUnlockedAt" AS at, g.name, g.slug, g."headerUrl", g.platform,
-             g."adultOnly", g."contentCheckedAt", g.tier,
-             COALESCE(g."familyKey", g.id) AS family,
-             COALESCE(g.console, g.platform::text) AS edition,
-             min(ug."lastUnlockedAt") OVER (
-               PARTITION BY ug."userId", COALESCE(g."familyKey", g.id),
-                 COALESCE(g.console, g.platform::text)
-             ) AS reached
-      FROM "UserGame" ug
-      JOIN "Game" g ON g.id = ug."gameId"
-      JOIN "User" u ON u.id = ug."userId" AND u."isPublic"
-      WHERE ug.completion >= 100 AND NOT ug.hidden AND ug."lastUnlockedAt" IS NOT NULL
+      ${finishedEditions(Prisma.sql`ug."lastUnlockedAt" IS NOT NULL
+        AND "userId" IN (SELECT id FROM "User" WHERE "isPublic")`)}
+    ), reached AS (
+      SELECT *, min(at) OVER (PARTITION BY "userId", family, edition) AS reached
+      FROM finished
     ), ranked AS (
       SELECT *, dense_rank() OVER (PARTITION BY "userId", family ORDER BY reached, edition) AS copies
-      FROM finished
+      FROM reached
     )
     SELECT u.handle, u."displayName", u."avatarUrl", u."avatarMotionUrl", u.frame,
            u."frameMotionUrl", r.name, r.slug, r."headerUrl", r.at, r.copies, r.tier
@@ -916,11 +900,11 @@ export async function compareUsers(a: string, b: string, showAdult = false) {
   const [left, right] = await Promise.all([
     db.userGame.findMany({
       where: { userId: a, hidden: false, game: visibleGames(showAdult) },
-      select: profileGameSelect,
+      select: cardSelect,
     }),
     db.userGame.findMany({
       where: { userId: b, hidden: false, game: visibleGames(showAdult) },
-      select: profileGameSelect,
+      select: cardSelect,
     }),
   ]);
   const rightByGame = new Map(right.map((row) => [row.game.id, row]));

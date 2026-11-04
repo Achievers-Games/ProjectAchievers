@@ -1,4 +1,6 @@
 import { db } from './db';
+import { globals } from './globals';
+import { logger } from '$lib/logger';
 import { notify, usersWhoLeft } from './push';
 import { pendingInvites, unreadCount } from './social';
 import { m } from '$lib/paraglide/messages';
@@ -28,11 +30,11 @@ export async function sendDigests() {
   }
 }
 
-const globalForDigest = globalThis as unknown as { paDigest?: NodeJS.Timeout };
+const log = logger('Résumé');
 
 export function startDigests() {
-  globalForDigest.paDigest ??= setInterval(() => {
-    sendDigests().catch((cause) => console.error('Résumé :', cause));
+  globals.paDigest ??= setInterval(() => {
+    sendDigests().catch((cause) => log.error(cause));
   }, INTERVAL);
-  globalForDigest.paDigest.unref();
+  globals.paDigest.unref();
 }

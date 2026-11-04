@@ -1,3 +1,7 @@
+import { logger } from '$lib/logger';
+
+const log = logger('Synchronisation');
+
 /** Erreur attendue d'une synchronisation : son message est un code, traduit à l'affichage. */
 export class SyncError extends Error {
   constructor(
@@ -67,7 +71,7 @@ export async function syncGames<T>(
       await task(item);
     } catch (error) {
       if (error instanceof SyncError) throw error;
-      console.error(`Synchronisation ${platform} de « ${name(item)} » :`, error);
+      log.error(`Synchronisation ${platform} de « ${name(item)} » :`, error);
       failed += 1;
     }
     processed += 1;
@@ -85,11 +89,14 @@ export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve
 /** `fetch` avec nouvelles tentatives sur 429 et 5xx, en respectant `Retry-After`. */
 export async function fetchRetry(url: string | URL, init?: RequestInit, attempts = 4) {
   for (let attempt = 1; ; attempt++) {
+    const timeout = AbortSignal.timeout(20_000);
+    const signal = init?.signal ? AbortSignal.any([init.signal, timeout]) : timeout;
     let response: Response | undefined;
     try {
-      response = await fetch(url, { ...init, signal: AbortSignal.timeout(20_000) });
+      response = await fetch(url, { ...init, signal });
     } catch (error) {
-      if (attempt >= attempts) throw error;
+      // Un appelant parti n'attend plus rien : inutile de retenter pour lui.
+      if (init?.signal?.aborted || attempt >= attempts) throw error;
     }
     if (response && response.status !== 429 && response.status < 500) return response;
     if (response && attempt >= attempts) return response;

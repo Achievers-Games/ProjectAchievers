@@ -1,9 +1,28 @@
+/** Au-delà, un flux ouvert ne peut plus l'être : le serveur garde de quoi répondre au reste. */
+const MAX_STREAMS = 2_000;
+let openStreams = 0;
+
 /** Flux Server-Sent Events. `subscribe` renvoie la fonction de désinscription. */
 export function eventStream<T>(
   subscribe: (send: (event: T) => void) => () => void,
   signal: AbortSignal,
 ): Response {
+  if (openStreams >= MAX_STREAMS) {
+    return new Response(null, { status: 503, headers: { 'Retry-After': '60' } });
+  }
+  openStreams += 1;
+  let released = false;
+  const release = () => {
+    if (released) return;
+    released = true;
+    openStreams -= 1;
+  };
+
   let cleanup = () => {};
+  const close = () => {
+    cleanup();
+    release();
+  };
 
   const stream = new ReadableStream<string>({
     start(controller) {
@@ -12,13 +31,19 @@ export function eventStream<T>(
         try {
           controller.enqueue(chunk);
         } catch {
-          cleanup();
+          close();
         }
       };
       const send = (event: T) => write(`data: ${JSON.stringify(event)}\n\n`);
       // Premier octet immédiat : sans lui, les en-têtes attendent le premier événement.
       write(': ok\n\n');
-      const unsubscribe = subscribe(send);
+      let unsubscribe: () => void;
+      try {
+        unsubscribe = subscribe(send);
+      } catch (error) {
+        release();
+        throw error;
+      }
       // Commentaire périodique : garde la connexion ouverte à travers les proxys.
       const heartbeat = setInterval(() => write(': ping\n\n'), 25_000);
 
@@ -28,7 +53,7 @@ export function eventStream<T>(
         cleanup = () => {};
       };
       signal.addEventListener('abort', () => {
-        cleanup();
+        close();
         try {
           controller.close();
         } catch {
@@ -37,7 +62,7 @@ export function eventStream<T>(
       });
     },
     cancel() {
-      cleanup();
+      close();
     },
   });
 

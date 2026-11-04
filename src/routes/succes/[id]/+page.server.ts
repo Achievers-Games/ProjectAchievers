@@ -7,11 +7,14 @@ import { censor } from '$lib/profanity';
 import { renderGuide, renderMarkdown } from '$lib/server/markdown';
 import { publicUser } from '$lib/server/queries';
 import { ensureGameTexts, localizeAchievements } from '$lib/server/achievement-texts';
+import { logger } from '$lib/logger';
 import { rateLimit } from '$lib/server/rate-limit';
 import { canTranslate, translateContent } from '$lib/server/translate';
 import { getLocale } from '$lib/paraglide/runtime';
 import type { Actions, PageServerLoad } from './$types';
 import { m } from '$lib/paraglide/messages';
+
+const log = logger('Traduction');
 
 /** Les visiteurs ont le filtre : seul un membre peut choisir de le retirer. */
 const forViewer = (user: App.Locals['user']) => (text: string, locale: string | null) =>
@@ -360,7 +363,7 @@ export const actions: Actions = {
       const html = targetType === 'GUIDE' ? renderGuide : renderMarkdown;
       return { html: html(forViewer(locals.user)(translated, getLocale())) };
     } catch (cause) {
-      console.error('Traduction :', cause);
+      log.error('Traduction :', cause);
       return fail(503, { error: m.translate_failed() });
     }
   },

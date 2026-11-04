@@ -2,6 +2,8 @@ import { PgBoss } from 'pg-boss';
 import type { Provider } from '@prisma/client';
 import { db } from '../db';
 import { env } from '../env';
+import { globals } from '../globals';
+import { logger } from '$lib/logger';
 import { availableProviders } from '../providers';
 import { fillFamilies, matchFamilies } from '../family';
 import { announceSeason } from '../push';
@@ -52,12 +54,12 @@ interface SyncJob {
   quiet?: boolean;
 }
 
-const globalForBoss = globalThis as unknown as { paBoss?: Promise<PgBoss> };
+const log = logger('Synchronisation');
 
 function boss(): Promise<PgBoss> {
-  return (globalForBoss.paBoss ??= (async () => {
+  return (globals.paBoss ??= (async () => {
     const instance = new PgBoss(env().DATABASE_URL);
-    instance.on('error', (error) => console.error('pg-boss :', error));
+    instance.on('error', (error) => log.error('pg-boss :', error));
     await instance.start();
     await instance.createQueue(SYNC_QUEUE);
     await instance.createQueue(SWEEP_QUEUE);
@@ -124,13 +126,13 @@ export function autoRefresh(userId: string) {
   if (!rateLimit(`rafraichissement:${userId}`, 1, AUTO_CHECK)) return;
   if (rateLimit(`succes-site:${userId}`, 1, SITE_CHECK)) void reviewSiteAchievements(userId);
   void refreshAccounts(userId, autoInterval, true).catch((cause) =>
-    console.error('Rafraîchissement :', cause),
+    log.error('Rafraîchissement :', cause),
   );
 }
 
 /** Un calcul de succès raté ne doit jamais faire échouer ce qui l'a déclenché. */
 const reviewSiteAchievements = (userId: string) =>
-  checkSiteAchievements(userId).catch((cause) => console.error('Succès du site :', cause));
+  checkSiteAchievements(userId).catch((cause) => log.error('Succès du site :', cause));
 
 async function rareCards(userId: string) {
   const rows = await db.userGame.findMany({
@@ -182,7 +184,7 @@ function announceUnlock(user: SyncUser, userId: string, game: UnlockedGame, coun
   if (!user.isPublic || !isPublicGame(game)) return;
   void hasRecentFeat(userId, game.id, new Date(Date.now() - LIVE_CARD_MAX_AGE))
     .then((feat) => feat && publishHighlight())
-    .catch((cause) => console.error('Fil global :', cause));
+    .catch((cause) => log.error('Fil global :', cause));
   publishUnlock({
     user: user.displayName,
     handle: user.handle,
@@ -224,7 +226,7 @@ async function announceCards(user: SyncUser, userId: string, before: Map<string,
       }
     }
   }
-  await grantFramesThrottled().catch((cause) => console.error('Cadres :', cause));
+  await grantFramesThrottled().catch((cause) => log.error('Cadres :', cause));
   return rewards;
 }
 
@@ -323,7 +325,7 @@ export async function runSync({ userId, provider, quiet }: SyncJob) {
     if (result.achievements > 0) await reviewSiteAchievements(userId);
   } catch (error) {
     const known = error instanceof SyncError;
-    if (!known) console.error(`Synchronisation ${provider} :`, error);
+    if (!known) log.error(`Synchronisation ${provider} :`, error);
     const message = known ? error.message : 'sync_failed_retry';
     const status = known && error.needsRelink ? 'NEEDS_RELINK' : 'FAILED';
 
@@ -359,23 +361,23 @@ async function sweep() {
     take: 500,
   });
   for (const account of accounts) await enqueueSync(account.userId, account.provider);
-  await reviewNewPlayers().catch((cause) => console.error('Succès du site :', cause));
-  await announceSeason().catch((cause) => console.error('Annonce :', cause));
-  await warnPsnToken().catch((cause) => console.error('Jeton PSN :', cause));
-  await flagProfaneClans().catch((cause) => console.error('Noms de clan :', cause));
-  await checkAllClans().catch((cause) => console.error('Succès de clan :', cause));
-  await refreshDiscordAccounts().catch((cause) => console.error('Discord :', cause));
-  await fillHiddenDescriptions().catch((cause) => console.error('Succès cachés :', cause));
-  await fillWowCatalog().catch((cause) => console.error('Catalogue WoW :', cause));
-  await sweepSteamStore().catch((cause) => console.error('Boutique Steam :', cause));
-  await matchFamilies().catch((cause) => console.error('Familles :', cause));
+  await reviewNewPlayers().catch((cause) => log.error('Succès du site :', cause));
+  await announceSeason().catch((cause) => log.error('Annonce :', cause));
+  await warnPsnToken().catch((cause) => log.error('Jeton PSN :', cause));
+  await flagProfaneClans().catch((cause) => log.error('Noms de clan :', cause));
+  await checkAllClans().catch((cause) => log.error('Succès de clan :', cause));
+  await refreshDiscordAccounts().catch((cause) => log.error('Discord :', cause));
+  await fillHiddenDescriptions().catch((cause) => log.error('Succès cachés :', cause));
+  await fillWowCatalog().catch((cause) => log.error('Catalogue WoW :', cause));
+  await sweepSteamStore().catch((cause) => log.error('Boutique Steam :', cause));
+  await matchFamilies().catch((cause) => log.error('Familles :', cause));
 }
 
 /** Démarre le traitement des synchronisations dans le processus du site. */
 export async function startWorkers() {
   const instance = await boss();
   await fillFamilies();
-  await matchFamilies().catch((cause) => console.error('Familles :', cause));
+  await matchFamilies().catch((cause) => log.error('Familles :', cause));
   await fillGameTiers();
 
   // Un arrêt brutal peut laisser des comptes bloqués en cours de synchronisation.

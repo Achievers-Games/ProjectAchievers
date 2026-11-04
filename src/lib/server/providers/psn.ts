@@ -62,15 +62,25 @@ interface PsnProfile {
   avatarUrl: string | null;
 }
 
-export async function findPsnProfile(onlineId: string): Promise<PsnProfile | null> {
+/** La recherche du compte retourne souvent sur le même pseudo ; la preuve de bio, jamais en cache. */
+const PROFILE_TTL = 10 * 60_000;
+const profiles = new Map<string, { profile: PsnProfile; at: number }>();
+
+export async function findPsnProfile(onlineId: string, fresh = false): Promise<PsnProfile | null> {
+  if (!fresh) {
+    const cached = profiles.get(onlineId);
+    if (cached && Date.now() - cached.at < PROFILE_TTL) return cached.profile;
+  }
   try {
     const { profile } = await getProfileFromUserName(await psnAuthorization(), onlineId);
-    return {
+    const found: PsnProfile = {
       accountId: profile.accountId,
       onlineId: profile.onlineId,
       aboutMe: profile.aboutMe ?? '',
       avatarUrl: profile.avatarUrls?.at(-1)?.avatarUrl ?? null,
     };
+    profiles.set(onlineId, { profile: found, at: Date.now() });
+    return found;
   } catch (error) {
     if (error instanceof Error && /not found|2105356/i.test(error.message)) return null;
     throw error;

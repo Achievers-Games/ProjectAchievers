@@ -1,5 +1,8 @@
 import { db } from './db';
 import { env } from './env';
+import { logger } from '$lib/logger';
+
+const log = logger('Image de clan');
 
 /** Le navigateur réduit l'image avant l'envoi : au-delà, ce n'est pas un emblème. */
 export const MAX_IMAGE_BYTES = 300_000;
@@ -64,7 +67,7 @@ export async function checkImage(bytes: Uint8Array): Promise<ImageVerdict> {
     if (word.startsWith('SAFE')) return 'safe';
     return 'unsure';
   } catch (cause) {
-    console.error('Analyse d’image :', cause);
+    log.error('Analyse d’image :', cause);
     return 'unsure';
   }
 }
