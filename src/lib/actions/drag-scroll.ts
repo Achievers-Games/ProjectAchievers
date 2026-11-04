@@ -50,6 +50,14 @@ export function dragScroll(
     setTimeout(() => delete element.dataset.dragging);
   }
 
+  /**
+   * Les cartes sont des liens : le navigateur lancerait son propre glisser-déposer et
+   * interromprait le geste. Le rail, lui, ne transporte rien.
+   */
+  function onDragStart(event: DragEvent) {
+    event.preventDefault();
+  }
+
   /** Le lien sous le curseur ne doit pas se déclencher après un glissement. */
   function onClick(event: MouseEvent) {
     if (!element.dataset.dragging) return;
@@ -61,6 +69,7 @@ export function dragScroll(
   element.addEventListener('pointermove', onMove);
   element.addEventListener('pointerup', onUp);
   element.addEventListener('pointercancel', onUp);
+  element.addEventListener('dragstart', onDragStart);
   element.addEventListener('click', onClick, true);
   return {
     destroy() {
@@ -68,6 +77,7 @@ export function dragScroll(
       element.removeEventListener('pointermove', onMove);
       element.removeEventListener('pointerup', onUp);
       element.removeEventListener('pointercancel', onUp);
+      element.removeEventListener('dragstart', onDragStart);
       element.removeEventListener('click', onClick, true);
       element.style.removeProperty('user-select');
     },

@@ -1,5 +1,5 @@
 import { expect, test as base, type Page } from '@playwright/test';
-import { SITE_CATEGORIES, SITE_TOTAL, groupSeries } from '../src/lib/site-achievements';
+import { SITE_TOTAL } from '../src/lib/site-achievements';
 
 /** Tout test échoue si la page journalise une erreur : un écran vide ne passe plus inaperçu. */
 const test = base.extend<{ consoleGuard: void }>({
@@ -12,6 +12,10 @@ const test = base.extend<{ consoleGuard: void }>({
         const location = message.location().url;
         // Les images distantes dépendent du réseau, pas de l'application.
         if (location.includes('steamstatic.com')) return;
+        // En développement, Vite sert ses propres modules depuis `.svelte-kit/generated/` :
+        // une page qui en redemande un pendant une régénération reçoit un 404 qui ne vient
+        // pas du site et qui n'existe pas une fois compilé.
+        if (location.includes('/.svelte-kit/generated/') && message.text().includes('404')) return;
         errors.push(`${message.text()} (${location})`);
       });
       await use();
@@ -40,6 +44,29 @@ test.describe('visiteur', () => {
     await expect(page.locator('.tagline')).not.toBeEmpty();
 
     await page.getByRole('button', { name: 'Bannière suivante' }).click();
+    await expect(page.getByRole('button', { name: 'Aller à la bannière 2' })).toHaveAttribute(
+      'aria-current',
+      'true',
+    );
+  });
+
+  test('fait glisser le carrousel jusqu’à la bannière suivante', async ({ page }) => {
+    await page.goto('/');
+    await ready(page);
+    const track = page.locator('.carousel-track');
+    await expect(page.getByRole('button', { name: 'Aller à la bannière 1' })).toHaveAttribute(
+      'aria-current',
+      'true',
+    );
+
+    const box = (await track.boundingBox())!;
+    const y = box.y + box.height / 2;
+    await page.mouse.move(box.x + box.width * 0.75, y);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width * 0.15, y, { steps: 10 });
+    await page.mouse.up();
+
+    // L'indicateur se recale sur ce qui reste à l'écran, sans clic sur un bouton.
     await expect(page.getByRole('button', { name: 'Aller à la bannière 2' })).toHaveAttribute(
       'aria-current',
       'true',
@@ -192,7 +219,8 @@ test.describe('membre', () => {
 
     const drop = {
       user: { handle: 'lea', displayName: 'Léa', avatarUrl: null },
-      game: { name: 'Celeste', slug: 'celeste', headerUrl: null },
+      game: { name: 'Celeste', slug: 'celeste', headerUrl: null, tier: 5 },
+      copies: 3,
       unlockedAt: new Date().toISOString(),
     };
     await page.route('**/api/cartes', (route) =>
@@ -205,7 +233,48 @@ test.describe('membre', () => {
     await page.goto('/');
     const live = page.getByRole('region', { name: /En direct/ });
     await expect(live.getByRole('link', { name: /Hades/ }).first()).toBeVisible();
-    await expect(live.getByRole('link', { name: /Celeste/ })).toBeVisible();
+    // La carte arrive avec son niveau et ses exemplaires, effets compris.
+    const celeste = live.locator('a.drop-tile', { hasText: 'Celeste' });
+    await expect(celeste).toHaveAttribute('data-tier', '5');
+    await expect(celeste).toHaveAttribute('data-copies', '3');
+    await expect(celeste.getByText('Prismatique')).toBeVisible();
+    await expect(celeste.getByText('×3')).toBeVisible();
+    await expect(celeste.locator('.fx-aurora')).toHaveCount(1);
+  });
+
+  test('fait glisser le fil en direct à la souris sans ouvrir une carte', async ({ page }) => {
+    await login(page);
+    // Douze cartes : le rail déborde de l'écran et peut se faire glisser.
+    const drops = Array.from({ length: 12 }, (_, index) => ({
+      user: { handle: 'lea', displayName: 'Léa', avatarUrl: null },
+      game: { name: `Direct ${index}`, slug: `direct-${index}`, headerUrl: null, tier: 1 },
+      unlockedAt: new Date().toISOString(),
+    }));
+    await page.route('**/api/cartes', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'text/event-stream',
+        body: drops.map((drop) => `data: ${JSON.stringify(drop)}\n\n`).join(''),
+      }),
+    );
+    await page.goto('/');
+    const rail = page.locator('.live-rail');
+    await expect(rail.locator('a.drop-tile')).toHaveCount(12);
+    expect(await rail.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(true);
+
+    await rail.scrollIntoViewIfNeeded();
+    const box = (await rail.boundingBox())!;
+    const y = box.y + box.height / 2;
+    await page.mouse.move(box.x + box.width / 2, y);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width / 2 - 160, y, { steps: 8 });
+    // Pendant le geste, le rail suit le pointeur au lieu de se recaler.
+    await expect(rail).toHaveAttribute('data-dragging', 'true');
+    await page.mouse.up();
+    await expect(rail).not.toHaveAttribute('data-dragging', 'true');
+    await expect.poll(() => rail.evaluate((el) => el.scrollLeft)).toBeGreaterThan(0);
+    // Le geste ne vaut pas un clic : on ne quitte pas l'accueil.
+    await expect(page).toHaveURL(/\/$/);
   });
 
   test('voit ses cartes rares et une révélation après une synchronisation', async ({ page }) => {
@@ -1023,15 +1092,10 @@ test.describe('succès du site', () => {
     await page.goto(`/u/${handle}`);
     await page.getByRole('link', { name: new RegExp(`/${SITE_TOTAL}$`) }).click();
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-    // Les paliers d'un même succès ne font qu'une carte.
-    const cards = Object.values(SITE_CATEGORIES).reduce(
-      (sum, codes) => sum + groupSeries(codes as readonly string[]).length,
-      0,
-    );
-    await expect(page.locator('main li.card')).toHaveCount(cards);
-    await expect(page.locator('main section').last().locator('li.card')).toHaveCount(
-      SITE_CATEGORIES.secret.length,
-    );
+    // Les paliers d'un même succès ne font qu'une carte : le compte est écrit ici, sans passer
+    // par le regroupement qui produit la page. Ajouter un succès le met à jour.
+    await expect(page.locator('main li.card')).toHaveCount(198);
+    await expect(page.locator('main section').last().locator('li.card')).toHaveCount(32);
 
     await expect(async () => {
       await page.reload();
