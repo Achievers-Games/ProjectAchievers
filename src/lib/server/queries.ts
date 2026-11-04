@@ -452,6 +452,7 @@ export async function seasonStats(season: Season) {
       isPublic: boolean;
       points: bigint;
       ignored: bigint;
+      unlocked: bigint;
     }[]
   >`
     WITH unlocks AS (${seasonUnlocks(season)}), started AS (
@@ -483,26 +484,27 @@ export async function seasonStats(season: Season) {
           WHERE b."userId" = ug."userId" AND b."gameId" = ug."gameId" AND b.burst
         )
       GROUP BY 1
+    ), total AS (
+      SELECT count(*) AS unlocked
+      FROM unlocks ua
+      JOIN "User" u ON u.id = ua."userId" AND u."isPublic"
+      WHERE NOT ua.burst
     )
     SELECT u.id, u.handle, u."displayName", u."avatarUrl", u."avatarMotionUrl", u.frame,
            u."frameMotionUrl", u."isPublic",
            (coalesce(e.points, 0) + coalesce(f.points, 0))::bigint AS points,
-           coalesce(e.ignored, 0)::bigint AS ignored
+           coalesce(e.ignored, 0)::bigint AS ignored,
+           t.unlocked
     FROM earned e
     FULL JOIN finished f USING ("userId")
     JOIN "User" u ON u.id = "userId"
+    CROSS JOIN total t
     ORDER BY points DESC, u.handle`;
 
-  const [{ unlocked } = { unlocked: 0n }] = await db.$queryRaw<{ unlocked: bigint }[]>`
-    WITH unlocks AS (${seasonUnlocks(season)})
-    SELECT count(*) AS unlocked
-    FROM unlocks ua
-    JOIN "User" u ON u.id = ua."userId" AND u."isPublic"
-    WHERE NOT ua.burst`;
-
+  // Sans aucune ligne, personne n'a rien débloqué pendant la saison.
   return {
-    unlocked: Number(unlocked),
-    ranking: ranking.map((row) => ({
+    unlocked: Number(ranking[0]?.unlocked ?? 0),
+    ranking: ranking.map(({ unlocked: _unlocked, ...row }) => ({
       ...row,
       points: Number(row.points),
       ignored: Number(row.ignored),
@@ -714,38 +716,45 @@ async function rankedCollectors(limit: number) {
       avatarMotionUrl: string | null;
       frame: string | null;
       frameMotionUrl: string | null;
+      score: bigint;
     } & TierCounts)[]
   >`
-    SELECT u.id, u.handle, u."displayName", u."avatarUrl", u."avatarMotionUrl", u.frame,
-           u."frameMotionUrl",
-           count(*) FILTER (WHERE tier = 1) AS t1,
-           count(*) FILTER (WHERE tier = 2) AS t2,
-           count(*) FILTER (WHERE tier = 3) AS t3,
-           count(*) FILTER (WHERE tier = 4) AS t4,
-           count(*) FILTER (WHERE tier = 5) AS t5,
-           count(*) FILTER (WHERE tier = 6) AS t6
-    FROM (
-      SELECT ug."userId", max(COALESCE(g.tier, 1)) AS tier
+    WITH cards AS (
+      SELECT ug."userId", COALESCE(g.tier, 1) AS tier
       FROM "UserGame" ug
       JOIN "Game" g ON g.id = ug."gameId"
       WHERE ug.completion >= 100 AND NOT ug.hidden
-      GROUP BY ug."userId", COALESCE(g."familyKey", g.id)
-    ) cards
-    JOIN "User" u ON u.id = cards."userId" AND u."isPublic"
-    GROUP BY u.id`;
+      GROUP BY ug."userId", COALESCE(g."familyKey", g.id), COALESCE(g.tier, 1)
+    ), counts AS (
+      SELECT "userId",
+             count(*) FILTER (WHERE tier = 1) AS t1,
+             count(*) FILTER (WHERE tier = 2) AS t2,
+             count(*) FILTER (WHERE tier = 3) AS t3,
+             count(*) FILTER (WHERE tier = 4) AS t4,
+             count(*) FILTER (WHERE tier = 5) AS t5,
+             count(*) FILTER (WHERE tier = 6) AS t6
+      FROM cards
+      GROUP BY "userId"
+    )
+    SELECT u.id, u.handle, u."displayName", u."avatarUrl", u."avatarMotionUrl", u.frame,
+           u."frameMotionUrl", c.t1, c.t2, c.t3, c.t4, c.t5, c.t6,
+           (c.t1 * ${TIER_POINTS[0]} + c.t2 * ${TIER_POINTS[1]} + c.t3 * ${TIER_POINTS[2]}
+             + c.t4 * ${TIER_POINTS[3]} + c.t5 * ${TIER_POINTS[4]} + c.t6 * ${TIER_POINTS[5]})::bigint
+             AS score
+    FROM counts c
+    JOIN "User" u ON u.id = c."userId" AND u."isPublic"
+    ORDER BY score DESC, u.handle
+    LIMIT ${limit}`;
 
-  return rows
-    .map(({ t1, t2, t3, t4, t5, t6, ...user }) => {
-      const tiers = tierCounts({ t1, t2, t3, t4, t5, t6 });
-      return {
-        ...user,
-        tiers,
-        cards: tiers.reduce((sum, count) => sum + count, 0),
-        score: cardScore(tiers),
-      };
-    })
-    .sort((a, b) => b.score - a.score || a.handle.localeCompare(b.handle))
-    .slice(0, limit);
+  return rows.map(({ t1, t2, t3, t4, t5, t6, score, ...user }) => {
+    const tiers = tierCounts({ t1, t2, t3, t4, t5, t6 });
+    return {
+      ...user,
+      tiers,
+      cards: tiers.reduce((sum, count) => sum + count, 0),
+      score: Number(score),
+    };
+  });
 }
 
 export async function collectors(limit = 100) {

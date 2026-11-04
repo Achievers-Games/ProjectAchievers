@@ -507,6 +507,8 @@ model UserGame {
 
   @@id([userId, gameId])
   @@index([userId, lastUnlockedAt])
+  @@index([gameId])
+  @@index([lastUnlockedAt])
 }
 
 model UserAchievement {

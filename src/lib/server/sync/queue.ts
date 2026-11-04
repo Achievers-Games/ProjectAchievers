@@ -16,7 +16,7 @@ import { rateGames, tagGames } from './content';
 import { refreshDiscordAccounts } from './discord';
 import { SyncError } from './errors';
 import { publishCard, publishHighlight, publishSync, publishUnlock } from './events';
-import { grantFrames } from '../frames';
+import { grantFramesThrottled } from '../frames';
 import { checkSiteAchievements, reviewNewPlayers } from '../site-achievements';
 import { syncPsn } from './psn';
 import { syncRetro } from './retro';
@@ -224,7 +224,7 @@ async function announceCards(user: SyncUser, userId: string, before: Map<string,
       }
     }
   }
-  await grantFrames().catch((cause) => console.error('Cadres :', cause));
+  await grantFramesThrottled().catch((cause) => console.error('Cadres :', cause));
   return rewards;
 }
 
