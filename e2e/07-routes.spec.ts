@@ -62,7 +62,11 @@ test.describe('pages délaissées', () => {
       await page.goto('/u/lea');
       await ready(page);
       const add = page.getByRole('button', { name: 'Ajouter' });
-      if (await add.isVisible()) await add.click();
+      if (await add.isVisible()) {
+        await add.click();
+        // La demande doit exister avant que Léa ouvre sa page, sinon elle n'a rien à accepter.
+        await expect(page.getByRole('link', { name: 'Demande en attente' })).toBeVisible();
+      }
 
       const other = await browser.newContext();
       const friend = await other.newPage();
@@ -114,6 +118,25 @@ test.describe('pages délaissées', () => {
     await expect(page).toHaveURL(/\/clans\/./);
     if (name) await expect(page.getByRole('heading', { level: 1 })).toContainText(name);
     await expect(page.getByRole('heading', { name: 'Membres' })).toBeVisible();
+  });
+
+  test('la surveillance lit l’état du site et sa version', async ({ request }) => {
+    const response = await request.get('/api/health');
+    expect(response.status()).toBe(200);
+    expect(await response.json()).toMatchObject({
+      status: 'ok',
+      database: 'ok',
+      version: 'dev',
+    });
+  });
+
+  test('accepte le rapport d’erreur d’un navigateur', async ({ request }) => {
+    const response = await request.post('/api/erreur', {
+      data: { message: 'erreur de test', context: '/api/erreur' },
+    });
+    expect(response.status()).toBe(204);
+    const refused = await request.post('/api/erreur', { data: { message: '' } });
+    expect(refused.status()).toBe(400);
   });
 
   test('compare deux profils par leurs adresses', async ({ page }) => {

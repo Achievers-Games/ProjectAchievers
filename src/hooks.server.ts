@@ -29,6 +29,8 @@ const WINDOW = 60_000;
 function limitFor(request: Request, path: string): number | null {
   if (path === '/auth/dev') return null;
   if (path.startsWith('/auth/')) return 20;
+  // Un écran en boucle ne doit pas inonder le journal : un rapport par seconde suffit.
+  if (path === '/api/erreur') return 10;
   if (request.method !== 'GET' && request.method !== 'HEAD') return 60;
   // Le flux reste ouvert : il ne doit pas bloquer le chat.
   if (path === '/api/sync/events') return null;

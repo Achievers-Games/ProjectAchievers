@@ -71,6 +71,7 @@ jobs:
           context: .
           platforms: linux/arm64
           push: true
+          build-args: APP_VERSION=${{ github.sha }}
           tags: |
             ghcr.io/rbasic/projectachievers:${{ github.sha }}
             ghcr.io/rbasic/projectachievers:latest

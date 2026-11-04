@@ -23,6 +23,9 @@ FROM node:22-alpine
 RUN apk add --no-cache openssl
 WORKDIR /app
 ENV NODE_ENV=production
+# Le commit publié, lu par `/api/health` : on sait quelle version tourne sur le NAS.
+ARG APP_VERSION=dev
+ENV APP_VERSION=$APP_VERSION
 COPY --from=build /app/build ./build
 COPY --from=deps /app/node_modules ./node_modules
 COPY prisma ./prisma

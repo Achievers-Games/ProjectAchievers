@@ -1,9 +1,18 @@
 # Hébergement sur un NAS à 2 Go de mémoire, sans port ouvert sur Internet.
 # Démarrer : docker compose -f docker-compose.nas.yml --profile tunnel up -d
+# Sans limite, le journal Docker d'un service grossit jusqu'à remplir le disque du NAS.
+# Trois fichiers de 10 Mo par service gardent trois semaines de journal au plus fort.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: '10m'
+    max-file: '3'
+
 services:
   db:
     image: postgres:17-alpine
     restart: unless-stopped
+    logging: *logging
     mem_limit: 384m
     command:
       - postgres
@@ -31,6 +40,7 @@ services:
     build: .
     restart: unless-stopped
     mem_limit: 512m
+    logging: *logging
     # Résolution directe : celle du NAS a déjà échoué par moments.
     dns:
       - 1.1.1.1
@@ -48,6 +58,8 @@ services:
       ADDRESS_HEADER: CF-Connecting-IP
       NODE_OPTIONS: --max-old-space-size=320
       SYNC_CONCURRENCY: '1'
+      # `docker compose logs site` reste lisible : debug pour les enquêtes, info par défaut.
+      LOG_LEVEL: ${LOG_LEVEL:-info}
       STEAM_API_KEY: ${STEAM_API_KEY:-}
       BLIZZARD_CLIENT_ID: ${BLIZZARD_CLIENT_ID:-}
       BLIZZARD_CLIENT_SECRET: ${BLIZZARD_CLIENT_SECRET:-}
@@ -82,6 +94,7 @@ services:
     image: docker:cli
     restart: unless-stopped
     mem_limit: 96m
+    logging: *logging
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - .:/app
@@ -129,6 +142,7 @@ services:
     image: postgres:17-alpine
     restart: unless-stopped
     mem_limit: 128m
+    logging: *logging
     depends_on:
       db:
         condition: service_healthy
@@ -152,6 +166,7 @@ services:
     profiles: [tunnel]
     restart: unless-stopped
     mem_limit: 96m
+    logging: *logging
     depends_on:
       - site
     command: tunnel --no-autoupdate run
