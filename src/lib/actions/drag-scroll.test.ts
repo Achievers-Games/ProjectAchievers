@@ -41,6 +41,35 @@ describe('glisser à la souris', () => {
     expect(onDrag).toHaveBeenLastCalledWith(false);
   });
 
+  it('laisse un clic franc ouvrir la carte-liens du rail', () => {
+    const { rail } = setup();
+    const link = document.createElement('a');
+    rail.append(link);
+    const capture = vi.fn();
+    Object.assign(rail, { setPointerCapture: capture, releasePointerCapture: vi.fn() });
+
+    // Un clic pose le pointeur et le relâche sans bouger. La capture du pointeur n'est alors
+    // jamais prise : dans un navigateur, elle redirigerait le `click` vers le rail et le lien
+    // resterait sans effet.
+    link.dispatchEvent(pointer('pointerdown', 300));
+    link.dispatchEvent(pointer('pointerup', 300));
+    const event = new MouseEvent('click', { bubbles: true, cancelable: true });
+    link.dispatchEvent(event);
+
+    expect(capture).not.toHaveBeenCalled();
+    expect(event.defaultPrevented).toBe(false);
+  });
+
+  it('capture le pointeur dès que le glissement commence', () => {
+    const { rail } = setup();
+    const capture = vi.fn();
+    Object.assign(rail, { setPointerCapture: capture, releasePointerCapture: vi.fn() });
+
+    drag(rail, 300, 200);
+
+    expect(capture).toHaveBeenCalledWith(1);
+  });
+
   it('ne bouge pas avant quelques pixels : un clic reste un clic', () => {
     const { rail, onDrag } = setup();
     rail.dispatchEvent(pointer('pointerdown', 300));

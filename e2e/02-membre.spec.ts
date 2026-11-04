@@ -75,6 +75,29 @@ test.describe('membre', () => {
     await expect(page).toHaveURL(/\/$/);
   });
 
+  test('ouvre la page d’un jeu d’un simple clic sur une carte du fil', async ({ page }) => {
+    await login(page);
+    const drop = {
+      user: { handle: 'lea', displayName: 'Léa', avatarUrl: null },
+      game: { name: 'Hades', slug: 'hades-psn', headerUrl: null, tier: 3 },
+      unlockedAt: new Date().toISOString(),
+    };
+    await page.route('**/api/cartes', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'text/event-stream',
+        body: `data: ${JSON.stringify(drop)}\n\n`,
+      }),
+    );
+    await page.goto('/');
+    const tile = page.locator('.live-rail a.drop-tile').first();
+    await expect(tile).toHaveAttribute('href', '/jeux/hades-psn');
+
+    // Le rail suit le pointeur dès l'appui : il ne doit pas avaler le clic pour autant.
+    await tile.click();
+    await expect(page).toHaveURL(/\/jeux\/hades-psn$/);
+  });
+
   test('voit ses cartes rares et une révélation après une synchronisation', async ({ page }) => {
     await login(page);
     await page.goto('/u/demo');

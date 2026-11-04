@@ -17,11 +17,6 @@ export function dragScroll(
     startX = event.clientX;
     startLeft = element.scrollLeft;
     moved = false;
-    try {
-      element.setPointerCapture(pointer);
-    } catch {
-      // Un pointeur déjà relâché : le glissement se fait quand même, sans capture.
-    }
   }
 
   function onMove(event: PointerEvent) {
@@ -30,6 +25,14 @@ export function dragScroll(
     if (!moved && Math.abs(delta) < 6) return;
     if (!moved) {
       moved = true;
+      // La capture n'arrive qu'une fois le geste engagé : prise dès l'appui, elle redirige aussi
+      // le `pointerup` vers le rail, donc le `click` qui suit, et les cartes-liens ne s'ouvrent
+      // plus. Un simple clic ne la déclenche jamais.
+      try {
+        element.setPointerCapture(event.pointerId);
+      } catch {
+        // Un pointeur déjà relâché : le glissement se fait quand même, sans capture.
+      }
       element.dataset.dragging = 'true';
       element.style.userSelect = 'none';
       options.onDrag?.(true);
