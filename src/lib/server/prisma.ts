@@ -1,5 +1,4 @@
 import { PrismaPg } from '@prisma/adapter-pg';
-import { env } from './env';
 import { PrismaClient } from '#prisma';
 
 /**
@@ -8,5 +7,9 @@ import { PrismaClient } from '#prisma';
  * même fabrique ; seule l'instance qui les utilise diffère.
  */
 export function createPrismaClient(): PrismaClient {
-  return new PrismaClient({ adapter: new PrismaPg({ connectionString: env().DATABASE_URL }) });
+  const url = process.env.DATABASE_URL;
+  // Le module est aussi évalué pendant `vite build`, où `.env` n'existe pas : sans URL,
+  // `pg` garde ses valeurs par défaut et rien ne se connecte. La configuration est de
+  // toute façon validée au démarrage du serveur (`hooks.server.ts`).
+  return new PrismaClient({ adapter: new PrismaPg(url ? { connectionString: url } : {}) });
 }
