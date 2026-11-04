@@ -1,5 +1,5 @@
 import { db } from '../db';
-import { bestCards, chosenCards, visibleLibrary } from './library';
+import { bestCards, chosenCards, profileCards } from './library';
 import { userStats } from './stats';
 import { MAX_SHOWCASE, cardSelect, publicUser, visibleGames } from './shared';
 
@@ -52,7 +52,7 @@ export async function userProfile(handle: string, viewerId: string | null, showA
 
   const [stats, library, pins, recent] = await Promise.all([
     userStats(user.id),
-    visibleLibrary(user.id, showAdult),
+    profileCards(user.id, showAdult),
     db.pinnedGame.findMany({
       where: { userId: user.id },
       orderBy: { position: 'asc' },

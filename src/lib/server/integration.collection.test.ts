@@ -1,7 +1,16 @@
 // Tests sur un vrai PostgreSQL : `npm run dev:db` ou le service de la CI.
 import 'dotenv/config';
 import { describe, expect, it } from 'vitest';
-import { activityFeed, cardFeed, collectors, listGames, userCards } from './queries';
+import {
+  activityFeed,
+  bestCards,
+  cardFeed,
+  collectors,
+  listGames,
+  profileCards,
+  userCards,
+  visibleLibrary,
+} from './queries';
 import { grantFrames } from './frames';
 import { resolveIdentity } from './accounts';
 import {
@@ -572,5 +581,73 @@ describe('filtres par niveau', () => {
     const filters = await library();
     const unfinished = await listGames({ ...filters, status: 'restants' }, filters.ownerId);
     expect(names(unfinished)).toEqual(['presque', 'or', 'debut']);
+  });
+});
+
+describe('lecture de la bibliothèque d’un profil', () => {
+  /** Une bibliothèque de 30 familles : quelques-unes finies, les autres à peine commencées. */
+  async function profile() {
+    const result = await resolveIdentity(identity(), null);
+    if (!result.ok) throw new Error('compte non créé');
+    const userId = result.userId;
+    const add = async (
+      name: string,
+      platform: 'STEAM' | 'PSN',
+      completion: number,
+      familyKey: string | undefined,
+      at: Date | null,
+      tier = 2,
+    ) => {
+      const game = await db.game.create({
+        data: {
+          platform,
+          platformGameId: `${PREFIX}-${Math.random()}`,
+          name: `${PREFIX} ${name}`,
+          slug: `${PREFIX}-${Math.random().toString(36).slice(2)}`,
+          totalAchievements: 10,
+          familyKey,
+          tier,
+        },
+      });
+      await db.userGame.create({
+        data: {
+          userId,
+          gameId: game.id,
+          completion,
+          unlockedCount: 0,
+          totalCount: 10,
+          lastUnlockedAt: at,
+        },
+      });
+    };
+    const key = () => `${PREFIX}-${Math.random()}`;
+    const day = 86_400_000;
+    const now = Date.now();
+    // Deux familles finies, dont une sur deux plateformes.
+    const finished = key();
+    await add('fini', 'STEAM', 100, finished, new Date(now - 40 * day), 4);
+    await add('fini', 'PSN', 100, finished, new Date(now - 39 * day), 4);
+    await add('fini seul', 'PSN', 100, undefined, new Date(now - 30 * day), 3);
+    // Vingt-huit familles inachevées, dont les plus récentes passent devant.
+    for (let index = 0; index < 28; index++) {
+      await add(`encours ${index}`, 'STEAM', 10 + index, key(), new Date(now - index * day));
+    }
+    // Une famille sans date, qui doit rester en fin de liste.
+    await add('sans date', 'PSN', 5, key(), null);
+    return userId;
+  }
+
+  const shape = (cards: { slug: string; tier: number; copies: number }[]) =>
+    cards.map((card) => `${card.slug}|${card.tier}|${card.copies}`);
+
+  it('rend les mêmes cartes que la bibliothèque entière, sans la lire', async () => {
+    const userId = await profile();
+    for (const showAdult of [false, true]) {
+      const full = await visibleLibrary(userId, showAdult);
+      const reduced = await profileCards(userId, showAdult);
+      expect(shape(reduced.slice(0, 24))).toEqual(shape(full.slice(0, 24)));
+      expect(shape(bestCards(reduced).slice(0, 8))).toEqual(shape(bestCards(full).slice(0, 8)));
+      expect(reduced.length).toBeLessThan(full.length);
+    }
   });
 });

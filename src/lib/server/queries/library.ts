@@ -1,5 +1,4 @@
-import type { Platform } from '#prisma';
-import type { Prisma } from '#prisma';
+import { Prisma, type Platform } from '#prisma';
 import { consolesOf } from '#lib/collection';
 import { db } from '../db';
 import { groupLibrary, type LibraryCard } from '../library';
@@ -190,10 +189,82 @@ export async function userCards(userId: string, showAdult = false) {
 export async function visibleLibrary(userId: string, showAdult: boolean) {
   const rows = await db.userGame.findMany({
     where: { userId, hidden: false, game: visibleGames(showAdult) },
-    orderBy: [{ lastUnlockedAt: { sort: 'desc', nulls: 'last' } }],
+    // Le slug départage les dates égales : sans lui, deux versions au même instant s'ordonnaient
+    // au hasard de la base, et la page changeait sans qu'on ait rien touché.
+    orderBy: [{ lastUnlockedAt: { sort: 'desc', nulls: 'last' } }, { game: { slug: 'asc' } }],
     select: cardSelect,
   });
   return groupLibrary(rows);
+}
+
+interface ProfileRow {
+  unlockedCount: number;
+  completion: number;
+  platinum: boolean;
+  lastUnlockedAt: Date | null;
+  id: string;
+  name: string;
+  slug: string;
+  platform: Platform;
+  console: string | null;
+  coverUrl: string | null;
+  headerUrl: string | null;
+  totalAchievements: number;
+  familyKey: string | null;
+  tier: number | null;
+}
+
+/**
+ * Les seules cartes qu'une page de profil affiche : la vitrine et les 24 plus récentes.
+ * Seules les familles dont une version est terminée peuvent donner une carte (`tier > 0`), et les
+ * cartes récentes se lisent dans le même ordre que la bibliothèque entière. Lire tout pour n'en
+ * garder qu'une poignée coûtait 785 lignes sur une bibliothèque de production.
+ */
+export async function profileCards(userId: string, showAdult: boolean) {
+  // Exactement `visibleGames(showAdult)` : l'adulte est masqué, le Steam non classé reste visible.
+  const visible = showAdult ? Prisma.empty : Prisma.sql`AND NOT g."adultOnly"`;
+  const rows = await db.$queryRaw<ProfileRow[]>`
+    WITH reachable AS (
+      SELECT COALESCE(g."familyKey", g.id) AS family, ug."completion",
+             row_number() OVER (ORDER BY ug."lastUnlockedAt" DESC NULLS LAST, g.slug) AS place
+      FROM "UserGame" ug
+      JOIN "Game" g ON g.id = ug."gameId"
+      WHERE ug."userId" = ${userId} AND NOT ug.hidden ${visible}
+    ), kept AS (
+      SELECT family FROM reachable WHERE completion >= 100
+      UNION
+      SELECT family FROM (
+        SELECT family, min(place) AS place FROM reachable GROUP BY family ORDER BY place LIMIT 24
+      ) recent
+    )
+    SELECT ug."unlockedCount", ug."completion", ug."platinum", ug."lastUnlockedAt",
+           g.id, g.name, g.slug, g.platform, g.console, g."coverUrl", g."headerUrl",
+           g."totalAchievements", g."familyKey", g.tier
+    FROM "UserGame" ug
+    JOIN "Game" g ON g.id = ug."gameId"
+    WHERE ug."userId" = ${userId} AND NOT ug.hidden ${visible}
+      AND COALESCE(g."familyKey", g.id) IN (SELECT family FROM kept)
+    ORDER BY ug."lastUnlockedAt" DESC NULLS LAST, g.slug`;
+  return groupLibrary(
+    rows.map((row) => ({
+      unlockedCount: row.unlockedCount,
+      completion: row.completion,
+      platinum: row.platinum,
+      lastUnlockedAt: row.lastUnlockedAt,
+      game: {
+        id: row.id,
+        name: row.name,
+        slug: row.slug,
+        platform: row.platform,
+        console: row.console,
+        coverUrl: row.coverUrl,
+        headerUrl: row.headerUrl,
+        totalAchievements: row.totalAchievements,
+        familyKey: row.familyKey,
+        tier: row.tier,
+      },
+    })),
+  );
 }
 
 export const bestCards = (library: LibraryCard[]) =>
