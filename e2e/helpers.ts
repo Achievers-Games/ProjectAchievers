@@ -1,0 +1,31 @@
+import { expect, test as base, type Page } from '@playwright/test';
+
+/** Tout test échoue si la page journalise une erreur : un écran vide ne passe plus inaperçu. */
+export const test = base.extend<{ consoleGuard: void }>({
+  consoleGuard: [
+    async ({ page }, use) => {
+      const errors: string[] = [];
+      page.on('pageerror', (error) => errors.push(error.message));
+      page.on('console', (message) => {
+        if (message.type() !== 'error') return;
+        const location = message.location().url;
+        // Les images distantes dépendent du réseau, pas de l'application.
+        if (location.includes('steamstatic.com')) return;
+        // En développement, Vite sert ses propres modules depuis `.svelte-kit/generated/` :
+        // une page qui en redemande un pendant une régénération reçoit un 404 qui ne vient
+        // pas du site et qui n'existe pas une fois compilé.
+        if (location.includes('/.svelte-kit/generated/') && message.text().includes('404')) return;
+        errors.push(`${message.text()} (${location})`);
+      });
+      await use();
+      expect(errors).toEqual([]);
+    },
+    { auto: true },
+  ],
+});
+
+export const login = (page: Page) => page.goto('/auth/dev');
+
+/** Attend que Svelte ait pris la main sur le HTML rendu par le serveur. */
+export const ready = (page: Page) =>
+  page.locator('html[data-ready="true"]').waitFor({ state: 'attached' });
