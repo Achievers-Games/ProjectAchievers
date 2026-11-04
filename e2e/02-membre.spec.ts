@@ -840,6 +840,36 @@ test.describe('membre', () => {
     await expect(page.getByRole('listitem').filter({ hasText: text })).toContainText('Communauté');
   });
 
+  test('ouvre le centre de notifications et les marque toutes comme lues', async ({ page }) => {
+    await login(page);
+    await page.goto('/jeux');
+    await ready(page);
+
+    const bell = page.getByRole('button', { name: /Notifications/ });
+    await expect(bell.locator('.social-badge')).toBeVisible();
+    await bell.click();
+
+    const panel = page.getByRole('dialog', { name: 'Notifications' });
+    await expect(panel).toBeVisible();
+    await expect(panel.getByText('Succès débloqué').first()).toBeVisible();
+    await expect(panel.locator('a[data-unread="true"]').first()).toBeVisible();
+
+    await panel.getByRole('button', { name: 'Tout marquer comme lu' }).click();
+
+    await expect(bell.locator('.social-badge')).toBeHidden();
+    await expect(panel.locator('a[data-unread="true"]')).toHaveCount(0);
+    await expect(panel.getByRole('button', { name: 'Tout marquer comme lu' })).toBeDisabled();
+
+    // La lecture tient d'une visite à l'autre : la cloche reste vide au rechargement.
+    await page.reload();
+    await ready(page);
+    await expect(bell.locator('.social-badge')).toBeHidden();
+    await bell.click();
+    const reloaded = page.getByRole('dialog', { name: 'Notifications' });
+    await expect(reloaded.getByRole('link').first()).toBeVisible();
+    await expect(reloaded.locator('a[data-unread="true"]')).toHaveCount(0);
+  });
+
   test('signale une demande d’ami en direct sur le site', async ({ page, browser }) => {
     const other = await browser.newContext();
     const friend = await other.newPage();
@@ -850,20 +880,25 @@ test.describe('membre', () => {
     await stream;
     await ready(friend);
 
+    // Les succès récents de la démonstration occupent déjà la cloche : on la vide d'abord,
+    // pour ne voir que la demande qui arrive.
+    const bell = friend.getByRole('button', { name: /Notifications/ });
+    await bell.click();
+    await friend.getByRole('button', { name: 'Tout marquer comme lu' }).click();
+    await expect(bell.locator('.social-badge')).toBeHidden();
+    await friend.keyboard.press('Escape');
+
     await page.goto('/auth/dev?compte=marco');
     await page.goto('/u/lea');
     await ready(page);
     await page.getByRole('button', { name: 'Ajouter' }).click();
 
     await expect(friend.getByText(/Marco veut t.ajouter en ami/)).toBeVisible();
-    const community = friend
-      .getByRole('navigation', { name: 'Navigation principale' })
-      .getByRole('link', { name: /Communauté/ });
-    await expect(community.locator('.social-badge')).toHaveText('1');
+    await expect(bell.locator('.social-badge')).toHaveText('1');
     await friend.goto('/amis');
     await ready(friend);
     await friend.getByRole('button', { name: 'Refuser' }).first().click();
-    await expect(community.locator('.social-badge')).toBeHidden();
+    await expect(bell.locator('.social-badge')).toBeHidden();
     await other.close();
   });
 

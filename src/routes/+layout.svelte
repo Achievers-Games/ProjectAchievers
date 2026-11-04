@@ -15,6 +15,7 @@
   import Avatar from '#lib/components/Avatar.svelte';
   import ChatDock from '#lib/components/ChatDock.svelte';
   import CommandPalette from '#lib/components/CommandPalette.svelte';
+  import NotificationBell from '#lib/components/NotificationBell.svelte';
   import PushPrompt from '#lib/components/PushPrompt.svelte';
   import RewardReveal from '#lib/components/RewardReveal.svelte';
   import Toasts from '#lib/components/Toasts.svelte';
@@ -68,7 +69,8 @@
     }
   });
 
-  const badge = $derived($unread + $invites.friends + $invites.clans);
+  /** Tout ce qui attend le joueur, en un seul compteur : le badge de la cloche. */
+  const noticeCount = $derived($unread + $invites.friends + $invites.clans + data.notices.unseen);
 
   const userId = $derived(data.user?.id);
   const syncing = $derived(
@@ -218,9 +220,6 @@
           class:bg-raised={isActive(link.href, link.exact)}
         >
           {link.label}
-          {#if link.href === '/communaute' && badge}
-            <span class="social-badge ml-1">{badge}</span>
-          {/if}
         </a>
       {/each}
       <a
@@ -262,6 +261,7 @@
       </span>
 
       {#if data.user}
+        <NotificationBell count={noticeCount} />
         <button
           type="button"
           class="btn w-9 px-0 text-muted"
@@ -316,9 +316,6 @@
     >
       <span class="relative">
         <Icon size={18} aria-hidden="true" />
-        {#if link.href === '/communaute' && badge}
-          <span class="social-badge absolute -right-2 -top-1">{badge}</span>
-        {/if}
       </span>
       {link.label}
     </a>

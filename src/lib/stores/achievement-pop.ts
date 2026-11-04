@@ -50,7 +50,10 @@ export function celebrateOnce(unlocks: UnlockPop[]) {
   if (!fresh.length) return;
 
   const kept = Object.entries(seen).filter(([, at]) => now - at < SEEN_TTL);
-  const next = { ...Object.fromEntries(kept), ...Object.fromEntries(fresh.map((u) => [u.id, now])) };
+  const next = {
+    ...Object.fromEntries(kept),
+    ...Object.fromEntries(fresh.map((u) => [u.id, now])),
+  };
   try {
     localStorage.setItem(SEEN_KEY, JSON.stringify(next));
   } catch {
