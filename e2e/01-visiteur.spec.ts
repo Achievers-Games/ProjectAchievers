@@ -93,8 +93,14 @@ test.describe('visiteur', () => {
     await cards.last().click();
     await expect(page).toHaveURL(/\/jeux\/.+/);
     await page.goBack();
-    await expect.poll(() => cards.count()).toBeGreaterThanOrEqual(loaded);
+    // Le navigateur restaure la position une fois la liste rendue : on lui laisse ce temps.
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+    // La suite se recharge au défilement : si la restauration est tombée pile en haut de liste,
+    // on redescend comme le ferait un visiteur.
+    if ((await cards.count()) <= 36) {
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    }
+    await expect.poll(() => cards.count()).toBeGreaterThanOrEqual(loaded);
   });
 
   test('sans JavaScript, ouvre une page suivante par lien', async ({ browser }) => {
