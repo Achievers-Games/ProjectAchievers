@@ -5,8 +5,8 @@
   import Sparkles from '@lucide/svelte/icons/sparkles';
   import Star from '@lucide/svelte/icons/star';
   import Target from '@lucide/svelte/icons/target';
-  import { m } from '$lib/paraglide/messages';
-  import { tierLabel, tierRule } from '$lib/labels';
+  import { m } from '#lib/paraglide/messages';
+  import { tierLabel, tierRule } from '#lib/labels';
 
   /** `goal` : la carte n'est pas encore gagnée, c'est celle qui attend au bout du 100 %. */
   let {

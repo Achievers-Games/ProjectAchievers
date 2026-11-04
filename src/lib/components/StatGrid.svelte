@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { m } from '$lib/paraglide/messages';
-  import { formatNumber, tierLabel } from '$lib/labels';
+  import { m } from '#lib/paraglide/messages';
+  import { formatNumber, tierLabel } from '#lib/labels';
 
   let {
     games,

@@ -1,5 +1,5 @@
-import { formatNumber } from '$lib/labels';
-import { m } from '$lib/paraglide/messages';
+import { formatNumber } from '#lib/labels';
+import { m } from '#lib/paraglide/messages';
 
 export interface TaglineStats {
   games: number;

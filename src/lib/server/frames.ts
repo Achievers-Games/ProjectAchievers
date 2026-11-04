@@ -1,4 +1,4 @@
-import { COLLECTOR_CARDS } from '$lib/frames';
+import { COLLECTOR_CARDS } from '#lib/frames';
 import { db } from './db';
 import { allCollectors } from './queries';
 

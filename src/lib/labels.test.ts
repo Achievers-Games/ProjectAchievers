@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getLocale } from '$lib/paraglide/runtime';
+import { getLocale } from '#lib/paraglide/runtime';
 import { RARITY_STEPS } from './collection';
 import {
   editionLabel,

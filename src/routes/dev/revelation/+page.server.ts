@@ -1,8 +1,8 @@
 import { error, redirect } from '@sveltejs/kit';
-import { dev } from '$app/environment';
-import type { Reward } from '$lib/collection';
-import { db } from '$lib/server/db';
-import { RARE_CARD } from '$lib/server/queries';
+import { dev } from '$app/env';
+import type { Reward } from '#lib/collection';
+import { db } from '#lib/server/db';
+import { RARE_CARD } from '#lib/server/queries';
 import type { PageServerLoad } from './$types';
 
 /** Rejoue la révélation avec les vraies cartes du joueur. N'existe qu'avec `vite dev`. */

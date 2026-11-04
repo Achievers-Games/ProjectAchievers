@@ -1,8 +1,8 @@
-import type { Locale } from '$lib/paraglide/runtime';
+import type { Locale } from '#lib/paraglide/runtime';
 import type { AchievementText } from '../achievement-texts';
 import type { BlizzardCharacter } from '../accounts';
 import { db } from '../db';
-import { logger } from '$lib/logger';
+import { logger } from '#lib/logger';
 import { blizzardGet } from '../providers/blizzard';
 
 const log = logger('WoW');

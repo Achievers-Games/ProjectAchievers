@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { m } from '$lib/paraglide/messages';
+  import { m } from '#lib/paraglide/messages';
   import { enhance } from '$app/forms';
-  import Avatar from '$lib/components/Avatar.svelte';
-  import { submitWithToast } from '$lib/forms';
+  import Avatar from '#lib/components/Avatar.svelte';
+  import { submitWithToast } from '#lib/forms';
 
   let {
     profile,

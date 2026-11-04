@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { m } from '$lib/paraglide/messages';
+  import { m } from '#lib/paraglide/messages';
   import { onMount } from 'svelte';
   import GameCard from './GameCard.svelte';
-  import { tierLabel } from '$lib/labels';
-  import { NO_REWARDS, persistRewards, rewards } from '$lib/stores/sync';
+  import { tierLabel } from '#lib/labels';
+  import { NO_REWARDS, persistRewards, rewards } from '#lib/stores/sync';
 
   const MAX_CARDS = 10;
   const FIRST_FLIP = 320;

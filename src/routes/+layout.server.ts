@@ -1,6 +1,6 @@
-import { pushPublicKey } from '$lib/server/push';
-import { themeOf } from '$lib/theme';
-import { pendingInvites, unreadCount } from '$lib/server/social';
+import { pushPublicKey } from '#lib/server/push';
+import { themeOf } from '#lib/theme';
+import { pendingInvites, unreadCount } from '#lib/server/social';
 import type { LayoutServerLoad } from './$types';
 
 export const load: LayoutServerLoad = async ({ locals, cookies, depends }) => {

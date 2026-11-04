@@ -3,7 +3,7 @@ import 'dotenv/config';
 import { describe, expect, it, vi } from 'vitest';
 import { listGames } from './queries';
 import { resolveIdentity } from './accounts';
-import { type CardDrop } from '$lib/collection';
+import { type CardDrop } from '#lib/collection';
 import { db } from './db';
 import { checkLiveGames } from './sync/live';
 import { enqueueSync, refreshAccounts, runSync, startWorkers } from './sync/queue';

@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { db } from './db';
 import { notify } from './push';
-import { m } from '$lib/paraglide/messages';
+import { m } from '#lib/paraglide/messages';
 
 const PSN = 'PSN_SERVICE_NPSSO';
 const DAY = 24 * 60 * 60 * 1000;

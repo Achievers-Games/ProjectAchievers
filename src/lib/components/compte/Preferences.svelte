@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { m } from '$lib/paraglide/messages';
+  import { m } from '#lib/paraglide/messages';
   import { enhance } from '$app/forms';
-  import type { SubmitFunction } from '@sveltejs/kit';
-  import { submitWithToast } from '$lib/forms';
+  import type { SubmitFunction } from '$app/forms';
+  import { submitWithToast } from '#lib/forms';
 
   let {
     profile,

@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { render } from '@testing-library/svelte';
 import { afterEach, describe, expect, it } from 'vitest';
-import { celebrate, dismissAllPops } from '$lib/stores/achievement-pop';
+import { celebrate, dismissAllPops } from '#lib/stores/achievement-pop';
 import AchievementPop from './AchievementPop.svelte';
 
 const pop = (title: string) => ({ title, icon: 'trophy', category: 'start', level: 2 });

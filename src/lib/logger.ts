@@ -2,7 +2,7 @@ type Level = 'debug' | 'info' | 'warn' | 'error';
 
 const ORDER: Record<Level, number> = { debug: 10, info: 20, warn: 30, error: 40 };
 
-// Aussi partagé avec le navigateur (`$lib/push`), où `process` n'existe pas.
+// Aussi partagé avec le navigateur (`#lib/push`), où `process` n'existe pas.
 const configured =
   typeof process === 'undefined' ? undefined : (process.env.LOG_LEVEL as Level | undefined);
 const minimum = ORDER[configured ?? 'info'] ?? ORDER.info;

@@ -266,7 +266,7 @@ writeFileSync(
   'src/lib/server/site-icons.ts',
   `// Généré par scripts/site-icons.mjs : ne pas modifier à la main.
 // Icônes de game-icons.net (Lorc, Delapouite et contributeurs), sous licence CC BY 3.0.
-import type { BaseCode, GenreKey, SeriesKey } from '$lib/site-achievements';
+import type { BaseCode, GenreKey, SeriesKey } from '#lib/site-achievements';
 
 /** Les dessins, en tracé SVG sur 512 × 512. */
 export const ICON_PATHS = {

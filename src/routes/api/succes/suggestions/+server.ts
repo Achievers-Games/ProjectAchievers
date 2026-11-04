@@ -1,7 +1,7 @@
 import { error, json } from '@sveltejs/kit';
-import { SITE_CODES } from '$lib/site-achievements';
-import { siteSuggestions } from '$lib/server/site-achievements';
-import { m } from '$lib/paraglide/messages';
+import { SITE_CODES } from '#lib/site-achievements';
+import { siteSuggestions } from '#lib/server/site-achievements';
+import { m } from '#lib/paraglide/messages';
 import type { RequestHandler } from './$types';
 
 /** Les jeux à lancer pour décrocher un succès du site : ceux du joueur d'abord. */

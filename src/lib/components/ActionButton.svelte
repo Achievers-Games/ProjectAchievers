@@ -1,6 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
-  import { submitWithToast } from '$lib/forms';
+  import { submitWithToast } from '#lib/forms';
 
   let {
     action,

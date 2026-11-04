@@ -1,6 +1,6 @@
 import { deserialize } from '$app/forms';
-import { m } from '$lib/paraglide/messages';
-import { toast } from '$lib/stores/toast';
+import { m } from '#lib/paraglide/messages';
+import { toast } from '#lib/stores/toast';
 
 interface GuideChecks {
   guideId: string;

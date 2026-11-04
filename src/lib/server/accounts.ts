@@ -3,10 +3,10 @@ import { z } from 'zod';
 import { db } from './db';
 import { encrypt } from './crypto';
 import { availableProviders } from './providers';
-import { isProfane } from '$lib/profanity';
-import { slugify } from '$lib/slug';
-import { m } from '$lib/paraglide/messages';
-import { getLocale } from '$lib/paraglide/runtime';
+import { isProfane } from '#lib/profanity';
+import { slugify } from '#lib/slug';
+import { m } from '#lib/paraglide/messages';
+import { getLocale } from '#lib/paraglide/runtime';
 
 const PLATFORMS: Platform[] = ['STEAM', 'PSN', 'XBOX', 'RETRO', 'BLIZZARD'];
 

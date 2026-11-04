@@ -1,5 +1,5 @@
 import { Prisma, type Platform } from '@prisma/client';
-import { TIERS } from '$lib/collection';
+import { TIERS } from '#lib/collection';
 import type { LibraryCard } from '../library';
 
 export const PAGE_SIZE = 36;

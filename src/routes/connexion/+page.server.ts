@@ -1,9 +1,9 @@
 import { redirect } from '@sveltejs/kit';
-import { dev } from '$app/environment';
-import { env } from '$lib/server/env';
-import { availableProviders, safeReturnTo } from '$lib/server/providers';
+import { dev } from '$app/env';
+import { env } from '#lib/server/env';
+import { availableProviders, safeReturnTo } from '#lib/server/providers';
 import type { PageServerLoad } from './$types';
-import { m } from '$lib/paraglide/messages';
+import { m } from '#lib/paraglide/messages';
 
 const ERRORS: Record<string, () => string> = {
   expire: m.signin_expired,

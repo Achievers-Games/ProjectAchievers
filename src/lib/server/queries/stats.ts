@@ -1,5 +1,5 @@
 import { Prisma } from '@prisma/client';
-import { RARITY_POINTS, SEASON, seasonState, type Season } from '$lib/season';
+import { RARITY_POINTS, SEASON, seasonState, type Season } from '#lib/season';
 import { db } from '../db';
 import { cardScore, tierCounts, visibleGames, type TierCounts } from './shared';
 

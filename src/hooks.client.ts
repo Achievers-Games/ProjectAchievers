@@ -1,5 +1,5 @@
-import type { ClientInit, HandleClientError } from '@sveltejs/kit';
-import { reportClientError } from '$lib/report';
+import type { ClientInit, HandleClientError } from '@sveltejs/kit/hooks';
+import { reportClientError } from '#lib/report';
 
 /** Les erreurs attrapées par SvelteKit (chargement, rendu) partent au journal du serveur. */
 export const handleError: HandleClientError = ({ error, event }) => {

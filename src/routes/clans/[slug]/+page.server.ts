@@ -1,8 +1,8 @@
 import { error, redirect } from '@sveltejs/kit';
-import { db } from '$lib/server/db';
-import { clanAchievementBoard } from '$lib/server/site-achievements';
-import { clanPage, flagClanName } from '$lib/server/social';
-import { m } from '$lib/paraglide/messages';
+import { db } from '#lib/server/db';
+import { clanAchievementBoard } from '#lib/server/site-achievements';
+import { clanPage, flagClanName } from '#lib/server/social';
+import { m } from '#lib/paraglide/messages';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params, locals }) => {

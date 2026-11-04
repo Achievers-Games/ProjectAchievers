@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/state';
-  import { displayText } from '$lib/profanity';
-  import { m } from '$lib/paraglide/messages';
+  import { displayText } from '#lib/profanity';
+  import { m } from '#lib/paraglide/messages';
   import { onMount } from 'svelte';
   import MessageCircle from '@lucide/svelte/icons/message-circle';
   import X from '@lucide/svelte/icons/x';
@@ -17,7 +17,7 @@
     persistChats,
     renameChat,
     unread,
-  } from '$lib/stores/chat';
+  } from '#lib/stores/chat';
 
   interface Row {
     id: string;

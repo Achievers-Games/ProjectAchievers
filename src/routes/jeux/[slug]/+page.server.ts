@@ -1,12 +1,12 @@
 import { error, fail } from '@sveltejs/kit';
-import { copiesFor, copyKey, nextCopy } from '$lib/collection';
-import { db } from '$lib/server/db';
-import { ensureGameTexts, localizeAchievements } from '$lib/server/achievement-texts';
-import { seasonStartedGames, visibleGames } from '$lib/server/queries';
-import { SEASON, seasonState } from '$lib/season';
-import { getLocale } from '$lib/paraglide/runtime';
+import { copiesFor, copyKey, nextCopy } from '#lib/collection';
+import { db } from '#lib/server/db';
+import { ensureGameTexts, localizeAchievements } from '#lib/server/achievement-texts';
+import { seasonStartedGames, visibleGames } from '#lib/server/queries';
+import { SEASON, seasonState } from '#lib/season';
+import { getLocale } from '#lib/paraglide/runtime';
 import type { Actions, PageServerLoad } from './$types';
-import { m } from '$lib/paraglide/messages';
+import { m } from '#lib/paraglide/messages';
 
 const OFFICIAL_GUIDE = { curatedKey: { not: null }, status: 'PUBLISHED' } as const;
 

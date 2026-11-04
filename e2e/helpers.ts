@@ -15,6 +15,9 @@ export const test = base.extend<{ consoleGuard: void }>({
         // une page qui en redemande un pendant une régénération reçoit un 404 qui ne vient
         // pas du site et qui n'existe pas une fois compilé.
         if (location.includes('/.svelte-kit/generated/') && message.text().includes('404')) return;
+        // Depuis SvelteKit 3, une action part en `fetch` : un échec de validation voulu (`fail(400)`)
+        // apparaît aussi comme une requête en erreur dans la console.
+        if (location.includes('?/') && message.text().startsWith('Failed to load resource')) return;
         errors.push(`${message.text()} (${location})`);
       });
       await use();

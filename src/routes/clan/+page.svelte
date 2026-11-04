@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { m } from '$lib/paraglide/messages';
+  import { m } from '#lib/paraglide/messages';
   import { enhance } from '$app/forms';
-  import ActionButton from '$lib/components/ActionButton.svelte';
-  import Avatar from '$lib/components/Avatar.svelte';
-  import { frameLabel, isFrame } from '$lib/frames';
-  import Empty from '$lib/components/Empty.svelte';
-  import SocialNav from '$lib/components/SocialNav.svelte';
-  import { submitWithToast } from '$lib/forms';
+  import ActionButton from '#lib/components/ActionButton.svelte';
+  import Avatar from '#lib/components/Avatar.svelte';
+  import { frameLabel, isFrame } from '#lib/frames';
+  import Empty from '#lib/components/Empty.svelte';
+  import SocialNav from '#lib/components/SocialNav.svelte';
+  import { submitWithToast } from '#lib/forms';
 
   let { data } = $props();
   const submit = submitWithToast();

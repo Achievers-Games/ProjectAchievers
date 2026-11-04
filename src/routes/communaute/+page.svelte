@@ -1,15 +1,15 @@
 <script lang="ts">
-  import { HOLO_TIER } from '$lib/collection';
-  import { m } from '$lib/paraglide/messages';
+  import { HOLO_TIER } from '#lib/collection';
+  import { m } from '#lib/paraglide/messages';
   import { invalidate } from '$app/navigation';
   import { fly } from 'svelte/transition';
-  import Avatar from '$lib/components/Avatar.svelte';
-  import CompleteBadge from '$lib/components/CompleteBadge.svelte';
-  import Empty from '$lib/components/Empty.svelte';
-  import SocialNav from '$lib/components/SocialNav.svelte';
-  import TrophyBadge from '$lib/components/TrophyBadge.svelte';
-  import { formatNumber, formatRelative, tierLabel } from '$lib/labels';
-  import { subscribeJson } from '$lib/sse';
+  import Avatar from '#lib/components/Avatar.svelte';
+  import CompleteBadge from '#lib/components/CompleteBadge.svelte';
+  import Empty from '#lib/components/Empty.svelte';
+  import SocialNav from '#lib/components/SocialNav.svelte';
+  import TrophyBadge from '#lib/components/TrophyBadge.svelte';
+  import { formatNumber, formatRelative, tierLabel } from '#lib/labels';
+  import { subscribeJson } from '#lib/sse';
 
   let { data } = $props();
 
@@ -113,7 +113,7 @@
           {#each tabs as tab (tab.value)}
             <a
               href="?onglet={tab.value}&periode={data.period}"
-              data-sveltekit-noscroll
+              data-sveltekit-reset="false"
               aria-current={data.tab === tab.value ? 'true' : undefined}
               class="px-3 py-1.5"
               class:bg-raised={data.tab === tab.value}
@@ -246,7 +246,7 @@
         {#each periods as period (period.value)}
           <a
             href="?onglet={data.tab}&periode={period.value}"
-            data-sveltekit-noscroll
+            data-sveltekit-reset="false"
             aria-current={data.period === period.value ? 'true' : undefined}
             class="px-2 py-1"
             class:bg-raised={data.period === period.value}

@@ -1,12 +1,12 @@
 import { fail } from '@sveltejs/kit';
 import { FeedbackArea } from '@prisma/client';
 import { z } from 'zod';
-import { feedbackAreaLabel } from '$lib/feedback';
-import { requireLogin } from '$lib/server/auth';
-import { db } from '$lib/server/db';
-import { notify } from '$lib/server/push';
-import { rateLimit } from '$lib/server/rate-limit';
-import { m } from '$lib/paraglide/messages';
+import { feedbackAreaLabel } from '#lib/feedback';
+import { requireLogin } from '#lib/server/auth';
+import { db } from '#lib/server/db';
+import { notify } from '#lib/server/push';
+import { rateLimit } from '#lib/server/rate-limit';
+import { m } from '#lib/paraglide/messages';
 import type { Actions, PageServerLoad } from './$types';
 
 const PER_HOUR = 5;

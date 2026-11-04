@@ -1,18 +1,18 @@
 import { error, redirect } from '@sveltejs/kit';
-import { resolveIdentity, type Identity } from '$lib/server/accounts';
-import { saveMerge } from '$lib/server/merge';
-import { OAUTH_PROVIDERS, takeFlow, type OAuthProvider } from '$lib/server/providers';
-import { exchangeDiscordCode } from '$lib/server/providers/discord';
-import { exchangeBlizzardCode } from '$lib/server/providers/blizzard';
-import { exchangeEpicCode } from '$lib/server/providers/epic';
-import { exchangeGoogleCode } from '$lib/server/providers/google';
-import { fetchSteamIdentity, verifySteamResponse } from '$lib/server/providers/steam';
-import { exchangeXboxCode } from '$lib/server/providers/xbox';
-import { createSession } from '$lib/server/session';
-import { logger } from '$lib/logger';
-import { enqueueSync } from '$lib/server/sync/queue';
+import { resolveIdentity, type Identity } from '#lib/server/accounts';
+import { saveMerge } from '#lib/server/merge';
+import { OAUTH_PROVIDERS, takeFlow, type OAuthProvider } from '#lib/server/providers';
+import { exchangeDiscordCode } from '#lib/server/providers/discord';
+import { exchangeBlizzardCode } from '#lib/server/providers/blizzard';
+import { exchangeEpicCode } from '#lib/server/providers/epic';
+import { exchangeGoogleCode } from '#lib/server/providers/google';
+import { fetchSteamIdentity, verifySteamResponse } from '#lib/server/providers/steam';
+import { exchangeXboxCode } from '#lib/server/providers/xbox';
+import { createSession } from '#lib/server/session';
+import { logger } from '#lib/logger';
+import { enqueueSync } from '#lib/server/sync/queue';
 import type { RequestHandler } from './$types';
-import { m } from '$lib/paraglide/messages';
+import { m } from '#lib/paraglide/messages';
 
 const log = logger('Connexion');
 

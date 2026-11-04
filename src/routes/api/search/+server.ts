@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
-import { db } from '$lib/server/db';
-import { visibleGames } from '$lib/server/queries';
+import { db } from '#lib/server/db';
+import { visibleGames } from '#lib/server/queries';
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = async ({ url, locals }) => {

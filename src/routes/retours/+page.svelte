@@ -1,15 +1,15 @@
 <script lang="ts">
-  import { m } from '$lib/paraglide/messages';
+  import { m } from '#lib/paraglide/messages';
   import { enhance } from '$app/forms';
-  import SocialNav from '$lib/components/SocialNav.svelte';
+  import SocialNav from '#lib/components/SocialNav.svelte';
   import {
     FEEDBACK_AREAS,
     feedbackAreaLabel,
     feedbackKindLabel,
     feedbackStatusLabel,
-  } from '$lib/feedback';
-  import { submitWithToast } from '$lib/forms';
-  import { formatRelative } from '$lib/labels';
+  } from '#lib/feedback';
+  import { submitWithToast } from '#lib/forms';
+  import { formatRelative } from '#lib/labels';
 
   let { data } = $props();
   const submit = submitWithToast();

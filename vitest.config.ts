@@ -2,7 +2,7 @@ import 'dotenv/config';
 import { defineConfig } from 'vitest/config';
 import path from 'node:path';
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
-import { svelte } from '@sveltejs/vite-plugin-svelte';
+import { svelte, vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
 const database = new URL(process.env.DATABASE_URL ?? '');
 database.pathname = '/achievers_test';
@@ -16,11 +16,11 @@ export default defineConfig({
       cookieName: 'pa_lang',
     }),
     // Les composants se montent dans happy-dom : le plugin les compile comme dans l'application.
-    svelte({ hot: false }),
+    svelte({ preprocess: vitePreprocess() }),
   ],
   resolve: {
     alias: {
-      $lib: path.resolve(__dirname, './src/lib'),
+      '#lib': path.resolve(import.meta.dirname, './src/lib'),
     },
     // Sans la condition navigateur, Svelte charge sa version serveur, où `mount` n'existe pas :
     // les tests de composants ne pourraient pas monter la moindre carte.

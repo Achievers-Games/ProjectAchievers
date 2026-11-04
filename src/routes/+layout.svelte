@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { m } from '$lib/paraglide/messages';
+  import { m } from '#lib/paraglide/messages';
   import '../app.css';
   import { onMount } from 'svelte';
   import { afterNavigate, invalidate, invalidateAll, onNavigate } from '$app/navigation';
@@ -12,23 +12,23 @@
   import Search from '@lucide/svelte/icons/search';
   import Trophy from '@lucide/svelte/icons/trophy';
   import User from '@lucide/svelte/icons/user';
-  import Avatar from '$lib/components/Avatar.svelte';
-  import ChatDock from '$lib/components/ChatDock.svelte';
-  import CommandPalette from '$lib/components/CommandPalette.svelte';
-  import PushPrompt from '$lib/components/PushPrompt.svelte';
-  import RewardReveal from '$lib/components/RewardReveal.svelte';
-  import Toasts from '$lib/components/Toasts.svelte';
-  import AchievementPop from '$lib/components/AchievementPop.svelte';
-  import { celebrate, type SitePop } from '$lib/stores/achievement-pop';
-  import { LOCALE_LABELS, PROVIDER_LABELS, syncErrorText } from '$lib/labels';
-  import { getLocale, locales, setLocale, type Locale } from '$lib/paraglide/runtime';
-  import { restorePush } from '$lib/push';
-  import { subscribeJson } from '$lib/sse';
-  import { hasDock, incoming, invites, isChatOpen, unread } from '$lib/stores/chat';
-  import { refreshPresence, watchPresence } from '$lib/stores/presence';
-  import { rewards, syncState, type SyncProgress } from '$lib/stores/sync';
-  import { toast } from '$lib/stores/toast';
-  import type { ChatEvent, InviteEvent, LiveEvent } from '$lib/server/sync/events';
+  import Avatar from '#lib/components/Avatar.svelte';
+  import ChatDock from '#lib/components/ChatDock.svelte';
+  import CommandPalette from '#lib/components/CommandPalette.svelte';
+  import PushPrompt from '#lib/components/PushPrompt.svelte';
+  import RewardReveal from '#lib/components/RewardReveal.svelte';
+  import Toasts from '#lib/components/Toasts.svelte';
+  import AchievementPop from '#lib/components/AchievementPop.svelte';
+  import { celebrate, type SitePop } from '#lib/stores/achievement-pop';
+  import { LOCALE_LABELS, PROVIDER_LABELS, syncErrorText } from '#lib/labels';
+  import { getLocale, locales, setLocale, type Locale } from '#lib/paraglide/runtime';
+  import { restorePush } from '#lib/push';
+  import { subscribeJson } from '#lib/sse';
+  import { hasDock, incoming, invites, isChatOpen, unread } from '#lib/stores/chat';
+  import { refreshPresence, watchPresence } from '#lib/stores/presence';
+  import { rewards, syncState, type SyncProgress } from '#lib/stores/sync';
+  import { toast } from '#lib/stores/toast';
+  import type { ChatEvent, InviteEvent, LiveEvent } from '#lib/server/sync/events';
 
   let { data, children } = $props();
   let paletteOpen = $state(false);

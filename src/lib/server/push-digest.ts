@@ -1,9 +1,9 @@
 import { db } from './db';
 import { globals } from './globals';
-import { logger } from '$lib/logger';
+import { logger } from '#lib/logger';
 import { notify, usersWhoLeft } from './push';
 import { pendingInvites, unreadCount } from './social';
-import { m } from '$lib/paraglide/messages';
+import { m } from '#lib/paraglide/messages';
 
 const INTERVAL = 30_000;
 

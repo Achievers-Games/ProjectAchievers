@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { m } from '$lib/paraglide/messages';
-  import { online } from '$lib/stores/presence';
+  import { m } from '#lib/paraglide/messages';
+  import { online } from '#lib/stores/presence';
 
   interface Person {
     /** Sans identifiant, pas de pastille : c'est le cas des aperçus. */

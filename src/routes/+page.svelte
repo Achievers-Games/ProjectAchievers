@@ -1,13 +1,13 @@
 <script lang="ts">
-  import { m } from '$lib/paraglide/messages';
-  import Empty from '$lib/components/Empty.svelte';
-  import GameCard from '$lib/components/GameCard.svelte';
-  import HomeCarousel from '$lib/components/HomeCarousel.svelte';
-  import LiveCards from '$lib/components/LiveCards.svelte';
-  import MissingPlatforms from '$lib/components/MissingPlatforms.svelte';
-  import Podium from '$lib/components/Podium.svelte';
-  import ProviderIcon from '$lib/components/ProviderIcon.svelte';
-  import StatGrid from '$lib/components/StatGrid.svelte';
+  import { m } from '#lib/paraglide/messages';
+  import Empty from '#lib/components/Empty.svelte';
+  import GameCard from '#lib/components/GameCard.svelte';
+  import HomeCarousel from '#lib/components/HomeCarousel.svelte';
+  import LiveCards from '#lib/components/LiveCards.svelte';
+  import MissingPlatforms from '#lib/components/MissingPlatforms.svelte';
+  import Podium from '#lib/components/Podium.svelte';
+  import ProviderIcon from '#lib/components/ProviderIcon.svelte';
+  import StatGrid from '#lib/components/StatGrid.svelte';
 
   let { data } = $props();
 </script>

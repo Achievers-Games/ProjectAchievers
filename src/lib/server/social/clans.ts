@@ -1,7 +1,7 @@
 import { Prisma, type PrismaClient } from '@prisma/client';
-import { m } from '$lib/paraglide/messages';
-import { isProfane } from '$lib/profanity';
-import { slugify } from '$lib/slug';
+import { m } from '#lib/paraglide/messages';
+import { isProfane } from '#lib/profanity';
+import { slugify } from '#lib/slug';
 import { checkClanAchievements } from '../clan-achievements';
 import { clanImageUrl } from '../clan-image';
 import { randomToken } from '../crypto';

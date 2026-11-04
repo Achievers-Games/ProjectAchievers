@@ -1,6 +1,6 @@
 import type { Platform } from '@prisma/client';
 import type { Prisma } from '@prisma/client';
-import { consolesOf } from '$lib/collection';
+import { consolesOf } from '#lib/collection';
 import { db } from '../db';
 import { groupLibrary, type LibraryCard } from '../library';
 import { seasonStartedGames } from './stats';

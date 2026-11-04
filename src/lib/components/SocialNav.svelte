@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { m } from '$lib/paraglide/messages';
+  import { m } from '#lib/paraglide/messages';
   import { page } from '$app/state';
-  import { invites, unread } from '$lib/stores/chat';
+  import { invites, unread } from '#lib/stores/chat';
 
   const links = $derived([
     { href: '/communaute', label: m.activity(), count: 0 },

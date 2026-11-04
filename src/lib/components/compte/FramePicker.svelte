@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { m } from '$lib/paraglide/messages';
+  import { m } from '#lib/paraglide/messages';
   import { enhance } from '$app/forms';
   import type { Provider } from '@prisma/client';
-  import Avatar from '$lib/components/Avatar.svelte';
-  import { FRAMES, frameHint, frameLabel } from '$lib/frames';
-  import { PROVIDER_LABELS } from '$lib/labels';
-  import { submitWithToast } from '$lib/forms';
+  import Avatar from '#lib/components/Avatar.svelte';
+  import { FRAMES, frameHint, frameLabel } from '#lib/frames';
+  import { PROVIDER_LABELS } from '#lib/labels';
+  import { submitWithToast } from '#lib/forms';
 
   let {
     profile,

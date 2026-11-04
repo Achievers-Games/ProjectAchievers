@@ -1,9 +1,9 @@
 import { error, json } from '@sveltejs/kit';
 import { z } from 'zod';
-import { rateLimit } from '$lib/server/rate-limit';
-import { reportMessage } from '$lib/server/social';
+import { rateLimit } from '#lib/server/rate-limit';
+import { reportMessage } from '#lib/server/social';
 import type { RequestHandler } from './$types';
-import { m } from '$lib/paraglide/messages';
+import { m } from '#lib/paraglide/messages';
 
 const body = z.object({
   messageId: z.string().min(1),

@@ -7,7 +7,7 @@ import {
   wowUnlocks,
 } from './blizzard';
 import { mapRetroAchievement, retroUnlocks } from './retro';
-import { isComplete } from '$lib/collection';
+import { isComplete } from '#lib/collection';
 import { fetchRetry, mapLimit, SyncError } from './errors';
 import { assertPsnResponse, mapTrophy } from './psn';
 import { mapSchema } from './steam';

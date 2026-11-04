@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
-import { logger } from '$lib/logger';
-import { db } from '$lib/server/db';
+import { logger } from '#lib/logger';
+import { db } from '#lib/server/db';
 import type { RequestHandler } from './$types';
 
 const log = logger('Santé');

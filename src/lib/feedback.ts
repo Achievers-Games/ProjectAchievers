@@ -1,5 +1,5 @@
 import type { FeedbackArea, FeedbackKind, FeedbackStatus } from '@prisma/client';
-import { m } from '$lib/paraglide/messages';
+import { m } from '#lib/paraglide/messages';
 
 export const feedbackKindLabel = (kind: FeedbackKind) =>
   kind === 'BUG' ? m.feedback_bug() : m.feedback_idea();

@@ -1,7 +1,7 @@
 import { error, json } from '@sveltejs/kit';
-import { db } from '$lib/server/db';
-import { sitePop } from '$lib/server/site-achievements';
-import { m } from '$lib/paraglide/messages';
+import { db } from '#lib/server/db';
+import { sitePop } from '#lib/server/site-achievements';
+import { m } from '#lib/paraglide/messages';
 import type { RequestHandler } from './$types';
 
 const MAX_ZONE = 64;

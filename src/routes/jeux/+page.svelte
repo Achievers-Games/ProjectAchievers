@@ -1,16 +1,15 @@
 <script lang="ts">
-  import { m } from '$lib/paraglide/messages';
-  import { goto } from '$app/navigation';
+  import { m } from '#lib/paraglide/messages';
+  import { goto, snapshot } from '$app/navigation';
   import { page } from '$app/state';
   import LayoutGrid from '@lucide/svelte/icons/layout-grid';
   import List from '@lucide/svelte/icons/list';
-  import Empty from '$lib/components/Empty.svelte';
-  import GameCard from '$lib/components/GameCard.svelte';
-  import TierLegend from '$lib/components/TierLegend.svelte';
-  import { PLATFORM_LABELS, tierLabel, tierRule } from '$lib/labels';
-  import { TIERS, TIER_SLUGS } from '$lib/collection';
-  import type { GameListItem } from '$lib/server/queries';
-  import type { Snapshot } from './$types';
+  import Empty from '#lib/components/Empty.svelte';
+  import GameCard from '#lib/components/GameCard.svelte';
+  import TierLegend from '#lib/components/TierLegend.svelte';
+  import { PLATFORM_LABELS, tierLabel, tierRule } from '#lib/labels';
+  import { TIERS, TIER_SLUGS } from '#lib/collection';
+  import type { GameListItem } from '#lib/server/queries';
 
   let { data } = $props();
 
@@ -79,23 +78,23 @@
   }
 
   /** Au retour depuis une fiche, la liste revient telle qu'elle était. */
-  export const snapshot: Snapshot<{
+  snapshot<{
     extra: GameListItem[];
     loadedPages: number;
     loadedFor: string | null;
-  }> = {
+  }>({
     capture: () => ({ extra: $state.snapshot(extra), loadedPages, loadedFor }),
     restore: (saved) => {
       extra = saved.extra;
       loadedPages = saved.loadedPages;
       loadedFor = saved.loadedFor;
     },
-  };
+  });
 
   /** Les filtres vivent dans l'URL : une vue filtrée se partage et survit au rechargement. */
   function hrefWith(changes: Record<string, string | null>) {
     // eslint-disable-next-line svelte/prefer-svelte-reactivity -- copie locale, jamais observée
-    const next = new URLSearchParams(page.url.searchParams);
+    const next = new URLSearchParams([...page.url.searchParams]);
     if (!('page' in changes)) next.delete('page');
     for (const [key, value] of Object.entries(changes)) {
       if (value) next.set(key, value);
@@ -106,7 +105,7 @@
   }
 
   const apply = (changes: Record<string, string | null>) =>
-    goto(hrefWith(changes), { keepFocus: true, noScroll: true, replaceState: true });
+    goto(hrefWith(changes), { replace: true, reset: false });
 
   function onSearch(event: Event) {
     const value = (event.currentTarget as HTMLInputElement).value;
@@ -204,7 +203,7 @@
       {#each platforms as platform (platform.label)}
         <a
           href={hrefWith({ plateforme: platform.value })}
-          data-sveltekit-noscroll
+          data-sveltekit-reset="false"
           aria-current={(data.params.plateforme ?? null) === platform.value ? 'true' : undefined}
           class="px-3 py-1.5 text-sm transition-colors"
           class:bg-raised={(data.params.plateforme ?? null) === platform.value}
@@ -224,7 +223,7 @@
         {#each collections.filter((item) => !data.player || (item.value !== 'caches' && item.value !== 'saison')) as item (item.label)}
           <a
             href={hrefWith({ filtre: item.value })}
-            data-sveltekit-noscroll
+            data-sveltekit-reset="false"
             aria-current={(data.params.filtre ?? null) === item.value ? 'true' : undefined}
             class="whitespace-nowrap px-3 py-1.5 text-sm transition-colors"
             class:bg-raised={(data.params.filtre ?? null) === item.value}
@@ -243,7 +242,7 @@
       {#each tiers as item (item.value)}
         <a
           href={hrefWith({ niveau: data.params.niveau === item.value ? null : item.value })}
-          data-sveltekit-noscroll
+          data-sveltekit-reset="false"
           data-tier={item.tier}
           title={tierRule(item.tier)}
           aria-current={data.params.niveau === item.value ? 'true' : undefined}
@@ -257,7 +256,7 @@
 
     <div class="ml-auto flex items-center gap-2">
       {#if filtered}
-        <a href={clearHref} data-sveltekit-noscroll class="text-sm text-muted hover:text-ink">
+        <a href={clearHref} data-sveltekit-reset="false" class="text-sm text-muted hover:text-ink">
           {m.games_clear()}
         </a>
       {/if}
@@ -275,7 +274,7 @@
       </select>
       <a
         href={hrefWith({ vue: data.params.vue === 'grille' ? 'liste' : null })}
-        data-sveltekit-noscroll
+        data-sveltekit-reset="false"
         class="btn w-9 px-0"
         aria-label={data.params.vue === 'grille' ? m.view_list() : m.view_grid()}
       >
@@ -332,7 +331,7 @@
         <a
           class="btn"
           href={hrefWith({ page: String(nextPage) })}
-          data-sveltekit-preload-data="off"
+          data-sveltekit-preload-data="false"
           onclick={(event) => {
             event.preventDefault();
             loadMore();

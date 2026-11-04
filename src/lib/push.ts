@@ -1,6 +1,6 @@
-import { sendJson } from '$lib/http';
-import { m } from '$lib/paraglide/messages';
-import { logger } from '$lib/logger';
+import { sendJson } from '#lib/http';
+import { m } from '#lib/paraglide/messages';
+import { logger } from '#lib/logger';
 
 const log = logger('Notifications');
 

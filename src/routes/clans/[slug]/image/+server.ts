@@ -1,6 +1,6 @@
 import { error } from '@sveltejs/kit';
-import { db } from '$lib/server/db';
-import { m } from '$lib/paraglide/messages';
+import { db } from '#lib/server/db';
+import { m } from '#lib/paraglide/messages';
 import type { RequestHandler } from './$types';
 
 /** L'emblème d'un clan. En attente de modération, seuls ses membres et les modérateurs le voient. */

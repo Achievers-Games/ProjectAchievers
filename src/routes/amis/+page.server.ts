@@ -1,6 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { requireLogin } from '$lib/server/auth';
-import { rateLimit } from '$lib/server/rate-limit';
+import { requireLogin } from '#lib/server/auth';
+import { rateLimit } from '#lib/server/rate-limit';
 import {
   acceptFriend,
   blockUser,
@@ -10,8 +10,8 @@ import {
   removeFriend,
   requestFriend,
   unblockUser,
-} from '$lib/server/social';
-import { m } from '$lib/paraglide/messages';
+} from '#lib/server/social';
+import { m } from '#lib/paraglide/messages';
 import type { Actions, PageServerLoad } from './$types';
 
 const INVITES_PER_HOUR = 30;

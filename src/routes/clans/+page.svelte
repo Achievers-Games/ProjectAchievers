@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { m } from '$lib/paraglide/messages';
-  import Avatar from '$lib/components/Avatar.svelte';
-  import Empty from '$lib/components/Empty.svelte';
-  import { formatNumber } from '$lib/labels';
+  import { m } from '#lib/paraglide/messages';
+  import Avatar from '#lib/components/Avatar.svelte';
+  import Empty from '#lib/components/Empty.svelte';
+  import { formatNumber } from '#lib/labels';
 
   let { data } = $props();
 </script>

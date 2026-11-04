@@ -1,7 +1,7 @@
 import { error, json } from '@sveltejs/kit';
-import { db } from '$lib/server/db';
+import { db } from '#lib/server/db';
 import type { RequestHandler } from './$types';
-import { m } from '$lib/paraglide/messages';
+import { m } from '#lib/paraglide/messages';
 
 /** Export RGPD : tout ce qui concerne l'utilisateur, sans les jetons chiffrés. */
 export const GET: RequestHandler = async ({ locals }) => {

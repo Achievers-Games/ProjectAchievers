@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { m } from '$lib/paraglide/messages';
+  import { m } from '#lib/paraglide/messages';
   import ChevronLeft from '@lucide/svelte/icons/chevron-left';
   import ChevronRight from '@lucide/svelte/icons/chevron-right';
-  import { formatPercent } from '$lib/labels';
-  import { FRAMES } from '$lib/frames';
+  import { formatPercent } from '#lib/labels';
+  import { FRAMES } from '#lib/frames';
   import Avatar from './Avatar.svelte';
-  import { dragScroll } from '$lib/actions/drag-scroll';
-  import type { BannerGame, Collector } from '$lib/server/queries';
+  import { dragScroll } from '#lib/actions/drag-scroll';
+  import type { BannerGame, Collector } from '#lib/server/queries';
 
   const AUTOPLAY = 7_000;
 

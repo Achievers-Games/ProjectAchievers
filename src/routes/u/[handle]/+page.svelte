@@ -1,17 +1,17 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
-  import { submitWithToast } from '$lib/forms';
-  import { m } from '$lib/paraglide/messages';
+  import { submitWithToast } from '#lib/forms';
+  import { m } from '#lib/paraglide/messages';
   import Link from '@lucide/svelte/icons/link';
-  import Avatar from '$lib/components/Avatar.svelte';
-  import Empty from '$lib/components/Empty.svelte';
-  import GameCard from '$lib/components/GameCard.svelte';
-  import ProviderIcon from '$lib/components/ProviderIcon.svelte';
-  import TrophyBadge from '$lib/components/TrophyBadge.svelte';
-  import StatGrid from '$lib/components/StatGrid.svelte';
-  import { formatDate, formatRelative, PROVIDER_LABELS } from '$lib/labels';
-  import { toast } from '$lib/stores/toast';
-  import { SITE_TOTAL } from '$lib/site-achievements';
+  import Avatar from '#lib/components/Avatar.svelte';
+  import Empty from '#lib/components/Empty.svelte';
+  import GameCard from '#lib/components/GameCard.svelte';
+  import ProviderIcon from '#lib/components/ProviderIcon.svelte';
+  import TrophyBadge from '#lib/components/TrophyBadge.svelte';
+  import StatGrid from '#lib/components/StatGrid.svelte';
+  import { formatDate, formatRelative, PROVIDER_LABELS } from '#lib/labels';
+  import { toast } from '#lib/stores/toast';
+  import { SITE_TOTAL } from '#lib/site-achievements';
 
   let { data } = $props();
   const friendSubmit = submitWithToast();

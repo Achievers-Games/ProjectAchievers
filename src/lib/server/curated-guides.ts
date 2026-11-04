@@ -9,7 +9,8 @@ const OFFICIAL_AUTHOR = {
   isPublic: false,
 };
 
-const FILES = import.meta.glob<string>('$lib/guides/*.md', {
+// Depuis Vite 8, un motif glob part du dossier du projet : `#lib` n'y est pas résolu.
+const FILES = import.meta.glob<string>('/src/lib/guides/*.md', {
   query: '?raw',
   import: 'default',
   eager: true,

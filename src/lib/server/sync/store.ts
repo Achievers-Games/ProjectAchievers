@@ -1,8 +1,8 @@
 import type { Platform, Prisma, TrophyType } from '@prisma/client';
 import { db } from '../db';
 import { familyKey } from '../family';
-import { difficultyTier } from '$lib/collection';
-import { slugify } from '$lib/slug';
+import { difficultyTier } from '#lib/collection';
+import { slugify } from '#lib/slug';
 
 const POINTS: Record<TrophyType, number> = {
   PLATINUM: 180,

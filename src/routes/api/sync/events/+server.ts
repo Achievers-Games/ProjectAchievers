@@ -1,8 +1,8 @@
 import { error } from '@sveltejs/kit';
-import { eventStream } from '$lib/server/sse';
-import { onChat, onSync, type LiveEvent, type SyncEvent } from '$lib/server/sync/events';
+import { eventStream } from '#lib/server/sse';
+import { onChat, onSync, type LiveEvent, type SyncEvent } from '#lib/server/sync/events';
 import type { RequestHandler } from './$types';
-import { m } from '$lib/paraglide/messages';
+import { m } from '#lib/paraglide/messages';
 
 /** Un seul flux par onglet : synchronisations et messages arrivent par le même chemin. */
 export const GET: RequestHandler = ({ locals, request }) => {

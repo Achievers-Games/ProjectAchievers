@@ -1,18 +1,18 @@
 import { error, fail } from '@sveltejs/kit';
 import { z } from 'zod';
 import type { ReactionType } from '@prisma/client';
-import { requireLogin } from '$lib/server/auth';
-import { db } from '$lib/server/db';
-import { censor } from '$lib/profanity';
-import { renderGuide, renderMarkdown } from '$lib/server/markdown';
-import { publicUser } from '$lib/server/queries';
-import { ensureGameTexts, localizeAchievements } from '$lib/server/achievement-texts';
-import { logger } from '$lib/logger';
-import { rateLimit } from '$lib/server/rate-limit';
-import { canTranslate, translateContent } from '$lib/server/translate';
-import { getLocale } from '$lib/paraglide/runtime';
+import { requireLogin } from '#lib/server/auth';
+import { db } from '#lib/server/db';
+import { censor } from '#lib/profanity';
+import { renderGuide, renderMarkdown } from '#lib/server/markdown';
+import { publicUser } from '#lib/server/queries';
+import { ensureGameTexts, localizeAchievements } from '#lib/server/achievement-texts';
+import { logger } from '#lib/logger';
+import { rateLimit } from '#lib/server/rate-limit';
+import { canTranslate, translateContent } from '#lib/server/translate';
+import { getLocale } from '#lib/paraglide/runtime';
 import type { Actions, PageServerLoad } from './$types';
-import { m } from '$lib/paraglide/messages';
+import { m } from '#lib/paraglide/messages';
 
 const log = logger('Traduction');
 

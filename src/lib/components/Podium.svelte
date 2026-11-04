@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { m } from '$lib/paraglide/messages';
+  import { m } from '#lib/paraglide/messages';
   import Avatar from './Avatar.svelte';
-  import type { Collector } from '$lib/server/queries';
+  import type { Collector } from '#lib/server/queries';
 
   let { collectors, more = true }: { collectors: Collector[]; more?: boolean } = $props();
 

@@ -1,5 +1,5 @@
 import type { Platform } from '@prisma/client';
-import { copiesFor, copyKey, nextCopy, type NextCopy } from '$lib/collection';
+import { copiesFor, copyKey, nextCopy, type NextCopy } from '#lib/collection';
 
 interface LibraryRow {
   unlockedCount: number;

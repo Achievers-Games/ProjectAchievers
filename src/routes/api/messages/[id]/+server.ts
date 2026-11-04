@@ -1,9 +1,9 @@
 import { error, json } from '@sveltejs/kit';
 import { z } from 'zod';
-import { rateLimit } from '$lib/server/rate-limit';
-import { markRead, readConversation, sendMessage, unreadCount } from '$lib/server/social';
+import { rateLimit } from '#lib/server/rate-limit';
+import { markRead, readConversation, sendMessage, unreadCount } from '#lib/server/social';
 import type { RequestHandler } from './$types';
-import { m } from '$lib/paraglide/messages';
+import { m } from '#lib/paraglide/messages';
 
 const MESSAGES_PER_MINUTE = 20;
 

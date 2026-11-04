@@ -1,9 +1,9 @@
 import { error } from '@sveltejs/kit';
 import { z } from 'zod';
-import { db } from '$lib/server/db';
-import { isPushEndpoint } from '$lib/server/push';
-import { getLocale } from '$lib/paraglide/runtime';
-import { m } from '$lib/paraglide/messages';
+import { db } from '#lib/server/db';
+import { isPushEndpoint } from '#lib/server/push';
+import { getLocale } from '#lib/paraglide/runtime';
+import { m } from '#lib/paraglide/messages';
 import type { RequestHandler } from './$types';
 
 const endpoint = z.url().max(1_000).refine(isPushEndpoint);

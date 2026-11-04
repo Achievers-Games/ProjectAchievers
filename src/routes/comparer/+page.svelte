@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { m } from '$lib/paraglide/messages';
-  import Avatar from '$lib/components/Avatar.svelte';
-  import Empty from '$lib/components/Empty.svelte';
-  import Progress from '$lib/components/Progress.svelte';
-  import { formatNumber, formatPercent, tierLabel } from '$lib/labels';
+  import { m } from '#lib/paraglide/messages';
+  import Avatar from '#lib/components/Avatar.svelte';
+  import Empty from '#lib/components/Empty.svelte';
+  import Progress from '#lib/components/Progress.svelte';
+  import { formatNumber, formatPercent, tierLabel } from '#lib/labels';
 
   let { data } = $props();
 

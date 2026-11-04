@@ -1,5 +1,5 @@
-import { db } from '$lib/server/db';
-import { env } from '$lib/server/env';
+import { db } from '#lib/server/db';
+import { env } from '#lib/server/env';
 import type { RequestHandler } from './$types';
 
 const CACHE_MS = 3_600_000;

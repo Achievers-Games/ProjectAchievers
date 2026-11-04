@@ -1,6 +1,6 @@
 import { db } from '../db';
 import { decrypt, encrypt } from '../crypto';
-import { logger } from '$lib/logger';
+import { logger } from '#lib/logger';
 import {
   openXboxSession,
   refreshMicrosoftTokens,
@@ -17,7 +17,7 @@ import {
   type UnlockInput,
 } from './store';
 import type { ProviderSync } from './types';
-import { xboxConsole } from '$lib/collection';
+import { xboxConsole } from '#lib/collection';
 
 const log = logger('Xbox');
 const CONCURRENCY = 3;

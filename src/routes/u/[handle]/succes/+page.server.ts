@@ -1,9 +1,9 @@
 import { error } from '@sveltejs/kit';
-import { db } from '$lib/server/db';
-import { publicUser } from '$lib/server/queries';
-import { siteAchievementBoard } from '$lib/server/site-achievements';
+import { db } from '#lib/server/db';
+import { publicUser } from '#lib/server/queries';
+import { siteAchievementBoard } from '#lib/server/site-achievements';
 import type { PageServerLoad } from './$types';
-import { m } from '$lib/paraglide/messages';
+import { m } from '#lib/paraglide/messages';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
   const viewerId = locals.user?.id ?? null;

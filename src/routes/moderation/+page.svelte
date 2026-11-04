@@ -4,11 +4,11 @@
     feedbackAreaLabel,
     feedbackKindLabel,
     feedbackStatusLabel,
-  } from '$lib/feedback';
-  import { m } from '$lib/paraglide/messages';
+  } from '#lib/feedback';
+  import { m } from '#lib/paraglide/messages';
   import { enhance } from '$app/forms';
-  import Empty from '$lib/components/Empty.svelte';
-  import { formatDate, formatRelative, PLATFORM_LABELS } from '$lib/labels';
+  import Empty from '#lib/components/Empty.svelte';
+  import { formatDate, formatRelative, PLATFORM_LABELS } from '#lib/labels';
 
   let { data } = $props();
 </script>

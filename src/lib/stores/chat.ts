@@ -1,5 +1,5 @@
 import { get, writable } from 'svelte/store';
-import type { ChatEvent } from '$lib/server/sync/events';
+import type { ChatEvent } from '#lib/server/sync/events';
 
 const STORAGE_KEY = 'pa_discussions';
 const MAX_OPEN = 3;

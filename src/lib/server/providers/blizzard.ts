@@ -1,6 +1,6 @@
 import type { BlizzardCharacter, Identity } from '../accounts';
 import { env } from '../env';
-import { logger } from '$lib/logger';
+import { logger } from '#lib/logger';
 import { fetchRetry } from '../sync/errors';
 import { callbackUrl } from './index';
 import { basicAuth, exchangeCodeForProfile } from './oauth';

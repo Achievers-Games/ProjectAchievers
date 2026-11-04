@@ -1,8 +1,8 @@
 import { fail } from '@sveltejs/kit';
-import { m } from '$lib/paraglide/messages';
-import { requireLogin } from '$lib/server/auth';
-import { db } from '$lib/server/db';
-import { chosenCards, MAX_SHOWCASE, userCards } from '$lib/server/queries';
+import { m } from '#lib/paraglide/messages';
+import { requireLogin } from '#lib/server/auth';
+import { db } from '#lib/server/db';
+import { chosenCards, MAX_SHOWCASE, userCards } from '#lib/server/queries';
 import type { Actions, PageServerLoad } from './$types';
 
 const requireUser = (locals: App.Locals) => requireLogin(locals, '/compte/vitrine');

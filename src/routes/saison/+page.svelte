@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { m } from '$lib/paraglide/messages';
+  import { m } from '#lib/paraglide/messages';
   import { onMount } from 'svelte';
-  import Avatar from '$lib/components/Avatar.svelte';
-  import Empty from '$lib/components/Empty.svelte';
-  import GameCard from '$lib/components/GameCard.svelte';
-  import Progress from '$lib/components/Progress.svelte';
-  import { formatDate, formatNumber, formatPercent } from '$lib/labels';
-  import { RARITY_POINTS, type SeasonState } from '$lib/season';
+  import Avatar from '#lib/components/Avatar.svelte';
+  import Empty from '#lib/components/Empty.svelte';
+  import GameCard from '#lib/components/GameCard.svelte';
+  import Progress from '#lib/components/Progress.svelte';
+  import { formatDate, formatNumber, formatPercent } from '#lib/labels';
+  import { RARITY_POINTS, type SeasonState } from '#lib/season';
 
   const MINUTE = 60_000;
 

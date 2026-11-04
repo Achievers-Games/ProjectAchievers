@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { m } from '$lib/paraglide/messages';
+  import { m } from '#lib/paraglide/messages';
   import { onMount } from 'svelte';
   import { fly } from 'svelte/transition';
-  import PushChannels from '$lib/components/PushChannels.svelte';
-  import { sendJson } from '$lib/http';
-  import { currentSubscription, enablePush, pushFailureText, pushSupported } from '$lib/push';
-  import { toast } from '$lib/stores/toast';
+  import PushChannels from '#lib/components/PushChannels.svelte';
+  import { sendJson } from '#lib/http';
+  import { currentSubscription, enablePush, pushFailureText, pushSupported } from '#lib/push';
+  import { toast } from '#lib/stores/toast';
 
   /** Deux minutes passées sur le site, onglet visible : le joueur a eu le temps de s'installer. */
   const SECONDS_BEFORE = 120;

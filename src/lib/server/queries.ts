@@ -1,6 +1,6 @@
 /**
  * Les lectures du site, rangées par domaine. Ce baril garde les chemins d'import existants
- * (`$lib/server/queries`) et laisse chaque domaine se lire seul.
+ * (`#lib/server/queries`) et laisse chaque domaine se lire seul.
  */
 export * from './queries/shared';
 export * from './queries/library';

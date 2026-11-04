@@ -8,7 +8,7 @@ import {
   THEMES,
   genreOf,
   seriesOf,
-} from '$lib/site-achievements';
+} from '#lib/site-achievements';
 import {
   earnedCodes,
   evaluateSite,

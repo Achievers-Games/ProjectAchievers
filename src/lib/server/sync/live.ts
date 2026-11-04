@@ -1,6 +1,6 @@
 import { db } from '../db';
 import { globals } from '../globals';
-import { logger } from '$lib/logger';
+import { logger } from '#lib/logger';
 import { availableProviders } from '../providers';
 import { fetchPlayingGames } from '../providers/steam';
 import { connectedUsers } from './events';

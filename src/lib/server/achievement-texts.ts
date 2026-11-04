@@ -1,8 +1,8 @@
 import type { Platform } from '@prisma/client';
-import { baseLocale, type Locale } from '$lib/paraglide/runtime';
+import { baseLocale, type Locale } from '#lib/paraglide/runtime';
 import { db } from './db';
 import { rateLimit } from './rate-limit';
-import { logger } from '$lib/logger';
+import { logger } from '#lib/logger';
 
 const log = logger('Textes');
 import { fetchBlizzardTexts } from './sync/blizzard';

@@ -1,7 +1,7 @@
 import { db } from './db';
 import { env } from './env';
 import { rateLimit } from './rate-limit';
-import type { Locale } from '$lib/paraglide/runtime';
+import type { Locale } from '#lib/paraglide/runtime';
 
 const MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
 const MAX_CHUNK = 3_000;

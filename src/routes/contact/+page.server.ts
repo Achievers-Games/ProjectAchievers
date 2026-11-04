@@ -1,10 +1,10 @@
 import { fail } from '@sveltejs/kit';
 import { z } from 'zod';
-import { m } from '$lib/paraglide/messages';
-import { sendMail } from '$lib/server/email';
-import { env } from '$lib/server/env';
-import { rateLimit } from '$lib/server/rate-limit';
-import { logger } from '$lib/logger';
+import { m } from '#lib/paraglide/messages';
+import { sendMail } from '#lib/server/email';
+import { env } from '#lib/server/env';
+import { rateLimit } from '#lib/server/rate-limit';
+import { logger } from '#lib/logger';
 import type { Actions, PageServerLoad } from './$types';
 
 const log = logger('Contact');

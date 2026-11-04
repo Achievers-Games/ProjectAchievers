@@ -1,19 +1,19 @@
-import { m } from '$lib/paraglide/messages';
+import { m } from '#lib/paraglide/messages';
 import { error, redirect } from '@sveltejs/kit';
-import { randomToken } from '$lib/server/crypto';
+import { randomToken } from '#lib/server/crypto';
 import {
   availableProviders,
   OAUTH_PROVIDERS,
   safeReturnTo,
   saveFlow,
   type OAuthProvider,
-} from '$lib/server/providers';
-import { discordAuthorizeUrl } from '$lib/server/providers/discord';
-import { googleAuthorizeUrl } from '$lib/server/providers/google';
-import { steamAuthorizeUrl } from '$lib/server/providers/steam';
-import { xboxAuthorizeUrl } from '$lib/server/providers/xbox';
-import { blizzardAuthorizeUrl } from '$lib/server/providers/blizzard';
-import { epicAuthorizeUrl } from '$lib/server/providers/epic';
+} from '#lib/server/providers';
+import { discordAuthorizeUrl } from '#lib/server/providers/discord';
+import { googleAuthorizeUrl } from '#lib/server/providers/google';
+import { steamAuthorizeUrl } from '#lib/server/providers/steam';
+import { xboxAuthorizeUrl } from '#lib/server/providers/xbox';
+import { blizzardAuthorizeUrl } from '#lib/server/providers/blizzard';
+import { epicAuthorizeUrl } from '#lib/server/providers/epic';
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = ({ params, url, cookies }) => {

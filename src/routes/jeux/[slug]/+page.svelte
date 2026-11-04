@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { m } from '$lib/paraglide/messages';
+  import { m } from '#lib/paraglide/messages';
   import { enhance } from '$app/forms';
   import Check from '@lucide/svelte/icons/check';
   import Eye from '@lucide/svelte/icons/eye';
@@ -8,17 +8,17 @@
   import Lock from '@lucide/svelte/icons/lock';
   import BookOpen from '@lucide/svelte/icons/book-open';
   import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
-  import AchievementIcon from '$lib/components/AchievementIcon.svelte';
-  import CompleteBadge from '$lib/components/CompleteBadge.svelte';
-  import Progress from '$lib/components/Progress.svelte';
-  import TrophyBadge from '$lib/components/TrophyBadge.svelte';
-  import { tilt } from '$lib/actions/tilt';
-  import { submitWithToast } from '$lib/forms';
-  import { HOLO_TIER } from '$lib/collection';
-  import CardFx from '$lib/components/CardFx.svelte';
-  import { editionLabel, formatDate, formatPercent, formatRarity } from '$lib/labels';
-  import { getLocale } from '$lib/paraglide/runtime';
-  import { isComplete } from '$lib/collection';
+  import AchievementIcon from '#lib/components/AchievementIcon.svelte';
+  import CompleteBadge from '#lib/components/CompleteBadge.svelte';
+  import Progress from '#lib/components/Progress.svelte';
+  import TrophyBadge from '#lib/components/TrophyBadge.svelte';
+  import { tilt } from '#lib/actions/tilt';
+  import { submitWithToast } from '#lib/forms';
+  import { HOLO_TIER } from '#lib/collection';
+  import CardFx from '#lib/components/CardFx.svelte';
+  import { editionLabel, formatDate, formatPercent, formatRarity } from '#lib/labels';
+  import { getLocale } from '#lib/paraglide/runtime';
+  import { isComplete } from '#lib/collection';
 
   let { data } = $props();
 
@@ -233,7 +233,7 @@
       <a
         href={data.revealed ? '?' : '?caches=1'}
         rel="nofollow"
-        data-sveltekit-noscroll
+        data-sveltekit-reset="false"
         class="btn h-9"
       >
         {#if data.revealed}

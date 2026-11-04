@@ -1,9 +1,9 @@
 import { error } from '@sveltejs/kit';
-import { compareUsers, publicUser, userStats } from '$lib/server/queries';
-import { db } from '$lib/server/db';
-import { grantSiteAchievement } from '$lib/server/site-achievements';
+import { compareUsers, publicUser, userStats } from '#lib/server/queries';
+import { db } from '#lib/server/db';
+import { grantSiteAchievement } from '#lib/server/site-achievements';
 import type { PageServerLoad } from './$types';
-import { m } from '$lib/paraglide/messages';
+import { m } from '#lib/paraglide/messages';
 
 export const load: PageServerLoad = async ({ url, locals }) => {
   const [a, b] = [url.searchParams.get('a'), url.searchParams.get('b')];

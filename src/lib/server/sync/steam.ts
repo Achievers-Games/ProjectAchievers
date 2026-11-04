@@ -1,8 +1,8 @@
-import { baseLocale, type Locale } from '$lib/paraglide/runtime';
+import { baseLocale, type Locale } from '#lib/paraglide/runtime';
 import { applyAccountLook, identityLook } from '../accounts';
 import { db } from '../db';
 import { env } from '../env';
-import { logger } from '$lib/logger';
+import { logger } from '#lib/logger';
 import { fetchSteamIdentity } from '../providers/steam';
 
 const log = logger('Steam');

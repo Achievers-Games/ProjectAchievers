@@ -1,4 +1,4 @@
-import { m } from '$lib/paraglide/messages';
+import { m } from '#lib/paraglide/messages';
 
 /** Du plus simple au plus prestigieux. L'identifiant sert aussi de classe visuelle. */
 export const FRAMES = [

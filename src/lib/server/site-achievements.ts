@@ -1,6 +1,6 @@
 import { Prisma, type Platform, type Provider } from '@prisma/client';
-import { m } from '$lib/paraglide/messages';
-import { SEASON, seasonState } from '$lib/season';
+import { m } from '#lib/paraglide/messages';
+import { SEASON, seasonState } from '#lib/season';
 import {
   CLAN_CODES,
   EVENT_CODES,
@@ -16,12 +16,12 @@ import {
   type ClanKey,
   type FriendKey,
   type SiteCode,
-} from '$lib/site-achievements';
-import { getLocale } from '$lib/paraglide/runtime';
+} from '#lib/site-achievements';
+import { getLocale } from '#lib/paraglide/runtime';
 import { localizeAchievements } from './achievement-texts';
 import { checkClanAchievements, clanFacts } from './clan-achievements';
 import { rateLimit } from './rate-limit';
-import { logger } from '$lib/logger';
+import { logger } from '#lib/logger';
 import { db } from './db';
 import {
   GENRE_ICON,

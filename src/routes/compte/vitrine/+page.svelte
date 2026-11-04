@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { m } from '$lib/paraglide/messages';
+  import { m } from '#lib/paraglide/messages';
   import { enhance } from '$app/forms';
   import ChevronDown from '@lucide/svelte/icons/chevron-down';
   import ChevronUp from '@lucide/svelte/icons/chevron-up';
-  import Empty from '$lib/components/Empty.svelte';
-  import GameCard from '$lib/components/GameCard.svelte';
-  import { submitWithToast } from '$lib/forms';
+  import Empty from '#lib/components/Empty.svelte';
+  import GameCard from '#lib/components/GameCard.svelte';
+  import { submitWithToast } from '#lib/forms';
 
   let { data } = $props();
 

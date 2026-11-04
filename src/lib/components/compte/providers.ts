@@ -1,4 +1,4 @@
-import { m } from '$lib/paraglide/messages';
+import { m } from '#lib/paraglide/messages';
 import type { Provider, SyncStatus } from '@prisma/client';
 
 /** Tous les comptes liables, dans l'ordre d'affichage. */

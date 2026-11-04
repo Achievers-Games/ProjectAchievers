@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { TIERS } from '$lib/collection';
-  import { m } from '$lib/paraglide/messages';
-  import Avatar from '$lib/components/Avatar.svelte';
-  import Empty from '$lib/components/Empty.svelte';
-  import Podium from '$lib/components/Podium.svelte';
-  import { formatNumber, tierLabel } from '$lib/labels';
+  import { TIERS } from '#lib/collection';
+  import { m } from '#lib/paraglide/messages';
+  import Avatar from '#lib/components/Avatar.svelte';
+  import Empty from '#lib/components/Empty.svelte';
+  import Podium from '#lib/components/Podium.svelte';
+  import { formatNumber, tierLabel } from '#lib/labels';
 
   let { data } = $props();
 

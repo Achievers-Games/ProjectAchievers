@@ -1,9 +1,9 @@
-import { CLAN_SERIES, GENRES, type ClanCode, type ClanKey } from '$lib/site-achievements';
-import { clanFrameFor, CLAN_FRAMES } from '$lib/frames';
-import { SEASON } from '$lib/season';
-import { m } from '$lib/paraglide/messages';
+import { CLAN_SERIES, GENRES, type ClanCode, type ClanKey } from '#lib/site-achievements';
+import { clanFrameFor, CLAN_FRAMES } from '#lib/frames';
+import { SEASON } from '#lib/season';
+import { m } from '#lib/paraglide/messages';
 import { db } from './db';
-import { logger } from '$lib/logger';
+import { logger } from '#lib/logger';
 import { notify } from './push';
 
 const log = logger('Succès de clan');

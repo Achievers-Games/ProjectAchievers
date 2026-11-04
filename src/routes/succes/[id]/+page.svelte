@@ -1,22 +1,22 @@
 <script lang="ts">
-  import { m } from '$lib/paraglide/messages';
+  import { m } from '#lib/paraglide/messages';
   import { deserialize, enhance } from '$app/forms';
   import { invalidateAll } from '$app/navigation';
-  import type { SubmitFunction } from '@sveltejs/kit';
+  import type { SubmitFunction } from '$app/forms';
   import ChevronDown from '@lucide/svelte/icons/chevron-down';
   import ChevronUp from '@lucide/svelte/icons/chevron-up';
   import Eye from '@lucide/svelte/icons/eye';
   import EyeOff from '@lucide/svelte/icons/eye-off';
   import Flag from '@lucide/svelte/icons/flag';
   import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
-  import AchievementIcon from '$lib/components/AchievementIcon.svelte';
-  import Avatar from '$lib/components/Avatar.svelte';
-  import Empty from '$lib/components/Empty.svelte';
-  import TrophyBadge from '$lib/components/TrophyBadge.svelte';
-  import { formatDate, formatRarity, formatRelative } from '$lib/labels';
-  import { guideChecks } from '$lib/actions/guide-checks';
-  import { submitWithToast } from '$lib/forms';
-  import { toast } from '$lib/stores/toast';
+  import AchievementIcon from '#lib/components/AchievementIcon.svelte';
+  import Avatar from '#lib/components/Avatar.svelte';
+  import Empty from '#lib/components/Empty.svelte';
+  import TrophyBadge from '#lib/components/TrophyBadge.svelte';
+  import { formatDate, formatRarity, formatRelative } from '#lib/labels';
+  import { guideChecks } from '#lib/actions/guide-checks';
+  import { submitWithToast } from '#lib/forms';
+  import { toast } from '#lib/stores/toast';
 
   let { data } = $props();
 
@@ -205,7 +205,7 @@
         <a
           href={data.revealed ? '?' : '?caches=1'}
           rel="nofollow"
-          data-sveltekit-noscroll
+          data-sveltekit-reset="false"
           class="btn mt-2 h-8"
         >
           {#if data.revealed}

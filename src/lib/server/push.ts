@@ -2,11 +2,11 @@ import webpush from 'web-push';
 import type { PushSubscription as Subscription } from '@prisma/client';
 import { db } from './db';
 import { env } from './env';
-import { logger } from '$lib/logger';
+import { logger } from '#lib/logger';
 import { rateLimit } from './rate-limit';
-import { m } from '$lib/paraglide/messages';
-import type { Locale } from '$lib/paraglide/runtime';
-import { SEASON, seasonState, type Season } from '$lib/season';
+import { m } from '#lib/paraglide/messages';
+import type { Locale } from '#lib/paraglide/runtime';
+import { SEASON, seasonState, type Season } from '#lib/season';
 
 const log = logger('Notifications');
 

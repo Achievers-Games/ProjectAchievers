@@ -9,7 +9,7 @@ import {
   type ClanCode,
   type FriendKey,
   type SiteCode,
-} from '$lib/site-achievements';
+} from '#lib/site-achievements';
 
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;

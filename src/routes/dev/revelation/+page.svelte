@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { Reward } from '$lib/collection';
-  import { rewards } from '$lib/stores/sync';
+  import type { Reward } from '#lib/collection';
+  import { rewards } from '#lib/stores/sync';
 
   let { data } = $props();
 

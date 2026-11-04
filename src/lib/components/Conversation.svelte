@@ -1,14 +1,14 @@
 <script lang="ts">
   import { page } from '$app/state';
-  import { displayText } from '$lib/profanity';
-  import { m } from '$lib/paraglide/messages';
+  import { displayText } from '#lib/profanity';
+  import { m } from '#lib/paraglide/messages';
   import { onMount, tick } from 'svelte';
   import Flag from '@lucide/svelte/icons/flag';
   import Avatar from './Avatar.svelte';
-  import type { ChatEvent } from '$lib/server/sync/events';
-  import { sendJson } from '$lib/http';
-  import { incoming, unread } from '$lib/stores/chat';
-  import { toast } from '$lib/stores/toast';
+  import type { ChatEvent } from '#lib/server/sync/events';
+  import { sendJson } from '#lib/http';
+  import { incoming, unread } from '#lib/stores/chat';
+  import { toast } from '#lib/stores/toast';
 
   type Message = ChatEvent['message'];
 

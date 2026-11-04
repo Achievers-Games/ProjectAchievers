@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { displayText } from '$lib/profanity';
-  import { m } from '$lib/paraglide/messages';
-  import Avatar from '$lib/components/Avatar.svelte';
-  import Empty from '$lib/components/Empty.svelte';
-  import SocialNav from '$lib/components/SocialNav.svelte';
-  import { formatRelative } from '$lib/labels';
+  import { displayText } from '#lib/profanity';
+  import { m } from '#lib/paraglide/messages';
+  import Avatar from '#lib/components/Avatar.svelte';
+  import Empty from '#lib/components/Empty.svelte';
+  import SocialNav from '#lib/components/SocialNav.svelte';
+  import { formatRelative } from '#lib/labels';
 
   let { data } = $props();
 </script>

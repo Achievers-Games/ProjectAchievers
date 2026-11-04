@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { logger } from '$lib/logger';
+import { logger } from '#lib/logger';
 import type { RequestHandler } from './$types';
 
 const log = logger('Navigateur');

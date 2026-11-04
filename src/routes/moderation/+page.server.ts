@@ -1,9 +1,9 @@
 import { error, fail } from '@sveltejs/kit';
 import { z } from 'zod';
-import { db } from '$lib/server/db';
-import { psnTokenState } from '$lib/server/service-token';
+import { db } from '#lib/server/db';
+import { psnTokenState } from '#lib/server/service-token';
 import type { Actions, PageServerLoad } from './$types';
-import { m } from '$lib/paraglide/messages';
+import { m } from '#lib/paraglide/messages';
 
 function requireModerator(locals: App.Locals) {
   if (!locals.user || locals.user.role === 'USER') error(404, m.not_found());

@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { m } from '$lib/paraglide/messages';
+  import { m } from '#lib/paraglide/messages';
   import { enhance } from '$app/forms';
-  import Avatar from '$lib/components/Avatar.svelte';
-  import Progress from '$lib/components/Progress.svelte';
-  import SiteBadge from '$lib/components/SiteBadge.svelte';
-  import StepDots from '$lib/components/StepDots.svelte';
-  import { formatDate, formatNumber } from '$lib/labels';
+  import Avatar from '#lib/components/Avatar.svelte';
+  import Progress from '#lib/components/Progress.svelte';
+  import SiteBadge from '#lib/components/SiteBadge.svelte';
+  import StepDots from '#lib/components/StepDots.svelte';
+  import { formatDate, formatNumber } from '#lib/labels';
 
   let { data } = $props();
   const clan = $derived(data.clan);

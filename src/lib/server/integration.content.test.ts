@@ -21,7 +21,7 @@ import { ensureGameTexts, localizeAchievements } from './achievement-texts';
 import { refreshDiscordAccounts } from './sync/discord';
 import { UNKNOWN_ICON } from './site-icons';
 import { notePsnToken, psnTokenState, warnPsnToken } from './service-token';
-import { GENRES, SITE_TOTAL } from '$lib/site-achievements';
+import { GENRES, SITE_TOTAL } from '#lib/site-achievements';
 import { PREFIX, identity, setupIntegration } from './test-helpers';
 
 setupIntegration();

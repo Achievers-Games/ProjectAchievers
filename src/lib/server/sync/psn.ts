@@ -5,8 +5,8 @@ import {
   type TrophyTitle,
 } from 'psn-api';
 import type { TrophyType } from '@prisma/client';
-import { psnConsole } from '$lib/collection';
-import type { Locale } from '$lib/paraglide/runtime';
+import { psnConsole } from '#lib/collection';
+import type { Locale } from '#lib/paraglide/runtime';
 import { db } from '../db';
 import { psnAuthorization } from '../providers/psn';
 import { SyncError, syncGames } from './errors';

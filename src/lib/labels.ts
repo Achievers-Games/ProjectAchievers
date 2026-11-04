@@ -1,7 +1,7 @@
-import { RARITY_STEPS } from '$lib/collection';
+import { RARITY_STEPS } from '#lib/collection';
 import type { Platform, Provider, TrophyType } from '@prisma/client';
-import { m } from '$lib/paraglide/messages';
-import { getLocale, type Locale } from '$lib/paraglide/runtime';
+import { m } from '#lib/paraglide/messages';
+import { getLocale, type Locale } from '#lib/paraglide/runtime';
 
 /** Chaque langue est écrite dans sa propre langue : le visiteur doit pouvoir la retrouver. */
 export const LOCALE_LABELS: Record<Locale, string> = {

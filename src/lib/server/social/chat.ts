@@ -1,5 +1,5 @@
-import { getLocale } from '$lib/paraglide/runtime';
-import { censor } from '$lib/profanity';
+import { getLocale } from '#lib/paraglide/runtime';
+import { censor } from '#lib/profanity';
 import { db } from '../db';
 import { notify } from '../push';
 import { publishChat } from '../sync/events';

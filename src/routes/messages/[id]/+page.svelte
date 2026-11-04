@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { m } from '$lib/paraglide/messages';
+  import { m } from '#lib/paraglide/messages';
   import ChevronLeft from '@lucide/svelte/icons/chevron-left';
-  import Conversation from '$lib/components/Conversation.svelte';
+  import Conversation from '#lib/components/Conversation.svelte';
 
   let { data } = $props();
   const me = $derived(data.user?.id ?? '');

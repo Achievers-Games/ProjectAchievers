@@ -1,7 +1,7 @@
 import { error } from '@sveltejs/kit';
-import { requireLogin } from '$lib/server/auth';
-import { conversationTitle } from '$lib/server/social';
-import { m } from '$lib/paraglide/messages';
+import { requireLogin } from '#lib/server/auth';
+import { conversationTitle } from '#lib/server/social';
+import { m } from '#lib/paraglide/messages';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals, params }) => {

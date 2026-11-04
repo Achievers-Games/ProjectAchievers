@@ -1,14 +1,14 @@
 <script lang="ts">
-  import { m } from '$lib/paraglide/messages';
+  import { m } from '#lib/paraglide/messages';
   import { flip } from 'svelte/animate';
   import { fly } from 'svelte/transition';
   import Avatar from './Avatar.svelte';
   import CardFx from './CardFx.svelte';
   import CompleteBadge from './CompleteBadge.svelte';
-  import { dragScroll } from '$lib/actions/drag-scroll';
-  import { subscribeJson } from '$lib/sse';
-  import type { CardDrop } from '$lib/collection';
-  import { formatRelative } from '$lib/labels';
+  import { dragScroll } from '#lib/actions/drag-scroll';
+  import { subscribeJson } from '#lib/sse';
+  import type { CardDrop } from '#lib/collection';
+  import { formatRelative } from '#lib/labels';
 
   const MAX_DROPS = 12;
 

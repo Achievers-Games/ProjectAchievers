@@ -1,7 +1,7 @@
 <script lang="ts">
-  import SiteBadge from '$lib/components/SiteBadge.svelte';
-  import { m } from '$lib/paraglide/messages';
-  import { dismissAllPops, dismissPop, popQueue } from '$lib/stores/achievement-pop';
+  import SiteBadge from '#lib/components/SiteBadge.svelte';
+  import { m } from '#lib/paraglide/messages';
+  import { dismissAllPops, dismissPop, popQueue } from '#lib/stores/achievement-pop';
 
   const DURATION = 5200;
   const PARTICLES = 16;

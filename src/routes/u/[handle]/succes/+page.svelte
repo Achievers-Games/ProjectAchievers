@@ -1,8 +1,8 @@
 <script lang="ts">
-  import SiteBadge from '$lib/components/SiteBadge.svelte';
-  import StepDots from '$lib/components/StepDots.svelte';
-  import { formatDate, formatNumber } from '$lib/labels';
-  import { m } from '$lib/paraglide/messages';
+  import SiteBadge from '#lib/components/SiteBadge.svelte';
+  import StepDots from '#lib/components/StepDots.svelte';
+  import { formatDate, formatNumber } from '#lib/labels';
+  import { m } from '#lib/paraglide/messages';
 
   let { data } = $props();
   const { player, board } = $derived(data);

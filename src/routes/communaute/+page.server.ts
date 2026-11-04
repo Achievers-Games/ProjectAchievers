@@ -1,6 +1,6 @@
-import { db } from '$lib/server/db';
-import { activityFeed, highlights, leaderboard, type LeaderboardPeriod } from '$lib/server/queries';
-import { clanMateIds, friendIds } from '$lib/server/social';
+import { db } from '#lib/server/db';
+import { activityFeed, highlights, leaderboard, type LeaderboardPeriod } from '#lib/server/queries';
+import { clanMateIds, friendIds } from '#lib/server/social';
 import type { PageServerLoad } from './$types';
 
 const PERIODS: LeaderboardPeriod[] = ['semaine', 'mois', 'tout'];

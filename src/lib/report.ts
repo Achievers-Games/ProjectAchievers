@@ -10,10 +10,18 @@ const MAX_REPORTS = 10;
 const shorten = (value: string, length: number) =>
   value.length > length ? `${value.slice(0, length)}…` : value;
 
+/** SvelteKit 3 remet parfois une erreur d'application (objet `message`) plutôt qu'une `Error`. */
+function textOf(error: unknown): { message: string; stack: string } {
+  if (error instanceof Error) return { message: error.message, stack: error.stack ?? '' };
+  if (error && typeof error === 'object' && 'message' in error) {
+    return { message: String((error as { message: unknown }).message), stack: '' };
+  }
+  return { message: String(error), stack: '' };
+}
+
 export function reportClientError(error: unknown, context: string): void {
   try {
-    const message = error instanceof Error ? error.message : String(error);
-    const stack = error instanceof Error ? (error.stack ?? '') : '';
+    const { message, stack } = textOf(error);
     const key = `${context}\n${message}`;
     if (reported.has(key) || reported.size >= MAX_REPORTS) return;
     reported.add(key);

@@ -1,5 +1,5 @@
 import { Prisma } from '@prisma/client';
-import { m } from '$lib/paraglide/messages';
+import { m } from '#lib/paraglide/messages';
 import { db } from '../db';
 import { notify } from '../push';
 import { publicUser } from '../queries';

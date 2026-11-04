@@ -1,5 +1,7 @@
 import { defineConfig } from 'vite';
 import { sveltekit } from '@sveltejs/kit/vite';
+import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
+import adapter from '@sveltejs/adapter-node';
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
 
 export default defineConfig({
@@ -10,7 +12,33 @@ export default defineConfig({
       strategy: ['cookie', 'preferredLanguage', 'baseLocale'],
       cookieName: 'pa_lang',
     }),
-    sveltekit(),
+    // Depuis SvelteKit 3, la configuration du kit vit ici : `svelte.config.js` n'est plus lu.
+    sveltekit({
+      preprocess: vitePreprocess(),
+      adapter: adapter(),
+      csp: {
+        mode: 'auto',
+        directives: {
+          'default-src': ['self'],
+          'script-src': ['self'],
+          'style-src': ['self', 'unsafe-inline'],
+          'img-src': ['self', 'data:', 'https:'],
+          'media-src': ['https:'],
+          'frame-src': ['https://www.youtube-nocookie.com'],
+          'font-src': ['self'],
+          'connect-src': ['self'],
+          'frame-ancestors': ['none'],
+          'base-uri': ['self'],
+          'form-action': [
+            'self',
+            'https://steamcommunity.com',
+            'https://discord.com',
+            'https://login.microsoftonline.com',
+            'https://accounts.google.com',
+          ],
+        },
+      },
+    }),
   ],
   // Les tests ont leur propre cache : deux serveurs ne doivent jamais en partager un.
   cacheDir: process.env.VITE_CACHE_DIR ?? 'node_modules/.vite',

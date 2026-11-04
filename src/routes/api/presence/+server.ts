@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
-import { onlineHandles } from '$lib/server/presence';
-import { markActive } from '$lib/server/push';
+import { onlineHandles } from '#lib/server/presence';
+import { markActive } from '#lib/server/push';
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = async ({ locals, url }) => {

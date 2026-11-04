@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { m } from '$lib/paraglide/messages';
-  import ProviderIcon from '$lib/components/ProviderIcon.svelte';
-  import { PROVIDER_LABELS } from '$lib/labels';
+  import { m } from '#lib/paraglide/messages';
+  import ProviderIcon from '#lib/components/ProviderIcon.svelte';
+  import { PROVIDER_LABELS } from '#lib/labels';
 
   let { data } = $props();
 

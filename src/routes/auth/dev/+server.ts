@@ -1,8 +1,8 @@
 import { error, redirect } from '@sveltejs/kit';
-import { dev } from '$app/environment';
-import { db } from '$lib/server/db';
-import { env } from '$lib/server/env';
-import { createSession } from '$lib/server/session';
+import { dev } from '$app/env';
+import { db } from '#lib/server/db';
+import { env } from '#lib/server/env';
+import { createSession } from '#lib/server/session';
 import type { RequestHandler } from './$types';
 
 /** Connexion de démonstration. N'existe qu'avec `vite dev` et DEV_LOGIN=1. */

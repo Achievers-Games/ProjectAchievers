@@ -12,7 +12,7 @@ import {
   psnConsole,
   stepOf,
   xboxConsole,
-} from '$lib/collection';
+} from '#lib/collection';
 import { db } from './db';
 import { familyKey, matchFamilies } from './family';
 import { groupLibrary } from './library';

@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { Platform } from '@prisma/client';
-  import { m } from '$lib/paraglide/messages';
-  import ProviderIcon from '$lib/components/ProviderIcon.svelte';
-  import { PLATFORM_LABELS } from '$lib/labels';
+  import { m } from '#lib/paraglide/messages';
+  import ProviderIcon from '#lib/components/ProviderIcon.svelte';
+  import { PLATFORM_LABELS } from '#lib/labels';
 
   let { platforms }: { platforms: Platform[] } = $props();
 </script>

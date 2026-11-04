@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { m } from '$lib/paraglide/messages';
-  import CompleteBadge from '$lib/components/CompleteBadge.svelte';
-  import { TIERS } from '$lib/collection';
-  import { tierRule } from '$lib/labels';
+  import { m } from '#lib/paraglide/messages';
+  import CompleteBadge from '#lib/components/CompleteBadge.svelte';
+  import { TIERS } from '#lib/collection';
+  import { tierRule } from '#lib/labels';
 </script>
 
 <details class="text-sm" data-testid="tier-legend">

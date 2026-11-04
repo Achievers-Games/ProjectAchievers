@@ -1,6 +1,6 @@
 import { db } from './db';
 import { env } from './env';
-import { logger } from '$lib/logger';
+import { logger } from '#lib/logger';
 
 const log = logger('Image de clan');
 

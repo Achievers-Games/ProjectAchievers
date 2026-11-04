@@ -1,7 +1,7 @@
 <script lang="ts">
-  import GameCard from '$lib/components/GameCard.svelte';
-  import { TIERS } from '$lib/collection';
-  import { tierLabel } from '$lib/labels';
+  import GameCard from '#lib/components/GameCard.svelte';
+  import { TIERS } from '#lib/collection';
+  import { tierLabel } from '#lib/labels';
 
   const game = {
     name: 'Hades',

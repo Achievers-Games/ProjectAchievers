@@ -1,17 +1,17 @@
 <script lang="ts">
-  import { m } from '$lib/paraglide/messages';
+  import { m } from '#lib/paraglide/messages';
   import { enhance } from '$app/forms';
-  import PushSettings from '$lib/components/PushSettings.svelte';
-  import DangerZone from '$lib/components/compte/DangerZone.svelte';
-  import FramePicker from '$lib/components/compte/FramePicker.svelte';
-  import LinkedAccounts from '$lib/components/compte/LinkedAccounts.svelte';
-  import Preferences from '$lib/components/compte/Preferences.svelte';
-  import ProfileForm from '$lib/components/compte/ProfileForm.svelte';
-  import SessionList from '$lib/components/compte/SessionList.svelte';
-  import { isClosedError, PRIVACY } from '$lib/components/compte/providers';
-  import { PROVIDER_LABELS } from '$lib/labels';
-  import { syncState } from '$lib/stores/sync';
-  import { submitWithToast } from '$lib/forms';
+  import PushSettings from '#lib/components/PushSettings.svelte';
+  import DangerZone from '#lib/components/compte/DangerZone.svelte';
+  import FramePicker from '#lib/components/compte/FramePicker.svelte';
+  import LinkedAccounts from '#lib/components/compte/LinkedAccounts.svelte';
+  import Preferences from '#lib/components/compte/Preferences.svelte';
+  import ProfileForm from '#lib/components/compte/ProfileForm.svelte';
+  import SessionList from '#lib/components/compte/SessionList.svelte';
+  import { isClosedError, PRIVACY } from '#lib/components/compte/providers';
+  import { PROVIDER_LABELS } from '#lib/labels';
+  import { syncState } from '#lib/stores/sync';
+  import { submitWithToast } from '#lib/forms';
 
   let { data } = $props();
 

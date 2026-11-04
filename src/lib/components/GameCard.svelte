@@ -1,14 +1,14 @@
 <script lang="ts">
-  import { m } from '$lib/paraglide/messages';
+  import { m } from '#lib/paraglide/messages';
   import type { Platform } from '@prisma/client';
   import Flame from '@lucide/svelte/icons/flame';
   import Gamepad2 from '@lucide/svelte/icons/gamepad-2';
   import CardFx from './CardFx.svelte';
   import CompleteBadge from './CompleteBadge.svelte';
   import Progress from './Progress.svelte';
-  import { tilt } from '$lib/actions/tilt';
-  import { editionLabel, formatPercent } from '$lib/labels';
-  import { HOLO_TIER, isComplete, stepOf, type CardProgress, type NextCopy } from '$lib/collection';
+  import { tilt } from '#lib/actions/tilt';
+  import { editionLabel, formatPercent } from '#lib/labels';
+  import { HOLO_TIER, isComplete, stepOf, type CardProgress, type NextCopy } from '#lib/collection';
 
   interface Props {
     game: {

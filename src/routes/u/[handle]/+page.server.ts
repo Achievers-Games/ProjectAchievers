@@ -1,9 +1,9 @@
 import { error } from '@sveltejs/kit';
-import { userProfile } from '$lib/server/queries';
-import { siteAchievementCount } from '$lib/server/site-achievements';
-import { relationWith } from '$lib/server/social';
+import { userProfile } from '#lib/server/queries';
+import { siteAchievementCount } from '#lib/server/site-achievements';
+import { relationWith } from '#lib/server/social';
 import type { PageServerLoad } from './$types';
-import { m } from '$lib/paraglide/messages';
+import { m } from '#lib/paraglide/messages';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
   const profile = await userProfile(params.handle, locals.user?.id ?? null, locals.user?.showAdult);

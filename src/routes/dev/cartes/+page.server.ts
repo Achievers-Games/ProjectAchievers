@@ -1,5 +1,5 @@
 import { error } from '@sveltejs/kit';
-import { dev } from '$app/environment';
+import { dev } from '$app/env';
 import type { PageServerLoad } from './$types';
 
 /** Planche de tous les niveaux et exemplaires. N'existe qu'avec `vite dev`. */

@@ -1,10 +1,10 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { z } from 'zod';
-import { requireLogin } from '$lib/server/auth';
-import { removeClanImage, setClanImage, type ImageFailure } from '$lib/server/clan-image';
-import { db } from '$lib/server/db';
-import { rateLimit } from '$lib/server/rate-limit';
-import { grantSiteAchievement } from '$lib/server/site-achievements';
+import { requireLogin } from '#lib/server/auth';
+import { removeClanImage, setClanImage, type ImageFailure } from '#lib/server/clan-image';
+import { db } from '#lib/server/db';
+import { rateLimit } from '#lib/server/rate-limit';
+import { grantSiteAchievement } from '#lib/server/site-achievements';
 import {
   acceptClanInvite,
   createClan,
@@ -17,10 +17,10 @@ import {
   myClan,
   renameClan,
   type SocialFailure,
-} from '$lib/server/social';
-import { m } from '$lib/paraglide/messages';
-import { getLocale } from '$lib/paraglide/runtime';
-import { isProfane } from '$lib/profanity';
+} from '#lib/server/social';
+import { m } from '#lib/paraglide/messages';
+import { getLocale } from '#lib/paraglide/runtime';
+import { isProfane } from '#lib/profanity';
 import type { Actions, PageServerLoad } from './$types';
 
 const INVITES_PER_HOUR = 30;

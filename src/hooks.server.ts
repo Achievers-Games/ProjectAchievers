@@ -1,17 +1,18 @@
-import type { Handle, RequestEvent, ServerInit } from '@sveltejs/kit';
-import { themeOf } from '$lib/theme';
-import { m } from '$lib/paraglide/messages';
-import { getLocale } from '$lib/paraglide/runtime';
-import { paraglideMiddleware } from '$lib/paraglide/server';
-import { syncCuratedGuides } from '$lib/server/curated-guides';
-import { env } from '$lib/server/env';
-import { grantFramesThrottled } from '$lib/server/frames';
-import { startDigests } from '$lib/server/push-digest';
-import { rateLimit } from '$lib/server/rate-limit';
-import { validateSession } from '$lib/server/session';
-import { logger } from '$lib/logger';
-import { startLiveGames } from '$lib/server/sync/live';
-import { autoRefresh, startWorkers } from '$lib/server/sync/queue';
+import type { Handle, ServerInit } from '@sveltejs/kit/hooks';
+import type { RequestEvent } from '@sveltejs/kit';
+import { themeOf } from '#lib/theme';
+import { m } from '#lib/paraglide/messages';
+import { getLocale } from '#lib/paraglide/runtime';
+import { paraglideMiddleware } from '#lib/paraglide/server';
+import { syncCuratedGuides } from '#lib/server/curated-guides';
+import { env } from '#lib/server/env';
+import { grantFramesThrottled } from '#lib/server/frames';
+import { startDigests } from '#lib/server/push-digest';
+import { rateLimit } from '#lib/server/rate-limit';
+import { validateSession } from '#lib/server/session';
+import { logger } from '#lib/logger';
+import { startLiveGames } from '#lib/server/sync/live';
+import { autoRefresh, startWorkers } from '#lib/server/sync/queue';
 
 const log = logger('Serveur');
 
@@ -89,6 +90,8 @@ const secured: Handle = async ({ event, resolve }) => {
 // Tout le reste s'exécute dans la langue du visiteur, messages d'erreur compris.
 export const handle: Handle = ({ event, resolve }) =>
   paraglideMiddleware(event.request, ({ request }) => {
-    event.request = request;
-    return secured({ event, resolve });
+    // `event.request` n'est plus modifiable : on transmet une copie portant la requête localisée.
+    // Une copie par prototype perdrait tout le reste : le kit recopie lui-même l'événement (`{ ...event }`)
+    // avant de le résoudre, et n'en garderait que les propriétés propres.
+    return secured({ event: { ...event, request }, resolve });
   });

@@ -1,5 +1,5 @@
-import { SEASON, seasonState } from '$lib/season';
-import { listGames, seasonStats } from '$lib/server/queries';
+import { SEASON, seasonState } from '#lib/season';
+import { listGames, seasonStats } from '#lib/server/queries';
 import type { PageServerLoad } from './$types';
 
 const WAITING_GAMES = 4;

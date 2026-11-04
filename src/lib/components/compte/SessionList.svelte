@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { m } from '$lib/paraglide/messages';
+  import { m } from '#lib/paraglide/messages';
   import { enhance } from '$app/forms';
-  import { formatRelative } from '$lib/labels';
-  import { submitWithToast } from '$lib/forms';
+  import { formatRelative } from '#lib/labels';
+  import { submitWithToast } from '#lib/forms';
 
   let {
     sessions,

@@ -1,17 +1,17 @@
 <script lang="ts">
-  import { m } from '$lib/paraglide/messages';
+  import { m } from '#lib/paraglide/messages';
   import { enhance } from '$app/forms';
   import { onMount } from 'svelte';
-  import PushChannels from '$lib/components/PushChannels.svelte';
-  import { submitWithToast } from '$lib/forms';
+  import PushChannels from '#lib/components/PushChannels.svelte';
+  import { submitWithToast } from '#lib/forms';
   import {
     currentSubscription,
     disablePush,
     enablePush,
     pushFailureText,
     pushSupported,
-  } from '$lib/push';
-  import { toast } from '$lib/stores/toast';
+  } from '#lib/push';
+  import { toast } from '#lib/stores/toast';
 
   let {
     publicKey,

@@ -6,10 +6,10 @@ import {
   homeBanners,
   listGames,
   toBanner,
-} from '$lib/server/queries';
-import { unlinkedPlatforms } from '$lib/server/accounts';
-import { db } from '$lib/server/db';
-import { randomTagline } from '$lib/taglines';
+} from '#lib/server/queries';
+import { unlinkedPlatforms } from '#lib/server/accounts';
+import { db } from '#lib/server/db';
+import { randomTagline } from '#lib/taglines';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
