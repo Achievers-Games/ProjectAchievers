@@ -19,3 +19,6 @@ Thumbs.db
 
 # Postgres de développement embarqué
 .pgdata/
+# Client Prisma généré (npm install le recrée) ; seul le tsconfig qui le protège reste suivi.
+prisma/generated/*
+!prisma/generated/tsconfig.json

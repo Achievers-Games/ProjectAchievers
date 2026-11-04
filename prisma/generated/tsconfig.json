@@ -1,0 +1,8 @@
+{
+  // Prisma lit le tsconfig le plus proche du dossier de sortie. Celui-ci coupe la
+  // recherche avant celui de SvelteKit, qui étend `$app/tsconfig` (écrit par `svelte-kit sync`)
+  // et que Prisma ne saurait pas résoudre pendant un `npm ci`.
+  "compilerOptions": {
+    "module": "esnext"
+  }
+}

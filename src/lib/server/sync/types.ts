@@ -1,4 +1,4 @@
-import type { Game, LinkedAccount } from '@prisma/client';
+import type { Game, LinkedAccount } from '#prisma';
 
 export type UnlockedGame = Pick<
   Game,

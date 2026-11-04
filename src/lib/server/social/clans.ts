@@ -1,4 +1,4 @@
-import { Prisma, type PrismaClient } from '@prisma/client';
+import { Prisma, type PrismaClient } from '#prisma';
 import { m } from '#lib/paraglide/messages';
 import { isProfane } from '#lib/profanity';
 import { slugify } from '#lib/slug';

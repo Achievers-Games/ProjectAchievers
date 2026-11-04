@@ -1,4 +1,4 @@
-import type { Platform } from '@prisma/client';
+import type { Platform } from '#prisma';
 import { db } from './db';
 
 /** Mentions commerciales : elles ne changent pas le jeu, seulement son emballage. */

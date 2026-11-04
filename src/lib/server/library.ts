@@ -1,4 +1,4 @@
-import type { Platform } from '@prisma/client';
+import type { Platform } from '#prisma';
 import { copiesFor, copyKey, nextCopy, type NextCopy } from '#lib/collection';
 
 interface LibraryRow {

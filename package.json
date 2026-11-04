@@ -19,7 +19,7 @@
     "test": "node scripts/test-db.mjs && vitest run",
     "test:coverage": "node scripts/test-db.mjs && vitest run --coverage",
     "test:e2e": "node scripts/test-db.mjs && playwright test",
-    "db:migrate": "prisma migrate dev",
+    "db:migrate": "prisma migrate dev && prisma generate",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
     "postinstall": "prisma generate"
@@ -28,12 +28,13 @@
     "@fontsource-variable/inter": "^5.2.0",
     "@fortawesome/free-brands-svg-icons": "^7.3.1",
     "@lucide/svelte": "^1.65.0",
-    "@prisma/client": "^5.22.0",
+    "@prisma/adapter-pg": "^7.10.1",
+    "@prisma/client": "^7.10.1",
     "dotenv": "^18.0.9",
     "marked": "^18.0.0",
     "nodemailer": "^10.3.1",
     "pg-boss": "^12.0.0",
-    "prisma": "^5.22.0",
+    "prisma": "^7.10.1",
     "psn-api": "^2.18.1",
     "sanitize-html": "^2.18.1",
     "simple-icons": "^16.36.0",
@@ -79,6 +80,7 @@
   },
   "imports": {
     "#lib": "./src/lib",
-    "#lib/*": "./src/lib/*"
+    "#lib/*": "./src/lib/*",
+    "#prisma": "./prisma/generated/client/client.ts"
   }
 }

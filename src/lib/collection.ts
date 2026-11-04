@@ -1,4 +1,4 @@
-import type { Platform } from '@prisma/client';
+import type { Platform } from '#prisma';
 
 export interface CardProgress {
   unlockedCount: number;

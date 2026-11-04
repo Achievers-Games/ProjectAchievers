@@ -1,4 +1,4 @@
-import { Prisma, type Platform } from '@prisma/client';
+import { Prisma, type Platform } from '#prisma';
 import { TIERS } from '#lib/collection';
 import type { LibraryCard } from '../library';
 

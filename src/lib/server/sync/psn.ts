@@ -4,7 +4,7 @@ import {
   getUserTrophiesEarnedForTitle,
   type TrophyTitle,
 } from 'psn-api';
-import type { TrophyType } from '@prisma/client';
+import type { TrophyType } from '#prisma';
 import { psnConsole } from '#lib/collection';
 import type { Locale } from '#lib/paraglide/runtime';
 import { db } from '../db';

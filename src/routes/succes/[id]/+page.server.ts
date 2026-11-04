@@ -1,6 +1,6 @@
 import { error, fail } from '@sveltejs/kit';
 import { z } from 'zod';
-import type { ReactionType } from '@prisma/client';
+import type { ReactionType } from '#prisma';
 import { requireLogin } from '#lib/server/auth';
 import { db } from '#lib/server/db';
 import { censor } from '#lib/profanity';

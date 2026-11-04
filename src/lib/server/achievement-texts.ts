@@ -1,4 +1,4 @@
-import type { Platform } from '@prisma/client';
+import type { Platform } from '#prisma';
 import { baseLocale, type Locale } from '#lib/paraglide/runtime';
 import { db } from './db';
 import { rateLimit } from './rate-limit';

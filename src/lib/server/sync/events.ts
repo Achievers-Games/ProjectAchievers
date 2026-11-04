@@ -1,5 +1,5 @@
 import { EventEmitter } from 'node:events';
-import type { Provider, SyncStatus } from '@prisma/client';
+import type { Provider, SyncStatus } from '#prisma';
 import type { CardDrop, Reward } from '#lib/collection';
 import { globals } from '../globals';
 

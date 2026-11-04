@@ -1,4 +1,4 @@
-import { Prisma, type Platform, type Provider } from '@prisma/client';
+import { Prisma, type Platform, type Provider } from '#prisma';
 import { z } from 'zod';
 import { db } from './db';
 import { encrypt } from './crypto';

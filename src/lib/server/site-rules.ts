@@ -1,4 +1,4 @@
-import type { Platform } from '@prisma/client';
+import type { Platform } from '#prisma';
 import {
   FRIEND_SERIES,
   GENRES,

@@ -1,5 +1,5 @@
 import { writable } from 'svelte/store';
-import type { Provider, SyncStatus } from '@prisma/client';
+import type { Provider, SyncStatus } from '#prisma';
 import type { Reward } from '#lib/collection';
 
 export interface SyncProgress {

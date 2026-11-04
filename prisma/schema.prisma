@@ -1,12 +1,15 @@
 generator client {
-  provider      = "prisma-client-js"
-  // Le client se génère sur une machine x86 ; le NAS est en ARM.
-  binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
+  provider     = "prisma-client"
+  output       = "./generated/client"
+  // Le projet est en ESM. Le générateur lit malgré tout le tsconfig le plus proche de
+  // `output` : `prisma/generated/tsconfig.json` coupe court à celui de SvelteKit.
+  moduleFormat = "esm"
 }
 
+// Depuis Prisma 7, l'URL de connexion vit dans `prisma.config.ts` ; le client, lui,
+// passe par le pilote `pg` (`@prisma/adapter-pg`), sans moteur binaire par architecture.
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 enum Provider {

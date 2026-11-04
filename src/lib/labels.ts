@@ -1,5 +1,5 @@
 import { RARITY_STEPS } from '#lib/collection';
-import type { Platform, Provider, TrophyType } from '@prisma/client';
+import type { Platform, Provider, TrophyType } from '#prisma';
 import { m } from '#lib/paraglide/messages';
 import { getLocale, type Locale } from '#lib/paraglide/runtime';
 

@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Prisma } from '#prisma';
 import { db } from '../db';
 import { TIER_POINTS, tierCounts, type TierCounts } from './shared';
 

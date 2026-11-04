@@ -1,6 +1,6 @@
 import { error } from '@sveltejs/kit';
 import { z } from 'zod';
-import type { Platform } from '@prisma/client';
+import type { Platform } from '#prisma';
 import { m } from '#lib/paraglide/messages';
 import { db } from './db';
 import { listGames, PAGE_SIZE, type GameStatus } from './queries';

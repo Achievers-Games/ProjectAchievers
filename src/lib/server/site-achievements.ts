@@ -1,4 +1,4 @@
-import { Prisma, type Platform, type Provider } from '@prisma/client';
+import { Prisma, type Platform, type Provider } from '#prisma';
 import { m } from '#lib/paraglide/messages';
 import { SEASON, seasonState } from '#lib/season';
 import {

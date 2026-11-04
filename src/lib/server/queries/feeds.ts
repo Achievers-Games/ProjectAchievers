@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Prisma } from '#prisma';
 import { copiesFor } from '#lib/collection';
 import { db } from '../db';
 import { publicGames, publicUser } from './shared';

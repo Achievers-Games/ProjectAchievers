@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Prisma } from '#prisma';
 import { m } from '#lib/paraglide/messages';
 import { db } from '../db';
 import { notify } from '../push';

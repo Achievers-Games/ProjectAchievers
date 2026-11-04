@@ -1,5 +1,5 @@
 import type { Cookies } from '@sveltejs/kit';
-import type { Prisma, Provider, Role } from '@prisma/client';
+import type { Prisma, Provider, Role } from '#prisma';
 import { secureCookie } from './cookies';
 import { decrypt, encrypt } from './crypto';
 import { db } from './db';

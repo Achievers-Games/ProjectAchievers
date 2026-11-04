@@ -1,4 +1,4 @@
-import type { Platform } from '@prisma/client';
+import type { Platform } from '#prisma';
 import { db } from './db';
 
 /** Compte fictif des guides officiels : sans compte lié, personne ne peut s'y connecter. */

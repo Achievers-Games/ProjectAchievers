@@ -1,5 +1,5 @@
 import { fail } from '@sveltejs/kit';
-import { FeedbackArea } from '@prisma/client';
+import { FeedbackArea } from '#prisma';
 import { z } from 'zod';
 import { feedbackAreaLabel } from '#lib/feedback';
 import { requireLogin } from '#lib/server/auth';

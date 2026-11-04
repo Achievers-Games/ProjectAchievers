@@ -1,7 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { themeOf } from '#lib/theme';
 import { z } from 'zod';
-import type { Provider } from '@prisma/client';
+import type { Provider } from '#prisma';
 import { profileSchema, resolveIdentity, updateProfile } from '#lib/server/accounts';
 import { requireLogin } from '#lib/server/auth';
 import { secureCookie } from '#lib/server/cookies';

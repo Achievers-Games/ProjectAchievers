@@ -1,4 +1,6 @@
 node_modules
+prisma/generated/*
+!prisma/generated/tsconfig.json
 build
 .svelte-kit
 .git

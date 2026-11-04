@@ -58,8 +58,8 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v4
-      # Pas de QEMU : le Dockerfile compile sur la machine hôte et ne fait qu'installer
-      # des paquets arm64, jamais les exécuter.
+      # Pas de QEMU : le Dockerfile compile sur la machine hôte ; seule l'image finale
+      # est étiquetée arm64, et plus rien n'y dépend de l'architecture depuis Prisma 7.
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         with:

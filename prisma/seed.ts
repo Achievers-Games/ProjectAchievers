@@ -1,8 +1,10 @@
 // Données de démonstration, pour le développement uniquement.
+import 'dotenv/config';
 import { difficultyTier } from '../src/lib/collection';
-import { PrismaClient, type TrophyType } from '@prisma/client';
+import { type TrophyType } from '#prisma';
+import { createPrismaClient } from '../src/lib/server/prisma';
 
-const db = new PrismaClient();
+const db = createPrismaClient();
 
 if (process.env.NODE_ENV === 'production') {
   throw new Error('Le seed de démonstration ne doit pas tourner en production.');

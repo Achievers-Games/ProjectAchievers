@@ -1,4 +1,4 @@
-import type { FeedbackArea, FeedbackKind, FeedbackStatus } from '@prisma/client';
+import type { FeedbackArea, FeedbackKind, FeedbackStatus } from '#prisma';
 import { m } from '#lib/paraglide/messages';
 
 export const feedbackKindLabel = (kind: FeedbackKind) =>

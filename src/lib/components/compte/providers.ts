@@ -1,5 +1,5 @@
 import { m } from '#lib/paraglide/messages';
-import type { Provider, SyncStatus } from '@prisma/client';
+import type { Provider, SyncStatus } from '#prisma';
 
 /** Tous les comptes liables, dans l'ordre d'affichage. */
 export const PROVIDERS: Provider[] = [

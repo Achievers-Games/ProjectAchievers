@@ -1,5 +1,5 @@
 import webpush from 'web-push';
-import type { PushSubscription as Subscription } from '@prisma/client';
+import type { PushSubscription as Subscription } from '#prisma';
 import { db } from './db';
 import { env } from './env';
 import { logger } from '#lib/logger';

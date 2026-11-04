@@ -1,4 +1,4 @@
-import type { Platform, Prisma, TrophyType } from '@prisma/client';
+import type { Platform, Prisma, TrophyType } from '#prisma';
 import { db } from '../db';
 import { familyKey } from '../family';
 import { difficultyTier } from '#lib/collection';

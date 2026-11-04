@@ -14,6 +14,7 @@ export default [
       '.svelte-kit/**',
       'node_modules/**',
       '.pgdata/**',
+      'prisma/generated/**',
     ],
   },
   js.configs.recommended,

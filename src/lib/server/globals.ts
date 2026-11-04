@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client';
+import type { PrismaClient } from '#prisma';
 import type { EventEmitter } from 'node:events';
 import type { PgBoss } from 'pg-boss';
 

@@ -1,5 +1,5 @@
 import { PgBoss } from 'pg-boss';
-import type { Provider } from '@prisma/client';
+import type { Provider } from '#prisma';
 import { db } from '../db';
 import { env } from '../env';
 import { globals } from '../globals';
