@@ -37,7 +37,9 @@
         "local c = count: plural",
         "local n = count: number"
       ],
-      "selectors": ["c"],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=one": "{n} новое достижение на {platform}!",
         "c=few": "{n} новых достижения на {platform}!",
@@ -55,8 +57,14 @@
   "sync_xbox_expired": "Срок авторизации Xbox истёк. Подключи аккаунт заново.",
   "more_cards": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=one": "+ ещё {n} открытие",
         "c=few": "+ ещё {n} открытия",
@@ -67,8 +75,14 @@
   ],
   "count_games": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=one": "{n} игра",
         "c=few": "{n} игры",
@@ -79,8 +93,14 @@
   ],
   "count_achievements": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=one": "{n} достижение",
         "c=few": "{n} достижения",
@@ -91,8 +111,14 @@
   ],
   "count_players": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=one": "{n} игрок",
         "c=few": "{n} игрока",
@@ -103,8 +129,14 @@
   ],
   "count_guides": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=one": "{n} гайд",
         "c=few": "{n} гайда",
@@ -115,8 +147,14 @@
   ],
   "count_comments": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=one": "{n} комментарий",
         "c=few": "{n} комментария",
@@ -127,8 +165,14 @@
   ],
   "count_points": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=one": "{n} очко",
         "c=few": "{n} очка",
@@ -139,8 +183,14 @@
   ],
   "count_sessions_closed": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=one": "Завершена {n} сессия.",
         "c=few": "Завершено {n} сессии.",
@@ -1088,43 +1138,332 @@
   "ach_ideas_loading": "Ищем игры…",
   "ach_ideas_none": "Пока не найдено ни одной игры для этого достижения.",
   "ach_ideas_catalog": "Ни одна из ваших игр не подходит: вот самые популярные на сайте, на ваших платформах.",
-  "ach_ideas_left": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=one":"осталось {n} достижение","c=few":"осталось {n} достижения","c=many":"осталось {n} достижений","c=*":"осталось {n} достижения"}}],
+  "ach_ideas_left": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "осталось {n} достижение",
+        "c=few": "осталось {n} достижения",
+        "c=many": "осталось {n} достижений",
+        "c=*": "осталось {n} достижения"
+      }
+    }
+  ],
   "ach_cat_friends": "С друзьями",
   "ach_cat_clan": "Клан",
   "clan_ach_title": "Достижения клана",
   "clan_ach_note": "Клан получает их вместе; участники, состоящие в клане в этот день, получают их тоже.",
   "clan_ach_push_title": "Ваш клан получил достижение",
-  "clan_ach_push_body": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=one":"{n} новое достижение клана — и ваше тоже.","c=few":"{n} новых достижения клана — и ваши тоже.","c=many":"{n} новых достижений клана — и ваши тоже.","c=*":"{n} новых достижения клана — и ваши тоже."}}],
+  "clan_ach_push_body": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "{n} новое достижение клана — и ваше тоже.",
+        "c=few": "{n} новых достижения клана — и ваши тоже.",
+        "c=many": "{n} новых достижений клана — и ваши тоже.",
+        "c=*": "{n} новых достижения клана — и ваши тоже."
+      }
+    }
+  ],
   "ach_duo_title": "Неразлучная парочка",
-  "ach_duo_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=one":"Пройти на 100 % игру, которую прошёл и друг","c=few":"Пройти на 100 % {n} игры, которые прошёл и друг","c=many":"Пройти на 100 % {n} игр, которые прошёл и друг","c=*":"Пройти на 100 % {n} игры, которые прошёл и друг"}}],
+  "ach_duo_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "Пройти на 100 % игру, которую прошёл и друг",
+        "c=few": "Пройти на 100 % {n} игры, которые прошёл и друг",
+        "c=many": "Пройти на 100 % {n} игр, которые прошёл и друг",
+        "c=*": "Пройти на 100 % {n} игры, которые прошёл и друг"
+      }
+    }
+  ],
   "ach_revenge_title": "Реванш",
-  "ach_revenge_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=one":"Пройти на 100 % игру, которую друг прошёл раньше вас","c=few":"Пройти на 100 % {n} игры, которые друг прошёл раньше вас","c=many":"Пройти на 100 % {n} игр, которые друг прошёл раньше вас","c=*":"Пройти на 100 % {n} игры, которые друг прошёл раньше вас"}}],
+  "ach_revenge_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "Пройти на 100 % игру, которую друг прошёл раньше вас",
+        "c=few": "Пройти на 100 % {n} игры, которые друг прошёл раньше вас",
+        "c=many": "Пройти на 100 % {n} игр, которые друг прошёл раньше вас",
+        "c=*": "Пройти на 100 % {n} игры, которые друг прошёл раньше вас"
+      }
+    }
+  ],
   "ach_teammates_title": "Напарники",
-  "ach_teammates_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=one":"Пройти игру в пределах 7 дней от друга, который тоже её прошёл","c=few":"Пройти {n} игры в пределах 7 дней от друга, который тоже их прошёл","c=many":"Пройти {n} игр в пределах 7 дней от друга, который тоже их прошёл","c=*":"Пройти {n} игры в пределах 7 дней от друга, который тоже их прошёл"}}],
+  "ach_teammates_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "Пройти игру в пределах 7 дней от друга, который тоже её прошёл",
+        "c=few": "Пройти {n} игры в пределах 7 дней от друга, который тоже их прошёл",
+        "c=many": "Пройти {n} игр в пределах 7 дней от друга, который тоже их прошёл",
+        "c=*": "Пройти {n} игры в пределах 7 дней от друга, который тоже их прошёл"
+      }
+    }
+  ],
   "ach_synchro_title": "Синхронно",
-  "ach_synchro_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=one":"Получить достижение в той же игре, что и друг, в тот же день","c=few":"Получать достижения в той же игре, что и друг, в тот же день — {n} разных дня","c=many":"Получать достижения в той же игре, что и друг, в тот же день — {n} разных дней","c=*":"Получать достижения в той же игре, что и друг, в тот же день — {n} разных дня"}}],
+  "ach_synchro_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "Получить достижение в той же игре, что и друг, в тот же день",
+        "c=few": "Получать достижения в той же игре, что и друг, в тот же день — {n} разных дня",
+        "c=many": "Получать достижения в той же игре, что и друг, в тот же день — {n} разных дней",
+        "c=*": "Получать достижения в той же игре, что и друг, в тот же день — {n} разных дня"
+      }
+    }
+  ],
   "ach_prescriber_title": "Законодатель моды",
-  "ach_prescriber_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=one":"Друг начинает игру, которую вы уже прошли","c=few":"Друзья начинают {n} игры, которые вы уже прошли","c=many":"Друзья начинают {n} игр, которые вы уже прошли","c=*":"Друзья начинают {n} игры, которые вы уже прошли"}}],
+  "ach_prescriber_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "Друг начинает игру, которую вы уже прошли",
+        "c=few": "Друзья начинают {n} игры, которые вы уже прошли",
+        "c=many": "Друзья начинают {n} игр, которые вы уже прошли",
+        "c=*": "Друзья начинают {n} игры, которые вы уже прошли"
+      }
+    }
+  ],
   "ach_same_taste_title": "Одинаковые вкусы",
-  "ach_same_taste_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=one":"Иметь {n} общую игру с другом","c=few":"Иметь {n} общие игры с другом","c=many":"Иметь {n} общих игр с другом","c=*":"Иметь {n} общие игры с другом"}}],
+  "ach_same_taste_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "Иметь {n} общую игру с другом",
+        "c=few": "Иметь {n} общие игры с другом",
+        "c=many": "Иметь {n} общих игр с другом",
+        "c=*": "Иметь {n} общие игры с другом"
+      }
+    }
+  ],
   "ach_guild_title": "Гильдия",
-  "ach_guild_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=one":"Клан набирает {n} достижение","c=few":"Клан набирает {n} достижения","c=many":"Клан набирает {n} достижений","c=*":"Клан набирает {n} достижения"}}],
+  "ach_guild_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "Клан набирает {n} достижение",
+        "c=few": "Клан набирает {n} достижения",
+        "c=many": "Клан набирает {n} достижений",
+        "c=*": "Клан набирает {n} достижения"
+      }
+    }
+  ],
   "ach_clan_collection_title": "Коллекция клана",
-  "ach_clan_collection_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=one":"Клан проходит на 100 % {n} разную игру","c=few":"Клан проходит на 100 % {n} разные игры","c=many":"Клан проходит на 100 % {n} разных игр","c=*":"Клан проходит на 100 % {n} разные игры"}}],
+  "ach_clan_collection_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "Клан проходит на 100 % {n} разную игру",
+        "c=few": "Клан проходит на 100 % {n} разные игры",
+        "c=many": "Клан проходит на 100 % {n} разных игр",
+        "c=*": "Клан проходит на 100 % {n} разные игры"
+      }
+    }
+  ],
   "ach_clan_range_title": "Широкий спектр",
-  "ach_clan_range_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=one":"Пройденные кланом игры охватывают {n} жанр","c=few":"Пройденные кланом игры охватывают {n} жанра","c=many":"Пройденные кланом игры охватывают {n} жанров","c=*":"Пройденные кланом игры охватывают {n} жанра"}}],
+  "ach_clan_range_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "Пройденные кланом игры охватывают {n} жанр",
+        "c=few": "Пройденные кланом игры охватывают {n} жанра",
+        "c=many": "Пройденные кланом игры охватывают {n} жанров",
+        "c=*": "Пройденные кланом игры охватывают {n} жанра"
+      }
+    }
+  ],
   "ach_raid_title": "Рейд",
-  "ach_raid_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=one":"{n} участник проходит на 100 % одну и ту же игру","c=few":"{n} участника проходят на 100 % одну и ту же игру","c=many":"{n} участников проходят на 100 % одну и ту же игру","c=*":"{n} участника проходят на 100 % одну и ту же игру"}}],
+  "ach_raid_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "{n} участник проходит на 100 % одну и ту же игру",
+        "c=few": "{n} участника проходят на 100 % одну и ту же игру",
+        "c=many": "{n} участников проходят на 100 % одну и ту же игру",
+        "c=*": "{n} участника проходят на 100 % одну и ту же игру"
+      }
+    }
+  ],
   "ach_clan_night_title": "Вечер клана",
-  "ach_clan_night_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=one":"3 участника получают достижение в одной игре в один день","c=few":"3 участника получают достижение в одной игре в один день — {n} раза","c=many":"3 участника получают достижение в одной игре в один день — {n} раз","c=*":"3 участника получают достижение в одной игре в один день — {n} раза"}}],
+  "ach_clan_night_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "3 участника получают достижение в одной игре в один день",
+        "c=few": "3 участника получают достижение в одной игре в один день — {n} раза",
+        "c=many": "3 участника получают достижение в одной игре в один день — {n} раз",
+        "c=*": "3 участника получают достижение в одной игре в один день — {n} раза"
+      }
+    }
+  ],
   "ach_all_in_title": "Все в деле",
-  "ach_all_in_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=one":"Каждый участник получает достижение за одну неделю (минимум 3 участника)","c=few":"Каждый участник получает достижение за одну неделю — {n} недели (минимум 3 участника)","c=many":"Каждый участник получает достижение за одну неделю — {n} недель (минимум 3 участника)","c=*":"Каждый участник получает достижение за одну неделю — {n} недели (минимум 3 участника)"}}],
+  "ach_all_in_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "Каждый участник получает достижение за одну неделю (минимум 3 участника)",
+        "c=few": "Каждый участник получает достижение за одну неделю — {n} недели (минимум 3 участника)",
+        "c=many": "Каждый участник получает достижение за одну неделю — {n} недель (минимум 3 участника)",
+        "c=*": "Каждый участник получает достижение за одну неделю — {n} недели (минимум 3 участника)"
+      }
+    }
+  ],
   "ach_marathon_title": "Марафон",
-  "ach_marathon_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=one":"Клан получает хотя бы одно достижение каждый день — {n} день подряд","c=few":"Клан получает хотя бы одно достижение каждый день — {n} дня подряд","c=many":"Клан получает хотя бы одно достижение каждый день — {n} дней подряд","c=*":"Клан получает хотя бы одно достижение каждый день — {n} дня подряд"}}],
+  "ach_marathon_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "Клан получает хотя бы одно достижение каждый день — {n} день подряд",
+        "c=few": "Клан получает хотя бы одно достижение каждый день — {n} дня подряд",
+        "c=many": "Клан получает хотя бы одно достижение каждый день — {n} дней подряд",
+        "c=*": "Клан получает хотя бы одно достижение каждый день — {n} дня подряд"
+      }
+    }
+  ],
   "ach_together_season_title": "Добьём вместе",
-  "ach_together_season_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=one":"Клан проходит {n} игру за сезон","c=few":"Клан проходит {n} игры за сезон","c=many":"Клан проходит {n} игр за сезон","c=*":"Клан проходит {n} игры за сезон"}}],
+  "ach_together_season_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "Клан проходит {n} игру за сезон",
+        "c=few": "Клан проходит {n} игры за сезон",
+        "c=many": "Клан проходит {n} игр за сезон",
+        "c=*": "Клан проходит {n} игры за сезон"
+      }
+    }
+  ],
   "ach_band_title": "Банда",
-  "ach_band_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=one":"В клане {n} участник","c=few":"В клане {n} участника","c=many":"В клане {n} участников","c=*":"В клане {n} участника"}}],
+  "ach_band_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "В клане {n} участник",
+        "c=few": "В клане {n} участника",
+        "c=many": "В клане {n} участников",
+        "c=*": "В клане {n} участника"
+      }
+    }
+  ],
   "ach_nobody_behind_title": "Никто не отстаёт",
   "ach_nobody_behind_text": "Каждый участник прошёл хотя бы одну игру, любую (минимум 3 участника)",
   "ach_loyal_title": "Верные",
@@ -1163,7 +1502,24 @@
   "missable_hint": "Можно упустить в текущем прохождении: прочитайте руководство заранее.",
   "guide_badge": "Официальное руководство",
   "filter_missable": "Упускаемые",
-  "missables_title": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=one":"{n} достижение можно упустить","c=few":"{n} достижения можно упустить","c=many":"{n} достижений можно упустить","c=*":"{n} достижения можно упустить"}}],
+  "missables_title": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "{n} достижение можно упустить",
+        "c=few": "{n} достижения можно упустить",
+        "c=many": "{n} достижений можно упустить",
+        "c=*": "{n} достижения можно упустить"
+      }
+    }
+  ],
   "missables_text": "Их можно упустить в текущем прохождении. Прочитайте руководства до начала или отфильтруйте их кнопкой «Упускаемые».",
   "missables_done": "Все уже получены: упустить больше нечего.",
   "missables_none": "Упустить нечего",
@@ -1273,8 +1629,14 @@
   "games_tier": "Уровень",
   "count_cards": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=one": "{n} карта",
         "c=few": "{n} карты",
@@ -1375,5 +1737,37 @@
   "season_all_games": "Все мои подходящие игры",
   "season_game_counts": "Эта игра засчитывается в сезоне.",
   "season_game_soon": "Пока не засчитывается: получите достижение до открытия, чтобы игра считалась в сезоне.",
-  "season_game_no": "Не засчитывается в сезоне: её нужно было начать до открытия."
+  "season_game_no": "Не засчитывается в сезоне: её нужно было начать до открытия.",
+  "compare_with_friend": "Сравнить с другом",
+  "compare_quit": "Выйти из сравнения",
+  "compare_summary": "{common} общих · {mine} только мои · {theirs} только у {name}",
+  "compare_filter_common": "Общие",
+  "compare_filter_mine": "Только мои",
+  "compare_filter_theirs": "Только у {name}",
+  "compare_column_mine": "Я",
+  "compare_check_theirs": "Получено игроком {name}",
+  "compare_missing_theirs": "Не получено игроком {name}",
+  "compare_you_dont_own": "У тебя нет этой версии {game}: сравнение достижение за достижением невозможно.",
+  "compare_they_dont_own": "У {name} нет этой версии {game}.",
+  "compare_no_friends": "Ни у кого из твоих друзей нет этой версии. Добавь друзей, чтобы сравнивать.",
+  "friends_full": "Достигнут лимит в {max} друзей. Удали друга, чтобы продолжить.",
+  "friends_count": "{count} / {max} друзей",
+  "friends_full_accept": "Удали друга, чтобы принять эту заявку.",
+  "clan_officer_only": "Только для лидера и офицеров.",
+  "clan_role_owner": "Лидер",
+  "clan_role_officer": "Офицер",
+  "clan_promote": "Назначить офицером",
+  "clan_demote": "Снять с должности",
+  "clan_requests": "Заявки на вступление",
+  "clan_request_join": "Подать заявку",
+  "clan_request_sent": "Заявка отправлена",
+  "clan_request_accept": "Принять",
+  "clan_request_decline": "Отклонить",
+  "clan_request_empty": "Нет ожидающих заявок.",
+  "clan_request_push_title": "Заявка на вступление",
+  "clan_request_push_body": "{name} хочет вступить в {clan}.",
+  "clans_ranking_rules": "Сумма очков коллекции участников.",
+  "clans_points": "Очки",
+  "notification_clan_request": "Заявка в клан",
+  "notification_clan_rename": "Название клана удалено"
 }

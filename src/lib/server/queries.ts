@@ -7,5 +7,6 @@ export * from './queries/library';
 export * from './queries/stats';
 export * from './queries/feeds';
 export * from './queries/profile';
+export * from './queries/compare';
 export * from './queries/leaderboard';
 export * from './queries/banners';

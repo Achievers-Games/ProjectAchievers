@@ -17,6 +17,8 @@ test.describe('mobile', () => {
       '/messages',
       '/amis',
       '/clan',
+      '/clans',
+      '/jeux/hades?avec=lea',
     ]) {
       await page.goto(path);
       await expect(page.getByRole('navigation', { name: 'Navigation mobile' })).toBeVisible();

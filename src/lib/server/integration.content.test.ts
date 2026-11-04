@@ -682,7 +682,10 @@ describe('succès du site', () => {
         name: unique('clan'),
         slug: unique('clan'),
         members: {
-          create: [a!, b!, c!].map((user, index) => ({ userId: user.id, owner: index === 0 })),
+          create: [a!, b!, c!].map((user, index) => ({
+            userId: user.id,
+            role: index === 0 ? 'OWNER' : 'MEMBER',
+          })),
         },
       },
     });

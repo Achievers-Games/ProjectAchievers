@@ -37,7 +37,9 @@
         "local c = count: plural",
         "local n = count: number"
       ],
-      "selectors": ["c"],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=one": "{n} new achievement on {platform}!",
         "c=*": "{n} new achievements on {platform}!"
@@ -53,8 +55,14 @@
   "sync_xbox_expired": "Your Xbox authorization has expired. Reconnect your account.",
   "more_cards": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=one": "+ {n} more unlock",
         "c=*": "+ {n} more unlocks"
@@ -63,8 +71,14 @@
   ],
   "count_games": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=one": "{n} game",
         "c=*": "{n} games"
@@ -73,8 +87,14 @@
   ],
   "count_achievements": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=one": "{n} achievement",
         "c=*": "{n} achievements"
@@ -83,8 +103,14 @@
   ],
   "count_players": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=one": "{n} player",
         "c=*": "{n} players"
@@ -93,8 +119,14 @@
   ],
   "count_guides": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=one": "{n} guide",
         "c=*": "{n} guides"
@@ -103,8 +135,14 @@
   ],
   "count_comments": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=one": "{n} comment",
         "c=*": "{n} comments"
@@ -113,8 +151,14 @@
   ],
   "count_points": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=one": "{n} point",
         "c=*": "{n} points"
@@ -123,8 +167,14 @@
   ],
   "count_sessions_closed": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=one": "{n} session signed out.",
         "c=*": "{n} sessions signed out."
@@ -1053,9 +1103,18 @@
   "sort_tier": "Card rarity",
   "ach_pop_more": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
-      "match": { "c=one": "+ {n} more behind", "c=*": "+ {n} more behind" }
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "+ {n} more behind",
+        "c=*": "+ {n} more behind"
+      }
     }
   ],
   "ach_pop_next": "Show the next one",
@@ -1076,43 +1135,291 @@
   "ach_ideas_loading": "Looking for games…",
   "ach_ideas_none": "No game found for this achievement yet.",
   "ach_ideas_catalog": "None of your games count: here are the most played on the site, on your platforms.",
-  "ach_ideas_left": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=one":"{n} achievement left","c=*":"{n} achievements left"}}],
+  "ach_ideas_left": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "{n} achievement left",
+        "c=*": "{n} achievements left"
+      }
+    }
+  ],
   "ach_cat_friends": "With friends",
   "ach_cat_clan": "Clan",
   "clan_ach_title": "Clan achievements",
   "clan_ach_note": "The clan earns them together; members present that day get them too.",
   "clan_ach_push_title": "Your clan earned an achievement",
-  "clan_ach_push_body": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=one":"{n} new clan achievement, yours too.","c=*":"{n} new clan achievements, yours too."}}],
+  "clan_ach_push_body": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "{n} new clan achievement, yours too.",
+        "c=*": "{n} new clan achievements, yours too."
+      }
+    }
+  ],
   "ach_duo_title": "Dynamic duo",
-  "ach_duo_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=one":"Fully complete a game a friend also completed","c=*":"Fully complete {n} games a friend also completed"}}],
+  "ach_duo_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "Fully complete a game a friend also completed",
+        "c=*": "Fully complete {n} games a friend also completed"
+      }
+    }
+  ],
   "ach_revenge_title": "Payback",
-  "ach_revenge_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=one":"Fully complete a game a friend finished before you","c=*":"Fully complete {n} games a friend finished before you"}}],
+  "ach_revenge_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "Fully complete a game a friend finished before you",
+        "c=*": "Fully complete {n} games a friend finished before you"
+      }
+    }
+  ],
   "ach_teammates_title": "Teammates",
-  "ach_teammates_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=one":"Complete a game within 7 days of a friend completing it","c=*":"Complete {n} games within 7 days of a friend completing them"}}],
+  "ach_teammates_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "Complete a game within 7 days of a friend completing it",
+        "c=*": "Complete {n} games within 7 days of a friend completing them"
+      }
+    }
+  ],
   "ach_synchro_title": "In sync",
-  "ach_synchro_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=one":"Unlock an achievement in the same game as a friend on the same day","c=*":"Unlock achievements in the same game as a friend on the same day, on {n} different days"}}],
+  "ach_synchro_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "Unlock an achievement in the same game as a friend on the same day",
+        "c=*": "Unlock achievements in the same game as a friend on the same day, on {n} different days"
+      }
+    }
+  ],
   "ach_prescriber_title": "Trendsetter",
-  "ach_prescriber_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=one":"A friend starts a game you already completed","c=*":"Friends start {n} games you already completed"}}],
+  "ach_prescriber_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "A friend starts a game you already completed",
+        "c=*": "Friends start {n} games you already completed"
+      }
+    }
+  ],
   "ach_same_taste_title": "Same taste",
-  "ach_same_taste_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=one":"Share {n} game with a friend","c=*":"Share {n} games with a friend"}}],
+  "ach_same_taste_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "Share {n} game with a friend",
+        "c=*": "Share {n} games with a friend"
+      }
+    }
+  ],
   "ach_guild_title": "Guild",
-  "ach_guild_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"The clan totals {n} achievements"}}],
+  "ach_guild_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "The clan totals {n} achievements"
+      }
+    }
+  ],
   "ach_clan_collection_title": "Clan collection",
-  "ach_clan_collection_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"The clan fully completes {n} different games"}}],
+  "ach_clan_collection_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "The clan fully completes {n} different games"
+      }
+    }
+  ],
   "ach_clan_range_title": "Full spectrum",
-  "ach_clan_range_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"The clan's completed games cover {n} genres"}}],
+  "ach_clan_range_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "The clan's completed games cover {n} genres"
+      }
+    }
+  ],
   "ach_raid_title": "Raid",
-  "ach_raid_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"{n} members fully complete the same game"}}],
+  "ach_raid_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "{n} members fully complete the same game"
+      }
+    }
+  ],
   "ach_clan_night_title": "Clan night",
-  "ach_clan_night_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=one":"3 members unlock an achievement in the same game on the same day","c=*":"3 members unlock an achievement in the same game on the same day, {n} times"}}],
+  "ach_clan_night_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "3 members unlock an achievement in the same game on the same day",
+        "c=*": "3 members unlock an achievement in the same game on the same day, {n} times"
+      }
+    }
+  ],
   "ach_all_in_title": "All hands on deck",
-  "ach_all_in_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=one":"Every member unlocks an achievement in the same week (3 members minimum)","c=*":"Every member unlocks an achievement in the same week, {n} weeks (3 members minimum)"}}],
+  "ach_all_in_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "Every member unlocks an achievement in the same week (3 members minimum)",
+        "c=*": "Every member unlocks an achievement in the same week, {n} weeks (3 members minimum)"
+      }
+    }
+  ],
   "ach_marathon_title": "Marathon",
-  "ach_marathon_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"The clan unlocks at least one achievement every day, {n} days in a row"}}],
+  "ach_marathon_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "The clan unlocks at least one achievement every day, {n} days in a row"
+      }
+    }
+  ],
   "ach_together_season_title": "Finish them together",
-  "ach_together_season_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"The clan completes {n} games during a season"}}],
+  "ach_together_season_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "The clan completes {n} games during a season"
+      }
+    }
+  ],
   "ach_band_title": "The crew",
-  "ach_band_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"The clan has {n} members"}}],
+  "ach_band_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "The clan has {n} members"
+      }
+    }
+  ],
   "ach_nobody_behind_title": "Nobody left behind",
   "ach_nobody_behind_text": "Every member has completed at least one game, any game (3 members minimum)",
   "ach_loyal_title": "Loyal",
@@ -1151,7 +1458,22 @@
   "missable_hint": "Can be lost for the current playthrough: read its guide before moving on.",
   "guide_badge": "Official guide",
   "filter_missable": "Missable",
-  "missables_title": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=one":"{n} missable achievement","c=*":"{n} missable achievements"}}],
+  "missables_title": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "{n} missable achievement",
+        "c=*": "{n} missable achievements"
+      }
+    }
+  ],
   "missables_text": "They can be lost for the current playthrough. Read their guides before you start, or filter them with “Missable”.",
   "missables_done": "You have them all: nothing can slip away now.",
   "missables_none": "No missable achievements",
@@ -1261,8 +1583,14 @@
   "games_tier": "Tier",
   "count_cards": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=one": "{n} card",
         "c=*": "{n} cards"
@@ -1361,5 +1689,37 @@
   "season_all_games": "All my eligible games",
   "season_game_counts": "This game counts for the season.",
   "season_game_soon": "Does not count yet: earn an achievement before the opening for it to count for the season.",
-  "season_game_no": "Does not count for the season: it had to be started before it opened."
+  "season_game_no": "Does not count for the season: it had to be started before it opened.",
+  "compare_with_friend": "Compare with a friend",
+  "compare_quit": "Leave the comparison",
+  "compare_summary": "{common} in common · {mine} only mine · {theirs} only {name}",
+  "compare_filter_common": "In common",
+  "compare_filter_mine": "Only mine",
+  "compare_filter_theirs": "Only {name}",
+  "compare_column_mine": "Me",
+  "compare_check_theirs": "Unlocked by {name}",
+  "compare_missing_theirs": "Not unlocked by {name}",
+  "compare_you_dont_own": "You don't own this version of {game}: achievement-by-achievement comparison isn't possible.",
+  "compare_they_dont_own": "{name} doesn't own this version of {game}.",
+  "compare_no_friends": "None of your friends owns this version. Add friends to compare.",
+  "friends_full": "The {max}-friend limit is reached. Remove a friend to continue.",
+  "friends_count": "{count} / {max} friends",
+  "friends_full_accept": "Remove a friend to accept this request.",
+  "clan_officer_only": "Reserved for the owner and officers.",
+  "clan_role_owner": "Owner",
+  "clan_role_officer": "Officer",
+  "clan_promote": "Make officer",
+  "clan_demote": "Demote",
+  "clan_requests": "Join requests",
+  "clan_request_join": "Request to join",
+  "clan_request_sent": "Request sent",
+  "clan_request_accept": "Accept",
+  "clan_request_decline": "Decline",
+  "clan_request_empty": "No pending requests.",
+  "clan_request_push_title": "Join request",
+  "clan_request_push_body": "{name} wants to join {clan}.",
+  "clans_ranking_rules": "The total collection points of the clan's members.",
+  "clans_points": "Points",
+  "notification_clan_request": "Clan request",
+  "notification_clan_rename": "Clan name removed"
 }

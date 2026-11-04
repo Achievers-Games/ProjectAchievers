@@ -37,7 +37,9 @@
         "local c = count: plural",
         "local n = count: number"
       ],
-      "selectors": ["c"],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=one": "¡{n} logro nuevo en {platform}!",
         "c=*": "¡{n} logros nuevos en {platform}!"
@@ -53,8 +55,14 @@
   "sync_xbox_expired": "Tu autorización de Xbox ha caducado. Vuelve a conectar tu cuenta.",
   "more_cards": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=one": "+ {n} desbloqueo más",
         "c=*": "+ {n} desbloqueos más"
@@ -63,8 +71,14 @@
   ],
   "count_games": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=one": "{n} juego",
         "c=*": "{n} juegos"
@@ -73,8 +87,14 @@
   ],
   "count_achievements": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=one": "{n} logro",
         "c=*": "{n} logros"
@@ -83,8 +103,14 @@
   ],
   "count_players": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=one": "{n} jugador",
         "c=*": "{n} jugadores"
@@ -93,8 +119,14 @@
   ],
   "count_guides": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=one": "{n} guía",
         "c=*": "{n} guías"
@@ -103,8 +135,14 @@
   ],
   "count_comments": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=one": "{n} comentario",
         "c=*": "{n} comentarios"
@@ -113,8 +151,14 @@
   ],
   "count_points": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=one": "{n} punto",
         "c=*": "{n} puntos"
@@ -123,8 +167,14 @@
   ],
   "count_sessions_closed": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=one": "{n} sesión cerrada.",
         "c=*": "{n} sesiones cerradas."
@@ -1053,9 +1103,18 @@
   "sort_tier": "Rareza de la carta",
   "ach_pop_more": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
-      "match": { "c=one": "+ {n} más detrás", "c=*": "+ {n} más detrás" }
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "+ {n} más detrás",
+        "c=*": "+ {n} más detrás"
+      }
     }
   ],
   "ach_pop_next": "Ver el siguiente",
@@ -1076,43 +1135,291 @@
   "ach_ideas_loading": "Buscando juegos…",
   "ach_ideas_none": "Todavía no hay ningún juego para este logro.",
   "ach_ideas_catalog": "Ninguno de tus juegos cuenta: aquí tienes los más jugados del sitio, en tus plataformas.",
-  "ach_ideas_left": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=one":"{n} logro restante","c=*":"{n} logros restantes"}}],
+  "ach_ideas_left": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "{n} logro restante",
+        "c=*": "{n} logros restantes"
+      }
+    }
+  ],
   "ach_cat_friends": "Entre amigos",
   "ach_cat_clan": "Clan",
   "clan_ach_title": "Logros del clan",
   "clan_ach_note": "El clan los gana en conjunto; los miembros presentes ese día también los reciben.",
   "clan_ach_push_title": "Tu clan ganó un logro",
-  "clan_ach_push_body": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=one":"{n} nuevo logro de clan, también para ti.","c=*":"{n} nuevos logros de clan, también para ti."}}],
+  "clan_ach_push_body": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "{n} nuevo logro de clan, también para ti.",
+        "c=*": "{n} nuevos logros de clan, también para ti."
+      }
+    }
+  ],
   "ach_duo_title": "Dúo dinámico",
-  "ach_duo_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=one":"Completar al 100 % un juego que un amigo también completó","c=*":"Completar al 100 % {n} juegos que un amigo también completó"}}],
+  "ach_duo_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "Completar al 100 % un juego que un amigo también completó",
+        "c=*": "Completar al 100 % {n} juegos que un amigo también completó"
+      }
+    }
+  ],
   "ach_revenge_title": "Revancha",
-  "ach_revenge_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=one":"Completar al 100 % un juego que un amigo terminó antes que tú","c=*":"Completar al 100 % {n} juegos que un amigo terminó antes que tú"}}],
+  "ach_revenge_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "Completar al 100 % un juego que un amigo terminó antes que tú",
+        "c=*": "Completar al 100 % {n} juegos que un amigo terminó antes que tú"
+      }
+    }
+  ],
   "ach_teammates_title": "Compañeros de equipo",
-  "ach_teammates_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=one":"Completar un juego a menos de 7 días de un amigo que también lo completa","c=*":"Completar {n} juegos a menos de 7 días de un amigo que también los completa"}}],
+  "ach_teammates_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "Completar un juego a menos de 7 días de un amigo que también lo completa",
+        "c=*": "Completar {n} juegos a menos de 7 días de un amigo que también los completa"
+      }
+    }
+  ],
   "ach_synchro_title": "Sincronizados",
-  "ach_synchro_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=one":"Desbloquear un logro en el mismo juego que un amigo, el mismo día","c=*":"Desbloquear logros en el mismo juego que un amigo, el mismo día, en {n} días distintos"}}],
+  "ach_synchro_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "Desbloquear un logro en el mismo juego que un amigo, el mismo día",
+        "c=*": "Desbloquear logros en el mismo juego que un amigo, el mismo día, en {n} días distintos"
+      }
+    }
+  ],
   "ach_prescriber_title": "Prescriptor",
-  "ach_prescriber_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=one":"Un amigo empieza un juego que ya completaste","c=*":"Tus amigos empiezan {n} juegos que ya completaste"}}],
+  "ach_prescriber_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "Un amigo empieza un juego que ya completaste",
+        "c=*": "Tus amigos empiezan {n} juegos que ya completaste"
+      }
+    }
+  ],
   "ach_same_taste_title": "Mismos gustos",
-  "ach_same_taste_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=one":"Tener {n} juego en común con un amigo","c=*":"Tener {n} juegos en común con un amigo"}}],
+  "ach_same_taste_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "Tener {n} juego en común con un amigo",
+        "c=*": "Tener {n} juegos en común con un amigo"
+      }
+    }
+  ],
   "ach_guild_title": "Gremio",
-  "ach_guild_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"El clan acumula {n} logros"}}],
+  "ach_guild_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "El clan acumula {n} logros"
+      }
+    }
+  ],
   "ach_clan_collection_title": "Colección del clan",
-  "ach_clan_collection_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"El clan completa al 100 % {n} juegos distintos"}}],
+  "ach_clan_collection_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "El clan completa al 100 % {n} juegos distintos"
+      }
+    }
+  ],
   "ach_clan_range_title": "Abanico",
-  "ach_clan_range_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"Los juegos completados por el clan cubren {n} géneros"}}],
+  "ach_clan_range_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "Los juegos completados por el clan cubren {n} géneros"
+      }
+    }
+  ],
   "ach_raid_title": "Incursión",
-  "ach_raid_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"{n} miembros completan al 100 % el mismo juego"}}],
+  "ach_raid_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "{n} miembros completan al 100 % el mismo juego"
+      }
+    }
+  ],
   "ach_clan_night_title": "Noche de clan",
-  "ach_clan_night_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=one":"3 miembros desbloquean un logro en el mismo juego el mismo día","c=*":"3 miembros desbloquean un logro en el mismo juego el mismo día, {n} veces"}}],
+  "ach_clan_night_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "3 miembros desbloquean un logro en el mismo juego el mismo día",
+        "c=*": "3 miembros desbloquean un logro en el mismo juego el mismo día, {n} veces"
+      }
+    }
+  ],
   "ach_all_in_title": "Todos a una",
-  "ach_all_in_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=one":"Cada miembro desbloquea un logro en la misma semana (mínimo 3 miembros)","c=*":"Cada miembro desbloquea un logro en la misma semana, {n} semanas (mínimo 3 miembros)"}}],
+  "ach_all_in_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "Cada miembro desbloquea un logro en la misma semana (mínimo 3 miembros)",
+        "c=*": "Cada miembro desbloquea un logro en la misma semana, {n} semanas (mínimo 3 miembros)"
+      }
+    }
+  ],
   "ach_marathon_title": "Maratón",
-  "ach_marathon_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"El clan desbloquea al menos un logro cada día, {n} días seguidos"}}],
+  "ach_marathon_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "El clan desbloquea al menos un logro cada día, {n} días seguidos"
+      }
+    }
+  ],
   "ach_together_season_title": "Acabadlos juntos",
-  "ach_together_season_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"El clan completa {n} juegos durante una temporada"}}],
+  "ach_together_season_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "El clan completa {n} juegos durante una temporada"
+      }
+    }
+  ],
   "ach_band_title": "La pandilla",
-  "ach_band_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"El clan tiene {n} miembros"}}],
+  "ach_band_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "El clan tiene {n} miembros"
+      }
+    }
+  ],
   "ach_nobody_behind_title": "Nadie se queda atrás",
   "ach_nobody_behind_text": "Cada miembro ha completado al menos un juego, el que sea (mínimo 3 miembros)",
   "ach_loyal_title": "Fieles",
@@ -1151,7 +1458,22 @@
   "missable_hint": "Se puede perder en la partida actual: lee su guía antes de avanzar.",
   "guide_badge": "Guía oficial",
   "filter_missable": "Perdibles",
-  "missables_title": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=one":"{n} logro perdible","c=*":"{n} logros perdibles"}}],
+  "missables_title": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "{n} logro perdible",
+        "c=*": "{n} logros perdibles"
+      }
+    }
+  ],
   "missables_text": "Se pueden perder en la partida actual. Lee sus guías antes de empezar o fíltralos con «Perdibles».",
   "missables_done": "Ya los tienes todos: nada se te puede escapar.",
   "missables_none": "Ningún logro perdible",
@@ -1261,8 +1583,14 @@
   "games_tier": "Nivel",
   "count_cards": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=one": "{n} carta",
         "c=*": "{n} cartas"
@@ -1361,5 +1689,37 @@
   "season_all_games": "Todos mis juegos elegibles",
   "season_game_counts": "Este juego cuenta para la temporada.",
   "season_game_soon": "Aún no cuenta: consigue un logro antes de la apertura para que cuente en la temporada.",
-  "season_game_no": "No cuenta para la temporada: debía empezarse antes de su apertura."
+  "season_game_no": "No cuenta para la temporada: debía empezarse antes de su apertura.",
+  "compare_with_friend": "Comparar con un amigo",
+  "compare_quit": "Salir de la comparación",
+  "compare_summary": "{common} en común · {mine} solo míos · {theirs} solo de {name}",
+  "compare_filter_common": "En común",
+  "compare_filter_mine": "Solo míos",
+  "compare_filter_theirs": "Solo de {name}",
+  "compare_column_mine": "Yo",
+  "compare_check_theirs": "Obtenido por {name}",
+  "compare_missing_theirs": "No obtenido por {name}",
+  "compare_you_dont_own": "No tienes esta versión de {game}: no es posible comparar logro por logro.",
+  "compare_they_dont_own": "{name} no tiene esta versión de {game}.",
+  "compare_no_friends": "Ninguno de tus amigos tiene esta versión. Añade amigos para comparar.",
+  "friends_full": "Has alcanzado el límite de {max} amigos. Elimina un amigo para continuar.",
+  "friends_count": "{count} / {max} amigos",
+  "friends_full_accept": "Elimina un amigo para aceptar esta solicitud.",
+  "clan_officer_only": "Reservado al líder y a los oficiales.",
+  "clan_role_owner": "Líder",
+  "clan_role_officer": "Oficial",
+  "clan_promote": "Nombrar oficial",
+  "clan_demote": "Degradar",
+  "clan_requests": "Solicitudes de ingreso",
+  "clan_request_join": "Solicitar unirse",
+  "clan_request_sent": "Solicitud enviada",
+  "clan_request_accept": "Aceptar",
+  "clan_request_decline": "Rechazar",
+  "clan_request_empty": "No hay solicitudes pendientes.",
+  "clan_request_push_title": "Solicitud de ingreso",
+  "clan_request_push_body": "{name} quiere unirse a {clan}.",
+  "clans_ranking_rules": "La suma de los puntos de colección de los miembros.",
+  "clans_points": "Puntos",
+  "notification_clan_request": "Solicitud de clan",
+  "notification_clan_rename": "Nombre de clan retirado"
 }

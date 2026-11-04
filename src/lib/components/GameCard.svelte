@@ -30,6 +30,8 @@
     seasonEligible?: boolean;
     /** Vitrine et révélation : l'animation tourne sans attendre le survol. */
     live?: boolean;
+    /** Lien vers la fiche, quand il faut y ajouter la comparaison (`?avec=`). */
+    href?: string;
   }
 
   let {
@@ -43,6 +45,7 @@
     next = null,
     seasonEligible = false,
     live = false,
+    href,
   }: Props = $props();
   const list = $derived(layout === 'liste');
   const complete = $derived(isComplete(progress));
@@ -69,7 +72,7 @@
 </script>
 
 <a
-  href="/jeux/{game.slug}"
+  href={href ?? `/jeux/${game.slug}`}
   use:tilt
   data-complete={complete || undefined}
   data-tier={complete ? level : undefined}

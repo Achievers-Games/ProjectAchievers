@@ -1529,6 +1529,21 @@
   color: rgb(var(--surface));
   background: rgb(var(--success));
 }
+/* Comparaison : la marque de gauche est la mienne, celle de droite celle de l'autre. */
+.compare-mark {
+  @apply grid h-4 w-4 place-items-center rounded-full border;
+  border-color: rgb(var(--line));
+  color: rgb(var(--muted));
+}
+.compare-mark[data-state='yes'] {
+  border-color: transparent;
+  color: rgb(var(--success));
+  background: rgb(var(--success) / 0.15);
+}
+/* Un succès masqué garde un tiret pâle : on ne sait pas encore ce que l'autre a fait. */
+.compare-mark[data-state='masked'] {
+  opacity: 0.45;
+}
 /* Décale chaque carte dans ses boucles, sans changer leur durée. */
 .game-card,
 .game-card::before,

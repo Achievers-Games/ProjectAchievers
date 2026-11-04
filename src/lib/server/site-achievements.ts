@@ -328,7 +328,7 @@ async function loadFacts(userId: string, earned: Set<string>): Promise<SiteFacts
       timeZone: true,
       frame: true,
       showcaseCustom: true,
-      clanMember: { select: { clanId: true, owner: true } },
+      clanMember: { select: { clanId: true, role: true } },
       accounts: { select: { provider: true } },
     },
   });
@@ -473,7 +473,7 @@ async function loadFacts(userId: string, earned: Set<string>): Promise<SiteFacts
     push: pushes > 0,
     friends: friends.length,
     friendIds: friends,
-    clan: clan && { owner: clan.owner, size: clanSize },
+    clan: clan && { owner: clan.role === 'OWNER', size: clanSize },
     clanId: clan?.clanId ?? null,
     messages,
     comments: comments.length,

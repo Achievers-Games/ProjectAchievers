@@ -54,6 +54,13 @@ enum Role {
   ADMIN
 }
 
+/// Ce que peut faire un membre dans son clan : le chef seul renomme et nomme les officiers.
+enum ClanRole {
+  OWNER
+  OFFICER
+  MEMBER
+}
+
 enum ContentStatus {
   PUBLISHED
   HIDDEN
@@ -145,6 +152,7 @@ model User {
   blockedBy      Block[]              @relation("Blocked")
   clanMember     ClanMember?
   clanInvites    ClanInvite[]
+  clanRequests   ClanRequest[]
   conversations  ConversationMember[]
   messages       Message[]
 
@@ -238,6 +246,7 @@ model Clan {
 
   members      ClanMember[]
   invites      ClanInvite[]
+  requests     ClanRequest[]
   unlocks      ClanUnlock[]
   conversation Conversation?
 }
@@ -258,13 +267,25 @@ model ClanMember {
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   clanId   String
   clan     Clan     @relation(fields: [clanId], references: [id], onDelete: Cascade)
-  owner    Boolean  @default(false)
+  role     ClanRole @default(MEMBER)
   joinedAt DateTime @default(now())
 
   @@index([clanId])
 }
 
 model ClanInvite {
+  clanId    String
+  clan      Clan     @relation(fields: [clanId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([clanId, userId])
+  @@index([userId])
+}
+
+/// Une demande d'adhésion : elle ne demande pas d'être ami avec le chef.
+model ClanRequest {
   clanId    String
   clan      Clan     @relation(fields: [clanId], references: [id], onDelete: Cascade)
   userId    String

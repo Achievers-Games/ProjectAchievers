@@ -2,7 +2,9 @@ import { error, fail } from '@sveltejs/kit';
 import { copiesFor, copyKey, nextCopy } from '#lib/collection';
 import { db } from '#lib/server/db';
 import { ensureGameTexts, localizeAchievements } from '#lib/server/achievement-texts';
-import { seasonStartedGames, visibleGames } from '#lib/server/queries';
+import { compareGame, seasonStartedGames, visibleGames } from '#lib/server/queries';
+import { friendList } from '#lib/server/social';
+import { compareAchievements } from '#lib/compare';
 import { SEASON, seasonState } from '#lib/season';
 import { getLocale } from '#lib/paraglide/runtime';
 import type { Actions, PageServerLoad } from './$types';
@@ -41,7 +43,9 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
     error(404, m.game_not_found());
   }
 
-  const [progress, unlocks, players, others] = await Promise.all([
+  const withHandle = url.searchParams.get('avec')?.trim() || null;
+
+  const [progress, unlocks, players, others, rival, friends] = await Promise.all([
     locals.user
       ? db.userGame.findUnique({
           where: { userId_gameId: { userId: locals.user.id, gameId: game.id } },
@@ -76,7 +80,27 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
           },
         })
       : [],
+    locals.user && withHandle
+      ? compareGame({ viewerId: locals.user.id, gameId: game.id, handle: withHandle })
+      : null,
+    locals.user ? friendList(locals.user.id) : [],
   ]);
+
+  // Seuls les amis qui possèdent cette version ont quelque chose à comparer.
+  const owning = new Set(
+    locals.user && friends.length
+      ? (
+          await db.userGame.findMany({
+            where: {
+              gameId: game.id,
+              hidden: false,
+              userId: { in: friends.map((friend) => friend.id) },
+            },
+            select: { userId: true },
+          })
+        ).map((row) => row.userId)
+      : [],
+  );
 
   const unlockedAt = new Map(unlocks.map((u) => [u.achievementId, u.unlockedAt]));
 
@@ -111,27 +135,45 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
   await ensureGameTexts(game, locale);
   const achievements = await localizeAchievements(game.achievements, locale);
 
+  const rows = achievements.map((a) => {
+    const unlocked = unlockedAt.get(a.id) ?? null;
+    // Un succès caché reste masqué tant que le joueur ne l'a pas obtenu ou demandé à le voir.
+    const secret = a.hidden && !unlocked;
+    const masked = secret && !revealed;
+    return {
+      id: a.id,
+      secret,
+      masked,
+      trophyType: a.trophyType,
+      globalRarity: a.globalRarity,
+      name: masked ? m.achievement_hidden() : a.name,
+      description: masked ? '' : a.description,
+      iconUrl: masked ? null : unlocked ? a.iconUrl : (a.iconLockedUrl ?? a.iconUrl),
+      unlockedAt: unlocked,
+      // Même caché, un succès manquable se signale : c'est avant de jouer qu'il faut le savoir.
+      missable: a.missable,
+      guided: a._count.guides > 0,
+    };
+  });
+
   return {
     game: { ...game, achievements: undefined },
-    achievements: achievements.map((a) => {
-      const unlocked = unlockedAt.get(a.id) ?? null;
-      // Un succès caché reste masqué tant que le joueur ne l'a pas obtenu ou demandé à le voir.
-      const secret = a.hidden && !unlocked;
-      const masked = secret && !revealed;
-      return {
-        id: a.id,
-        secret,
-        trophyType: a.trophyType,
-        globalRarity: a.globalRarity,
-        name: masked ? m.achievement_hidden() : a.name,
-        description: masked ? '' : a.description,
-        iconUrl: masked ? null : unlocked ? a.iconUrl : (a.iconLockedUrl ?? a.iconUrl),
-        unlockedAt: unlocked,
-        // Même caché, un succès manquable se signale : c'est avant de jouer qu'il faut le savoir.
-        missable: a.missable,
-        guided: a._count.guides > 0,
-      };
-    }),
+    achievements: rows,
+    compare: rival
+      ? {
+          user: rival.user,
+          progress: rival.progress,
+          // Deux versions différentes ne se comparent pas : sans l'une des deux progressions,
+          // la page explique pourquoi au lieu d'afficher des marques trompeuses.
+          ...(rival.progress && progress
+            ? compareAchievements(rows, rival.unlocked)
+            : {
+                visible: [] as string[],
+                counts: { common: 0, mine: 0, theirs: 0, neither: 0 },
+              }),
+        }
+      : null,
+    friends: friends.filter((friend) => owning.has(friend.id)),
     revealed,
     missables: missablesOf(game, others),
     progress,

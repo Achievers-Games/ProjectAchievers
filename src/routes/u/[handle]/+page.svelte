@@ -18,6 +18,12 @@
 
   const profile = $derived(data.profile);
   const isMe = $derived(data.user?.id === profile.user.id);
+
+  /** Sur une version que je possède, la carte ouvre directement la comparaison avec ce joueur. */
+  const gameHref = (card: { id: string; slug: string }) =>
+    data.compareIds.includes(card.id)
+      ? `/jeux/${card.slug}?avec=${profile.user.handle}`
+      : undefined;
   async function share() {
     try {
       await navigator.clipboard.writeText(location.href);
@@ -138,6 +144,7 @@
             tier={card.tier}
             copies={card.copies}
             next={card.next}
+            href={gameHref(card)}
             live
           />
         {/each}
@@ -174,6 +181,7 @@
               target={card.target}
               copies={card.copies}
               next={card.next}
+              href={gameHref(card)}
             />
           {/each}
         </div>

@@ -9,6 +9,7 @@
 
   let { data } = $props();
   const submit = submitWithToast();
+  const full = $derived(data.friendCount >= data.maxFriends);
 </script>
 
 <svelte:head><title>{m.nav_friends()} — Project Achievers</title></svelte:head>
@@ -21,25 +22,39 @@
 {/snippet}
 
 <div class="mx-auto max-w-2xl space-y-6">
-  <h1>{m.nav_friends()}</h1>
+  <div class="space-y-1">
+    <h1>{m.nav_friends()}</h1>
+    <p class="text-sm text-muted" data-testid="friends-count">
+      {m.friends_count({ count: data.friendCount, max: data.maxFriends })}
+    </p>
+  </div>
   <SocialNav />
 
-  <form method="POST" action="?/add" use:enhance={submit} class="flex gap-2">
-    <input
-      name="handle"
-      required
-      maxlength="24"
-      autocomplete="off"
-      aria-label={m.friend_handle()}
-      placeholder={m.friend_handle()}
-      class="input flex-1"
-    />
-    <button class="btn btn-primary">{m.friend_add()}</button>
-  </form>
+  {#if full}
+    <p class="card p-3 text-sm text-muted" data-testid="friends-full">
+      {m.friends_full({ max: data.maxFriends })}
+    </p>
+  {:else}
+    <form method="POST" action="?/add" use:enhance={submit} class="flex gap-2">
+      <input
+        name="handle"
+        required
+        maxlength="24"
+        autocomplete="off"
+        aria-label={m.friend_handle()}
+        placeholder={m.friend_handle()}
+        class="input flex-1"
+      />
+      <button class="btn btn-primary">{m.friend_add()}</button>
+    </form>
+  {/if}
 
   {#if data.received.length}
     <section class="space-y-2">
       <h2>{m.friends_received()}</h2>
+      {#if full}
+        <p class="text-xs text-muted">{m.friends_full_accept()}</p>
+      {/if}
       <ul class="card divide-y divide-line">
         {#each data.received as user (user.id)}
           <li class="flex flex-wrap items-center gap-2 p-3">

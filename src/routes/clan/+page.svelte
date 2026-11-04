@@ -82,7 +82,7 @@
   {/if}
 
   {#if data.membership?.clan.flaggedName}
-    {#if data.membership.owner}
+    {#if data.membership.role === 'OWNER'}
       <section class="card space-y-3 border-danger/60 p-4" data-testid="clan-rename">
         <h2 class="text-base">{m.clan_rename_title()}</h2>
         <p class="text-sm text-muted">
@@ -119,7 +119,7 @@
       </form>
     </div>
 
-    {#if data.membership.owner}
+    {#if data.membership.role === 'OWNER'}
       <section class="card space-y-2 p-4" data-testid="clan-emblem">
         <h2 class="text-base">{m.clan_image_title()}</h2>
         <p class="text-sm text-muted">{m.clan_image_help()}</p>
@@ -155,19 +155,59 @@
       </section>
     {/if}
 
+    {#if data.requests.length}
+      <section class="space-y-2">
+        <h2>{m.clan_requests()}</h2>
+        <ul class="card divide-y divide-line">
+          {#each data.requests as request (request.user.id)}
+            <li class="flex flex-wrap items-center gap-2 p-3">
+              <a href="/u/{request.user.handle}" class="flex min-w-0 flex-1 items-center gap-3">
+                <Avatar person={request.user} size={36} />
+                <span class="truncate text-sm font-medium">{request.user.displayName}</span>
+              </a>
+              <ActionButton
+                action="acceptRequest"
+                id={request.user.id}
+                label={m.clan_request_accept()}
+              />
+              <ActionButton
+                action="declineRequest"
+                id={request.user.id}
+                label={m.clan_request_decline()}
+              />
+            </li>
+          {/each}
+        </ul>
+      </section>
+    {/if}
+
     <section class="space-y-2">
       <h2>{m.clan_members()}</h2>
       <ul class="card divide-y divide-line">
         {#each data.membership.clan.members as member (member.user.id)}
-          <li class="flex items-center gap-2 p-3">
+          <li class="flex flex-wrap items-center gap-2 p-3">
             <a href="/u/{member.user.handle}" class="flex min-w-0 flex-1 items-center gap-3">
               <Avatar person={member.user} size={36} />
               <span class="truncate text-sm font-medium">{member.user.displayName}</span>
             </a>
-            {#if member.owner}
-              <span class="text-xs text-muted">{m.clan_owner()}</span>
-            {:else if data.membership.owner}
-              <ActionButton action="kick" id={member.user.id} label={m.clan_kick()} danger />
+            {#if member.role === 'OWNER'}
+              <span class="text-xs text-muted">{m.clan_role_owner()}</span>
+            {:else}
+              {#if member.role === 'OFFICER'}
+                <span class="text-xs text-muted">{m.clan_role_officer()}</span>
+              {/if}
+              {#if member.user.id !== data.user?.id}
+                {#if data.membership.role === 'OWNER'}
+                  {#if member.role === 'OFFICER'}
+                    <ActionButton action="demote" id={member.user.id} label={m.clan_demote()} />
+                  {:else}
+                    <ActionButton action="promote" id={member.user.id} label={m.clan_promote()} />
+                  {/if}
+                {/if}
+                {#if data.membership.role === 'OWNER' || member.role === 'MEMBER'}
+                  <ActionButton action="kick" id={member.user.id} label={m.clan_kick()} danger />
+                {/if}
+              {/if}
             {/if}
           </li>
         {/each}

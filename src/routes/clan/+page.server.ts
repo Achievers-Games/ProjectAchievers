@@ -7,8 +7,11 @@ import { rateLimit } from '#lib/server/rate-limit';
 import { grantSiteAchievement } from '#lib/server/site-achievements';
 import {
   acceptClanInvite,
+  acceptClanRequest,
+  clanRequests,
   createClan,
   declineClanInvite,
+  declineClanRequest,
   friendsOverview,
   markInvitesSeen,
   inviteToClan,
@@ -16,6 +19,7 @@ import {
   leaveClan,
   myClan,
   renameClan,
+  setClanRole,
   type SocialFailure,
 } from '#lib/server/social';
 import { m } from '#lib/paraglide/messages';
@@ -34,6 +38,8 @@ const ERRORS: Partial<Record<SocialFailure, () => string>> = {
   in_clan: m.clan_already,
   clan_full: m.clan_full,
   owner_only: m.clan_owner_only,
+  officer_only: m.clan_officer_only,
+  self: m.gone,
   not_friends: m.chat_not_friends,
 };
 
@@ -66,12 +72,14 @@ export const load: PageServerLoad = async ({ locals }) => {
   ]);
   const members = new Set(membership?.clan.members.map((member) => member.user.id));
   const clan = membership?.clan;
+  const manages = membership ? membership.role !== 'MEMBER' : false;
   return {
     // Ses membres voient l'emblème même quand il attend la modération.
     emblem: clan?.imageAt ? `/clans/${clan.slug}/image?v=${clan.imageAt.getTime()}` : null,
     membership,
     invites,
-    invitable: membership?.owner ? friends.filter((friend) => !members.has(friend.id)) : [],
+    requests: manages ? await clanRequests(user.id) : [],
+    invitable: manages ? friends.filter((friend) => !members.has(friend.id)) : [],
   };
 };
 
@@ -128,6 +136,30 @@ export const actions: Actions = {
   },
   kick: async ({ request, locals }) => {
     const failure = await kickFromClan(requireUser(locals).id, await field(request, 'id'));
+    if (failure) return failed(failure);
+  },
+  promote: async ({ request, locals }) => {
+    const failure = await setClanRole(
+      requireUser(locals).id,
+      await field(request, 'id'),
+      'OFFICER',
+    );
+    if (failure) return failed(failure);
+  },
+  demote: async ({ request, locals }) => {
+    const failure = await setClanRole(requireUser(locals).id, await field(request, 'id'), 'MEMBER');
+    if (failure) return failed(failure);
+  },
+  acceptRequest: async ({ request, locals }) => {
+    const user = requireUser(locals);
+    if (!rateLimit(`clan-request:${user.id}`, INVITES_PER_HOUR, 3_600_000)) {
+      return fail(429, { error: m.too_fast() });
+    }
+    const failure = await acceptClanRequest(user.id, await field(request, 'id'));
+    if (failure) return failed(failure);
+  },
+  declineRequest: async ({ request, locals }) => {
+    const failure = await declineClanRequest(requireUser(locals).id, await field(request, 'id'));
     if (failure) return failed(failure);
   },
   discussion: async ({ locals }) => {

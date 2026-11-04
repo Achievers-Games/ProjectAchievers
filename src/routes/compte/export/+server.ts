@@ -58,7 +58,7 @@ export const GET: RequestHandler = async ({ locals }) => {
       friendRequests: { select: { addressee: { select: { handle: true } }, accepted: true } },
       friendReceived: { select: { requester: { select: { handle: true } }, accepted: true } },
       blocks: { select: { blocked: { select: { handle: true } }, createdAt: true } },
-      clanMember: { select: { owner: true, joinedAt: true, clan: { select: { name: true } } } },
+      clanMember: { select: { role: true, joinedAt: true, clan: { select: { name: true } } } },
       messages: { select: { content: true, createdAt: true, conversationId: true } },
       pushSubscriptions: { select: { locale: true, createdAt: true } },
       feedback: {

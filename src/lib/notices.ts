@@ -1,5 +1,6 @@
 /** Les genres de nouvelles que la cloche de l'en-tête présente. */
-export type NoticeKind = 'message' | 'invite_friend' | 'invite_clan' | 'unlock' | 'card';
+export type NoticeKind =
+  'message' | 'invite_friend' | 'invite_clan' | 'clan_request' | 'clan_rename' | 'unlock' | 'card';
 
 /** Une ligne du centre de notifications, telle que le panneau l'affiche. */
 export interface Notice {

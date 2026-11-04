@@ -37,7 +37,9 @@
         "local c = count: plural",
         "local n = count: number"
       ],
-      "selectors": ["c"],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=*": "{platform} 上有 {n} 个新成就！"
       }
@@ -52,8 +54,14 @@
   "sync_xbox_expired": "你的 Xbox 授权已过期，请重新连接账户。",
   "more_cards": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=*": "+ 另外 {n} 项解锁"
       }
@@ -61,8 +69,14 @@
   ],
   "count_games": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=*": "{n} 款游戏"
       }
@@ -70,8 +84,14 @@
   ],
   "count_achievements": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=*": "{n} 个成就"
       }
@@ -79,8 +99,14 @@
   ],
   "count_players": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=*": "{n} 名玩家"
       }
@@ -88,8 +114,14 @@
   ],
   "count_guides": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=*": "{n} 篇攻略"
       }
@@ -97,8 +129,14 @@
   ],
   "count_comments": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=*": "{n} 条评论"
       }
@@ -106,8 +144,14 @@
   ],
   "count_points": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=*": "{n} 分"
       }
@@ -115,8 +159,14 @@
   ],
   "count_sessions_closed": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=*": "已退出 {n} 个会话。"
       }
@@ -1061,43 +1111,281 @@
   "ach_ideas_loading": "正在查找游戏…",
   "ach_ideas_none": "暂时没有找到适合此成就的游戏。",
   "ach_ideas_catalog": "你的游戏都不符合：以下是本站在你的平台上玩得最多的游戏。",
-  "ach_ideas_left": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"还剩 {n} 个成就"}}],
+  "ach_ideas_left": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "还剩 {n} 个成就"
+      }
+    }
+  ],
   "ach_cat_friends": "好友",
   "ach_cat_clan": "战队",
   "clan_ach_title": "战队成就",
   "clan_ach_note": "战队共同获得；当时在队的成员也会一同获得。",
   "clan_ach_push_title": "你的战队获得了成就",
-  "clan_ach_push_body": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"{n} 个新的战队成就，你也有份。"}}],
+  "clan_ach_push_body": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "{n} 个新的战队成就，你也有份。"
+      }
+    }
+  ],
   "ach_duo_title": "黄金搭档",
-  "ach_duo_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"100% 完成 {n} 款好友也完成的游戏"}}],
+  "ach_duo_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "100% 完成 {n} 款好友也完成的游戏"
+      }
+    }
+  ],
   "ach_revenge_title": "复仇",
-  "ach_revenge_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"100% 完成 {n} 款好友比你先完成的游戏"}}],
+  "ach_revenge_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "100% 完成 {n} 款好友比你先完成的游戏"
+      }
+    }
+  ],
   "ach_teammates_title": "队友",
-  "ach_teammates_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"与好友在 7 天内先后完成同 {n} 款游戏"}}],
+  "ach_teammates_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "与好友在 7 天内先后完成同 {n} 款游戏"
+      }
+    }
+  ],
   "ach_synchro_title": "同步",
-  "ach_synchro_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"在 {n} 个不同的日子里，与好友同一天在同一款游戏中解锁成就"}}],
+  "ach_synchro_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "在 {n} 个不同的日子里，与好友同一天在同一款游戏中解锁成就"
+      }
+    }
+  ],
   "ach_prescriber_title": "安利达人",
-  "ach_prescriber_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"好友开始玩 {n} 款你已经完成的游戏"}}],
+  "ach_prescriber_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "好友开始玩 {n} 款你已经完成的游戏"
+      }
+    }
+  ],
   "ach_same_taste_title": "志趣相投",
-  "ach_same_taste_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"与一位好友拥有 {n} 款相同的游戏"}}],
+  "ach_same_taste_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "与一位好友拥有 {n} 款相同的游戏"
+      }
+    }
+  ],
   "ach_guild_title": "公会",
-  "ach_guild_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"战队累计获得 {n} 个成就"}}],
+  "ach_guild_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "战队累计获得 {n} 个成就"
+      }
+    }
+  ],
   "ach_clan_collection_title": "战队收藏",
-  "ach_clan_collection_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"战队 100% 完成 {n} 款不同的游戏"}}],
+  "ach_clan_collection_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "战队 100% 完成 {n} 款不同的游戏"
+      }
+    }
+  ],
   "ach_clan_range_title": "百花齐放",
-  "ach_clan_range_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"战队完成的游戏涵盖 {n} 种类型"}}],
+  "ach_clan_range_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "战队完成的游戏涵盖 {n} 种类型"
+      }
+    }
+  ],
   "ach_raid_title": "团本",
-  "ach_raid_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"{n} 名成员 100% 完成同一款游戏"}}],
+  "ach_raid_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "{n} 名成员 100% 完成同一款游戏"
+      }
+    }
+  ],
   "ach_clan_night_title": "战队之夜",
-  "ach_clan_night_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"3 名成员在同一天于同一款游戏中解锁成就，共 {n} 次"}}],
+  "ach_clan_night_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "3 名成员在同一天于同一款游戏中解锁成就，共 {n} 次"
+      }
+    }
+  ],
   "ach_all_in_title": "全员出动",
-  "ach_all_in_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"每位成员在同一周内都解锁成就，共 {n} 周（至少 3 名成员）"}}],
+  "ach_all_in_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "每位成员在同一周内都解锁成就，共 {n} 周（至少 3 名成员）"
+      }
+    }
+  ],
   "ach_marathon_title": "马拉松",
-  "ach_marathon_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"战队连续 {n} 天每天至少解锁一个成就"}}],
+  "ach_marathon_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "战队连续 {n} 天每天至少解锁一个成就"
+      }
+    }
+  ],
   "ach_together_season_title": "一起通关",
-  "ach_together_season_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"战队在一个赛季内完成 {n} 款游戏"}}],
+  "ach_together_season_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "战队在一个赛季内完成 {n} 款游戏"
+      }
+    }
+  ],
   "ach_band_title": "一伙人",
-  "ach_band_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"战队拥有 {n} 名成员"}}],
+  "ach_band_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "战队拥有 {n} 名成员"
+      }
+    }
+  ],
   "ach_nobody_behind_title": "一个都不能少",
   "ach_nobody_behind_text": "每位成员都至少完成了一款游戏，任何游戏都行（至少 3 名成员）",
   "ach_loyal_title": "忠诚",
@@ -1136,7 +1424,21 @@
   "missable_hint": "本周目可能错过：推进前请先阅读攻略。",
   "guide_badge": "官方攻略",
   "filter_missable": "可错过",
-  "missables_title": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"{n} 个可错过的成就"}}],
+  "missables_title": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "{n} 个可错过的成就"
+      }
+    }
+  ],
   "missables_text": "本周目可能错过。开始前请阅读攻略，或用「可错过」筛选。",
   "missables_done": "已全部获得：不会再错过了。",
   "missables_none": "没有可错过的成就",
@@ -1246,8 +1548,14 @@
   "games_tier": "等级",
   "count_cards": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=*": "{n} 张卡牌"
       }
@@ -1345,5 +1653,37 @@
   "season_all_games": "我所有符合条件的游戏",
   "season_game_counts": "这款游戏计入赛季。",
   "season_game_soon": "暂不计入：在开启前获得一项成就，即可计入赛季。",
-  "season_game_no": "不计入赛季：必须在赛季开始前开始游玩。"
+  "season_game_no": "不计入赛季：必须在赛季开始前开始游玩。",
+  "compare_with_friend": "与好友比较",
+  "compare_quit": "退出比较",
+  "compare_summary": "{common} 项共同 · {mine} 项仅我有 · {theirs} 项仅 {name} 有",
+  "compare_filter_common": "共同",
+  "compare_filter_mine": "仅我有",
+  "compare_filter_theirs": "仅 {name} 有",
+  "compare_column_mine": "我",
+  "compare_check_theirs": "{name} 已获得",
+  "compare_missing_theirs": "{name} 未获得",
+  "compare_you_dont_own": "你没有此版本的 {game}，无法逐项比较成就。",
+  "compare_they_dont_own": "{name} 没有此版本的 {game}。",
+  "compare_no_friends": "你的好友中没有此版本。添加好友后即可比较。",
+  "friends_full": "已达到 {max} 位好友上限。请移除一位好友后继续。",
+  "friends_count": "{count} / {max} 位好友",
+  "friends_full_accept": "请移除一位好友以接受此请求。",
+  "clan_officer_only": "仅限族长和官员。",
+  "clan_role_owner": "族长",
+  "clan_role_officer": "官员",
+  "clan_promote": "设为官员",
+  "clan_demote": "取消官员",
+  "clan_requests": "加入申请",
+  "clan_request_join": "申请加入",
+  "clan_request_sent": "申请已发送",
+  "clan_request_accept": "接受",
+  "clan_request_decline": "拒绝",
+  "clan_request_empty": "暂无待处理的申请。",
+  "clan_request_push_title": "加入申请",
+  "clan_request_push_body": "{name} 希望加入 {clan}。",
+  "clans_ranking_rules": "成员收藏积分总和。",
+  "clans_points": "积分",
+  "notification_clan_request": "氏族申请",
+  "notification_clan_rename": "战队改名"
 }

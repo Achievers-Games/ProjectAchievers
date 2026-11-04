@@ -5,17 +5,24 @@ import { activityFeed, hasRecentFeat, highlights, leaderboard } from './queries'
 import { resolveIdentity } from './accounts';
 import { db } from './db';
 import { mergeUsers } from './merge';
+import { notifications } from './notifications';
 import { markActive, subscribersToNotify, usersWhoLeft } from './push';
 import {
   acceptClanInvite,
+  acceptClanRequest,
   acceptFriend,
   blockUser,
   clanPage,
+  clanRequests,
   createClan,
+  declineClanRequest,
   flagClanName,
   flagProfaneClans,
+  friendCount,
   inviteToClan,
+  kickFromClan,
   leaveClan,
+  listClans,
   markInvitesSeen,
   openDirect,
   pendingInvites,
@@ -24,9 +31,12 @@ import {
   renameClan,
   reportMessage,
   requestFriend,
+  requestToJoinClan,
   sendMessage,
+  setClanRole,
   unreadCount,
 } from './social';
+import { MAX_CLAN_MEMBERS, MAX_FRIENDS } from './social/shared';
 import { PREFIX, identity, setupIntegration } from './test-helpers';
 
 setupIntegration();
@@ -136,9 +146,9 @@ describe('amis, clans et discussions', () => {
 
     const clan = await db.clanMember.findUnique({
       where: { userId: target.id },
-      select: { owner: true, clan: { select: { name: true } } },
+      select: { role: true, clan: { select: { name: true } } },
     });
-    expect(clan).toEqual({ owner: true, clan: { name: `${name}a` } });
+    expect(clan).toEqual({ role: 'OWNER', clan: { name: `${name}a` } });
     expect(await db.clan.findUnique({ where: { name: `${name}b` } })).toBeNull();
   });
 
@@ -177,7 +187,7 @@ describe('amis, clans et discussions', () => {
 
   it('transmet le clan au plus ancien membre, puis le supprime quand il est vide', async () => {
     const [a, b] = await players();
-    expect(await inviteToClan(a.id, b.id)).toBe('owner_only');
+    expect(await inviteToClan(a.id, b.id)).toBe('officer_only');
     const name = `${PREFIX} ${Math.random()}`;
     expect(await createClan(a.id, name)).toBeNull();
     expect(await createClan(a.id, `${name}2`)).toBe('in_clan');
@@ -191,7 +201,7 @@ describe('amis, clans et discussions', () => {
 
     await leaveClan(a.id);
     expect(await db.clanMember.findUnique({ where: { userId: b.id } })).toMatchObject({
-      owner: true,
+      role: 'OWNER',
     });
     await leaveClan(b.id);
     expect(await db.clan.findUnique({ where: { name } })).toBeNull();
@@ -232,6 +242,11 @@ describe('amis, clans et discussions', () => {
     expect(flagged.name).toMatch(/^Clan #/);
     expect(await flagClanName(id)).toBe(false);
     expect((await pendingInvites(a.id)).clans).toBeGreaterThanOrEqual(1);
+    // Le badge annonce une nouvelle : le panneau doit la porter, sinon la cloche ment.
+    expect((await notifications(a.id))[0]).toMatchObject({
+      kind: 'clan_rename',
+      href: '/clan',
+    });
 
     expect(await renameClan(b.id, `${PREFIX} propre`)).toBe('owner_only');
     const fresh = `${PREFIX} ${Math.random()}`;
@@ -240,8 +255,293 @@ describe('amis, clans et discussions', () => {
       name: fresh,
       flaggedName: null,
     });
+    // Le nom choisi, la nouvelle disparaît : plus rien n'attend le chef.
+    expect(await notifications(a.id)).not.toContainEqual(
+      expect.objectContaining({ kind: 'clan_rename' }),
+    );
     await leaveClan(b.id);
     await leaveClan(a.id);
+  });
+});
+
+describe('plafond d’amis', () => {
+  async function player() {
+    const result = await resolveIdentity(identity(), null);
+    if (!result.ok) throw new Error('compte non créé');
+    return db.user.findUniqueOrThrow({ where: { id: result.userId } });
+  }
+
+  /** `count` joueurs d'un coup : le plafond ne se teste pas avec trente allers-retours. */
+  async function crowd(count: number) {
+    const tag = Math.random().toString(36).slice(2, 8);
+    await db.user.createMany({
+      data: Array.from({ length: count }, (_, index) => ({
+        handle: `${PREFIX}-${tag}-${index}`,
+        displayName: `${PREFIX} ami ${index}`,
+      })),
+    });
+    return db.user.findMany({
+      where: { handle: { startsWith: `${PREFIX}-${tag}-` } },
+      select: { id: true, handle: true },
+    });
+  }
+
+  async function befriend(userId: string, others: { id: string }[]) {
+    await db.friendship.createMany({
+      data: others.map((other) => ({
+        requesterId: userId,
+        addresseeId: other.id,
+        accepted: true,
+      })),
+    });
+  }
+
+  it('accepte une dernière amitié au plafond, puis refuse sans perdre la demande', async () => {
+    const me = await player();
+    const [asker, late] = await crowd(2);
+    await befriend(me.id, await crowd(MAX_FRIENDS - 1));
+    await db.friendship.create({ data: { requesterId: asker.id, addresseeId: me.id } });
+
+    expect(await acceptFriend(me.id, asker.id)).toBeNull();
+    expect(await friendCount(me.id)).toBe(MAX_FRIENDS);
+
+    await db.friendship.create({ data: { requesterId: late.id, addresseeId: me.id } });
+    expect(await acceptFriend(me.id, late.id)).toBe('friends_full');
+    expect(await friendCount(me.id)).toBe(MAX_FRIENDS);
+    expect(await relationWith(me.id, late.id)).toBe('received');
+  });
+
+  it('refuse une demande quand le demandeur est plein, y compris en acceptant une reçue', async () => {
+    const me = await player();
+    const full = await player();
+    await befriend(full.id, await crowd(MAX_FRIENDS));
+
+    expect(await requestFriend(full.id, me.handle)).toBe('friends_full');
+    expect(await relationWith(full.id, me.id)).toBe('none');
+
+    await db.friendship.create({ data: { requesterId: full.id, addresseeId: me.id } });
+    expect(await requestFriend(me.id, full.handle)).toBe('friends_full');
+    expect(await relationWith(me.id, full.id)).toBe('received');
+  });
+
+  it('sérialise deux acceptations simultanées : une seule passe', async () => {
+    const me = await player();
+    const [first, second] = await crowd(2);
+    await befriend(me.id, await crowd(MAX_FRIENDS - 1));
+    await db.friendship.createMany({
+      data: [
+        { requesterId: first.id, addresseeId: me.id },
+        { requesterId: second.id, addresseeId: me.id },
+      ],
+    });
+
+    const results = await Promise.all([
+      acceptFriend(me.id, first.id),
+      acceptFriend(me.id, second.id),
+    ]);
+
+    expect(results.toSorted()).toEqual([null, 'friends_full'].toSorted());
+    expect(await friendCount(me.id)).toBe(MAX_FRIENDS);
+  });
+
+  it('ne crée qu’une amitié quand deux demandes se croisent', async () => {
+    const [a, b] = [await player(), await player()];
+
+    await Promise.all([requestFriend(a.id, b.handle), requestFriend(b.id, a.handle)]);
+
+    expect(
+      await db.friendship.count({ where: { OR: [{ requesterId: a.id }, { addresseeId: a.id }] } }),
+    ).toBe(1);
+    expect(await relationWith(a.id, b.id)).toBe('friends');
+    expect(await friendCount(a.id)).toBe(1);
+  });
+});
+
+describe('rôles et demandes de clan', () => {
+  async function player() {
+    const result = await resolveIdentity(identity(), null);
+    if (!result.ok) throw new Error('compte non créé');
+    return db.user.findUniqueOrThrow({ where: { id: result.userId } });
+  }
+
+  /** Un clan du test, et de quoi y placer des rôles sans repasser par les invitations. */
+  async function clanWith(ownerId: string, roles: { id: string; role: 'OFFICER' | 'MEMBER' }[]) {
+    const name = `${PREFIX} clan ${Math.random()}`;
+    expect(await createClan(ownerId, name)).toBeNull();
+    const clan = await db.clan.findUniqueOrThrow({ where: { name } });
+    await db.clanMember.createMany({
+      data: roles.map((member) => ({ userId: member.id, clanId: clan.id, role: member.role })),
+    });
+    return clan;
+  }
+
+  it('une demande est reçue par le chef et les officiers, acceptée par eux seuls', async () => {
+    const [owner, officer, member, candidate] = [
+      await player(),
+      await player(),
+      await player(),
+      await player(),
+    ];
+    const clan = await clanWith(owner.id, [
+      { id: officer.id, role: 'OFFICER' },
+      { id: member.id, role: 'MEMBER' },
+    ]);
+
+    expect(await requestToJoinClan(candidate.id, clan.id)).toBeNull();
+    expect((await clanRequests(officer.id)).map((row) => row.user.id)).toEqual([candidate.id]);
+    expect(await clanRequests(owner.id)).toHaveLength(1);
+    expect(await clanRequests(member.id)).toEqual([]);
+    expect((await pendingInvites(officer.id)).clans).toBe(1);
+    expect((await pendingInvites(member.id)).clans).toBe(0);
+
+    expect(await acceptClanRequest(member.id, candidate.id)).toBe('officer_only');
+    expect(await acceptClanRequest(officer.id, candidate.id)).toBeNull();
+    expect(await db.clanMember.findUnique({ where: { userId: candidate.id } })).toMatchObject({
+      clanId: clan.id,
+      role: 'MEMBER',
+    });
+    expect(await clanRequests(officer.id)).toEqual([]);
+  });
+
+  it('refuse une demande quand le clan est plein, et sait refuser une demande reçue', async () => {
+    const owner = await player();
+    const tag = Math.random().toString(36).slice(2, 8);
+    await db.user.createMany({
+      data: Array.from({ length: MAX_CLAN_MEMBERS - 1 }, (_, index) => ({
+        handle: `${PREFIX}-${tag}-${index}`,
+        displayName: `${PREFIX} membre ${index}`,
+      })),
+    });
+    const crowd = await db.user.findMany({
+      where: { handle: { startsWith: `${PREFIX}-${tag}-` } },
+      select: { id: true },
+    });
+    const clan = await clanWith(
+      owner.id,
+      crowd.map((user) => ({ id: user.id, role: 'MEMBER' })),
+    );
+    const [candidate, other] = [await player(), await player()];
+
+    expect(await requestToJoinClan(candidate.id, clan.id)).toBe('clan_full');
+    expect(await db.clanRequest.count({ where: { clanId: clan.id } })).toBe(0);
+
+    await db.clanMember.delete({ where: { userId: crowd[0].id } });
+    expect(await requestToJoinClan(other.id, clan.id)).toBeNull();
+    expect(await declineClanRequest(owner.id, other.id)).toBeNull();
+    expect(await db.clanRequest.count({ where: { clanId: clan.id } })).toBe(0);
+    expect(await db.clanMember.count({ where: { userId: other.id } })).toBe(0);
+  });
+
+  it('accepte d’office la demande quand une invitation du même clan attend', async () => {
+    const [owner, friend] = [await player(), await player()];
+    const clan = await clanWith(owner.id, []);
+    await requestFriend(owner.id, friend.handle);
+    await acceptFriend(friend.id, owner.id);
+    expect(await inviteToClan(owner.id, friend.id)).toBeNull();
+
+    expect(await requestToJoinClan(friend.id, clan.id)).toBeNull();
+    expect(await db.clanMember.findUnique({ where: { userId: friend.id } })).toMatchObject({
+      clanId: clan.id,
+    });
+    expect(await db.clanInvite.count({ where: { userId: friend.id } })).toBe(0);
+  });
+
+  it('un officier exclut des membres, jamais un officier ni le chef', async () => {
+    const [owner, officer, peer, member] = [
+      await player(),
+      await player(),
+      await player(),
+      await player(),
+    ];
+    const clan = await clanWith(owner.id, [
+      { id: officer.id, role: 'OFFICER' },
+      { id: peer.id, role: 'OFFICER' },
+      { id: member.id, role: 'MEMBER' },
+    ]);
+
+    expect(await kickFromClan(member.id, peer.id)).toBe('officer_only');
+    expect(await kickFromClan(officer.id, peer.id)).toBe('officer_only');
+    expect(await kickFromClan(officer.id, owner.id)).toBe('owner_only');
+    expect(await kickFromClan(officer.id, member.id)).toBeNull();
+    expect(await db.clanMember.count({ where: { userId: member.id } })).toBe(0);
+
+    expect(await kickFromClan(owner.id, owner.id)).toBe('self');
+    expect(await kickFromClan(owner.id, officer.id)).toBeNull();
+    expect(await db.clanMember.findUnique({ where: { userId: peer.id } })).toMatchObject({
+      clanId: clan.id,
+    });
+  });
+
+  it('seul le chef nomme et rétrograde un officier', async () => {
+    const [owner, member, stranger] = [await player(), await player(), await player()];
+    const clan = await clanWith(owner.id, [{ id: member.id, role: 'MEMBER' }]);
+
+    expect(await setClanRole(member.id, member.id, 'OFFICER')).toBe('owner_only');
+    expect(await setClanRole(owner.id, owner.id, 'OFFICER')).toBe('self');
+    expect(await setClanRole(owner.id, stranger.id, 'OFFICER')).toBe('not_found');
+    expect(await setClanRole(owner.id, member.id, 'OFFICER')).toBeNull();
+    expect(await db.clanMember.findUnique({ where: { userId: member.id } })).toMatchObject({
+      role: 'OFFICER',
+    });
+    expect(await setClanRole(owner.id, member.id, 'MEMBER')).toBeNull();
+    expect(await db.clanMember.findUnique({ where: { userId: member.id } })).toMatchObject({
+      role: 'MEMBER',
+      clanId: clan.id,
+    });
+  });
+
+  it('transmet le clan à un officier au départ du chef', async () => {
+    const [owner, officer, member] = [await player(), await player(), await player()];
+    await clanWith(owner.id, [
+      { id: officer.id, role: 'OFFICER' },
+      { id: member.id, role: 'MEMBER' },
+    ]);
+
+    await leaveClan(owner.id);
+    expect(await db.clanMember.findUnique({ where: { userId: officer.id } })).toMatchObject({
+      role: 'OWNER',
+    });
+    expect(await db.clanMember.findUnique({ where: { userId: member.id } })).toMatchObject({
+      role: 'MEMBER',
+    });
+  });
+
+  it('classe les clans aux points de collection, profils privés compris', async () => {
+    const [rich, poor] = [await player(), await player()];
+    const tag = Math.random().toString(36).slice(2, 8);
+    const richClan = await clanWith(rich.id, []);
+    const poorClan = await clanWith(poor.id, []);
+    const card = async (userId: string, tier: number) => {
+      const game = await db.game.create({
+        data: {
+          platform: 'STEAM',
+          platformGameId: `${PREFIX}-${Math.random()}`,
+          name: `${PREFIX} ${tag} palier ${tier}`,
+          slug: `${PREFIX}-${tag}-${Math.random().toString(36).slice(2)}`,
+          tier,
+        },
+      });
+      await db.userGame.create({
+        data: {
+          userId,
+          gameId: game.id,
+          completion: 100,
+          unlockedCount: 1,
+          totalCount: 1,
+        },
+      });
+    };
+    await card(rich.id, 3);
+    await card(poor.id, 1);
+    await db.user.update({ where: { id: poor.id }, data: { isPublic: false } });
+
+    const ranked = (await listClans()).filter((clan) =>
+      [richClan.id, poorClan.id].includes(clan.id),
+    );
+    expect(ranked.map((clan) => clan.id)).toEqual([richClan.id, poorClan.id]);
+    expect(ranked[0]).toMatchObject({ points: 100, members: 1, total: 1, open: true });
+    // Le clan dont tous les membres sont privés reste classé, à zéro point visible.
+    expect(ranked[1]).toMatchObject({ points: 0, members: 0, total: 1 });
   });
 });
 

@@ -80,7 +80,7 @@ export async function setClanImage(
   file: File,
 ): Promise<{ failure: ImageFailure } | { pending: boolean }> {
   const membership = await db.clanMember.findUnique({ where: { userId } });
-  if (!membership?.owner) return { failure: 'owner_only' };
+  if (membership?.role !== 'OWNER') return { failure: 'owner_only' };
   if (file.size > MAX_IMAGE_BYTES) return { failure: 'image_too_big' };
   const bytes = new Uint8Array(await file.arrayBuffer());
   const type = imageType(bytes);
@@ -103,7 +103,7 @@ export async function setClanImage(
 
 export async function removeClanImage(userId: string) {
   const membership = await db.clanMember.findUnique({ where: { userId } });
-  if (!membership?.owner) return 'owner_only' as const;
+  if (membership?.role !== 'OWNER') return 'owner_only' as const;
   await db.clan.update({
     where: { id: membership.clanId },
     data: { image: null, imageType: null, imageAt: null, imagePending: false },

@@ -20,6 +20,7 @@
   <div class="space-y-1">
     <h1>{m.ranking()}</h1>
     <p class="text-sm text-muted">{m.ranking_rules()}</p>
+    <a href="/clans" class="text-sm text-muted hover:text-ink">{m.clans_title()} →</a>
   </div>
 
   {#if data.ranking.length === 0}

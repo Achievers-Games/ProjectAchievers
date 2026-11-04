@@ -6,3 +6,4 @@ export * from './social/shared';
 export * from './social/friends';
 export * from './social/chat';
 export * from './social/clans';
+export * from './social/clan-requests';

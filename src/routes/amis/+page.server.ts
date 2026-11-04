@@ -11,6 +11,7 @@ import {
   requestFriend,
   unblockUser,
 } from '#lib/server/social';
+import { MAX_FRIENDS } from '#lib/server/social/shared';
 import { m } from '#lib/paraglide/messages';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -23,7 +24,8 @@ const otherId = async (request: Request) => String((await request.formData()).ge
 export const load: PageServerLoad = async ({ locals }) => {
   const { id } = requireUser(locals);
   await markInvitesSeen(id, 'friends');
-  return friendsOverview(id);
+  const overview = await friendsOverview(id);
+  return { ...overview, maxFriends: MAX_FRIENDS, friendCount: overview.friends.length };
 };
 
 export const actions: Actions = {
@@ -35,11 +37,15 @@ export const actions: Actions = {
     const handle = String((await request.formData()).get('handle') ?? '');
     const failure = await requestFriend(user.id, handle);
     if (failure === 'self') return fail(400, { error: m.friend_self() });
+    if (failure === 'friends_full')
+      return fail(400, { error: m.friends_full({ max: MAX_FRIENDS }) });
     if (failure) return fail(404, { error: m.friend_not_found() });
     return { success: m.friend_requested() };
   },
   accept: async ({ request, locals }) => {
-    await acceptFriend(requireUser(locals).id, await otherId(request));
+    const failure = await acceptFriend(requireUser(locals).id, await otherId(request));
+    if (failure === 'friends_full')
+      return fail(400, { error: m.friends_full({ max: MAX_FRIENDS }) });
   },
   remove: async ({ request, locals }) => {
     await removeFriend(requireUser(locals).id, await otherId(request));

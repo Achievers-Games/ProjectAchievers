@@ -65,7 +65,11 @@
             <span class="min-w-0 flex-1 truncate text-sm font-medium">
               {member.user.displayName}
             </span>
-            {#if member.owner}<span class="text-xs text-muted">{m.clan_owner()}</span>{/if}
+            {#if member.role === 'OWNER'}
+              <span class="text-xs text-muted">{m.clan_role_owner()}</span>
+            {:else if member.role === 'OFFICER'}
+              <span class="text-xs text-muted">{m.clan_role_officer()}</span>
+            {/if}
             <span class="tabular text-sm">{formatNumber(member.achievements)}</span>
           </a>
         </li>

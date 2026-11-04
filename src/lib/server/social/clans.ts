@@ -6,6 +6,7 @@ import { checkClanAchievements } from '../clan-achievements';
 import { clanImageUrl } from '../clan-image';
 import { randomToken } from '../crypto';
 import { db } from '../db';
+import { TIER_POINTS } from '../queries/shared';
 import { notify } from '../push';
 import { relationWith } from './friends';
 import { MAX_CLAN_MEMBERS, inviteNotice, personSelect, type SocialFailure } from './shared';
@@ -24,7 +25,7 @@ export async function myClan(userId: string) {
   const membership = await db.clanMember.findUnique({
     where: { userId },
     select: {
-      owner: true,
+      role: true,
       clan: {
         select: {
           id: true,
@@ -36,8 +37,8 @@ export async function myClan(userId: string) {
           frame: true,
           conversation: { select: { id: true } },
           members: {
-            orderBy: [{ owner: 'desc' }, { joinedAt: 'asc' }],
-            select: { owner: true, user: { select: personSelect } },
+            orderBy: [{ role: 'asc' }, { joinedAt: 'asc' }],
+            select: { role: true, user: { select: personSelect } },
           },
         },
       },
@@ -57,7 +58,7 @@ export async function createClan(userId: string, name: string): Promise<SocialFa
       data: {
         name,
         slug: slugify(name) || `clan-${randomToken(6).toLowerCase()}`,
-        members: { create: { userId, owner: true } },
+        members: { create: { userId, role: 'OWNER' } },
         conversation: { create: { members: { create: { userId } } } },
       },
       select: { id: true },
@@ -76,7 +77,7 @@ export async function createClan(userId: string, name: string): Promise<SocialFa
 /** Le chef donne un nouveau nom au clan, et lève ainsi une demande de la modération. */
 export async function renameClan(userId: string, name: string): Promise<SocialFailure | null> {
   const membership = await db.clanMember.findUnique({ where: { userId } });
-  if (!membership?.owner) return 'owner_only';
+  if (membership?.role !== 'OWNER') return 'owner_only';
   try {
     await db.clan.update({
       where: { id: membership.clanId },
@@ -103,7 +104,7 @@ export async function renameClan(userId: string, name: string): Promise<SocialFa
 export async function flagClanName(clanId: string) {
   const clan = await db.clan.findUnique({
     where: { id: clanId },
-    select: { name: true, flaggedName: true, members: { where: { owner: true } } },
+    select: { name: true, flaggedName: true, members: { where: { role: 'OWNER' } } },
   });
   if (!clan || clan.flaggedName) return false;
   const token = randomToken(6).toLowerCase();
@@ -135,13 +136,16 @@ export async function flagProfaneClans() {
   return flagged;
 }
 
-/** Le chef invite ses amis ; personne n'entre dans un clan sans l'avoir accepté. */
+/** Le chef et ses officiers invitent leurs amis ; personne n'entre sans avoir accepté. */
 export async function inviteToClan(
   userId: string,
   friendId: string,
 ): Promise<SocialFailure | null> {
   const membership = await db.clanMember.findUnique({ where: { userId } });
-  if (!membership?.owner) return 'owner_only';
+  if (!membership || membership.role === 'MEMBER') return 'officer_only';
+  if (await db.clanMember.count({ where: { userId: friendId } })) return 'in_clan';
+  if ((await db.clanMember.count({ where: { clanId: membership.clanId } })) >= MAX_CLAN_MEMBERS)
+    return 'clan_full';
   if ((await relationWith(userId, friendId)) !== 'friends') return 'not_friends';
   await db.clanInvite.createMany({
     data: [{ clanId: membership.clanId, userId: friendId }],
@@ -166,6 +170,7 @@ export async function acceptClanInvite(
   });
   await db.$transaction([
     db.clanInvite.deleteMany({ where: { userId } }),
+    db.clanRequest.deleteMany({ where: { userId } }),
     db.clanMember.create({ data: { clanId, userId } }),
     db.conversationMember.create({ data: { conversationId: conversation.id, userId } }),
   ]);
@@ -178,17 +183,17 @@ export async function declineClanInvite(userId: string, clanId: string) {
   await db.clanInvite.deleteMany({ where: { clanId, userId } });
 }
 
-/** Le clan survit au départ de son chef : le plus ancien membre prend sa place. */
+/** Le clan survit au départ de son chef : un officier, sinon le plus ancien membre, prend sa place. */
 export async function leaveClan(
   userId: string,
   client: Pick<PrismaClient, 'clan' | 'clanMember' | 'conversationMember'> = db,
 ) {
   const membership = await client.clanMember.findUnique({
     where: { userId },
-    select: { clanId: true, owner: true, clan: { select: { conversation: true } } },
+    select: { clanId: true, role: true, clan: { select: { conversation: true } } },
   });
   if (!membership) return;
-  const { clanId, owner, clan } = membership;
+  const { clanId, role, clan } = membership;
 
   await client.clanMember.delete({ where: { userId } });
   if (clan.conversation) {
@@ -196,44 +201,72 @@ export async function leaveClan(
       where: { conversationId: clan.conversation.id, userId },
     });
   }
+  // L'ordre de l'énumération place le chef puis les officiers avant les membres.
   const next = await client.clanMember.findFirst({
     where: { clanId },
-    orderBy: { joinedAt: 'asc' },
+    orderBy: [{ role: 'asc' }, { joinedAt: 'asc' }],
   });
   if (!next) await client.clan.delete({ where: { id: clanId } });
-  else if (owner) {
-    await client.clanMember.update({ where: { userId: next.userId }, data: { owner: true } });
+  else if (role === 'OWNER') {
+    await client.clanMember.update({ where: { userId: next.userId }, data: { role: 'OWNER' } });
   }
 }
 
 const publicMembers = { user: { isPublic: true } };
 
-/** Les clans classés par succès cumulés : seuls les profils publics comptent. */
+/**
+ * Les clans classés aux points de collection cumulés de leurs membres publics. Une carte
+ * compte comme au classement des collectionneurs : une par famille, seulement si terminée.
+ */
 export async function listClans() {
   const rows = await db.$queryRaw<
     {
+      id: string;
       name: string;
       slug: string;
       imageAt: Date | null;
       imagePending: boolean;
       frame: string | null;
       members: bigint;
-      achievements: bigint;
+      total: bigint;
+      points: bigint;
     }[]
   >`
-    SELECT c.name, c.slug, c."imageAt", c."imagePending", c.frame,
-      count(DISTINCT cm."userId") AS members, count(ua."achievementId") AS achievements
+    WITH cards AS (
+      SELECT ug."userId", COALESCE(g.tier, 1) AS tier
+      FROM "UserGame" ug
+      JOIN "Game" g ON g.id = ug."gameId"
+      WHERE ug.completion >= 100 AND NOT ug.hidden
+      GROUP BY ug."userId", COALESCE(g."familyKey", g.id), COALESCE(g.tier, 1)
+    ), scores AS (
+      SELECT "userId",
+             (count(*) FILTER (WHERE tier = 1) * ${TIER_POINTS[0]}
+               + count(*) FILTER (WHERE tier = 2) * ${TIER_POINTS[1]}
+               + count(*) FILTER (WHERE tier = 3) * ${TIER_POINTS[2]}
+               + count(*) FILTER (WHERE tier = 4) * ${TIER_POINTS[3]}
+               + count(*) FILTER (WHERE tier = 5) * ${TIER_POINTS[4]}
+               + count(*) FILTER (WHERE tier = 6) * ${TIER_POINTS[5]})::bigint AS points
+      FROM cards
+      GROUP BY "userId"
+    )
+    SELECT c.id, c.name, c.slug, c."imageAt", c."imagePending", c.frame,
+      count(DISTINCT u.id) AS members,
+      count(DISTINCT cm."userId") AS total,
+      COALESCE(sum(CASE WHEN u.id IS NOT NULL THEN COALESCE(s.points, 0) ELSE 0 END), 0)::bigint
+        AS points
     FROM "Clan" c
-    JOIN "ClanMember" cm ON cm."clanId" = c.id
-    JOIN "User" u ON u.id = cm."userId" AND u."isPublic"
-    LEFT JOIN "UserAchievement" ua ON ua."userId" = cm."userId"
+    LEFT JOIN "ClanMember" cm ON cm."clanId" = c.id
+    LEFT JOIN "User" u ON u.id = cm."userId" AND u."isPublic"
+    LEFT JOIN scores s ON s."userId" = cm."userId"
     GROUP BY c.id
-    ORDER BY achievements DESC, c.name`;
+    ORDER BY points DESC, c.name`;
   return rows.map(({ imageAt, imagePending, ...row }) => ({
     ...row,
     image: clanImageUrl({ slug: row.slug, imageAt, imagePending }),
     members: Number(row.members),
-    achievements: Number(row.achievements),
+    total: Number(row.total),
+    points: Number(row.points),
+    open: Number(row.total) < MAX_CLAN_MEMBERS,
   }));
 }
 
@@ -251,7 +284,7 @@ export async function clanPage(slug: string) {
       members: {
         where: publicMembers,
         orderBy: { joinedAt: 'asc' },
-        select: { owner: true, user: { select: personSelect } },
+        select: { role: true, user: { select: personSelect } },
       },
     },
   });
@@ -264,8 +297,8 @@ export async function clanPage(slug: string) {
   });
   const byUser = new Map(counts.map((row) => [row.userId, row._count._all]));
   const members = clan.members
-    .map(({ owner, user: { id, ...user } }) => ({
-      owner,
+    .map(({ role, user: { id, ...user } }) => ({
+      role,
       user,
       achievements: byUser.get(id) ?? 0,
     }))
@@ -280,12 +313,37 @@ export async function clanPage(slug: string) {
   };
 }
 
-export async function kickFromClan(userId: string, memberId: string) {
+/**
+ * Un officier exclut les membres, le chef exclut aussi les officiers. Personne n'exclut le
+ * chef, et on ne s'exclut pas soi-même : on quitte son clan.
+ */
+export async function kickFromClan(
+  userId: string,
+  memberId: string,
+): Promise<SocialFailure | null> {
   const membership = await db.clanMember.findUnique({ where: { userId } });
-  if (!membership?.owner || memberId === userId) return 'owner_only';
-  const target = await db.clanMember.count({
-    where: { userId: memberId, clanId: membership.clanId },
-  });
-  if (target) await leaveClan(memberId);
+  if (!membership || membership.role === 'MEMBER') return 'officer_only';
+  if (memberId === userId) return 'self';
+  const target = await db.clanMember.findUnique({ where: { userId: memberId } });
+  if (!target || target.clanId !== membership.clanId) return 'not_found';
+  if (target.role === 'OWNER') return 'owner_only';
+  if (membership.role === 'OFFICER' && target.role === 'OFFICER') return 'officer_only';
+  await leaveClan(memberId);
+  return null;
+}
+
+/** Seul le chef nomme et rétrograde les officiers ; jamais lui-même. */
+export async function setClanRole(
+  userId: string,
+  memberId: string,
+  role: 'OFFICER' | 'MEMBER',
+): Promise<SocialFailure | null> {
+  const membership = await db.clanMember.findUnique({ where: { userId } });
+  if (membership?.role !== 'OWNER') return 'owner_only';
+  if (memberId === userId) return 'self';
+  const target = await db.clanMember.findUnique({ where: { userId: memberId } });
+  if (!target || target.clanId !== membership.clanId) return 'not_found';
+  if (target.role === 'OWNER') return 'owner_only';
+  await db.clanMember.update({ where: { userId: memberId }, data: { role } });
   return null;
 }

@@ -1,0 +1,151 @@
+import { expect } from '@playwright/test';
+import { test, login, ready } from './helpers';
+
+test.describe('comparaison par jeu', () => {
+  test('ouvre la comparaison depuis un profil, filtre, puis quitte', async ({ page }) => {
+    await login(page);
+    await page.goto('/u/lea');
+    await ready(page);
+
+    // La carte du jeu mène à la version avec `?avec=`, quand les deux la possèdent.
+    const card = page.locator('a[href^="/jeux/"][href*="avec=lea"]').first();
+    await expect(card).toBeVisible();
+    await card.click();
+    await expect(page).toHaveURL(/\/jeux\/[^?]+\?avec=lea/);
+    await ready(page);
+
+    const compare = page.getByTestId('compare');
+    await expect(compare.getByRole('heading', { level: 2 })).toContainText('Comparaison');
+    await expect(page.getByTestId('compare-summary')).toContainText(/en commun ·/);
+
+    const common = page.getByRole('button', { name: 'En commun' });
+    await common.click();
+    await expect(common).toHaveAttribute('aria-pressed', 'true');
+
+    await page.getByRole('link', { name: 'Quitter la comparaison' }).click();
+    await expect(page).not.toHaveURL(/avec=/);
+    await expect(page.getByTestId('compare')).toHaveCount(0);
+  });
+
+  test('révèle les succès cachés sans perdre la comparaison', async ({ page }) => {
+    await login(page);
+    // Elden Ring : son dernier succès, secret, n'est pas débloqué par la démonstration.
+    await page.goto('/jeux/elden-ring?avec=lea');
+    await ready(page);
+
+    const reveal = page.getByRole('link', { name: /Révéler les succès cachés/ });
+    await expect(reveal).toHaveAttribute('href', /avec=lea/);
+    await reveal.click();
+    await expect(page).toHaveURL(/avec=lea/);
+    await expect(page).toHaveURL(/caches=1/);
+    const conceal = page.getByRole('link', { name: 'Masquer les succès cachés' });
+    await expect(conceal).toHaveAttribute('href', /avec=lea/);
+  });
+
+  test('propose de comparer avec un ami qui possède la version', async ({ page }) => {
+    await login(page);
+    await page.goto('/jeux/hades');
+    await ready(page);
+
+    await page.getByText('Comparer avec un ami').click();
+    await page.locator('details').getByRole('link', { name: 'Marco' }).click();
+    await expect(page).toHaveURL(/avec=marco/);
+    await expect(page.getByTestId('compare').getByRole('heading', { level: 2 })).toContainText(
+      'Marco',
+    );
+  });
+
+  test('affiche le compte d’amis et sa limite', async ({ page }) => {
+    await login(page);
+    await page.goto('/amis');
+    await ready(page);
+    await expect(page.getByText(/\d+ \/ 30 amis/)).toBeVisible();
+  });
+});
+
+test.describe('clans', () => {
+  test('liste les clans aux points et accepte une demande d’adhésion', async ({
+    page,
+    browser,
+  }) => {
+    await login(page);
+    await page.goto('/clan');
+    await ready(page);
+    // Le joueur de test peut déjà avoir un clan : on en repart pour repasser par la création.
+    const previous = page.getByRole('button', { name: 'Quitter le clan' });
+    if (await previous.isVisible()) {
+      await previous.click();
+      await expect(page.getByLabel('Nom du clan')).toBeVisible();
+    }
+
+    const name = `Clan rôles ${Date.now()}`;
+    await page.getByLabel('Nom du clan').fill(name);
+    await page.getByRole('button', { name: 'Créer' }).click();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(name);
+
+    // Un joueur sans clan demande à rejoindre depuis le classement.
+    const marcoContext = await browser.newContext();
+    const marco = await marcoContext.newPage();
+    await marco.goto('/auth/dev?compte=marco');
+    await marco.goto('/clans');
+    await ready(marco);
+    const clanRow = () => marco.getByRole('listitem').filter({ hasText: name });
+    await expect(clanRow().getByText('Points')).toBeVisible();
+    await clanRow().getByRole('button', { name: 'Demander à rejoindre' }).click();
+    await expect(marco.getByText('Demande envoyée').first()).toBeVisible();
+    await marco.reload();
+    await ready(marco);
+    await expect(clanRow()).toContainText('Demande envoyée');
+
+    // Le chef accepte la demande, puis nomme le nouveau membre officier.
+    const requests = page
+      .locator('section')
+      .filter({ has: page.getByRole('heading', { name: /Demandes d.adhésion/ }) });
+    const members = page
+      .locator('section')
+      .filter({ has: page.getByRole('heading', { name: 'Membres' }) });
+    await page.reload();
+    await ready(page);
+    await expect(requests).toContainText('Marco');
+    await requests.getByRole('button', { name: 'Accepter' }).click();
+    await page.reload();
+    await ready(page);
+    await expect(requests).toHaveCount(0);
+    const marcoRow = () => members.getByRole('listitem').filter({ hasText: 'Marco' });
+    await expect(marcoRow()).toBeVisible();
+    await marcoRow().getByRole('button', { name: 'Nommer officier' }).click();
+    await expect(marcoRow()).toContainText('Officier');
+
+    // Un officier reçoit et accepte à son tour une demande.
+    const leaContext = await browser.newContext();
+    const lea = await leaContext.newPage();
+    await lea.goto('/auth/dev?compte=lea');
+    await lea.goto('/clans');
+    await ready(lea);
+    await lea
+      .getByRole('listitem')
+      .filter({ hasText: name })
+      .getByRole('button', { name: 'Demander à rejoindre' })
+      .click();
+    await expect(lea.getByText('Demande envoyée').first()).toBeVisible();
+
+    await marco.goto('/clan');
+    await ready(marco);
+    const officerRequests = marco
+      .locator('section')
+      .filter({ has: marco.getByRole('heading', { name: /Demandes d.adhésion/ }) });
+    await expect(officerRequests).toContainText('Léa');
+    await officerRequests.getByRole('button', { name: 'Accepter' }).click();
+    await marco.goto('/clan');
+    await ready(marco);
+    const marcoMembers = marco
+      .locator('section')
+      .filter({ has: marco.getByRole('heading', { name: 'Membres' }) });
+    await expect(marcoMembers.getByRole('listitem').filter({ hasText: 'Léa' })).toBeVisible();
+    // L'officier ne nomme pas : ce pouvoir reste au chef seul.
+    await expect(marco.getByRole('button', { name: 'Nommer officier' })).toHaveCount(0);
+
+    await marcoContext.close();
+    await leaContext.close();
+  });
+});

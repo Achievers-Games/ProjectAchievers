@@ -37,7 +37,9 @@
         "local c = count: plural",
         "local n = count: number"
       ],
-      "selectors": ["c"],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=*": "{platform} で新しい実績を {n} 件獲得しました！"
       }
@@ -52,8 +54,14 @@
   "sync_xbox_expired": "Xbox の認証が期限切れです。アカウントを再接続してください。",
   "more_cards": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=*": "+ ほか {n} 件のアンロック"
       }
@@ -61,8 +69,14 @@
   ],
   "count_games": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=*": "{n} 本のゲーム"
       }
@@ -70,8 +84,14 @@
   ],
   "count_achievements": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=*": "{n} 件の実績"
       }
@@ -79,8 +99,14 @@
   ],
   "count_players": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=*": "{n} 人のプレイヤー"
       }
@@ -88,8 +114,14 @@
   ],
   "count_guides": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=*": "{n} 件のガイド"
       }
@@ -97,8 +129,14 @@
   ],
   "count_comments": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=*": "{n} 件のコメント"
       }
@@ -106,8 +144,14 @@
   ],
   "count_points": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=*": "{n} ポイント"
       }
@@ -115,8 +159,14 @@
   ],
   "count_sessions_closed": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=*": "{n} 件のセッションをログアウトしました。"
       }
@@ -1061,43 +1111,281 @@
   "ach_ideas_loading": "ゲームを探しています…",
   "ach_ideas_none": "この実績に合うゲームはまだ見つかりません。",
   "ach_ideas_catalog": "あなたのゲームは該当しません。あなたのプラットフォームでサイト内で最も遊ばれているゲームです。",
-  "ach_ideas_left": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"残り {n} 個の実績"}}],
+  "ach_ideas_left": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "残り {n} 個の実績"
+      }
+    }
+  ],
   "ach_cat_friends": "フレンド",
   "ach_cat_clan": "クラン",
   "clan_ach_title": "クランの実績",
   "clan_ach_note": "クラン全体で獲得します。その日に在籍しているメンバーも獲得できます。",
   "clan_ach_push_title": "クランが実績を獲得しました",
-  "clan_ach_push_body": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"クランの新しい実績が {n} 件。あなたのものにもなります。"}}],
+  "clan_ach_push_body": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "クランの新しい実績が {n} 件。あなたのものにもなります。"
+      }
+    }
+  ],
   "ach_duo_title": "最強コンビ",
-  "ach_duo_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"フレンドもコンプリートしたゲームを {n} 本コンプリートする"}}],
+  "ach_duo_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "フレンドもコンプリートしたゲームを {n} 本コンプリートする"
+      }
+    }
+  ],
   "ach_revenge_title": "リベンジ",
-  "ach_revenge_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"フレンドが先にコンプリートしたゲームを {n} 本コンプリートする"}}],
+  "ach_revenge_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "フレンドが先にコンプリートしたゲームを {n} 本コンプリートする"
+      }
+    }
+  ],
   "ach_teammates_title": "チームメイト",
-  "ach_teammates_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"フレンドと 7 日以内に同じゲームを {n} 本コンプリートする"}}],
+  "ach_teammates_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "フレンドと 7 日以内に同じゲームを {n} 本コンプリートする"
+      }
+    }
+  ],
   "ach_synchro_title": "シンクロ",
-  "ach_synchro_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"フレンドと同じ日に同じゲームで実績を解除した日を {n} 日つくる"}}],
+  "ach_synchro_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "フレンドと同じ日に同じゲームで実績を解除した日を {n} 日つくる"
+      }
+    }
+  ],
   "ach_prescriber_title": "布教者",
-  "ach_prescriber_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"あなたがコンプリートしたゲームをフレンドが {n} 本始める"}}],
+  "ach_prescriber_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "あなたがコンプリートしたゲームをフレンドが {n} 本始める"
+      }
+    }
+  ],
   "ach_same_taste_title": "似た者同士",
-  "ach_same_taste_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"フレンドと共通のゲームを {n} 本持つ"}}],
+  "ach_same_taste_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "フレンドと共通のゲームを {n} 本持つ"
+      }
+    }
+  ],
   "ach_guild_title": "ギルド",
-  "ach_guild_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"クランの実績が合計 {n} 個に達する"}}],
+  "ach_guild_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "クランの実績が合計 {n} 個に達する"
+      }
+    }
+  ],
   "ach_clan_collection_title": "クランコレクション",
-  "ach_clan_collection_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"クランで {n} 本の異なるゲームをコンプリートする"}}],
+  "ach_clan_collection_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "クランで {n} 本の異なるゲームをコンプリートする"
+      }
+    }
+  ],
   "ach_clan_range_title": "オールラウンド",
-  "ach_clan_range_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"クランがコンプリートしたゲームが {n} ジャンルに及ぶ"}}],
+  "ach_clan_range_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "クランがコンプリートしたゲームが {n} ジャンルに及ぶ"
+      }
+    }
+  ],
   "ach_raid_title": "レイド",
-  "ach_raid_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"メンバー {n} 人が同じゲームをコンプリートする"}}],
+  "ach_raid_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "メンバー {n} 人が同じゲームをコンプリートする"
+      }
+    }
+  ],
   "ach_clan_night_title": "クランの夜",
-  "ach_clan_night_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"メンバー 3 人が同じ日に同じゲームで実績を解除する（{n} 回）"}}],
+  "ach_clan_night_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "メンバー 3 人が同じ日に同じゲームで実績を解除する（{n} 回）"
+      }
+    }
+  ],
   "ach_all_in_title": "総員参加",
-  "ach_all_in_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"全メンバーが同じ週に実績を解除する（{n} 週、3 人以上）"}}],
+  "ach_all_in_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "全メンバーが同じ週に実績を解除する（{n} 週、3 人以上）"
+      }
+    }
+  ],
   "ach_marathon_title": "マラソン",
-  "ach_marathon_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"クランが {n} 日連続で毎日 1 つ以上の実績を解除する"}}],
+  "ach_marathon_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "クランが {n} 日連続で毎日 1 つ以上の実績を解除する"
+      }
+    }
+  ],
   "ach_together_season_title": "みんなで片付けろ",
-  "ach_together_season_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"クランが 1 シーズンでゲームを {n} 本コンプリートする"}}],
+  "ach_together_season_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "クランが 1 シーズンでゲームを {n} 本コンプリートする"
+      }
+    }
+  ],
   "ach_band_title": "仲間たち",
-  "ach_band_text": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"クランのメンバーが {n} 人になる"}}],
+  "ach_band_text": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "クランのメンバーが {n} 人になる"
+      }
+    }
+  ],
   "ach_nobody_behind_title": "誰も置いていかない",
   "ach_nobody_behind_text": "全メンバーが何かしらのゲームを 1 本以上コンプリートしている（3 人以上）",
   "ach_loyal_title": "忠義",
@@ -1136,7 +1424,21 @@
   "missable_hint": "今回のプレイで取り逃す恐れあり。進める前にガイドを確認。",
   "guide_badge": "公式ガイド",
   "filter_missable": "取り逃し注意",
-  "missables_title": [{"declarations":["input count","local c = count: plural","local n = count: number"],"selectors":["c"],"match":{"c=*":"取り逃しの恐れがある実績：{n} 個"}}],
+  "missables_title": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "取り逃しの恐れがある実績：{n} 個"
+      }
+    }
+  ],
   "missables_text": "今回のプレイで取り逃す恐れがあります。始める前にガイドを読むか、「取り逃し注意」で絞り込んでください。",
   "missables_done": "すべて獲得済み。もう取り逃しはありません。",
   "missables_none": "取り逃しの恐れがある実績はありません",
@@ -1246,8 +1548,14 @@
   "games_tier": "レベル",
   "count_cards": [
     {
-      "declarations": ["input count", "local c = count: plural", "local n = count: number"],
-      "selectors": ["c"],
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
       "match": {
         "c=*": "{n} 枚のカード"
       }
@@ -1345,5 +1653,37 @@
   "season_all_games": "対象のゲームをすべて見る",
   "season_game_counts": "このゲームはシーズンの対象です。",
   "season_game_soon": "まだ対象外です。開始前に実績を獲得すると、シーズンの対象になります。",
-  "season_game_no": "シーズン対象外です：開始前に始めている必要がありました。"
+  "season_game_no": "シーズン対象外です：開始前に始めている必要がありました。",
+  "compare_with_friend": "フレンドと比較",
+  "compare_quit": "比較を終了",
+  "compare_summary": "{common} 個共通 · {mine} 個は自分のみ · {theirs} 個は {name} のみ",
+  "compare_filter_common": "共通",
+  "compare_filter_mine": "自分のみ",
+  "compare_filter_theirs": "{name} のみ",
+  "compare_column_mine": "自分",
+  "compare_check_theirs": "{name} が取得",
+  "compare_missing_theirs": "{name} は未取得",
+  "compare_you_dont_own": "このバージョンの {game} を持っていないため、実績ごとの比較はできません。",
+  "compare_they_dont_own": "{name} はこのバージョンの {game} を持っていません。",
+  "compare_no_friends": "このバージョンを持っているフレンドがいません。フレンドを追加すると比較できます。",
+  "friends_full": "フレンド上限の {max} 人に達しています。続けるにはフレンドを削除してください。",
+  "friends_count": "{count} / {max} 人",
+  "friends_full_accept": "この申請を承認するにはフレンドを削除してください。",
+  "clan_officer_only": "リーダーと役職者のみ。",
+  "clan_role_owner": "リーダー",
+  "clan_role_officer": "役職者",
+  "clan_promote": "役職者にする",
+  "clan_demote": "役職を解除",
+  "clan_requests": "参加申請",
+  "clan_request_join": "参加を申請",
+  "clan_request_sent": "申請済み",
+  "clan_request_accept": "承認",
+  "clan_request_decline": "拒否",
+  "clan_request_empty": "保留中の申請はありません。",
+  "clan_request_push_title": "参加申請",
+  "clan_request_push_body": "{name} が {clan} への参加を希望しています。",
+  "clans_ranking_rules": "メンバーのコレクションポイントの合計。",
+  "clans_points": "ポイント",
+  "notification_clan_request": "クラン申請",
+  "notification_clan_rename": "クラン名の変更"
 }

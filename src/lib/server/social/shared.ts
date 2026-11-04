@@ -2,12 +2,14 @@ import { Prisma } from '#prisma';
 import { m } from '#lib/paraglide/messages';
 import { db } from '../db';
 import { notify } from '../push';
-import { publicUser } from '../queries';
+import { publicUser } from '../queries/shared';
 import { publishChat } from '../sync/events';
 
 export const MESSAGES_SHOWN = 100;
 export const PUSH_PREVIEW = 120;
 export const MAX_CLAN_MEMBERS = 50;
+/** Les membres d'un clan ne sont pas des amis : ce plafond ne compte que les amitiés acceptées. */
+export const MAX_FRIENDS = 30;
 
 export type SocialFailure =
   | 'not_found'
@@ -16,7 +18,9 @@ export type SocialFailure =
   | 'name_taken'
   | 'in_clan'
   | 'clan_full'
+  | 'friends_full'
   | 'owner_only'
+  | 'officer_only'
   | 'not_friends';
 
 export type Relation = 'self' | 'none' | 'sent' | 'received' | 'friends' | 'blocked';

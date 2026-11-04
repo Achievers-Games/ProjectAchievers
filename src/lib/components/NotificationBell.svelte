@@ -6,6 +6,7 @@
   import Layers from '@lucide/svelte/icons/layers';
   import MessageCircle from '@lucide/svelte/icons/message-circle';
   import Shield from '@lucide/svelte/icons/shield';
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
   import Trophy from '@lucide/svelte/icons/trophy';
   import UserPlus from '@lucide/svelte/icons/user-plus';
   import type { Component } from 'svelte';
@@ -19,6 +20,8 @@
     message: MessageCircle,
     invite_friend: UserPlus,
     invite_clan: Shield,
+    clan_request: Shield,
+    clan_rename: TriangleAlert,
     unlock: Trophy,
     card: Layers,
   };
@@ -39,6 +42,8 @@
       message: m.notification_message(),
       invite_friend: m.notification_invite_friend(),
       invite_clan: m.notification_invite_clan(),
+      clan_request: m.notification_clan_request(),
+      clan_rename: m.notification_clan_rename(),
       unlock: m.notification_unlock(),
       card: m.notification_card(),
     })[kind];
