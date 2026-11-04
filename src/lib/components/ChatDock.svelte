@@ -62,7 +62,7 @@
   }
 </script>
 
-{#if shown}<div class="fixed bottom-0 right-4 z-30 hidden items-end gap-2 md:flex">
+{#if shown}<div class="fixed bottom-0 right-4 z-[var(--z-dock)] hidden items-end gap-2 md:flex">
     {#each $dockChats as chat (chat.id)}
       <section class="card w-72 overflow-hidden rounded-b-none shadow-lg" aria-label={chat.title}>
         <header

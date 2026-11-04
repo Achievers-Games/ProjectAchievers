@@ -102,7 +102,7 @@
     position: fixed;
     left: 50%;
     bottom: 6rem;
-    z-index: 60;
+    z-index: var(--z-pop);
     transform: translateX(-50%);
     width: min(24rem, calc(100vw - 2rem));
     pointer-events: none;

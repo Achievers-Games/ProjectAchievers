@@ -5,7 +5,7 @@
 </script>
 
 <div
-  class="fixed bottom-20 right-4 z-50 flex w-80 max-w-[calc(100vw-2rem)] flex-col gap-2 md:bottom-4"
+  class="fixed bottom-20 right-4 z-[var(--z-toast)] flex w-80 max-w-[calc(100vw-2rem)] flex-col gap-2 md:bottom-4"
 >
   {#each $toasts as item (item.id)}
     <div

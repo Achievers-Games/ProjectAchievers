@@ -22,6 +22,10 @@
   --gold: 247 196 72;
   --silver: 176 184 192;
   --bronze: 200 136 92;
+  /* Couches fixes, du plus bas au plus haut : dock de chat, avis, popup de succès. */
+  --z-dock: 30;
+  --z-toast: 50;
+  --z-pop: 60;
   color-scheme: dark;
 }
 
@@ -64,6 +68,118 @@
     --bronze: 140 80 40;
     color-scheme: light;
   }
+}
+
+/*
+ * Une seule palette de niveaux, posée sur `data-tier` : cartes, tuiles du fil, badges,
+ * chiffres et barres de progression y puisent leurs couleurs au lieu de les recopier.
+ */
+[data-tier='1'] {
+  --tier-ink: #cd8b4e;
+  --tier-frame: linear-gradient(135deg, #e8b184, #8a5a2b 40%, #d39a64 70%, #7a4c22);
+  --tier-body: linear-gradient(160deg, #4a2c15, #1e1208);
+  --tier-back: #4a2e17, #24160a;
+  --tier-line: #f0c8a0, #b0743c, #e8b184;
+  --tier-title: #f0c8a0;
+  --tier-text: rgb(240 205 170 / 0.8);
+  --tier-glow: 205 139 78;
+  --tier-sheen: 255 225 150;
+  --tier-border: 2px;
+  --tier-badge: linear-gradient(120deg, #e8b184, #b0743c, #f0c8a0);
+  --tier-badge-ink: #2c1505;
+  --tier-fill: linear-gradient(90deg, #8a5a2b, #e0a56c, #a86f38);
+  --tier-goal: 232 177 132;
+}
+[data-tier='2'] {
+  --tier-ink: #c4ccd6;
+  --tier-frame: linear-gradient(135deg, #f2f4f7, #8d97a3 40%, #dfe4ea 70%, #7c8693);
+  --tier-body: linear-gradient(160deg, #3f4752, #171b21);
+  --tier-back: #3b424a, #1c2229;
+  --tier-line: #f2f4f7, #8d97a3, #eef1f5;
+  --tier-title: #e6eaef;
+  --tier-text: rgb(225 230 236 / 0.8);
+  --tier-glow: 196 204 214;
+  --tier-sheen: 255 225 150;
+  --tier-border: 2px;
+  --tier-badge: linear-gradient(120deg, #f2f4f7, #aab3bd, #e6eaef);
+  --tier-badge-ink: #1c2229;
+  --tier-fill: linear-gradient(90deg, #8d97a3, #eef1f5, #a7b1bc);
+  --tier-goal: 214 220 228;
+}
+[data-tier='3'] {
+  --tier-ink: #f7c448;
+  --tier-frame: linear-gradient(135deg, #fff1bf, #d9a520 30%, #fff6d5 50%, #b8860b 75%, #ffe08a);
+  --tier-body: linear-gradient(160deg, rgb(92 66 12), rgb(38 28 8));
+  --tier-back: #5c420c, #261c08;
+  --tier-line: #fff1bf, #d9a520, #b8860b, #ffe08a;
+  --tier-title: #ffe08a;
+  --tier-text: rgb(255 236 180 / 0.8);
+  --tier-glow: 247 196 72;
+  --tier-sheen: 255 225 150;
+  --tier-border: 3px;
+  --tier-badge: linear-gradient(120deg, #ffe08a, #e0ac28, #fff1bf);
+  --tier-badge-ink: #3d2a00;
+  --tier-fill: linear-gradient(90deg, #b8860b, #ffe08a, #d9a520);
+  --tier-goal: 255 214 102;
+}
+[data-tier='4'] {
+  --tier-ink: #d9e8fb;
+  --tier-frame: linear-gradient(135deg, #ffffff, #8ba0b8 30%, #f4f9ff 50%, #6f8299 75%, #dce8f6);
+  --tier-body: linear-gradient(160deg, #46586d, #141c27);
+  --tier-back: #33425a, #14202e;
+  --tier-line: #f2f8ff, #7f93ad, #e8f2ff;
+  --tier-title: #f2f8ff;
+  --tier-text: rgb(220 233 250 / 0.85);
+  --tier-glow: 200 225 255;
+  --tier-sheen: 225 240 255;
+  --tier-border: 4px;
+  --tier-badge: linear-gradient(120deg, #ffffff, #b4c6dc, #eef5ff);
+  --tier-badge-ink: #14202e;
+  --tier-fill: linear-gradient(90deg, #7f93ad, #f2f8ff, #9fb4cc);
+  --tier-goal: 200 225 255;
+}
+[data-tier='5'] {
+  --tier-ink: #c4b5fd;
+  --tier-frame: linear-gradient(
+    120deg,
+    #38bdf8,
+    #a78bfa,
+    #f472b6,
+    #fbbf24,
+    #4ade80,
+    #38bdf8,
+    #a78bfa
+  );
+  --tier-body: linear-gradient(120deg, #3a1a78, #0c5468, #7a1a63, #3a1a78);
+  --tier-back: #2e1f52, #120d24;
+  --tier-line: #38bdf8, #a78bfa, #f472b6, #fbbf24, #4ade80, #38bdf8;
+  --tier-title: #ffffff;
+  --tier-title-fill: linear-gradient(90deg, #7dd3fc, #e9d5ff, #fbcfe8, #fde68a);
+  --tier-text: rgb(232 225 255 / 0.9);
+  --tier-glow: 196 150 255;
+  --tier-sheen: 255 255 255;
+  --tier-border: 4px;
+  --tier-badge: linear-gradient(120deg, #7dd3fc, #c4b5fd, #f9a8d4, #fde68a);
+  --tier-badge-ink: #17132e;
+  --tier-fill: linear-gradient(90deg, #38bdf8, #a78bfa, #f472b6, #fbbf24, #4ade80, #38bdf8);
+  --tier-stat-fill: linear-gradient(100deg, #7dd3fc, #c4b5fd, #f9a8d4);
+  --tier-goal: 196 170 255;
+}
+[data-tier='6'] {
+  --tier-ink: #ff7a3d;
+  --tier-frame: linear-gradient(120deg, #ffd76e, #ff5a1f, #b91c1c, #7c3aed, #ff5a1f, #ffd76e);
+  --tier-body: radial-gradient(circle at 50% 120%, #7f1d1d, #1a0500 55%, #050000);
+  --tier-back: #4a0d0d, #1a0500;
+  --tier-line: #7f1d1d, #ff5a1f, #ffd76e, #ff5a1f, #7f1d1d;
+  --tier-title: #ffd76e;
+  --tier-text: rgb(255 205 160 / 0.9);
+  --tier-glow: 255 110 40;
+  --tier-sheen: 255 170 80;
+  --tier-border: 5px;
+  --tier-badge: linear-gradient(120deg, #1a0500, #7f1d1d, #1a0500);
+  --tier-badge-ink: #ffd76e;
+  --tier-fill: linear-gradient(90deg, #7f1d1d, #ff5a1f, #ffd76e, #ff5a1f, #7f1d1d);
+  --tier-goal: 255 160 70;
 }
 
 @layer base {
@@ -197,50 +313,27 @@
 .stat-value {
   @apply text-2xl font-bold;
 }
-.stat-value[data-tier='1'] {
-  color: #cd8b4e;
-}
-.stat-value[data-tier='2'] {
-  color: #c4ccd6;
-}
-.stat-value[data-tier='3'] {
-  @apply text-gold;
-}
-.stat-value[data-tier='4'] {
-  color: #d9e8fb;
+.stat-value[data-tier] {
+  color: var(--tier-ink);
 }
 .stat-value[data-tier='5'] {
-  background: linear-gradient(100deg, #7dd3fc, #c4b5fd, #f9a8d4);
+  background: var(--tier-stat-fill);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-}
-.stat-value[data-tier='6'] {
-  color: #ff7a3d;
 }
 .progress-fill {
   background-image: linear-gradient(90deg, rgb(var(--accent)), rgb(var(--accent-2)));
   transition: width 400ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-.progress-fill[data-tier='1'] {
-  background-image: linear-gradient(90deg, #8a5a2b, #e0a56c, #a86f38);
-}
-.progress-fill[data-tier='2'] {
-  background-image: linear-gradient(90deg, #8d97a3, #eef1f5, #a7b1bc);
-}
-.progress-fill[data-tier='3'] {
-  background-image: linear-gradient(90deg, #b8860b, #ffe08a, #d9a520);
-}
-.progress-fill[data-tier='4'] {
-  background-image: linear-gradient(90deg, #7f93ad, #f2f8ff, #9fb4cc);
+.progress-fill[data-tier] {
+  background-image: var(--tier-fill);
 }
 .progress-fill[data-tier='5'] {
-  background-image: linear-gradient(90deg, #38bdf8, #a78bfa, #f472b6, #fbbf24, #4ade80, #38bdf8);
   background-size: 200% 100%;
   animation: tier-flow 2.5s linear infinite;
 }
 .progress-fill[data-tier='6'] {
-  background-image: linear-gradient(90deg, #7f1d1d, #ff5a1f, #ffd76e, #ff5a1f, #7f1d1d);
   background-size: 200% 100%;
   animation: tier-flow 1.6s linear infinite;
 }
@@ -284,64 +377,23 @@
 }
 .drop-tile {
   @apply relative block w-56 shrink-0 overflow-hidden rounded-md;
-  /* Les effets d'exemplaires reprennent la couleur du niveau. */
-  --glow: var(--drop-glow);
-  /* Le cadre, le fond et le halo suivent le niveau de la carte, comme les badges. */
-  --drop-ink: #f7c448;
-  --drop-line: #fff1bf, #d9a520, #b8860b, #ffe08a;
-  --drop-back: #5c420c, #261c08;
-  --drop-glow: 247 196 72;
+  /* Les effets d'exemplaires reprennent la couleur du niveau, comme le cadre et le halo. */
+  --glow: var(--tier-glow);
   border: 2px solid transparent;
   background:
-    linear-gradient(160deg, var(--drop-back)) padding-box,
-    linear-gradient(135deg, var(--drop-line)) border-box;
-  box-shadow: 0 0 12px rgb(var(--drop-glow) / 0.3);
+    linear-gradient(160deg, var(--tier-back)) padding-box,
+    linear-gradient(135deg, var(--tier-line)) border-box;
+  box-shadow: 0 0 12px rgb(var(--tier-glow) / 0.3);
   transition:
     box-shadow 180ms,
     transform 180ms;
 }
-.drop-tile[data-tier='1'] {
-  --drop-ink: #cd8b4e;
-  --drop-line: #f0c8a0, #b0743c, #e8b184;
-  --drop-back: #4a2e17, #24160a;
-  --drop-glow: 205 139 78;
-}
-.drop-tile[data-tier='2'] {
-  --drop-ink: #c4ccd6;
-  --drop-line: #f2f4f7, #8d97a3, #eef1f5;
-  --drop-back: #3b424a, #1c2229;
-  --drop-glow: 196 204 214;
-}
-.drop-tile[data-tier='3'] {
-  --drop-ink: #f7c448;
-  --drop-line: #fff1bf, #d9a520, #b8860b, #ffe08a;
-  --drop-back: #5c420c, #261c08;
-  --drop-glow: 247 196 72;
-}
-.drop-tile[data-tier='4'] {
-  --drop-ink: #d9e8fb;
-  --drop-line: #f2f8ff, #7f93ad, #e8f2ff;
-  --drop-back: #33425a, #14202e;
-  --drop-glow: 200 225 255;
-}
-.drop-tile[data-tier='5'] {
-  --drop-ink: #c4b5fd;
-  --drop-line: #38bdf8, #a78bfa, #f472b6, #fbbf24, #4ade80, #38bdf8;
-  --drop-back: #2e1f52, #120d24;
-  --drop-glow: 196 150 255;
-}
-.drop-tile[data-tier='6'] {
-  --drop-ink: #ff7a3d;
-  --drop-line: #7f1d1d, #ff5a1f, #ffd76e, #ff5a1f, #7f1d1d;
-  --drop-back: #4a0d0d, #1a0500;
-  --drop-glow: 255 110 40;
-}
 .drop-tile:hover {
   transform: translateY(-2px);
-  box-shadow: 0 0 22px rgb(var(--drop-glow) / 0.6);
+  box-shadow: 0 0 22px rgb(var(--tier-glow) / 0.6);
 }
 .drop-title {
-  color: var(--drop-ink);
+  color: var(--tier-ink);
 }
 /* Mêmes exemplaires que les cartes de la collection : ×2 étincelles, ×3 fond vivant,
    ×4 sujet détaché. Ils s'animent au survol, pour que la page reste calme. */
@@ -394,59 +446,22 @@
     0 2px 10px rgb(0 0 0 / 0.5),
     0 0 12px rgb(var(--tier-glow, 247 196 72) / 0.8);
 }
-.complete-badge[data-tier='1'] {
-  --tier-glow: 205 139 78;
-  color: #2c1505;
-  background: linear-gradient(120deg, #e8b184, #b0743c, #f0c8a0);
-}
-.complete-badge[data-tier='2'] {
-  --tier-glow: 196 204 214;
-  color: #1c2229;
-  background: linear-gradient(120deg, #f2f4f7, #aab3bd, #e6eaef);
-}
-.complete-badge[data-tier='3'] {
-  color: #3d2a00;
-  background: linear-gradient(120deg, #ffe08a, #e0ac28, #fff1bf);
-}
-.complete-badge[data-tier='4'] {
-  --tier-glow: 200 225 255;
-  color: #14202e;
-  background: linear-gradient(120deg, #ffffff, #b4c6dc, #eef5ff);
-}
-.complete-badge[data-tier='5'] {
-  --tier-glow: 196 150 255;
-  color: #17132e;
-  background: linear-gradient(120deg, #7dd3fc, #c4b5fd, #f9a8d4, #fde68a);
+.complete-badge[data-tier] {
+  color: var(--tier-badge-ink);
+  background: var(--tier-badge);
 }
 .complete-badge[data-tier='6'] {
-  --tier-glow: 255 110 40;
-  color: #ffd76e;
-  background: linear-gradient(120deg, #1a0500, #7f1d1d, #1a0500);
   border: 1px solid #ffb547;
 }
 /* La carte à gagner : même couleur, en creux, pour ne pas la confondre avec une carte obtenue. */
 .complete-badge[data-goal] {
-  --goal: 232 177 132;
-  color: rgb(var(--goal));
+  color: rgb(var(--tier-goal, 232 177 132));
   background: rgb(12 11 22 / 0.78);
-  border: 1px dashed rgb(var(--goal) / 0.9);
+  border: 1px dashed rgb(var(--tier-goal, 232 177 132) / 0.9);
   box-shadow: 0 2px 8px rgb(0 0 0 / 0.45);
   backdrop-filter: blur(4px);
 }
-.complete-badge[data-goal][data-tier='2'] {
-  --goal: 214 220 228;
-}
-.complete-badge[data-goal][data-tier='3'] {
-  --goal: 255 214 102;
-}
-.complete-badge[data-goal][data-tier='4'] {
-  --goal: 200 225 255;
-}
-.complete-badge[data-goal][data-tier='5'] {
-  --goal: 196 170 255;
-}
 .complete-badge[data-goal][data-tier='6'] {
-  --goal: 255 160 70;
   box-shadow:
     0 2px 8px rgb(0 0 0 / 0.45),
     0 0 10px rgb(255 110 40 / 0.45);
@@ -471,13 +486,13 @@
 
 /* Chaque rareté change toute la carte : cadre, fond, titre, reflet et lueur. */
 .game-card[data-tier] {
-  --frame: linear-gradient(135deg, #fff1bf, #d9a520 30%, #fff6d5 50%, #b8860b 75%, #ffe08a);
-  --body: linear-gradient(160deg, rgb(92 66 12), rgb(38 28 8));
-  --title: #ffe08a;
-  --text: rgb(255 236 180 / 0.8);
-  --glow: 247 196 72;
-  --sheen: 255 225 150;
-  border: 3px solid transparent;
+  --frame: var(--tier-frame);
+  --body: var(--tier-body);
+  --title: var(--tier-title);
+  --text: var(--tier-text);
+  --glow: var(--tier-glow);
+  --sheen: var(--tier-sheen);
+  border: var(--tier-border) solid transparent;
   background:
     var(--body) padding-box,
     var(--frame) border-box;
@@ -503,49 +518,20 @@
 }
 
 .game-card[data-tier='1'] {
-  --frame: linear-gradient(135deg, #e8b184, #8a5a2b 40%, #d39a64 70%, #7a4c22);
-  --body: linear-gradient(160deg, #4a2c15, #1e1208);
-  --title: #f0c8a0;
-  --text: rgb(240 205 170 / 0.8);
-  --glow: 205 139 78;
-  border-width: 2px;
   box-shadow: 0 0 0 1px rgb(var(--glow) / 0.25);
 }
 .game-card[data-tier='2'] {
-  --frame: linear-gradient(135deg, #f2f4f7, #8d97a3 40%, #dfe4ea 70%, #7c8693);
-  --body: linear-gradient(160deg, #3f4752, #171b21);
-  --title: #e6eaef;
-  --text: rgb(225 230 236 / 0.8);
-  --glow: 196 204 214;
-  border-width: 2px;
   box-shadow: 0 0 0 1px rgb(var(--glow) / 0.3);
 }
-
-.game-card[data-tier='4'] {
-  --frame: linear-gradient(135deg, #ffffff, #8ba0b8 30%, #f4f9ff 50%, #6f8299 75%, #dce8f6);
-  --body: linear-gradient(160deg, #46586d, #141c27);
-  --title: #f2f8ff;
-  --text: rgb(220 233 250 / 0.85);
-  --glow: 200 225 255;
-  --sheen: 225 240 255;
-  border-width: 4px;
-}
-
 .game-card[data-tier='5'] {
-  --frame: linear-gradient(120deg, #38bdf8, #a78bfa, #f472b6, #fbbf24, #4ade80, #38bdf8, #a78bfa);
-  --body: linear-gradient(120deg, #3a1a78, #0c5468, #7a1a63, #3a1a78);
-  --title: #ffffff;
-  --text: rgb(232 225 255 / 0.9);
   --glow: 190 140 255;
-  --sheen: 255 255 255;
-  border-width: 4px;
   background-size:
     300% 300%,
     300% 300%;
   animation: tier-shift 5s linear infinite alternate;
 }
 .game-card[data-tier='5'] h3 {
-  background: linear-gradient(90deg, #7dd3fc, #e9d5ff, #fbcfe8, #fde68a);
+  background: var(--tier-title-fill);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -555,13 +541,7 @@
 }
 
 .game-card[data-tier='6'] {
-  --frame: linear-gradient(120deg, #ffd76e, #ff5a1f, #b91c1c, #7c3aed, #ff5a1f, #ffd76e);
-  --body: radial-gradient(circle at 50% 120%, #7f1d1d, #1a0500 55%, #050000);
-  --title: #ffd76e;
-  --text: rgb(255 205 160 / 0.9);
   --glow: 255 90 31;
-  --sheen: 255 170 80;
-  border-width: 5px;
   background-size:
     100% 100%,
     300% 300%;
@@ -1208,13 +1188,17 @@
   .progress-fill[data-tier],
   .reward-rays,
   .reward-back::after,
-  .reward-stage.finished .game-card {
+  .reward-stage.finished .game-card,
+  .avatar-frame,
+  .chat-waiting {
     animation: none !important;
   }
-  .reward-confetti,
-  .reward-finale {
-    display: none;
+  .chat-waiting {
+    background-color: rgb(var(--accent) / 0.25);
   }
+  .reward-confetti,
+  .reward-finale,
+  .season-embers,
   .foil::before {
     display: none;
   }
@@ -1290,11 +1274,6 @@
     --spin: 360deg;
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .avatar-frame {
-    animation: none !important;
-  }
-}
 
 .carousel {
   @apply relative overflow-hidden rounded-lg border border-line;
@@ -1308,7 +1287,7 @@
   display: none;
 }
 .carousel-slide {
-  @apply flex min-h-56 w-full shrink-0 flex-col gap-2 px-14 py-6;
+  @apply relative flex min-h-56 w-full shrink-0 flex-col gap-2 px-14 py-6;
   scroll-snap-align: start;
   background-image:
     linear-gradient(90deg, rgb(8 6 18 / 0.94) 15%, rgb(8 6 18 / 0.6) 60%, rgb(8 6 18 / 0.2)),
@@ -1370,9 +1349,6 @@
   width: 122%;
   height: 122%;
 }
-.carousel-slide {
-  position: relative;
-}
 .carousel-frames {
   @apply absolute right-16 top-1/2 hidden -translate-y-1/2 grid-cols-2 gap-5 sm:grid;
 }
@@ -1428,11 +1404,6 @@
     transform: translate(var(--drift), -340px) scale(0.3);
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .season-embers {
-    display: none;
-  }
-}
 .season-tab {
   @apply ml-1 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-bold transition-transform hover:scale-105;
   color: #1a0d05;
@@ -1449,7 +1420,7 @@
   left: 1rem;
   right: 1rem;
   bottom: 4.5rem;
-  z-index: 50;
+  z-index: var(--z-toast);
 }
 @media (min-width: 768px) {
   .push-prompt {
@@ -1494,12 +1465,6 @@
 @keyframes chat-waiting {
   50% {
     background-color: rgb(var(--accent) / 0.35);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .chat-waiting {
-    animation: none;
-    background-color: rgb(var(--accent) / 0.25);
   }
 }
 .social-badge {
