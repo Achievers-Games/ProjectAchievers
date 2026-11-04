@@ -1,6 +1,6 @@
 <script lang="ts">
   import { m } from '#lib/paraglide/messages';
-  import type { Platform } from '@prisma/client';
+  import type { Platform } from '#prisma';
   import Flame from '@lucide/svelte/icons/flame';
   import Gamepad2 from '@lucide/svelte/icons/gamepad-2';
   import CardFx from './CardFx.svelte';

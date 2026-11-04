@@ -3,7 +3,7 @@
   import { goto } from '$app/navigation';
   import Search from '@lucide/svelte/icons/search';
   import { PLATFORM_LABELS } from '#lib/labels';
-  import type { Platform } from '@prisma/client';
+  import type { Platform } from '#prisma';
 
   interface Result {
     name: string;

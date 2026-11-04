@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Platform } from '@prisma/client';
+  import type { Platform } from '#prisma';
   import { m } from '#lib/paraglide/messages';
   import ProviderIcon from '#lib/components/ProviderIcon.svelte';
   import { PLATFORM_LABELS } from '#lib/labels';

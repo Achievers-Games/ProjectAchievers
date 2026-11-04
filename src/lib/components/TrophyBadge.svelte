@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { TrophyType } from '@prisma/client';
+  import type { TrophyType } from '#prisma';
   import { trophyLabel } from '#lib/labels';
 
   let { type }: { type: TrophyType } = $props();

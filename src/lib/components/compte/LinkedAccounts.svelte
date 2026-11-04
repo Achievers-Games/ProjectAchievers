@@ -1,7 +1,7 @@
 <script lang="ts">
   import { m } from '#lib/paraglide/messages';
   import { enhance } from '$app/forms';
-  import type { Provider, SyncStatus } from '@prisma/client';
+  import type { Provider, SyncStatus } from '#prisma';
   import ProviderIcon from '#lib/components/ProviderIcon.svelte';
   import Progress from '#lib/components/Progress.svelte';
   import { formatRelative, PROVIDER_LABELS, syncErrorText } from '#lib/labels';
