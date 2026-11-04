@@ -1,4 +1,4 @@
-import { Prisma } from '#prisma';
+import { Prisma, type TrophyType } from '#prisma';
 import { copiesFor } from '#lib/collection';
 import { db } from '../db';
 import { publicGames, publicUser } from './shared';
@@ -95,42 +95,121 @@ export async function hasRecentFeat(userId: string, gameId: string, since: Date)
   return feats > 0;
 }
 
+/**
+ * Les exploits récents, retrouvés à partir du catalogue. Les chercher au fil des déblocages
+ * obligeait à relire chaque succès débloqué du site (27 000 en production, 650 ms sur le NAS) :
+ * ici le catalogue répond par son index partiel, et seuls les exploits retrouvés sont relus.
+ */
+async function recentFeats(showAdult: boolean, userIds: string[] | undefined, limit: number) {
+  const rows = await db.$queryRaw<
+    {
+      userId: string;
+      unlockedAt: Date;
+      handle: string;
+      displayName: string;
+      avatarUrl: string | null;
+      avatarMotionUrl: string | null;
+      frame: string | null;
+      frameMotionUrl: string | null;
+      id: string;
+      gameId: string;
+      name: string;
+      iconUrl: string | null;
+      trophyType: TrophyType;
+      globalRarity: number | null;
+      gameName: string;
+      gameSlug: string;
+    }[]
+  >`
+    WITH feats AS MATERIALIZED (
+      SELECT a.id
+      FROM "Achievement" a
+      JOIN "Game" g ON g.id = a."gameId"
+      WHERE (a."trophyType" = 'PLATINUM' OR a."globalRarity" < ${FEAT_RARITY})
+        ${
+          showAdult
+            ? Prisma.empty
+            : Prisma.sql`AND NOT g."adultOnly"
+          AND (g.platform <> 'STEAM' OR g."contentCheckedAt" IS NOT NULL)`
+        }
+    ), recent AS MATERIALIZED (
+      SELECT ua."userId", ua."achievementId", ua."unlockedAt"
+      FROM "UserAchievement" ua
+      JOIN "User" u ON u.id = ua."userId" AND u."isPublic"
+      JOIN feats f ON f.id = ua."achievementId"
+      ${userIds ? Prisma.sql`WHERE ua."userId" = ANY(${userIds}::text[])` : Prisma.empty}
+      ORDER BY ua."unlockedAt" DESC
+      LIMIT ${limit}
+    )
+    SELECT r."userId", r."unlockedAt", u.handle, u."displayName", u."avatarUrl",
+           u."avatarMotionUrl", u.frame, u."frameMotionUrl",
+           a.id, a."gameId", a.name, a."iconUrl", a."trophyType", a."globalRarity",
+           g.name AS "gameName", g.slug AS "gameSlug"
+    FROM recent r
+    JOIN "User" u ON u.id = r."userId"
+    JOIN "Achievement" a ON a.id = r."achievementId"
+    JOIN "Game" g ON g.id = a."gameId"
+    ORDER BY r."unlockedAt" DESC`;
+  return rows.map((row) => ({
+    userId: row.userId,
+    unlockedAt: row.unlockedAt,
+    user: {
+      handle: row.handle,
+      displayName: row.displayName,
+      avatarUrl: row.avatarUrl,
+      avatarMotionUrl: row.avatarMotionUrl,
+      frame: row.frame,
+      frameMotionUrl: row.frameMotionUrl,
+    },
+    achievement: {
+      id: row.id,
+      gameId: row.gameId,
+      name: row.name,
+      iconUrl: row.iconUrl,
+      trophyType: row.trophyType,
+      globalRarity: row.globalRarity,
+      game: { name: row.gameName, slug: row.gameSlug },
+    },
+  }));
+}
+
 export async function activityFeed(
   showAdult = false,
   { userIds, feats, limit = 30 }: FeedFilter = {},
 ) {
   if (userIds?.length === 0) return [];
-  const rows = await db.userAchievement.findMany({
-    where: {
-      user: { isPublic: true },
-      ...(userIds && { userId: { in: userIds } }),
-      achievement: {
-        game: showAdult ? {} : publicGames,
-        ...(feats && FEAT_ACHIEVEMENT),
-      },
-    },
-    orderBy: { unlockedAt: 'desc' },
-    // De la marge : les jeux cachés par leur joueur sont retirés ensuite.
-    take: limit * 3,
-    select: {
-      userId: true,
-      unlockedAt: true,
-      user: {
-        select: publicUser,
-      },
-      achievement: {
-        select: {
-          id: true,
-          gameId: true,
-          name: true,
-          iconUrl: true,
-          trophyType: true,
-          globalRarity: true,
-          game: { select: { name: true, slug: true } },
+  const rows = feats
+    ? await recentFeats(showAdult, userIds, limit * 3)
+    : await db.userAchievement.findMany({
+        where: {
+          user: { isPublic: true },
+          ...(userIds && { userId: { in: userIds } }),
+          achievement: {
+            game: showAdult ? {} : publicGames,
+          },
         },
-      },
-    },
-  });
+        orderBy: { unlockedAt: 'desc' },
+        // De la marge : les jeux cachés par leur joueur sont retirés ensuite.
+        take: limit * 3,
+        select: {
+          userId: true,
+          unlockedAt: true,
+          user: {
+            select: publicUser,
+          },
+          achievement: {
+            select: {
+              id: true,
+              gameId: true,
+              name: true,
+              iconUrl: true,
+              trophyType: true,
+              globalRarity: true,
+              game: { select: { name: true, slug: true } },
+            },
+          },
+        },
+      });
   const hidden = await db.userGame.findMany({
     where: { hidden: true, userId: { in: [...new Set(rows.map((row) => row.userId))] } },
     select: { userId: true, gameId: true },
