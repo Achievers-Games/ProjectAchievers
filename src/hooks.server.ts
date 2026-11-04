@@ -1,5 +1,6 @@
 import type { Handle, ServerInit } from '@sveltejs/kit/hooks';
 import type { RequestEvent } from '@sveltejs/kit';
+import { dev } from '$app/env';
 import { themeOf } from '#lib/theme';
 import { m } from '#lib/paraglide/messages';
 import { getLocale } from '#lib/paraglide/runtime';
@@ -35,7 +36,11 @@ function limitFor(request: Request, path: string): number | null {
   if (request.method !== 'GET' && request.method !== 'HEAD') return 60;
   // Le flux reste ouvert : il ne doit pas bloquer le chat.
   if (path === '/api/sync/events') return null;
-  return path.startsWith('/api/') ? 120 : null;
+  if (!path.startsWith('/api/')) return null;
+  // Le parcours e2e ne dispose que d'une adresse pour toutes ses sessions : la présence et le
+  // centre de notifications y épuisent le plafond et font tomber des tests sans rapport.
+  if (dev && env().DEV_LOGIN === '1') return null;
+  return 120;
 }
 
 /** Le client peut déjà être parti : ce n'est pas une raison de répondre 500. */
