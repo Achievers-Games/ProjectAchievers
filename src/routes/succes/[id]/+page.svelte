@@ -253,8 +253,7 @@
           rows="8"
           required
           minlength="3"
-          class="input h-auto py-2"
-        ></textarea>
+          class="input h-auto py-2"></textarea>
         <button class="btn btn-primary">{m.publish()}</button>
       </form>
     {/if}
@@ -414,8 +413,7 @@
           minlength="3"
           aria-label={parentId ? m.reply_label() : m.comment_label()}
           placeholder={parentId ? m.reply_placeholder() : m.comment_placeholder()}
-          class="input h-auto py-2"
-        ></textarea>
+          class="input h-auto py-2"></textarea>
         <button class="btn">{m.publish()}</button>
       </form>
     {/snippet}

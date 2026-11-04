@@ -51,8 +51,7 @@
       maxlength="4000"
       aria-label={m.feedback_content()}
       placeholder={m.feedback_placeholder()}
-      class="input h-auto py-2"
-    ></textarea>
+      class="input h-auto py-2"></textarea>
     <button class="btn btn-primary">{m.feedback_send()}</button>
   </form>
 

@@ -144,8 +144,7 @@
       maxlength="2000"
       aria-label={m.chat_placeholder()}
       placeholder={m.chat_placeholder()}
-      class="input h-auto min-h-9 flex-1 resize-none py-1.5"
-    ></textarea>
+      class="input h-auto min-h-9 flex-1 resize-none py-1.5"></textarea>
     <button class="btn btn-primary" disabled={sending || !draft.trim()}>{m.chat_send()}</button>
   </form>
 </div>

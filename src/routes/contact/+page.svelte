@@ -54,8 +54,7 @@
           minlength="20"
           maxlength="4000"
           placeholder={m.contact_placeholder()}
-          class="input h-auto py-2"
-        ></textarea>
+          class="input h-auto py-2"></textarea>
       </div>
       <div class="hidden" aria-hidden="true">
         <label for="contact-website">Website</label>
