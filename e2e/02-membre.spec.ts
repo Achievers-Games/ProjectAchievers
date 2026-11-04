@@ -50,7 +50,9 @@ test.describe('membre', () => {
       total: 1,
       achievements: 1,
       quiet: true,
-      unlocks: [{ title: 'Je refuse qu’on m’enferme', icon, game: 'Baldur’s Gate 3' }],
+      unlocks: [
+        { id: 'steam-1', title: 'Je refuse qu’on m’enferme', icon, game: 'Baldur’s Gate 3' },
+      ],
     };
     await page.route('**/api/sync/events', (route) =>
       route.fulfill({
@@ -86,6 +88,11 @@ test.describe('membre', () => {
     await page.goto('/');
     const rail = page.locator('.live-rail');
     await expect(rail.locator('a.drop-tile')).toHaveCount(12);
+
+    // Les succès récents du compte de test se fêtent en arrivant et recouvrent le fil :
+    // on les ferme d'abord, comme le ferait le visiteur avant de faire glisser.
+    const closeAll = page.locator('.close-all');
+    if (await closeAll.count()) await closeAll.click();
     expect(await rail.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(true);
 
     await rail.scrollIntoViewIfNeeded();

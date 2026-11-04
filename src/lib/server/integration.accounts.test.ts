@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { profileSchema, resolveIdentity, updateProfile, type Identity } from './accounts';
 import { db } from './db';
 import { mergeUsers } from './merge';
-import { saveAchievements, saveProgress, upsertGame } from './sync/store';
+import { recentUnlocks, saveAchievements, saveProgress, upsertGame } from './sync/store';
 import { PREFIX, identity, setupIntegration } from './test-helpers';
 
 setupIntegration();
@@ -192,6 +192,32 @@ describe('calcul de la progression', () => {
       { platformAchievementId: '99', unlockedAt: new Date() },
     ]);
     expect(result).toMatchObject({ gained: 0, fresh: [] });
+  });
+
+  it('retrouve les succès de la semaine pour la visite suivante', async () => {
+    const { userId, gameId } = await fixture(['GOLD', 'GOLD']);
+    const day = 24 * 60 * 60 * 1000;
+    await saveProgress(userId, gameId, [
+      { platformAchievementId: '0', unlockedAt: new Date(Date.now() - 30 * day) },
+      { platformAchievementId: '1', unlockedAt: new Date(Date.now() - day) },
+    ]);
+    const recent = await recentUnlocks(userId);
+    expect(recent).toMatchObject([{ title: 'T1', icon: null, game: `${PREFIX} jeu` }]);
+  });
+
+  it('ne garde que les trois derniers succès récents', async () => {
+    const { userId, gameId } = await fixture(['GOLD', 'GOLD', 'GOLD', 'GOLD']);
+    const hour = 60 * 60 * 1000;
+    await saveProgress(
+      userId,
+      gameId,
+      [0, 1, 2, 3].map((i) => ({
+        platformAchievementId: String(i),
+        unlockedAt: new Date(Date.now() - i * hour),
+      })),
+    );
+    const recent = await recentUnlocks(userId);
+    expect(recent.map((unlock) => unlock.title)).toEqual(['T0', 'T1', 'T2']);
   });
 });
 

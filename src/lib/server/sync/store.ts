@@ -139,6 +139,7 @@ export async function saveAchievements(gameId: string, achievements: Achievement
 
 /** Un succès qui vient de tomber : de quoi le montrer au joueur sans recharger sa page. */
 export interface NewUnlock {
+  id: string;
   name: string;
   iconUrl: string | null;
 }
@@ -234,6 +235,37 @@ export async function saveProgress(
 
   return {
     gained: count,
-    fresh: [...pending.values()].map(({ name, iconUrl }) => ({ name, iconUrl })),
+    fresh: [...pending.values()].map(({ achievementId, name, iconUrl }) => ({
+      id: achievementId,
+      name,
+      iconUrl,
+    })),
   };
+}
+
+/** Au-delà, un succès retrouvé à la visite suivante n'est plus une nouvelle. */
+const CATCH_UP_DAYS = 7;
+
+/**
+ * Les derniers succès du joueur, pour les fêter quand il revient sur le site : ceux
+ * débloqués pendant qu'il n'avait pas la page ouverte n'ont encore rien montré.
+ */
+export async function recentUnlocks(userId: string, limit = 3) {
+  const since = new Date(Date.now() - CATCH_UP_DAYS * 24 * 60 * 60 * 1000);
+  const rows = await db.userAchievement.findMany({
+    where: { userId, unlockedAt: { gte: since } },
+    orderBy: { unlockedAt: 'desc' },
+    take: limit,
+    select: {
+      achievement: {
+        select: { id: true, name: true, iconUrl: true, game: { select: { name: true } } },
+      },
+    },
+  });
+  return rows.map(({ achievement }) => ({
+    id: achievement.id,
+    title: achievement.name,
+    icon: achievement.iconUrl,
+    game: achievement.game.name,
+  }));
 }

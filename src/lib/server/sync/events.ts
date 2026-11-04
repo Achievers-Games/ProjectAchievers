@@ -5,6 +5,8 @@ import { globals } from '../globals';
 
 /** Un succès qui vient de tomber : de quoi le fêter sur la page, sans la recharger. */
 export interface UnlockPop {
+  /** Identifiant du succès : la page ne fête jamais deux fois le même. */
+  id: string;
   title: string;
   icon: string | null;
   game: string;
@@ -90,7 +92,13 @@ export interface SiteAchievementEvent {
   codes: string[];
 }
 
-export type LiveEvent = ChatEvent | InviteEvent | SiteAchievementEvent;
+/** Des succès de plateforme débloqués pendant que la page était fermée : à fêter en arrivant. */
+export interface UnlocksEvent {
+  type: 'unlocks';
+  achievements: UnlockPop[];
+}
+
+export type LiveEvent = ChatEvent | InviteEvent | SiteAchievementEvent | UnlocksEvent;
 
 export const publishChat = (userId: string, event: LiveEvent) => bus.emit(`chat:${userId}`, event);
 

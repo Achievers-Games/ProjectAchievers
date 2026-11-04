@@ -19,7 +19,7 @@
   import RewardReveal from '#lib/components/RewardReveal.svelte';
   import Toasts from '#lib/components/Toasts.svelte';
   import AchievementPop from '#lib/components/AchievementPop.svelte';
-  import { celebrate, type SitePop } from '#lib/stores/achievement-pop';
+  import { celebrate, celebrateOnce, type SitePop } from '#lib/stores/achievement-pop';
   import { LOCALE_LABELS, PROVIDER_LABELS, syncErrorText } from '#lib/labels';
   import { getLocale, locales, setLocale, type Locale } from '#lib/paraglide/runtime';
   import { restorePush } from '#lib/push';
@@ -139,6 +139,7 @@
         if ('type' in event) {
           if (event.type === 'chat') receive(event);
           else if (event.type === 'invite') receiveInvite(event);
+          else if (event.type === 'unlocks') celebrateOnce(event.achievements);
           else void announceAchievements(event.codes);
           return;
         }
@@ -147,18 +148,7 @@
           const gained = event.achievements ?? 0;
           if (event.quiet && gained === 0 && !event.rewards?.length) return;
           // Un succès tombé en jouant : la page le fête tout de suite, sans rechargement.
-          if (event.unlocks?.length) {
-            celebrate(
-              event.unlocks.map(({ title, icon, game }) => ({
-                title,
-                game,
-                icon: '',
-                category: 'platform',
-                level: 0,
-                image: icon,
-              })),
-            );
-          }
+          if (event.unlocks?.length) celebrateOnce(event.unlocks);
           toast(
             gained > 0
               ? m.sync_gained({ count: gained, platform: PROVIDER_LABELS[event.provider] })

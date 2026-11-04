@@ -23,7 +23,7 @@ import { checkSiteAchievements, reviewNewPlayers } from '../site-achievements';
 import { syncPsn } from './psn';
 import { syncRetro } from './retro';
 import { fetchUnlocks, fillHiddenDescriptions, sweepSteamStore, syncSteam } from './steam';
-import { fillGameTiers, saveProgress } from './store';
+import { fillGameTiers, recentUnlocks, saveProgress } from './store';
 import { syncXbox } from './xbox';
 import type { ProviderSync, UnlockedGame } from './types';
 
@@ -280,7 +280,8 @@ export async function runLiveGame(
     total: 1,
     achievements: gained,
     // Le joueur a la page ouverte : chaque succès s'y fête tout de suite, sans rechargement.
-    unlocks: fresh.slice(0, MAX_POPS).map(({ name, iconUrl }) => ({
+    unlocks: fresh.slice(0, MAX_POPS).map(({ id, name, iconUrl }) => ({
+      id,
       title: name,
       icon: iconUrl,
       game: owned.game.name,
@@ -346,6 +347,8 @@ export async function runSync({ userId, provider, quiet }: SyncJob) {
       processed: result.games,
       total: result.games,
       achievements: result.achievements,
+      // Revenu sur le site après avoir joué : les succès tombés entre-temps se fêtent ici.
+      unlocks: result.achievements > 0 ? await recentUnlocks(userId) : undefined,
       quiet,
       rewards: rewards.slice(0, MAX_REWARDS),
       moreRewards: Math.max(0, rewards.length - MAX_REWARDS),

@@ -282,7 +282,9 @@ describe('synchronisation Steam', () => {
     expect(events).toHaveLength(1);
     expect(events[0]).toMatchObject({ status: 'COMPLETED', achievements: 1, quiet: true });
     // La page du joueur peut fêter le succès tout de suite : elle reçoit son titre et sa vignette.
-    expect(events[0].unlocks).toEqual([{ title: 'Bêta', icon: 'i', game: `${PREFIX} steam` }]);
+    expect(events[0].unlocks).toMatchObject([
+      { title: 'Bêta', icon: 'i', game: `${PREFIX} steam` },
+    ]);
   });
 
   it('annonce une carte quand un jeu atteint 100 %, une seule fois', async () => {

@@ -4,6 +4,7 @@ import type { Reward } from '#lib/collection';
 
 /** Un succès qui vient de tomber : la page le fête sans être rechargée. */
 export interface UnlockPop {
+  id: string;
   title: string;
   icon: string | null;
   game: string;
