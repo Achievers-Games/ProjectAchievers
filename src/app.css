@@ -1,8 +1,36 @@
 @import '@fontsource-variable/inter';
+@import 'tailwindcss';
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Tailwind 4 ne lit plus `tailwind.config.js` : les sources et le thème vivent ici. */
+@source './**/*.{html,svelte,ts}';
+
+@theme {
+  /* Les couleurs restent des jetons CSS : les thèmes les redéfinissent plus bas. */
+  --color-bg: rgb(var(--bg));
+  --color-surface: rgb(var(--surface));
+  --color-raised: rgb(var(--raised));
+  --color-line: rgb(var(--line));
+  --color-ink: rgb(var(--ink));
+  --color-muted: rgb(var(--muted));
+  --color-accent: rgb(var(--accent));
+  --color-accent-2: rgb(var(--accent-2));
+  --color-on-accent: rgb(var(--on-accent));
+  --color-danger: rgb(var(--danger));
+  --color-success: rgb(var(--success));
+  --color-platinum: rgb(var(--platinum));
+  --color-gold: rgb(var(--gold));
+  --color-silver: rgb(var(--silver));
+  --color-bronze: rgb(var(--bronze));
+
+  --font-sans: 'Inter Variable', system-ui, sans-serif;
+
+  /* Les mêmes rayons qu'avant : `rounded` vaut 6px, pas les 4px par défaut. */
+  --radius: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+
+  --default-transition-duration: 150ms;
+}
 
 :root,
 [data-theme='dark'],
