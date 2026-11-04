@@ -1,3 +1,7 @@
+// Le client se construit à l'évaluation du module, souvent avant `env.ts` (qui lit `.env`) :
+// en développement, l'URL manquait et `pg` partait sur son port par défaut. Charger `.env` ici
+// rend le module autosuffisant, sans écraser les variables déjà définies (tests, conteneur).
+import 'dotenv/config';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '#prisma';
 
