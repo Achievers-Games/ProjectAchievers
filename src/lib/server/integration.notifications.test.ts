@@ -102,6 +102,33 @@ describe('centre de notifications', () => {
     expect(items.map((item) => item.id)).toContain(`message:${conversationId}`);
   });
 
+  it('annonce un succès lu par la synchronisation après « tout marquer comme lu »', async () => {
+    const { me } = await busyPlayer();
+    await markNotificationsRead(me.id);
+
+    // Débloqué hier, mais seulement lu aujourd'hui par la synchronisation : c'est une nouvelle.
+    const game = await upsertGame({
+      platform: 'STEAM',
+      platformGameId: `${PREFIX}-${Math.random()}`,
+      name: `${PREFIX} en retard`,
+    });
+    await saveAchievements(game.id, [
+      {
+        platformAchievementId: 'late',
+        name: `${PREFIX} tardif`,
+        description: '',
+        hidden: false,
+        trophyType: 'BRONZE',
+      },
+    ]);
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    await saveProgress(me.id, game.id, [{ platformAchievementId: 'late', unlockedAt: yesterday }]);
+
+    expect(await unseenNotices(me.id)).toBe(2);
+    const late = (await notifications(me.id)).filter((item) => item.detail === game.name);
+    expect(late.map((item) => [item.kind, item.unread])).toEqual([['unlock', true]]);
+  });
+
   it('garde les plus récentes quand la liste est bornée', async () => {
     const { me } = await busyPlayer();
     const [newest] = await notifications(me.id);

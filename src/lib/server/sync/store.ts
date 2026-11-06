@@ -205,10 +205,19 @@ export async function saveProgress(
     achievementId,
     unlockedAt,
   }));
-  const { count } = await db.userAchievement.createMany({ data: rows, skipDuplicates: true });
+  // Une synchronisation parallèle a pu écrire les mêmes lignes entre-temps : seules celles
+  // réellement insérées ici se fêtent, sans quoi le même succès s'afficherait deux fois.
+  const inserted = await db.userAchievement.createManyAndReturn({
+    data: rows,
+    skipDuplicates: true,
+    select: { achievementId: true },
+  });
+  const count = inserted.length;
+  const ours = new Set(inserted.map((row) => row.achievementId));
 
   const total = known.length;
-  const unlockedCount = mine.length + count;
+  // Insérées ici ou par l'autre synchronisation, toutes les lignes en attente existent désormais.
+  const unlockedCount = mine.length + pending.size;
   const completion = total > 0 ? (unlockedCount / total) * 100 : 0;
   const platinum =
     mine.some((o) => o.achievement.trophyType === 'PLATINUM') ||
@@ -235,11 +244,9 @@ export async function saveProgress(
 
   return {
     gained: count,
-    fresh: [...pending.values()].map(({ achievementId, name, iconUrl }) => ({
-      id: achievementId,
-      name,
-      iconUrl,
-    })),
+    fresh: [...pending.values()]
+      .filter(({ achievementId }) => ours.has(achievementId))
+      .map(({ achievementId, name, iconUrl }) => ({ id: achievementId, name, iconUrl })),
   };
 }
 

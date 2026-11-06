@@ -161,19 +161,31 @@ export async function acceptClanInvite(
 ): Promise<SocialFailure | null> {
   const invite = await db.clanInvite.findUnique({ where: { clanId_userId: { clanId, userId } } });
   if (!invite) return 'not_found';
-  if (await db.clanMember.count({ where: { userId } })) return 'in_clan';
-  if ((await db.clanMember.count({ where: { clanId } })) >= MAX_CLAN_MEMBERS) return 'clan_full';
+  return admitToClan(clanId, userId);
+}
 
-  const conversation = await db.conversation.findUniqueOrThrow({
-    where: { clanId },
-    select: { id: true },
+/**
+ * Fait entrer un joueur, par invitation ou par demande acceptée. Le clan est verrouillé le temps
+ * de compter : deux entrées simultanées ne peuvent pas dépasser le plafond.
+ */
+export async function admitToClan(clanId: string, userId: string): Promise<SocialFailure | null> {
+  const failure = await db.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM "Clan" WHERE id = ${clanId} FOR UPDATE`;
+    if (await tx.clanMember.count({ where: { userId } })) return 'in_clan' as const;
+    if ((await tx.clanMember.count({ where: { clanId } })) >= MAX_CLAN_MEMBERS)
+      return 'clan_full' as const;
+    const conversation = await tx.conversation.findUniqueOrThrow({
+      where: { clanId },
+      select: { id: true },
+    });
+    // Le joueur entre ici : ses autres demandes et invitations n'ont plus lieu d'être.
+    await tx.clanInvite.deleteMany({ where: { userId } });
+    await tx.clanRequest.deleteMany({ where: { userId } });
+    await tx.clanMember.create({ data: { clanId, userId } });
+    await tx.conversationMember.create({ data: { conversationId: conversation.id, userId } });
+    return null;
   });
-  await db.$transaction([
-    db.clanInvite.deleteMany({ where: { userId } }),
-    db.clanRequest.deleteMany({ where: { userId } }),
-    db.clanMember.create({ data: { clanId, userId } }),
-    db.conversationMember.create({ data: { conversationId: conversation.id, userId } }),
-  ]);
+  if (failure) return failure;
   // Un nouveau membre peut faire franchir un palier au clan : il le partage alors avec lui.
   await checkClanAchievements(clanId);
   return null;

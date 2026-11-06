@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { logger } from '#lib/logger';
+import { readSmallBody } from '#lib/server/body';
 import type { RequestHandler } from './$types';
 
 const log = logger('Navigateur');
@@ -15,8 +16,8 @@ const schema = z.object({
 
 /** Reçoit les erreurs remontées par le navigateur et les écrit dans le journal du serveur. */
 export const POST: RequestHandler = async ({ request }) => {
-  const body = await request.text();
-  if (body.length > MAX_BODY) return new Response(null, { status: 413 });
+  const body = await readSmallBody(request, MAX_BODY);
+  if (body === null) return new Response(null, { status: 413 });
 
   let payload: unknown;
   try {

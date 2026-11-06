@@ -78,6 +78,11 @@ describe('Steam', () => {
     expect(unchangedSince({ lastPlayedAt: null, playtimeMinutes: 0 }, null, 0)).toBe(true);
     expect(unchangedSince({ lastPlayedAt: null, playtimeMinutes: 15882 }, null, 16127)).toBe(false);
   });
+
+  it('relit toujours un jeu joué ces deux dernières semaines', () => {
+    // La relecture en direct a pu enregistrer le temps de jeu avant que Steam publie le succès.
+    expect(unchangedSince({ lastPlayedAt: null, playtimeMinutes: 120 }, null, 120, 30)).toBe(false);
+  });
 });
 
 describe('PSN', () => {

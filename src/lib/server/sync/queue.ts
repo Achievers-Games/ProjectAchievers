@@ -340,6 +340,13 @@ export async function runSync({ userId, provider, quiet }: SyncJob) {
         data: { syncStatus: 'COMPLETED', lastSyncedAt: finishedAt },
       }),
     ]);
+    // Le premier import d'un compte rapporte tout son passé : ce ne sont pas des nouvelles, et la
+    // cloche ne doit pas en annoncer des centaines. Ils arrivent à leur date de déblocage.
+    if (!account.lastSyncedAt) {
+      await db.$executeRaw`
+        UPDATE "UserAchievement" SET "createdAt" = "unlockedAt"
+        WHERE "userId" = ${userId} AND "createdAt" >= ${run.startedAt}`;
+    }
     const rewards = await announceCards(user, userId, before);
     publishSync(userId, {
       provider,

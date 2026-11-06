@@ -14,6 +14,11 @@ const CARD_NOTICES = 3;
 
 const DAY = 24 * 60 * 60 * 1000;
 
+/** Un jeu dont un succès est arrivé sur le site après `after` : ce qui a pu le terminer. */
+const completedSince = (userId: string, after: Date) => ({
+  game: { achievements: { some: { unlocks: { some: { userId, createdAt: { gt: after } } } } } },
+});
+
 /** Le point de lecture d'un joueur, ou le début des temps s'il n'a jamais rien marqué. */
 async function seenAt(userId: string) {
   const user = await db.user.findUnique({
@@ -69,12 +74,15 @@ export async function notifications(userId: string, limit = 12): Promise<Notice[
         where: { userId, role: 'OWNER', clan: { flaggedName: { not: null } } },
         select: { clan: { select: { id: true, flaggedName: true } } },
       }),
+      // Classés à l'arrivée sur le site : un succès d'hier lu ce matin par la synchronisation
+      // est une nouvelle d'aujourd'hui.
       db.userAchievement.findMany({
-        where: { userId, unlockedAt: { gte: since } },
-        orderBy: { unlockedAt: 'desc' },
+        where: { userId, createdAt: { gte: since } },
+        orderBy: { createdAt: 'desc' },
         take: UNLOCK_NOTICES,
         select: {
           unlockedAt: true,
+          createdAt: true,
           achievement: {
             select: {
               id: true,
@@ -90,12 +98,13 @@ export async function notifications(userId: string, limit = 12): Promise<Notice[
           userId,
           hidden: false,
           completion: { gte: 100 },
-          lastUnlockedAt: { gte: since },
+          ...completedSince(userId, since),
         },
         orderBy: { lastUnlockedAt: 'desc' },
         take: CARD_NOTICES,
         select: {
           lastUnlockedAt: true,
+          gameId: true,
           game: { select: { name: true, slug: true, headerUrl: true } },
         },
       }),
@@ -183,12 +192,23 @@ export async function notifications(userId: string, limit = 12): Promise<Notice[
       title: row.achievement.name,
       detail: row.achievement.game.name,
       icon: row.achievement.iconUrl,
-      unread: row.unlockedAt > seen.notices,
+      unread: row.createdAt > seen.notices,
     });
   }
 
-  for (const row of cards) {
-    if (!row.lastUnlockedAt) continue;
+  // Le dernier succès arrivé sur chaque jeu terminé : c'est lui qui a fait tomber la carte.
+  const arrivals = await Promise.all(
+    cards.map((row) =>
+      db.userAchievement.findFirst({
+        where: { userId, achievement: { gameId: row.gameId } },
+        orderBy: { createdAt: 'desc' },
+        select: { createdAt: true },
+      }),
+    ),
+  );
+  cards.forEach((row, index) => {
+    const arrived = arrivals[index]?.createdAt;
+    if (!row.lastUnlockedAt || !arrived) return;
     notices.push({
       id: `card:${row.game.slug}`,
       kind: 'card',
@@ -196,9 +216,9 @@ export async function notifications(userId: string, limit = 12): Promise<Notice[
       href: `/jeux/${row.game.slug}`,
       title: row.game.name,
       icon: row.game.headerUrl,
-      unread: row.lastUnlockedAt > seen.notices,
+      unread: arrived > seen.notices,
     });
-  }
+  });
 
   // Messages et succès se mélangent : le panneau montre le plus récent en haut, sans doublon.
   const unique = new Map(notices.map((notice) => [notice.id, notice]));
@@ -209,15 +229,11 @@ export async function notifications(userId: string, limit = 12): Promise<Notice[
 export async function unseenNotices(userId: string) {
   const { notices: seen } = await seenAt(userId);
   const since = new Date(Date.now() - NOTICE_DAYS * DAY);
+  const after = seen > since ? seen : since;
   const [unlocks, cards] = await Promise.all([
-    db.userAchievement.count({ where: { userId, unlockedAt: { gt: seen, gte: since } } }),
+    db.userAchievement.count({ where: { userId, createdAt: { gt: after } } }),
     db.userGame.count({
-      where: {
-        userId,
-        hidden: false,
-        completion: { gte: 100 },
-        lastUnlockedAt: { gt: seen, gte: since },
-      },
+      where: { userId, hidden: false, completion: { gte: 100 }, ...completedSince(userId, after) },
     }),
   ]);
   return unlocks + cards;
@@ -232,17 +248,11 @@ export async function markNotificationsRead(userId: string) {
   await Promise.all([markInvitesSeen(userId, 'friends'), markInvitesSeen(userId, 'clans')]);
 
   // L'horloge de la base peut avancer sur celle du serveur : le point de lecture la suit.
-  const [{ _max: lastUnlock }, { _max: lastCard }] = await Promise.all([
-    db.userAchievement.aggregate({ where: { userId }, _max: { unlockedAt: true } }),
-    db.userGame.aggregate({ where: { userId }, _max: { lastUnlockedAt: true } }),
-  ]);
-  const seen = new Date(
-    Math.max(
-      now.getTime(),
-      lastUnlock.unlockedAt?.getTime() ?? 0,
-      lastCard.lastUnlockedAt?.getTime() ?? 0,
-    ),
-  );
+  const { _max: last } = await db.userAchievement.aggregate({
+    where: { userId },
+    _max: { createdAt: true },
+  });
+  const seen = new Date(Math.max(now.getTime(), last.createdAt?.getTime() ?? 0));
 
   await Promise.all([
     db.user.update({ where: { id: userId }, data: { notificationsSeenAt: seen } }),

@@ -95,6 +95,8 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
               gameId: game.id,
               hidden: false,
               userId: { in: friends.map((friend) => friend.id) },
+              // Un profil privé ne se compare pas : le proposer ne mènerait qu'à une page vide.
+              user: { isPublic: true },
             },
             select: { userId: true },
           })

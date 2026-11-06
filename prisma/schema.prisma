@@ -544,9 +544,13 @@ model UserAchievement {
   achievementId String
   achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
   unlockedAt    DateTime
+  /// Arrivée sur le site : la synchronisation lit un succès des heures après son déblocage, et
+  /// c'est elle qui dit s'il est nouveau pour les notifications.
+  createdAt     DateTime    @default(now())
 
   @@id([userId, achievementId])
   @@index([unlockedAt])
+  @@index([userId, createdAt])
   @@index([achievementId])
 }
 

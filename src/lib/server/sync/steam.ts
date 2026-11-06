@@ -27,6 +27,7 @@ interface OwnedGame {
   appid: number;
   name: string;
   playtime_forever?: number;
+  playtime_2weeks?: number;
   rtime_last_played?: number;
   has_community_visible_stats?: boolean;
 }
@@ -44,12 +45,18 @@ interface SchemaAchievement {
  * Le jeu n'a pas bougé depuis la dernière synchronisation : ni nouveau lancement, ni temps de jeu
  * en plus. `GetOwnedGames` n'envoie plus `rtime_last_played` : deux dates absentes ne disaient donc
  * rien, et le jeu était sauté à chaque passage — plus aucun succès Steam n'arrivait.
+ *
+ * Le temps de jeu seul ne suffit pas non plus : Steam publie les succès avec retard, et la relecture
+ * en direct enregistre parfois le temps de jeu avant que le succès soit visible. Un jeu joué ces
+ * deux dernières semaines est donc toujours relu.
  */
 export const unchangedSince = (
   known: { lastPlayedAt: Date | null; playtimeMinutes: number },
   playedAt: Date | null,
   minutes: number,
+  recentMinutes = 0,
 ) =>
+  recentMinutes === 0 &&
   (known.lastPlayedAt?.getTime() ?? null) === (playedAt?.getTime() ?? null) &&
   known.playtimeMinutes === minutes;
 
@@ -526,7 +533,8 @@ export const syncSteam: ProviderSync = async ({ userId, account, report, onUnloc
 
       // Un jeu non relancé depuis la dernière synchronisation ne peut pas avoir changé.
       const known = knownProgress.get(appId);
-      if (!borrowed && known && unchangedSince(known, playedAt, minutes)) return;
+      const recent = ownedGame.playtime_2weeks ?? 0;
+      if (!borrowed && known && unchangedSince(known, playedAt, minutes, recent)) return;
 
       const { game, gained } = await syncSteamGame(userId, steamId, ownedGame, borrowed);
       achievements += gained;

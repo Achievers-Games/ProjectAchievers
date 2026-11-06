@@ -1,4 +1,5 @@
 import { error, json } from '@sveltejs/kit';
+import { readSmallBody } from '#lib/server/body';
 import { db } from '#lib/server/db';
 import { sitePop } from '#lib/server/site-achievements';
 import { m } from '#lib/paraglide/messages';
@@ -28,30 +29,6 @@ function isTimeZone(zone: string) {
 
 /** Le fuseau tient en bien moins que ça ; au-delà, le corps n'a rien à faire ici. */
 const MAX_BODY = 256;
-
-/** Lit le corps sans jamais dépasser `limit` : une requête énorme est refusée sans être chargée. */
-async function readSmallBody(request: Request, limit: number): Promise<string | null> {
-  if (!request.body) return '';
-  const reader = request.body.getReader();
-  const chunks: Uint8Array[] = [];
-  let size = 0;
-  try {
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      size += value.byteLength;
-      if (size > limit) {
-        await reader.cancel();
-        return null;
-      }
-      chunks.push(value);
-    }
-  } catch {
-    // Client parti avant la fin : la réponse ne l'intéresse plus.
-    return '';
-  }
-  return new TextDecoder().decode(Buffer.concat(chunks));
-}
 
 /** Le fuseau du navigateur, pour les succès liés à l'heure du joueur. */
 export const POST: RequestHandler = async ({ locals, request }) => {
