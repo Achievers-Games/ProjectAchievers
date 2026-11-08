@@ -10,7 +10,7 @@
   import Empty from '#lib/components/Empty.svelte';
   import { formatDate, formatRelative, PLATFORM_LABELS } from '#lib/labels';
 
-  let { data } = $props();
+  let { data, form } = $props();
 </script>
 
 <svelte:head>
@@ -44,6 +44,63 @@
       {#if token?.warn}
         <p class="text-muted">{m.mod_psn_token_help()}</p>
       {/if}
+    </section>
+  {/if}
+
+  {#if data.partners}
+    <section class="card space-y-3 p-4 text-sm" data-testid="partners">
+      <h2 class="text-base">{m.mod_partners()}</h2>
+      <p class="text-muted">
+        {m.mod_partners_help()}
+        <a href="/api/v1/openapi.json" class="underline hover:text-ink">OpenAPI</a>
+      </p>
+      {#if form?.partnerKey}
+        <div class="space-y-1 rounded border border-accent p-3">
+          <p class="font-medium">{m.mod_partner_key_once({ name: form.partnerName })}</p>
+          <code class="block select-all break-all">{form.partnerKey}</code>
+        </div>
+      {/if}
+      {#if data.partners.length}
+        <ul class="divide-y divide-line">
+          {#each data.partners as partner (partner.id)}
+            <li class="flex flex-wrap items-center gap-3 py-2">
+              <span class="font-medium">{partner.name}</span>
+              <code class="text-muted">{partner.keyPrefix}…</code>
+              <span class="text-muted">
+                {partner.revokedAt
+                  ? m.mod_partner_revoked()
+                  : partner.lastUsedAt
+                    ? m.mod_partner_last_used({ when: formatRelative(partner.lastUsedAt) })
+                    : m.mod_partner_never_used()}
+              </span>
+              <span class="ml-auto flex gap-2">
+                <form method="POST" action="?/partnerKey" use:enhance>
+                  <input type="hidden" name="name" value={partner.name} />
+                  <button class="btn">{m.mod_partner_renew()}</button>
+                </form>
+                {#if !partner.revokedAt}
+                  <form method="POST" action="?/partnerRevoke" use:enhance>
+                    <input type="hidden" name="id" value={partner.id} />
+                    <button class="btn btn-danger">{m.mod_partner_revoke()}</button>
+                  </form>
+                {/if}
+              </span>
+            </li>
+          {/each}
+        </ul>
+      {/if}
+      <form method="POST" action="?/partnerKey" use:enhance class="flex gap-2">
+        <input
+          name="name"
+          class="input flex-1"
+          required
+          minlength="2"
+          maxlength="40"
+          placeholder="Lure"
+          aria-label={m.mod_partner_name()}
+        />
+        <button class="btn btn-primary">{m.mod_partner_create()}</button>
+      </form>
     </section>
   {/if}
 

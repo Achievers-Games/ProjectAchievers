@@ -36,6 +36,8 @@ function limitFor(request: Request, path: string): number | null {
   if (request.method !== 'GET' && request.method !== 'HEAD') return 60;
   // Le flux reste ouvert : il ne doit pas bloquer le chat.
   if (path === '/api/sync/events') return null;
+  // L'API partenaire limite par clé (`partner-api.ts`) : un partenaire n'a qu'une adresse.
+  if (path.startsWith('/api/v1/')) return null;
   if (!path.startsWith('/api/')) return null;
   // Le parcours e2e ne dispose que d'une adresse pour toutes ses sessions : la présence et le
   // centre de notifications y épuisent le plafond et font tomber des tests sans rapport.

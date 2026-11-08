@@ -688,3 +688,16 @@ model ServiceToken {
   failedAt    DateTime?
   error       String?
 }
+
+/// Un site partenaire (Lure…) qui lit l'API publique `/api/v1` avec sa clé.
+model PartnerApp {
+  id         String    @id @default(cuid())
+  name       String    @unique
+  /// Empreinte SHA-256 de la clé, jamais la clé : elle ne s'affiche qu'à sa création.
+  keyHash    String    @unique
+  /// Début de la clé, pour la reconnaître dans la liste sans la révéler.
+  keyPrefix  String
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+}

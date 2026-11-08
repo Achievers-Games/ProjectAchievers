@@ -1,6 +1,7 @@
 import { error, fail } from '@sveltejs/kit';
 import { z } from 'zod';
 import { db } from '#lib/server/db';
+import { issuePartnerKey, revokePartnerKey } from '#lib/server/partner-api';
 import { psnTokenState } from '#lib/server/service-token';
 import type { Actions, PageServerLoad } from './$types';
 import { m } from '#lib/paraglide/messages';
@@ -92,6 +93,21 @@ export const load: PageServerLoad = async ({ locals }) => {
     })),
     // Le jeton du site ne regarde que les administrateurs, qui le renouvellent.
     psnToken: moderator.role === 'ADMIN' ? await psnTokenState() : undefined,
+    // Les clés de l'API partenaire aussi : elles ouvrent les données du site à un autre.
+    partners:
+      moderator.role === 'ADMIN'
+        ? await db.partnerApp.findMany({
+            orderBy: { name: 'asc' },
+            select: {
+              id: true,
+              name: true,
+              keyPrefix: true,
+              createdAt: true,
+              lastUsedAt: true,
+              revokedAt: true,
+            },
+          })
+        : undefined,
     feedback,
     families,
     reports: reports.map((report) => ({
@@ -107,7 +123,30 @@ export const load: PageServerLoad = async ({ locals }) => {
 
 const feedbackStatus = z.enum(['NEW', 'PLANNED', 'DONE', 'DECLINED']);
 
+function requireAdmin(locals: App.Locals) {
+  const user = requireModerator(locals);
+  if (user.role !== 'ADMIN') error(404, m.not_found());
+  return user;
+}
+
+const partnerName = z.string().trim().min(2).max(40);
+
 export const actions: Actions = {
+  /** Crée la clé d'un partenaire, ou la remplace : elle ne s'affiche qu'une fois. */
+  partnerKey: async ({ request, locals }) => {
+    requireAdmin(locals);
+    const name = partnerName.safeParse((await request.formData()).get('name'));
+    if (!name.success) return fail(400, { error: m.action_failed() });
+    const { key } = await issuePartnerKey(name.data);
+    return { partnerKey: key, partnerName: name.data };
+  },
+
+  partnerRevoke: async ({ request, locals }) => {
+    requireAdmin(locals);
+    const id = String((await request.formData()).get('id'));
+    await revokePartnerKey(id).catch(() => null);
+  },
+
   feedback: async ({ request, locals }) => {
     requireModerator(locals);
     const form = await request.formData();

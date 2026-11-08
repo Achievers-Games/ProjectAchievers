@@ -118,20 +118,33 @@ Base : `https://<achievers>/api/v1`. JSON, dates ISO 8601, pagination par curseu
 
 ### Identifier un jeu entre les deux sites
 
-On s'appuie sur ce qu'Achievers stocke déjà : le couple **(`platform`, `platformGameId`)**, qui
-vaut par exemple `STEAM` + `730` pour l'appid Steam. Lure connaît les mêmes identifiants puisqu'il
-relie aussi les comptes Steam. `familyKey` regroupe les versions d'un même jeu sur plusieurs
-plateformes.
+Lure identifie ses jeux par **appid Steam** (`https://lureverse.fr/jeu/683320`). Achievers stocke
+déjà le couple (`platform`, `platformGameId`) : pour Steam, c'est ce même appid. L'adresse de
+l'API reprend donc celle de Lure : `/api/v1/games/steam/683320`.
 
-### Routes publiques (clé partenaire, profils publics uniquement)
+### Routes publiques — en place
 
-| Méthode | Route                                 | Contenu                                                                                                   |
-| ------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| GET     | `/users/{handle}`                     | nom, avatar, clan, stats (jeux, succès, cartes par palier, points)                                        |
-| GET     | `/users/{handle}/games`               | jeux avec progression : `platform`, `platformGameId`, `completion`, `unlocked`, `total`, `lastUnlockedAt` |
-| GET     | `/games/lookup?platform=STEAM&id=730` | fiche Achievers d'un jeu à partir de son identifiant de plateforme                                        |
-| GET     | `/games/{slug}`                       | nombre de succès, palier de difficulté, rareté moyenne                                                    |
-| GET     | `/users/{handle}/card.svg`            | alias de la carte de joueur                                                                               |
+Chaque appel porte la clé : `Authorization: Bearer ak_…`. Les administrateurs la créent, la
+remplacent ou la révoquent dans **Modération → Sites partenaires** ; elle ne s'affiche qu'une fois
+et seule son empreinte SHA-256 est gardée.
+
+| Méthode | Route                                   | Contenu                                                               |
+| ------- | --------------------------------------- | --------------------------------------------------------------------- |
+| GET     | `/users/{handle}`                       | nom, avatar, clan, lien de la carte, stats (jeux, succès, cartes…)    |
+| GET     | `/users/{handle}/games`                 | jeux et progression, `?platform=steam`, `?limit=` (≤ 100), `?cursor=` |
+| GET     | `/users/{handle}/games/{platform}/{id}` | progression d'un jeu et chaque succès, obtenu ou non                  |
+| GET     | `/games/{platform}/{id}`                | fiche du jeu, joueurs publics, nombre et taux de 100 %                |
+| GET     | `/openapi.json`                         | description OpenAPI 3.1, lisible sans clé                             |
+
+Exemple :
+
+```bash
+curl -H "Authorization: Bearer ak_…" https://<achievers>/api/v1/games/steam/683320
+```
+
+Ce qui ne sort jamais : un profil privé (404), un jeu masqué par le joueur, un jeu adulte, le
+nom et la description d'un succès caché tant qu'il n'est pas obtenu. Les textes sont dans la
+langue de la plateforme (pas de traduction côté API).
 
 ### Routes privées (jeton OAuth du joueur)
 
@@ -142,22 +155,29 @@ plateformes.
 | GET     | `/me/games/{platform}/{platformGameId}/achievements` | `achievements`                                                        |
 | GET     | `/me/almost`                                         | `library` : jeux entre 50 et 99 %, pour « finis-le ce soir » sur Lure |
 
-### Plus tard : webhooks
+### Webhooks (après l'OAuth)
 
-`achievement.unlocked` et `game.completed` envoyés à Lure, signés HMAC-SHA256 avec un secret par
-application, nouvelle tentative avec délai croissant via la file `pg-boss` déjà en place.
+Les deux se complètent, aucun ne remplace l'autre :
+
+- **Webhooks** pour savoir _quand_ quelque chose change (`achievement.unlocked`,
+  `game.completed`) : Lure est prévenu en quelques secondes, sans interroger l'API pour rien.
+- **API** pour lire _l'état_ : premier chargement d'un joueur, et rattrapage si un webhook s'est
+  perdu (serveur de Lure en panne, déploiement…). Un webhook n'est jamais garanti à 100 %.
+
+Les webhooks viennent après l'OAuth : envoyer à Lure les succès d'un joueur au fil de l'eau
+suppose que ce joueur a relié ses comptes et accepté. Chaque envoi est signé HMAC-SHA256 avec un
+secret par partenaire, et retenté avec un délai croissant via la file `pg-boss` déjà en place.
 
 ### Sécurité et limites
 
-- Le hook `limitFor` limite aujourd'hui `/api/*` à 120 requêtes par minute et par adresse. Pour
-  `/api/v1`, on limite **par clé ou par jeton** (600/min), pas par adresse, puisque Lure appelle
-  depuis un seul serveur.
-- Appels **serveur à serveur** recommandés. CORS ouvert seulement pour les routes publiques en
-  `GET`, et seulement pour l'origine `https://lureverse.fr`.
+- `/api/v1` sort de la limite par adresse du hook : la limite suit **la clé** (600 requêtes par
+  minute), et les clés invalides sont freinées par adresse (30 par minute).
+- Appels **serveur à serveur** uniquement : la clé ne doit jamais apparaître dans le navigateur.
+  Pas de CORS sur les routes à clé ; `/openapi.json` est ouvert à tous.
 - Les règles d'affichage du site s'appliquent : profils privés, jeux masqués, jeux adultes exclus
   par défaut (`visibleGames`, `publicGames`).
-- Tests d'intégration pour chaque route : profil privé → 404, jeu masqué absent, portée manquante
-  → 403, code réutilisé → refus et révocation de l'autorisation.
+- Tests d'intégration (`integration.partner.test.ts`) : clé remplacée ou révoquée refusée,
+  profil privé, jeu masqué, jeu adulte, succès caché, pagination, joueurs privés non comptés.
 
 ## 5. Dans l'autre sens : ce que Lure pourrait nous offrir
 
@@ -169,9 +189,9 @@ application, nouvelle tentative avec délai croissant via la file `pg-boss` déj
 ## 6. Étapes
 
 1. ~~Diapositive Lure et carte de joueur.~~
-2. Se mettre d'accord avec le développeur de Lure : identifiants de jeux, liste des données,
-   appels serveur ou navigateur, nom de domaine final.
-3. Routes publiques `/api/v1` + clé partenaire + OpenAPI.
+2. Se mettre d'accord avec le développeur de Lure : ~~identifiants de jeux~~ (appid Steam),
+   liste des données, nom de domaine final.
+3. ~~Routes publiques `/api/v1` + clé partenaire + OpenAPI.~~
 4. Achievers fournisseur OAuth (consentement, jetons, révocation, page « Applications reliées »).
 5. Routes privées `/me/*`.
 6. « Se connecter avec Lure » sur Achievers (quand Lure fournit son OAuth).
@@ -180,7 +200,6 @@ application, nouvelle tentative avec délai croissant via la file `pg-boss` déj
 ## Questions pour le développeur de Lure
 
 - Quelle est votre pile technique, et existe-t-il déjà un fournisseur OAuth côté Lure ?
-- Vos jeux sont-ils identifiés par appid Steam, IGDB, ou par un identifiant interne ?
-- Préférez-vous des appels périodiques ou des webhooks pour les nouveaux succès ?
+- Avez-vous un serveur capable de recevoir des webhooks (une adresse HTTPS publique) ?
 - Quelles données voulez-vous afficher sur Lure : la carte seule, la progression, ou le détail
   des succès ?
