@@ -18,6 +18,19 @@ const TOUCH_EVERY = 5 * MINUTE;
 export const PAGE_LIMIT = 50;
 export const PAGE_MAX = 100;
 
+/**
+ * Les ordres proposés. `default` garde l'ordre historique de la première version de l'API :
+ * stable d'une page à l'autre, mais sans signification pour le partenaire.
+ */
+export type ApiSort = 'default' | 'name' | 'completion' | 'lastUnlocked' | 'updated';
+const SORTS: ApiSort[] = ['default', 'name', 'completion', 'lastUnlocked', 'updated'];
+export const API_SORT_KEYS = SORTS.filter((sort) => sort !== 'default');
+
+/** Où en est le joueur sur le jeu : fini, commencé, ou à peine lancé. */
+export type ApiGameStatus = 'completed' | 'started' | 'untouched';
+export const API_STATUS_KEYS: ApiGameStatus[] = ['completed', 'started', 'untouched'];
+const STATUSES = API_STATUS_KEYS;
+
 /** Les plateformes dans l'adresse, en minuscules : `/games/steam/683320`. */
 export const API_PLATFORMS: Record<string, Platform> = {
   steam: 'STEAM',
@@ -119,12 +132,124 @@ export const notFound = (what: string) => apiError(404, 'not_found', `${what} no
 export const apiJson = (body: unknown) =>
   json(body, { headers: { 'Cache-Control': 'private, max-age=300' } });
 
-/** `?limit=` borné et `?cursor=` opaque : l'identifiant du dernier jeu renvoyé. */
-export function pageParams(url: URL) {
-  const raw = Number(url.searchParams.get('limit') ?? PAGE_LIMIT);
-  const limit = Number.isInteger(raw) ? Math.min(Math.max(raw, 1), PAGE_MAX) : PAGE_LIMIT;
-  const cursor = url.searchParams.get('cursor')?.slice(0, 64) || null;
-  return { limit, cursor };
+/**
+ * Un curseur dit où reprendre : l'ordre et la valeur de tri du dernier élément rendu, plus son
+ * identifiant pour départager deux valeurs égales. Il est opaque, et se refuse s'il vient d'un
+ * autre ordre — sinon la suite d'une page serait celle d'un tri qu'on n'a pas demandé.
+ */
+export interface ApiCursor {
+  sort: ApiSort;
+  value: string | number | null;
+  id: string;
+}
+
+/** Préfixe des curseurs récents : sans lui, un curseur reste l'identifiant du dernier jeu. */
+const CURSOR_PREFIX = 'k1.';
+
+export const encodeCursor = (cursor: ApiCursor) =>
+  CURSOR_PREFIX +
+  Buffer.from(JSON.stringify([cursor.sort, cursor.value, cursor.id])).toString('base64url');
+
+/** Le curseur du dernier élément rendu, ou `null` : le partenaire ne fabrique jamais un id. */
+export function nextCursor(
+  sort: ApiSort,
+  last: {
+    gameId: string;
+    completion: number;
+    lastUnlockedAt: Date | null;
+    updatedAt: Date;
+    game: { name: string };
+  },
+) {
+  // L'ordre par défaut garde le curseur d'origine : l'identifiant du dernier jeu, tel quel.
+  if (sort === 'default') return last.gameId;
+  const value =
+    sort === 'completion'
+      ? last.completion
+      : sort === 'updated'
+        ? last.updatedAt.toISOString()
+        : sort === 'lastUnlocked'
+          ? (last.lastUnlockedAt?.toISOString() ?? null)
+          : last.game.name;
+  return encodeCursor({ sort, value, id: last.gameId });
+}
+
+const invalidCursor = () => apiError(400, 'bad_request', 'Invalid cursor.');
+
+/** Le curseur reçu, ou la réponse `400` qui explique pourquoi il ne vaut rien pour cet ordre. */
+export function decodeCursor(raw: string, sort: ApiSort): ApiCursor | Response {
+  if (!raw.startsWith(CURSOR_PREFIX)) {
+    // Curseur de la première version : l'identifiant du dernier jeu, valable pour l'ordre par défaut.
+    return sort === 'default'
+      ? { sort, value: null, id: raw }
+      : apiError(400, 'bad_request', 'This cursor belongs to the default order: drop sort.');
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(Buffer.from(raw.slice(CURSOR_PREFIX.length), 'base64url').toString('utf8'));
+  } catch {
+    return invalidCursor();
+  }
+  if (!Array.isArray(parsed) || parsed.length !== 3) return invalidCursor();
+  const [cursorSort, value, id] = parsed as [unknown, unknown, unknown];
+  if (cursorSort !== sort)
+    return apiError(400, 'bad_request', 'This cursor belongs to another sort.');
+  if (typeof id !== 'string' || !id) return invalidCursor();
+  if (value !== null && typeof value !== 'string' && typeof value !== 'number') {
+    return invalidCursor();
+  }
+  return { sort, value, id };
+}
+
+export interface GameListParams {
+  limit: number;
+  sort: ApiSort;
+  status: ApiGameStatus | null;
+  since: Date | null;
+  cursor: ApiCursor | null;
+}
+
+const badRequest = (message: string) => apiError(400, 'bad_request', message);
+
+/**
+ * `?limit=`, `?sort=`, `?status=`, `?since=` et `?cursor=` lus et validés. Une valeur incomprise
+ * est refusée plutôt que remplacée en silence : le partenaire voit son erreur au premier appel.
+ */
+export function listParams(url: URL): GameListParams | Response {
+  const rawLimit = url.searchParams.get('limit');
+  const limit = rawLimit === null ? PAGE_LIMIT : Number(rawLimit);
+  if (!Number.isInteger(limit) || limit < 1) {
+    return badRequest(`limit must be a whole number from 1 to ${PAGE_MAX}.`);
+  }
+
+  const sort = (url.searchParams.get('sort') ?? 'default') as ApiSort;
+  if (!SORTS.includes(sort)) {
+    return badRequest(`sort must be one of: ${API_SORT_KEYS.join(', ')}.`);
+  }
+
+  const rawStatus = url.searchParams.get('status');
+  const status = rawStatus as ApiGameStatus;
+  if (rawStatus !== null && !STATUSES.includes(status)) {
+    return badRequest(`status must be one of: ${STATUSES.join(', ')}.`);
+  }
+
+  const rawSince = url.searchParams.get('since');
+  const since = rawSince ? new Date(rawSince) : null;
+  if (rawSince && Number.isNaN(since!.getTime())) {
+    return badRequest('since must be an ISO 8601 date-time, e.g. 2026-01-31T00:00:00Z.');
+  }
+
+  const rawCursor = url.searchParams.get('cursor')?.slice(0, 256) || null;
+  const cursor = rawCursor ? decodeCursor(rawCursor, sort) : null;
+  if (cursor instanceof Response) return cursor;
+
+  return {
+    limit: Math.min(limit, PAGE_MAX),
+    sort,
+    status: rawStatus ? status : null,
+    since,
+    cursor,
+  };
 }
 
 export const absolute = (path: string) => `${env().ORIGIN}${path}`;
@@ -139,6 +264,8 @@ export interface ApiGameFields {
   headerUrl: string | null;
   totalAchievements: number;
   tier: number | null;
+  tags: number[];
+  familyKey: string | null;
 }
 
 export const apiGame = (game: ApiGameFields) => ({
@@ -152,6 +279,8 @@ export const apiGame = (game: ApiGameFields) => ({
   headerUrl: game.headerUrl,
   totalAchievements: game.totalAchievements,
   tier: game.tier,
+  tags: game.tags,
+  familyKey: game.familyKey,
 });
 
 export const apiGameSelect = {
@@ -164,4 +293,6 @@ export const apiGameSelect = {
   headerUrl: true,
   totalAchievements: true,
   tier: true,
+  tags: true,
+  familyKey: true,
 } as const;

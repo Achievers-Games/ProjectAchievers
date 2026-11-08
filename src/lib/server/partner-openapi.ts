@@ -1,4 +1,11 @@
-import { API_PLATFORMS, KEY_LIMIT, PAGE_LIMIT, PAGE_MAX } from './partner-api';
+import {
+  API_PLATFORMS,
+  API_SORT_KEYS,
+  API_STATUS_KEYS,
+  KEY_LIMIT,
+  PAGE_LIMIT,
+  PAGE_MAX,
+} from './partner-api';
 
 const ref = (name: string) => ({ $ref: `#/components/schemas/${name}` });
 const nullable = (type: string, extra = {}) => ({ type: [type, 'null'], ...extra });
@@ -42,6 +49,7 @@ export function partnerOpenApi(origin: string) {
     paths: {
       '/users/{handle}': {
         get: {
+          operationId: 'getUser',
           summary: 'Public profile and stats',
           parameters: [handle],
           responses: { '200': ok(ref('User'), 'The profile.'), ...errors },
@@ -49,6 +57,7 @@ export function partnerOpenApi(origin: string) {
       },
       '/users/{handle}/games': {
         get: {
+          operationId: 'listUserGames',
           summary: 'Games of a player with their progress',
           parameters: [
             handle,
@@ -60,16 +69,40 @@ export function partnerOpenApi(origin: string) {
             {
               name: 'limit',
               in: 'query',
+              description: `Values above ${PAGE_MAX} are capped at ${PAGE_MAX}.`,
               schema: { type: 'integer', minimum: 1, maximum: PAGE_MAX, default: PAGE_LIMIT },
+            },
+            {
+              name: 'sort',
+              in: 'query',
+              description:
+                'Order of the games. Omitted: a stable historical order with no meaning for ' +
+                'the partner; ask for an order before reading more than one page.',
+              schema: { type: 'string', enum: API_SORT_KEYS },
+            },
+            {
+              name: 'status',
+              in: 'query',
+              description: 'completed: 100 %; started: above 0 % and below 100 %; untouched: 0 %.',
+              schema: { type: 'string', enum: API_STATUS_KEYS },
+            },
+            {
+              name: 'since',
+              in: 'query',
+              description:
+                'Only progress Achievers wrote at or after this instant: the way to catch up ' +
+                'incrementally with what changed since the last call.',
+              schema: { type: 'string', format: 'date-time' },
             },
             {
               name: 'cursor',
               in: 'query',
-              description: 'The nextCursor of the previous page.',
+              description: 'The nextCursor of the previous page, read with the same sort.',
               schema: { type: 'string' },
             },
           ],
           responses: {
+            '400': { $ref: '#/components/responses/BadRequest' },
             '200': ok(
               {
                 type: 'object',
@@ -93,6 +126,7 @@ export function partnerOpenApi(origin: string) {
       },
       '/users/{handle}/games/{platform}/{id}': {
         get: {
+          operationId: 'getUserGame',
           summary: "A player's progress on one game, achievement by achievement",
           parameters: [handle, platform, gameId],
           responses: {
@@ -113,6 +147,7 @@ export function partnerOpenApi(origin: string) {
       },
       '/games/{platform}/{id}': {
         get: {
+          operationId: 'getGame',
           summary: 'A game from its platform id',
           parameters: [platform, gameId],
           responses: {
@@ -148,6 +183,10 @@ export function partnerOpenApi(origin: string) {
       responses: {
         Unauthorized: ok(ref('Error'), 'Missing, unknown or revoked key.'),
         NotFound: ok(ref('Error'), 'Unknown, private or hidden.'),
+        BadRequest: ok(
+          ref('Error'),
+          'A query parameter is invalid, or the cursor suits another sort.',
+        ),
         RateLimited: ok(ref('Error'), 'Too many requests: wait for Retry-After seconds.'),
       },
       schemas: {
@@ -214,6 +253,18 @@ export function partnerOpenApi(origin: string) {
             headerUrl: nullable('string'),
             totalAchievements: { type: 'integer' },
             tier: nullable('integer', { description: 'Difficulty, 1 (Bronze) to 6 (Legendary).' }),
+            tags: {
+              type: 'array',
+              items: { type: 'integer' },
+              description:
+                'Steam tag ids, strongest first. Set for the same game on every platform, ' +
+                'so it can be used as a genre.',
+            },
+            familyKey: nullable('string', {
+              description:
+                'Shared by the versions of one game across platforms; null when the game has ' +
+                'no sibling on another platform.',
+            }),
           },
         },
         Progress: {
@@ -225,6 +276,21 @@ export function partnerOpenApi(origin: string) {
             completed: { type: 'boolean' },
             platinum: { type: 'boolean' },
             lastUnlockedAt: nullable('string', { format: 'date-time' }),
+            lastPlayedAt: nullable('string', {
+              format: 'date-time',
+              description: 'When the platform last recorded a session.',
+            }),
+            playtimeMinutes: {
+              type: 'integer',
+              description: 'Minutes played as reported by the platform (Steam only; 0 elsewhere).',
+            },
+            updatedAt: {
+              type: 'string',
+              format: 'date-time',
+              description:
+                'When Achievers last wrote this progress. `?since=` filters on it, so a partner ' +
+                'only rereads what may have changed.',
+            },
           },
         },
         Achievement: {
@@ -240,6 +306,11 @@ export function partnerOpenApi(origin: string) {
               enum: ['platinum', 'gold', 'silver', 'bronze', 'achievement'],
             },
             rarity: nullable('number', { description: 'Percent of players who have it.' }),
+            points: { type: 'integer', description: 'Points the achievement is worth.' },
+            missable: {
+              type: 'boolean',
+              description: 'Can be lost for the current playthrough.',
+            },
             unlocked: { type: 'boolean' },
             unlockedAt: nullable('string', { format: 'date-time' }),
           },

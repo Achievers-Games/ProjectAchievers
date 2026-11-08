@@ -133,13 +133,24 @@ Chaque appel porte la clé : `Authorization: Bearer ak_…`. Les administrateurs
 remplacent ou la révoquent dans **Modération → Sites partenaires** ; elle ne s'affiche qu'une fois
 et seule son empreinte SHA-256 est gardée.
 
-| Méthode | Route                                   | Contenu                                                               |
-| ------- | --------------------------------------- | --------------------------------------------------------------------- |
-| GET     | `/users/{handle}`                       | nom, avatar, clan, lien de la carte, stats (jeux, succès, cartes…)    |
-| GET     | `/users/{handle}/games`                 | jeux et progression, `?platform=steam`, `?limit=` (≤ 100), `?cursor=` |
-| GET     | `/users/{handle}/games/{platform}/{id}` | progression d'un jeu et chaque succès, obtenu ou non                  |
-| GET     | `/games/{platform}/{id}`                | fiche du jeu, joueurs publics, nombre et taux de 100 %                |
-| GET     | `/openapi.json`                         | description OpenAPI 3.1, lisible sans clé                             |
+| Méthode | Route                                   | Contenu                                                                                                |
+| ------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| GET     | `/users/{handle}`                       | nom, avatar, clan, lien de la carte, stats (jeux, succès, cartes…)                                     |
+| GET     | `/users/{handle}/games`                 | jeux et progression, `?platform=steam`, `?sort=`, `?status=`, `?since=`, `?limit=` (≤ 100), `?cursor=` |
+| GET     | `/users/{handle}/games/{platform}/{id}` | progression d'un jeu et chaque succès, obtenu ou non                                                   |
+| GET     | `/games/{platform}/{id}`                | fiche du jeu, joueurs publics, nombre et taux de 100 %                                                 |
+| GET     | `/openapi.json`                         | description OpenAPI 3.1, lisible sans clé                                                              |
+
+Sur la liste des jeux, trois paramètres de plus :
+
+- `sort` : `name`, `completion`, `lastUnlocked` ou `updated`. Sans lui, l'ordre historique est
+  conservé — stable d'une page à l'autre, mais sans signification pour le partenaire.
+- `status` : `completed` (100 %), `started` (commencé, pas fini) ou `untouched` (0 %).
+- `since` : ne rend que les progressions réécrites à partir de cet instant ISO 8601. C'est le
+  rattrapage incrémental : on ne relit que ce qui a pu changer.
+
+Le curseur porte l'ordre et la valeur du dernier élément : il se refuse s'il vient d'un autre tri
+(`400 bad_request`), comme tout paramètre incompris — plus de valeur remplacée en silence.
 
 Exemple :
 

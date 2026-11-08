@@ -1,10 +1,11 @@
 // Tests sur un vrai PostgreSQL : `npm run dev:db` ou le service de la CI.
 import 'dotenv/config';
 import type { RequestEvent } from '@sveltejs/kit';
+import type { Platform } from '#prisma';
 import { afterAll, describe, expect, it } from 'vitest';
 import { resolveIdentity } from './accounts';
 import { db } from './db';
-import { authenticatePartner, issuePartnerKey, revokePartnerKey } from './partner-api';
+import { authenticatePartner, issuePartnerKey, listParams, revokePartnerKey } from './partner-api';
 import { partnerGame, partnerUser, partnerUserGame, partnerUserGames } from './partner-queries';
 import { PREFIX, identity, setupIntegration } from './test-helpers';
 
@@ -54,6 +55,15 @@ const owns = (
       hidden: data.hidden ?? false,
     },
   });
+
+/** La même lecture que la route : les paramètres passent par `listParams`, comme en production. */
+async function listPage(handle: string, query = '', platform: Platform | null = null) {
+  const list = listParams(new URL(`http://localhost/api/v1/users/${handle}/games${query}`));
+  if (list instanceof Response) throw new Error(`paramètres refusés (${list.status})`);
+  const games = await partnerUserGames(handle, { platform, ...list });
+  if (!games) throw new Error('profil absent');
+  return games;
+}
 
 describe('clé partenaire', () => {
   it('ouvre l’API, puis plus rien une fois révoquée ou remplacée', async () => {
@@ -115,20 +125,19 @@ describe('API partenaire', () => {
     await owns(user.id, masked.id, { hidden: true });
     await owns(user.id, adult.id);
 
-    const first = await partnerUserGames(user.handle, { platform: null, limit: 2, cursor: null });
-    expect(first?.items).toHaveLength(2);
-    expect(first?.nextCursor).not.toBeNull();
-    const second = await partnerUserGames(user.handle, {
-      platform: null,
-      limit: 2,
-      cursor: first!.nextCursor,
-    });
-    expect(second?.items).toHaveLength(1);
-    expect(second?.nextCursor).toBeNull();
+    const first = await listPage(user.handle, '?limit=2');
+    expect(first.items).toHaveLength(2);
+    expect(first.nextCursor).not.toBeNull();
+    const second = await listPage(
+      user.handle,
+      `?limit=2&cursor=${encodeURIComponent(first.nextCursor!)}`,
+    );
+    expect(second.items).toHaveLength(1);
+    expect(second.nextCursor).toBeNull();
 
-    const ids = [...first!.items, ...second!.items].map((item) => item.game.platformGameId);
+    const ids = [...first.items, ...second.items].map((item) => item.game.platformGameId);
     expect(ids.sort()).toEqual(games.map((g) => g.platformGameId).sort());
-    expect(first?.items[0]).toMatchObject({
+    expect(first.items[0]).toMatchObject({
       game: { platform: 'steam' },
       progress: { unlocked: 1, total: 2, completion: 50, completed: false },
     });
@@ -185,5 +194,114 @@ describe('API partenaire', () => {
     });
     const adult = await game({ adultOnly: true });
     expect(await partnerGame('STEAM', adult.platformGameId)).toBeNull();
+  });
+});
+
+describe('champs et filtres de l’API partenaire', () => {
+  const params = (query = '') =>
+    listParams(new URL(`http://localhost/api/v1/users/ada/games${query}`));
+
+  it('refuse un paramètre incompris au lieu de le remplacer en silence', async () => {
+    const refused = (query: string) => params(query) as Response;
+    expect(refused('?limit=abc').status).toBe(400);
+    expect(await refused('?limit=abc').json()).toMatchObject({ error: 'bad_request' });
+    expect(refused('?sort=bidon').status).toBe(400);
+    expect(refused('?status=fini').status).toBe(400);
+    expect(refused('?since=hier').status).toBe(400);
+    // Un curseur d'avant les tris ne vaut que pour l'ordre par défaut.
+    expect(refused('?sort=completion&cursor=abc').status).toBe(400);
+  });
+
+  it('rend les champs de progression, de jeu et de succès que le site connaît', async () => {
+    const user = await player();
+    const g = await game();
+    await owns(user.id, g.id, { completion: 100 });
+    await db.userGame.update({
+      where: { userId_gameId: { userId: user.id, gameId: g.id } },
+      data: { playtimeMinutes: 1234, lastPlayedAt: new Date('2026-02-03T10:00:00Z') },
+    });
+    await db.game.update({
+      where: { id: g.id },
+      data: { tags: [1667, 492], familyKey: `${PREFIX}-famille` },
+    });
+    await db.achievement.create({
+      data: {
+        gameId: g.id,
+        platformAchievementId: 'POINTS',
+        name: 'Un',
+        points: 25,
+        missable: true,
+      },
+    });
+
+    const detail = await partnerUserGame(user.handle, 'STEAM', g.platformGameId);
+    expect(detail?.game).toMatchObject({ tags: [1667, 492], familyKey: `${PREFIX}-famille` });
+    expect(detail?.progress).toMatchObject({
+      playtimeMinutes: 1234,
+      lastPlayedAt: '2026-02-03T10:00:00.000Z',
+    });
+    expect(detail?.progress.updatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    expect(detail?.achievements.find((a) => a.id === 'POINTS')).toMatchObject({
+      points: 25,
+      missable: true,
+    });
+  });
+
+  it('filtre par état et trie page après page', async () => {
+    const user = await player();
+    const done = await game();
+    const started = await game();
+    const untouched = await game();
+    await owns(user.id, done.id, { completion: 100 });
+    await owns(user.id, started.id, { completion: 40 });
+    await owns(user.id, untouched.id, { completion: 0 });
+
+    const ids = async (query: string) =>
+      (await listPage(user.handle, query)).items.map((item) => item.game.platformGameId);
+
+    expect(await ids('?status=completed')).toEqual([done.platformGameId]);
+    expect(await ids('?status=started')).toEqual([started.platformGameId]);
+    expect(await ids('?status=untouched')).toEqual([untouched.platformGameId]);
+
+    expect(await ids('?sort=completion')).toEqual([
+      done.platformGameId,
+      started.platformGameId,
+      untouched.platformGameId,
+    ]);
+
+    // Le tri par nom passe par la relation : il a son propre curseur.
+    await db.game.update({ where: { id: untouched.id }, data: { name: `${PREFIX} A` } });
+    await db.game.update({ where: { id: started.id }, data: { name: `${PREFIX} B` } });
+    await db.game.update({ where: { id: done.id }, data: { name: `${PREFIX} C` } });
+    expect(await ids('?sort=name')).toEqual([
+      untouched.platformGameId,
+      started.platformGameId,
+      done.platformGameId,
+    ]);
+    const byName = await listPage(user.handle, '?sort=name&limit=1');
+    const afterName = await listPage(
+      user.handle,
+      `?sort=name&limit=1&cursor=${encodeURIComponent(byName.nextCursor!)}`,
+    );
+    expect(afterName.items[0].game.platformGameId).toBe(started.platformGameId);
+
+    // Le curseur porte la valeur de tri : la page suivante reprend où l'on s'est arrêté.
+    const first = await listPage(user.handle, '?sort=completion&limit=1');
+    expect(first.items[0].game.platformGameId).toBe(done.platformGameId);
+    const second = await listPage(
+      user.handle,
+      `?sort=completion&limit=1&cursor=${encodeURIComponent(first.nextCursor!)}`,
+    );
+    expect(second.items[0].game.platformGameId).toBe(started.platformGameId);
+  });
+
+  it('ne relit que ce qui a été réécrit depuis un instant donné', async () => {
+    const user = await player();
+    const g = await game();
+    await owns(user.id, g.id);
+
+    expect((await listPage(user.handle, '?since=2000-01-01T00:00:00Z')).items).toHaveLength(1);
+    const future = new Date(Date.now() + 60_000).toISOString();
+    expect((await listPage(user.handle, `?since=${future}`)).items).toHaveLength(0);
   });
 });

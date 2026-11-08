@@ -1,6 +1,14 @@
-import type { Platform } from '#prisma';
+import type { Platform, Prisma } from '#prisma';
 import { db } from './db';
-import { absolute, apiGame, apiGameSelect } from './partner-api';
+import {
+  absolute,
+  apiGame,
+  apiGameSelect,
+  nextCursor,
+  type ApiCursor,
+  type ApiGameStatus,
+  type ApiSort,
+} from './partner-api';
 import { userStats } from './queries/stats';
 import { visibleGames } from './queries/shared';
 
@@ -29,6 +37,9 @@ const progress = (row: {
   completion: number;
   platinum: boolean;
   lastUnlockedAt: Date | null;
+  lastPlayedAt: Date | null;
+  playtimeMinutes: number;
+  updatedAt: Date;
 }) => ({
   unlocked: row.unlockedCount,
   total: row.totalCount,
@@ -36,6 +47,10 @@ const progress = (row: {
   completed: row.completion >= 100,
   platinum: row.platinum,
   lastUnlockedAt: row.lastUnlockedAt?.toISOString() ?? null,
+  lastPlayedAt: row.lastPlayedAt?.toISOString() ?? null,
+  playtimeMinutes: row.playtimeMinutes,
+  // Le moment où Achievers a réécrit cette progression : `?since=` s'appuie dessus.
+  updatedAt: row.updatedAt.toISOString(),
 });
 
 const progressSelect = {
@@ -44,6 +59,9 @@ const progressSelect = {
   completion: true,
   platinum: true,
   lastUnlockedAt: true,
+  lastPlayedAt: true,
+  playtimeMinutes: true,
+  updatedAt: true,
 } as const;
 
 export async function partnerUser(handle: string) {
@@ -69,27 +87,97 @@ export async function partnerUser(handle: string) {
   };
 }
 
+const orderFor = (sort: ApiSort): Prisma.UserGameOrderByWithRelationInput[] =>
+  sort === 'name'
+    ? [{ game: { name: 'asc' } }, { gameId: 'asc' }]
+    : sort === 'completion'
+      ? [{ completion: 'desc' }, { gameId: 'asc' }]
+      : sort === 'lastUnlocked'
+        ? [{ lastUnlockedAt: { sort: 'desc', nulls: 'last' } }, { gameId: 'asc' }]
+        : sort === 'updated'
+          ? [{ updatedAt: 'desc' }, { gameId: 'asc' }]
+          : [{ gameId: 'asc' }];
+
+/** Reprendre après le dernier élément rendu : sa valeur de tri, puis son identifiant. */
+const afterCursor = (sort: ApiSort, cursor: ApiCursor): Prisma.UserGameWhereInput => {
+  switch (sort) {
+    case 'default':
+      return { gameId: { gt: cursor.id } };
+    case 'completion': {
+      const value = Number(cursor.value);
+      return {
+        OR: [{ completion: { lt: value } }, { completion: value, gameId: { gt: cursor.id } }],
+      };
+    }
+    case 'updated': {
+      const value = new Date(String(cursor.value));
+      return {
+        OR: [{ updatedAt: { lt: value } }, { updatedAt: value, gameId: { gt: cursor.id } }],
+      };
+    }
+    case 'lastUnlocked': {
+      const value = cursor.value === null ? null : new Date(String(cursor.value));
+      // Les jeux jamais débloqués viennent en dernier : on les parcourt les uns après les autres.
+      return value
+        ? {
+            OR: [
+              { lastUnlockedAt: { lt: value } },
+              { lastUnlockedAt: value, gameId: { gt: cursor.id } },
+              { lastUnlockedAt: null },
+            ],
+          }
+        : { lastUnlockedAt: null, gameId: { gt: cursor.id } };
+    }
+    case 'name': {
+      const value = String(cursor.value);
+      return {
+        OR: [
+          { game: { name: { gt: value } } },
+          { game: { name: value }, gameId: { gt: cursor.id } },
+        ],
+      };
+    }
+  }
+};
+
+export interface UserGamesFilter {
+  platform: Platform | null;
+  limit: number;
+  cursor: ApiCursor | null;
+  sort?: ApiSort;
+  status?: ApiGameStatus | null;
+  /** Ne rend que les progressions réécrites à partir de cet instant. */
+  since?: Date | null;
+}
+
 export async function partnerUserGames(
   handle: string,
-  { platform, limit, cursor }: { platform: Platform | null; limit: number; cursor: string | null },
+  { platform, limit, cursor, sort = 'default', status = null, since = null }: UserGamesFilter,
 ) {
   const user = await publicPlayer(handle);
   if (!user) return null;
+
+  const game: Prisma.GameWhereInput = { ...visibleGames(false) };
+  if (platform) game.platform = platform;
+
+  const where: Prisma.UserGameWhereInput = { userId: user.id, hidden: false, game };
+  if (status === 'completed') where.completion = { gte: 100 };
+  else if (status === 'started') where.completion = { gt: 0, lt: 100 };
+  else if (status === 'untouched') where.completion = { lte: 0 };
+  if (since) where.updatedAt = { gte: since };
+  if (cursor) where.AND = [afterCursor(sort, cursor)];
+
   const rows = await db.userGame.findMany({
-    where: {
-      userId: user.id,
-      ...shownGames,
-      ...(platform && { game: { ...visibleGames(false), platform } }),
-      ...(cursor && { gameId: { gt: cursor } }),
-    },
-    orderBy: { gameId: 'asc' },
+    where,
+    orderBy: orderFor(sort),
     take: limit + 1,
     select: { gameId: true, ...progressSelect, game: { select: apiGameSelect } },
   });
   const page = rows.slice(0, limit);
+  const last = page.at(-1);
   return {
     items: page.map((row) => ({ game: apiGame(row.game), progress: progress(row) })),
-    nextCursor: rows.length > limit ? (page.at(-1)?.gameId ?? null) : null,
+    nextCursor: rows.length > limit && last ? nextCursor(sort, last) : null,
   };
 }
 
@@ -120,6 +208,8 @@ export async function partnerUserGame(handle: string, platform: Platform, platfo
               hidden: true,
               trophyType: true,
               globalRarity: true,
+              points: true,
+              missable: true,
               unlocks: { where: { userId: user.id }, select: { unlockedAt: true } },
             },
           },
@@ -144,6 +234,9 @@ export async function partnerUserGame(handle: string, platform: Platform, platfo
         hidden: a.hidden,
         trophyType: a.trophyType.toLowerCase(),
         rarity: a.globalRarity,
+        points: a.points,
+        // Un succès manquable se perd pour la partie en cours : le partenaire peut prévenir.
+        missable: a.missable,
         unlocked: unlockedAt !== null,
         unlockedAt: unlockedAt?.toISOString() ?? null,
       };

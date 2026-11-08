@@ -1,7 +1,7 @@
 import {
   apiJson,
+  listParams,
   notFound,
-  pageParams,
   parsePlatform,
   partnerRoute,
   unknownPlatform,
@@ -14,6 +14,9 @@ export const GET: RequestHandler = partnerRoute(async ({ params, url }) => {
   const platform = filter ? parsePlatform(filter) : null;
   if (filter && !platform) return unknownPlatform(filter);
 
-  const games = await partnerUserGames(params.handle, { platform, ...pageParams(url) });
+  const list = listParams(url);
+  if (list instanceof Response) return list;
+
+  const games = await partnerUserGames(params.handle, { platform, ...list });
   return games ? apiJson(games) : notFound('Public profile');
 });
