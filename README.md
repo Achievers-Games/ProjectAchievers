@@ -35,7 +35,7 @@ npm run dev
 ```
 
 `npm run dev:db` lance un PostgreSQL local sans Docker, sur le port 5433. Le site est sur
-<http://localhost:5173>.
+<http://localhost:3000>.
 
 ## Vérifier
 

@@ -27,7 +27,7 @@ jobs:
           --health-cmd "pg_isready -U achievers" --health-interval 5s --health-retries 10
     env:
       DATABASE_URL: postgresql://achievers:achievers@localhost:5433/achievers
-      ORIGIN: http://localhost:5173
+      ORIGIN: http://localhost:3000
       ENCRYPTION_KEY: '0000000000000000000000000000000000000000000000000000000000000000'
     steps:
       - uses: actions/checkout@v4
