@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { renderPlayerCard, type PlayerCardData } from './player-card';
+import { describe, expect, it, vi } from 'vitest';
+import { inlineAvatar, renderPlayerCard, type PlayerCardData } from './player-card';
 
 const base: PlayerCardData = {
   displayName: 'Ada',
@@ -30,6 +30,19 @@ describe('carte de joueur', () => {
   it('raccourcit les noms trop longs', () => {
     const svg = renderPlayerCard({ ...base, displayName: 'x'.repeat(40) });
     expect(svg).toContain(`${'x'.repeat(23)}…`);
+  });
+
+  it('va chercher en https un avatar donné en http, comme ceux de PSN', async () => {
+    const fetched: string[] = [];
+    vi.stubGlobal('fetch', async (url: string) => {
+      fetched.push(url);
+      return new Response(new Uint8Array([1, 2, 3]), { headers: { 'content-type': 'image/png' } });
+    });
+    const data = await inlineAvatar('http://static-resource.np.community.playstation.net/a.png');
+    expect(fetched).toEqual(['https://static-resource.np.community.playstation.net/a.png']);
+    expect(data).toBe('data:image/png;base64,AQID');
+    expect(await inlineAvatar('ftp://exemple/a.png')).toBeNull();
+    vi.unstubAllGlobals();
   });
 
   it('reste un document SVG autonome', () => {

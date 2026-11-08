@@ -98,7 +98,12 @@ const avatars = new Map<string, { data: string | null; at: number }>();
  * Les adresses viennent toujours d'un compte lié (Steam, PSN, Xbox…) : aucune adresse libre.
  * La carte reste utilisable si le serveur d'images est lent ou refuse : l'initiale remplace l'avatar.
  */
-export async function inlineAvatar(url: string | null, now = Date.now()): Promise<string | null> {
+export async function inlineAvatar(
+  address: string | null,
+  now = Date.now(),
+): Promise<string | null> {
+  // PSN donne encore ses avatars en http, mais les sert aussi en https.
+  const url = address?.startsWith('http://') ? `https://${address.slice(7)}` : address;
   if (!url?.startsWith('https://')) return null;
   const cached = avatars.get(url);
   if (cached && now - cached.at < AVATAR_TTL) return cached.data;
