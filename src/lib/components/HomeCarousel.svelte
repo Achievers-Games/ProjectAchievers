@@ -2,6 +2,7 @@
   import { m } from '#lib/paraglide/messages';
   import ChevronLeft from '@lucide/svelte/icons/chevron-left';
   import ChevronRight from '@lucide/svelte/icons/chevron-right';
+  import ExternalLink from '@lucide/svelte/icons/external-link';
   import { formatPercent } from '#lib/labels';
   import { FRAMES } from '#lib/frames';
   import Avatar from './Avatar.svelte';
@@ -37,6 +38,8 @@
   let dragging = $state(false);
 
   const signIn = '/connexion';
+  /** Lure, le site partenaire qui trouve quoi lancer : la source dit d'où vient le visiteur. */
+  const LURE = 'https://lureverse.fr/?utm_source=achievers&utm_medium=banniere';
   const slides = $derived([
     {
       id: 'saison',
@@ -64,6 +67,15 @@
       text: m.banner_frames_text(),
       href: member ? '/compte' : signIn,
       cta: m.banner_frames_cta(),
+    },
+    {
+      id: 'lure',
+      game: null,
+      eyebrow: m.banner_lure_label(),
+      title: m.banner_lure_title(),
+      text: m.banner_lure_text(),
+      href: LURE,
+      cta: m.banner_lure_cta(),
     },
   ]);
 
@@ -118,7 +130,14 @@
         <h2 class="carousel-title">{slide.title}</h2>
         <p class="carousel-text" class:tagline={slide.id === 'saison'}>{slide.text}</p>
         <div class="mt-auto flex flex-wrap items-center gap-3">
-          <a href={slide.href} class="btn btn-primary">{slide.cta}</a>
+          {#if slide.href === LURE}
+            <a href={slide.href} class="btn btn-primary" target="_blank" rel="noopener">
+              {slide.cta}
+              <ExternalLink size={14} aria-hidden="true" />
+            </a>
+          {:else}
+            <a href={slide.href} class="btn btn-primary">{slide.cta}</a>
+          {/if}
           {#if slide.game}
             {@const game = slide.game}
             <a href="/jeux/{game.slug}" class="carousel-game">

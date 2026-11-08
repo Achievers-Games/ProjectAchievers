@@ -1335,6 +1335,10 @@
   --slide-a: #0b3142;
   --slide-b: #0d0a1c;
 }
+.carousel-slide[data-slide='lure'] {
+  --slide-a: #4a2408;
+  --slide-b: #0d0a1c;
+}
 .carousel-eyebrow {
   @apply text-xs font-semibold uppercase tracking-wide text-white/70;
 }

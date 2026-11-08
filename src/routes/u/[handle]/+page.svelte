@@ -2,6 +2,7 @@
   import { enhance } from '$app/forms';
   import { submitWithToast } from '#lib/forms';
   import { m } from '#lib/paraglide/messages';
+  import IdCard from '@lucide/svelte/icons/id-card';
   import Link from '@lucide/svelte/icons/link';
   import Avatar from '#lib/components/Avatar.svelte';
   import Empty from '#lib/components/Empty.svelte';
@@ -24,6 +25,17 @@
     data.compareIds.includes(card.id)
       ? `/jeux/${card.slug}?avec=${profile.user.handle}`
       : undefined;
+  /** Le lien de l'image, prêt à coller sur un forum, Lure ou un README. */
+  async function shareCard() {
+    const url = `${data.origin}/u/${profile.user.handle}/carte.svg`;
+    try {
+      await navigator.clipboard.writeText(url);
+      toast(m.player_card_copied());
+    } catch {
+      toast(url);
+    }
+  }
+
   async function share() {
     try {
       await navigator.clipboard.writeText(location.href);
@@ -94,6 +106,12 @@
         <Link size={14} aria-hidden="true" />
         {m.share()}
       </button>
+      {#if profile.user.isPublic}
+        <button type="button" class="btn" onclick={shareCard}>
+          <IdCard size={14} aria-hidden="true" />
+          {m.player_card()}
+        </button>
+      {/if}
       {#if isMe}
         <a class="btn btn-primary" href="/compte">{m.profile_edit()}</a>
       {/if}
