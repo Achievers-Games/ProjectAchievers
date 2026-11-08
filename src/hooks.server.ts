@@ -33,11 +33,13 @@ function limitFor(request: Request, path: string): number | null {
   if (path.startsWith('/auth/')) return 20;
   // Un écran en boucle ne doit pas inonder le journal : un rapport par seconde suffit.
   if (path === '/api/erreur') return 10;
+  // L'API partenaire limite par clé (`partner-api.ts`) : un partenaire n'a qu'une adresse, et la
+  // recherche d'identités est un POST. Passer avant la règle des écritures, sinon les connexions
+  // d'un partenaire très fréquenté s'y arrêteraient à 60 par minute.
+  if (path.startsWith('/api/v1/')) return null;
   if (request.method !== 'GET' && request.method !== 'HEAD') return 60;
   // Le flux reste ouvert : il ne doit pas bloquer le chat.
   if (path === '/api/sync/events') return null;
-  // L'API partenaire limite par clé (`partner-api.ts`) : un partenaire n'a qu'une adresse.
-  if (path.startsWith('/api/v1/')) return null;
   if (!path.startsWith('/api/')) return null;
   // Le parcours e2e ne dispose que d'une adresse pour toutes ses sessions : la présence et le
   // centre de notifications y épuisent le plafond et font tomber des tests sans rapport.

@@ -176,6 +176,26 @@ export function nextCursor(
 
 const invalidCursor = () => apiError(400, 'bad_request', 'Invalid cursor.');
 
+const isDate = (value: unknown) =>
+  typeof value === 'string' && !Number.isNaN(new Date(value).getTime());
+
+/** Ce que chaque tri range dans son curseur : un nombre, une date ou un nom. */
+function cursorValueFits(sort: ApiSort, value: unknown): value is string | number | null {
+  switch (sort) {
+    case 'completion':
+      return typeof value === 'number' && Number.isFinite(value);
+    case 'updated':
+      return isDate(value);
+    case 'lastUnlocked':
+      // Les jeux jamais débloqués ferment la liste : leur curseur ne porte pas de date.
+      return value === null || isDate(value);
+    case 'name':
+      return typeof value === 'string';
+    case 'default':
+      return value === null;
+  }
+}
+
 /** Le curseur reçu, ou la réponse `400` qui explique pourquoi il ne vaut rien pour cet ordre. */
 export function decodeCursor(raw: string, sort: ApiSort): ApiCursor | Response {
   if (!raw.startsWith(CURSOR_PREFIX)) {
@@ -195,10 +215,9 @@ export function decodeCursor(raw: string, sort: ApiSort): ApiCursor | Response {
   if (cursorSort !== sort)
     return apiError(400, 'bad_request', 'This cursor belongs to another sort.');
   if (typeof id !== 'string' || !id) return invalidCursor();
-  if (value !== null && typeof value !== 'string' && typeof value !== 'number') {
-    return invalidCursor();
-  }
-  return { sort, value, id };
+  // La valeur doit avoir le type de son tri : une date illisible ou un pourcentage qui n'en est
+  // pas finirait en erreur 500 dans la requête, au lieu d'un refus clair.
+  return cursorValueFits(sort, value) ? { sort, value, id } : invalidCursor();
 }
 
 export interface GameListParams {
@@ -218,7 +237,7 @@ const badRequest = (message: string) => apiError(400, 'bad_request', message);
 export function listParams(url: URL): GameListParams | Response {
   const rawLimit = url.searchParams.get('limit');
   const limit = rawLimit === null ? PAGE_LIMIT : Number(rawLimit);
-  if (!Number.isInteger(limit) || limit < 1) {
+  if (!Number.isInteger(limit) || limit < 1 || limit > PAGE_MAX) {
     return badRequest(`limit must be a whole number from 1 to ${PAGE_MAX}.`);
   }
 
@@ -244,7 +263,7 @@ export function listParams(url: URL): GameListParams | Response {
   if (cursor instanceof Response) return cursor;
 
   return {
-    limit: Math.min(limit, PAGE_MAX),
+    limit,
     sort,
     status: rawStatus ? status : null,
     since,

@@ -5,7 +5,13 @@ import type { Platform } from '#prisma';
 import { afterAll, describe, expect, it } from 'vitest';
 import { resolveIdentity } from './accounts';
 import { db } from './db';
-import { authenticatePartner, issuePartnerKey, listParams, revokePartnerKey } from './partner-api';
+import {
+  authenticatePartner,
+  issuePartnerKey,
+  listParams,
+  PAGE_MAX,
+  revokePartnerKey,
+} from './partner-api';
 import { partnerGame, partnerUser, partnerUserGame, partnerUserGames } from './partner-queries';
 import { PREFIX, identity, setupIntegration } from './test-helpers';
 
@@ -210,6 +216,24 @@ describe('champs et filtres de l’API partenaire', () => {
     expect(refused('?since=hier').status).toBe(400);
     // Un curseur d'avant les tris ne vaut que pour l'ordre par défaut.
     expect(refused('?sort=completion&cursor=abc').status).toBe(400);
+    // Au-delà du maximum, le refus annoncé par le message plutôt qu'une page tronquée.
+    expect(refused(`?limit=${PAGE_MAX + 1}`).status).toBe(400);
+  });
+
+  it('refuse un curseur dont la valeur ne va pas avec son tri', () => {
+    const forged = (sort: string, value: unknown) =>
+      params(
+        `?sort=${sort}&cursor=${encodeURIComponent(
+          `k1.${Buffer.from(JSON.stringify([sort, value, 'jeu'])).toString('base64url')}`,
+        )}`,
+      );
+    // Sans ce contrôle, la requête recevait une date invalide et répondait 500.
+    expect((forged('updated', 'pas-une-date') as Response).status).toBe(400);
+    expect((forged('lastUnlocked', 'demain') as Response).status).toBe(400);
+    expect((forged('completion', 'cent') as Response).status).toBe(400);
+    expect((forged('name', 42) as Response).status).toBe(400);
+    expect(forged('updated', '2026-01-02T00:00:00.000Z')).not.toBeInstanceOf(Response);
+    expect(forged('lastUnlocked', null)).not.toBeInstanceOf(Response);
   });
 
   it('rend les champs de progression, de jeu et de succès que le site connaît', async () => {
