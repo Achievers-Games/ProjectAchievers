@@ -344,14 +344,6 @@ export function partnerOpenApi(origin: string) {
             completed: { type: 'boolean' },
             platinum: { type: 'boolean' },
             lastUnlockedAt: nullable('string', { format: 'date-time' }),
-            lastPlayedAt: nullable('string', {
-              format: 'date-time',
-              description: 'When the platform last recorded a session.',
-            }),
-            playtimeMinutes: {
-              type: 'integer',
-              description: 'Minutes played as reported by the platform (Steam only; 0 elsewhere).',
-            },
             updatedAt: {
               type: 'string',
               format: 'date-time',

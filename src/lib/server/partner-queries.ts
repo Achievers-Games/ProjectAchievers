@@ -37,8 +37,6 @@ const progress = (row: {
   completion: number;
   platinum: boolean;
   lastUnlockedAt: Date | null;
-  lastPlayedAt: Date | null;
-  playtimeMinutes: number;
   updatedAt: Date;
 }) => ({
   unlocked: row.unlockedCount,
@@ -47,8 +45,7 @@ const progress = (row: {
   completed: row.completion >= 100,
   platinum: row.platinum,
   lastUnlockedAt: row.lastUnlockedAt?.toISOString() ?? null,
-  lastPlayedAt: row.lastPlayedAt?.toISOString() ?? null,
-  playtimeMinutes: row.playtimeMinutes,
+  // Ni temps de jeu ni dernière session : le site ne les montre à personne, l'API non plus.
   // Le moment où Achievers a réécrit cette progression : `?since=` s'appuie dessus.
   updatedAt: row.updatedAt.toISOString(),
 });
@@ -59,8 +56,6 @@ const progressSelect = {
   completion: true,
   platinum: true,
   lastUnlockedAt: true,
-  lastPlayedAt: true,
-  playtimeMinutes: true,
   updatedAt: true,
 } as const;
 

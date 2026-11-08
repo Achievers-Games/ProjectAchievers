@@ -260,10 +260,9 @@ describe('champs et filtres de l’API partenaire', () => {
 
     const detail = await partnerUserGame(user.handle, 'STEAM', g.platformGameId);
     expect(detail?.game).toMatchObject({ tags: [1667, 492], familyKey: `${PREFIX}-famille` });
-    expect(detail?.progress).toMatchObject({
-      playtimeMinutes: 1234,
-      lastPlayedAt: '2026-02-03T10:00:00.000Z',
-    });
+    // Le temps de jeu reste privé : le site ne le montre pas, l'API ne le donne pas.
+    expect(detail?.progress).not.toHaveProperty('playtimeMinutes');
+    expect(detail?.progress).not.toHaveProperty('lastPlayedAt');
     expect(detail?.progress.updatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
     expect(detail?.achievements.find((a) => a.id === 'POINTS')).toMatchObject({
       points: 25,
