@@ -71,6 +71,8 @@ export async function partnerUser(handle: PlayerRef) {
   const stats = await userStats(user.id);
   const clan = user.clanMember?.clan;
   return {
+    // Stable pour toujours, contrairement au handle que le joueur peut changer.
+    id: user.id,
     handle: user.handle,
     displayName: user.displayName,
     // Toujours vrai par l'identifiant public ; par OAuth, le joueur peut être privé.

@@ -177,6 +177,32 @@ describe('webhooks partenaires', () => {
     ]);
   });
 
+  it('suit aussi le joueur qui a autorisé le partenaire par OAuth, même au profil privé', async () => {
+    const { app, game, achievements } = await setup();
+    const [authorised, readOnly] = [await player(false), await player(false)];
+    await db.oAuthGrant.create({
+      data: { userId: authorised.id, appId: app.id, scopes: ['profile', 'library'] },
+    });
+    // Sans la portée library, le partenaire n'a pas demandé à suivre la bibliothèque.
+    await db.oAuthGrant.create({
+      data: { userId: readOnly.id, appId: app.id, scopes: ['profile'] },
+    });
+    const arrived = at('2026-03-01T13:00:00Z');
+    await unlock(authorised.id, game.id, achievements[0]!.id, arrived);
+    await unlock(readOnly.id, game.id, achievements[0]!.id, arrived);
+
+    const partner = fakePartner();
+    await deliverPartnerWebhooks(at('2026-03-01T13:05:00Z'), partner.send);
+    const events = (
+      JSON.parse(partner.sent[0]!.body) as {
+        events: { user: { id: string; handle: string; partnerUserId: string | null } }[];
+      }
+    ).events;
+    expect(events.map((event) => event.user)).toEqual([
+      { id: authorised.id, handle: authorised.handle, partnerUserId: null },
+    ]);
+  });
+
   it('retente après un échec, en attendant de plus en plus longtemps', async () => {
     const { app, game, achievements } = await setup();
     const user = await player();

@@ -55,15 +55,24 @@ interface UnlockRow {
   };
 }
 
-/** Les succès arrivés après le curseur, pour les joueurs reliés, publics, sur des jeux visibles. */
-async function pendingUnlocks(slug: string, cursor: Date | null, until: Date) {
+/**
+ * Qui le partenaire suit : les joueurs reliés automatiquement (même identité OAuth) au profil
+ * public, et ceux qui l'ont autorisé par « Se connecter avec Achievers » avec la portée
+ * `library`, même au profil privé : ils ont dit oui en connaissance de cause.
+ */
+const followedBy = (app: { id: string; slug: string }) => ({
+  OR: [
+    { isPublic: true, partnerLinks: { some: { partner: app.slug, revokedAt: null } } },
+    { oauthGrants: { some: { appId: app.id, revokedAt: null, scopes: { has: 'library' } } } },
+  ],
+});
+
+/** Les succès arrivés après le curseur, pour les joueurs suivis, sur des jeux visibles. */
+async function pendingUnlocks(app: { id: string; slug: string }, cursor: Date | null, until: Date) {
   const rows: UnlockRow[] = await db.userAchievement.findMany({
     where: {
       createdAt: { ...(cursor && { gt: cursor }), lte: until },
-      user: {
-        isPublic: true,
-        partnerLinks: { some: { partner: slug, revokedAt: null } },
-      },
+      user: followedBy(app),
       achievement: { game: { adultOnly: false } },
     },
     orderBy: { createdAt: 'asc' },
@@ -97,6 +106,8 @@ async function pendingUnlocks(slug: string, cursor: Date | null, until: Date) {
  * `game.completed` quand elle atteint 100 %. Un jeu masqué par le joueur ne part pas.
  */
 async function buildEvents(slug: string, rows: UnlockRow[]) {
+  // Un joueur autorisé par OAuth sans liaison n'a pas d'identifiant chez le partenaire : `id`
+  // (Achievers, stable) suffit à le retrouver, puisque `/me` le donne aussi.
   const userIds = [...new Set(rows.map((row) => row.userId))];
   const gameIds = [...new Set(rows.map((row) => row.achievement.game.id))];
   const [links, users, progress] = await Promise.all([
@@ -125,15 +136,18 @@ async function buildEvents(slug: string, rows: UnlockRow[]) {
   return [...groups].flatMap(([key, unlocks]) => {
     const first = unlocks[0]!;
     const owned = progressOf.get(key);
-    const partnerUserId = partnerIds.get(first.userId);
-    if (!partnerUserId || owned?.hidden) return [];
+    if (owned?.hidden) return [];
     const { game } = first.achievement;
     const completed = (owned?.completion ?? 0) >= 100;
     return [
       {
         id: randomUUID(),
         type: completed ? 'game.completed' : 'achievements.unlocked',
-        user: { partnerUserId, handle: handles.get(first.userId) ?? null },
+        user: {
+          id: first.userId,
+          handle: handles.get(first.userId) ?? null,
+          partnerUserId: partnerIds.get(first.userId) ?? null,
+        },
         game: {
           platform: platformSlug(game.platform),
           platformGameId: game.platformGameId,
@@ -186,7 +200,7 @@ export async function deliverPartnerWebhooks(now = new Date(), send: typeof fetc
     }
 
     const until = new Date(now.getTime() - SETTLE_MS);
-    const rows = await pendingUnlocks(app.slug!, app.webhookCursor, until);
+    const rows = await pendingUnlocks({ id: app.id, slug: app.slug! }, app.webhookCursor, until);
     if (rows.length === 0) continue;
     const cursor = rows.at(-1)!.createdAt;
     const events = await buildEvents(app.slug!, rows);

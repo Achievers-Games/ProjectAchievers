@@ -458,6 +458,12 @@ export function partnerOpenApi(origin: string) {
         User: {
           type: 'object',
           properties: {
+            id: {
+              type: 'string',
+              description:
+                'Stable Achievers id, the same as in identity lookups and webhooks. Key your ' +
+                'records on it: the handle can change.',
+            },
             handle: { type: 'string' },
             displayName: { type: 'string' },
             avatarUrl: nullable('string'),
