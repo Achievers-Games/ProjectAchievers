@@ -16,6 +16,7 @@ const PER_USER_TABLES = [
   ['UserAchievement', 'achievementId'],
   ['GuideVote', 'guideId'],
   ['CommentReaction', 'commentId'],
+  ['ClanRequest', 'clanId'],
 ] as const;
 
 type Transaction = Prisma.TransactionClient;
@@ -226,6 +227,7 @@ export async function mergeUsers(
       await tx.userFrame.updateMany(owner);
       await tx.siteUnlock.updateMany(owner);
       await tx.pinnedGame.updateMany(owner);
+      await tx.clanRequest.updateMany(owner);
 
       const author = { where: { authorId: sourceId }, data: { authorId: targetId } };
       await tx.guide.updateMany(author);
@@ -268,6 +270,19 @@ export async function mergeUsers(
         SELECT ${targetId}, "blockedId" FROM "Block"
         WHERE "blockerId" = ${sourceId} AND "blockedId" <> ${targetId}
         ON CONFLICT DO NOTHING`;
+      // Ceux qui avaient bloqué le profil absorbé restent à l'abri : sinon la fusion suffirait à
+      // effacer un blocage.
+      await tx.$executeRaw`
+        INSERT INTO "Block" ("blockerId", "blockedId")
+        SELECT "blockerId", ${targetId} FROM "Block"
+        WHERE "blockedId" = ${sourceId} AND "blockerId" <> ${targetId}
+        ON CONFLICT DO NOTHING`;
+      // Un blocage défait l'amitié, comme le fait blockUser.
+      await tx.$executeRaw`
+        DELETE FROM "Friendship" f USING "Block" b
+        WHERE (b."blockerId" = ${targetId} OR b."blockedId" = ${targetId})
+          AND ((f."requesterId" = b."blockerId" AND f."addresseeId" = b."blockedId")
+            OR (f."requesterId" = b."blockedId" AND f."addresseeId" = b."blockerId"))`;
       await mergeClans(tx, sourceId, targetId, clanChoice);
       await mergeConversations(tx, sourceId, targetId);
 

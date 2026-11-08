@@ -10,7 +10,7 @@ import { enqueueSync, refreshAccounts, runSync, startWorkers } from './sync/queu
 import { isAdultOnly, rateGames, tagGames } from './sync/content';
 import { onCard, onSync, type SyncEvent } from './sync/events';
 import { parseSteamPage, requestStoreSweep, steamImages, sweepSteamStore } from './sync/steam';
-import { saveAchievements, upsertGame } from './sync/store';
+import { saveAchievements, saveProgress, upsertGame } from './sync/store';
 import { PREFIX, STEAM_ID, identity, setupIntegration } from './test-helpers';
 
 setupIntegration();
@@ -91,6 +91,35 @@ describe('synchronisation Steam', () => {
     });
     expect(progress).toMatchObject({ unlockedCount: 1, totalCount: 2, completion: 50 });
     expect(progress.game.achievements.find((a) => a.name === 'Alpha')?.globalRarity).toBe(42.5);
+  });
+
+  it('date aussi à leur déblocage les succès laissés par un premier import interrompu', async () => {
+    vi.stubGlobal('fetch', steamApi(ownedGames));
+    const userId = await steamUser();
+    // Un premier essai a enregistré ce succès avant d'échouer : le compte n'a jamais abouti.
+    const game = await upsertGame({
+      platform: 'STEAM',
+      platformGameId: `${PREFIX}-${Math.random()}`,
+      name: `${PREFIX} interrompu`,
+    });
+    await saveAchievements(game.id, [
+      {
+        platformAchievementId: 'X',
+        name: `${PREFIX} X`,
+        description: '',
+        hidden: false,
+        trophyType: 'ACHIEVEMENT',
+      },
+    ]);
+    const unlockedAt = new Date('2024-01-01T00:00:00Z');
+    await saveProgress(userId, game.id, [{ platformAchievementId: 'X', unlockedAt }]);
+
+    await runSync({ userId, provider: 'STEAM' });
+
+    const row = await db.userAchievement.findFirstOrThrow({
+      where: { userId, achievement: { gameId: game.id } },
+    });
+    expect(row.createdAt).toEqual(unlockedAt);
   });
 
   it("ne relit pas un jeu qui n'a pas été relancé", async () => {

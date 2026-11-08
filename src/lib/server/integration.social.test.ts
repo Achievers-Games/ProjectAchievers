@@ -185,6 +185,57 @@ describe('amis, clans et discussions', () => {
     expect(page?.members).toHaveLength(1);
   });
 
+  it('garde le blocage subi par le profil absorbé', async () => {
+    const [source, target] = await players();
+    const [victim] = await players();
+    await requestFriend(victim.id, target.handle);
+    await acceptFriend(target.id, victim.id);
+    await blockUser(victim.id, source.id);
+
+    expect(await mergeUsers(await pendingMerge(source.id, target.id))).toBeNull();
+
+    expect(await relationWith(victim.id, target.id)).toBe('blocked');
+    expect(await requestFriend(target.id, victim.handle)).toBe('not_found');
+  });
+
+  it('coupe dans le chat du clan deux membres qui se sont bloqués', async () => {
+    const [a, b] = await players();
+    const name = `${PREFIX} ${Math.random()}`;
+    await createClan(a.id, name);
+    await requestFriend(a.id, b.handle);
+    await acceptFriend(b.id, a.id);
+    await inviteToClan(a.id, b.id);
+    const clan = await db.clan.findUniqueOrThrow({
+      where: { name },
+      select: { id: true, conversation: { select: { id: true } } },
+    });
+    await acceptClanInvite(b.id, clan.id);
+    const chat = clan.conversation?.id as string;
+    await readConversation(b.id, chat);
+
+    await blockUser(b.id, a.id);
+    await sendMessage(a.id, chat, 'Tu me lis ?');
+
+    expect(await unreadCount(b.id)).toBe(0);
+    expect((await readConversation(b.id, chat))?.messages).toEqual([]);
+    expect((await readConversation(a.id, chat))?.messages).toHaveLength(1);
+  });
+
+  it('supporte un départ et une exclusion simultanés', async () => {
+    const [a, b] = await players();
+    const name = `${PREFIX} ${Math.random()}`;
+    await createClan(a.id, name);
+    await requestFriend(a.id, b.handle);
+    await acceptFriend(b.id, a.id);
+    await inviteToClan(a.id, b.id);
+    const { id } = await db.clan.findUniqueOrThrow({ where: { name } });
+    await acceptClanInvite(b.id, id);
+
+    await Promise.all([leaveClan(b.id), kickFromClan(a.id, b.id)]);
+    await Promise.all([leaveClan(a.id), leaveClan(a.id)]);
+    expect(await db.clan.findUnique({ where: { id } })).toBeNull();
+  });
+
   it('transmet le clan au plus ancien membre, puis le supprime quand il est vide', async () => {
     const [a, b] = await players();
     expect(await inviteToClan(a.id, b.id)).toBe('officer_only');

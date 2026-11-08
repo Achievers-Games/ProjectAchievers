@@ -207,7 +207,9 @@ export async function leaveClan(
   if (!membership) return;
   const { clanId, role, clan } = membership;
 
-  await client.clanMember.delete({ where: { userId } });
+  // Un départ et une exclusion peuvent se croiser : seul celui qui retire la ligne poursuit.
+  const { count } = await client.clanMember.deleteMany({ where: { userId } });
+  if (count === 0) return;
   if (clan.conversation) {
     await client.conversationMember.deleteMany({
       where: { conversationId: clan.conversation.id, userId },
@@ -218,7 +220,8 @@ export async function leaveClan(
     where: { clanId },
     orderBy: [{ role: 'asc' }, { joinedAt: 'asc' }],
   });
-  if (!next) await client.clan.delete({ where: { id: clanId } });
+  // Les deux derniers membres peuvent partir en même temps : le second ne trouve plus rien à effacer.
+  if (!next) await client.clan.deleteMany({ where: { id: clanId } });
   else if (role === 'OWNER') {
     await client.clanMember.update({ where: { userId: next.userId }, data: { role: 'OWNER' } });
   }
@@ -247,6 +250,8 @@ export async function listClans() {
     WITH cards AS (
       SELECT ug."userId", COALESCE(g.tier, 1) AS tier
       FROM "UserGame" ug
+      -- Seuls les membres d'un clan comptent : inutile de noter tout le site.
+      JOIN "ClanMember" member ON member."userId" = ug."userId"
       JOIN "Game" g ON g.id = ug."gameId"
       WHERE ug.completion >= 100 AND NOT ug.hidden
       GROUP BY ug."userId", COALESCE(g."familyKey", g.id), COALESCE(g.tier, 1)

@@ -12,6 +12,15 @@ import {
   type SocialFailure,
 } from './shared';
 
+/**
+ * Les auteurs dont un joueur lit les messages. Un clan réunit parfois deux joueurs brouillés :
+ * chacun cesse alors de voir ce qu'écrit l'autre.
+ */
+const visibleTo = (userId: string) => ({
+  blocks: { none: { blockedId: userId } },
+  blockedBy: { none: { blockerId: userId } },
+});
+
 /** Ouvre la discussion avec un ami, ou retrouve celle qui existe déjà. */
 export async function openDirect(userId: string, otherId: string) {
   if ((await relationWith(userId, otherId)) !== 'friends') return null;
@@ -47,6 +56,7 @@ export async function listConversations(userId: string) {
             select: { user: { select: personSelect } },
           },
           messages: {
+            where: { author: visibleTo(userId) },
             orderBy: { createdAt: 'desc' },
             take: 1,
             select: { content: true, locale: true, createdAt: true },
@@ -80,6 +90,11 @@ async function unreadByConversation(userId: string) {
     FROM "ConversationMember" cm
     JOIN "Message" m ON m."conversationId" = cm."conversationId"
     WHERE cm."userId" = ${userId} AND m."createdAt" > cm."lastReadAt" AND m."authorId" <> ${userId}
+      AND NOT EXISTS (
+        SELECT 1 FROM "Block" b
+        WHERE (b."blockerId" = ${userId} AND b."blockedId" = m."authorId")
+           OR (b."blockerId" = m."authorId" AND b."blockedId" = ${userId})
+      )
     GROUP BY 1`;
   return new Map(rows.map((row) => [row.conversationId, Number(row.count)]));
 }
@@ -119,7 +134,8 @@ export async function readConversation(userId: string, conversationId: string) {
   if (title === null) return null;
 
   const messages = await db.message.findMany({
-    where: { conversationId },
+    // Un clan réunit parfois deux joueurs brouillés : chacun cesse de voir les messages de l'autre.
+    where: { conversationId, author: visibleTo(userId) },
     orderBy: { createdAt: 'desc' },
     take: MESSAGES_SHOWN,
     select: {
@@ -172,8 +188,18 @@ export async function sendMessage(
       author: { select: personSelect },
     },
   });
+  // Dans le chat d'un clan, un blocage tient toujours : rien n'arrive en direct ni par notification.
+  const blocks = conversation.clan
+    ? await db.block.findMany({
+        where: { OR: [{ blockerId: userId }, { blockedId: userId }] },
+        select: { blockerId: true, blockedId: true },
+      })
+    : [];
+  const shielded = new Set(blocks.flatMap((block) => [block.blockerId, block.blockedId]));
+  shielded.delete(userId);
   const censored = censor(content, message.locale);
   for (const member of conversation.members) {
+    if (shielded.has(member.userId)) continue;
     publishChat(member.userId, { type: 'chat', conversationId, message });
     if (member.userId === userId) continue;
     notify(member.userId, 'message', conversationId, () => ({

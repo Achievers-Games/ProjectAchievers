@@ -309,15 +309,24 @@ export async function runSync({ userId, provider, quiet }: SyncJob) {
   });
   if (count === 0) return;
 
-  const run = await db.syncRun.create({ data: { userId, provider, status: 'SYNCING' } });
-  const hiddenGames = await db.userGame.findMany({
-    where: { userId, hidden: true },
-    select: { gameId: true },
-  });
-  const hidden = new Set(hiddenGames.map((row) => row.gameId));
+  // Le compte est déjà marqué en cours : un échec ici ne doit pas l'y laisser jusqu'au redémarrage.
+  const run = await db.syncRun
+    .create({ data: { userId, provider, status: 'SYNCING' } })
+    .catch(async (cause: unknown) => {
+      await db.linkedAccount.update({
+        where,
+        data: { syncStatus: 'FAILED', syncError: 'sync_failed_retry' },
+      });
+      throw cause;
+    });
   publishSync(userId, { provider, status: 'SYNCING', processed: 0, total: 0 });
 
   try {
+    const hiddenGames = await db.userGame.findMany({
+      where: { userId, hidden: true },
+      select: { gameId: true },
+    });
+    const hidden = new Set(hiddenGames.map((row) => row.gameId));
     const before = await rareCards(userId);
     const result = await syncer({
       userId,
@@ -341,11 +350,14 @@ export async function runSync({ userId, provider, quiet }: SyncJob) {
       }),
     ]);
     // Le premier import d'un compte rapporte tout son passé : ce ne sont pas des nouvelles, et la
-    // cloche ne doit pas en annoncer des centaines. Ils arrivent à leur date de déblocage.
+    // cloche ne doit pas en annoncer des centaines. Ils arrivent à leur date de déblocage, y
+    // compris ceux qu'un premier essai interrompu avait déjà enregistrés.
     if (!account.lastSyncedAt) {
       await db.$executeRaw`
-        UPDATE "UserAchievement" SET "createdAt" = "unlockedAt"
-        WHERE "userId" = ${userId} AND "createdAt" >= ${run.startedAt}`;
+        UPDATE "UserAchievement" ua SET "createdAt" = ua."unlockedAt"
+        FROM "Achievement" a JOIN "Game" g ON g.id = a."gameId"
+        WHERE ua."achievementId" = a.id AND ua."userId" = ${userId}
+          AND g.platform = CAST(${provider} AS "Platform")`;
     }
     const rewards = await announceCards(user, userId, before);
     publishSync(userId, {

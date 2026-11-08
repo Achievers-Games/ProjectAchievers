@@ -1,5 +1,6 @@
 import { error } from '@sveltejs/kit';
 import { db } from '#lib/server/db';
+import { env } from '#lib/server/env';
 import { userProfile } from '#lib/server/queries';
 import { siteAchievementCount } from '#lib/server/site-achievements';
 import { relationWith } from '#lib/server/social';
@@ -26,5 +27,5 @@ export const load: PageServerLoad = async ({ params, locals }) => {
           .then((rows) => rows.map((row) => row.gameId))
       : ([] as string[]),
   ]);
-  return { profile, relation, siteAchievements, compareIds, origin: process.env.ORIGIN };
+  return { profile, relation, siteAchievements, compareIds, origin: env().ORIGIN };
 };

@@ -194,7 +194,7 @@ export async function markInvitesSeen(userId: string, kind: 'friends' | 'clans')
 
 export async function friendIds(userId: string) {
   const links = await db.friendship.findMany({
-    where: { accepted: true, OR: [{ requesterId: userId }, { addresseeId: userId }] },
+    where: accepted(userId),
     select: { requesterId: true, addresseeId: true },
   });
   return links.map((link) => (link.requesterId === userId ? link.addresseeId : link.requesterId));
