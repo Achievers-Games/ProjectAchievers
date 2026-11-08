@@ -1,760 +1,624 @@
-STEAM 249130
+STEAM 219150
 
-@@ HM_ComboBeginner
+@@ ACH_ACHIEVEMENT_WHORE
 
 ## L'essentiel
 
-Faire un **combo ×4** (quatre ennemis tués en enchaînement rapide sans pause). C'est le premier palier de la série « Combo ».
+Obtenir les 34 autres succès. Rien n'est définitivement manquable : chaque chapitre se rejoue depuis la sélection des chapitres.
+
+## Feuille de route pour le 100 %
+
+1. **Finir l'histoire** (Prélude « The Metro » à « Showdown », puis les 4 chapitres du Motard) : _The End?_, et au passage _Nigel Lowrie_, _Domino Effect_, _Playing Pool_, les premiers combos.
+2. **Ramasser les 16 lettres du puzzle** (une par chapitre de Jacket, voir _Eye For Details_), en portant **Rasmus** (le hibou) qui les fait briller.
+3. **Résoudre le puzzle** (_The Boss_), puis finir « Resolution » **en utilisant l'ordinateur** (_This Is It_, masque Nigel).
+4. Rejouer « Resolution » **sans toucher à l'ordinateur** (_That's It?_, masque Louie).
+5. **Ramasser les masques cachés** (voir _Zoo Keeper_) : Earl, Jones, Carl, Jake, Richter, Charlie, Phil.
+6. **Viser A+ partout** (_Get A Life_) : cela débloque aussi les masques de score et les armes (un tous les 50 000 points).
+7. Les succès à conditions : _Batman_, _Cat Fight_, _These Are My Guns_, _Smell Something Burning_, _Plain Luck_, _Combo King_.
+8. Les collections d'armes : _Knife For Pros_, _Guns For Show_, _Pitcher_, _Always On Top_.
+9. Finir les compteurs : _Karma_, _1989_, _Dog Lover_, _Let In Some Air_, _60 To Car_, puis porter chaque masque une fois (_Sounds Of Animals Fighting_).
+
+## Si le succès n'apparaît pas
+
+Rejouer le Prélude jusqu'au bout : le jeu vérifie alors la liste.
+
+## Sources
+
+- [Hotline Miami Wiki : Achievement Whore](https://hotlinemiami.fandom.com/wiki/Achievement_Whore)
+
+@@ ACH_THE_END
+
+## L'essentiel
+
+Finir tous les chapitres de Jacket, du Prélude « The Metro » au chapitre final « Showdown ».
+
+## Les chapitres
+
+Prélude The Metro · 1 No Talk · 2 Overdose · 3 Decadence · 4 Tension · 5 Full House · 6 Clean Hit · 7 Neighbors · 8 Push It · 9 Crackdown · 10 Hot & Heavy · 11 Deadline · 12 Trauma · 13 Assault · 14 Vengeance · 15 Showdown. Viennent ensuite les chapitres du Motard : 16 Safehouse · 17 Fun & Games · 18 Prank Call · 19 Resolution.
+
+## Sources
+
+- [Hotline Miami Wiki : The End?](https://hotlinemiami.fandom.com/wiki/The_End%3F)
+- [Hotline Miami Wiki : Chapters](https://hotlinemiami.fandom.com/wiki/Chapters)
+
+@@ ACH_THATS_IT
+
+## L'essentiel
+
+Finir le chapitre 19 « Resolution » (le Motard) **sans accéder à l'ordinateur** du rez-de-chaussée. C'est la fin normale ; elle donne aussi le masque **Louie**.
 
 ## Comment faire
 
-- [ ] Prendre un niveau simple (ex. Chapitre 1-1 « Prologue »)
-- [ ] Attirer 4 ennemis dans un couloir ou une pièce unique
-- [ ] Les tuer rapidement à l'arme de poing ou au corps-à-corps
-- [ ] Le combo s'affiche en haut à gauche ; valider ×4 suffit
+- [ ] Jouer « Resolution » jusqu'au bout sans interagir avec l'ordinateur
+- [ ] Si le puzzle est déjà résolu, l'ordinateur reste accessible : l'éviter volontairement
+
+## Astuce
+
+Le succès peut n'apparaître qu'au prochain ennemi tué : lancer n'importe quel chapitre et tuer quelqu'un.
+
+## Sources
+
+- [Hotline Miami Wiki : That's It?](https://hotlinemiami.fandom.com/wiki/That%27s_It%3F)
+
+@@ ACH_THAT_IS_IT
+
+## L'essentiel
+
+Obtenir la fin secrète : avec le puzzle résolu (_The Boss_), utiliser l'ordinateur du rez-de-chaussée de « Resolution », puis finir le chapitre. Elle donne aussi le masque **Nigel**.
+
+## Comment faire
+
+- [ ] Résoudre le puzzle (voir _The Boss_)
+- [ ] Rejouer le chapitre 19 « Resolution »
+- [ ] Au rez-de-chaussée, utiliser l'ordinateur et lire ce qu'il affiche
+- [ ] Finir le chapitre normalement
+
+## Astuce
+
+Le succès peut n'apparaître qu'au prochain ennemi tué.
+
+## Sources
+
+- [Hotline Miami Wiki : This Is It](https://hotlinemiami.fandom.com/wiki/This_Is_It)
+
+@@ ACH_EYE_FOR_DETAILS
+
+## L'essentiel
+
+Ramasser les **16 lettres du puzzle** : une dans le Prélude et une dans chacun des chapitres 1 à 15. Ce sont de petits carrés violets, très discrets.
+
+## Comment faire
+
+Porter le masque **Rasmus** (hibou, score dans « The Metro ») : il fait briller les lettres. Une lettre ne compte qu'une fois le chapitre terminé. L'écran de sélection indique si la lettre d'un chapitre est déjà prise.
+
+- [ ] **Prélude, The Metro** : première section, juste à côté de l'entrée principale (U)
+- [ ] **1, No Talk** : deuxième section, à côté de la cuisinière au nord (T)
+- [ ] **2, Overdose** : 2e étage, salle de bain au sud-est (A)
+- [ ] **3, Decadence** : 2e étage, salle à manger au sud-ouest (O)
+- [ ] **4, Tension** : 2e étage, dans la pièce qui explose (A)
+- [ ] **5, Full House** : 1er étage, à côté de la cuisinière au sud-est (E)
+- [ ] **6, Clean Hit** : 2e étage, dehors sur le balcon, près du buisson (I)
+- [ ] **7, Neighbors** : première section, chambre au nord-ouest (N)
+- [ ] **8, Push It** : escalier sud-est, coin nord-est de la grande piste de danse (R)
+- [ ] **9, Crackdown** : 2e étage, côté nord, juste à côté de l'ascenseur (S)
+- [ ] **10, Hot & Heavy** : 2e étage, entrée est, box au sud-ouest près d'une piscine (I)
+- [ ] **11, Deadline** : deuxième section, pièce au sud-ouest près d'une table (N)
+- [ ] **12, Trauma** : première section, salle de bain au sud-est (W)
+- [ ] **13, Assault** : 1er étage, salle de bain au sud-ouest (S)
+- [ ] **14, Vengeance** : 3e étage, salle de bain juste au nord de l'escalier (B)
+- [ ] **15, Showdown** : pièce ouest, juste à côté de l'entrée principale (H)
+
+## Sources
+
+- [Hotline Miami Wiki : Puzzle](https://hotlinemiami.fandom.com/wiki/Puzzle)
+
+@@ ACH_THE_BOSS
+
+## L'essentiel
+
+Résoudre le puzzle formé par les 16 lettres.
+
+## Comment faire
+
+- [ ] Avoir les 16 lettres (voir _Eye For Details_)
+- [ ] En jeu, appuyer sur Entrée, puis choisir **Puzzle**
+- [ ] Placer les lettres : une lettre bien placée devient bleue après quelques secondes et se verrouille
+- [ ] La phrase à former est **I WAS BORN IN THE USA**
+
+## Astuce
+
+Le puzzle résolu reste acquis même sans finir le chapitre en cours.
+
+## Sources
+
+- [Hotline Miami Wiki : Puzzle](https://hotlinemiami.fandom.com/wiki/Puzzle)
+
+@@ ACH_ACED_IT
+
+## L'essentiel
+
+Obtenir **A+** sur n'importe quel chapitre noté.
+
+## Comment faire
+
+- [ ] Porter **Carl** (sauterelle, trouvé dans « Push It ») et enchaîner les exécutions à la perceuse
+- [ ] Sinon, porter **Zack** (grenouille, score dans « Assault ») : la fenêtre de combo dure plus longtemps
+- [ ] Privilégier le corps-à-corps, aller vite, garder le combo
+
+## Sources
+
+- [Hotline Miami Wiki : Aced It](https://hotlinemiami.fandom.com/wiki/Aced_It)
+
+@@ ACH_GET_A_LIFE
+
+## L'essentiel
+
+Obtenir **A+ sur chaque chapitre noté**, ceux du Motard compris. Les chapitres bonus « Exposed » et « Highball » ne comptent pas.
+
+## Comment faire
+
+- [ ] Rejouer chaque chapitre depuis la sélection jusqu'à l'A+
+- [ ] Porter **Carl** (perceuse) ou **Zack** (combo plus long) pour gonfler le score
+- [ ] Au passage, les bons scores débloquent les masques de score et une arme tous les 50 000 points
+
+## Astuce
+
+Le succès n'apparaît qu'au prochain ennemi tué.
+
+## Sources
+
+- [Hotline Miami Wiki : Get A Life](https://hotlinemiami.fandom.com/wiki/Get_A_Life)
+
+@@ ACH_COMBO_BEGINNER
+
+## L'essentiel
+
+Faire un **combo ×4** : tuer quatre ennemis à la suite, sans laisser retomber le compteur.
+
+## Comment faire
+
+Il vient tout seul dans les premiers chapitres : enchaîner les ennemis d'une même pièce au corps-à-corps.
+
+## Sources
+
+- [Hotline Miami Wiki : Combo](https://hotlinemiami.fandom.com/wiki/Combo)
+
+@@ ACH_COMBO_INTERMEDIATE
+
+## L'essentiel
+
+Faire un **combo ×6**.
+
+## Comment faire
+
+Enchaîner une pièce bien remplie, ou attirer les ennemis dans un couloir près d'une porte et les cueillir un par un.
+
+## Sources
+
+- [Hotline Miami Wiki : Combo](https://hotlinemiami.fandom.com/wiki/Combo)
+
+@@ ACH_COMBO_PRO
+
+## L'essentiel
+
+Faire un **combo ×8**.
+
+## Comment faire
+
+Même méthode que pour ×6. Le masque **Zack** (grenouille, score dans « Assault ») allonge la fenêtre de combo de deux tiers.
+
+## Sources
+
+- [Hotline Miami Wiki : Combo](https://hotlinemiami.fandom.com/wiki/Combo)
+
+@@ ACH_COMBO_MASTER
+
+## L'essentiel
+
+Faire un **combo ×10**.
+
+## Comment faire
+
+Voir _Combo King_ : la même méthode donne ×10 au passage.
+
+## Sources
+
+- [Hotline Miami Wiki : Combo](https://hotlinemiami.fandom.com/wiki/Combo)
+
+@@ ACH_COMBO_KING
+
+## L'essentiel
+
+Faire un **combo ×12**.
+
+## Comment faire
+
+Au **3e étage du chapitre 14 « Vengeance »**, les ennemis sont proches et surtout armés au corps-à-corps :
+
+- [ ] Arriver avec une arme de corps-à-corps, porter **Zack** si possible
+- [ ] Tuer le mafieux de la pièce de gauche
+- [ ] Tuer les deux chiens et le mafieux de la pièce de droite
+- [ ] Tuer les deux mafieux de la salle de bain au-dessus
+- [ ] Revenir à gauche et remonter en tuant les six mafieux qui arrivent : 12 au total
+
+## Sources
+
+- [Hotline Miami Wiki : Combo King](https://hotlinemiami.fandom.com/wiki/Combo_King)
+
+@@ ACH_I_GOT_NEW_FRIENDS
+
+## L'essentiel
+
+Débloquer les **16 armes** à débloquer. Une arme arrive tous les **50 000 points** de score cumulé, dans cet ordre : katana, bouteille, Magnum, machette, canette, Skorpion, marteau, brique, Uzi, masse, étoile de ninja, fléchette, MP5, hache de pompier, ciseaux, pistolet silencieux.
+
+## Comment faire
+
+Il vient en jouant, et surtout en visant A+ (_Get A Life_) : il faut 800 000 points au total.
+
+## Sources
+
+- [Hotline Miami Wiki : I Got New Friends](https://hotlinemiami.fandom.com/wiki/I_Got_New_Friends)
+
+@@ ACH_KNIFE_FOR_PROS
+
+## L'essentiel
+
+**Tuer** un ennemi avec chaque arme de corps-à-corps, sauf le trophée.
+
+## Liste
+
+- [ ] Couteau · batte de baseball · tuyau de plomb · club de golf · mallette · pied-de-biche
+- [ ] Queue de billard · queue de billard cassée · poêle · casserole · casserole vide
+- [ ] Matraque · katana · machette · masse · hache de pompier
 
 ## Astuces
 
-- Ne pas changer d'arme ni attendre : le minuteur de combo est court (~2 s)
-- Le niveau « Prologue » est parfait : peu d'ennemis, espace étroit
+- Le kill est obligatoire ; finir le chapitre ne l'est pas
+- Katana, machette, masse et hache de pompier se débloquent au score (voir _I Got New Friends_)
+- Le masque Charlie ne fait pas apparaître les armes débloquées plus souvent : inutile ici
 
 ## Sources
 
-- [Achievements - Hotline Miami Wiki](https://hotlinemiami.fandom.com/wiki/Achievements)
-- [vgtimes.com Hotline Miami achievements](https://vgtimes.com/games/hotline-miami/achievements-and-trophies/)
+- [Hotline Miami Wiki : Knife For Pros](https://hotlinemiami.fandom.com/wiki/Knife_For_Pros)
 
-@@ HM_ComboIntermediate
-
-## L'essentiel
-
-Faire un **combo ×6**. Deuxième palier.
-
-## Comment faire
-
-- [ ] Chapitre 2-1 ou 3-1 (plus d'ennemis groupés)
-- [ ] Utiliser une arme à feu rapide (fusil à pompe, Uzi) pour enchaîner 6 kills
-- [ ] Ou attirer les ennemis dans un goulot d'étranglement
-
-## Sources
-
-- [vgtimes.com Hotline Miami achievements](https://vgtimes.com/games/hotline-miami/achievements-and-trophies/)
-
-@@ HM_ComboPro
+@@ ACH_GUNS_FOR_SHOW
 
 ## L'essentiel
 
-Faire un **combo ×8**. Troisième palier.
-
-## Comment faire
-
-- [ ] Chapitre 4-1 « Full House » ou 5-1 « Meth Lab » (beaucoup d'ennemis proches)
-- [ ] Arme recommandée : fusil d'assaut ou mitraillette
-- [ ] Nettoyer une zone sans pause
-
-## Sources
-
-- [vgtimes.com Hotline Miami achievements](https://vgtimes.com/games/hotline-miami/achievements-and-trophies/)
-
-@@ HM_ComboMaster
-
-## L'essentiel
-
-Faire un **combo ×10**. Quatrième palier.
-
-## Comment faire
-
-- [ ] Chapitre 6-1 « Subway » (longs couloirs, densité élevée)
-- [ ] Arme : mitraillette ou fusil à pompe
-- [ ] Enchaîner sans s'arrêter ; viser les groupes
-
-## Sources
-
-- [vgtimes.com Hotline Miami achievements](https://vgtimes.com/games/hotline-miami/achievements-and-trophies/)
-
-@@ HM_ComboKing
-
-## L'essentiel
-
-Faire un **combo ×12**. Palier final et le plus dur de la série.
-
-## Comment faire
-
-- [ ] Chapitre 10-1 « Safe House » ou 14-1 « Release » (beaucoup d'ennemis, espaces ouverts)
-- [ ] Arme : mitraillette à gros chargeur (MP5, etc.)
-- [ ] Attirer un maximum d'ennemis, puis nettoyer en ligne droite sans pause
-- [ ] Si raté : relancer le niveau (checkpoint = reset combo)
-
-## Sources
-
-- [vgtimes.com Hotline Miami achievements](https://vgtimes.com/games/hotline-miami/achievements-and-trophies/)
-- [Steam Community 100% Guide](https://steamcommunity.com/sharedfiles/filedetails/?id=3553517474)
-
-@@ HM_TheEnd
-
-## L'essentiel
-
-Terminer l'histoire principale (tous les chapitres 1 à 15). Achievement **secret**.
-
-## Comment faire
-
-- [ ] Jouer la campagne en difficulté normale (ou facile)
-- [ ] Finir le Chapitre 15 « Showdown »
-- [ ] L'achievement se débloque au générique
+Utiliser au moins une fois chaque arme à feu : M16, fusil à pompe, double canon, Magnum, Skorpion, Uzi, MP5, pistolet silencieux, Uzi silencieux.
 
 ## Astuces
 
-- Difficulté « Facile » recommandée si bloqué : même achievements
-- Sauvegarde auto à chaque niveau
+- Tirer suffit, tuer n'est pas obligatoire
+- L'Uzi silencieux se trouve au départ avec le masque **Richter** (trouvé dans « Assault »)
+- Le masque **Aubrey** (cochon) ne fait apparaître que des M16, fusils à pompe et doubles canons
 
 ## Sources
 
-- [Hotline Miami Wiki - The End?](https://hotlinemiami.fandom.com/wiki/Achievements)
+- [Hotline Miami Wiki : Guns For Show](https://hotlinemiami.fandom.com/wiki/Guns_For_Show)
 
-@@ HM_ThatsIt
-
-## L'essentiel
-
-Terminer l'épilogue (chapitre supplémentaire après l'histoire principale). Achievement **secret**.
-
-## Comment faire
-
-- [ ] Après le Chapitre 15, l'épilogue se débloque
-- [ ] Le finir entièrement
-
-## Sources
-
-- [vgtimes.com Hotline Miami achievements](https://vgtimes.com/games/hotline-miami/achievements-and-trophies/)
-
-@@ HM_ThisIsIt
+@@ ACH_PITCHER
 
 ## L'essentiel
 
-Terminer l'épilogue avec la **fin secrète** (résoudre le puzzle du journal). Achievement **secret**.
-
-## Comment faire
-
-- [ ] Pendant l'épilogue, collecter les **6 pièces de puzzle** (une par niveau de l'épilogue)
-- [ ] Elles sont cachées ; explorer chaque recoin
-- [ ] Une fois les 6 pièces trouvées, la fin secrète se débloque automatiquement
+Lancer au moins une fois chaque arme de jet, sauf le couteau de lancer du Motard : bouteille, canette, marteau, brique, étoile de ninja, fléchette, ciseaux.
 
 ## Astuces
 
-- Les pièces brillent légèrement ; bien regarder les coins et derrière les portes
+- Toucher un ennemi suffit, le tuer n'est pas obligatoire
+- Toutes ces armes se débloquent au score (voir _I Got New Friends_)
 
 ## Sources
 
-- [Hotline Miami Wiki - This Is It](https://hotlinemiami.fandom.com/wiki/Achievements)
-- [vgtimes.com - Eye For Details / The Boss](https://vgtimes.com/games/hotline-miami/achievements-and-trophies/)
+- [Hotline Miami Wiki : Pitcher](https://hotlinemiami.fandom.com/wiki/Pitcher)
 
-@@ HM_AcedIt
+@@ ACH_ALWAYS_ON_TOP
 
 ## L'essentiel
 
-Obtenir un **rang A+** sur **au moins un chapitre**. Le rang dépend du score (combo, rapidité, variété, boldness).
+Faire une **exécution au sol** avec chacune de ces **22 armes** : batte, matraque, brique, mallette, pied-de-biche, fléchette, perceuse, hache de pompier, poêle, bouteille, club de golf, marteau, katana, couteau, tuyau de plomb, machette, queue de billard, queue de billard cassée, casserole, casserole vide, ciseaux, masse.
 
 ## Comment faire
 
-- [ ] Choisir un chapitre court et dense (ex. Chapitre 2-1 « Wrong Number »)
-- [ ] Maximiser le combo (×12+), aller vite, varier les armes
-- [ ] Ne pas mourir (les morts baissent le score)
+- [ ] Mettre un ennemi à terre (porte, coup, objet lancé), puis l'exécuter avec l'arme en main
+- [ ] Une exécution compte si elle rapporte des points : on peut ensuite recommencer le chapitre avec une autre arme
+- [ ] La perceuse ne s'obtient qu'avec le masque **Carl**
 
 ## Astuces
 
-- Masque **Tony (le tigre)** = coups de poing tue en un coup → boldness bonus
-- Masque **Don Juan** = exécutions plus rapides
+- Ni les exécutions à mains nues ni celles du Motard ne comptent
+- La poêle de « Full House » et « Neighbors » est une arme différente de la casserole d'« Overdose »
 
 ## Sources
 
-- [vgtimes.com - Aced It / Get A Life](https://vgtimes.com/games/hotline-miami/achievements-and-trophies/)
+- [Hotline Miami Wiki : Always On Top](https://hotlinemiami.fandom.com/wiki/Always_On_Top)
 
-@@ HM_GetALife
+@@ ACH_SMELL_SOMETHING_BURNING
 
 ## L'essentiel
 
-Obtenir **A+ sur TOUS les chapitres** (1 à 15 + épilogue). Le plus long achievement « skill ».
+Tuer à la **hache de pompier** le gros bras (Thug) installé dans la salle de bain du 2e étage de « Clean Hit » (chapitre 6).
 
 ## Comment faire
 
-- [ ] Faire chaque chapitre individuellement en visant A+
-- [ ] Utiliser le bon masque par niveau (voir liste ci-dessous)
-- [ ] Si raté : « Restart Chapter » depuis le menu pause → réessayer sans pénalité
+- [ ] Dans le couloir principal, ouvrir le conteneur où la hache de pompier est cachée
+- [ ] Monter au 2e étage et tuer le gros bras de la salle de bain avec la hache
 
-## Masques recommandés par chapitre
+## Astuce
 
-| Chapitre    | Masque                | Avantage                            |
-| ----------- | --------------------- | ----------------------------------- |
-| 1-1 à 1-3   | Tony (Tigre)          | Poings mortels, boldness            |
-| 2-1 à 2-3   | Don Juan              | Exécutions instantanées             |
-| 3-1 à 3-3   | Brandon (Panthère)    | Vitesse + armes lancées meurtrières |
-| 4-1 à 4-3   | Richter               | Commence avec fusil à pompe         |
-| 5-1 à 5-3   | Nigel (Chauve-souris) | Armes lancées = one-hit             |
-| 6-1 à 6-3   | Jake (Serpent)        | Lancer d'armes mortel               |
-| 7-1 à 7-3   | Alex (Éléphant)       | Survivre à une balle                |
-| 8-1 à 8-3   | Carl (Sauterelle)     | Déplacement ultra-rapide            |
-| 9-1 à 9-3   | Earl (Morse)          | Pas de bruit en marchant            |
-| 10-1 à 10-3 | Rasmus (Hibou)        | Vision élargie                      |
-| 11-1 à 11-3 | Charlie (Alligator)   | Corps-à-corps létal                 |
-| 12-1 à 12-3 | Tony ou Don Juan      | Selon préférence                    |
-| 13-1 à 13-3 | Don Juan              | Exécutions rapides                  |
-| 14-1 à 14-3 | Tony                  | Poings one-hit                      |
-| 15-1 à 15-3 | Tony                  | Boss final au corps-à-corps         |
-| Épilogue    | Brandon               | Vitesse + lancers                   |
+C'est le seul gros bras que Jacket peut tuer au corps-à-corps.
 
 ## Sources
 
-- [vgtimes.com - Get A Life](https://vgtimes.com/games/hotline-miami/achievements-and-trophies/)
-- [Steam Community 100% Guide](https://steamcommunity.com/sharedfiles/filedetails/?id=3553517474)
+- [Hotline Miami Wiki : Smell Something Burning](https://hotlinemiami.fandom.com/wiki/Smell_Something_Burning)
 
-@@ HM_1989
+@@ ACH_DOMINO_EFFECT
 
 ## L'essentiel
 
-Tuer **1 989 ennemis** au total (cumulatif sur toute la partie).
+Faire tomber un ennemi armé avec une arme lancée, de sorte que **son arme** fasse tomber un second ennemi.
 
 ## Comment faire
 
-- [ ] Jouer normalement la campagne + épilogue
-- [ ] Rejouer les chapitres manquants si le compteur n'est pas atteint
-- [ ] Chapitre 10-1 « Safe House » et 14-1 « Release » sont très denses pour farm
+Viser deux ennemis proches et alignés, l'un tenant une arme : le lancer (clic droit) sur le premier projette son arme sur le second.
+
+## Sources
+
+- [Hotline Miami Wiki : Domino Effect](https://hotlinemiami.fandom.com/wiki/Domino_Effect)
+
+@@ ACH_PLAYING_POOL
+
+## L'essentiel
+
+Toucher un ennemi avec une arme lancée qui a **rebondi sur un mur** avant de l'atteindre.
+
+## Comment faire
+
+Lancer une arme contre un mur en biais vers un ennemi. Le tuer n'est pas nécessaire.
+
+## Sources
+
+- [Hotline Miami Wiki : Playing Pool](https://hotlinemiami.fandom.com/wiki/Playing_Pool)
+
+@@ ACH_TWO_BIRDS_WITH_ONE_STONE
+
+## L'essentiel
+
+Tuer **deux ennemis** avec une seule brique (ou un seul marteau) lancée.
+
+## Comment faire
+
+Voir _Plain Luck_ : la même mise en place, avec deux ennemis.
+
+## Sources
+
+- [Hotline Miami Wiki : Two Birds With One Stone](https://hotlinemiami.fandom.com/wiki/Two_Birds_With_One_Stone)
+
+@@ ACH_PLAIN_LUCK
+
+## L'essentiel
+
+Tuer **trois ennemis** avec une seule brique (ou un seul marteau) lancée. Les deux se débloquent au score.
+
+## Comment faire
+
+Dans le chapitre 3 « Decadence », une arme aléatoire apparaît dès l'entrée du bâtiment :
+
+- [ ] Recommencer jusqu'à obtenir une brique ou un marteau
+- [ ] Mettre trois ennemis à terre et jeter leurs armes au loin
+- [ ] Les aligner, puis lancer la brique dans l'alignement
+
+## Sources
+
+- [Hotline Miami Wiki : Plain Luck](https://hotlinemiami.fandom.com/wiki/Plain_Luck)
+
+@@ ACH_NIGEL_LOWRIE
+
+## L'essentiel
+
+Prendre un ennemi en **bouclier humain**.
+
+## Comment faire
+
+Avec une arme chargée en main (pistolet silencieux, double canon, Magnum, Skorpion, Uzi ou MP5), appuyer sur la touche d'exécution au-dessus d'un ennemi à terre.
+
+## Astuce
+
+Impossible avec une arme vide.
+
+## Sources
+
+- [Hotline Miami Wiki : Nigel Lowrie](https://hotlinemiami.fandom.com/wiki/Nigel_Lowrie)
+
+@@ ACH_KARMA
+
+## L'essentiel
+
+**Mourir 1 000 fois** au total.
+
+## Comment faire
+
+À la fin du chapitre 11 « Deadline », une voiture traverse le mur. En mourant à ce moment, on réapparaît juste avant l'impact : appuyer sur « recommencer » en boucle, en avançant vers la voiture si besoin, pour se faire écraser à chaque fois.
+
+## Sources
+
+- [Hotline Miami Wiki : Karma](https://hotlinemiami.fandom.com/wiki/Karma)
+
+@@ ACH_1989
+
+## L'essentiel
+
+Tuer **1 989 ennemis** au total.
+
+## Comment faire
+
+Le compteur monte tout seul pendant la course aux A+ et aux armes.
+
+## Sources
+
+- [Hotline Miami Wiki : 1989](https://hotlinemiami.fandom.com/wiki/1989)
+
+@@ ACH_DOGLOVER
+
+## L'essentiel
+
+Tuer **99 chiens** au total.
+
+## Comment faire
+
+Le compteur monte tout seul pendant la course aux A+. Le 3e étage de « Vengeance » (chapitre 14) en compte deux près du départ.
+
+## Sources
+
+- [Hotline Miami Wiki : Dog Lover](https://hotlinemiami.fandom.com/wiki/Dog_Lover)
+
+@@ ACH_LET_IN_SOME_FRESH_AIR
+
+## L'essentiel
+
+Briser **200 vitres** au total.
+
+## Comment faire
+
+Dans le chapitre 18 « Prank Call » (le Motard), prendre l'ascenseur jusqu'au 2e étage de l'immeuble et casser toutes les vitres, puis recommencer.
+
+## Sources
+
+- [Hotline Miami Wiki : Let In Some Air](https://hotlinemiami.fandom.com/wiki/Let_In_Some_Air)
+
+@@ ACH_60_TO_CAR
+
+## L'essentiel
+
+Finir **60 fois** un chapitre de Jacket en rejoignant sa voiture. « Trauma » et « Showdown » ne comptent pas, ni les chapitres du Motard (il roule à moto).
+
+## Comment faire
+
+Il vient tout seul en rejouant les chapitres pour les A+, les lettres et les masques.
+
+## Sources
+
+- [Hotline Miami Wiki : 60 To Car](https://hotlinemiami.fandom.com/wiki/60_To_Car)
+
+@@ ACH_ZOO_KEEPER
+
+## L'essentiel
+
+Obtenir **les 26 masques** de Jacket sur PC (Richard, le coq, est donné d'office).
+
+## Masques de score
+
+Un bon score sur le chapitre les débloque ; viser A+ partout les donne tous :
+
+- [ ] **Rasmus** (hibou) : The Metro · **Tony** (tigre) : No Talk · **Aubrey** (cochon) : Overdose
+- [ ] **Don Juan** (cheval) : Decadence · **Graham** (lapin) : Tension · **Dennis** (loup) : Full House
+- [ ] **George** (girafe) : Clean Hit · **Ted** (chien) : Neighbors · **Rufus** (éléphant) : Push It
+- [ ] **Rami** (chameau) : Crackdown · **Willem** (chimpanzé) : Hot & Heavy · **Peter** (licorne) : Deadline
+- [ ] **Zack** (grenouille) : Assault · **Oscar** (taupe) : Vengeance
+- [ ] **Rick** (renard) : Safehouse (ch. 16) · **Brandon** (panthère) : Fun & Games (ch. 17)
+
+## Masques cachés
+
+- [ ] **Earl** (morse) : « Overdose », 2e étage, sur un cadavre
+- [ ] **Jones** (alligator) : « Full House », dans les égouts (voir _Sewer Alligator_)
+- [ ] **Carl** (sauterelle) : « Push It », sur un cadavre dans la pièce centrale du 1er étage
+- [ ] **Jake** (cobra) : « Hot & Heavy », section nord-ouest, sur le corps de Jake dans la pièce la plus au nord
+- [ ] **Richter** (rat) : « Assault », dernier étage, salle des scellés la plus au nord, sur un comptoir
+- [ ] **Charlie** (pieuvre) : « Safehouse », sur un comptoir de la cuisine, une fois tous les ennemis tués
+- [ ] **Phil** (poisson) : « Resolution », dans une caisse pleine de masques, côté égouts
+- [ ] **Louie** (caméléon) : fin normale de « Resolution » (voir _That's It?_)
+- [ ] **Nigel** (chauve-souris) : fin secrète de « Resolution » (voir _This Is It_)
+
+## Sources
+
+- [Hotline Miami Wiki : Masks](https://hotlinemiami.fandom.com/wiki/Masks)
+
+@@ ACH_SOUNDS_OF_ANIMALS_FIGHTING
+
+## L'essentiel
+
+**Choisir chaque masque au moins une fois** au début d'un chapitre. Finir le chapitre n'est pas nécessaire.
+
+## Comment faire
+
+- [ ] Une fois les 26 masques obtenus (_Zoo Keeper_), lancer un chapitre de Jacket
+- [ ] Choisir un masque, revenir au menu, recommencer avec le suivant
+
+## Sources
+
+- [Hotline Miami Wiki : Sounds Of Animals Fighting](https://hotlinemiami.fandom.com/wiki/Sounds_Of_Animals_Fighting)
+
+@@ ACH_THESE_ARE_MY_GUNS
+
+## L'essentiel
+
+Finir le chapitre 5 « Full House » **aux poings uniquement**, en portant le masque **Tony** (tigre).
+
+## Comment faire
+
+- [ ] Débloquer Tony (bon score dans « No Talk »)
+- [ ] Ne ramasser aucune arme, et ne pas assommer les ennemis avec les portes
+- [ ] Tony est indispensable : sans lui, les chiens ne meurent pas à mains nues
+
+## Sources
+
+- [Hotline Miami Wiki : These Are My Guns](https://hotlinemiami.fandom.com/wiki/These_Are_My_Guns)
+
+@@ ACH_SEWER_ALLIGATOR
+
+## L'essentiel
+
+Trouver le masque **Jones** (alligator) dans les égouts de « Full House » (chapitre 5).
+
+## Comment faire
+
+- [ ] Tuer tout le monde jusqu'au message « Go To Car », sans rejoindre la voiture
+- [ ] Prendre le **pied-de-biche** près de l'entrée
+- [ ] Faire le tour du bâtiment par l'arrière : marcher sur la plaque d'égout, pied-de-biche en main, pour l'ouvrir
+- [ ] En bas, parler à l'homme mourant, puis interagir de nouveau avec lui pour prendre le masque
+- [ ] Finir le chapitre en rejoignant la voiture
+
+## Astuce
+
+Si le succès ne tombe pas, refaire le chapitre et redescendre aux égouts avec n'importe quel masque, puis rejoindre la voiture.
+
+## Sources
+
+- [Hotline Miami Wiki : Sewer Alligator](https://hotlinemiami.fandom.com/wiki/Sewer_Alligator)
+
+@@ ACH_CAT_FIGHT
+
+## L'essentiel
+
+Tuer les **deux panthères** du chapitre final « Showdown » en portant le masque **Brandon** (panthère).
+
+## Comment faire
+
+- [ ] Débloquer Brandon (bon score dans « Fun & Games », chapitre 17 du Motard)
+- [ ] Rejouer « Showdown » avec Brandon et tuer les deux panthères
+- [ ] Finir le chapitre n'est pas nécessaire
+
+## Sources
+
+- [Hotline Miami Wiki : Cat Fight](https://hotlinemiami.fandom.com/wiki/Cat_Fight)
+
+@@ ACH_BATMAN
+
+## L'essentiel
+
+Finir le chapitre 2 « Overdose » en portant le masque **Nigel** (chauve-souris), qui inverse les déplacements.
+
+## Comment faire
+
+- [ ] Obtenir Nigel par la fin secrète de « Resolution » (voir _This Is It_)
+- [ ] Rejouer « Overdose » avec Nigel jusqu'au bout
 
 ## Astuces
 
-- Le compteur est visible dans les stats du menu principal
-- Ne pas hésiter à refaire « Safe House » en boucle (beaucoup d'ennemis, rapide)
+- Inverser les touches de déplacement dans les options rend le niveau jouable normalement, et le succès tombe quand même
+- Jouer uniquement à la batte n'est pas nécessaire
+- Si le succès n'apparaît pas, tuer un ennemi dans n'importe quel chapitre ou relancer le jeu
 
 ## Sources
 
-- [vgtimes.com - 1989](https://vgtimes.com/games/hotline-miami/achievements-and-trophies/)
-
-@@ HM_DogLover
-
-## L'essentiel
-
-Tuer **99 chiens**. Les chiens apparaissent dans certains niveaux (ils chargent vite, meurent en un coup).
-
-## Comment faire
-
-- [ ] Chapitres avec chiens : 3-1, 4-1, 5-1, 8-1, 10-1, 12-1, 14-1
-- [ ] Arme : fusil à pompe ou poing (Tony) pour one-shot
-- [ ] Compteur cumulatif → rejouer les niveaux à chiens si besoin
-
-## Astuces
-
-- Les chiens comptent aussi dans l'épilogue
-- Masque Tony rend trivial (poing = tuer instantané)
-
-## Sources
-
-- [vgtimes.com - Dog Lover](https://vgtimes.com/games/hotline-miami/achievements-and-trophies/)
-
-@@ HM_LetInSomeAir
-
-## L'essentiel
-
-Détruire **200 panneaux de verre** (fenêtres, cloisons vitrées). Cumulatif.
-
-## Comment faire
-
-- [ ] Presque chaque niveau a des fenêtres brisables
-- [ ] Tirer dedans ou les traverser en courant
-- [ ] Chapitre 1-1, 2-1, 6-1 en ont beaucoup
-
-## Astuces
-
-- Compteur visible dans les stats
-- Ne pas chercher à optimiser : se débloque naturellement en faisant A+ partout
-
-## Sources
-
-- [vgtimes.com - Let In Some Air](https://vgtimes.com/games/hotline-miami/achievements-and-trophies/)
-
-@@ HM_NigelLowrie
-
-## L'essentiel
-
-Utiliser un **bouclier humain** (saisir un ennemi et l'utiliser comme protection).
-
-## Comment faire
-
-- [ ] S'approcher d'un ennemi **par derrière** sans alerter
-- [ ] Appuyer sur la touche d'interaction (E / □ / X) pour l'attraper
-- [ ] L'ennemi devient un bouclier ; l'achievement se débloque immédiatement
-
-## Astuces
-
-- Fonctionne sur n'importe quel ennemi humanoïde (pas les chiens)
-- Chapitre 1-1 : premier ennemi de dos dans le couloir
-
-## Sources
-
-- [vgtimes.com - Nigel Lowrie](https://vgtimes.com/games/hotline-miami/achievements-and-trophies/)
-
-@@ HM_TwoBirdsOneStone
-
-## L'essentiel
-
-Tuer **deux ennemis avec la même brique** en un seul lancer.
-
-## Comment faire
-
-- [ ] Trouver une brique (au sol dans plusieurs niveaux)
-- [ ] Attendre que deux ennemis soient alignés
-- [ ] Lancer la brique (clic droit / touche de lancer)
-- [ ] La brique traverse le premier et tue le second derrière
-
-## Astuces
-
-- Niveau idéal : Chapitre 1-1 (couloir, ennemis alignés)
-- La brique a une trajectoire droite ; viser au niveau de la tête
-
-## Sources
-
-- [vgtimes.com - Two Birds With One Stone](https://vgtimes.com/games/hotline-miami/achievements-and-trophies/)
-
-@@ HM_PlainLuck
-
-## L'essentiel
-
-Tuer **trois ennemis ou plus avec une seule brique** en un lancer.
-
-## Comment faire
-
-- [ ] Même méthode que « Two Birds », mais avec 3+ ennemis alignés
-- [ ] Chapitre 4-1 « Full House » : pièce avec plusieurs ennemis statiques alignés
-- [ ] Lancer la brique au bon moment
-
-## Astuces
-
-- Rare ; plusieurs essais peuvent être nécessaires
-- Recharger le checkpoint si raté
-
-## Sources
-
-- [vgtimes.com - Plain Luck](https://vgtimes.com/games/hotline-miami/achievements-and-trophies/)
-
-@@ HM_PlayingPool
-
-## L'essentiel
-
-Tuer un ennemi avec une **brique qui a ricoché sur un mur**.
-
-## Comment faire
-
-- [ ] Trouver une brique près d'un mur
-- [ ] Lancer la brique contre le mur pour qu'elle rebondisse
-- [ ] Un ennemi doit se trouver sur la trajectoire du rebond
-
-## Astuces
-
-- Chapitre 2-1 : brique près du mur du fond, ennemi de l'autre côté
-- Angle d'incidence = angle de réflexion ; viser le point de rebond
-
-## Sources
-
-- [vgtimes.com - Playing Pool](https://vgtimes.com/games/hotline-miami/achievements-and-trophies/)
-
-@@ HM_DominoEffect
-
-## L'essentiel
-
-Lancer une arme sur un ennemi pour que **son arme tue un autre ennemi** en tombant.
-
-## Comment faire
-
-- [ ] Lancer une arme (couteau, bouteille, etc.) sur un ennemi armé
-- [ ] À sa mort, son arme tombe et peut toucher un ennemi derrière
-- [ ] Positionner les ennemis pour créer l'effet domino
-
-## Astuces
-
-- Chapitre 3-1 : deux ennemis dos à dos, l'un armé
-- Lancer un couteau sur le premier → son fusil tombe et tue le second
-
-## Sources
-
-- [vgtimes.com - Domino Effect](https://vgtimes.com/games/hotline-miami/achievements-and-trophies/)
-
-@@ HM_ZooKeeper
-
-## L'essentiel
-
-Collecter **tous les masques** (25 masques au total). Ils sont cachés dans les niveaux.
-
-## Liste des masques et emplacements
-
-- [ ] **Tony (Tigre)** : Chapitre 1-1, sur une table au début
-- [ ] **Rasmus (Hibou)** : Chapitre 1-2, dans une pièce latérale
-- [ ] **Don Juan** : Chapitre 1-3, sur une étagère
-- [ ] **Nigel (Chauve-souris)** : Chapitre 2-1, derrière une porte verrouillée (clé sur un ennemi)
-- [ ] **Earl (Morse)** : Chapitre 2-2, dans les égouts
-- [ ] **Carl (Sauterelle)** : Chapitre 2-3, sur un toit (accès par fenêtre)
-- [ ] **Richter** : Chapitre 3-1, dans le bureau du boss
-- [ ] **Jake (Serpent)** : Chapitre 3-2, dans une caisse
-- [ ] **Brandon (Panthère)** : Chapitre 3-3, derrière une fausse porte
-- [ ] **Alex (Éléphant)** : Chapitre 4-1, dans le coffre-fort
-- [ ] **Lisa** : Chapitre 4-2, dans la salle de bain
-- [ ] **Ted (Chien)** : Chapitre 4-3, dans la niche
-- [ ] **Sofia** : Chapitre 5-1, sur le lit
-- [ ] **Evan** : Chapitre 5-2, dans le garage
-- [ ] **Billy** : Chapitre 5-3, sur l'étagère haute
-- [ ] **Dennis (Loup)** : Chapitre 6-1, dans le wagon de métro
-- [ ] **Jonas** : Chapitre 6-2, sur le quai
-- [ ] **Martin** : Chapitre 6-3, dans le bureau
-- [ ] **Lars** : Chapitre 7-1, dans le container
-- [ ] **Hans** : Chapitre 7-2, sur la grue
-- [ ] **Oscar** : Chapitre 7-3, dans la cale
-- [ ] **Jones (Crocodile)** : Chapitre 8-1, **secret** dans les égouts (→ achievement _Sewer Alligator_)
-- [ ] **Brandon (Panthère - variante)** : Chapitre 8-2, dans la cage
-- [ ] **Richard (Coq)** : Chapitre 8-3, sur le toit (accès par échelle)
-
-## Astuces
-
-- Masque **Nigel** requis pour _Batman_ (Chapitre 2 avec Nigel)
-- Masque **Brandon** requis pour _Cat Fight_ (panthères)
-- Masque **Jones** = achievement _Sewer Alligator_
-
-## Sources
-
-- [Hotline Miami Wiki - Masks](https://hotlinemiami.fandom.com/wiki/Masks)
-- [vgtimes.com - Zoo Keeper](https://vgtimes.com/games/hotline-miami/achievements-and-trophies/)
-
-@@ HM_SoundsOfAnimalsFighting
-
-## L'essentiel
-
-**Porter chaque masque au moins une fois** (dans un niveau complet).
-
-## Comment faire
-
-- [ ] Après avoir collecté les 25 masques (Zoo Keeper)
-- [ ] Sélectionner un masque, jouer un niveau court (ex. 1-1), le finir
-- [ ] Répéter pour les 25 masques
-- [ ] L'achievement se débloque au 25e
-
-## Astuces
-
-- Niveau 1-1 « Prologue » est le plus court (~30 s)
-- Peut se faire en difficulté Facile
-
-## Sources
-
-- [vgtimes.com - Sounds of Animals Fighting](https://vgtimes.com/games/hotline-miami/achievements-and-trophies/)
-
-@@ HM_IGotNewFriends
-
-## L'essentiel
-
-**Débloquer toutes les armes** (elles se débloquent en atteignant certains scores / rangs).
-
-## Comment faire
-
-- [ ] Les armes se débloquent automatiquement en progressant (score global)
-- [ ] Faire A+ sur tous les chapitres (Get A Life) débloque tout
-- [ ] Sinon : farmer le score sur les niveaux denses (Safe House, Release)
-
-## Liste indicative (débloquées par paliers de score)
-
-| Score ~  | Armes                     |
-| -------- | ------------------------- |
-| 10 000   | Couteau, Bouteille, Batte |
-| 50 000   | Fusil à pompe, Revolver   |
-| 100 000  | Uzi, MP5, AK-47           |
-| 200 000  | Fusil d'assaut, Sniper    |
-| 300 000  | Lance-roquettes, Minigun  |
-| 500 000+ | Tout le reste             |
-
-## Sources
-
-- [vgtimes.com - I Got New Friends](https://vgtimes.com/games/hotline-miami/achievements-and-trophies/)
-
-@@ HM_GunsForShow
-
-## L'essentiel
-
-**Utiliser chaque arme à feu au moins une fois** (tuer un ennemi avec).
-
-## Comment faire
-
-- [ ] Une fois toutes les armes débloquées (I Got New Friends)
-- [ ] Charger un niveau avec beaucoup d'ennemis (Chapitre 10-1)
-- [ ] Changer d'arme à chaque kill (roue d'armes / touches 1-9)
-- [ ] Vérifier dans les stats : « Weapons Used »
-
-## Astuces
-
-- Ne compter que les armes à feu (pas corps-à-corps ni lancées)
-- Fusil à pompe, pistolet, revolver, Uzi, MP5, AK, M16, Sniper, Lance-roquettes
-
-## Sources
-
-- [vgtimes.com - Guns For Show](https://vgtimes.com/games/hotline-miami/achievements-and-trophies/)
-
-@@ HM_KnifeForPros
-
-## L'essentiel
-
-**Utiliser chaque arme de corps-à-corps au moins une fois** (tuer avec).
-
-## Comment faire
-
-- [ ] Même méthode que Guns For Show, mais au corps-à-corps
-- [ ] Couteau, batte, hache, marteau, poing (Tony), etc.
-- [ ] Masque Tony = poings comptent comme arme corps-à-corps
-
-## Sources
-
-- [vgtimes.com - Knife For Pros](https://vgtimes.com/games/hotline-miami/achievements-and-trophies/)
-
-@@ HM_Pitcher
-
-## L'essentiel
-
-**Utiliser chaque arme de lancer au moins une fois** (tuer en lançant).
-
-## Comment faire
-
-- [ ] Armes de lancer : brique, bouteille, couteau de lancer, hache de lancer, canette, etc.
-- [ ] Même niveau dense, changer d'arme de lancer à chaque kill
-- [ ] Touche de lancer (clic droit / L1 / LB) pour jeter
-
-## Sources
-
-- [vgtimes.com - Pitcher](https://vgtimes.com/games/hotline-miami/achievements-and-trophies/)
-
-@@ HM_AlwaysOnTop
-
-## L'essentiel
-
-Effectuer **toutes les exécutions au sol** (ground kills) du jeu. Il y a 25 animations distinctes selon l'arme et l'angle.
-
-## Comment faire
-
-- [ ] Abattre un ennemi (le mettre à terre sans le tuer)
-- [ ] S'approcher et appuyer sur la touche d'exécution (E / □ / X)
-- [ ] Répéter avec chaque type d'arme et chaque angle (devant, derrière, côté)
-
-## Liste des exécutions requises
-
-| Arme               | Exécutions (4 angles × arme) |
-| ------------------ | ---------------------------- |
-| Poings             | 4                            |
-| Couteau            | 4                            |
-| Batte              | 4                            |
-| Hache              | 4                            |
-| Fusil à pompe      | 2 (canon, crosse)            |
-| Autres armes à feu | 2 chacune                    |
-
-## Astuces
-
-- Masque Tony facilite : poing = abattage instantané
-- Chapitre 1-1 idéal : ennemis isolés, temps illimité
-- L'achievement se débloque quand la dernière animation inédite est jouée
-
-## Sources
-
-- [vgtimes.com - Always On Top](https://vgtimes.com/games/hotline-miami/achievements-and-trophies/)
-
-@@ HM_TheseAreMyGuns
-
-## L'essentiel
-
-Terminer le **Chapitre 5** (**« Meth Lab »**) **sans arme** (poings uniquement). Achievement **secret**.
-
-## Comment faire
-
-- [ ] Sélectionner le **masque Tony (Tigre)** → poings tue en un coup
-- [ ] Ne ramasser **aucune arme** pendant tout le niveau
-- [ ] Si une arme est ramassée par erreur → « Restart Chapter »
-- [ ] Finir les 3 sous-niveaux (5-1, 5-2, 5-3) à mains nues
-
-## Astuces
-
-- Tony rend trivial : un coup de poing = kill
-- Éviter les chiens (ils chargent) → les contourner ou les poigner vite
-
-## Sources
-
-- [vgtimes.com - These Are My Guns](https://vgtimes.com/games/hotline-miami/achievements-and-trophies/)
-- [Hotline Miami Wiki](https://hotlinemiami.fandom.com/wiki/Achievements)
-
-@@ HM_Karma
-
-## L'essentiel
-
-**Mourir 1 000 fois** au total. Cumulatif.
-
-## Comment faire
-
-- [ ] Se faire tuer volontairement (se jeter sur les ennemis, bombes, etc.)
-- [ ] Chapitre 1-1 : courir sur le premier ennemi armé → mort instantanée
-- [ ] Répéter ~1000 fois (ou laisser le compteur monter naturellement)
-
-## Astuces
-
-- Se débloque naturellement en faisant A+ partout (beaucoup de morts)
-- Sinon : farmer 10 min sur 1-1 en se suicidant
-
-## Sources
-
-- [vgtimes.com - Karma](https://vgtimes.com/games/hotline-miami/achievements-and-trophies/)
-
-@@ HM_AchievementWhore
-
-## L'essentiel
-
-**Débloquer tous les autres achievements**. Achievement final « méta ».
-
-## Comment faire
-
-- [ ] Suivre ce guide à 100 %
-- [ ] Une fois les 33 autres achievements obtenus, celui-ci tombe automatiquement
-
-## Sources
-
-- [vgtimes.com - Achievement Whore](https://vgtimes.com/games/hotline-miami/achievements-and-trophies/)
-
-@@ HM_SmellSomethingBurning
-
-## L'essentiel
-
-Tuer **le gangster qui fait ses besoins** avec une **hache de feu (fireaxe)**. Achievement **secret**.
-
-## Comment faire
-
-- [ ] Chapitre 7-1 « Ambush » : dans les toilettes, un ennemi est assis sur les WC
-- [ ] Ne pas le tuer à distance
-- [ ] Trouver la **hache de feu** dans le niveau (près des casiers pompiers)
-- [ ] L'exécuter au corps-à-corps avec la hache de feu
-
-## Astuces
-
-- La hache de feu est un objet distinct de la hache normale (skin rouge/orange)
-- Ne pas confondre avec la hache standard
-
-## Sources
-
-- [Hotline Miami Wiki - Smell Something Burning](https://hotlinemiami.fandom.com/wiki/Achievements)
-- [vgtimes.com](https://vgtimes.com/games/hotline-miami/achievements-and-trophies/)
-
-@@ HM_Batman
-
-## L'essentiel
-
-Finir le **Chapitre 2** en portant le **masque Nigel (Chauve-souris)**. Achievement **secret**.
-
-## Comment faire
-
-- [ ] Collecter le masque **Nigel** (Chapitre 2-1, derrière porte verrouillée)
-- [ ] Rejouer le Chapitre 2 (2-1, 2-2, 2-3) avec Nigel équipé
-- [ ] Le finir entièrement
-
-## Astuces
-
-- Nigel = armes lancées one-hit kill → très puissant
-- Si pas encore Nigel : le prendre d'abord dans 2-1, puis refaire le chapitre
-
-## Sources
-
-- [Hotline Miami Wiki - Batman](https://hotlinemiami.fandom.com/wiki/Achievements)
-- [vgtimes.com - Batman](https://vgtimes.com/games/hotline-miami/achievements-and-trophies/)
-
-@@ HM_SewerAlligator
-
-## L'essentiel
-
-Trouver **Jones le Crocodile** (masque secret dans les égouts). Achievement **secret**.
-
-## Comment faire
-
-- [ ] Chapitre 8-1 « Assault » : zone d'égouts (après l'explosion)
-- [ ] Explorer le réseau de tunnels **sous le niveau principal**
-- [ ] Une trappe cachée mène à une pièce avec le masque **Jones (Crocodile)**
-- [ ] Le ramasser → achievement débloqué
-
-## Astuces
-
-- Zone facile à rater : bien fouiller après l'explosion
-- Masque requis pour _Cat Fight_ (panthères)
-
-## Sources
-
-- [Hotline Miami Wiki - Sewer Alligator](https://hotlinemiami.fandom.com/wiki/Achievements)
-
-@@ HM_CatFight
-
-## L'essentiel
-
-Tuer les **panthères** en portant le **masque Brandon (Panthère)**. Achievement **secret**.
-
-## Comment faire
-
-- [ ] Avoir débloqué le masque **Brandon** (Chapitre 3-3)
-- [ ] Avoir débloqué **Jones** (Sewer Alligator, Chapitre 8-1)
-- [ ] Chapitre 8-2 « Rendezvous » : zone avec panthères
-- [ ] Équiper **Brandon** et tuer toutes les panthères au corps-à-corps
-
-## Astuces
-
-- Brandon = vitesse + corps-à-corps létal → panthères faciles
-- Ne pas utiliser d'arme à feu : doit être corps-à-corps
-
-## Sources
-
-- [Hotline Miami Wiki - Cat Fight](https://hotlinemiami.fandom.com/wiki/Achievements)
-- [vgtimes.com - Cat Fight](https://vgtimes.com/games/hotline-miami/achievements-and-trophies/)
-
-@@ HM_60ToCar
-
-## L'essentiel
-
-Aller **à la voiture 60 fois** (fin de niveau = entrée dans la voiture).
-
-## Comment faire
-
-- [ ] Chaque fin de sous-chapitre = 1 fois à la voiture
-- [ ] Campagne (15 chapitres × 3 sous-niveaux = 45) + Épilogue (3-6 sous-niveaux)
-- [ ] Il manque ~15 → refaire 5 chapitres complets ou 15 sous-niveaux
-
-## Astuces
-
-- Se débloque naturellement en faisant Get A Life (A+ partout = rejouer)
-- Sinon : speedrun Chapitre 1-1 en boucle (30 s par run)
-
-## Sources
-
-- [vgtimes.com - 60 To Car](https://vgtimes.com/games/hotline-miami/achievements-and-trophies/)
-
-@@ HM_EyeForDetails
-
-## L'essentiel
-
-Collecter **toutes les pièces du puzzle** (6 pièces cachées dans l'épilogue). Achievement **secret**.
-
-## Comment faire
-
-- [ ] Jouer l'épilogue (après Chapitre 15)
-- [ ] Dans **chaque niveau de l'épilogue**, trouver une pièce de puzzle cachée
-- [ ] Elles brillent légèrement ; bien fouiller les coins, derrière les portes, sous les tables
-- [ ] 6 pièces = puzzle complet → achievement + fin secrète (_This Is It_)
-
-## Sources
-
-- [vgtimes.com - Eye For Details](https://vgtimes.com/games/hotline-miami/achievements-and-trophies/)
-- [Hotline Miami Wiki](https://hotlinemiami.fandom.com/wiki/Achievements)
-
-@@ HM_TheBoss
-
-## L'essentiel
-
-**Résoudre le puzzle** (assembler les 6 pièces → fin secrète). Achievement **secret**.
-
-## Comment faire
-
-- [ ] Collecter les 6 pièces (Eye For Details)
-- [ ] Le puzzle s'assemble automatiquement à la fin de l'épilogue
-- [ ] La fin secrète se joue → _The Boss_ + _This Is It_ débloqués ensemble
-
-## Sources
-
-- [vgtimes.com - The Boss](https://vgtimes.com/games/hotline-miami/achievements-and-trophies/)
-- [Hotline Miami Wiki](https://hotlinemiami.fandom.com/wiki/Achievements)
+- [Hotline Miami Wiki : Batman](https://hotlinemiami.fandom.com/wiki/Batman)
