@@ -26,6 +26,11 @@ export const PROVIDER_LABELS: Record<Provider, string> = {
   GOOGLE: 'Google',
 };
 
+/** Les sites partenaires reliés à un compte. */
+export const PARTNER_LABELS: Record<string, string> = { lure: 'Lure' };
+
+export const partnerLabel = (partner: string) => PARTNER_LABELS[partner] ?? partner;
+
 export const PLATFORM_LABELS: Record<Platform, string> = {
   BLIZZARD: 'Battle.net',
   STEAM: 'Steam',

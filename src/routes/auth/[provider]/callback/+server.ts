@@ -10,6 +10,7 @@ import { fetchSteamIdentity, verifySteamResponse } from '#lib/server/providers/s
 import { exchangeXboxCode } from '#lib/server/providers/xbox';
 import { createSession } from '#lib/server/session';
 import { logger } from '#lib/logger';
+import { autoLinkLure, lureConfigured } from '#lib/server/partner-link';
 import { enqueueSync } from '#lib/server/sync/queue';
 import type { RequestHandler } from './$types';
 import { m } from '#lib/paraglide/messages';
@@ -65,6 +66,15 @@ export const GET: RequestHandler = async ({ params, url, cookies, locals, reques
 
   if (!locals.user) await createSession(cookies, result.userId, request.headers.get('user-agent'));
   await enqueueSync(result.userId, identity.provider);
+
+  // Le partenaire n'empêche jamais de se connecter : le délai est court et l'échec est muet.
+  if (lureConfigured()) {
+    try {
+      await autoLinkLure(result.userId);
+    } catch (cause) {
+      log.warn('Liaison Lure :', cause);
+    }
+  }
 
   redirect(303, result.created ? '/compte?bienvenue=1' : flow.returnTo);
 };

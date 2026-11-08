@@ -214,9 +214,14 @@ export async function mergeUsers(
         DELETE FROM "Report" s USING "Report" t
         WHERE s."reporterId" = ${sourceId} AND t."reporterId" = ${targetId}
           AND s."targetType" = t."targetType" AND s."targetId" = t."targetId"`;
+      // Un seul compte par site partenaire : celui du profil conservé fait foi.
+      await tx.$executeRaw`
+        DELETE FROM "PartnerLink" s USING "PartnerLink" t
+        WHERE s."userId" = ${sourceId} AND t."userId" = ${targetId} AND s."partner" = t."partner"`;
 
       const owner = { where: { userId: sourceId }, data: { userId: targetId } };
       await tx.linkedAccount.updateMany(owner);
+      await tx.partnerLink.updateMany(owner);
       await tx.userGame.updateMany(owner);
       await tx.userAchievement.updateMany(owner);
       await tx.guideVote.updateMany(owner);

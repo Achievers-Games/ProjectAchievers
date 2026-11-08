@@ -132,6 +132,7 @@ model User {
   updatedAt       DateTime  @updatedAt
 
   accounts     LinkedAccount[]
+  partnerLinks PartnerLink[]
   sessions     Session[]
   games        UserGame[]
   achievements UserAchievement[]
@@ -412,6 +413,27 @@ model LinkedAccount {
 
   @@unique([provider, providerUserId])
   @@unique([userId, provider])
+}
+
+/// Le compte d'un joueur sur un site partenaire : même personne, deux bases, deux sites.
+/// Aucun e-mail ni pseudo n'entre ici : seul un identifiant de compte partenaire, obtenu en
+/// prouvant la même identité OAuth des deux côtés.
+model PartnerLink {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// « lure »
+  partner       String
+  partnerUserId String
+  /// AUTO quand une identité OAuth commune l'a prouvé, MANUAL sinon.
+  method        String
+  createdAt     DateTime @default(now())
+  /// Délié par le joueur : la ligne reste pour que la connexion suivante ne relie pas de nouveau.
+  revokedAt     DateTime?
+
+  @@unique([partner, partnerUserId])
+  @@unique([userId, partner])
+  @@index([userId])
 }
 
 /// Vérification de propriété d'un identifiant PSN par un code à placer dans

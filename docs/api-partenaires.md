@@ -54,6 +54,122 @@ Règles à fixer dès le départ, pour éviter les mauvaises surprises :
   `Provider`, et la route existante `src/routes/auth/[provider]` fait le reste (PKCE déjà géré par
   `fetchOAuthProfile`). À faire dès que Lure expose son propre `/oauth/authorize`.
 
+### Liaison automatique par les identités OAuth : oui, sans double OAuth
+
+Les deux sites utilisent Discord, Steam, Google, Xbox… et **ce n'est pas grave s'ils utilisent deux
+applications OAuth différentes** : l'identifiant que le fournisseur renvoie est global, il ne dépend
+pas du client qui le demande.
+
+| Fournisseur | Identifiant stable | Vérifié par  |
+| ----------- | ------------------ | ------------ |
+| Discord     | `id` (snowflake)   | Discord      |
+| Steam       | SteamID64          | Steam OpenID |
+| Google      | `sub`              | Google       |
+| Xbox        | XUID               | Microsoft    |
+| Epic        | `sub`              | Epic         |
+| Blizzard    | `sub`              | Battle.net   |
+| PSN         | `accountId`        | code en bio  |
+
+Achievers stocke déjà ce couple dans `LinkedAccount`, avec `@@unique([provider, providerUserId])`.
+Si Lure stocke le même couple, alors **deux comptes qui ont vérifié la même identité Discord auprès
+de Discord sont la même personne** : aucun des deux sites n'a à croire l'autre sur parole, la preuve
+vient du fournisseur.
+
+À la connexion, Achievers peut donc demander à Lure « as-tu un compte lié à ces identités ? » et
+relier tout seul. Et réciproquement.
+
+Ce que ça ne permet pas :
+
+- **Deux fournisseurs différents d'un côté et de l'autre.** Discord sur Achievers + Steam sur Lure
+  ne donne aucune clé commune. Il faut une liaison manuelle (« Relier mon compte Lure » depuis
+  `/compte`), ou le double OAuth ci-dessus.
+- **De deviner par e-mail, pseudo, handle ou avatar.** Jamais : c'est le vecteur classique de prise
+  de contrôle d'un compte.
+- **De partager des données.** Un lien dit « même personne », pas « accès aux données ». Pour lire
+  la progression privée, le jeton OAuth du §3 reste nécessaire.
+
+#### Le point d'entrée de recherche
+
+Un seul, dans chaque sens, authentifié par la clé partenaire déjà en place (`ak_…`, serveur à
+serveur, jamais dans le navigateur) :
+
+`POST /api/v1/partner/identities/lookup`
+
+```json
+{
+  "identities": [
+    { "provider": "DISCORD", "providerUserId": "123456789012345678" },
+    { "provider": "STEAM", "providerUserId": "76561198000000000" }
+  ]
+}
+```
+
+Réponse : la liste **distincte** des comptes partenaires trouvés (vide si aucun).
+
+```json
+{ "partnerUserIds": ["usr_…"] }
+```
+
+On envoie **toutes** les identités du compte, pas seulement celle de la connexion : quelqu'un peut
+avoir lié Discord et Steam ici, et seulement Steam là-bas.
+
+#### À la connexion, côté Achievers
+
+1. `resolveIdentity` a rendu le compte local (créé ou existant).
+2. S'il n'a pas encore de lien Lure, appel à Lure avec ses identités (délai 2 s, jamais bloquant :
+   une panne de Lure ne doit pas empêcher de se connecter).
+3. Un seul compte Lure trouvé → `PartnerLink` créé, mention discrète « Compte Lure relié ».
+4. Aucun → rien.
+5. **Deux comptes Lure différents trouvés** (Discord → L1, Steam → L2) → aucune liaison
+   automatique : on demande au joueur lequel garder, comme la fusion existante (`merge.ts`).
+
+Le même algorithme tourne chez Lure, avec le même point d'entrée côté Achievers.
+
+#### Modèle de données
+
+```prisma
+model PartnerLink {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  partner       String    // « lure »
+  partnerUserId String
+  method        String    // AUTO | MANUAL
+  createdAt     DateTime  @default(now())
+  revokedAt     DateTime?
+
+  @@unique([partner, partnerUserId])
+  @@unique([userId, partner])
+}
+```
+
+Le lien est révocable des deux côtés et survit à une fusion de comptes : `merge.ts` doit déplacer la
+ligne, comme les autres tables par utilisateur.
+
+#### Rattrapage des comptes existants
+
+Les joueurs déjà inscrits sur les deux sites n'ont pas de lien tant qu'ils ne se reconnectent pas
+quelque part. Pour les relier d'un coup, chaque site envoie une liste de **HMAC** des identités
+(`HMAC(clé partagée, "DISCORD:123…")`) : les empreintes se comparent sans que ni l'un ni l'autre ne
+reçoive les identifiants en clair.
+
+#### Sécurité et vie privée
+
+- Le point d'entrée répond seulement « ces identités correspondent à ces comptes » : jamais de nom,
+  d'avatar ni de jeu.
+- Clé invalide → `401` ; limite de débit par clé, comme le reste de `/api/v1`.
+- Une clé volée permet d'énumérer l'existence d'un compte pour une identité donnée : clé côté
+  serveur uniquement, rotation possible depuis Modération → Sites partenaires.
+- Prévenir dans `/confidentialite` et permettre de délier depuis `/compte`.
+
+#### Pourquoi garder le double OAuth
+
+La recherche d'identités relie les comptes, mais ne donne aucun droit de lecture. Le double OAuth
+reste la bonne façon de faire circuler les données privées, et « Se connecter avec Lure » donne un
+identifiant unique (`sub` = compte Lure) plus simple à raisonner que N identités de fournisseurs.
+Ordre conseillé : la recherche d'identités d'abord (petite, utile tout de suite), le double OAuth
+ensuite.
+
 ## 3. Achievers fournisseur OAuth 2
 
 Sous-ensemble minimal et standard, pas d'OIDC complet au départ :
@@ -208,14 +324,17 @@ secret par partenaire, et retenté avec un délai croissant via la file `pg-boss
 2. Se mettre d'accord avec le développeur de Lure : ~~identifiants de jeux~~ (appid Steam),
    liste des données, nom de domaine final.
 3. ~~Routes publiques `/api/v1` + clé partenaire + OpenAPI.~~
-4. Achievers fournisseur OAuth (consentement, jetons, révocation, page « Applications reliées »).
-5. Routes privées `/me/*`.
-6. « Se connecter avec Lure » sur Achievers (quand Lure fournit son OAuth).
-7. Webhooks, puis carte en PNG pour Discord (qui n'affiche pas les SVG).
+4. Recherche d'identités dans les deux sens + `PartnerLink` : la liaison automatique à la connexion.
+5. Achievers fournisseur OAuth (consentement, jetons, révocation, page « Applications reliées »).
+6. Routes privées `/me/*`.
+7. « Se connecter avec Lure » sur Achievers (quand Lure fournit son OAuth).
+8. Webhooks, puis carte en PNG pour Discord (qui n'affiche pas les SVG).
 
 ## Questions pour le développeur de Lure
 
 - Quelle est votre pile technique, et existe-t-il déjà un fournisseur OAuth côté Lure ?
+- Stockez-vous, pour chaque compte, l'identifiant global du fournisseur (`id` Discord, SteamID64…)
+  dans une colonne unique ? C'est tout ce qu'il faut pour la liaison automatique du §2.
 - Avez-vous un serveur capable de recevoir des webhooks (une adresse HTTPS publique) ?
 - Quelles données voulez-vous afficher sur Lure : la carte seule, la progression, ou le détail
   des succès ?

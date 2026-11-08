@@ -14,6 +14,7 @@
   <h2 class="pt-4">{m.privacy_data()}</h2>
   <ul>
     <li>{m.privacy_data_accounts()}</li>
+    <li>{m.privacy_data_partners()}</li>
     <li>{m.privacy_data_library()}</li>
     <li>{m.privacy_data_content()}</li>
     <li>{m.privacy_data_sessions()}</li>

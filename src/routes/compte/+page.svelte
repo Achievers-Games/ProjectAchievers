@@ -5,6 +5,7 @@
   import DangerZone from '#lib/components/compte/DangerZone.svelte';
   import FramePicker from '#lib/components/compte/FramePicker.svelte';
   import LinkedAccounts from '#lib/components/compte/LinkedAccounts.svelte';
+  import PartnerLinks from '#lib/components/compte/PartnerLinks.svelte';
   import Preferences from '#lib/components/compte/Preferences.svelte';
   import ProfileForm from '#lib/components/compte/ProfileForm.svelte';
   import SessionList from '#lib/components/compte/SessionList.svelte';
@@ -126,6 +127,8 @@
     retro={data.retro}
     psn={data.psn}
   />
+
+  <PartnerLinks partners={data.partners} />
 
   <PushSettings publicKey={data.pushKey} profile={data.profile} />
 

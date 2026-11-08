@@ -14,6 +14,7 @@ import { findRetroProfile } from '#lib/server/providers/retro';
 import { destroySession } from '#lib/server/session';
 import { grantSiteAchievement } from '#lib/server/site-achievements';
 import { leaveClan } from '#lib/server/social';
+import { activePartnerLinks, unlinkPartner as removePartnerLink } from '#lib/server/partner-link';
 import { forgetPresence } from '#lib/server/presence';
 import { pushPublicKey } from '#lib/server/push';
 import { enqueueSync } from '#lib/server/sync/queue';
@@ -48,7 +49,7 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
   const user = requireUser(locals);
   const pendingMerge = readMerge(cookies, user.id);
 
-  const [profile, accounts, sessions, pending, merge, earned] = await Promise.all([
+  const [profile, accounts, sessions, pending, merge, earned, partners] = await Promise.all([
     db.user.findUniqueOrThrow({
       where: { id: user.id },
       select: {
@@ -90,6 +91,7 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
     db.psnVerification.findUnique({ where: { userId: user.id } }),
     pendingMerge ? mergePreview(pendingMerge) : null,
     db.userFrame.findMany({ where: { userId: user.id }, select: { frame: true } }),
+    activePartnerLinks(user.id),
   ]);
 
   const activeCheck = (provider: Provider) =>
@@ -103,6 +105,7 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
     frames: earned.map((row) => row.frame),
     merge,
     accounts,
+    partners,
     sessions: sessions.map((s) => ({ ...s, current: s.id === user.sessionId })),
     providers: availableProviders(),
     psn: activeCheck('PSN'),
@@ -211,6 +214,14 @@ export const actions: Actions = {
       }
     });
     return { success: m.account_unlinked() };
+  },
+
+  unlinkPartner: async ({ request, locals }) => {
+    const user = requireUser(locals);
+    const partner = String((await request.formData()).get('partner') ?? '');
+    if (!partner) return fail(400, { error: m.account_unknown() });
+    await removePartnerLink(user.id, partner);
+    return { success: m.partner_unlinked() };
   },
 
   merge: async ({ request, locals, cookies }) => {

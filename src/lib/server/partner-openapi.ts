@@ -40,9 +40,10 @@ export function partnerOpenApi(origin: string) {
       title: 'Project Achievers partner API',
       version: '1.0.0',
       description:
-        'Read-only access to public Achievers profiles and games. Only public profiles are ' +
-        'exposed; games hidden by the player and adult-only games never appear. Secret ' +
-        `achievements stay masked until unlocked. Limit: ${KEY_LIMIT} requests per minute per key.`,
+        'Read-only access to public Achievers profiles and games, plus an identity lookup used ' +
+        'to link a player account across partner sites. Only public profiles are exposed; games ' +
+        'hidden by the player and adult-only games never appear. Secret achievements stay masked ' +
+        `until unlocked. Limit: ${KEY_LIMIT} requests per minute per key.`,
     },
     servers: [{ url: `${origin}/api/v1` }],
     security: [{ apiKey: [] }],
@@ -142,6 +143,73 @@ export function partnerOpenApi(origin: string) {
               'The game, the progress and every achievement.',
             ),
             ...errors,
+          },
+        },
+      },
+      '/partner/identities/lookup': {
+        post: {
+          operationId: 'lookupIdentities',
+          summary: 'Achievers accounts holding these verified identities',
+          description:
+            'Account linking only. Send provider identities you verified yourself (Discord id, ' +
+            'SteamID64…). The answer holds account ids, never profile data. One match means the ' +
+            'same person; several mean the player has to choose.',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['identities'],
+                  properties: {
+                    identities: {
+                      type: 'array',
+                      minItems: 1,
+                      maxItems: 20,
+                      items: {
+                        type: 'object',
+                        required: ['provider', 'providerUserId'],
+                        properties: {
+                          provider: {
+                            type: 'string',
+                            enum: [
+                              'STEAM',
+                              'DISCORD',
+                              'PSN',
+                              'XBOX',
+                              'GOOGLE',
+                              'RETRO',
+                              'EPIC',
+                              'BLIZZARD',
+                            ],
+                          },
+                          providerUserId: { type: 'string', maxLength: 128 },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            '200': ok(
+              {
+                type: 'object',
+                required: ['partnerUserIds'],
+                properties: {
+                  partnerUserIds: {
+                    type: 'array',
+                    items: { type: 'string' },
+                    description: 'Distinct Achievers accounts matching at least one identity.',
+                  },
+                },
+              },
+              'The accounts found, empty when none.',
+            ),
+            '400': { $ref: '#/components/responses/BadRequest' },
+            '401': { $ref: '#/components/responses/Unauthorized' },
+            '429': { $ref: '#/components/responses/RateLimited' },
           },
         },
       },
