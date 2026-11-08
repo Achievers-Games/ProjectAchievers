@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { db } from '#lib/server/db';
 import { issuePartnerKey, revokePartnerKey } from '#lib/server/partner-api';
 import { issueWebhookSecret } from '#lib/server/partner-webhooks';
+import { isRedirectUri, issueOAuthClient, rotateOAuthSecret } from '#lib/server/oauth-provider';
 import { psnTokenState } from '#lib/server/service-token';
 import type { Actions, PageServerLoad } from './$types';
 import { m } from '#lib/paraglide/messages';
@@ -136,6 +137,8 @@ export const load: PageServerLoad = async ({ locals }) => {
                 webhookFailures: true,
                 webhookLastAttemptAt: true,
                 webhookLastError: true,
+                oauthClientId: true,
+                oauthRedirectUris: true,
               },
             })
           ).map(({ webhookSecret, ...partner }) => ({
@@ -223,6 +226,49 @@ export const actions: Actions = {
     if (url && !app.webhookSecret) {
       return { webhookSecret: await issueWebhookSecret(app.id), partnerName: app.name };
     }
+  },
+
+  /**
+   * Les adresses de retour OAuth du partenaire. La première fois, crée aussi son identifiant
+   * client et son secret, montrés une seule fois ; ensuite, seules les adresses changent.
+   */
+  partnerOAuth: async ({ request, locals }) => {
+    requireAdmin(locals);
+    const form = await request.formData();
+    const id = String(form.get('id') ?? '');
+    const uris = String(form.get('uris') ?? '')
+      .split(/\s+/)
+      .filter(Boolean);
+    if (uris.length === 0 || uris.length > 10 || !uris.every(isRedirectUri)) {
+      return fail(400, { error: m.mod_partner_oauth_invalid() });
+    }
+    const app = await db.partnerApp.findUnique({
+      where: { id },
+      select: { id: true, name: true, oauthClientId: true },
+    });
+    if (!app) return fail(400, { error: m.action_failed() });
+    if (app.oauthClientId) {
+      await db.partnerApp.update({ where: { id }, data: { oauthRedirectUris: uris } });
+      return;
+    }
+    const client = await issueOAuthClient(app.id, uris);
+    return { oauthClient: client, partnerName: app.name };
+  },
+
+  /** Un nouveau secret client, même identifiant : l'ancien cesse de valoir aussitôt. */
+  partnerOAuthSecret: async ({ request, locals }) => {
+    requireAdmin(locals);
+    const id = String((await request.formData()).get('id') ?? '');
+    const app = await db.partnerApp.findUnique({
+      where: { id },
+      select: { id: true, name: true, oauthClientId: true },
+    });
+    if (!app?.oauthClientId) return fail(400, { error: m.action_failed() });
+    const clientSecret = await rotateOAuthSecret(app.id);
+    return {
+      oauthClient: { clientId: app.oauthClientId, clientSecret },
+      partnerName: app.name,
+    };
   },
 
   /** Un nouveau secret de signature : l'ancien cesse de valoir aussitôt. */

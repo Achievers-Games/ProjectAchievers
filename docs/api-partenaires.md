@@ -170,62 +170,55 @@ identifiant unique (`sub` = compte Lure) plus simple à raisonner que N identit�
 Ordre conseillé : la recherche d'identités d'abord (petite, utile tout de suite), le double OAuth
 ensuite.
 
-## 3. Achievers fournisseur OAuth 2
+## 3. Achievers fournisseur OAuth 2 — en place
 
-Sous-ensemble minimal et standard, pas d'OIDC complet au départ :
+« Se connecter avec Achievers » sur Lure. Le sous-ensemble sûr de la norme, rien d'autre :
+_Authorization Code_ avec **PKCE S256 obligatoire**, client confidentiel (Lure garde son secret
+côté serveur), adresse de retour comparée à l'identique. Pas de flux implicite, pas de mot de
+passe.
 
-- **Flux** : _Authorization Code_ + **PKCE obligatoire** (RFC 6749, RFC 7636, recommandations de
-  la RFC 9700). Pas de flux implicite, pas de mot de passe.
-- **Points d'entrée**
-  - `GET /oauth/authorize` : page de consentement (« Lure veut voir tes jeux et tes succès »),
-    connexion demandée si besoin.
-  - `POST /oauth/token` : échange du code, puis rafraîchissement (`refresh_token`, rotation à
-    chaque usage).
-  - `POST /oauth/revoke` : révocation par le partenaire.
-- **Portées**
-  - `profile` : nom, identifiant, avatar.
-  - `library` : jeux et progression (respecte les jeux masqués).
-  - `achievements` : détail des succès débloqués.
-- **Jetons** : opaques, aléatoires (32 octets), **stockés hachés** (SHA-256) ; accès 1 h,
-  rafraîchissement 60 jours. `redirect_uri` comparée à l'identique avec la liste enregistrée.
-- **Côté joueur** : section « Applications reliées » dans `/compte` (voir, révoquer), et mention
-  dans `/confidentialite`.
+**Mise en route** : dans Modération → Sites partenaires, saisir les adresses de retour de Lure
+(HTTPS, une par ligne). Le `client_id` et le `client_secret` s'affichent alors, le secret une
+seule fois.
 
-### Modèle de données (Prisma)
+**Portées** : `profile` (nom, avatar, clan, stats ; toujours accordée), `library` (jeux et
+progression, même avec un profil privé), `achievements` (le détail des succès).
 
-```prisma
-model PartnerApp {
-  id           String   @id @default(cuid())
-  name         String              // « Lure »
-  clientId     String   @unique
-  secretHash   String              // jamais le secret en clair
-  redirectUris String[]
-  /// Clé publique pour les routes sans joueur (limitation de débit, statistiques).
-  apiKeyHash   String   @unique
-  createdAt    DateTime @default(now())
-  grants       OAuthGrant[]
-}
+**Le parcours, côté Lure** :
 
-model OAuthGrant {
-  id         String     @id @default(cuid())
-  userId     String
-  appId      String
-  scopes     String[]
-  createdAt  DateTime   @default(now())
-  revokedAt  DateTime?
-  tokens     OAuthToken[]
-  @@unique([userId, appId])
-}
+1. Générer un `code_verifier` aléatoire (43 à 128 caractères), son `code_challenge` =
+   base64url(SHA-256(verifier)), et un `state` à vérifier au retour.
+2. Envoyer le joueur sur :
 
-model OAuthToken {
-  id        String     @id @default(cuid())
-  grantId   String
-  kind      String     // CODE | ACCESS | REFRESH
-  hash      String     @unique
-  expiresAt DateTime
-  usedAt    DateTime?  // un code ou un rafraîchissement ne sert qu'une fois
-}
-```
+   ```
+   https://<achievers>/oauth/authorize?response_type=code&client_id=ach_…
+     &redirect_uri=https://lureverse.fr/auth/achievers/callback
+     &scope=library%20achievements&state=…&code_challenge=…&code_challenge_method=S256
+   ```
+
+   Le joueur se connecte si besoin, voit ce que Lure demande et accepte. S'il l'a déjà accepté
+   avec les mêmes portées, il revient aussitôt, sans écran.
+
+3. Au retour (`?code=…&state=…`, ou `?error=access_denied`), échanger le code **en JSON** :
+
+   ```bash
+   curl -X POST https://<achievers>/oauth/token -H "Content-Type: application/json" -d '{
+     "grant_type": "authorization_code", "client_id": "ach_…", "client_secret": "acs_…",
+     "code": "ac_…", "code_verifier": "…", "redirect_uri": "https://lureverse.fr/auth/achievers/callback"
+   }'
+   ```
+
+   Réponse : `access_token` (1 h), `refresh_token` (60 jours), `scope`. **JSON et non
+   formulaire** : la protection CSRF du site refuse les formulaires venus d'un autre site.
+
+4. Appeler les routes `/me` avec `Authorization: Bearer at_…`.
+5. Avant expiration, `{"grant_type": "refresh_token", "refresh_token": "rt_…", …}` sur le même
+   point d'entrée. **Chaque jeton de rafraîchissement ne sert qu'une fois** : garder le nouveau.
+6. Pour se déconnecter : `POST /oauth/revoke` avec `{"client_id", "client_secret", "token"}`.
+
+**Ce qui coupe l'accès** : le joueur le retire dans `/compte` (« Applications autorisées »), ou
+Lure révoque. Et par sécurité, un code ou un jeton de rafraîchissement **présenté deux fois**
+fait tomber tout ce que l'accord a délivré : c'est le signe qu'il a été volé.
 
 ## 4. L'API v1
 
@@ -310,14 +303,17 @@ Ce qui ne sort jamais : un profil privé (404), un jeu masqué par le joueur, un
 nom et la description d'un succès caché tant qu'il n'est pas obtenu. Les textes sont dans la
 langue de la plateforme (pas de traduction côté API).
 
-### Routes privées (jeton OAuth du joueur)
+### Routes privées — en place (jeton OAuth du joueur)
 
-| Méthode | Route                                                | Portée                                                                |
-| ------- | ---------------------------------------------------- | --------------------------------------------------------------------- |
-| GET     | `/me`                                                | `profile`                                                             |
-| GET     | `/me/games`                                          | `library` (même si le profil est privé)                               |
-| GET     | `/me/games/{platform}/{platformGameId}/achievements` | `achievements`                                                        |
-| GET     | `/me/almost`                                         | `library` : jeux entre 50 et 99 %, pour « finis-le ce soir » sur Lure |
+Les mêmes réponses que les routes publiques, pour le joueur qui a donné son accord, même au profil
+privé. Les jeux masqués et adultes restent exclus.
+
+| Méthode | Route                       | Portée         | Équivalent public                       |
+| ------- | --------------------------- | -------------- | --------------------------------------- |
+| GET     | `/me`                       | `profile`      | `/users/{handle}` (+ `isPublic`)        |
+| GET     | `/me/games`                 | `library`      | `/users/{handle}/games`                 |
+| GET     | `/me/games/{platform}/{id}` | `achievements` | `/users/{handle}/games/{platform}/{id}` |
+| GET     | `/me/almost`                | `library`      | `/users/{handle}/almost`                |
 
 ### Webhooks — en place
 
@@ -393,15 +389,17 @@ couple joueur + succès déjà connu.
 
 ## 6. Étapes
 
-1. ~~Diapositive Lure et carte de joueur.~~
+1. ~~Diapositive Lure et carte de joueur (SVG et PNG).~~
 2. Se mettre d'accord avec le développeur de Lure : ~~identifiants de jeux~~ (appid Steam),
    liste des données, nom de domaine final.
-3. ~~Routes publiques `/api/v1` + clé partenaire + OpenAPI.~~
-4. Recherche d'identités dans les deux sens + `PartnerLink` : la liaison automatique à la connexion.
-5. Achievers fournisseur OAuth (consentement, jetons, révocation, page « Applications reliées »).
-6. Routes privées `/me/*`.
-7. « Se connecter avec Lure » sur Achievers (quand Lure fournit son OAuth).
-8. Webhooks, puis carte en PNG pour Discord (qui n'affiche pas les SVG).
+3. ~~Routes publiques `/api/v1`, clé partenaire, OpenAPI, recherche groupée, difficulté du 100 %,
+   jeux presque finis, jeux populaires.~~
+4. ~~Recherche d'identités + `PartnerLink` : la liaison automatique à la connexion.~~ Il reste à
+   Lure d'exposer le même point d'entrée, et à renseigner `LURE_API_URL` et `LURE_API_KEY`.
+5. ~~Achievers fournisseur OAuth et routes `/me`.~~
+6. ~~Webhooks signés.~~
+7. « Se connecter avec Lure » sur Achievers, quand Lure fournit son OAuth.
+8. Rattrapage des comptes déjà inscrits des deux côtés (empreintes HMAC des identités).
 
 ## Questions pour le développeur de Lure
 

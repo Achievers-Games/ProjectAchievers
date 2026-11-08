@@ -14,18 +14,23 @@ import { userStats } from './queries/stats';
 import { visibleGames } from './queries/shared';
 
 /**
- * Ce que l'API publique lit d'un joueur : exactement ce qu'un visiteur anonyme voit sur son
- * profil. Profil privé, jeu masqué ou jeu adulte : rien ne sort.
+ * Le joueur dont on parle : par son identifiant public (`handle`), il doit avoir un profil
+ * public, et l'API ne rend que ce qu'un visiteur anonyme verrait. Par `userId`, c'est le
+ * joueur lui-même qui a donné son accord par OAuth : son profil peut être privé. Dans les deux
+ * cas, un jeu masqué ou adulte ne sort pas.
  */
-const publicPlayer = (handle: string) =>
+export type PlayerRef = string | { userId: string };
+
+const publicPlayer = (who: PlayerRef) =>
   db.user.findFirst({
-    where: { handle, isPublic: true },
+    where: typeof who === 'string' ? { handle: who, isPublic: true } : { id: who.userId },
     select: {
       id: true,
       handle: true,
       displayName: true,
       avatarUrl: true,
       createdAt: true,
+      isPublic: true,
       clanMember: { select: { clan: { select: { name: true, slug: true } } } },
     },
   });
@@ -60,7 +65,7 @@ const progressSelect = {
   updatedAt: true,
 } as const;
 
-export async function partnerUser(handle: string) {
+export async function partnerUser(handle: PlayerRef) {
   const user = await publicPlayer(handle);
   if (!user) return null;
   const stats = await userStats(user.id);
@@ -68,6 +73,8 @@ export async function partnerUser(handle: string) {
   return {
     handle: user.handle,
     displayName: user.displayName,
+    // Toujours vrai par l'identifiant public ; par OAuth, le joueur peut être privé.
+    isPublic: user.isPublic,
     avatarUrl: user.avatarUrl,
     url: absolute(`/u/${user.handle}`),
     cardUrl: absolute(`/u/${user.handle}/carte.svg`),
@@ -149,7 +156,7 @@ export interface UserGamesFilter {
 }
 
 export async function partnerUserGames(
-  handle: string,
+  handle: PlayerRef,
   { platform, limit, cursor, sort = 'default', status = null, since = null }: UserGamesFilter,
 ) {
   const user = await publicPlayer(handle);
@@ -180,7 +187,11 @@ export async function partnerUserGames(
 }
 
 /** Le détail d'un jeu pour un joueur : chaque succès, obtenu ou non. */
-export async function partnerUserGame(handle: string, platform: Platform, platformGameId: string) {
+export async function partnerUserGame(
+  handle: PlayerRef,
+  platform: Platform,
+  platformGameId: string,
+) {
   const user = await publicPlayer(handle);
   if (!user) return null;
   const row = await db.userGame.findFirst({
@@ -411,7 +422,7 @@ export const ALMOST_MAX = 50;
  * lointain. Pour chacun, ce qui reste : combien de succès, le plus rare et le plus courant,
  * combien sont manquables. Les noms des succès restants ne sortent pas : un secret reste secret.
  */
-export async function partnerAlmost(handle: string, limit = ALMOST_LIMIT) {
+export async function partnerAlmost(handle: PlayerRef, limit = ALMOST_LIMIT) {
   const user = await publicPlayer(handle);
   if (!user) return null;
 

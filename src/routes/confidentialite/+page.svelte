@@ -15,6 +15,7 @@
   <ul>
     <li>{m.privacy_data_accounts()}</li>
     <li>{m.privacy_data_partners()}</li>
+    <li>{m.privacy_data_partner_sharing()}</li>
     <li>{m.privacy_data_library()}</li>
     <li>{m.privacy_data_content()}</li>
     <li>{m.privacy_data_sessions()}</li>

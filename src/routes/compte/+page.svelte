@@ -6,6 +6,7 @@
   import FramePicker from '#lib/components/compte/FramePicker.svelte';
   import LinkedAccounts from '#lib/components/compte/LinkedAccounts.svelte';
   import PartnerLinks from '#lib/components/compte/PartnerLinks.svelte';
+  import OAuthApps from '#lib/components/compte/OAuthApps.svelte';
   import Preferences from '#lib/components/compte/Preferences.svelte';
   import ProfileForm from '#lib/components/compte/ProfileForm.svelte';
   import SessionList from '#lib/components/compte/SessionList.svelte';
@@ -129,6 +130,8 @@
   />
 
   <PartnerLinks partners={data.partners} />
+
+  <OAuthApps apps={data.oauthApps} />
 
   <PushSettings publicKey={data.pushKey} profile={data.profile} />
 

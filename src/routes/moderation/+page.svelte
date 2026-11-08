@@ -60,6 +60,15 @@
           <code class="block select-all break-all">{form.partnerKey}</code>
         </div>
       {/if}
+      {#if form?.oauthClient}
+        <div class="space-y-1 rounded border border-accent p-3">
+          <p class="font-medium">{m.mod_partner_oauth_once({ name: form.partnerName })}</p>
+          <code class="block select-all break-all">client_id: {form.oauthClient.clientId}</code>
+          <code class="block select-all break-all"
+            >client_secret: {form.oauthClient.clientSecret}</code
+          >
+        </div>
+      {/if}
       {#if form?.webhookSecret}
         <div class="space-y-1 rounded border border-accent p-3">
           <p class="font-medium">
@@ -124,6 +133,33 @@
                   </button>
                 {/if}
               </form>
+              <form
+                method="POST"
+                action="?/partnerOAuth"
+                use:enhance
+                class="flex w-full flex-wrap items-start gap-2"
+              >
+                <input type="hidden" name="id" value={partner.id} />
+                <textarea
+                  name="uris"
+                  rows="2"
+                  class="input min-w-0 flex-1"
+                  placeholder="https://lureverse.fr/auth/achievers/callback"
+                  aria-label={m.mod_partner_oauth_uris()}
+                  title={m.mod_partner_oauth_uris()}
+                  value={partner.oauthRedirectUris.join('\n')}></textarea>
+                <button class="btn">{m.mod_partner_oauth_save()}</button>
+                {#if partner.oauthClientId}
+                  <button class="btn" formaction="?/partnerOAuthSecret">
+                    {m.mod_partner_oauth_new_secret()}
+                  </button>
+                {/if}
+              </form>
+              {#if partner.oauthClientId}
+                <p class="w-full text-xs text-muted">
+                  {m.mod_partner_oauth_client()} <code>{partner.oauthClientId}</code>
+                </p>
+              {/if}
               {#if partner.webhookUrl}
                 <p class="w-full text-xs {partner.webhookFailures ? 'text-danger' : 'text-muted'}">
                   {partner.webhookFailures

@@ -37,6 +37,9 @@ function limitFor(request: Request, path: string): number | null {
   // recherche d'identités est un POST. Passer avant la règle des écritures, sinon les connexions
   // d'un partenaire très fréquenté s'y arrêteraient à 60 par minute.
   if (path.startsWith('/api/v1/')) return null;
+  // Même raison pour les jetons OAuth : le partenaire les échange depuis un seul serveur, et
+  // `oauth-provider.ts` limite déjà par client.
+  if (path === '/oauth/token' || path === '/oauth/revoke') return 600;
   if (request.method !== 'GET' && request.method !== 'HEAD') return 60;
   // Le flux reste ouvert : il ne doit pas bloquer le chat.
   if (path === '/api/sync/events') return null;

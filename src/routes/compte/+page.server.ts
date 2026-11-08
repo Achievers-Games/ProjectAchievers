@@ -15,6 +15,7 @@ import { destroySession } from '#lib/server/session';
 import { grantSiteAchievement } from '#lib/server/site-achievements';
 import { leaveClan } from '#lib/server/social';
 import { activePartnerLinks, unlinkPartner as removePartnerLink } from '#lib/server/partner-link';
+import { activeGrants, revokeGrant } from '#lib/server/oauth-provider';
 import { forgetPresence } from '#lib/server/presence';
 import { pushPublicKey } from '#lib/server/push';
 import { enqueueSync } from '#lib/server/sync/queue';
@@ -49,50 +50,52 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
   const user = requireUser(locals);
   const pendingMerge = readMerge(cookies, user.id);
 
-  const [profile, accounts, sessions, pending, merge, earned, partners] = await Promise.all([
-    db.user.findUniqueOrThrow({
-      where: { id: user.id },
-      select: {
-        displayName: true,
-        handle: true,
-        avatarUrl: true,
-        avatarMotionUrl: true,
-        frame: true,
-        frameMotionUrl: true,
-        isPublic: true,
-        showOnline: true,
-        showAdult: true,
-        allowProfanity: true,
-        pushMessages: true,
-        pushInvites: true,
-        pushEvents: true,
-      },
-    }),
-    db.linkedAccount.findMany({
-      where: { userId: user.id },
-      select: {
-        id: true,
-        provider: true,
-        displayName: true,
-        avatarUrl: true,
-        avatarMotionUrl: true,
-        frameUrl: true,
-        frameMotionUrl: true,
-        syncStatus: true,
-        syncError: true,
-        lastSyncedAt: true,
-      },
-    }),
-    db.session.findMany({
-      where: { userId: user.id, expiresAt: { gt: new Date() } },
-      orderBy: { lastUsedAt: 'desc' },
-      select: { id: true, userAgent: true, createdAt: true, lastUsedAt: true },
-    }),
-    db.psnVerification.findUnique({ where: { userId: user.id } }),
-    pendingMerge ? mergePreview(pendingMerge) : null,
-    db.userFrame.findMany({ where: { userId: user.id }, select: { frame: true } }),
-    activePartnerLinks(user.id),
-  ]);
+  const [profile, accounts, sessions, pending, merge, earned, partners, oauthApps] =
+    await Promise.all([
+      db.user.findUniqueOrThrow({
+        where: { id: user.id },
+        select: {
+          displayName: true,
+          handle: true,
+          avatarUrl: true,
+          avatarMotionUrl: true,
+          frame: true,
+          frameMotionUrl: true,
+          isPublic: true,
+          showOnline: true,
+          showAdult: true,
+          allowProfanity: true,
+          pushMessages: true,
+          pushInvites: true,
+          pushEvents: true,
+        },
+      }),
+      db.linkedAccount.findMany({
+        where: { userId: user.id },
+        select: {
+          id: true,
+          provider: true,
+          displayName: true,
+          avatarUrl: true,
+          avatarMotionUrl: true,
+          frameUrl: true,
+          frameMotionUrl: true,
+          syncStatus: true,
+          syncError: true,
+          lastSyncedAt: true,
+        },
+      }),
+      db.session.findMany({
+        where: { userId: user.id, expiresAt: { gt: new Date() } },
+        orderBy: { lastUsedAt: 'desc' },
+        select: { id: true, userAgent: true, createdAt: true, lastUsedAt: true },
+      }),
+      db.psnVerification.findUnique({ where: { userId: user.id } }),
+      pendingMerge ? mergePreview(pendingMerge) : null,
+      db.userFrame.findMany({ where: { userId: user.id }, select: { frame: true } }),
+      activePartnerLinks(user.id),
+      activeGrants(user.id),
+    ]);
 
   const activeCheck = (provider: Provider) =>
     pending?.provider === provider && pending.expiresAt > new Date()
@@ -106,6 +109,7 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
     merge,
     accounts,
     partners,
+    oauthApps,
     sessions: sessions.map((s) => ({ ...s, current: s.id === user.sessionId })),
     providers: availableProviders(),
     psn: activeCheck('PSN'),
@@ -214,6 +218,15 @@ export const actions: Actions = {
       }
     });
     return { success: m.account_unlinked() };
+  },
+
+  /** Retire l'accès d'une application : l'accord et tous ses jetons cessent aussitôt de valoir. */
+  revokeApp: async ({ request, locals }) => {
+    const user = requireUser(locals);
+    const app = String((await request.formData()).get('app') ?? '');
+    if (!app) return fail(400, { error: m.account_unknown() });
+    await revokeGrant(user.id, app);
+    return { success: m.oauth_app_revoked() };
   },
 
   unlinkPartner: async ({ request, locals }) => {

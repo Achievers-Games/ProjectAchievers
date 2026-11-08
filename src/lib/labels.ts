@@ -31,6 +31,15 @@ export const PARTNER_LABELS: Record<string, string> = { lure: 'Lure' };
 
 export const partnerLabel = (partner: string) => PARTNER_LABELS[partner] ?? partner;
 
+/** Ce qu'un site partenaire peut lire, en mots du joueur, sur la page d'accord et dans `/compte`. */
+const SCOPE_LABELS: Record<string, () => string> = {
+  profile: m.oauth_scope_profile,
+  library: m.oauth_scope_library,
+  achievements: m.oauth_scope_achievements,
+};
+
+export const scopeLabel = (scope: string) => (SCOPE_LABELS[scope] ?? (() => scope))();
+
 export const PLATFORM_LABELS: Record<Platform, string> = {
   BLIZZARD: 'Battle.net',
   STEAM: 'Steam',

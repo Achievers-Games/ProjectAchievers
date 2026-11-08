@@ -14,6 +14,14 @@ import {
   POPULAR_MAX,
   POPULAR_PERIODS,
 } from './partner-queries';
+import { OAUTH_SCOPES } from './oauth-provider';
+
+/** Ce que chaque portée ouvre, tel que le partenaire le lit dans la description. */
+const OAUTH_SCOPE_DESCRIPTIONS: Record<(typeof OAUTH_SCOPES)[number], string> = {
+  profile: 'Name, avatar, clan and stats. Always granted.',
+  library: 'Games and progress, even with a private profile.',
+  achievements: 'Achievements of each game, unlocked or not.',
+};
 
 const ref = (name: string) => ({ $ref: `#/components/schemas/${name}` });
 const nullable = (type: string, extra = {}) => ({ type: [type, 'null'], ...extra });
@@ -42,7 +50,7 @@ const gameId = pathParam('id', 'Game id on its platform: the Steam appid for Ste
 
 /** La description OpenAPI 3.1 de `/api/v1`, servie telle quelle aux partenaires. */
 export function partnerOpenApi(origin: string) {
-  return {
+  const spec = {
     openapi: '3.1.0',
     info: {
       title: 'Project Achievers partner API',
@@ -405,6 +413,20 @@ export function partnerOpenApi(origin: string) {
           scheme: 'bearer',
           description: 'Authorization: Bearer ak_… (key given by the Achievers admins).',
         },
+        oauth2: {
+          type: 'oauth2',
+          description:
+            'Authorization code with PKCE (S256), confidential client. The token endpoint ' +
+            'takes a JSON body, not a form: the site refuses cross-site form posts.',
+          flows: {
+            authorizationCode: {
+              authorizationUrl: `${origin}/oauth/authorize`,
+              tokenUrl: `${origin}/oauth/token`,
+              refreshUrl: `${origin}/oauth/token`,
+              scopes: OAUTH_SCOPE_DESCRIPTIONS,
+            },
+          },
+        },
       },
       responses: {
         Unauthorized: ok(ref('Error'), 'Missing, unknown or revoked key.'),
@@ -597,4 +619,41 @@ export function partnerOpenApi(origin: string) {
       },
     },
   };
+
+  /**
+   * Les routes `/me` : les mêmes réponses que leurs équivalents publics, pour le joueur qui a
+   * donné son accord, même au profil privé. Jeton OAuth au lieu de la clé partenaire.
+   */
+  // Les routes `/games/lookup` et `/partner/…` sont des POST : on ne lit ici que des GET.
+  const paths = spec.paths as unknown as Record<string, { get: Record<string, unknown> }>;
+  const me = (
+    from: string,
+    operationId: string,
+    scope: string,
+    keep: (parameter: { name: string }) => boolean = () => false,
+  ) => {
+    const get = paths[from]!.get;
+    return {
+      get: {
+        ...get,
+        operationId,
+        summary: `${String(get.summary)}, for the player who authorised you`,
+        parameters: ((get.parameters ?? []) as { name: string }[]).filter(keep),
+        security: [{ oauth2: [scope] }],
+      },
+    };
+  };
+  const query = (parameter: { name: string }) => parameter.name !== 'handle';
+  Object.assign(paths, {
+    '/me': me('/users/{handle}', 'getMe', 'profile'),
+    '/me/games': me('/users/{handle}/games', 'listMyGames', 'library', query),
+    '/me/games/{platform}/{id}': me(
+      '/users/{handle}/games/{platform}/{id}',
+      'getMyGame',
+      'achievements',
+      query,
+    ),
+    '/me/almost': me('/users/{handle}/almost', 'getMyAlmostFinished', 'library', query),
+  });
+  return spec;
 }

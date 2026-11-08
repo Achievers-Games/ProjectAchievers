@@ -105,34 +105,35 @@ enum ReportTarget {
 // ── Comptes ────────────────────────────────────────────────────────────
 
 model User {
-  id              String    @id @default(cuid())
-  handle          String    @unique
-  displayName     String
-  avatarUrl       String?
+  id                  String    @id @default(cuid())
+  handle              String    @unique
+  displayName         String
+  avatarUrl           String?
   /// Version animée de `avatarUrl`, chargée seulement quand elle doit jouer.
-  avatarMotionUrl String?
+  avatarMotionUrl     String?
   /// Cadre équipé : un identifiant de `frames`, ou l'image d'un cadre importé d'un compte.
-  frameMotionUrl  String?
-  frame           String?
-  isPublic        Boolean   @default(true)
+  frameMotionUrl      String?
+  frame               String?
+  isPublic            Boolean   @default(true)
   /// Vitrine choisie à la main ; sinon, les meilleures cartes.
-  showcaseCustom  Boolean   @default(false)
+  showcaseCustom      Boolean   @default(false)
   /// Affiche les jeux centrés sur le contenu sexuel, masqués par défaut.
-  showAdult       Boolean   @default(false)
+  showAdult           Boolean   @default(false)
   /// Montre les messages tels qu'ils ont été écrits ; sinon, les grossièretés sont masquées.
-  allowProfanity  Boolean   @default(false)
+  allowProfanity      Boolean   @default(false)
   /// Fuseau du navigateur : certains succès du site dépendent de l'heure du joueur.
-  timeZone        String?
-  friendsSeenAt   DateTime?
-  clansSeenAt     DateTime?
+  timeZone            String?
+  friendsSeenAt       DateTime?
+  clansSeenAt         DateTime?
   /// Dernière lecture du centre de notifications : succès et jeux terminés avant cette date sont vus.
   notificationsSeenAt DateTime?
-  role            Role      @default(USER)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  role                Role      @default(USER)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   accounts     LinkedAccount[]
   partnerLinks PartnerLink[]
+  oauthGrants  OAuthGrant[]
   sessions     Session[]
   games        UserGame[]
   achievements UserAchievement[]
@@ -419,15 +420,15 @@ model LinkedAccount {
 /// Aucun e-mail ni pseudo n'entre ici : seul un identifiant de compte partenaire, obtenu en
 /// prouvant la même identité OAuth des deux côtés.
 model PartnerLink {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   /// « lure »
   partner       String
   partnerUserId String
   /// AUTO quand une identité OAuth commune l'a prouvé, MANUAL sinon.
   method        String
-  createdAt     DateTime @default(now())
+  createdAt     DateTime  @default(now())
   /// Délié par le joueur : la ligne reste pour que la connexion suivante ne relie pas de nouveau.
   revokedAt     DateTime?
 
@@ -743,4 +744,49 @@ model PartnerApp {
   webhookFailures      Int       @default(0)
   webhookLastAttemptAt DateTime?
   webhookLastError     String?
+
+  /// Identifiant public du client OAuth : « Se connecter avec Achievers » chez le partenaire.
+  oauthClientId     String?      @unique
+  /// Empreinte du secret client, jamais le secret : il ne s'affiche qu'à sa création.
+  oauthSecretHash   String?
+  /// Adresses de retour acceptées, comparées à l'identique : aucune autre ne reçoit de code.
+  oauthRedirectUris String[]     @default([])
+  oauthGrants       OAuthGrant[]
+}
+
+/// L'accord d'un joueur à un partenaire : ce qu'il lui laisse lire, jusqu'à ce qu'il le retire.
+model OAuthGrant {
+  id        String       @id @default(cuid())
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appId     String
+  app       PartnerApp   @relation(fields: [appId], references: [id], onDelete: Cascade)
+  /// profile, library, achievements
+  scopes    String[]
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  revokedAt DateTime?
+  tokens    OAuthToken[]
+
+  @@unique([userId, appId])
+}
+
+/// Codes d'autorisation, jetons d'accès et de rafraîchissement : seule leur empreinte est gardée.
+model OAuthToken {
+  id            String     @id @default(cuid())
+  grantId       String
+  grant         OAuthGrant @relation(fields: [grantId], references: [id], onDelete: Cascade)
+  /// CODE, ACCESS ou REFRESH
+  kind          String
+  hash          String     @unique
+  scopes        String[]
+  expiresAt     DateTime
+  /// Un code ou un rafraîchissement ne sert qu'une fois : le réemploi trahit un vol.
+  usedAt        DateTime?
+  /// Codes seulement : le défi PKCE et l'adresse de retour à présenter de nouveau.
+  codeChallenge String?
+  redirectUri   String?
+  createdAt     DateTime   @default(now())
+
+  @@index([grantId])
 }
