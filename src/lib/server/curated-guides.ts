@@ -16,6 +16,41 @@ const FILES = import.meta.glob<string>('/src/lib/guides/*.md', {
   eager: true,
 });
 
+/** Les guides complets officiels, un par jeu : à suivre du début à la fin pour le 100 %. */
+const GAME_FILES = import.meta.glob<string>('/src/lib/guides/jeux/*.md', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+});
+
+export interface GameGuideFile {
+  platform: Platform;
+  gameId: string;
+  title: string;
+  content: string;
+}
+
+/**
+ * Un guide complet commence par `STEAM 219150`, puis son titre en `# Titre` ; tout le reste est
+ * le guide, en Markdown. Le titre devient celui de la page : il ne se répète pas dans le texte.
+ */
+export function parseGameGuideFile(text: string): GameGuideFile {
+  const [head = '', ...lines] = text.split(/\r?\n/);
+  const [platform, gameId] = head.trim().split(/\s+/);
+  const titleAt = lines.findIndex((line) => line.trim() !== '');
+  const title = /^#\s+(.+)$/.exec(lines[titleAt] ?? '')?.[1]?.trim();
+  if (!platform || !gameId || !title) throw new Error('En-tête de guide complet invalide');
+  return {
+    platform: platform as Platform,
+    gameId,
+    title,
+    content: lines
+      .slice(titleAt + 1)
+      .join('\n')
+      .trim(),
+  };
+}
+
 export interface GuideFile {
   platform: Platform;
   gameId: string;
@@ -51,7 +86,10 @@ export function parseGuideFile(text: string): GuideFile {
 }
 
 /** Le dépôt fait foi : les guides officiels y sont ajoutés, modifiés ou retirés. */
-export async function syncCuratedGuides(files: string[] = Object.values(FILES)) {
+export async function syncCuratedGuides(
+  files: string[] = Object.values(FILES),
+  gameFiles: string[] = Object.values(GAME_FILES),
+) {
   await db.user.upsert({
     where: { id: OFFICIAL_AUTHOR.id },
     update: {},
@@ -115,6 +153,32 @@ export async function syncCuratedGuides(files: string[] = Object.values(FILES)) 
       });
     }
   }
+  for (const file of gameFiles.map(parseGameGuideFile)) {
+    const game = await db.game.findUnique({
+      where: { platform_platformGameId: { platform: file.platform, platformGameId: file.gameId } },
+      select: { id: true },
+    });
+    if (!game) continue;
+    const curatedKey = `${file.platform}:${file.gameId}:JEU`;
+    keys.push(curatedKey);
+
+    const known = await db.guide.findUnique({ where: { curatedKey } });
+    if (known?.contentMd === file.content && known.title === file.title) continue;
+    if (known) await db.contentTranslation.deleteMany({ where: { guideId: known.id } });
+    await db.guide.upsert({
+      where: { curatedKey },
+      update: { title: file.title, contentMd: file.content },
+      create: {
+        curatedKey,
+        gameId: game.id,
+        title: file.title,
+        authorId: OFFICIAL_AUTHOR.id,
+        contentMd: file.content,
+        locale: 'fr',
+      },
+    });
+  }
+
   await db.guide.deleteMany({ where: { curatedKey: { not: null, notIn: keys } } });
   // Un fichier retiré du dépôt ne garantit plus le relevé de ses manquables.
   await db.achievement.updateMany({

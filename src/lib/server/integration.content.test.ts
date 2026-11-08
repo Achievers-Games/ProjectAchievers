@@ -15,7 +15,7 @@ import { resolveIdentity, updateProfile } from './accounts';
 import { db } from './db';
 import { onChat } from './sync/events';
 import { parseSteamPage } from './sync/steam';
-import { parseGuideFile, syncCuratedGuides } from './curated-guides';
+import { parseGameGuideFile, parseGuideFile, syncCuratedGuides } from './curated-guides';
 import { splitText, translateContent } from './translate';
 import { ensureGameTexts, localizeAchievements } from './achievement-texts';
 import { refreshDiscordAccounts } from './sync/discord';
@@ -361,6 +361,46 @@ describe('guides officiels', () => {
 
     await syncCuratedGuides([]);
     expect(await guides()).toEqual([]);
+  });
+
+  it('publie un guide complet officiel, le met à jour, puis le retire', async () => {
+    const game = await db.game.create({
+      data: {
+        platform: 'STEAM',
+        platformGameId: `${PREFIX}-guide-complet`,
+        name: `${PREFIX} guide complet`,
+        slug: `${PREFIX}-guide-complet`,
+      },
+    });
+    const gameGuide = (body: string) =>
+      `STEAM ${PREFIX}-guide-complet\n\n# Le 100 % pas à pas\n\n## Étape 1\n\n${body}\n`;
+    const guides = () =>
+      db.guide.findMany({
+        where: { gameId: game.id },
+        select: { title: true, contentMd: true, curatedKey: true, achievementId: true },
+      });
+
+    await syncCuratedGuides([], [gameGuide('Finir l’histoire.')]);
+    expect(await guides()).toEqual([
+      {
+        title: 'Le 100 % pas à pas',
+        contentMd: '## Étape 1\n\nFinir l’histoire.',
+        curatedKey: `STEAM:${PREFIX}-guide-complet:JEU`,
+        achievementId: null,
+      },
+    ]);
+
+    await syncCuratedGuides([], [gameGuide('Finir l’histoire, puis le puzzle.')]);
+    expect((await guides()).map((g) => g.contentMd)).toEqual([
+      '## Étape 1\n\nFinir l’histoire, puis le puzzle.',
+    ]);
+
+    await syncCuratedGuides([], []);
+    expect(await guides()).toEqual([]);
+  });
+
+  it('refuse un guide complet sans titre', () => {
+    expect(() => parseGameGuideFile('STEAM 42\n\n## Pas de titre\n')).toThrow();
   });
 
   it('marque les manquables du jeu relevé, et les retire avec son fichier', async () => {
