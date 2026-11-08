@@ -4,14 +4,15 @@
   import ArrowLeft from '@lucide/svelte/icons/arrow-left';
   import Eye from '@lucide/svelte/icons/eye';
   import Edit from '@lucide/svelte/icons/edit';
+  import { untrack } from 'svelte';
   import { renderGuidePreview } from '#lib/guide-preview';
 
   let { data, form } = $props();
 
   const heading = $derived(data.guide ? m.game_guide_edit_title() : m.game_guide_new_title());
 
-  // État local pour le texte de l'éditeur
-  let content = $state(form?.content ?? data.guide?.content ?? '');
+  // État local pour le texte de l'éditeur : la valeur initiale seulement, le reste est saisi.
+  let content = $state(untrack(() => form?.content ?? data.guide?.content ?? ''));
   let showPreview = $state(false);
 
   // Prévisualisation live
@@ -80,6 +81,8 @@
           {@html previewHtml}
         </div>
       </div>
+      <!-- Le textarea est remplacé par l'aperçu : sans ce champ, publier depuis l'aperçu enverrait un guide vide. -->
+      <input type="hidden" name="content" value={content} />
     {:else}
       <div class="space-y-1">
         <label class="label" for="guide-content">{m.game_guide_content_label()}</label>
