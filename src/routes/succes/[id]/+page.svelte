@@ -3,6 +3,7 @@
   import { deserialize, enhance } from '$app/forms';
   import { invalidateAll } from '$app/navigation';
   import type { SubmitFunction } from '$app/forms';
+  import BookOpen from '@lucide/svelte/icons/book-open';
   import ChevronDown from '@lucide/svelte/icons/chevron-down';
   import ChevronUp from '@lucide/svelte/icons/chevron-up';
   import Eye from '@lucide/svelte/icons/eye';
@@ -20,7 +21,12 @@
 
   let { data } = $props();
 
+  type Guide = (typeof data.guides)[number];
+
   let writingGuide = $state(false);
+  let showBuried = $state(false);
+  const shownGuides = $derived(data.guides.filter((guide) => !guide.buried));
+  const buriedGuides = $derived(data.guides.filter((guide) => guide.buried));
   let replyTo = $state<string | null>(null);
   let translations = $state<Record<string, { html: string; shown: boolean }>>({});
   let translating = $state<string | null>(null);
@@ -258,7 +264,7 @@
       </form>
     {/if}
 
-    {#each data.guides as guide (guide.id)}
+    {#snippet guideCard(guide: Guide)}
       <article class="card flex gap-3 p-4">
         <form method="POST" action="?/vote" use:enhance={vote} class="flex flex-col items-center">
           <input type="hidden" name="guideId" value={guide.id} />
@@ -287,6 +293,9 @@
         <div class="min-w-0 flex-1 space-y-2">
           <p class="flex items-center gap-2 text-xs text-muted">
             {#if guide.official}
+              <span class="flex items-center gap-1 font-medium text-accent">
+                <BookOpen size={12} aria-hidden="true" />{m.guide_badge()}
+              </span>
               <span class="font-medium text-ink">{guide.author.displayName}</span>
             {:else}
               <a href="/u/{guide.author.handle}" class="font-medium text-ink">
@@ -327,11 +336,34 @@
           </div>
         </div>
       </article>
+    {/snippet}
+
+    {#each shownGuides as guide (guide.id)}
+      {@render guideCard(guide)}
     {:else}
-      <Empty title={data.masked ? m.guides_masked() : m.guides_empty()}>
-        {data.masked ? m.guides_masked_text() : m.guides_empty_text()}
-      </Empty>
+      {#if !buriedGuides.length}
+        <Empty title={data.masked ? m.guides_masked() : m.guides_empty()}>
+          {data.masked ? m.guides_masked_text() : m.guides_empty_text()}
+        </Empty>
+      {/if}
     {/each}
+
+    {#if buriedGuides.length}
+      <button
+        type="button"
+        class="text-sm text-muted hover:text-ink"
+        aria-expanded={showBuried}
+        onclick={() => (showBuried = !showBuried)}
+      >
+        {showBuried ? m.guides_buried_hide() : m.guides_buried_show({ count: buriedGuides.length })}
+      </button>
+      {#if showBuried}
+        <p class="text-xs text-muted">{m.guides_buried_note()}</p>
+        {#each buriedGuides as guide (guide.id)}
+          {@render guideCard(guide)}
+        {/each}
+      {/if}
+    {/if}
   </section>
 
   <section class="space-y-3">

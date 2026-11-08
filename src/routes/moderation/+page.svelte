@@ -140,8 +140,8 @@
         >
           {report.target.contentMd || m.mod_content_deleted()}
         </blockquote>
-        {#if report.target.achievementId}
-          <a class="text-xs text-muted underline" href="/succes/{report.target.achievementId}">
+        {#if report.target.href}
+          <a class="text-xs text-muted underline" href={report.target.href}>
             {m.mod_context()}
           </a>
         {/if}

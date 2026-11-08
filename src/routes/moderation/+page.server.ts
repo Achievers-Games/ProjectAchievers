@@ -27,7 +27,14 @@ export const load: PageServerLoad = async ({ locals }) => {
   const [guides, comments, messages] = await Promise.all([
     db.guide.findMany({
       where: { id: { in: guideIds } },
-      select: { id: true, contentMd: true, achievementId: true, status: true },
+      select: {
+        id: true,
+        title: true,
+        contentMd: true,
+        achievementId: true,
+        game: { select: { slug: true } },
+        status: true,
+      },
     }),
     db.comment.findMany({
       where: { id: { in: commentIds } },
@@ -39,9 +46,25 @@ export const load: PageServerLoad = async ({ locals }) => {
       select: { id: true, content: true },
     }),
   ]);
-  const targets = new Map<string, { contentMd: string; achievementId: string | null }>([
-    ...[...guides, ...comments].map((t) => [t.id, t] as const),
-    ...messages.map((t) => [t.id, { contentMd: t.content, achievementId: null }] as const),
+  // Le lien mène au succès, ou à la page du guide complet du jeu.
+  const context = (t: {
+    id: string;
+    achievementId: string | null;
+    game?: { slug: string } | null;
+  }) =>
+    t.achievementId
+      ? `/succes/${t.achievementId}`
+      : t.game
+        ? `/jeux/${t.game.slug}/guides/${t.id}`
+        : null;
+  const targets = new Map<string, { contentMd: string; href: string | null }>([
+    // Le titre d'un guide de jeu fait partie de ce qui est signalé.
+    ...guides.map((t) => {
+      const contentMd = [t.title, t.contentMd].filter(Boolean).join('\n\n');
+      return [t.id, { contentMd, href: context(t) }] as const;
+    }),
+    ...comments.map((t) => [t.id, { contentMd: t.contentMd, href: context(t) }] as const),
+    ...messages.map((t) => [t.id, { contentMd: t.content, href: null }] as const),
   ]);
 
   // Les familles de plusieurs jeux : c'est là que le rapprochement par titre peut se tromper.

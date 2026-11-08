@@ -463,6 +463,7 @@ model Game {
 
   achievements Achievement[]
   players      UserGame[]
+  guides       Guide[]
 
   @@unique([platform, platformGameId])
   @@index([name])
@@ -571,10 +572,16 @@ model SyncRun {
 
 // ── Communauté ─────────────────────────────────────────────────────────
 
+/// Un guide porte sur un succès, ou sur tout un jeu (`gameId`) : jamais les deux à la fois.
 model Guide {
   id            String        @id @default(cuid())
-  achievementId String
-  achievement   Achievement   @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  achievementId String?
+  achievement   Achievement?  @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  /// Guide complet du jeu, à suivre du début à la fin pour tout obtenir.
+  gameId        String?
+  game          Game?         @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  /// Titre des guides de jeu ; les guides de succès s'en passent.
+  title         String?
   authorId      String
   author        User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
   contentMd     String
@@ -592,6 +599,7 @@ model Guide {
   translations ContentTranslation[]
 
   @@index([achievementId, score])
+  @@index([gameId, score])
 }
 
 /// Une case cochée par un joueur, repérée par son rang dans le guide.

@@ -4,6 +4,9 @@ import { db } from '#lib/server/db';
 import { ensureGameTexts, localizeAchievements } from '#lib/server/achievement-texts';
 import { compareGame, seasonStartedGames, visibleGames } from '#lib/server/queries';
 import { friendList } from '#lib/server/social';
+import { GUIDE_ORDER, countChecklist, gameGuidesWhere, isBuried } from '#lib/server/guides';
+import { publicUser } from '#lib/server/queries';
+import { censor } from '#lib/profanity';
 import { compareAchievements } from '#lib/compare';
 import { SEASON, seasonState } from '#lib/season';
 import { getLocale } from '#lib/paraglide/runtime';
@@ -45,7 +48,8 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
 
   const withHandle = url.searchParams.get('avec')?.trim() || null;
 
-  const [progress, unlocks, players, others, rival, friends] = await Promise.all([
+  const viewerId = locals.user?.id;
+  const [progress, unlocks, players, others, rival, friends, guides] = await Promise.all([
     locals.user
       ? db.userGame.findUnique({
           where: { userId_gameId: { userId: locals.user.id, gameId: game.id } },
@@ -84,6 +88,23 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
       ? compareGame({ viewerId: locals.user.id, gameId: game.id, handle: withHandle })
       : null,
     locals.user ? friendList(locals.user.id) : [],
+    db.guide.findMany({
+      where: gameGuidesWhere(game),
+      orderBy: GUIDE_ORDER,
+      take: 50,
+      select: {
+        id: true,
+        title: true,
+        contentMd: true,
+        locale: true,
+        score: true,
+        curatedKey: true,
+        createdAt: true,
+        updatedAt: true,
+        author: { select: publicUser },
+        _count: { select: { checks: { where: { userId: viewerId ?? '' } } } },
+      },
+    }),
   ]);
 
   // Seuls les amis qui possèdent cette version ont quelque chose à comparer.
@@ -158,8 +179,24 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
     };
   });
 
+  const clean = (text: string, from: string | null) =>
+    locals.user?.allowProfanity ? text : censor(text, from);
+
   return {
     game: { ...game, achievements: undefined },
+    // Les guides complets du jeu : on les lit sur leur propre page, ici seulement la liste.
+    guides: guides.map((guide) => ({
+      id: guide.id,
+      title: clean(guide.title ?? '', guide.locale),
+      official: guide.curatedKey !== null,
+      buried: isBuried(guide),
+      score: guide.score,
+      author: guide.author,
+      createdAt: guide.createdAt,
+      updatedAt: guide.updatedAt,
+      steps: countChecklist(guide.contentMd),
+      checked: guide._count.checks,
+    })),
     achievements: rows,
     compare: rival
       ? {

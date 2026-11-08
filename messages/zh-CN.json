@@ -272,11 +272,8 @@
   "report_sent": "举报已发送，谢谢。",
   "report_failed": "举报发送失败。",
   "report_reason_missing": "请说明举报原因。",
-  "guides_empty": "指南即将推出",
-  "guides_empty_text": "团队正在准备指南，这篇稍后推出。你可以先在讨论区分享技巧。",
   "guides_masked": "隐藏的指南",
   "guides_masked_text": "显示此成就后即可阅读指南。",
-  "guide_forbidden": "只有团队可以发布指南。",
   "discussion": "讨论",
   "comment_deleted": "评论已删除。",
   "reply": "回复",
@@ -292,6 +289,45 @@
   "guide_published": "攻略已发布。",
   "comment_published": "评论已发布。",
   "guide_deleted": "攻略已删除。",
+  "guides_empty": "暂无攻略",
+  "guides_empty_text": "率先说明如何获得这个成就吧：社区会为最好的攻略投票。",
+  "guides_buried_show": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "查看已隐藏的攻略（{n} 篇）"
+      }
+    }
+  ],
+  "guides_buried_hide": "收起已隐藏的攻略",
+  "guides_buried_note": "这些攻略收到了太多反对票。你仍可阅读，但社区认为它们不太可靠。",
+  "game_guides": "完整攻略",
+  "game_guides_text": "从头到尾按攻略进行，即可不留遗漏地达成 100%。投票会让最好的攻略排在前面。",
+  "game_guide_write": "撰写完整攻略",
+  "game_guides_empty": "这款游戏还没有完整攻略。动笔吧：社区会来投票。",
+  "game_guide_steps": "{done}/{total} 步",
+  "game_guide_score": "投票得分",
+  "game_guide_new_title": "新的完整攻略",
+  "game_guide_edit_title": "编辑攻略",
+  "game_guide_title_label": "标题",
+  "game_guide_title_placeholder": "零遗漏 100% 攻略",
+  "game_guide_content_label": "攻略内容（Markdown）",
+  "game_guide_content_placeholder": "## 开始之前\n- [ ] 不能忘记的可错过成就\n\n## 第 1 章\n…",
+  "game_guide_help": "先写可错过的成就，然后按游戏顺序推进，最后写剧情结束后剩下的内容。玩家从头到尾照着你的攻略做，应该能拿到全部成就。",
+  "game_guide_syntax": "## 章节和 ### 小节组成目录。- [ ] 创建复选框。![说明](地址) 添加图片或 YouTube 视频。",
+  "game_guide_outline": "目录",
+  "game_guide_edit": "编辑",
+  "game_guide_updated": "{when}更新",
+  "game_guide_delete_confirm": "删除这篇攻略？它的投票和已勾选的项目将会丢失。",
+  "game_guide_buried_warning": "这篇攻略收到了太多反对票：它在游戏的攻略列表中已被隐藏。",
+  "game_guide_spoiler": "完整攻略可能会透露游戏的隐藏成就。",
   "reaction_invalid": "无效的回应。",
   "signin_tagline": "无需密码。你绑定的所有账户都会打开同一个个人资料。",
   "signin_with": "使用 {provider} 继续",

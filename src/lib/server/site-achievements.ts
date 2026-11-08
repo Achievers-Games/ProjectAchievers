@@ -23,6 +23,7 @@ import { checkClanAchievements, clanFacts } from './clan-achievements';
 import { rateLimit } from './rate-limit';
 import { logger } from '#lib/logger';
 import { db } from './db';
+import { countChecklist } from './guides';
 import {
   GENRE_ICON,
   ICON_PATHS,
@@ -55,7 +56,6 @@ const SECRETS_FOR_LAST_WORD = 10;
 const SEASON_CACHE = 10 * 60 * 1000;
 const CLAN_CHECK_EVERY = 10 * 60 * 1000;
 const WEEK = 7 * 24 * 60 * 60 * 1000;
-const CHECKBOX = /^\s*[-*] \[[ x]\]/gim;
 
 let seasonCache: { at: number; stats: Awaited<ReturnType<typeof seasonStats>> } | null = null;
 
@@ -90,7 +90,7 @@ async function finishedGuide(userId: string) {
   });
   return (
     guides.find((guide) => {
-      const items = guide.contentMd.match(CHECKBOX)?.length ?? 0;
+      const items = countChecklist(guide.contentMd);
       const done = checked.find((row) => row.guideId === guide.id)?._count._all ?? 0;
       return items > 0 && done >= items;
     }) ?? null

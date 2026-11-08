@@ -281,11 +281,8 @@
   "report_sent": "Denúncia enviada. Obrigado.",
   "report_failed": "Não foi possível enviar a denúncia.",
   "report_reason_missing": "Informe o motivo da denúncia.",
-  "guides_empty": "Guia em breve",
-  "guides_empty_text": "A equipe está preparando os guias: este chegará mais tarde. Você já pode compartilhar dicas na discussão.",
   "guides_masked": "Guia oculto",
   "guides_masked_text": "Revele esta conquista para ler o guia.",
-  "guide_forbidden": "Só a equipe pode publicar guias.",
   "discussion": "Discussão",
   "comment_deleted": "Comentário excluído.",
   "reply": "Responder",
@@ -301,6 +298,46 @@
   "guide_published": "Guia publicado.",
   "comment_published": "Comentário publicado.",
   "guide_deleted": "Guia excluído.",
+  "guides_empty": "Nenhum guia ainda",
+  "guides_empty_text": "Seja o primeiro a explicar como conseguir esta conquista: a comunidade vai votar nos melhores guias.",
+  "guides_buried_show": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "Ver o guia oculto",
+        "c=*": "Ver os {n} guias ocultos"
+      }
+    }
+  ],
+  "guides_buried_hide": "Esconder os guias ocultos",
+  "guides_buried_note": "Estes guias receberam votos negativos demais. Você ainda pode lê-los, mas a comunidade os considera pouco confiáveis.",
+  "game_guides": "Guias completos",
+  "game_guides_text": "Siga do início ao fim para chegar a 100% sem perder nada. Os votos levam os melhores ao topo.",
+  "game_guide_write": "Escrever um guia completo",
+  "game_guides_empty": "Ainda não há guia completo para este jogo. Comece: a comunidade vai votar.",
+  "game_guide_steps": "{done}/{total} etapas",
+  "game_guide_score": "Pontuação dos votos",
+  "game_guide_new_title": "Novo guia completo",
+  "game_guide_edit_title": "Editar o guia",
+  "game_guide_title_label": "Título",
+  "game_guide_title_placeholder": "Guia 100% sem perder nada",
+  "game_guide_content_label": "O guia (Markdown)",
+  "game_guide_content_placeholder": "## Antes de começar\n- [ ] Conquista perdível para não esquecer\n\n## Capítulo 1\n…",
+  "game_guide_help": "Comece pelas conquistas perdíveis, depois siga a ordem do jogo e termine com o que resta após a história. Quem seguir seu guia do início ao fim deve conseguir tudo.",
+  "game_guide_syntax": "## Seção e ### subseção formam o sumário. - [ ] cria uma caixa de seleção. ![legenda](endereço) adiciona uma imagem ou um vídeo do YouTube.",
+  "game_guide_outline": "Sumário",
+  "game_guide_edit": "Editar",
+  "game_guide_updated": "Atualizado {when}",
+  "game_guide_delete_confirm": "Excluir este guia? Os votos e as caixas marcadas serão perdidos.",
+  "game_guide_buried_warning": "Este guia recebeu votos negativos demais: ele fica oculto na lista do jogo.",
+  "game_guide_spoiler": "Um guia completo pode revelar as conquistas ocultas do jogo.",
   "reaction_invalid": "Reação inválida.",
   "signin_tagline": "Sem senha. Todas as contas que você vincular abrem o mesmo perfil.",
   "signin_with": "Continuar com {provider}",

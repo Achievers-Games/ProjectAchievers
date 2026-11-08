@@ -281,11 +281,8 @@
   "report_sent": "Report sent. Thank you.",
   "report_failed": "The report could not be sent.",
   "report_reason_missing": "Please give a reason for your report.",
-  "guides_empty": "Guide coming soon",
-  "guides_empty_text": "The team is preparing its guides: this one will come later. You can already share tips in the discussion.",
   "guides_masked": "Hidden guide",
   "guides_masked_text": "Reveal this achievement to read its guide.",
-  "guide_forbidden": "Only the team can publish a guide.",
   "discussion": "Discussion",
   "comment_deleted": "Comment deleted.",
   "reply": "Reply",
@@ -301,6 +298,46 @@
   "guide_published": "Guide published.",
   "comment_published": "Comment published.",
   "guide_deleted": "Guide deleted.",
+  "guides_empty": "No guide yet",
+  "guides_empty_text": "Be the first to explain how to earn this achievement: the community will vote for the best guides.",
+  "guides_buried_show": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "Show the hidden guide",
+        "c=*": "Show the {n} hidden guides"
+      }
+    }
+  ],
+  "guides_buried_hide": "Hide the hidden guides",
+  "guides_buried_note": "These guides received too many downvotes. You can still read them, but the community finds them unreliable.",
+  "game_guides": "Full guides",
+  "game_guides_text": "Follow one from start to finish to reach 100% without missing anything. Votes bring the best ones to the top.",
+  "game_guide_write": "Write a full guide",
+  "game_guides_empty": "No full guide for this game yet. Go for it: the community will vote.",
+  "game_guide_steps": "{done}/{total} steps",
+  "game_guide_score": "Vote score",
+  "game_guide_new_title": "New full guide",
+  "game_guide_edit_title": "Edit the guide",
+  "game_guide_title_label": "Title",
+  "game_guide_title_placeholder": "100% guide, nothing missed",
+  "game_guide_content_label": "The guide (Markdown)",
+  "game_guide_content_placeholder": "## Before you start\n- [ ] Missable achievement to remember\n\n## Chapter 1\n…",
+  "game_guide_help": "Start with the missable achievements, then follow the game in order and finish with what is left after the story. A player who follows your guide from start to finish should earn everything.",
+  "game_guide_syntax": "## Section and ### subsection build the table of contents. - [ ] adds a checkbox. ![caption](address) adds an image or a YouTube video.",
+  "game_guide_outline": "Contents",
+  "game_guide_edit": "Edit",
+  "game_guide_updated": "Updated {when}",
+  "game_guide_delete_confirm": "Delete this guide? Its votes and checked boxes will be lost.",
+  "game_guide_buried_warning": "This guide received too many downvotes: it is hidden in the game’s list.",
+  "game_guide_spoiler": "A full guide may reveal the game’s hidden achievements.",
   "reaction_invalid": "Invalid reaction.",
   "signin_tagline": "No password. Every account you link opens the same profile.",
   "signin_with": "Continue with {provider}",

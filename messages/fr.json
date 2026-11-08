@@ -281,11 +281,8 @@
   "report_sent": "Signalement envoyé. Merci.",
   "report_failed": "Le signalement a échoué.",
   "report_reason_missing": "Précise la raison du signalement.",
-  "guides_empty": "Guide bientôt disponible",
-  "guides_empty_text": "L'équipe prépare ses guides : celui-ci arrivera plus tard. Tu peux déjà partager tes astuces dans la discussion.",
   "guides_masked": "Guide caché",
   "guides_masked_text": "Révèle ce succès pour lire son guide.",
-  "guide_forbidden": "Seule l'équipe peut publier un guide.",
   "discussion": "Discussion",
   "comment_deleted": "Commentaire supprimé.",
   "reply": "Répondre",
@@ -301,6 +298,46 @@
   "guide_published": "Guide publié.",
   "comment_published": "Commentaire publié.",
   "guide_deleted": "Guide supprimé.",
+  "guides_empty": "Aucun guide pour l’instant",
+  "guides_empty_text": "Sois le premier à expliquer comment obtenir ce succès : la communauté votera pour les meilleurs guides.",
+  "guides_buried_show": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "Voir le guide masqué",
+        "c=*": "Voir les {n} guides masqués"
+      }
+    }
+  ],
+  "guides_buried_hide": "Cacher les guides masqués",
+  "guides_buried_note": "Ces guides ont reçu trop de votes négatifs. Ils restent lisibles, mais la communauté les juge peu fiables.",
+  "game_guides": "Guides complets",
+  "game_guides_text": "À suivre du début à la fin pour atteindre 100 % sans rien rater. Les votes font remonter les meilleurs.",
+  "game_guide_write": "Écrire un guide complet",
+  "game_guides_empty": "Aucun guide complet pour ce jeu. Lance-toi : la communauté votera.",
+  "game_guide_steps": "{done}/{total} étapes",
+  "game_guide_score": "Score des votes",
+  "game_guide_new_title": "Nouveau guide complet",
+  "game_guide_edit_title": "Modifier le guide",
+  "game_guide_title_label": "Titre",
+  "game_guide_title_placeholder": "Guide 100 % sans rien rater",
+  "game_guide_content_label": "Le guide (Markdown)",
+  "game_guide_content_placeholder": "## Avant de commencer\n- [ ] Succès manquable à ne pas oublier\n\n## Chapitre 1\n…",
+  "game_guide_help": "Commence par les succès manquables, suis ensuite l’ordre du jeu et termine par ce qui reste après l’histoire. Un joueur qui suit ton guide du début à la fin doit tout obtenir.",
+  "game_guide_syntax": "## Partie et ### sous-partie forment le sommaire. - [ ] crée une case à cocher. ![légende](adresse) ajoute une image ou une vidéo YouTube.",
+  "game_guide_outline": "Sommaire",
+  "game_guide_edit": "Modifier",
+  "game_guide_updated": "Mis à jour {when}",
+  "game_guide_delete_confirm": "Supprimer ce guide ? Ses votes et ses cases cochées seront perdus.",
+  "game_guide_buried_warning": "Ce guide a reçu trop de votes négatifs : il est masqué dans la liste du jeu.",
+  "game_guide_spoiler": "Un guide complet peut dévoiler les succès cachés du jeu.",
   "reaction_invalid": "Réaction invalide.",
   "signin_tagline": "Pas de mot de passe. Tous les comptes que tu lies ouvrent le même profil.",
   "signin_with": "Continuer avec {provider}",

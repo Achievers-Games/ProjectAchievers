@@ -304,6 +304,13 @@
   .prose-user h4 {
     @apply pt-1 text-sm font-semibold;
   }
+  /* Le sommaire d'un guide complet : la partie visée ne passe pas sous l'en-tête fixe. */
+  .guide-long [id^='partie-'] {
+    scroll-margin-top: 5rem;
+  }
+  .guide-long h2 {
+    @apply border-b border-line pb-1 pt-6 text-xl;
+  }
   .prose-user img,
   .prose-user video,
   .prose-user iframe {

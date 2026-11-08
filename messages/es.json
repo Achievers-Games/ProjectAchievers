@@ -281,11 +281,8 @@
   "report_sent": "Denuncia enviada. Gracias.",
   "report_failed": "No se ha podido enviar la denuncia.",
   "report_reason_missing": "Indica el motivo de la denuncia.",
-  "guides_empty": "Guía disponible pronto",
-  "guides_empty_text": "El equipo está preparando sus guías: esta llegará más adelante. Ya puedes compartir trucos en la discusión.",
   "guides_masked": "Guía oculta",
   "guides_masked_text": "Muestra este logro para leer su guía.",
-  "guide_forbidden": "Solo el equipo puede publicar guías.",
   "discussion": "Debate",
   "comment_deleted": "Comentario eliminado.",
   "reply": "Responder",
@@ -301,6 +298,46 @@
   "guide_published": "Guía publicada.",
   "comment_published": "Comentario publicado.",
   "guide_deleted": "Guía eliminada.",
+  "guides_empty": "Aún no hay guías",
+  "guides_empty_text": "Sé el primero en explicar cómo conseguir este logro: la comunidad votará las mejores guías.",
+  "guides_buried_show": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "Ver la guía oculta",
+        "c=*": "Ver las {n} guías ocultas"
+      }
+    }
+  ],
+  "guides_buried_hide": "Ocultar las guías ocultas",
+  "guides_buried_note": "Estas guías recibieron demasiados votos negativos. Puedes leerlas, pero la comunidad las considera poco fiables.",
+  "game_guides": "Guías completas",
+  "game_guides_text": "Síguela de principio a fin para llegar al 100 % sin perderte nada. Los votos suben las mejores.",
+  "game_guide_write": "Escribir una guía completa",
+  "game_guides_empty": "Aún no hay guía completa para este juego. Anímate: la comunidad votará.",
+  "game_guide_steps": "{done}/{total} pasos",
+  "game_guide_score": "Puntuación de votos",
+  "game_guide_new_title": "Nueva guía completa",
+  "game_guide_edit_title": "Editar la guía",
+  "game_guide_title_label": "Título",
+  "game_guide_title_placeholder": "Guía al 100 % sin perderse nada",
+  "game_guide_content_label": "La guía (Markdown)",
+  "game_guide_content_placeholder": "## Antes de empezar\n- [ ] Logro perdible que no hay que olvidar\n\n## Capítulo 1\n…",
+  "game_guide_help": "Empieza por los logros perdibles, sigue después el orden del juego y termina con lo que queda tras la historia. Quien siga tu guía de principio a fin debe conseguirlo todo.",
+  "game_guide_syntax": "## Sección y ### subsección forman el índice. - [ ] crea una casilla. ![leyenda](dirección) añade una imagen o un vídeo de YouTube.",
+  "game_guide_outline": "Índice",
+  "game_guide_edit": "Editar",
+  "game_guide_updated": "Actualizada {when}",
+  "game_guide_delete_confirm": "¿Eliminar esta guía? Se perderán sus votos y casillas marcadas.",
+  "game_guide_buried_warning": "Esta guía recibió demasiados votos negativos: está oculta en la lista del juego.",
+  "game_guide_spoiler": "Una guía completa puede revelar los logros ocultos del juego.",
   "reaction_invalid": "Reacción no válida.",
   "signin_tagline": "Sin contraseña. Todas las cuentas que vincules abren el mismo perfil.",
   "signin_with": "Continuar con {provider}",

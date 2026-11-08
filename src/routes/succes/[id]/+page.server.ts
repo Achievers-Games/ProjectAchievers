@@ -9,6 +9,7 @@ import { publicUser } from '#lib/server/queries';
 import { ensureGameTexts, localizeAchievements } from '#lib/server/achievement-texts';
 import { logger } from '#lib/logger';
 import { rateLimit } from '#lib/server/rate-limit';
+import { GUIDE_ORDER, checkGuideItem, deleteGuide, isBuried, voteGuide } from '#lib/server/guides';
 import { canTranslate, translateContent } from '#lib/server/translate';
 import { getLocale } from '#lib/paraglide/runtime';
 import type { Actions, PageServerLoad } from './$types';
@@ -70,7 +71,7 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
   const [guides, comments, unlockers] = await Promise.all([
     db.guide.findMany({
       where: { achievementId: params.id, status: 'PUBLISHED' },
-      orderBy: [{ score: 'desc' }, { createdAt: 'asc' }],
+      orderBy: GUIDE_ORDER,
       include: {
         author: {
           select: publicUser,
@@ -152,6 +153,8 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
       official: guide.curatedKey !== null,
       checked: guide.checks?.map((check) => check.item) ?? [],
       score: guide.score,
+      // Trop mal noté : replié derrière « voir les guides masqués », jamais supprimé.
+      buried: isBuried(guide),
       author: guide.author,
       createdAt: guide.createdAt,
       mine: guide.authorId === viewerId,
@@ -189,8 +192,8 @@ const requireUser = (locals: App.Locals, url: URL) => requireLogin(locals, url.p
 const tooFast = (userId: string, action = 'publication') =>
   !rateLimit(`${action}:${userId}`, 5, 60_000);
 
-/** Les guides sont écrits par l'équipe ; les joueurs gardent la discussion. */
-const canWriteGuide = (user: App.Locals['user']) => Boolean(user && user.role !== 'USER');
+/** Tout joueur connecté écrit son guide : les votes trient, la modération tranche le reste. */
+const canWriteGuide = (user: App.Locals['user']) => Boolean(user);
 
 const checkSchema = z.object({
   guideId: z.string().min(1),
@@ -203,7 +206,6 @@ const achievementExists = async (id: string) => (await db.achievement.count({ wh
 export const actions: Actions = {
   guide: async ({ request, params, locals, url }) => {
     const user = requireUser(locals, url);
-    if (!canWriteGuide(user)) return fail(403, { error: m.guide_forbidden() });
     const form = await request.formData();
     const content = body(20_000).safeParse(form.get('content'));
     if (!content.success) return fail(400, { error: content.error.issues[0]?.message });
@@ -226,23 +228,7 @@ export const actions: Actions = {
     const form = await request.formData();
     const guideId = String(form.get('guideId'));
     const value = Number(form.get('value')) > 0 ? 1 : -1;
-    const guide = await db.guide.count({ where: { id: guideId, status: 'PUBLISHED' } });
-    if (!guide) return fail(404, { error: m.gone() });
-
-    await db.$transaction(async (tx) => {
-      const key = { guideId_userId: { guideId, userId: user.id } };
-      const current = await tx.guideVote.findUnique({ where: key });
-      if (current?.value === value) await tx.guideVote.delete({ where: key });
-      else {
-        await tx.guideVote.upsert({
-          where: key,
-          update: { value },
-          create: { guideId, userId: user.id, value },
-        });
-      }
-      const { _sum } = await tx.guideVote.aggregate({ where: { guideId }, _sum: { value: true } });
-      await tx.guide.update({ where: { id: guideId }, data: { score: _sum.value ?? 0 } });
-    });
+    if (!(await voteGuide(guideId, user.id, value))) return fail(404, { error: m.gone() });
   },
 
   check: async ({ request, locals, url }) => {
@@ -250,16 +236,8 @@ export const actions: Actions = {
     const parsed = checkSchema.safeParse(Object.fromEntries(await request.formData()));
     if (!parsed.success) return fail(400, { error: m.action_failed() });
     const { guideId, item, checked } = parsed.data;
-    const guide = await db.guide.count({ where: { id: guideId, status: 'PUBLISHED' } });
-    if (!guide) return fail(404, { error: m.gone() });
-
-    if (checked) {
-      await db.guideCheck.createMany({
-        data: [{ guideId, item, userId: user.id }],
-        skipDuplicates: true,
-      });
-    } else {
-      await db.guideCheck.deleteMany({ where: { guideId, item, userId: user.id } });
+    if (!(await checkGuideItem(guideId, user.id, item, Boolean(checked)))) {
+      return fail(404, { error: m.gone() });
     }
   },
 
@@ -333,13 +311,7 @@ export const actions: Actions = {
   deleteGuide: async ({ request, locals, url }) => {
     const user = requireUser(locals, url);
     const id = String((await request.formData()).get('id'));
-    await db.contentTranslation.deleteMany({
-      where: { guideId: id, guide: { authorId: user.id } },
-    });
-    await db.guide.updateMany({
-      where: { id, authorId: user.id },
-      data: { status: 'DELETED', contentMd: '' },
-    });
+    await deleteGuide(id, user.id);
     return { success: m.guide_deleted() };
   },
 

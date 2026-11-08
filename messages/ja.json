@@ -272,11 +272,8 @@
   "report_sent": "報告を送信しました。ありがとうございます。",
   "report_failed": "報告を送信できませんでした。",
   "report_reason_missing": "報告の理由を入力してください。",
-  "guides_empty": "ガイドは準備中です",
-  "guides_empty_text": "チームがガイドを準備しています。このガイドは後日公開します。コツはディスカッションで共有できます。",
   "guides_masked": "非表示のガイド",
   "guides_masked_text": "ガイドを読むには、この実績を表示してください。",
-  "guide_forbidden": "ガイドを公開できるのはチームのみです。",
   "discussion": "ディスカッション",
   "comment_deleted": "コメントを削除しました。",
   "reply": "返信",
@@ -292,6 +289,45 @@
   "guide_published": "ガイドを投稿しました。",
   "comment_published": "コメントを投稿しました。",
   "guide_deleted": "ガイドを削除しました。",
+  "guides_empty": "ガイドはまだありません",
+  "guides_empty_text": "この実績の取り方を最初に説明しましょう。コミュニティが優れたガイドに投票します。",
+  "guides_buried_show": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "非表示のガイドを見る（{n} 件）"
+      }
+    }
+  ],
+  "guides_buried_hide": "非表示のガイドを隠す",
+  "guides_buried_note": "これらのガイドは低評価が多すぎます。読むことはできますが、コミュニティは信頼性が低いと判断しています。",
+  "game_guides": "完全ガイド",
+  "game_guides_text": "最初から最後まで従えば、何も取り逃さずに 100% を達成できます。投票で優れたガイドが上位に表示されます。",
+  "game_guide_write": "完全ガイドを書く",
+  "game_guides_empty": "このゲームの完全ガイドはまだありません。書いてみましょう。コミュニティが投票します。",
+  "game_guide_steps": "{done}/{total} ステップ",
+  "game_guide_score": "投票スコア",
+  "game_guide_new_title": "新しい完全ガイド",
+  "game_guide_edit_title": "ガイドを編集",
+  "game_guide_title_label": "タイトル",
+  "game_guide_title_placeholder": "取り逃しなしの 100% ガイド",
+  "game_guide_content_label": "ガイド（Markdown）",
+  "game_guide_content_placeholder": "## 始める前に\n- [ ] 忘れてはいけない取り逃し要素のある実績\n\n## 第1章\n…",
+  "game_guide_help": "まず取り逃しのある実績から始め、次にゲームの順番どおりに進め、ストーリー後に残るもので締めくくりましょう。ガイドを最初から最後まで従えば、すべて獲得できるようにします。",
+  "game_guide_syntax": "## 見出しと ### 小見出しが目次になります。- [ ] でチェックボックスを作成。![説明](アドレス) で画像や YouTube 動画を追加できます。",
+  "game_guide_outline": "目次",
+  "game_guide_edit": "編集",
+  "game_guide_updated": "{when}に更新",
+  "game_guide_delete_confirm": "このガイドを削除しますか？投票とチェック済みの項目は失われます。",
+  "game_guide_buried_warning": "このガイドは低評価が多すぎるため、ゲームのリストでは非表示になっています。",
+  "game_guide_spoiler": "完全ガイドにはゲームの隠し実績が含まれる場合があります。",
   "reaction_invalid": "無効なリアクションです。",
   "signin_tagline": "パスワードは不要です。連携したアカウントはすべて同じプロフィールを開きます。",
   "signin_with": "{provider} で続行",

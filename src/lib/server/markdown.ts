@@ -60,7 +60,7 @@ const guideMarked = new Marked({
   },
 });
 
-/** Les guides sont écrits par l'équipe : titres, médias et cases à cocher y sont permis. */
+/** Un guide va plus loin qu’un commentaire : titres, médias et cases à cocher y sont permis. */
 export function renderGuide(source: string): string {
   const html = sanitizeHtml(guideMarked.parse(source, { async: false }) as string, {
     allowedTags: [

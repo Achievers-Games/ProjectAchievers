@@ -281,11 +281,8 @@
   "report_sent": "Meldung gesendet. Danke.",
   "report_failed": "Die Meldung ist fehlgeschlagen.",
   "report_reason_missing": "Gib einen Grund für die Meldung an.",
-  "guides_empty": "Leitfaden folgt bald",
-  "guides_empty_text": "Das Team bereitet seine Leitfäden vor: Dieser kommt später. Tipps kannst du schon in der Diskussion teilen.",
   "guides_masked": "Versteckter Leitfaden",
   "guides_masked_text": "Zeige diesen Erfolg an, um seinen Leitfaden zu lesen.",
-  "guide_forbidden": "Nur das Team kann Leitfäden veröffentlichen.",
   "discussion": "Diskussion",
   "comment_deleted": "Kommentar gelöscht.",
   "reply": "Antworten",
@@ -301,6 +298,46 @@
   "guide_published": "Guide veröffentlicht.",
   "comment_published": "Kommentar veröffentlicht.",
   "guide_deleted": "Guide gelöscht.",
+  "guides_empty": "Noch kein Guide",
+  "guides_empty_text": "Erkläre als Erster, wie man diesen Erfolg bekommt: Die Community stimmt für die besten Guides.",
+  "guides_buried_show": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "Ausgeblendeten Guide anzeigen",
+        "c=*": "Die {n} ausgeblendeten Guides anzeigen"
+      }
+    }
+  ],
+  "guides_buried_hide": "Ausgeblendete Guides verbergen",
+  "guides_buried_note": "Diese Guides haben zu viele negative Stimmen erhalten. Du kannst sie lesen, aber die Community hält sie für wenig zuverlässig.",
+  "game_guides": "Komplettlösungen",
+  "game_guides_text": "Von Anfang bis Ende befolgen, um 100 % zu erreichen, ohne etwas zu verpassen. Die Stimmen bringen die besten nach oben.",
+  "game_guide_write": "Komplettlösung schreiben",
+  "game_guides_empty": "Noch keine Komplettlösung für dieses Spiel. Leg los: Die Community stimmt ab.",
+  "game_guide_steps": "{done}/{total} Schritte",
+  "game_guide_score": "Stimmenwert",
+  "game_guide_new_title": "Neue Komplettlösung",
+  "game_guide_edit_title": "Guide bearbeiten",
+  "game_guide_title_label": "Titel",
+  "game_guide_title_placeholder": "100-%-Guide, nichts verpassen",
+  "game_guide_content_label": "Der Guide (Markdown)",
+  "game_guide_content_placeholder": "## Bevor du anfängst\n- [ ] Verpassbarer Erfolg, an den man denken muss\n\n## Kapitel 1\n…",
+  "game_guide_help": "Beginne mit den verpassbaren Erfolgen, folge dann dem Spielverlauf und ende mit dem, was nach der Story übrig bleibt. Wer deinem Guide von Anfang bis Ende folgt, soll alles bekommen.",
+  "game_guide_syntax": "## Abschnitt und ### Unterabschnitt bilden das Inhaltsverzeichnis. - [ ] erzeugt ein Kästchen. ![Beschriftung](Adresse) fügt ein Bild oder ein YouTube-Video ein.",
+  "game_guide_outline": "Inhalt",
+  "game_guide_edit": "Bearbeiten",
+  "game_guide_updated": "Aktualisiert {when}",
+  "game_guide_delete_confirm": "Diesen Guide löschen? Seine Stimmen und abgehakten Kästchen gehen verloren.",
+  "game_guide_buried_warning": "Dieser Guide hat zu viele negative Stimmen erhalten: In der Liste des Spiels ist er ausgeblendet.",
+  "game_guide_spoiler": "Eine Komplettlösung kann die versteckten Erfolge des Spiels verraten.",
   "reaction_invalid": "Ungültige Reaktion.",
   "signin_tagline": "Kein Passwort. Alle Konten, die du verknüpfst, öffnen dasselbe Profil.",
   "signin_with": "Weiter mit {provider}",
