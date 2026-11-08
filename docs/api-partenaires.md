@@ -122,6 +122,11 @@ Lure identifie ses jeux par **appid Steam** (`https://lureverse.fr/jeu/683320`).
 déjà le couple (`platform`, `platformGameId`) : pour Steam, c'est ce même appid. L'adresse de
 l'API reprend donc celle de Lure : `/api/v1/games/steam/683320`.
 
+Pour un simple lien, sans clé ni appel d'API, `https://<achievers>/jeux/steam/683320` redirige
+vers la fiche du jeu (`/jeux/<nom-du-jeu>`), en gardant les paramètres (`?utm_source=lure`).
+Même forme pour les autres plateformes : `/jeux/psn/…`, `/jeux/xbox/…`. Les fiches gardent leur
+adresse lisible, utile au partage et au référencement.
+
 ### Routes publiques — en place
 
 Chaque appel porte la clé : `Authorization: Bearer ak_…`. Les administrateurs la créent, la
