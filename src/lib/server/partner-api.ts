@@ -17,6 +17,8 @@ const TOUCH_EVERY = 5 * MINUTE;
 
 export const PAGE_LIMIT = 50;
 export const PAGE_MAX = 100;
+/** Une bibliothèque se lit par lots : au-delà, le partenaire découpe sa liste. */
+export const LOOKUP_MAX = 100;
 
 /**
  * Les ordres proposés. `default` garde l'ordre historique de la première version de l'API :

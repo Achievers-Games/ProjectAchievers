@@ -9,11 +9,13 @@ import {
   authenticatePartner,
   issuePartnerKey,
   listParams,
+  LOOKUP_MAX,
   PAGE_MAX,
   revokePartnerKey,
 } from './partner-api';
 import { partnerGame, partnerUser, partnerUserGame, partnerUserGames } from './partner-queries';
 import { PREFIX, identity, setupIntegration } from './test-helpers';
+import { POST as LOOKUP } from '../../routes/api/v1/games/lookup/+server';
 
 setupIntegration();
 afterAll(() => db.partnerApp.deleteMany({ where: { name: { startsWith: PREFIX } } }));
@@ -200,6 +202,124 @@ describe('API partenaire', () => {
     });
     const adult = await game({ adultOnly: true });
     expect(await partnerGame('STEAM', adult.platformGameId)).toBeNull();
+  });
+});
+
+describe('difficulté du 100 %', () => {
+  it('compte les manquables, la rareté et les guides lisibles', async () => {
+    const g = await game();
+    const author = await player();
+    const [rare, missable] = await Promise.all([
+      db.achievement.create({
+        data: { gameId: g.id, platformAchievementId: 'RARE', name: 'Rare', globalRarity: 1.5 },
+      }),
+      db.achievement.create({
+        data: {
+          gameId: g.id,
+          platformAchievementId: 'MANQUABLE',
+          name: 'Manquable',
+          globalRarity: 40,
+          missable: true,
+        },
+      }),
+    ]);
+    const guide = (data: { achievementId?: string; gameId?: string; score?: number }) =>
+      db.guide.create({ data: { authorId: author.id, contentMd: 'Texte', ...data } });
+    await guide({ achievementId: rare.id });
+    // Enterré par les votes : il ne compte plus.
+    await guide({ achievementId: missable.id, score: -5 });
+    const weak = await guide({ gameId: g.id, score: 1 });
+    const best = await guide({ gameId: g.id, score: 7 });
+
+    const card = await partnerGame('STEAM', g.platformGameId);
+    expect(card?.difficulty).toEqual({
+      missableAchievements: 1,
+      missablesReviewed: false,
+      rarestAchievement: 1.5,
+    });
+    expect(card?.guides).toEqual({
+      achievementsCovered: 1,
+      gameGuides: 2,
+      bestGameGuideUrl: expect.stringContaining(`/jeux/${g.slug}/guides/${best.id}`),
+    });
+    expect(weak.id).not.toBe(best.id);
+  });
+
+  it('ne donne le temps médian qu’à partir de cinq joueurs publics à 100 %', async () => {
+    const g = await game();
+    const finish = async (minutes: number, isPublic = true) => {
+      const p = await player(isPublic);
+      await owns(p.id, g.id, { completion: 100 });
+      await db.userGame.update({
+        where: { userId_gameId: { userId: p.id, gameId: g.id } },
+        data: { playtimeMinutes: minutes },
+      });
+    };
+    for (const minutes of [600, 700, 800, 900]) await finish(minutes);
+    // Un profil privé ne compte pas, même avec un temps.
+    await finish(5, false);
+    expect((await partnerGame('STEAM', g.platformGameId))?.completionTime).toBeNull();
+
+    await finish(1000);
+    expect((await partnerGame('STEAM', g.platformGameId))?.completionTime).toEqual({
+      medianMinutes: 800,
+      sample: 5,
+    });
+  });
+});
+
+describe('recherche groupée de jeux', () => {
+  const lookup = async (body: unknown, key: string) =>
+    LOOKUP({
+      request: new Request('http://localhost/api/v1/games/lookup', {
+        method: 'POST',
+        headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+      }),
+      getClientAddress: () => '203.0.113.88',
+    } as unknown as Parameters<typeof LOOKUP>[0]);
+
+  it('rend les jeux dans l’ordre demandé, et range les inconnus à part', async () => {
+    const { key } = await issuePartnerKey(`${PREFIX} lot`);
+    const [first, second] = [await game(), await game()];
+    const adult = await game({ adultOnly: true });
+
+    const response = await lookup(
+      {
+        games: [
+          { platform: 'steam', id: second.platformGameId },
+          { platform: 'STEAM', id: first.platformGameId },
+          { platform: 'steam', id: second.platformGameId },
+          { platform: 'steam', id: adult.platformGameId },
+          { platform: 'steam', id: 'inconnu' },
+        ],
+      },
+      key,
+    );
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as {
+      items: { platformGameId: string }[];
+      missing: { platform: string; id: string }[];
+    };
+    expect(body.items.map((item) => item.platformGameId)).toEqual([
+      second.platformGameId,
+      first.platformGameId,
+    ]);
+    expect(body.missing).toEqual([
+      { platform: 'steam', id: adult.platformGameId },
+      { platform: 'steam', id: 'inconnu' },
+    ]);
+  });
+
+  it('refuse une plateforme inconnue ou un lot trop gros', async () => {
+    const { key } = await issuePartnerKey(`${PREFIX} lot refusé`);
+    expect((await lookup({ games: [{ platform: 'epic', id: '1' }] }, key)).status).toBe(400);
+    const tooMany = Array.from({ length: LOOKUP_MAX + 1 }, (_, i) => ({
+      platform: 'steam',
+      id: String(i),
+    }));
+    expect((await lookup({ games: tooMany }, key)).status).toBe(400);
+    expect((await lookup({ games: [] }, key)).status).toBe(400);
   });
 });
 

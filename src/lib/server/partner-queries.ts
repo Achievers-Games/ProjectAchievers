@@ -1,5 +1,6 @@
-import type { Platform, Prisma } from '#prisma';
+import { Prisma, type Platform } from '#prisma';
 import { db } from './db';
+import { BURIED_SCORE, GUIDE_ORDER } from './guides';
 import {
   absolute,
   apiGame,
@@ -240,21 +241,162 @@ export async function partnerUserGame(handle: string, platform: Platform, platfo
 }
 
 /** Un jeu à partir de son identifiant de plateforme, l'appid Steam par exemple. */
-export async function partnerGame(platform: Platform, platformGameId: string) {
-  const game = await db.game.findFirst({
-    where: { ...visibleGames(false), platform, platformGameId },
-    select: { id: true, ...apiGameSelect },
+/** Un jeu tel qu'un partenaire le désigne : sa plateforme et son identifiant chez elle. */
+export interface GameKey {
+  platform: Platform;
+  platformGameId: string;
+}
+
+/**
+ * Sous ce nombre de joueurs à 100 %, une médiane de temps de jeu ne dit rien, et elle pourrait
+ * laisser deviner le temps d'un joueur précis : on ne la donne pas.
+ */
+export const COMPLETION_TIME_MIN_SAMPLE = 5;
+
+const keyOf = (key: GameKey) => `${key.platform}:${key.platformGameId}`;
+const round1 = (value: number) => Math.round(value * 10) / 10;
+
+/**
+ * Les fiches de plusieurs jeux, avec ce qu'Achievers sait de leur 100 % : joueurs, difficulté,
+ * succès manquables, guides et temps de jeu médian. Quelques requêtes pour tout le lot, quelle
+ * que soit sa taille. Rend une `Map` par `PLATEFORME:identifiant` ; un jeu inconnu ou adulte
+ * n'y figure pas.
+ */
+export async function partnerGames(keys: GameKey[]) {
+  const result = new Map<string, Awaited<ReturnType<typeof gameCard>>>();
+  if (keys.length === 0) return result;
+
+  const games = await db.game.findMany({
+    where: {
+      ...visibleGames(false),
+      OR: keys.map(({ platform, platformGameId }) => ({ platform, platformGameId })),
+    },
+    select: { id: true, guideReviewedAt: true, ...apiGameSelect },
   });
-  if (!game) return null;
-  const players = { gameId: game.id, hidden: false, user: { isPublic: true } };
-  const [playerCount, completedCount] = await Promise.all([
-    db.userGame.count({ where: players }),
-    db.userGame.count({ where: { ...players, completion: { gte: 100 } } }),
-  ]);
+  if (games.length === 0) return result;
+  const ids = games.map((game) => game.id);
+
+  const shown = { gameId: { in: ids }, hidden: false, user: { isPublic: true } };
+  const visibleGuide = {
+    status: 'PUBLISHED',
+    OR: [{ curatedKey: { not: null } }, { score: { gt: BURIED_SCORE } }],
+  } satisfies Prisma.GuideWhereInput;
+
+  const [players, completions, missables, rarest, achievementGuides, gameGuides, times] =
+    await Promise.all([
+      db.userGame.groupBy({ by: ['gameId'], where: shown, _count: { _all: true } }),
+      db.userGame.groupBy({
+        by: ['gameId'],
+        where: { ...shown, completion: { gte: 100 } },
+        _count: { _all: true },
+      }),
+      db.achievement.groupBy({
+        by: ['gameId'],
+        where: { gameId: { in: ids }, missable: true },
+        _count: { _all: true },
+      }),
+      db.achievement.groupBy({
+        by: ['gameId'],
+        where: { gameId: { in: ids } },
+        _min: { globalRarity: true },
+      }),
+      // Le nombre de succès couverts par au moins un guide lisible, pas le nombre de guides.
+      db.$queryRaw<{ gameId: string; covered: bigint }[]>`
+        SELECT a."gameId", count(DISTINCT a.id) AS covered
+        FROM "Achievement" a
+        JOIN "Guide" g ON g."achievementId" = a.id
+        WHERE a."gameId" IN (${Prisma.join(ids)})
+          AND g.status = 'PUBLISHED'
+          AND (g."curatedKey" IS NOT NULL OR g.score > ${BURIED_SCORE})
+        GROUP BY a."gameId"`,
+      db.guide.findMany({
+        where: { gameId: { in: ids }, ...visibleGuide },
+        orderBy: GUIDE_ORDER,
+        select: { id: true, gameId: true },
+      }),
+      // Une médiane sur les joueurs publics à 100 % : jamais le temps d'un joueur seul.
+      db.$queryRaw<{ gameId: string; median: number; sample: bigint }[]>`
+        SELECT ug."gameId",
+               percentile_cont(0.5) WITHIN GROUP (ORDER BY ug."playtimeMinutes") AS median,
+               count(*) AS sample
+        FROM "UserGame" ug
+        JOIN "User" u ON u.id = ug."userId"
+        WHERE ug."gameId" IN (${Prisma.join(ids)})
+          AND ug.completion >= 100 AND ug."playtimeMinutes" > 0
+          AND NOT ug.hidden AND u."isPublic"
+        GROUP BY ug."gameId"
+        HAVING count(*) >= ${COMPLETION_TIME_MIN_SAMPLE}`,
+    ]);
+
+  const count = (rows: { gameId: string; _count: { _all: number } }[]) =>
+    new Map(rows.map((row) => [row.gameId, row._count._all]));
+  const playerCounts = count(players);
+  const completionCounts = count(completions);
+  const missableCounts = count(missables);
+  const rarities = new Map(rarest.map((row) => [row.gameId, row._min.globalRarity]));
+  const covered = new Map(achievementGuides.map((row) => [row.gameId, Number(row.covered)]));
+  const timeByGame = new Map(times.map((row) => [row.gameId, row]));
+  const guidesByGame = new Map<string, string[]>();
+  for (const guide of gameGuides) {
+    const list = guidesByGame.get(guide.gameId!) ?? [];
+    list.push(guide.id);
+    guidesByGame.set(guide.gameId!, list);
+  }
+
+  for (const game of games) {
+    result.set(
+      keyOf(game),
+      gameCard(game, {
+        players: playerCounts.get(game.id) ?? 0,
+        completions: completionCounts.get(game.id) ?? 0,
+        missable: missableCounts.get(game.id) ?? 0,
+        rarest: rarities.get(game.id) ?? null,
+        covered: covered.get(game.id) ?? 0,
+        gameGuides: guidesByGame.get(game.id) ?? [],
+        time: timeByGame.get(game.id) ?? null,
+      }),
+    );
+  }
+  return result;
+}
+
+function gameCard(
+  game: Parameters<typeof apiGame>[0] & { guideReviewedAt: Date | null },
+  stats: {
+    players: number;
+    completions: number;
+    missable: number;
+    rarest: number | null;
+    covered: number;
+    gameGuides: string[];
+    time: { median: number; sample: bigint } | null;
+  },
+) {
+  const [bestGuide] = stats.gameGuides;
   return {
     ...apiGame(game),
-    players: playerCount,
-    completions: completedCount,
-    completionRate: playerCount ? Math.round((completedCount / playerCount) * 1000) / 10 : null,
+    players: stats.players,
+    completions: stats.completions,
+    completionRate: stats.players ? round1((stats.completions / stats.players) * 100) : null,
+    difficulty: {
+      missableAchievements: stats.missable,
+      // Vrai quand un guide officiel a relevé tous les manquables : le compte est alors complet.
+      missablesReviewed: game.guideReviewedAt !== null,
+      rarestAchievement: stats.rarest,
+    },
+    guides: {
+      achievementsCovered: stats.covered,
+      gameGuides: stats.gameGuides.length,
+      bestGameGuideUrl: bestGuide ? absolute(`/jeux/${game.slug}/guides/${bestGuide}`) : null,
+    },
+    completionTime: stats.time
+      ? { medianMinutes: Math.round(stats.time.median), sample: Number(stats.time.sample) }
+      : null,
   };
+}
+
+/** Un seul jeu à partir de son identifiant de plateforme, l'appid Steam par exemple. */
+export async function partnerGame(platform: Platform, platformGameId: string) {
+  const games = await partnerGames([{ platform, platformGameId }]);
+  return games.get(keyOf({ platform, platformGameId })) ?? null;
 }

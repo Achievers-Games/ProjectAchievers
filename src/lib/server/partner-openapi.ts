@@ -3,6 +3,7 @@ import {
   API_SORT_KEYS,
   API_STATUS_KEYS,
   KEY_LIMIT,
+  LOOKUP_MAX,
   PAGE_LIMIT,
   PAGE_MAX,
 } from './partner-api';
@@ -219,23 +220,67 @@ export function partnerOpenApi(origin: string) {
           summary: 'A game from its platform id',
           parameters: [platform, gameId],
           responses: {
-            '200': ok(
-              {
-                allOf: [
-                  ref('Game'),
-                  {
-                    type: 'object',
-                    properties: {
-                      players: { type: 'integer', description: 'Public players owning it.' },
-                      completions: { type: 'integer', description: 'Of those, at 100 %.' },
-                      completionRate: nullable('number', { description: 'Percent, 0-100.' }),
+            '200': ok(ref('GameCard'), 'The game, with what Achievers knows of its 100 %.'),
+            ...errors,
+          },
+        },
+      },
+      '/games/lookup': {
+        post: {
+          operationId: 'lookupGames',
+          summary: `Up to ${LOOKUP_MAX} games in one call, e.g. a whole library page`,
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['games'],
+                  properties: {
+                    games: {
+                      type: 'array',
+                      minItems: 1,
+                      maxItems: LOOKUP_MAX,
+                      items: {
+                        type: 'object',
+                        required: ['platform', 'id'],
+                        properties: {
+                          platform: { type: 'string', enum: Object.keys(API_PLATFORMS) },
+                          id: { type: 'string', description: 'Steam appid for Steam games.' },
+                        },
+                      },
                     },
                   },
-                ],
+                },
               },
-              'The game.',
+            },
+          },
+          responses: {
+            '200': ok(
+              {
+                type: 'object',
+                required: ['items', 'missing'],
+                properties: {
+                  items: {
+                    type: 'array',
+                    items: ref('GameCard'),
+                    description: 'Found games, in request order, duplicates dropped.',
+                  },
+                  missing: {
+                    type: 'array',
+                    description: 'Games Achievers does not know, or adult-only ones.',
+                    items: {
+                      type: 'object',
+                      properties: { platform: { type: 'string' }, id: { type: 'string' } },
+                    },
+                  },
+                },
+              },
+              'The games found, and the ones missing.',
             ),
-            ...errors,
+            '400': { $ref: '#/components/responses/BadRequest' },
+            '401': { $ref: '#/components/responses/Unauthorized' },
+            '429': { $ref: '#/components/responses/RateLimited' },
           },
         },
       },
@@ -307,6 +352,63 @@ export function partnerOpenApi(origin: string) {
               },
             },
           },
+        },
+        GameCard: {
+          allOf: [
+            ref('Game'),
+            {
+              type: 'object',
+              properties: {
+                players: { type: 'integer', description: 'Public players owning it.' },
+                completions: { type: 'integer', description: 'Of those, at 100 %.' },
+                completionRate: nullable('number', { description: 'Percent, 0-100.' }),
+                difficulty: {
+                  type: 'object',
+                  properties: {
+                    missableAchievements: {
+                      type: 'integer',
+                      description: 'Achievements that can be lost for the current run.',
+                    },
+                    missablesReviewed: {
+                      type: 'boolean',
+                      description:
+                        'True when an official guide reviewed every achievement: the missable ' +
+                        'count is then complete. False: only the known ones are counted.',
+                    },
+                    rarestAchievement: nullable('number', {
+                      description: 'Percent of Steam players who have the rarest achievement.',
+                    }),
+                  },
+                },
+                guides: {
+                  type: 'object',
+                  properties: {
+                    achievementsCovered: {
+                      type: 'integer',
+                      description: 'Achievements with at least one readable guide.',
+                    },
+                    gameGuides: {
+                      type: 'integer',
+                      description: 'Full walkthroughs to 100 % for the game.',
+                    },
+                    bestGameGuideUrl: nullable('string', {
+                      description: 'Official walkthrough first, then the best voted one.',
+                    }),
+                  },
+                },
+                completionTime: {
+                  type: ['object', 'null'],
+                  description:
+                    'Median playtime of public players at 100 % (Steam playtime). Null under ' +
+                    '5 such players: too few to mean anything, and never one player’s time.',
+                  properties: {
+                    medianMinutes: { type: 'integer' },
+                    sample: { type: 'integer', description: 'Players the median is based on.' },
+                  },
+                },
+              },
+            },
+          ],
         },
         Game: {
           type: 'object',

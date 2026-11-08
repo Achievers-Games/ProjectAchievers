@@ -254,8 +254,38 @@ et seule son empreinte SHA-256 est gardée.
 | GET     | `/users/{handle}`                       | nom, avatar, clan, lien de la carte, stats (jeux, succès, cartes…)                                     |
 | GET     | `/users/{handle}/games`                 | jeux et progression, `?platform=steam`, `?sort=`, `?status=`, `?since=`, `?limit=` (≤ 100), `?cursor=` |
 | GET     | `/users/{handle}/games/{platform}/{id}` | progression d'un jeu et chaque succès, obtenu ou non                                                   |
-| GET     | `/games/{platform}/{id}`                | fiche du jeu, joueurs publics, nombre et taux de 100 %                                                 |
+| GET     | `/games/{platform}/{id}`                | fiche du jeu, joueurs publics, taux de 100 %, difficulté, guides, temps médian                         |
+| POST    | `/games/lookup`                         | les mêmes fiches pour 100 jeux au plus en un appel                                                     |
 | GET     | `/openapi.json`                         | description OpenAPI 3.1, lisible sans clé                                                              |
+
+### Ce que la fiche d'un jeu dit de son 100 %
+
+C'est ce que Lure n'a pas ailleurs : de quoi annoncer « 100 % accessible : aucun manquable, guide
+disponible, environ 12 h ».
+
+- `difficulty.missableAchievements` : succès qui peuvent se perdre pour la partie en cours.
+  `difficulty.missablesReviewed` dit si ce compte est complet (un guide officiel a relevé tous
+  les succès) ou s'il ne contient que les manquables déjà connus.
+- `difficulty.rarestAchievement` : pourcentage de joueurs Steam qui ont le succès le plus rare.
+- `guides.achievementsCovered` : succès qui ont au moins un guide lisible (officiel, ou pas
+  enterré par les votes). `guides.gameGuides` : guides complets du jeu ;
+  `guides.bestGameGuideUrl` mène au guide officiel, sinon au mieux noté.
+- `completionTime` : temps de jeu médian (temps Steam) des joueurs publics à 100 %, avec la
+  taille de l'échantillon. `null` sous cinq joueurs : trop peu pour dire quelque chose, et
+  jamais le temps d'un joueur seul. C'est une médiane, à afficher comme « environ ».
+
+### Recherche groupée
+
+Une bibliothèque de 300 jeux se lit en 3 appels au lieu de 300 :
+
+```bash
+curl -X POST -H "Authorization: Bearer ak_…" -H "Content-Type: application/json" \
+  -d '{"games":[{"platform":"steam","id":"683320"},{"platform":"steam","id":"219150"}]}' \
+  https://<achievers>/api/v1/games/lookup
+```
+
+Réponse : `items` (les fiches trouvées, dans l'ordre demandé, sans doublon) et `missing` (les
+jeux qu'Achievers ne connaît pas, ou les jeux adultes).
 
 Sur la liste des jeux, trois paramètres de plus :
 
