@@ -108,6 +108,9 @@ test.describe('clans', () => {
     await ready(page);
     await expect(requests).toContainText('Marco');
     await requests.getByRole('button', { name: 'Accepter' }).click();
+    // Attendre que la demande ait disparu : recharger aussitôt après le clic pouvait couper
+    // l'envoi du formulaire, et Marco n'était alors jamais accepté.
+    await expect(requests).toHaveCount(0);
     await page.reload();
     await ready(page);
     await expect(requests).toHaveCount(0);
@@ -136,6 +139,8 @@ test.describe('clans', () => {
       .filter({ has: marco.getByRole('heading', { name: /Demandes d.adhésion/ }) });
     await expect(officerRequests).toContainText('Léa');
     await officerRequests.getByRole('button', { name: 'Accepter' }).click();
+    // Même précaution : la demande doit être traitée avant de quitter la page.
+    await expect(officerRequests).toHaveCount(0);
     await marco.goto('/clan');
     await ready(marco);
     const marcoMembers = marco
