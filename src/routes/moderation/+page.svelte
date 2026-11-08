@@ -60,6 +60,14 @@
           <code class="block select-all break-all">{form.partnerKey}</code>
         </div>
       {/if}
+      {#if form?.webhookSecret}
+        <div class="space-y-1 rounded border border-accent p-3">
+          <p class="font-medium">
+            {m.mod_partner_webhook_secret_once({ name: form.partnerName })}
+          </p>
+          <code class="block select-all break-all">{form.webhookSecret}</code>
+        </div>
+      {/if}
       {#if data.partners.length}
         <ul class="divide-y divide-line">
           {#each data.partners as partner (partner.id)}
@@ -85,6 +93,51 @@
                   </form>
                 {/if}
               </span>
+              <form
+                method="POST"
+                action="?/partnerWebhook"
+                use:enhance
+                class="flex w-full flex-wrap items-center gap-2"
+              >
+                <input type="hidden" name="id" value={partner.id} />
+                <input
+                  name="slug"
+                  class="input w-28"
+                  value={partner.slug ?? ''}
+                  placeholder="lure"
+                  aria-label={m.mod_partner_slug()}
+                  title={m.mod_partner_slug()}
+                />
+                <input
+                  name="url"
+                  type="url"
+                  class="input min-w-0 flex-1"
+                  value={partner.webhookUrl ?? ''}
+                  placeholder="https://…"
+                  aria-label={m.mod_partner_webhook_url()}
+                  title={m.mod_partner_webhook_url()}
+                />
+                <button class="btn">{m.mod_partner_webhook_save()}</button>
+                {#if partner.hasWebhookSecret}
+                  <button class="btn" formaction="?/partnerWebhookSecret">
+                    {m.mod_partner_webhook_new_secret()}
+                  </button>
+                {/if}
+              </form>
+              {#if partner.webhookUrl}
+                <p class="w-full text-xs {partner.webhookFailures ? 'text-danger' : 'text-muted'}">
+                  {partner.webhookFailures
+                    ? m.mod_partner_webhook_failing({
+                        count: partner.webhookFailures,
+                        error: partner.webhookLastError ?? '',
+                      })
+                    : partner.webhookLastAttemptAt
+                      ? m.mod_partner_webhook_ok({
+                          when: formatRelative(partner.webhookLastAttemptAt),
+                        })
+                      : m.mod_partner_webhook_waiting()}
+                </p>
+              {/if}
             </li>
           {/each}
         </ul>

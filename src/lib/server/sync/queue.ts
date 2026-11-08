@@ -18,6 +18,7 @@ import { rateGames, tagGames } from './content';
 import { refreshDiscordAccounts } from './discord';
 import { SyncError } from './errors';
 import { publishCard, publishHighlight, publishSync, publishUnlock } from './events';
+import { deliverPartnerWebhooks } from '../partner-webhooks';
 import { grantFramesThrottled } from '../frames';
 import { checkSiteAchievements, reviewNewPlayers } from '../site-achievements';
 import { syncPsn } from './psn';
@@ -30,6 +31,8 @@ import type { ProviderSync, UnlockedGame } from './types';
 const SYNC_QUEUE = 'sync-account';
 const SWEEP_QUEUE = 'sync-sweep';
 const CONTENT_QUEUE = 'content-rating';
+/** Les nouveaux succès des joueurs reliés, envoyés aux sites partenaires. */
+const WEBHOOK_QUEUE = 'partner-webhooks';
 const STALE_AFTER = 24 * 60 * 60 * 1000;
 const MAX_REWARDS = 10;
 /** Une rafale de succès ne doit pas noyer la page sous les annonces. */
@@ -66,6 +69,7 @@ function boss(): Promise<PgBoss> {
     await instance.createQueue(SYNC_QUEUE);
     await instance.createQueue(SWEEP_QUEUE);
     await instance.createQueue(CONTENT_QUEUE);
+    await instance.createQueue(WEBHOOK_QUEUE);
     return instance;
   })());
 }
@@ -454,4 +458,7 @@ export async function startWorkers() {
     await tagGames();
   });
   await instance.schedule(CONTENT_QUEUE, '*/5 * * * *');
+  // À part de la synchronisation : un partenaire lent ou en panne ne la retarde jamais.
+  await instance.work(WEBHOOK_QUEUE, async () => deliverPartnerWebhooks());
+  await instance.schedule(WEBHOOK_QUEUE, '* * * * *');
 }

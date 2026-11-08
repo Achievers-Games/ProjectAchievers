@@ -319,18 +319,59 @@ langue de la plateforme (pas de traduction côté API).
 | GET     | `/me/games/{platform}/{platformGameId}/achievements` | `achievements`                                                        |
 | GET     | `/me/almost`                                         | `library` : jeux entre 50 et 99 %, pour « finis-le ce soir » sur Lure |
 
-### Webhooks (après l'OAuth)
+### Webhooks — en place
 
 Les deux se complètent, aucun ne remplace l'autre :
 
-- **Webhooks** pour savoir _quand_ quelque chose change (`achievement.unlocked`,
-  `game.completed`) : Lure est prévenu en quelques secondes, sans interroger l'API pour rien.
+- **Webhooks** pour savoir _quand_ quelque chose change : Lure est prévenu dans la minute, sans
+  interroger l'API pour rien.
 - **API** pour lire _l'état_ : premier chargement d'un joueur, et rattrapage si un webhook s'est
-  perdu (serveur de Lure en panne, déploiement…). Un webhook n'est jamais garanti à 100 %.
+  perdu (serveur de Lure en panne, déploiement…).
 
-Les webhooks viennent après l'OAuth : envoyer à Lure les succès d'un joueur au fil de l'eau
-suppose que ce joueur a relié ses comptes et accepté. Chaque envoi est signé HMAC-SHA256 avec un
-secret par partenaire, et retenté avec un délai croissant via la file `pg-boss` déjà en place.
+**Qui part** : les nouveaux succès des joueurs **reliés à Lure** (`PartnerLink`, non délié) et
+dont le profil est **public**. Rien pour un jeu masqué par le joueur ni pour un jeu adulte : on
+reste sur ce qu'un visiteur verrait de toute façon.
+
+**Réglage** : dans Modération → Sites partenaires, renseigner l'identifiant `lure` (celui de la
+liaison de comptes) et l'adresse HTTPS. Le secret de signature s'affiche alors une seule fois. Au
+premier branchement, l'envoi part de maintenant : l'historique n'est pas renvoyé.
+
+**Format** : un `POST` par minute au plus, regroupant jusqu'à 500 succès, un événement par joueur
+et par jeu.
+
+```json
+{
+  "events": [
+    {
+      "id": "0b6f…",
+      "type": "achievements.unlocked",
+      "user": { "partnerUserId": "id-du-compte-lure", "handle": "ada" },
+      "game": { "platform": "steam", "platformGameId": "219150", "name": "Hotline Miami" },
+      "achievements": [
+        { "id": "ACH_COMBO_KING", "name": "Combo King", "unlockedAt": "2026-03-01T20:00:00Z" }
+      ],
+      "progress": { "unlocked": 34, "total": 35, "completion": 97.1, "completed": false }
+    }
+  ]
+}
+```
+
+`type` vaut `game.completed` quand l'envoi fait passer le jeu à 100 %.
+
+**Signature** : l'en-tête `X-Achievers-Signature: t=<horodatage>,v1=<hex>` porte un
+HMAC-SHA256 de `"<horodatage>.<corps brut>"` avec le secret. Côté Lure :
+
+```js
+const [, t, v1] = /t=(\d+),v1=([0-9a-f]+)/.exec(req.headers['x-achievers-signature']);
+const expected = createHmac('sha256', SECRET).update(`${t}.${rawBody}`).digest('hex');
+const fresh = Math.abs(Date.now() / 1000 - Number(t)) < 300;
+if (!fresh || !timingSafeEqual(Buffer.from(v1), Buffer.from(expected))) return res.status(401);
+```
+
+**Livraison au moins une fois** : Achievers n'avance qu'après une réponse 2xx. Sinon il retente
+après 1 min, puis 2, 4… jusqu'à 1 h entre deux essais ; l'état est visible dans Modération. Un
+même succès peut donc arriver deux fois : Lure ignore un `id` d'événement déjà traité, ou un
+couple joueur + succès déjà connu.
 
 ### Sécurité et limites
 

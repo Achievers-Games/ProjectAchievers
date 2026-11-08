@@ -2,6 +2,7 @@ import { error, fail } from '@sveltejs/kit';
 import { z } from 'zod';
 import { db } from '#lib/server/db';
 import { issuePartnerKey, revokePartnerKey } from '#lib/server/partner-api';
+import { issueWebhookSecret } from '#lib/server/partner-webhooks';
 import { psnTokenState } from '#lib/server/service-token';
 import type { Actions, PageServerLoad } from './$types';
 import { m } from '#lib/paraglide/messages';
@@ -119,17 +120,29 @@ export const load: PageServerLoad = async ({ locals }) => {
     // Les clés de l'API partenaire aussi : elles ouvrent les données du site à un autre.
     partners:
       moderator.role === 'ADMIN'
-        ? await db.partnerApp.findMany({
-            orderBy: { name: 'asc' },
-            select: {
-              id: true,
-              name: true,
-              keyPrefix: true,
-              createdAt: true,
-              lastUsedAt: true,
-              revokedAt: true,
-            },
-          })
+        ? (
+            await db.partnerApp.findMany({
+              orderBy: { name: 'asc' },
+              select: {
+                id: true,
+                name: true,
+                keyPrefix: true,
+                createdAt: true,
+                lastUsedAt: true,
+                revokedAt: true,
+                slug: true,
+                webhookUrl: true,
+                webhookSecret: true,
+                webhookFailures: true,
+                webhookLastAttemptAt: true,
+                webhookLastError: true,
+              },
+            })
+          ).map(({ webhookSecret, ...partner }) => ({
+            ...partner,
+            // Le secret chiffré ne quitte pas le serveur : la page sait seulement s'il existe.
+            hasWebhookSecret: webhookSecret !== null,
+          }))
         : undefined,
     feedback,
     families,
@@ -154,6 +167,21 @@ function requireAdmin(locals: App.Locals) {
 
 const partnerName = z.string().trim().min(2).max(40);
 
+/** Seule une adresse HTTPS reçoit les succès : ils ne doivent pas circuler en clair. */
+const partnerWebhook = z.object({
+  id: z.string().min(1),
+  slug: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .regex(/^([a-z0-9-]{2,30})?$/),
+  url: z
+    .string()
+    .trim()
+    .max(500)
+    .refine((value) => value === '' || /^https:\/\/[^\s]+$/.test(value)),
+});
+
 export const actions: Actions = {
   /** Crée la clé d'un partenaire, ou la remplace : elle ne s'affiche qu'une fois. */
   partnerKey: async ({ request, locals }) => {
@@ -168,6 +196,42 @@ export const actions: Actions = {
     requireAdmin(locals);
     const id = String((await request.formData()).get('id'));
     await revokePartnerKey(id).catch(() => null);
+  },
+
+  /**
+   * Relie le partenaire à ses joueurs (`slug`, comme dans `PartnerLink`) et à son adresse de
+   * webhook. Le premier enregistrement d'une adresse crée le secret de signature, montré une fois.
+   */
+  partnerWebhook: async ({ request, locals }) => {
+    requireAdmin(locals);
+    const form = await request.formData();
+    const parsed = partnerWebhook.safeParse({
+      id: form.get('id'),
+      slug: form.get('slug'),
+      url: form.get('url'),
+    });
+    if (!parsed.success) return fail(400, { error: m.mod_partner_webhook_invalid() });
+    const { id, slug, url } = parsed.data;
+    const app = await db.partnerApp
+      .update({
+        where: { id },
+        data: { slug: slug || null, webhookUrl: url || null, webhookFailures: 0 },
+        select: { id: true, name: true, webhookSecret: true },
+      })
+      .catch(() => null);
+    if (!app) return fail(400, { error: m.mod_partner_webhook_invalid() });
+    if (url && !app.webhookSecret) {
+      return { webhookSecret: await issueWebhookSecret(app.id), partnerName: app.name };
+    }
+  },
+
+  /** Un nouveau secret de signature : l'ancien cesse de valoir aussitôt. */
+  partnerWebhookSecret: async ({ request, locals }) => {
+    requireAdmin(locals);
+    const id = String((await request.formData()).get('id'));
+    const app = await db.partnerApp.findUnique({ where: { id }, select: { id: true, name: true } });
+    if (!app) return fail(400, { error: m.action_failed() });
+    return { webhookSecret: await issueWebhookSecret(app.id), partnerName: app.name };
   },
 
   feedback: async ({ request, locals }) => {

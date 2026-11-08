@@ -730,4 +730,17 @@ model PartnerApp {
   createdAt  DateTime  @default(now())
   lastUsedAt DateTime?
   revokedAt  DateTime?
+
+  /// Le nom du partenaire dans `PartnerLink.partner` (« lure ») : les joueurs reliés à lui.
+  slug                 String?   @unique
+  /// Adresse HTTPS où envoyer les nouveaux succès des joueurs reliés ; vide, rien ne part.
+  webhookUrl           String?
+  /// Secret de signature HMAC, chiffré : il faut le relire pour signer chaque envoi.
+  webhookSecret        String?
+  /// Arrivée sur le site du dernier succès déjà envoyé : la suite part de là.
+  webhookCursor        DateTime?
+  /// Échecs d'affilée : chacun double l'attente avant le prochain essai.
+  webhookFailures      Int       @default(0)
+  webhookLastAttemptAt DateTime?
+  webhookLastError     String?
 }
