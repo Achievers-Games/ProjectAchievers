@@ -7,6 +7,13 @@ import {
   PAGE_LIMIT,
   PAGE_MAX,
 } from './partner-api';
+import {
+  ALMOST_LIMIT,
+  ALMOST_MAX,
+  POPULAR_LIMIT,
+  POPULAR_MAX,
+  POPULAR_PERIODS,
+} from './partner-queries';
 
 const ref = (name: string) => ({ $ref: `#/components/schemas/${name}` });
 const nullable = (type: string, extra = {}) => ({ type: [type, 'null'], ...extra });
@@ -222,6 +229,112 @@ export function partnerOpenApi(origin: string) {
           responses: {
             '200': ok(ref('GameCard'), 'The game, with what Achievers knows of its 100 %.'),
             ...errors,
+          },
+        },
+      },
+      '/users/{handle}/almost': {
+        get: {
+          operationId: 'getAlmostFinished',
+          summary: "A player's started games, closest to 100 % first",
+          parameters: [
+            handle,
+            {
+              name: 'limit',
+              in: 'query',
+              schema: { type: 'integer', minimum: 1, maximum: ALMOST_MAX, default: ALMOST_LIMIT },
+            },
+          ],
+          responses: {
+            '200': ok(
+              {
+                type: 'object',
+                properties: {
+                  items: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        game: ref('Game'),
+                        progress: ref('Progress'),
+                        remaining: {
+                          type: 'object',
+                          description: 'What is left. Names stay hidden: secrets stay secret.',
+                          properties: {
+                            achievements: { type: 'integer' },
+                            hardestRarity: nullable('number', {
+                              description: 'Percent of players with the rarest one left.',
+                            }),
+                            easiestRarity: nullable('number', {
+                              description: 'Percent of players with the most common one left.',
+                            }),
+                            missable: { type: 'integer' },
+                            points: { type: 'integer' },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+              'Fewest achievements left first, then the most common ones.',
+            ),
+            '400': { $ref: '#/components/responses/BadRequest' },
+            ...errors,
+          },
+        },
+      },
+      '/games/popular': {
+        get: {
+          operationId: 'getPopularGames',
+          summary: 'Games where achievement hunters are busy',
+          parameters: [
+            {
+              name: 'period',
+              in: 'query',
+              schema: { type: 'string', enum: Object.keys(POPULAR_PERIODS), default: 'week' },
+            },
+            {
+              name: 'limit',
+              in: 'query',
+              schema: {
+                type: 'integer',
+                minimum: 1,
+                maximum: POPULAR_MAX,
+                default: POPULAR_LIMIT,
+              },
+            },
+          ],
+          responses: {
+            '200': ok(
+              {
+                type: 'object',
+                properties: {
+                  period: { type: 'string' },
+                  since: { type: 'string', format: 'date-time' },
+                  items: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        game: ref('GameCard'),
+                        periodCompletions: {
+                          type: 'integer',
+                          description: 'Public players who reached 100 % in the period.',
+                        },
+                        activePlayers: {
+                          type: 'integer',
+                          description: 'Public players who unlocked something in the period.',
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+              'Most 100 % reached first, then most active players.',
+            ),
+            '400': { $ref: '#/components/responses/BadRequest' },
+            '401': { $ref: '#/components/responses/Unauthorized' },
+            '429': { $ref: '#/components/responses/RateLimited' },
           },
         },
       },

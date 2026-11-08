@@ -400,3 +400,123 @@ export async function partnerGame(platform: Platform, platformGameId: string) {
   const games = await partnerGames([{ platform, platformGameId }]);
   return games.get(keyOf({ platform, platformGameId })) ?? null;
 }
+
+export const ALMOST_LIMIT = 10;
+export const ALMOST_MAX = 50;
+
+/**
+ * « Finis-le ce soir » : les jeux commencés d'un joueur public, du plus proche du 100 % au plus
+ * lointain. Pour chacun, ce qui reste : combien de succès, le plus rare et le plus courant,
+ * combien sont manquables. Les noms des succès restants ne sortent pas : un secret reste secret.
+ */
+export async function partnerAlmost(handle: string, limit = ALMOST_LIMIT) {
+  const user = await publicPlayer(handle);
+  if (!user) return null;
+
+  const rows = await db.$queryRaw<
+    {
+      gameId: string;
+      remaining: bigint;
+      hardest: number | null;
+      easiest: number | null;
+      missable: bigint;
+      points: bigint | null;
+    }[]
+  >`
+    SELECT ug."gameId",
+           count(a.id) AS remaining,
+           min(a."globalRarity") AS hardest,
+           max(a."globalRarity") AS easiest,
+           count(*) FILTER (WHERE a.missable) AS missable,
+           sum(a.points) AS points
+    FROM "UserGame" ug
+    JOIN "Game" g ON g.id = ug."gameId"
+    JOIN "Achievement" a ON a."gameId" = ug."gameId"
+    LEFT JOIN "UserAchievement" ua ON ua."achievementId" = a.id AND ua."userId" = ug."userId"
+    WHERE ug."userId" = ${user.id}
+      AND NOT ug.hidden AND NOT g."adultOnly"
+      AND ug.completion > 0 AND ug.completion < 100
+      AND ua."userId" IS NULL
+    GROUP BY ug."gameId"
+    ORDER BY remaining ASC, hardest DESC NULLS LAST, ug."gameId" ASC
+    LIMIT ${limit}`;
+  if (rows.length === 0) return { items: [] };
+
+  const games = await db.userGame.findMany({
+    where: { userId: user.id, gameId: { in: rows.map((row) => row.gameId) } },
+    select: { gameId: true, ...progressSelect, game: { select: apiGameSelect } },
+  });
+  const byGame = new Map(games.map((row) => [row.gameId, row]));
+  return {
+    items: rows.flatMap((row) => {
+      const owned = byGame.get(row.gameId);
+      if (!owned) return [];
+      return [
+        {
+          game: apiGame(owned.game),
+          progress: progress(owned),
+          remaining: {
+            achievements: Number(row.remaining),
+            // Le plus rare des succès restants : c'est lui qui dit si le 100 % est à portée.
+            hardestRarity: row.hardest,
+            easiestRarity: row.easiest,
+            missable: Number(row.missable),
+            points: Number(row.points ?? 0),
+          },
+        },
+      ];
+    }),
+  };
+}
+
+export const POPULAR_LIMIT = 20;
+export const POPULAR_MAX = 50;
+export const POPULAR_PERIODS = { week: 7, month: 30 } as const;
+export type PopularPeriod = keyof typeof POPULAR_PERIODS;
+
+/**
+ * Les jeux qui animent les chasseurs de succès : le plus de 100 % atteints sur la période, puis
+ * le plus de joueurs actifs. Seuls comptent les profils publics et les jeux montrables à tous.
+ */
+export async function partnerPopularGames(
+  period: PopularPeriod,
+  limit = POPULAR_LIMIT,
+  now = new Date(),
+) {
+  const since = new Date(now.getTime() - POPULAR_PERIODS[period] * 24 * 60 * 60 * 1000);
+  const rows = await db.$queryRaw<
+    { platform: Platform; platformGameId: string; completions: bigint; active: bigint }[]
+  >`
+    SELECT g.platform, g."platformGameId",
+           count(*) FILTER (WHERE ug.completion >= 100) AS completions,
+           count(*) AS active
+    FROM "UserGame" ug
+    JOIN "User" u ON u.id = ug."userId"
+    JOIN "Game" g ON g.id = ug."gameId"
+    WHERE u."isPublic" AND NOT ug.hidden
+      AND ug."lastUnlockedAt" >= ${since}
+      AND NOT g."adultOnly"
+      AND (g.platform <> 'STEAM' OR g."contentCheckedAt" IS NOT NULL)
+    GROUP BY g.id, g.platform, g."platformGameId"
+    ORDER BY completions DESC, active DESC, g."platformGameId" ASC
+    LIMIT ${limit}`;
+
+  const cards = await partnerGames(rows);
+  return {
+    period,
+    since: since.toISOString(),
+    items: rows.flatMap((row) => {
+      const card = cards.get(keyOf(row));
+      return card
+        ? [
+            {
+              game: card,
+              // Sur la période : 100 % atteints (dernier succès dedans) et joueurs actifs.
+              periodCompletions: Number(row.completions),
+              activePlayers: Number(row.active),
+            },
+          ]
+        : [];
+    }),
+  };
+}

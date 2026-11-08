@@ -13,7 +13,14 @@ import {
   PAGE_MAX,
   revokePartnerKey,
 } from './partner-api';
-import { partnerGame, partnerUser, partnerUserGame, partnerUserGames } from './partner-queries';
+import {
+  partnerAlmost,
+  partnerGame,
+  partnerPopularGames,
+  partnerUser,
+  partnerUserGame,
+  partnerUserGames,
+} from './partner-queries';
 import { PREFIX, identity, setupIntegration } from './test-helpers';
 import { POST as LOOKUP } from '../../routes/api/v1/games/lookup/+server';
 
@@ -446,5 +453,99 @@ describe('champs et filtres de l’API partenaire', () => {
     expect((await listPage(user.handle, '?since=2000-01-01T00:00:00Z')).items).toHaveLength(1);
     const future = new Date(Date.now() + 60_000).toISOString();
     expect((await listPage(user.handle, `?since=${future}`)).items).toHaveLength(0);
+  });
+});
+
+describe('jeux presque finis', () => {
+  it('range les jeux commencés du plus proche du 100 % au plus lointain', async () => {
+    const user = await player();
+    const close = await game();
+    const far = await game();
+    const done = await game();
+    const adult = await game({ adultOnly: true });
+    const achievements = async (gameId: string, count: number) => {
+      const list = [];
+      for (let i = 0; i < count; i++) {
+        list.push(
+          await db.achievement.create({
+            data: {
+              gameId,
+              platformAchievementId: `A${i}`,
+              name: `Succès ${i}`,
+              globalRarity: 10 * (i + 1),
+              missable: i === count - 1,
+            },
+          }),
+        );
+      }
+      return list;
+    };
+    const [closeList, farList] = [await achievements(close.id, 3), await achievements(far.id, 4)];
+    await achievements(adult.id, 2);
+    await owns(user.id, close.id, { completion: 66 });
+    await owns(user.id, far.id, { completion: 25 });
+    await owns(user.id, done.id, { completion: 100 });
+    await owns(user.id, adult.id, { completion: 50 });
+    const unlock = (achievementId: string) =>
+      db.userAchievement.create({
+        data: { userId: user.id, achievementId, unlockedAt: new Date('2026-01-01') },
+      });
+    await unlock(closeList[0]!.id);
+    await unlock(closeList[1]!.id);
+    await unlock(farList[0]!.id);
+
+    const almost = await partnerAlmost(user.handle);
+    expect(almost?.items.map((item) => item.game.platformGameId)).toEqual([
+      close.platformGameId,
+      far.platformGameId,
+    ]);
+    expect(almost?.items[0]?.remaining).toEqual({
+      achievements: 1,
+      hardestRarity: 30,
+      easiestRarity: 30,
+      missable: 1,
+      points: 10,
+    });
+    expect(almost?.items[1]?.remaining.achievements).toBe(3);
+    expect(await partnerAlmost((await player(false)).handle)).toBeNull();
+  });
+});
+
+describe('jeux populaires', () => {
+  it('classe par 100 % atteints sur la période, sans profil privé ni jeu non vérifié', async () => {
+    const now = new Date('2026-06-15T12:00:00Z');
+    const recent = new Date('2026-06-12T12:00:00Z');
+    const old = new Date('2026-04-01T12:00:00Z');
+    const checked = { contentCheckedAt: new Date('2026-01-01') };
+    const [hot, warm, unchecked] = [await game(), await game(), await game()];
+    await db.game.updateMany({ where: { id: { in: [hot.id, warm.id] } }, data: checked });
+    const play = async (gameId: string, completion: number, at: Date, isPublic = true) => {
+      const p = await player(isPublic);
+      await owns(p.id, gameId, { completion });
+      await db.userGame.update({
+        where: { userId_gameId: { userId: p.id, gameId } },
+        data: { lastUnlockedAt: at },
+      });
+    };
+    await play(hot.id, 100, recent);
+    await play(hot.id, 100, recent);
+    await play(hot.id, 100, old);
+    await play(warm.id, 100, recent);
+    await play(warm.id, 50, recent);
+    await play(warm.id, 100, recent, false);
+    await play(unchecked.id, 100, recent);
+
+    const week = await partnerPopularGames('week', 50, now);
+    const ours = week.items.filter((item) =>
+      [hot.platformGameId, warm.platformGameId, unchecked.platformGameId].includes(
+        item.game.platformGameId,
+      ),
+    );
+    expect(
+      ours.map((item) => [item.game.platformGameId, item.periodCompletions, item.activePlayers]),
+    ).toEqual([
+      [hot.platformGameId, 2, 2],
+      [warm.platformGameId, 1, 2],
+    ]);
   });
 });

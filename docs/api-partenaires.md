@@ -256,6 +256,8 @@ et seule son empreinte SHA-256 est gardée.
 | GET     | `/users/{handle}/games/{platform}/{id}` | progression d'un jeu et chaque succès, obtenu ou non                                                   |
 | GET     | `/games/{platform}/{id}`                | fiche du jeu, joueurs publics, taux de 100 %, difficulté, guides, temps médian                         |
 | POST    | `/games/lookup`                         | les mêmes fiches pour 100 jeux au plus en un appel                                                     |
+| GET     | `/users/{handle}/almost`                | jeux commencés les plus proches du 100 %, avec ce qui reste (nombre, rareté, manquables)               |
+| GET     | `/games/popular`                        | jeux où les chasseurs sont actifs, `?period=week` ou `month` : 100 % atteints, joueurs actifs          |
 | GET     | `/openapi.json`                         | description OpenAPI 3.1, lisible sans clé                                                              |
 
 ### Ce que la fiche d'un jeu dit de son 100 %
