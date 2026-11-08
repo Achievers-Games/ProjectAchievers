@@ -181,24 +181,24 @@ Obtenir **A+ sur TOUS les chapitres** (1 à 15 + épilogue). Le plus long achiev
 
 ## Masques recommandés par chapitre
 
-| Chapitre | Masque | Avantage |
-|---|---|---|
-| 1-1 à 1-3 | Tony (Tigre) | Poings mortels, boldness |
-| 2-1 à 2-3 | Don Juan | Exécutions instantanées |
-| 3-1 à 3-3 | Brandon (Panthère) | Vitesse + armes lancées meurtrières |
-| 4-1 à 4-3 | Richter | Commence avec fusil à pompe |
-| 5-1 à 5-3 | Nigel (Chauve-souris) | Armes lancées = one-hit |
-| 6-1 à 6-3 | Jake (Serpent) | Lancer d'armes mortel |
-| 7-1 à 7-3 | Alex (Éléphant) | Survivre à une balle |
-| 8-1 à 8-3 | Carl (Sauterelle) | Déplacement ultra-rapide |
-| 9-1 à 9-3 | Earl (Morse) | Pas de bruit en marchant |
-| 10-1 à 10-3 | Rasmus (Hibou) | Vision élargie |
-| 11-1 à 11-3 | Charlie (Alligator) | Corps-à-corps létal |
-| 12-1 à 12-3 | Tony ou Don Juan | Selon préférence |
-| 13-1 à 13-3 | Don Juan | Exécutions rapides |
-| 14-1 à 14-3 | Tony | Poings one-hit |
-| 15-1 à 15-3 | Tony | Boss final au corps-à-corps |
-| Épilogue | Brandon | Vitesse + lancers |
+| Chapitre    | Masque                | Avantage                            |
+| ----------- | --------------------- | ----------------------------------- |
+| 1-1 à 1-3   | Tony (Tigre)          | Poings mortels, boldness            |
+| 2-1 à 2-3   | Don Juan              | Exécutions instantanées             |
+| 3-1 à 3-3   | Brandon (Panthère)    | Vitesse + armes lancées meurtrières |
+| 4-1 à 4-3   | Richter               | Commence avec fusil à pompe         |
+| 5-1 à 5-3   | Nigel (Chauve-souris) | Armes lancées = one-hit             |
+| 6-1 à 6-3   | Jake (Serpent)        | Lancer d'armes mortel               |
+| 7-1 à 7-3   | Alex (Éléphant)       | Survivre à une balle                |
+| 8-1 à 8-3   | Carl (Sauterelle)     | Déplacement ultra-rapide            |
+| 9-1 à 9-3   | Earl (Morse)          | Pas de bruit en marchant            |
+| 10-1 à 10-3 | Rasmus (Hibou)        | Vision élargie                      |
+| 11-1 à 11-3 | Charlie (Alligator)   | Corps-à-corps létal                 |
+| 12-1 à 12-3 | Tony ou Don Juan      | Selon préférence                    |
+| 13-1 à 13-3 | Don Juan              | Exécutions rapides                  |
+| 14-1 à 14-3 | Tony                  | Poings one-hit                      |
+| 15-1 à 15-3 | Tony                  | Boss final au corps-à-corps         |
+| Épilogue    | Brandon               | Vitesse + lancers                   |
 
 ## Sources
 
@@ -403,15 +403,15 @@ Collecter **tous les masques** (25 masques au total). Ils sont cachés dans les 
 - [ ] **Lars** : Chapitre 7-1, dans le container
 - [ ] **Hans** : Chapitre 7-2, sur la grue
 - [ ] **Oscar** : Chapitre 7-3, dans la cale
-- [ ] **Jones (Crocodile)** : Chapitre 8-1, **secret** dans les égouts (→ achievement *Sewer Alligator*)
+- [ ] **Jones (Crocodile)** : Chapitre 8-1, **secret** dans les égouts (→ achievement _Sewer Alligator_)
 - [ ] **Brandon (Panthère - variante)** : Chapitre 8-2, dans la cage
 - [ ] **Richard (Coq)** : Chapitre 8-3, sur le toit (accès par échelle)
 
 ## Astuces
 
-- Masque **Nigel** requis pour *Batman* (Chapitre 2 avec Nigel)
-- Masque **Brandon** requis pour *Cat Fight* (panthères)
-- Masque **Jones** = achievement *Sewer Alligator*
+- Masque **Nigel** requis pour _Batman_ (Chapitre 2 avec Nigel)
+- Masque **Brandon** requis pour _Cat Fight_ (panthères)
+- Masque **Jones** = achievement _Sewer Alligator_
 
 ## Sources
 
@@ -454,14 +454,14 @@ Collecter **tous les masques** (25 masques au total). Ils sont cachés dans les 
 
 ## Liste indicative (débloquées par paliers de score)
 
-Score ~ | Armes
----|---
-10 000 | Couteau, Bouteille, Batte
-50 000 | Fusil à pompe, Revolver
-100 000 | Uzi, MP5, AK-47
-200 000 | Fusil d'assaut, Sniper
-300 000 | Lance-roquettes, Minigun
-500 000+ | Tout le reste
+| Score ~  | Armes                     |
+| -------- | ------------------------- |
+| 10 000   | Couteau, Bouteille, Batte |
+| 50 000   | Fusil à pompe, Revolver   |
+| 100 000  | Uzi, MP5, AK-47           |
+| 200 000  | Fusil d'assaut, Sniper    |
+| 300 000  | Lance-roquettes, Minigun  |
+| 500 000+ | Tout le reste             |
 
 ## Sources
 
@@ -535,14 +535,14 @@ Effectuer **toutes les exécutions au sol** (ground kills) du jeu. Il y a 25 ani
 
 ## Liste des exécutions requises
 
-Arme | Exécutions (4 angles × arme)
----|---
-Poings | 4
-Couteau | 4
-Batte | 4
-Hache | 4
-Fusil à pompe | 2 (canon, crosse)
-Autres armes à feu | 2 chacune
+| Arme               | Exécutions (4 angles × arme) |
+| ------------------ | ---------------------------- |
+| Poings             | 4                            |
+| Couteau            | 4                            |
+| Batte              | 4                            |
+| Hache              | 4                            |
+| Fusil à pompe      | 2 (canon, crosse)            |
+| Autres armes à feu | 2 chacune                    |
 
 ## Astuces
 
@@ -674,7 +674,7 @@ Trouver **Jones le Crocodile** (masque secret dans les égouts). Achievement **s
 ## Astuces
 
 - Zone facile à rater : bien fouiller après l'explosion
-- Masque requis pour *Cat Fight* (panthères)
+- Masque requis pour _Cat Fight_ (panthères)
 
 ## Sources
 
@@ -735,7 +735,7 @@ Collecter **toutes les pièces du puzzle** (6 pièces cachées dans l'épilogue)
 - [ ] Jouer l'épilogue (après Chapitre 15)
 - [ ] Dans **chaque niveau de l'épilogue**, trouver une pièce de puzzle cachée
 - [ ] Elles brillent légèrement ; bien fouiller les coins, derrière les portes, sous les tables
-- [ ] 6 pièces = puzzle complet → achievement + fin secrète (*This Is It*)
+- [ ] 6 pièces = puzzle complet → achievement + fin secrète (_This Is It_)
 
 ## Sources
 
@@ -752,7 +752,7 @@ Collecter **toutes les pièces du puzzle** (6 pièces cachées dans l'épilogue)
 
 - [ ] Collecter les 6 pièces (Eye For Details)
 - [ ] Le puzzle s'assemble automatiquement à la fin de l'épilogue
-- [ ] La fin secrète se joue → *The Boss* + *This Is It* débloqués ensemble
+- [ ] La fin secrète se joue → _The Boss_ + _This Is It_ débloqués ensemble
 
 ## Sources
 

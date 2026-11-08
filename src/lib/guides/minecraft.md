@@ -9,6 +9,7 @@ Il faut **tuer un monstre hostile** de chaque type. Les 34 monstres comptent, ma
 ## Ta liste
 
 Monstres principaux (Overworld) :
+
 - [ ] Zombie
 - [ ] Squelette
 - [ ] Creeper
@@ -42,6 +43,7 @@ Monstres principaux (Overworld) :
 - [ ] Warden
 
 Boss (ne comptent qu'une fois chacun) :
+
 - [ ] Ender Dragon
 - [ ] Wither
 
@@ -75,6 +77,7 @@ Il faut **visiter 53 biomes différents** (sur les 60+ existants). Le progrès s
 ## Biomes à trouver
 
 Overworld (principaux) :
+
 - [ ] Plaines
 - [ ] Forêt
 - [ ] Forêt de bouleaux
@@ -107,6 +110,7 @@ Overworld (principaux) :
 - [ ] Océan froid profond
 
 Nether :
+
 - [ ] Déchets du Nether
 - [ ] Forêt carmin
 - [ ] Forêt déformée
@@ -115,6 +119,7 @@ Nether :
 - [ ] Forêt de l'Âme (Ancient Debris biome)
 
 End :
+
 - [ ] Les Terres de l'End
 - [ ] Highlands de l'End
 - [ ] Midlands de l'End
@@ -213,8 +218,9 @@ Avoir **tous les 27 effets de statut** en même temps. C'est le succès le plus 
 ## Les 27 effets à obtenir
 
 Effets positifs (12) :
+
 - [ ] Vitesse (Speed)
-- [ ] Lenteur (Slowness) - *négatif mais requis*
+- [ ] Lenteur (Slowness) - _négatif mais requis_
 - [ ] Hâte (Haste)
 - [ ] Fatigue minière (Mining Fatigue)
 - [ ] Force (Strength)
@@ -222,27 +228,27 @@ Effets positifs (12) :
 - [ ] Régénération (Regeneration)
 - [ ] Poison (Poison)
 - [ ] Résistance au feu (Fire Resistance)
-- [ ] Soins instantanés (Instant Health) - *via potion jetable*
-- [ ] Dégâts instantanés (Instant Damage) - *via potion jetable*
+- [ ] Soins instantanés (Instant Health) - _via potion jetable_
+- [ ] Dégâts instantanés (Instant Damage) - _via potion jetable_
 - [ ] Saut (Jump Boost)
-- [ ] Nausée (Nausea) - *via pufferfish*
-- [ ] Régénération (Regeneration) - *déjà listé*
+- [ ] Nausée (Nausea) - _via pufferfish_
+- [ ] Régénération (Regeneration) - _déjà listé_
 - [ ] Résistance (Resistance)
 - [ ] Vision nocturne (Night Vision)
 - [ ] Invisibilité (Invisibility)
-- [ ] Flottaison (Slow Falling) - *1.13+*
-- [ ] Conduit (Conduit Power) - *1.13+*
-- [ ] Dolphin's Grace - *1.13+*
-- [ ] Bad Omen - *1.14+*
-- [ ] Hero of the Village - *1.14+*
-- [ ] Darkness - *1.19+*
-- [ ] Trial Omen - *1.21+*
-- [ ] Oozing - *1.21+*
-- [ ] Infested - *1.21+*
-- [ ] Wind Charged - *1.21+*
-- [ ] Weaving - *1.21+*
+- [ ] Flottaison (Slow Falling) - _1.13+_
+- [ ] Conduit (Conduit Power) - _1.13+_
+- [ ] Dolphin's Grace - _1.13+_
+- [ ] Bad Omen - _1.14+_
+- [ ] Hero of the Village - _1.14+_
+- [ ] Darkness - _1.19+_
+- [ ] Trial Omen - _1.21+_
+- [ ] Oozing - _1.21+_
+- [ ] Infested - _1.21+_
+- [ ] Wind Charged - _1.21+_
+- [ ] Weaving - _1.21+_
 
-*La liste exacte varie selon la version. Vérifie sur le Wiki pour ta version.*
+_La liste exacte varie selon la version. Vérifie sur le Wiki pour ta version._
 
 ## Méthode générale (très résumée)
 
@@ -250,7 +256,7 @@ Effets positifs (12) :
 2. **Potions** : Vision nocturne, Invisibilité, Flottaison, Force, Vitesse, Saut, Résistance au feu, Soins instantanés
 3. **Conduit** : Conduit Power (dans l'eau, près d'un conduit activé)
 4. **Dolphin** : Dolphin's Grace (nager près d'un dauphin)
-5. **Mobs** : 
+5. **Mobs** :
    - Shulker → Lévitation
    - Elder Guardian → Fatigue minière III
    - Pufferfish → Poison + Nausée
