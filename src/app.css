@@ -319,11 +319,13 @@
   .prose-user iframe {
     aspect-ratio: 16 / 9;
   }
+  /* Une ligne de texte ordinaire, la case posée dans sa marge : en flex, chaque passage en gras
+     ou en lien devenait une colonne à part et la phrase se coupait en morceaux. */
   .prose-user li:has(> input[data-check]) {
-    @apply -ml-5 flex list-none items-start gap-2;
+    @apply relative -ml-5 list-none pl-6;
   }
   .prose-user input[data-check] {
-    @apply mt-1 h-4 w-4 shrink-0 accent-accent;
+    @apply absolute left-0 top-1 h-4 w-4 accent-accent;
   }
   .prose-user li:has(> input[data-check]:checked) {
     @apply text-muted line-through;
