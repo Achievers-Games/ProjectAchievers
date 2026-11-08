@@ -1,350 +1,478 @@
-# API partenaires : Achievers ↔ Lure
+# API partenaires Achievers — guide pour Lure
 
-Plan pour relier Achievers et [Lure](https://lureverse.fr) tout en gardant deux sites, deux bases et
-deux déploiements indépendants. Chaque site reste maître de ses comptes ; ils se parlent par une API
-versionnée et par une liaison de comptes que le joueur accepte lui-même.
+Ce guide explique comment Lure peut utiliser Achievers : lire les profils et les jeux, relier
+automatiquement les comptes des joueurs, proposer « Se connecter avec Achievers » et recevoir les
+nouveaux succès en direct.
 
-## 1. Ce qui est déjà en place
+- **Adresse** : `https://achievers.games`
+- **API** : `https://achievers.games/api/v1`
+- **Description OpenAPI 3.1** (lisible sans clé) : `https://achievers.games/api/v1/openapi.json`
 
-| Élément                                              | Où                          | État |
-| ---------------------------------------------------- | --------------------------- | ---- |
-| Diapositive « Tu sais pas à quoi jouer ? » vers Lure | `HomeCarousel.svelte`       | fait |
-| Carte de joueur intégrable (SVG)                     | `GET /u/{handle}/carte.svg` | fait |
-| Bouton « Carte de joueur » (copie le lien)           | profil public               | fait |
+## Sommaire
 
-La carte s’intègre partout avec une simple image, en SVG ou en PNG (`/u/{handle}/carte.png`, 1200×360, pour Discord et les forums) :
+1. [Ce que tu reçois, ce que tu renvoies](#1-ce-que-tu-reçois-ce-que-tu-renvoies)
+2. [Règles communes](#2-règles-communes)
+3. [Lire les profils et les jeux](#3-lire-les-profils-et-les-jeux)
+4. [Relier automatiquement les comptes](#4-relier-automatiquement-les-comptes)
+5. [« Se connecter avec Achievers » (OAuth 2)](#5-se-connecter-avec-achievers-oauth-2)
+6. [Recevoir les nouveaux succès (webhooks)](#6-recevoir-les-nouveaux-succès-webhooks)
+7. [Liens et cartes sans API](#7-liens-et-cartes-sans-api)
 
-```html
-<img
-  src="https://<achievers>/u/ada/carte.svg"
-  width="600"
-  height="180"
-  alt="Carte Achievers de Ada"
-/>
+## 1. Ce que tu reçois, ce que tu renvoies
+
+Chaque fonctionnalité est indépendante : prends seulement celles qui te servent.
+
+| Fonctionnalité                        | Tu reçois d'Achievers                              | Tu renvoies à Achievers                                                   |
+| ------------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------- |
+| Lire l'API (§3)                       | la clé `ak_…`                                      | rien                                                                      |
+| Relier les comptes : Lure → Achievers | la même clé `ak_…`                                 | rien                                                                      |
+| Relier les comptes : Achievers → Lure | rien                                               | l'adresse de ton site et une clé que tu crées pour Achievers              |
+| « Se connecter avec Achievers » (§5)  | `client_id` (`ach_…`) et `client_secret` (`acs_…`) | ton adresse de retour, ex. `https://lureverse.fr/auth/achievers/callback` |
+| Webhooks (§6)                         | un secret de signature `whsec_…`                   | l'adresse HTTPS qui recevra les envois                                    |
+
+Les secrets ne s'affichent qu'une fois chez nous : garde-les côté serveur, jamais dans le
+navigateur ni dans un dépôt. Si l'un d'eux fuit, on en génère un nouveau et l'ancien cesse de
+valoir aussitôt.
+
+## 2. Règles communes
+
+**Authentification** : chaque appel à `/api/v1` porte la clé, de serveur à serveur :
+
+```http
+Authorization: Bearer ak_…
 ```
 
-Elle respecte les profils privés (404), les jeux masqués, et n'embarque aucune ressource externe
-(l'avatar est intégré en `data:`), donc elle fonctionne aussi dans un README GitHub.
+Les routes `/me` (§5) prennent un jeton OAuth à la place.
 
-## 2. Le double OAuth : oui, et voici comment
+**Format** : JSON, dates ISO 8601 en UTC. Les pourcentages vont de 0 à 100.
 
-« Se connecter avec Achievers » sur Lure et « Se connecter avec Lure » sur Achievers, c'est faisable :
-chaque site devient **fournisseur OAuth 2** (il délivre des jetons) **et client** de l'autre.
+**Erreurs** : toujours la même forme, avec un code stable et une phrase pour le développeur.
 
-```
-Lure  ── « Se connecter avec Achievers » ──▶  Achievers /oauth/authorize  (fournisseur)
-Achievers ── « Se connecter avec Lure » ──▶  Lure /oauth/authorize        (fournisseur)
+```json
+{ "error": "not_found", "message": "Public profile not found." }
 ```
 
-Règles à fixer dès le départ, pour éviter les mauvaises surprises :
+| Statut | `error`                           | Quand                                                    |
+| ------ | --------------------------------- | -------------------------------------------------------- |
+| 400    | `bad_request`, `unknown_platform` | paramètre invalide (il n'est jamais remplacé en silence) |
+| 401    | `unauthorized`                    | clé absente, inconnue ou révoquée                        |
+| 404    | `not_found`                       | joueur inconnu ou privé, jeu inconnu ou adulte           |
+| 429    | `rate_limited`                    | trop de requêtes : attendre `Retry-After` secondes       |
 
-1. **Jamais de fusion automatique par e-mail.** La connexion par l'autre site crée un compte ou se
-   rattache à un compte _déjà ouvert dans la session_, exactement comme Steam ou Discord aujourd'hui.
-2. **Un lien, deux sens.** Une fois Achievers relié depuis Lure, Lure peut appeler l'API d'Achievers
-   avec le jeton reçu ; l'inverse est indépendant et demande son propre consentement.
-3. **Révocable des deux côtés.** Délier sur un site révoque ses jetons ; l'autre site reçoit une
-   erreur `401` et propose de relier à nouveau.
+**Limites** : 600 requêtes par minute et par clé. Les réponses se gardent en cache 5 minutes.
 
-### Ordre conseillé
+**Ce qui ne sort jamais** : un profil privé, un jeu que le joueur a masqué, un jeu adulte, le
+nom et la description d'un succès caché tant qu'il n'est pas obtenu, le temps de jeu d'un joueur.
+Les textes des succès sont dans la langue de la plateforme.
 
-- **D'abord Achievers fournisseur.** C'est Lure qui a besoin de nos données (progression des
-  succès) pour proposer « finir un jeu à 100 % ». C'est aussi ce qui débloque l'API privée.
-- **Ensuite « Se connecter avec Lure » côté Achievers.** Côté code, c'est un fournisseur de plus :
-  `src/lib/server/providers/lure.ts` sur le modèle de `discord.ts`, une valeur `LURE` dans l'énum
-  `Provider`, et la route existante `src/routes/auth/[provider]` fait le reste (PKCE déjà géré par
-  `fetchOAuthProfile`). À faire dès que Lure expose son propre `/oauth/authorize`.
+**Identifier un joueur** : garde son `id` Achievers. Il ne change jamais, alors que le `handle`
+(l'adresse `/u/{handle}`) peut changer.
 
-### Liaison automatique par les identités OAuth : oui, sans double OAuth
+**Identifier un jeu** : `platform` + `platformGameId`. Pour Steam, `platformGameId` est l'**appid**,
+comme sur Lure : `/games/steam/683320` correspond à `lureverse.fr/jeu/683320`. Plateformes :
+`steam`, `psn`, `xbox`, `retro`, `blizzard`.
 
-Les deux sites utilisent Discord, Steam, Google, Xbox… et **ce n'est pas grave s'ils utilisent deux
-applications OAuth différentes** : l'identifiant que le fournisseur renvoie est global, il ne dépend
-pas du client qui le demande.
+## 3. Lire les profils et les jeux
 
-| Fournisseur | Identifiant stable | Vérifié par  |
-| ----------- | ------------------ | ------------ |
-| Discord     | `id` (snowflake)   | Discord      |
-| Steam       | SteamID64          | Steam OpenID |
-| Google      | `sub`              | Google       |
-| Xbox        | XUID               | Microsoft    |
-| Epic        | `sub`              | Epic         |
-| Blizzard    | `sub`              | Battle.net   |
-| PSN         | `accountId`        | code en bio  |
+| Méthode | Route                                   | Contenu                                       |
+| ------- | --------------------------------------- | --------------------------------------------- |
+| GET     | `/users/{handle}`                       | profil, clan, statistiques, liens de la carte |
+| GET     | `/users/{handle}/games`                 | jeux et progression, paginés                  |
+| GET     | `/users/{handle}/games/{platform}/{id}` | progression d'un jeu, succès par succès       |
+| GET     | `/users/{handle}/almost`                | jeux commencés les plus proches du 100 %      |
+| GET     | `/games/{platform}/{id}`                | fiche d'un jeu et ce que coûte son 100 %      |
+| POST    | `/games/lookup`                         | jusqu'à 100 fiches de jeux en un appel        |
+| GET     | `/games/popular`                        | jeux où les chasseurs de succès sont actifs   |
 
-Achievers stocke déjà ce couple dans `LinkedAccount`, avec `@@unique([provider, providerUserId])`.
-Si Lure stocke le même couple, alors **deux comptes qui ont vérifié la même identité Discord auprès
-de Discord sont la même personne** : aucun des deux sites n'a à croire l'autre sur parole, la preuve
-vient du fournisseur.
+### Un joueur
 
-À la connexion, Achievers peut donc demander à Lure « as-tu un compte lié à ces identités ? » et
-relier tout seul. Et réciproquement.
-
-Ce que ça ne permet pas :
-
-- **Deux fournisseurs différents d'un côté et de l'autre.** Discord sur Achievers + Steam sur Lure
-  ne donne aucune clé commune. Il faut une liaison manuelle (« Relier mon compte Lure » depuis
-  `/compte`), ou le double OAuth ci-dessus.
-- **De deviner par e-mail, pseudo, handle ou avatar.** Jamais : c'est le vecteur classique de prise
-  de contrôle d'un compte.
-- **De partager des données.** Un lien dit « même personne », pas « accès aux données ». Pour lire
-  la progression privée, le jeton OAuth du §3 reste nécessaire.
-
-#### Le point d'entrée de recherche
-
-Un seul, dans chaque sens, authentifié par la clé partenaire déjà en place (`ak_…`, serveur à
-serveur, jamais dans le navigateur) :
-
-`POST /api/v1/partner/identities/lookup`
+```bash
+curl -H "Authorization: Bearer ak_…" https://achievers.games/api/v1/users/kokki
+```
 
 ```json
 {
-  "identities": [
-    { "provider": "DISCORD", "providerUserId": "123456789012345678" },
-    { "provider": "STEAM", "providerUserId": "76561198000000000" }
-  ]
+  "id": "cmv0…",
+  "handle": "kokki",
+  "displayName": "LaKokilletteCendrée",
+  "isPublic": true,
+  "avatarUrl": "https://…",
+  "url": "https://achievers.games/u/kokki",
+  "cardUrl": "https://achievers.games/u/kokki/carte.svg",
+  "cardPngUrl": "https://achievers.games/u/kokki/carte.png",
+  "memberSince": "2026-10-01T18:00:00.000Z",
+  "clan": {
+    "name": "Achievers",
+    "slug": "achievers",
+    "url": "https://achievers.games/clans/achievers"
+  },
+  "stats": {
+    "games": 976,
+    "achievements": 11437,
+    "cards": 34,
+    "cardsByTier": [20, 8, 3, 2, 1, 0],
+    "points": 4675
+  }
 }
 ```
 
-Réponse : la liste **distincte** des comptes partenaires trouvés (vide si aucun).
+`cards` compte les jeux finis à 100 % ; `cardsByTier` les répartit par difficulté, de Bronze à
+Légendaire.
+
+### Ses jeux
+
+`GET /users/{handle}/games`, paramètres facultatifs :
+
+| Paramètre  | Valeurs                                                      |
+| ---------- | ------------------------------------------------------------ |
+| `platform` | `steam`, `psn`, `xbox`, `retro`, `blizzard`                  |
+| `status`   | `completed` (100 %), `started` (commencé), `untouched` (0 %) |
+| `sort`     | `name`, `completion`, `lastUnlocked`, `updated`              |
+| `since`    | date ISO : seulement les progressions modifiées depuis       |
+| `limit`    | 1 à 100 (50 par défaut)                                      |
+| `cursor`   | le `nextCursor` de la page précédente                        |
 
 ```json
-{ "partnerUserIds": ["usr_…"] }
-```
-
-On envoie **toutes** les identités du compte, pas seulement celle de la connexion : quelqu'un peut
-avoir lié Discord et Steam ici, et seulement Steam là-bas.
-
-#### À la connexion, côté Achievers
-
-1. `resolveIdentity` a rendu le compte local (créé ou existant).
-2. S'il n'a pas encore de lien Lure, appel à Lure avec ses identités (délai 2 s, jamais bloquant :
-   une panne de Lure ne doit pas empêcher de se connecter).
-3. Un seul compte Lure trouvé → `PartnerLink` créé, mention discrète « Compte Lure relié ».
-4. Aucun → rien.
-5. **Deux comptes Lure différents trouvés** (Discord → L1, Steam → L2) → aucune liaison
-   automatique : on demande au joueur lequel garder, comme la fusion existante (`merge.ts`).
-
-Le même algorithme tourne chez Lure, avec le même point d'entrée côté Achievers.
-
-#### Modèle de données
-
-```prisma
-model PartnerLink {
-  id            String    @id @default(cuid())
-  userId        String
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  partner       String    // « lure »
-  partnerUserId String
-  method        String    // AUTO | MANUAL
-  createdAt     DateTime  @default(now())
-  revokedAt     DateTime?
-
-  @@unique([partner, partnerUserId])
-  @@unique([userId, partner])
+{
+  "items": [
+    {
+      "game": {
+        "platform": "steam",
+        "platformGameId": "219150",
+        "console": null,
+        "slug": "hotline-miami",
+        "name": "Hotline Miami",
+        "url": "https://achievers.games/jeux/hotline-miami",
+        "coverUrl": "https://…",
+        "headerUrl": "https://…",
+        "totalAchievements": 35,
+        "tier": 4,
+        "tags": [1774, 492],
+        "familyKey": "hotline miami"
+      },
+      "progress": {
+        "unlocked": 34,
+        "total": 35,
+        "completion": 97.1,
+        "completed": false,
+        "platinum": false,
+        "lastUnlockedAt": "2026-11-08T20:00:00.000Z",
+        "updatedAt": "2026-11-08T20:01:12.000Z"
+      }
+    }
+  ],
+  "nextCursor": "k1.…"
 }
 ```
 
-Le lien est révocable des deux côtés et survit à une fusion de comptes : `merge.ts` doit déplacer la
-ligne, comme les autres tables par utilisateur.
+Pour tout lire, rappelle la route avec `cursor=<nextCursor>` jusqu'à ce qu'il vaille `null`, en
+gardant les mêmes `sort` et `status`. Pour une resynchronisation, `since=<date du dernier passage>`
+ne rend que ce qui a changé.
 
-#### Rattrapage des comptes existants
+### Un jeu, succès par succès
 
-Les joueurs déjà inscrits sur les deux sites n'ont pas de lien tant qu'ils ne se reconnectent pas
-quelque part. Pour les relier d'un coup, chaque site envoie une liste de **HMAC** des identités
-(`HMAC(clé partagée, "DISCORD:123…")`) : les empreintes se comparent sans que ni l'un ni l'autre ne
-reçoive les identifiants en clair.
+`GET /users/{handle}/games/steam/219150` rend `game`, `progress` et `achievements` :
 
-#### Sécurité et vie privée
+```json
+{
+  "id": "ACH_COMBO_KING",
+  "name": "Combo King",
+  "description": "Perform a 12x combo",
+  "iconUrl": "https://…",
+  "hidden": false,
+  "trophyType": "achievement",
+  "rarity": 10.3,
+  "points": 10,
+  "missable": false,
+  "unlocked": true,
+  "unlockedAt": "2026-11-08T20:00:00.000Z"
+}
+```
 
-- Le point d'entrée répond seulement « ces identités correspondent à ces comptes » : jamais de nom,
-  d'avatar ni de jeu.
-- Clé invalide → `401` ; limite de débit par clé, comme le reste de `/api/v1`.
-- Une clé volée permet d'énumérer l'existence d'un compte pour une identité donnée : clé côté
-  serveur uniquement, rotation possible depuis Modération → Sites partenaires.
-- Prévenir dans `/confidentialite` et permettre de délier depuis `/compte`.
+`rarity` est le pourcentage de joueurs qui l'ont. `missable` : le succès peut se perdre pour la
+partie en cours. `trophyType` vaut `platinum`, `gold`, `silver` ou `bronze` sur PlayStation.
 
-#### Pourquoi garder le double OAuth
+### « Finis-le ce soir »
 
-La recherche d'identités relie les comptes, mais ne donne aucun droit de lecture. Le double OAuth
-reste la bonne façon de faire circuler les données privées, et « Se connecter avec Lure » donne un
-identifiant unique (`sub` = compte Lure) plus simple à raisonner que N identités de fournisseurs.
-Ordre conseillé : la recherche d'identités d'abord (petite, utile tout de suite), le double OAuth
-ensuite.
+`GET /users/{handle}/almost?limit=10` (1 à 50) rend les jeux commencés, du plus proche du 100 % au
+plus lointain, avec ce qui reste :
 
-## 3. Achievers fournisseur OAuth 2 — en place
+```json
+{
+  "game": { "…": "…" },
+  "progress": { "…": "…" },
+  "remaining": {
+    "achievements": 1,
+    "hardestRarity": 10.3,
+    "easiestRarity": 10.3,
+    "missable": 0,
+    "points": 10
+  }
+}
+```
 
-« Se connecter avec Achievers » sur Lure. Le sous-ensemble sûr de la norme, rien d'autre :
-_Authorization Code_ avec **PKCE S256 obligatoire**, client confidentiel (Lure garde son secret
-côté serveur), adresse de retour comparée à l'identique. Pas de flux implicite, pas de mot de
-passe.
+Les noms des succès restants ne sont pas donnés, pour qu'un succès caché reste secret. Le détail
+est dans la route « un jeu, succès par succès ».
 
-**Mise en route** : dans Modération → Sites partenaires, saisir les adresses de retour de Lure
-(HTTPS, une par ligne). Le `client_id` et le `client_secret` s'affichent alors, le secret une
-seule fois.
+### La fiche d'un jeu et le coût de son 100 %
 
-**Portées** : `profile` (nom, avatar, clan, stats ; toujours accordée), `library` (jeux et
-progression, même avec un profil privé), `achievements` (le détail des succès).
+`GET /games/steam/219150` rend les champs du jeu, plus :
 
-**Le parcours, côté Lure** :
+```json
+{
+  "players": 2,
+  "completions": 1,
+  "completionRate": 50,
+  "difficulty": { "missableAchievements": 0, "missablesReviewed": true, "rarestAchievement": 4 },
+  "guides": {
+    "achievementsCovered": 35,
+    "gameGuides": 0,
+    "bestGameGuideUrl": null
+  },
+  "completionTime": { "medianMinutes": 840, "sample": 12 }
+}
+```
 
-1. Générer un `code_verifier` aléatoire (43 à 128 caractères), son `code_challenge` =
-   base64url(SHA-256(verifier)), et un `state` à vérifier au retour.
-2. Envoyer le joueur sur :
+- `players`, `completions`, `completionRate` : joueurs publics d'Achievers qui ont le jeu, et
+  combien l'ont fini à 100 %.
+- `missableAchievements` : succès qui peuvent se perdre pour la partie en cours.
+  `missablesReviewed` vaut `true` quand un guide officiel a relevé tous les succès : le compte est
+  alors complet. Sinon, il ne contient que les manquables déjà connus.
+- `rarestAchievement` : pourcentage de joueurs qui ont le succès le plus rare.
+- `guides` : succès couverts par au moins un guide, guides complets du jeu, et le lien du
+  meilleur (l'officiel d'abord, sinon le mieux noté par la communauté).
+- `completionTime` : temps de jeu Steam **médian** des joueurs publics à 100 %, et sur combien de
+  joueurs. `null` sous cinq joueurs, et pour les jeux hors Steam. À afficher comme « environ ».
+
+De quoi annoncer, par exemple : « 100 % accessible : aucun succès manquable, guide disponible,
+environ 14 h ».
+
+### Plusieurs jeux d'un coup
+
+Pour enrichir une bibliothèque : 100 jeux par appel, donc 3 appels pour 300 jeux.
+
+```bash
+curl -X POST https://achievers.games/api/v1/games/lookup \
+  -H "Authorization: Bearer ak_…" -H "Content-Type: application/json" \
+  -d '{"games":[{"platform":"steam","id":"219150"},{"platform":"steam","id":"999999999"}]}'
+```
+
+```json
+{
+  "items": [{ "platform": "steam", "platformGameId": "219150", "…": "même fiche que ci-dessus" }],
+  "missing": [{ "platform": "steam", "id": "999999999" }]
+}
+```
+
+`items` suit l'ordre de la demande, sans doublon. `missing` liste les jeux qu'Achievers ne connaît
+pas encore, ou les jeux adultes.
+
+### Les jeux du moment
+
+`GET /games/popular?period=week` (ou `month`), `limit` de 1 à 50 (20 par défaut) :
+
+```json
+{
+  "period": "week",
+  "since": "2026-11-01T20:00:00.000Z",
+  "items": [{ "game": { "…": "fiche du jeu" }, "periodCompletions": 5, "activePlayers": 18 }]
+}
+```
+
+Classés par nombre de 100 % atteints sur la période, puis par nombre de joueurs actifs.
+
+## 4. Relier automatiquement les comptes
+
+Quand un joueur se connecte des deux côtés avec le même compte Steam (ou Discord, Google…), c'est
+la même personne : Steam renvoie le même identifiant aux deux sites. Aucun des deux n'a à croire
+l'autre sur parole, et on ne compare jamais d'e-mail ni de pseudo.
+
+**Ce que Lure doit stocker** : pour chaque compte, l'identifiant brut que renvoie le fournisseur.
+
+| Fournisseur | `provider` | `providerUserId`                  |
+| ----------- | ---------- | --------------------------------- |
+| Steam       | `STEAM`    | SteamID64 (`76561198000000000`)   |
+| Discord     | `DISCORD`  | `id` de l'utilisateur (snowflake) |
+| Google      | `GOOGLE`   | `sub`                             |
+| Xbox        | `XBOX`     | XUID                              |
+| Epic        | `EPIC`     | `sub`                             |
+| Battle.net  | `BLIZZARD` | `sub`                             |
+
+### Lure → Achievers (disponible maintenant)
+
+Quand un joueur se connecte sur Lure, envoie **toutes** ses identités, pas seulement celle de la
+connexion :
+
+```bash
+curl -X POST https://achievers.games/api/v1/partner/identities/lookup \
+  -H "Authorization: Bearer ak_…" -H "Content-Type: application/json" \
+  -d '{"identities":[{"provider":"STEAM","providerUserId":"76561198000000000"}]}'
+```
+
+```json
+{ "partnerUserIds": ["cmv0…"] }
+```
+
+Ce sont les `id` Achievers trouvés : un seul, c'est le compte à relier. Aucun, rien à faire.
+Plusieurs (Steam mène à un compte, Discord à un autre), ne relie pas automatiquement et laisse le
+joueur choisir. De 1 à 20 identités par appel. La réponse ne contient jamais de nom ni de donnée de
+profil.
+
+### Achievers → Lure (à construire côté Lure)
+
+À chaque connexion sur Achievers, Achievers fait l'appel inverse. Pour l'activer, Lure expose le
+**même** point d'entrée et nous donne son adresse et une clé :
+
+- `POST https://lureverse.fr/api/v1/partner/identities/lookup`
+- en-tête `Authorization: Bearer <la clé que Lure a créée pour Achievers>`
+- corps `{"identities":[{"provider":"STEAM","providerUserId":"…"}]}`, `provider` en majuscules
+- réponse `{"partnerUserIds":["<id du compte Lure>"]}`, liste vide si aucun
+
+Achievers attend au plus 2 secondes : une panne de Lure n'empêche jamais de se connecter, le lien
+se fera simplement plus tard. S'il trouve exactement un compte Lure, il garde son identifiant, et
+c'est lui qui revient dans les webhooks (`user.partnerUserId`). Le joueur peut délier depuis son
+compte Achievers ; le lien n'est alors plus recréé automatiquement.
+
+## 5. « Se connecter avec Achievers » (OAuth 2)
+
+Pour un bouton « Se connecter avec Achievers », et pour lire les données d'un joueur **même si son
+profil est privé**, avec son accord. Le flux est le code d'autorisation avec **PKCE S256
+obligatoire** ; Lure est un client confidentiel (le secret reste sur le serveur).
+
+**Portées** :
+
+| Portée         | Donne accès à                                       |
+| -------------- | --------------------------------------------------- |
+| `profile`      | nom, avatar, clan, statistiques ; toujours accordée |
+| `library`      | jeux et progression, même au profil privé           |
+| `achievements` | le détail des succès, jeu par jeu                   |
+
+### Le parcours
+
+1. **Préparer** : générer un `code_verifier` aléatoire de 43 à 128 caractères, le
+   `code_challenge` = base64url(SHA-256(`code_verifier`)), et un `state` aléatoire, gardés dans la
+   session du joueur.
+
+   ```js
+   import { createHash, randomBytes } from 'node:crypto';
+   const verifier = randomBytes(32).toString('base64url');
+   const challenge = createHash('sha256').update(verifier).digest('base64url');
+   const state = randomBytes(16).toString('base64url');
+   ```
+
+2. **Envoyer le joueur** sur la page d'accord :
 
    ```
-   https://<achievers>/oauth/authorize?response_type=code&client_id=ach_…
+   https://achievers.games/oauth/authorize
+     ?response_type=code
+     &client_id=ach_…
      &redirect_uri=https://lureverse.fr/auth/achievers/callback
-     &scope=library%20achievements&state=…&code_challenge=…&code_challenge_method=S256
+     &scope=library%20achievements
+     &state=<state>
+     &code_challenge=<challenge>
+     &code_challenge_method=S256
    ```
 
-   Le joueur se connecte si besoin, voit ce que Lure demande et accepte. S'il l'a déjà accepté
-   avec les mêmes portées, il revient aussitôt, sans écran.
+   Il se connecte si besoin, voit ce que Lure pourra lire et accepte. S'il a déjà accepté les
+   mêmes portées, il revient aussitôt, sans écran. `redirect_uri` doit être exactement celle
+   déclarée chez nous.
 
-3. Au retour (`?code=…&state=…`, ou `?error=access_denied`), échanger le code **en JSON** :
+3. **Au retour** sur ton adresse : vérifie que `state` est le tien. Tu reçois `?code=ac_…`, ou
+   `?error=access_denied` si le joueur a refusé.
+
+4. **Échanger le code**, en JSON (pas en formulaire : notre protection CSRF refuse les formulaires
+   venus d'un autre site). Le code est valable 10 minutes, une seule fois.
 
    ```bash
-   curl -X POST https://<achievers>/oauth/token -H "Content-Type: application/json" -d '{
-     "grant_type": "authorization_code", "client_id": "ach_…", "client_secret": "acs_…",
-     "code": "ac_…", "code_verifier": "…", "redirect_uri": "https://lureverse.fr/auth/achievers/callback"
+   curl -X POST https://achievers.games/oauth/token -H "Content-Type: application/json" -d '{
+     "grant_type": "authorization_code",
+     "client_id": "ach_…",
+     "client_secret": "acs_…",
+     "code": "ac_…",
+     "code_verifier": "<verifier>",
+     "redirect_uri": "https://lureverse.fr/auth/achievers/callback"
    }'
    ```
 
-   Réponse : `access_token` (1 h), `refresh_token` (60 jours), `scope`. **JSON et non
-   formulaire** : la protection CSRF du site refuse les formulaires venus d'un autre site.
+   ```json
+   {
+     "access_token": "at_…",
+     "token_type": "Bearer",
+     "expires_in": 3600,
+     "refresh_token": "rt_…",
+     "scope": "profile library achievements"
+   }
+   ```
 
-4. Appeler les routes `/me` avec `Authorization: Bearer at_…`.
-5. Avant expiration, `{"grant_type": "refresh_token", "refresh_token": "rt_…", …}` sur le même
-   point d'entrée. **Chaque jeton de rafraîchissement ne sert qu'une fois** : garder le nouveau.
-6. Pour se déconnecter : `POST /oauth/revoke` avec `{"client_id", "client_secret", "token"}`.
+5. **Lire** avec `Authorization: Bearer at_…` :
 
-**Ce qui coupe l'accès** : le joueur le retire dans `/compte` (« Applications autorisées »), ou
-Lure révoque. Et par sécurité, un code ou un jeton de rafraîchissement **présenté deux fois**
-fait tomber tout ce que l'accord a délivré : c'est le signe qu'il a été volé.
+   | Route                                  | Portée         | Même réponse que                          |
+   | -------------------------------------- | -------------- | ----------------------------------------- |
+   | `GET /api/v1/me`                       | `profile`      | `/users/{handle}`                         |
+   | `GET /api/v1/me/games`                 | `library`      | `/users/{handle}/games`, mêmes paramètres |
+   | `GET /api/v1/me/games/{platform}/{id}` | `achievements` | `/users/{handle}/games/{platform}/{id}`   |
+   | `GET /api/v1/me/almost`                | `library`      | `/users/{handle}/almost`                  |
 
-## 4. L'API v1
+   `GET /me` donne l'`id` Achievers du joueur : c'est lui qu'il faut garder pour relier le compte
+   Lure. Un jeton expiré ou retiré répond `401 invalid_token` ; une portée manquante,
+   `403 insufficient_scope`.
 
-Base : `https://<achievers>/api/v1`. JSON, dates ISO 8601, pagination par curseur, erreurs
-`{ "error": "code", "message": "…" }`. Description OpenAPI servie sur `/api/v1/openapi.json`.
+6. **Rafraîchir** avant l'heure, sur le même point d'entrée :
 
-### Identifier un jeu entre les deux sites
+   ```json
+   {
+     "grant_type": "refresh_token",
+     "client_id": "ach_…",
+     "client_secret": "acs_…",
+     "refresh_token": "rt_…"
+   }
+   ```
 
-Lure identifie ses jeux par **appid Steam** (`https://lureverse.fr/jeu/683320`). Achievers stocke
-déjà le couple (`platform`, `platformGameId`) : pour Steam, c'est ce même appid. L'adresse de
-l'API reprend donc celle de Lure : `/api/v1/games/steam/683320`.
+   Tu reçois une **nouvelle paire** : garde le nouveau `refresh_token`, l'ancien ne sert plus.
+   Un jeton de rafraîchissement vaut 60 jours.
 
-Pour un simple lien, sans clé ni appel d'API, `https://<achievers>/jeux/steam/683320` redirige
-vers la fiche du jeu (`/jeux/<nom-du-jeu>`), en gardant les paramètres (`?utm_source=lure`).
-Même forme pour les autres plateformes : `/jeux/psn/…`, `/jeux/xbox/…`. Les fiches gardent leur
-adresse lisible, utile au partage et au référencement.
+7. **Déconnecter** : `POST https://achievers.games/oauth/revoke`, en JSON,
+   `{"client_id", "client_secret", "token"}`. Révoquer le `refresh_token` coupe tout l'accès.
 
-### Routes publiques — en place
+**Sécurité** : un code ou un jeton de rafraîchissement présenté **deux fois** coupe tout l'accès
+du joueur, car c'est le signe d'un vol. Ne rejoue donc jamais une requête de jeton sans relire la
+réponse. Le joueur peut aussi retirer l'accès à tout moment depuis son compte Achievers : la
+prochaine requête répond `401`, et il faut lui reproposer de se connecter.
 
-Chaque appel porte la clé : `Authorization: Bearer ak_…`. Les administrateurs la créent, la
-remplacent ou la révoquent dans **Modération → Sites partenaires** ; elle ne s'affiche qu'une fois
-et seule son empreinte SHA-256 est gardée.
+## 6. Recevoir les nouveaux succès (webhooks)
 
-| Méthode | Route                                   | Contenu                                                                                                |
-| ------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| GET     | `/users/{handle}`                       | nom, avatar, clan, lien de la carte, stats (jeux, succès, cartes…)                                     |
-| GET     | `/users/{handle}/games`                 | jeux et progression, `?platform=steam`, `?sort=`, `?status=`, `?since=`, `?limit=` (≤ 100), `?cursor=` |
-| GET     | `/users/{handle}/games/{platform}/{id}` | progression d'un jeu et chaque succès, obtenu ou non                                                   |
-| GET     | `/games/{platform}/{id}`                | fiche du jeu, joueurs publics, taux de 100 %, difficulté, guides, temps médian                         |
-| POST    | `/games/lookup`                         | les mêmes fiches pour 100 jeux au plus en un appel                                                     |
-| GET     | `/users/{handle}/almost`                | jeux commencés les plus proches du 100 %, avec ce qui reste (nombre, rareté, manquables)               |
-| GET     | `/games/popular`                        | jeux où les chasseurs sont actifs, `?period=week` ou `month` : 100 % atteints, joueurs actifs          |
-| GET     | `/openapi.json`                         | description OpenAPI 3.1, lisible sans clé                                                              |
+Achievers prévient Lure dans la minute quand un joueur suivi débloque un succès. C'est le
+complément de l'API : les webhooks disent **quand** ça change, l'API donne **l'état** (premier
+chargement, rattrapage après une panne).
 
-### Ce que la fiche d'un jeu dit de son 100 %
+**Joueurs suivis** :
 
-C'est ce que Lure n'a pas ailleurs : de quoi annoncer « 100 % accessible : aucun manquable, guide
-disponible, environ 12 h ».
+- ceux reliés automatiquement (§4) dont le profil est public ;
+- ceux qui ont autorisé Lure avec la portée `library` (§5), même au profil privé.
 
-- `difficulty.missableAchievements` : succès qui peuvent se perdre pour la partie en cours.
-  `difficulty.missablesReviewed` dit si ce compte est complet (un guide officiel a relevé tous
-  les succès) ou s'il ne contient que les manquables déjà connus.
-- `difficulty.rarestAchievement` : pourcentage de joueurs Steam qui ont le succès le plus rare.
-- `guides.achievementsCovered` : succès qui ont au moins un guide lisible (officiel, ou pas
-  enterré par les votes). `guides.gameGuides` : guides complets du jeu ;
-  `guides.bestGameGuideUrl` mène au guide officiel, sinon au mieux noté.
-- `completionTime` : temps de jeu médian (temps Steam) des joueurs publics à 100 %, avec la
-  taille de l'échantillon. `null` sous cinq joueurs : trop peu pour dire quelque chose, et
-  jamais le temps d'un joueur seul. C'est une médiane, à afficher comme « environ ».
+Rien ne part pour un jeu masqué par le joueur ni pour un jeu adulte. Au premier branchement, les
+envois partent du moment présent : l'historique n'est pas renvoyé, utilise l'API pour lui.
 
-### Recherche groupée
+**L'envoi** : un `POST` JSON sur ton adresse, au plus une fois par minute, regroupant jusqu'à 500
+succès, un événement par joueur et par jeu.
 
-Une bibliothèque de 300 jeux se lit en 3 appels au lieu de 300 :
-
-```bash
-curl -X POST -H "Authorization: Bearer ak_…" -H "Content-Type: application/json" \
-  -d '{"games":[{"platform":"steam","id":"683320"},{"platform":"steam","id":"219150"}]}' \
-  https://<achievers>/api/v1/games/lookup
+```http
+POST /api/achievers/webhook HTTP/1.1
+Content-Type: application/json
+User-Agent: Achievers-Webhooks/1
+X-Achievers-Signature: t=1794168000,v1=5f2c…
 ```
-
-Réponse : `items` (les fiches trouvées, dans l'ordre demandé, sans doublon) et `missing` (les
-jeux qu'Achievers ne connaît pas, ou les jeux adultes).
-
-Sur la liste des jeux, trois paramètres de plus :
-
-- `sort` : `name`, `completion`, `lastUnlocked` ou `updated`. Sans lui, l'ordre historique est
-  conservé — stable d'une page à l'autre, mais sans signification pour le partenaire.
-- `status` : `completed` (100 %), `started` (commencé, pas fini) ou `untouched` (0 %).
-- `since` : ne rend que les progressions réécrites à partir de cet instant ISO 8601. C'est le
-  rattrapage incrémental : on ne relit que ce qui a pu changer.
-
-Le curseur porte l'ordre et la valeur du dernier élément : il se refuse s'il vient d'un autre tri
-(`400 bad_request`), comme tout paramètre incompris — plus de valeur remplacée en silence.
-
-Exemple :
-
-```bash
-curl -H "Authorization: Bearer ak_…" https://<achievers>/api/v1/games/steam/683320
-```
-
-Ce qui ne sort jamais : un profil privé (404), un jeu masqué par le joueur, un jeu adulte, le
-nom et la description d'un succès caché tant qu'il n'est pas obtenu. Les textes sont dans la
-langue de la plateforme (pas de traduction côté API).
-
-### Routes privées — en place (jeton OAuth du joueur)
-
-Les mêmes réponses que les routes publiques, pour le joueur qui a donné son accord, même au profil
-privé. Les jeux masqués et adultes restent exclus.
-
-| Méthode | Route                       | Portée         | Équivalent public                       |
-| ------- | --------------------------- | -------------- | --------------------------------------- |
-| GET     | `/me`                       | `profile`      | `/users/{handle}` (+ `isPublic`)        |
-| GET     | `/me/games`                 | `library`      | `/users/{handle}/games`                 |
-| GET     | `/me/games/{platform}/{id}` | `achievements` | `/users/{handle}/games/{platform}/{id}` |
-| GET     | `/me/almost`                | `library`      | `/users/{handle}/almost`                |
-
-### Webhooks — en place
-
-Les deux se complètent, aucun ne remplace l'autre :
-
-- **Webhooks** pour savoir _quand_ quelque chose change : Lure est prévenu dans la minute, sans
-  interroger l'API pour rien.
-- **API** pour lire _l'état_ : premier chargement d'un joueur, et rattrapage si un webhook s'est
-  perdu (serveur de Lure en panne, déploiement…).
-
-**Qui part** : les nouveaux succès des joueurs **reliés à Lure** (`PartnerLink`, non délié) et
-dont le profil est **public**. Rien pour un jeu masqué par le joueur ni pour un jeu adulte : on
-reste sur ce qu'un visiteur verrait de toute façon.
-
-**Réglage** : dans Modération → Sites partenaires, renseigner l'identifiant `lure` (celui de la
-liaison de comptes) et l'adresse HTTPS. Le secret de signature s'affiche alors une seule fois. Au
-premier branchement, l'envoi part de maintenant : l'historique n'est pas renvoyé.
-
-**Format** : un `POST` par minute au plus, regroupant jusqu'à 500 succès, un événement par joueur
-et par jeu.
 
 ```json
 {
   "events": [
     {
-      "id": "0b6f…",
+      "id": "0b6f7c1e-…",
       "type": "achievements.unlocked",
-      "user": { "partnerUserId": "id-du-compte-lure", "handle": "ada" },
+      "user": { "id": "cmv0…", "handle": "kokki", "partnerUserId": "id-du-compte-lure" },
       "game": { "platform": "steam", "platformGameId": "219150", "name": "Hotline Miami" },
       "achievements": [
-        { "id": "ACH_COMBO_KING", "name": "Combo King", "unlockedAt": "2026-03-01T20:00:00Z" }
+        { "id": "ACH_COMBO_KING", "name": "Combo King", "unlockedAt": "2026-11-08T20:00:00.000Z" }
       ],
       "progress": { "unlocked": 34, "total": 35, "completion": 97.1, "completed": false }
     }
@@ -352,60 +480,52 @@ et par jeu.
 }
 ```
 
-`type` vaut `game.completed` quand l'envoi fait passer le jeu à 100 %.
+- `type` vaut `game.completed` quand ces succès font passer le jeu à 100 %, sinon
+  `achievements.unlocked`.
+- `user.partnerUserId` est l'identifiant du compte Lure si les comptes sont reliés
+  automatiquement ; `null` pour un joueur venu seulement par OAuth : retrouve-le par `user.id`.
 
-**Signature** : l'en-tête `X-Achievers-Signature: t=<horodatage>,v1=<hex>` porte un
-HMAC-SHA256 de `"<horodatage>.<corps brut>"` avec le secret. Côté Lure :
+**Vérifier la signature** avant tout traitement. `X-Achievers-Signature` porte un HMAC-SHA256 de
+`"<t>.<corps brut>"` avec le secret `whsec_…`. Calcule-le sur le **corps brut**, avant de parser
+le JSON :
 
 ```js
-const [, t, v1] = /t=(\d+),v1=([0-9a-f]+)/.exec(req.headers['x-achievers-signature']);
-const expected = createHmac('sha256', SECRET).update(`${t}.${rawBody}`).digest('hex');
-const fresh = Math.abs(Date.now() / 1000 - Number(t)) < 300;
-if (!fresh || !timingSafeEqual(Buffer.from(v1), Buffer.from(expected))) return res.status(401);
+import { createHmac, timingSafeEqual } from 'node:crypto';
+
+function verify(rawBody, header, secret) {
+  const match = /^t=(\d+),v1=([0-9a-f]{64})$/.exec(header ?? '');
+  if (!match) return false;
+  const [, t, v1] = match;
+  // Plus de 5 minutes : un ancien envoi rejoué, on refuse.
+  if (Math.abs(Date.now() / 1000 - Number(t)) > 300) return false;
+  const expected = createHmac('sha256', secret).update(`${t}.${rawBody}`).digest('hex');
+  return timingSafeEqual(Buffer.from(v1), Buffer.from(expected));
+}
 ```
 
-**Livraison au moins une fois** : Achievers n'avance qu'après une réponse 2xx. Sinon il retente
-après 1 min, puis 2, 4… jusqu'à 1 h entre deux essais ; l'état est visible dans Modération. Un
-même succès peut donc arriver deux fois : Lure ignore un `id` d'événement déjà traité, ou un
-couple joueur + succès déjà connu.
+**Répondre** `2xx` rapidement, puis traiter. Sans `2xx`, Achievers renvoie le même lot après
+1 minute, puis 2, 4… jusqu'à 1 heure entre deux essais. Un succès peut donc arriver deux fois :
+ignore un `id` d'événement déjà traité, ou un couple joueur + succès déjà connu.
 
-### Sécurité et limites
+## 7. Liens et cartes sans API
 
-- `/api/v1` sort de la limite par adresse du hook : la limite suit **la clé** (600 requêtes par
-  minute), et les clés invalides sont freinées par adresse (30 par minute).
-- Appels **serveur à serveur** uniquement : la clé ne doit jamais apparaître dans le navigateur.
-  Pas de CORS sur les routes à clé ; `/openapi.json` est ouvert à tous.
-- Les règles d'affichage du site s'appliquent : profils privés, jeux masqués, jeux adultes exclus
-  par défaut (`visibleGames`, `publicGames`).
-- Tests d'intégration (`integration.partner.test.ts`) : clé remplacée ou révoquée refusée,
-  profil privé, jeu masqué, jeu adulte, succès caché, pagination, joueurs privés non comptés.
+Rien de tout ceci ne demande de clé.
 
-## 5. Dans l'autre sens : ce que Lure pourrait nous offrir
+**Lien vers un jeu par son appid** : `https://achievers.games/jeux/steam/683320` redirige vers la
+fiche du jeu sur Achievers, en gardant les paramètres (`?utm_source=lure`). Même forme pour
+`psn`, `xbox`, `retro` et `blizzard`. Pratique pour un lien « Voir les succès sur Achievers » sur
+chaque fiche Lure.
 
-- **Durées de jeu** (« environ 40 h pour le 100 % ») : affichées sur les fiches jeu et les jeux
-  presque finis. Récupérées côté serveur, mises en cache 24 h.
-- **« Trouver un jeu » contextualisé** : un lien vers Lure qui transmet le jeu ou l'envie, par
-  exemple `https://lureverse.fr/trouver?temps=60&envie=finir`.
+**Carte de joueur** à intégrer comme une image, en SVG (600×180) ou en PNG (1200×360, qui
+s'affiche aussi sur Discord) :
 
-## 6. Étapes
+```html
+<img
+  src="https://achievers.games/u/kokki/carte.svg"
+  width="600"
+  height="180"
+  alt="Carte Achievers de kokki"
+/>
+```
 
-1. ~~Diapositive Lure et carte de joueur (SVG et PNG).~~
-2. Se mettre d'accord avec le développeur de Lure : ~~identifiants de jeux~~ (appid Steam),
-   liste des données, nom de domaine final.
-3. ~~Routes publiques `/api/v1`, clé partenaire, OpenAPI, recherche groupée, difficulté du 100 %,
-   jeux presque finis, jeux populaires.~~
-4. ~~Recherche d'identités + `PartnerLink` : la liaison automatique à la connexion.~~ Il reste à
-   Lure d'exposer le même point d'entrée, et à renseigner `LURE_API_URL` et `LURE_API_KEY`.
-5. ~~Achievers fournisseur OAuth et routes `/me`.~~
-6. ~~Webhooks signés.~~
-7. « Se connecter avec Lure » sur Achievers, quand Lure fournit son OAuth.
-8. Rattrapage des comptes déjà inscrits des deux côtés (empreintes HMAC des identités).
-
-## Questions pour le développeur de Lure
-
-- Quelle est votre pile technique, et existe-t-il déjà un fournisseur OAuth côté Lure ?
-- Stockez-vous, pour chaque compte, l'identifiant global du fournisseur (`id` Discord, SteamID64…)
-  dans une colonne unique ? C'est tout ce qu'il faut pour la liaison automatique du §2.
-- Avez-vous un serveur capable de recevoir des webhooks (une adresse HTTPS publique) ?
-- Quelles données voulez-vous afficher sur Lure : la carte seule, la progression, ou le détail
-  des succès ?
+Un profil privé répond `404`. Les liens exacts sont aussi dans `cardUrl` et `cardPngUrl` (§3).
