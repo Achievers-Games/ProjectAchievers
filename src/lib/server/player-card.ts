@@ -1,3 +1,5 @@
+import { db } from './db';
+import { userStats } from './queries/stats';
 import { m } from '#lib/paraglide/messages';
 import { formatNumber } from '#lib/labels';
 import { logger } from '#lib/logger';
@@ -130,3 +132,42 @@ export async function inlineAvatar(
   avatars.set(url, { data, at: now });
   return data;
 }
+
+/** La carte d'un profil public, prête à servir ; `null` pour un profil inconnu ou privé. */
+export async function playerCardSvg(handle: string): Promise<string | null> {
+  const user = await db.user.findUnique({
+    where: { handle },
+    select: {
+      id: true,
+      handle: true,
+      displayName: true,
+      avatarUrl: true,
+      isPublic: true,
+      clanMember: { select: { clan: { select: { name: true } } } },
+    },
+  });
+  // Un profil privé ne se montre pas plus ailleurs que sur le site.
+  if (!user?.isPublic) return null;
+
+  const [stats, avatar] = await Promise.all([userStats(user.id), inlineAvatar(user.avatarUrl)]);
+  return renderPlayerCard({
+    displayName: user.displayName,
+    handle: user.handle,
+    clan: user.clanMember?.clan.name ?? null,
+    games: stats.games,
+    unlocked: stats.unlocked,
+    cards: stats.tiers.reduce((sum, count) => sum + count, 0),
+    points: stats.points,
+    avatar,
+  });
+}
+
+/** Assez frais pour suivre une séance de chasse, assez long pour ménager la base. */
+export const CARD_MAX_AGE = 30 * 60;
+
+/** Les en-têtes communs aux deux formats : d'autres sites l'affichent, c'est tout l'intérêt. */
+export const cardHeaders = (type: string) => ({
+  'Content-Type': type,
+  'Cache-Control': `public, max-age=${CARD_MAX_AGE}`,
+  'Cross-Origin-Resource-Policy': 'cross-origin',
+});

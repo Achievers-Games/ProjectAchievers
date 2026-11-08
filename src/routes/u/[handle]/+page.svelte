@@ -27,7 +27,8 @@
       : undefined;
   /** Le lien de l'image, prêt à coller sur un forum, Lure ou un README. */
   async function shareCard() {
-    const url = `${data.origin}/u/${profile.user.handle}/carte.svg`;
+    // Le PNG s’affiche partout, Discord compris ; le SVG reste servi pour qui le préfère.
+    const url = `${data.origin}/u/${profile.user.handle}/carte.png`;
     try {
       await navigator.clipboard.writeText(url);
       toast(m.player_card_copied());

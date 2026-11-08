@@ -12,7 +12,7 @@ versionnée et par une liaison de comptes que le joueur accepte lui-même.
 | Carte de joueur intégrable (SVG)                     | `GET /u/{handle}/carte.svg` | fait |
 | Bouton « Carte de joueur » (copie le lien)           | profil public               | fait |
 
-La carte s'intègre partout avec une simple image :
+La carte s’intègre partout avec une simple image, en SVG ou en PNG (`/u/{handle}/carte.png`, 1200×360, pour Discord et les forums) :
 
 ```html
 <img

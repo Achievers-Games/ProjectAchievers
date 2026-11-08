@@ -441,6 +441,10 @@ export function partnerOpenApi(origin: string) {
             avatarUrl: nullable('string'),
             url: { type: 'string' },
             cardUrl: { type: 'string', description: 'Embeddable SVG player card, 600×180.' },
+            cardPngUrl: {
+              type: 'string',
+              description: 'The same card as a 1200×360 PNG, for Discord and forums.',
+            },
             memberSince: { type: 'string', format: 'date-time' },
             clan: {
               type: ['object', 'null'],

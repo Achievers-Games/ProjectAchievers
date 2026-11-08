@@ -71,6 +71,8 @@ export async function partnerUser(handle: string) {
     avatarUrl: user.avatarUrl,
     url: absolute(`/u/${user.handle}`),
     cardUrl: absolute(`/u/${user.handle}/carte.svg`),
+    // La même carte en PNG, pour Discord et les forums qui refusent le SVG.
+    cardPngUrl: absolute(`/u/${user.handle}/carte.png`),
     memberSince: user.createdAt.toISOString(),
     clan: clan ? { name: clan.name, slug: clan.slug, url: absolute(`/clans/${clan.slug}`) } : null,
     stats: {
