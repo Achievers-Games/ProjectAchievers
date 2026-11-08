@@ -8,6 +8,10 @@
   import Avatar from './Avatar.svelte';
   import { dragScroll } from '#lib/actions/drag-scroll';
   import type { BannerGame, Collector } from '#lib/server/queries';
+  // Les polices de Lure, servies d'ici : le navigateur ne les télécharge que si la diapositive
+  // s'affiche, et aucune requête ne part chez Google.
+  import '@fontsource/cinzel/latin-900.css';
+  import '@fontsource-variable/bricolage-grotesque/wght.css';
 
   const AUTOPLAY = 7_000;
 
@@ -51,6 +55,15 @@
       cta: m.banner_season_cta(),
     },
     {
+      id: 'lure',
+      game: null,
+      eyebrow: m.banner_lure_label(),
+      title: m.banner_lure_title(),
+      text: m.banner_lure_text(),
+      href: LURE,
+      cta: m.banner_lure_cta(),
+    },
+    {
       id: 'classement',
       game: banners.ranking,
       eyebrow: m.ranking(),
@@ -67,15 +80,6 @@
       text: m.banner_frames_text(),
       href: member ? '/compte' : signIn,
       cta: m.banner_frames_cta(),
-    },
-    {
-      id: 'lure',
-      game: null,
-      eyebrow: m.banner_lure_label(),
-      title: m.banner_lure_title(),
-      text: m.banner_lure_text(),
-      href: LURE,
-      cta: m.banner_lure_cta(),
     },
   ]);
 
@@ -158,6 +162,13 @@
               {m.count_points({ count: leader.score })}
             </span>
           </a>
+        {/if}
+        {#if slide.id === 'lure'}
+          <!-- Le logo de Lure, en grand : une lueur qui respire, traversée de deux rayons. -->
+          <div class="lure-mark" aria-hidden="true">
+            <span class="lure-logo"><u></u><b></b><i></i></span>
+            <span class="lure-wordmark">Lure</span>
+          </div>
         {/if}
         {#if slide.id === 'cadres'}
           <div class="carousel-frames" aria-hidden="true">

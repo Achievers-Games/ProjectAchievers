@@ -1336,12 +1336,121 @@
   --slide-b: #0d0a1c;
 }
 .carousel-slide[data-slide='lure'] {
-  --slide-a: #4a2408;
-  --slide-b: #0d0a1c;
+  --slide-a: #141a33;
+  --slide-b: #0c1022;
+  background-image:
+    radial-gradient(26rem 16rem at 80% 50%, rgb(255 150 60 / 0.2), transparent 70%),
+    radial-gradient(60rem 30rem at 50% -8rem, #2b2748, transparent 70%),
+    linear-gradient(115deg, var(--slide-a), var(--slide-b));
+}
+.carousel-slide[data-slide='lure'] .carousel-eyebrow {
+  color: #ffd993;
+}
+.carousel-slide[data-slide='lure'] .carousel-title {
+  font-family: 'Bricolage Grotesque Variable', 'Trebuchet MS', sans-serif;
+  color: #f1f0ff;
+}
+.carousel-slide[data-slide='lure'] .carousel-text {
+  color: #a9b2d6;
+}
+.carousel-slide[data-slide='lure'] .btn-primary {
+  background: #ffb547;
+  border-color: #ffb547;
+  color: #2a1500;
+}
+.carousel-slide[data-slide='lure'] .btn-primary:hover {
+  background: #ffd993;
+}
+.lure-mark {
+  @apply absolute right-16 top-1/2 hidden -translate-y-1/2 flex-col items-center gap-5 md:flex;
+}
+.lure-logo {
+  position: relative;
+  display: block;
+  width: 1em;
+  height: 1em;
+  font-size: 7rem;
+}
+.lure-logo i,
+.lure-logo b,
+.lure-logo u {
+  position: absolute;
+  display: block;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+.lure-logo i {
+  width: 0.22em;
+  height: 0.22em;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow:
+    0 0 0.1em 0.06em #fff,
+    0 0 0.3em 0.14em #ffd894,
+    0 0 0.8em 0.36em rgb(255 130 50 / 0.6);
+  animation: lure-glow 3.4s ease-in-out infinite;
+}
+.lure-logo b {
+  width: 1.6em;
+  height: 0.03em;
+  background: linear-gradient(90deg, transparent, #ffc76a 30%, #fff 50%, #ffc76a 70%, transparent);
+  animation: lure-beam 4s ease-in-out infinite;
+}
+.lure-logo u {
+  width: 0.03em;
+  height: 1em;
+  background: linear-gradient(transparent, #ffe6b8 50%, transparent);
+  opacity: 0.75;
+}
+.lure-wordmark {
+  font-family: 'Cinzel', Georgia, serif;
+  font-weight: 900;
+  font-size: 2.25rem;
+  line-height: 1;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  background: linear-gradient(#fff8dd 8%, #ffc861 55%, #d9772a 96%);
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 7px rgb(255 180 90 / 0.5));
+}
+@keyframes lure-beam {
+  0%,
+  100% {
+    opacity: 0.82;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes lure-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0.1em 0.06em #fff,
+      0 0 0.3em 0.14em #ffd894,
+      0 0 0.8em 0.36em rgb(255 130 50 / 0.6),
+      0 0 1.1em 0.5em rgb(255 80 30 / 0.2);
+  }
+  50% {
+    box-shadow:
+      0 0 0.12em 0.07em #fff,
+      0 0 0.36em 0.18em #ffe0a0,
+      0 0 0.95em 0.44em rgb(255 150 60 / 0.75),
+      0 0 1.4em 0.66em rgb(255 80 30 / 0.42);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lure-logo i,
+  .lure-logo b {
+    animation: none;
+  }
 }
 .carousel-eyebrow {
   @apply text-xs font-semibold uppercase tracking-wide text-white/70;
 }
+/* Lure, le site partenaire : sa nuit, sa lueur et ses polices, repris de lureverse.fr. */
 .carousel-title {
   @apply text-3xl font-extrabold text-white;
 }
