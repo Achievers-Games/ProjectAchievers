@@ -98,7 +98,8 @@ export interface SiteFacts {
   clanId?: string | null;
   /** Le succès de jeu derrière le guide terminé, le commentaire et la réaction qui comptent. */
   guideAchievementId?: string | null;
-  commentAchievementIds?: string[];
+  // Vide pour un commentaire de guide : le palier compte, sans succès à montrer en preuve.
+  commentAchievementIds?: (string | null)[];
   reactionAchievementId?: string | null;
   /** Un ami a commencé un jeu que le joueur avait laissé tomber. */
   badInfluence: string | null;

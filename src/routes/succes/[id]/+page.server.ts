@@ -1,6 +1,5 @@
 import { error, fail } from '@sveltejs/kit';
 import { z } from 'zod';
-import type { ReactionType } from '#prisma';
 import { requireLogin } from '#lib/server/auth';
 import { db } from '#lib/server/db';
 import { censor } from '#lib/profanity';
@@ -11,6 +10,7 @@ import { logger } from '#lib/logger';
 import { rateLimit } from '#lib/server/rate-limit';
 import { GUIDE_ORDER, checkGuideItem, deleteGuide, isBuried, voteGuide } from '#lib/server/guides';
 import { canTranslate, translateContent } from '#lib/server/translate';
+import { commentActions, loadComments } from '#lib/server/comments';
 import { getLocale } from '#lib/paraglide/runtime';
 import type { Actions, PageServerLoad } from './$types';
 import { m } from '#lib/paraglide/messages';
@@ -81,47 +81,9 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
         translations,
       },
     }),
-    db.comment.findMany({
-      where: { achievementId: params.id, parentId: null, status: { not: 'HIDDEN' } },
-      orderBy: { createdAt: 'asc' },
-      take: 100,
-      include: {
-        author: {
-          select: publicUser,
-        },
-        reactions: { select: { userId: true, type: true } },
-        translations,
-        replies: {
-          where: { status: { not: 'HIDDEN' } },
-          orderBy: { createdAt: 'asc' },
-          include: {
-            author: {
-              select: publicUser,
-            },
-            reactions: { select: { userId: true, type: true } },
-            translations,
-          },
-        },
-      },
-    }),
+    loadComments({ achievementId: params.id }, locals.user),
     db.userAchievement.count({ where: { achievementId: params.id, user: { isPublic: true } } }),
   ]);
-
-  type RawComment = Omit<(typeof comments)[number], 'replies'>;
-  const view = (comment: RawComment) => {
-    const counts: Partial<Record<ReactionType, number>> = {};
-    for (const r of comment.reactions) counts[r.type] = (counts[r.type] ?? 0) + 1;
-    return {
-      id: comment.id,
-      createdAt: comment.createdAt,
-      html: renderMarkdown(clean(comment.contentMd, comment.locale)),
-      ...translation(comment),
-      author: comment.author,
-      mine: comment.authorId === viewerId,
-      counts,
-      myReaction: comment.reactions.find((r) => r.userId === viewerId)?.type ?? null,
-    };
-  };
 
   const unlock = achievement.unlocks?.[0]?.unlockedAt ?? null;
   const secret = achievement.hidden && !unlock;
@@ -160,7 +122,7 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
       mine: guide.authorId === viewerId,
       myVote: guide.votes?.[0]?.value ?? 0,
     })),
-    comments: comments.map((comment) => ({ ...view(comment), replies: comment.replies.map(view) })),
+    comments,
   };
 };
 
@@ -182,11 +144,6 @@ const translateSchema = z.object({
   targetId: z.string().min(1),
 });
 
-const reactionSchema = z.object({
-  commentId: z.string().min(1),
-  type: z.enum(['HELPFUL', 'THANKS', 'FUNNY']),
-});
-
 const requireUser = (locals: App.Locals, url: URL) => requireLogin(locals, url.pathname);
 
 const tooFast = (userId: string, action = 'publication') =>
@@ -204,6 +161,11 @@ const checkSchema = z.object({
 const achievementExists = async (id: string) => (await db.achievement.count({ where: { id } })) > 0;
 
 export const actions: Actions = {
+  // La discussion du succès : commenter, réagir, supprimer, traduire et signaler un commentaire.
+  ...commentActions(async ({ params }) =>
+    params.id && (await achievementExists(params.id)) ? { achievementId: params.id } : null,
+  ),
+
   guide: async ({ request, params, locals, url }) => {
     const user = requireUser(locals, url);
     const form = await request.formData();
@@ -239,73 +201,6 @@ export const actions: Actions = {
     if (!(await checkGuideItem(guideId, user.id, item, Boolean(checked)))) {
       return fail(404, { error: m.gone() });
     }
-  },
-
-  comment: async ({ request, params, locals, url }) => {
-    const user = requireUser(locals, url);
-    const form = await request.formData();
-    const content = body(2_000).safeParse(form.get('content'));
-    if (!content.success) return fail(400, { error: content.error.issues[0]?.message });
-    if (tooFast(user.id)) return fail(429, { error: m.too_fast() });
-    if (!(await achievementExists(params.id))) return fail(404, { error: m.gone() });
-
-    // Les réponses restent à un seul niveau : plus lisible sur mobile.
-    const parentId = form.get('parentId');
-    const parent =
-      typeof parentId === 'string' && parentId
-        ? await db.comment.findFirst({
-            where: { id: parentId, achievementId: params.id, parentId: null, status: 'PUBLISHED' },
-            select: { id: true },
-          })
-        : null;
-    if (parentId && !parent) return fail(404, { error: m.gone() });
-
-    await db.comment.create({
-      data: {
-        achievementId: params.id,
-        authorId: user.id,
-        contentMd: content.data,
-        locale: getLocale(),
-        parentId: parent?.id,
-      },
-    });
-    return { success: m.comment_published() };
-  },
-
-  react: async ({ request, locals, url }) => {
-    const user = requireUser(locals, url);
-    const parsed = reactionSchema.safeParse(Object.fromEntries(await request.formData()));
-    if (!parsed.success) return fail(400, { error: m.reaction_invalid() });
-    const comment = await db.comment.count({
-      where: { id: parsed.data.commentId, status: 'PUBLISHED' },
-    });
-    if (!comment) return fail(404, { error: m.gone() });
-
-    const key = { commentId_userId: { commentId: parsed.data.commentId, userId: user.id } };
-    const current = await db.commentReaction.findUnique({ where: key });
-    if (current?.type === parsed.data.type) await db.commentReaction.delete({ where: key });
-    else {
-      await db.commentReaction.upsert({
-        where: key,
-        update: { type: parsed.data.type },
-        create: { ...parsed.data, userId: user.id },
-      });
-    }
-  },
-
-  deleteComment: async ({ request, locals, url }) => {
-    const user = requireUser(locals, url);
-    const id = String((await request.formData()).get('id'));
-    const own = await db.comment.count({ where: { id, authorId: user.id } });
-    if (!own) return fail(404, { error: m.gone() });
-
-    // Rien n'est gardé ; les réponses des autres survivent en remontant d'un niveau.
-    await db.$transaction([
-      db.comment.updateMany({ where: { parentId: id }, data: { parentId: null } }),
-      db.report.deleteMany({ where: { targetType: 'COMMENT', targetId: id } }),
-      db.comment.delete({ where: { id } }),
-    ]);
-    return { success: m.comment_deleted() };
   },
 
   deleteGuide: async ({ request, locals, url }) => {

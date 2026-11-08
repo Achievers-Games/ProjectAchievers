@@ -18,6 +18,7 @@ import {
 import { rateLimit } from '#lib/server/rate-limit';
 import { canTranslate, translateContent } from '#lib/server/translate';
 import { anchorHeadings } from '#lib/guide-outline';
+import { commentActions, loadComments } from '#lib/server/comments';
 import { logger } from '#lib/logger';
 import { getLocale } from '#lib/paraglide/runtime';
 import type { Actions, PageServerLoad } from './$types';
@@ -64,9 +65,12 @@ export const load: PageServerLoad = async ({ params, locals }) => {
     guide.authorId !== viewerId;
   const cached = autoTranslate ? guide.translations[0]?.contentMd : undefined;
 
+  const comments = await loadComments({ guideId: guide.id }, locals.user);
+
   return {
     game: { name: game.name, slug: game.slug },
     canTranslate: canTranslate(),
+    comments,
     guide: {
       id: guide.id,
       title: clean(guide.title ?? '', guide.locale),
@@ -95,6 +99,14 @@ const checkSchema = z.object({
 const reasonSchema = z.string().trim().min(3).max(500);
 
 export const actions: Actions = {
+  // La discussion du guide : commenter, réagir, supprimer, traduire et signaler un commentaire.
+  ...commentActions(async ({ params, locals }) => {
+    if (!params.slug || !params.id) return null;
+    const game = await guideGame(params.slug, locals.user);
+    const exists = await db.guide.count({ where: { id: params.id, ...gameGuidesWhere(game) } });
+    return exists ? { guideId: params.id } : null;
+  }),
+
   vote: async ({ request, params, locals, url }) => {
     const user = requireLogin(locals, url.pathname);
     await findGuide(params.slug, params.id, locals);

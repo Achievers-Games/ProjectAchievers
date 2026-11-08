@@ -9,6 +9,7 @@
   import Flag from '@lucide/svelte/icons/flag';
   import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
   import Avatar from '#lib/components/Avatar.svelte';
+  import Discussion from '#lib/components/Discussion.svelte';
   import { guideChecks } from '#lib/actions/guide-checks';
   import { outlineOf } from '#lib/guide-outline';
   import { formatRelative } from '#lib/labels';
@@ -249,5 +250,14 @@
       <!-- eslint-disable-next-line svelte/no-at-html-tags -- assaini par renderGuide -->
       {@html html}
     </article>
+  </div>
+
+  <div class="lg:ml-[15.5rem]">
+    <Discussion
+      comments={data.comments}
+      signedIn={Boolean(data.user)}
+      signInHref="/connexion?retour=/jeux/{data.game.slug}/guides/{data.guide.id}"
+      canTranslate={data.canTranslate}
+    />
   </div>
 </div>

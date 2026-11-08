@@ -40,7 +40,13 @@ export const load: PageServerLoad = async ({ locals }) => {
     }),
     db.comment.findMany({
       where: { id: { in: commentIds } },
-      select: { id: true, contentMd: true, achievementId: true, status: true },
+      select: {
+        id: true,
+        contentMd: true,
+        achievementId: true,
+        status: true,
+        guide: { select: { id: true, game: { select: { slug: true } } } },
+      },
     }),
     // Seul le message signalé est lu, jamais le reste de la discussion.
     db.message.findMany({
@@ -65,7 +71,11 @@ export const load: PageServerLoad = async ({ locals }) => {
       const contentMd = [t.title, t.contentMd].filter(Boolean).join('\n\n');
       return [t.id, { contentMd, href: context(t) }] as const;
     }),
-    ...comments.map((t) => [t.id, { contentMd: t.contentMd, href: context(t) }] as const),
+    // Un commentaire de guide mène au guide qu'il commente.
+    ...comments.map((t) => {
+      const href = t.guide ? context({ ...t.guide, achievementId: null }) : context(t);
+      return [t.id, { contentMd: t.contentMd, href }] as const;
+    }),
     ...messages.map((t) => [t.id, { contentMd: t.content, href: null }] as const),
   ]);
 

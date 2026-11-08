@@ -619,6 +619,7 @@ model Guide {
 
   votes        GuideVote[]
   checks       GuideCheck[]
+  comments     Comment[]
   translations ContentTranslation[]
 
   @@index([achievementId, score])
@@ -648,8 +649,11 @@ model GuideVote {
 
 model Comment {
   id            String        @id @default(cuid())
-  achievementId String
-  achievement   Achievement   @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  /// Sous un succès, ou sous un guide complet de jeu : l'un ou l'autre, jamais les deux.
+  achievementId String?
+  achievement   Achievement?  @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  guideId       String?
+  guide         Guide?        @relation(fields: [guideId], references: [id], onDelete: Cascade)
   authorId      String
   author        User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
   parentId      String?
@@ -666,6 +670,7 @@ model Comment {
   translations ContentTranslation[]
 
   @@index([achievementId, createdAt])
+  @@index([guideId, createdAt])
 }
 
 /// Traductions automatiques, supprimées avec le texte d'origine.
