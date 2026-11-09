@@ -445,7 +445,8 @@ test.describe('membre', () => {
     await expect(mine.getByRole('button', { name: 'Traduire' })).toHaveCount(0);
 
     const visitor = await browser.newPage({ locale: 'fr-FR' });
-    await visitor.route('**/*translate', (route) =>
+    // Les commentaires se traduisent par leur propre action, translateComment.
+    await visitor.route('**/*translateComment', (route) =>
       route.fulfill({
         json: { type: 'success', status: 200, data: '[{"html":1},"<p>Translated tip</p>"]' },
       }),
@@ -480,7 +481,7 @@ test.describe('membre', () => {
     await expect(mine).toBeVisible();
 
     const reader = await browser.newPage({ locale: 'en-US' });
-    await reader.route('**/*translate', (route) =>
+    await reader.route('**/*translateComment', (route) =>
       route.fulfill({
         json: { type: 'success', status: 200, data: '[{"html":1},"<p>Automatic tip</p>"]' },
       }),
