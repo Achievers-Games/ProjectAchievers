@@ -1,8 +1,11 @@
 # Le JavaScript produit ne dépend pas de la machine : il se compile en natif, même pour le NAS ARM.
 FROM --platform=$BUILDPLATFORM node:22-alpine AS build
 WORKDIR /app
+# Seulement ce que l'installation lit : une nouvelle migration ne doit pas la refaire (~480 Mo
+# de dépendances, recopiés à chaque fois dans le cache de la CI).
 COPY package*.json prisma.config.ts ./
-COPY prisma ./prisma
+COPY prisma/schema.prisma ./prisma/schema.prisma
+COPY prisma/generated/tsconfig.json ./prisma/generated/tsconfig.json
 RUN npm ci
 COPY . .
 RUN npm run build

@@ -1814,5 +1814,6 @@
   "notification_clan_request": "Demande de clan",
   "notification_clan_rename": "Nom de clan retiré",
   "game_lure_link": "Voir sur Lure",
-  "game_lure_completionist": "{hours} h pour le 100 % selon Lure"
+  "game_lure_completionist": "{hours} h pour le 100 % selon Lure",
+  "game_completion_time": "{hours} h pour le 100 % (médiane de {count} joueurs Achievers)"
 }

@@ -1864,5 +1864,6 @@
   "notification_clan_request": "Заявка в клан",
   "notification_clan_rename": "Название клана удалено",
   "game_lure_link": "Открыть на Lure",
-  "game_lure_completionist": "{hours} ч до 100 % по данным Lure"
+  "game_lure_completionist": "{hours} ч до 100 % по данным Lure",
+  "game_completion_time": "{hours} ч до 100 % (медиана по {count} игрокам Achievers)"
 }

@@ -1814,5 +1814,6 @@
   "notification_clan_request": "Solicitação de clã",
   "notification_clan_rename": "Nome do clã removido",
   "game_lure_link": "Ver no Lure",
-  "game_lure_completionist": "{hours} h para 100% segundo o Lure"
+  "game_lure_completionist": "{hours} h para 100% segundo o Lure",
+  "game_completion_time": "{hours} h para 100% (mediana de {count} jogadores do Achievers)"
 }

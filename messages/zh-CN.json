@@ -1777,5 +1777,6 @@
   "notification_clan_request": "氏族申请",
   "notification_clan_rename": "战队改名",
   "game_lure_link": "在 Lure 上查看",
-  "game_lure_completionist": "据 Lure 统计，100% 需 {hours} 小时"
+  "game_lure_completionist": "据 Lure 统计，100% 需 {hours} 小时",
+  "game_completion_time": "100% 需 {hours} 小时（{count} 位 Achievers 玩家的中位数）"
 }

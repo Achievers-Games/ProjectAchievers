@@ -16,6 +16,7 @@ import {
 import { userStats } from './queries/stats';
 import { ensureGameTexts, localizeAchievements } from './achievement-texts';
 import { baseLocale } from '#lib/paraglide/runtime';
+import { completionTimes } from './completion-time';
 import { publicGames, visibleGames } from './queries/shared';
 
 /**
@@ -281,7 +282,7 @@ export interface GameKey {
  * Sous ce nombre de joueurs à 100 %, une médiane de temps de jeu ne dit rien, et elle pourrait
  * laisser deviner le temps d'un joueur précis : on ne la donne pas.
  */
-export const COMPLETION_TIME_MIN_SAMPLE = 5;
+export { COMPLETION_TIME_MIN_SAMPLE } from './completion-time';
 
 const keyOf = (key: GameKey) => `${key.platform}:${key.platformGameId}`;
 const round1 = (value: number) => Math.round(value * 10) / 10;
@@ -345,17 +346,7 @@ export async function partnerGames(keys: GameKey[]) {
         select: { id: true, gameId: true },
       }),
       // Une médiane sur les joueurs publics à 100 % : jamais le temps d'un joueur seul.
-      db.$queryRaw<{ gameId: string; median: number; sample: bigint }[]>`
-        SELECT ug."gameId",
-               percentile_cont(0.5) WITHIN GROUP (ORDER BY ug."playtimeMinutes") AS median,
-               count(*) AS sample
-        FROM "UserGame" ug
-        JOIN "User" u ON u.id = ug."userId"
-        WHERE ug."gameId" IN (${Prisma.join(ids)})
-          AND ug.completion >= 100 AND ug."playtimeMinutes" > 0
-          AND NOT ug.hidden AND u."isPublic"
-        GROUP BY ug."gameId"
-        HAVING count(*) >= ${COMPLETION_TIME_MIN_SAMPLE}`,
+      completionTimes(ids),
       steamAppIds(games),
     ]);
 
@@ -366,7 +357,6 @@ export async function partnerGames(keys: GameKey[]) {
   const missableCounts = count(missables);
   const rarities = new Map(rarest.map((row) => [row.gameId, row._min.globalRarity]));
   const covered = new Map(achievementGuides.map((row) => [row.gameId, Number(row.covered)]));
-  const timeByGame = new Map(times.map((row) => [row.gameId, row]));
   const guidesByGame = new Map<string, string[]>();
   for (const guide of gameGuides) {
     const list = guidesByGame.get(guide.gameId!) ?? [];
@@ -384,7 +374,7 @@ export async function partnerGames(keys: GameKey[]) {
         rarest: rarities.get(game.id) ?? null,
         covered: covered.get(game.id) ?? 0,
         gameGuides: guidesByGame.get(game.id) ?? [],
-        time: timeByGame.get(game.id) ?? null,
+        time: times.get(game.id) ?? null,
         steamIds,
       }),
     );
@@ -401,7 +391,7 @@ function gameCard(
     rarest: number | null;
     covered: number;
     gameGuides: string[];
-    time: { median: number; sample: bigint } | null;
+    time: { median: number; sample: number } | null;
     steamIds: Map<string, string>;
   },
 ) {

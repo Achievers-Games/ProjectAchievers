@@ -11,6 +11,7 @@ import { compareAchievements } from '#lib/compare';
 import { SEASON, seasonState } from '#lib/season';
 import { getLocale } from '#lib/paraglide/runtime';
 import { lureGameFor } from '#lib/server/lure-games';
+import { completionTimes } from '#lib/server/completion-time';
 import type { Actions, PageServerLoad } from './$types';
 import { m } from '#lib/paraglide/messages';
 
@@ -50,65 +51,67 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
   const withHandle = url.searchParams.get('avec')?.trim() || null;
 
   const viewerId = locals.user?.id;
-  const [progress, unlocks, players, others, rival, friends, guides, lure] = await Promise.all([
-    locals.user
-      ? db.userGame.findUnique({
-          where: { userId_gameId: { userId: locals.user.id, gameId: game.id } },
-        })
-      : null,
-    locals.user
-      ? db.userAchievement.findMany({
-          where: { userId: locals.user.id, achievement: { gameId: game.id } },
-          select: { achievementId: true, unlockedAt: true },
-        })
-      : [],
-    db.userGame.count({ where: { gameId: game.id, user: { isPublic: true } } }),
-    game.familyKey
-      ? db.game.findMany({
-          where: {
-            familyKey: game.familyKey,
-            NOT: { id: game.id },
-            ...visibleGames(locals.user?.showAdult),
-          },
-          select: {
-            id: true,
-            slug: true,
-            platform: true,
-            console: true,
-            tier: true,
-            guideReviewedAt: true,
-            _count: { select: { achievements: { where: { missable: true } } } },
-            players: {
-              where: { userId: locals.user?.id ?? '' },
-              select: { completion: true },
+  const [progress, unlocks, players, others, rival, friends, guides, lure, times] =
+    await Promise.all([
+      locals.user
+        ? db.userGame.findUnique({
+            where: { userId_gameId: { userId: locals.user.id, gameId: game.id } },
+          })
+        : null,
+      locals.user
+        ? db.userAchievement.findMany({
+            where: { userId: locals.user.id, achievement: { gameId: game.id } },
+            select: { achievementId: true, unlockedAt: true },
+          })
+        : [],
+      db.userGame.count({ where: { gameId: game.id, user: { isPublic: true } } }),
+      game.familyKey
+        ? db.game.findMany({
+            where: {
+              familyKey: game.familyKey,
+              NOT: { id: game.id },
+              ...visibleGames(locals.user?.showAdult),
             },
-          },
-        })
-      : [],
-    locals.user && withHandle
-      ? compareGame({ viewerId: locals.user.id, gameId: game.id, handle: withHandle })
-      : null,
-    locals.user ? friendList(locals.user.id) : [],
-    db.guide.findMany({
-      where: gameGuidesWhere(game),
-      orderBy: GUIDE_ORDER,
-      take: 50,
-      select: {
-        id: true,
-        title: true,
-        contentMd: true,
-        locale: true,
-        score: true,
-        curatedKey: true,
-        createdAt: true,
-        updatedAt: true,
-        author: { select: publicUser },
-        _count: { select: { checks: { where: { userId: viewerId ?? '' } } } },
-      },
-    }),
-    // La fiche Lure du jeu et son temps pour le 100 %, si Lure le connaît : jamais attendu.
-    lureGameFor(game).catch(() => null),
-  ]);
+            select: {
+              id: true,
+              slug: true,
+              platform: true,
+              console: true,
+              tier: true,
+              guideReviewedAt: true,
+              _count: { select: { achievements: { where: { missable: true } } } },
+              players: {
+                where: { userId: locals.user?.id ?? '' },
+                select: { completion: true },
+              },
+            },
+          })
+        : [],
+      locals.user && withHandle
+        ? compareGame({ viewerId: locals.user.id, gameId: game.id, handle: withHandle })
+        : null,
+      locals.user ? friendList(locals.user.id) : [],
+      db.guide.findMany({
+        where: gameGuidesWhere(game),
+        orderBy: GUIDE_ORDER,
+        take: 50,
+        select: {
+          id: true,
+          title: true,
+          contentMd: true,
+          locale: true,
+          score: true,
+          curatedKey: true,
+          createdAt: true,
+          updatedAt: true,
+          author: { select: publicUser },
+          _count: { select: { checks: { where: { userId: viewerId ?? '' } } } },
+        },
+      }),
+      // La fiche Lure du jeu et son temps pour le 100 %, si Lure le connaît : jamais attendu.
+      lureGameFor(game).catch(() => null),
+      completionTimes([game.id]),
+    ]);
 
   // Seuls les amis qui possèdent cette version ont quelque chose à comparer.
   const owning = new Set(
@@ -222,6 +225,7 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
     season,
     players,
     lure,
+    completionTime: times.get(game.id) ?? null,
     versions: others.map((other) => ({
       slug: other.slug,
       platform: other.platform,

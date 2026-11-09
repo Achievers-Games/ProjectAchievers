@@ -133,6 +133,12 @@
   const missingMissables = $derived(
     data.achievements.filter((a) => a.missable && !a.unlockedAt).length,
   );
+
+  /** Des minutes en heures, à la demi-heure près, écrites dans la langue du visiteur. */
+  const hours = (minutes: number) =>
+    new Intl.NumberFormat(getLocale(), { maximumFractionDigits: 1 }).format(
+      Math.max(0.5, Math.round(minutes / 30) / 2),
+    );
 </script>
 
 <svelte:head>
@@ -183,21 +189,28 @@
         })}
         · {m.count_players({ count: data.players })}
       </p>
-      {#if data.lure}
-        <p class="flex flex-wrap items-center gap-x-2 text-sm text-muted" data-testid="lure">
-          {#if data.lure.completionistMinutes}
+      {#if data.completionTime || data.lure}
+        <p class="flex flex-wrap items-center gap-x-2 text-sm text-muted" data-testid="game-time">
+          {#if data.completionTime}
             <span>
-              {m.game_lure_completionist({
-                hours: new Intl.NumberFormat(getLocale(), { maximumFractionDigits: 1 }).format(
-                  Math.round(data.lure.completionistMinutes / 30) / 2,
-                ),
+              {m.game_completion_time({
+                hours: hours(data.completionTime.median),
+                count: data.completionTime.sample,
               })}
             </span>
-            ·
           {/if}
-          <a href={data.lure.url} target="_blank" rel="noopener" class="underline hover:text-ink">
-            {m.game_lure_link()} ↗
-          </a>
+          {#if data.lure?.completionistMinutes}
+            {#if data.completionTime}·{/if}
+            <span
+              >{m.game_lure_completionist({ hours: hours(data.lure.completionistMinutes) })}</span
+            >
+          {/if}
+          {#if data.lure}
+            {#if data.completionTime || data.lure.completionistMinutes}·{/if}
+            <a href={data.lure.url} target="_blank" rel="noopener" class="underline hover:text-ink">
+              {m.game_lure_link()} ↗
+            </a>
+          {/if}
         </p>
       {/if}
       {#if data.versions.length}
