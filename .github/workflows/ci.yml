@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
   pull_request:
+  # Relancer à la main toute la chaîne (vérification, image, contrôle du site), depuis l'onglet
+  # Actions ou avec `gh workflow run CI --ref main`.
+  workflow_dispatch:
 
 # Un nouveau commit annule la vérification du précédent.
 concurrency:
@@ -51,7 +54,7 @@ jobs:
   # L'image du NAS : seul un commit de main qui passe tous les tests est publié.
   image:
     needs: verify
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: read
