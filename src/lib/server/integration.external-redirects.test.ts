@@ -4,7 +4,13 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { resolveIdentity } from './accounts';
 import { pkceChallenge, randomToken } from './crypto';
 import { db } from './db';
-import { issueOAuthClient, revokeEndpoint, revokeGrant, tokenEndpoint } from './oauth-provider';
+import {
+  issueOAuthClient,
+  revokeEndpoint,
+  revokeGrant,
+  tokenEndpoint,
+  withPartnerFormAction,
+} from './oauth-provider';
 import { issuePartnerKey } from './partner-api';
 import { PREFIX, identity, setupIntegration } from './test-helpers';
 import { actions, load } from '../../routes/oauth/authorize/+page.server';
@@ -139,5 +145,20 @@ describe('connexion par un fournisseur', () => {
       }),
     );
     expect(sent.location).toMatch(/^https:\/\/steamcommunity\.com\/openid\/login/);
+  });
+});
+
+describe('CSP de la page d’accord', () => {
+  it('laisse le formulaire finir chez le partenaire, et seulement à son adresse enregistrée', async () => {
+    const c = await setup();
+    const csp =
+      "default-src 'self'; form-action 'self' https://steamcommunity.com; base-uri 'self'";
+    const params = new URLSearchParams(query(c.clientId).search);
+    expect(await withPartnerFormAction(csp, params)).toContain(
+      "form-action https://lure.test 'self' https://steamcommunity.com;",
+    );
+    params.set('redirect_uri', 'https://pirate.test/callback');
+    expect(await withPartnerFormAction(csp, params)).toBe(csp);
+    expect(await withPartnerFormAction(csp, new URLSearchParams())).toBe(csp);
   });
 });

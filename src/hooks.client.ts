@@ -2,8 +2,11 @@ import type { ClientInit, HandleClientError } from '@sveltejs/kit/hooks';
 import { reportClientError } from '#lib/report';
 
 /** Les erreurs attrapées par SvelteKit (chargement, rendu) partent au journal du serveur. */
-export const handleError: HandleClientError = ({ error, event }) => {
-  reportClientError(error, event.url.pathname);
+export const handleError: HandleClientError = (caught) => {
+  // Depuis SvelteKit 3, les erreurs prévues (une page 404, un `error(403)`) passent aussi ici :
+  // seules les pannes méritent le journal.
+  if (caught.kind !== 'unknown') return;
+  reportClientError(caught.error, caught.event.url.pathname);
 };
 
 export const init: ClientInit = () => {

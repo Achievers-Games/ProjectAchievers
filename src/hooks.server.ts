@@ -8,6 +8,7 @@ import { paraglideMiddleware } from '#lib/paraglide/server';
 import { syncCuratedGuides } from '#lib/server/curated-guides';
 import { env } from '#lib/server/env';
 import { grantFramesThrottled } from '#lib/server/frames';
+import { withPartnerFormAction } from '#lib/server/oauth-provider';
 import { startDigests } from '#lib/server/push-digest';
 import { rateLimit } from '#lib/server/rate-limit';
 import { validateSession } from '#lib/server/session';
@@ -92,6 +93,14 @@ const secured: Handle = async ({ event, resolve }) => {
         .replace('%lang%', getLocale())
         .replace('%theme%', themeOf(event.cookies.get('pa_theme'))),
   });
+
+  const csp = response.headers.get('content-security-policy');
+  if (path === '/oauth/authorize' && csp) {
+    response.headers.set(
+      'content-security-policy',
+      await withPartnerFormAction(csp, event.url.searchParams),
+    );
+  }
 
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');

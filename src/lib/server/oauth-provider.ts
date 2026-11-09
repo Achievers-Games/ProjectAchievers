@@ -421,3 +421,21 @@ export async function revokeGrant(userId: string, appId: string) {
   await burnGrant(grant.id);
   await queueAccountEvent(userId, 'user.unlinked', { app: { id: appId }, via: 'OAUTH' });
 }
+
+/**
+ * La page d'accord poste un formulaire qui finit chez le partenaire : la CSP `form-action` vaut
+ * aussi pour cette redirection, et Chrome la bloquerait. On y ajoute l'origine du retour, seulement
+ * quand elle fait partie des adresses que le partenaire a enregistrées.
+ */
+export async function withPartnerFormAction(csp: string, params: URLSearchParams) {
+  const clientId = params.get('client_id');
+  const redirectUri = params.get('redirect_uri');
+  if (!clientId || !redirectUri) return csp;
+  const app = await db.partnerApp.findUnique({
+    where: { oauthClientId: clientId },
+    select: { revokedAt: true, oauthRedirectUris: true },
+  });
+  if (!app || app.revokedAt || !app.oauthRedirectUris.includes(redirectUri)) return csp;
+  const origin = new URL(redirectUri).origin;
+  return csp.replace(/(^|;\s*)form-action\s/, `$1form-action ${origin} `);
+}
