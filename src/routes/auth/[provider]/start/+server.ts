@@ -32,10 +32,13 @@ export const GET: RequestHandler = ({ params, url, cookies }) => {
     returnTo: safeReturnTo(url.searchParams.get('retour')),
   });
 
-  if (provider === 'steam') redirect(303, steamAuthorizeUrl(state));
-  if (provider === 'epic') redirect(303, epicAuthorizeUrl(state));
-  if (provider === 'blizzard') redirect(303, blizzardAuthorizeUrl(state));
-  if (provider === 'discord') redirect(303, discordAuthorizeUrl(state, verifier as string));
-  if (provider === 'google') redirect(303, googleAuthorizeUrl(state, verifier as string));
-  redirect(303, xboxAuthorizeUrl(state, verifier as string));
+  // Le fournisseur d'identité est un autre site : SvelteKit 3 exige de le dire explicitement.
+  const external = { external: true };
+  if (provider === 'steam') redirect(303, steamAuthorizeUrl(state), external);
+  if (provider === 'epic') redirect(303, epicAuthorizeUrl(state), external);
+  if (provider === 'blizzard') redirect(303, blizzardAuthorizeUrl(state), external);
+  if (provider === 'discord')
+    redirect(303, discordAuthorizeUrl(state, verifier as string), external);
+  if (provider === 'google') redirect(303, googleAuthorizeUrl(state, verifier as string), external);
+  redirect(303, xboxAuthorizeUrl(state, verifier as string), external);
 };

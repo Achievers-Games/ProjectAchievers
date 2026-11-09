@@ -11,6 +11,14 @@ import { m } from '#lib/paraglide/messages';
 import type { Actions, PageServerLoad } from './$types';
 
 /**
+ * Le retour se fait chez le partenaire, sur une adresse qu'il a enregistrée et que
+ * `readAuthorizeRequest` a vérifiée : SvelteKit 3 veut qu'une redirection externe soit voulue.
+ */
+function toPartner(location: string): never {
+  redirect(303, location, { external: true });
+}
+
+/**
  * Lit la demande du partenaire. Un client inconnu ou une adresse de retour douteuse s'arrêtent
  * ici, sans jamais rediriger ; toute autre erreur repart chez le partenaire.
  */
@@ -18,7 +26,7 @@ async function readRequest(search: string): Promise<AuthorizeRequest> {
   const read = await readAuthorizeRequest(new URLSearchParams(search));
   if (read.ok) return read.request;
   if (read.fatal) error(400, m.oauth_invalid_request());
-  redirect(303, read.redirect);
+  return toPartner(read.redirect);
 }
 
 export const load: PageServerLoad = async ({ url, locals }) => {
@@ -31,7 +39,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
     select: { scopes: true, revokedAt: true },
   });
   if (grant && !grant.revokedAt && request.scopes.every((scope) => grant.scopes.includes(scope))) {
-    redirect(303, await approveAuthorization(user.id, request));
+    toPartner(await approveAuthorization(user.id, request));
   }
 
   return { app: request.app.name, scopes: request.scopes, query: url.search };
@@ -42,11 +50,11 @@ export const actions: Actions = {
   approve: async ({ request, locals, url }) => {
     const user = requireLogin(locals, `${url.pathname}${url.search}`);
     const search = String((await request.formData()).get('query') ?? '');
-    redirect(303, await approveAuthorization(user.id, await readRequest(search)));
+    toPartner(await approveAuthorization(user.id, await readRequest(search)));
   },
   deny: async ({ request, locals, url }) => {
     requireLogin(locals, `${url.pathname}${url.search}`);
     const search = String((await request.formData()).get('query') ?? '');
-    redirect(303, denyAuthorization(await readRequest(search)));
+    toPartner(denyAuthorization(await readRequest(search)));
   },
 };
