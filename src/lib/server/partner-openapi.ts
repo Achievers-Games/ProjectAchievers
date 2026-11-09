@@ -41,7 +41,10 @@ const pathParam = (name: string, description: string, schema: object = { type: '
   description,
   schema,
 });
-const handle = pathParam('handle', 'Player handle, as in /u/{handle}.');
+const handle = pathParam(
+  'handle',
+  'Player handle, as in /u/{handle}, or their stable Achievers id: both give the same profile.',
+);
 const platform = pathParam('platform', 'Platform of the game.', {
   type: 'string',
   enum: Object.keys(API_PLATFORMS),
@@ -466,7 +469,7 @@ export function partnerOpenApi(origin: string) {
             },
             handle: { type: 'string' },
             displayName: { type: 'string' },
-            avatarUrl: nullable('string'),
+            avatarUrl: nullable('string', { description: 'Always https://, or null.' }),
             url: { type: 'string' },
             cardUrl: { type: 'string', description: 'Embeddable SVG player card, 600×180.' },
             cardPngUrl: {

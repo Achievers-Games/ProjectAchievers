@@ -131,22 +131,23 @@ model User {
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
-  accounts     LinkedAccount[]
-  partnerLinks PartnerLink[]
-  oauthGrants  OAuthGrant[]
-  sessions     Session[]
-  games        UserGame[]
-  achievements UserAchievement[]
-  guides       Guide[]
-  guideVotes   GuideVote[]
-  guideChecks  GuideCheck[]
-  comments     Comment[]
-  reactions    CommentReaction[]
-  reports      Report[]
-  syncRuns     SyncRun[]
-  frames       UserFrame[]
-  siteUnlocks  SiteUnlock[]
-  pinned       PinnedGame[]
+  accounts      LinkedAccount[]
+  partnerLinks  PartnerLink[]
+  oauthGrants   OAuthGrant[]
+  partnerEvents PartnerEvent[]
+  sessions      Session[]
+  games         UserGame[]
+  achievements  UserAchievement[]
+  guides        Guide[]
+  guideVotes    GuideVote[]
+  guideChecks   GuideCheck[]
+  comments      Comment[]
+  reactions     CommentReaction[]
+  reports       Report[]
+  syncRuns      SyncRun[]
+  frames        UserFrame[]
+  siteUnlocks   SiteUnlock[]
+  pinned        PinnedGame[]
 
   friendRequests Friendship[]         @relation("FriendRequester")
   friendReceived Friendship[]         @relation("FriendAddressee")
@@ -751,12 +752,33 @@ model PartnerApp {
   webhookLastError     String?
 
   /// Identifiant public du client OAuth : « Se connecter avec Achievers » chez le partenaire.
-  oauthClientId     String?      @unique
+  oauthClientId     String?        @unique
   /// Empreinte du secret client, jamais le secret : il ne s'affiche qu'à sa création.
   oauthSecretHash   String?
   /// Adresses de retour acceptées, comparées à l'identique : aucune autre ne reçoit de code.
-  oauthRedirectUris String[]     @default([])
+  oauthRedirectUris String[]       @default([])
   oauthGrants       OAuthGrant[]
+  events            PartnerEvent[]
+}
+
+/// Ce qu'un partenaire doit apprendre d'un compte : relié, délié, modifié. Envoyé par webhook,
+/// avec les succès, et gardé jusqu'à ce que le partenaire l'ait reçu.
+model PartnerEvent {
+  id            String     @id @default(cuid())
+  appId         String
+  app           PartnerApp @relation(fields: [appId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// user.linked, user.unlinked ou user.updated
+  type          String
+  /// AUTO (identités communes) ou OAUTH (« Se connecter avec Achievers ») ; vide pour updated.
+  via           String?
+  /// Le compte partenaire au moment de l'événement : après une déliaison, le lien n'existe plus.
+  partnerUserId String?
+  createdAt     DateTime   @default(now())
+  deliveredAt   DateTime?
+
+  @@index([appId, deliveredAt, createdAt])
 }
 
 /// L'accord d'un joueur à un partenaire : ce qu'il lui laisse lire, jusqu'à ce qu'il le retire.

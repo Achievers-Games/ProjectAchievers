@@ -5,7 +5,13 @@ import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { resolveIdentity } from './accounts';
 import { db } from './db';
 import { issuePartnerKey } from './partner-api';
-import { deliverPartnerWebhooks, issueWebhookSecret, signWebhook } from './partner-webhooks';
+import {
+  deliverPartnerWebhooks,
+  issueWebhookSecret,
+  queueAccountEvent,
+  signWebhook,
+} from './partner-webhooks';
+import { unlinkPartner } from './partner-link';
 import { PREFIX, identity, setupIntegration } from './test-helpers';
 
 setupIntegration();
@@ -199,7 +205,13 @@ describe('webhooks partenaires', () => {
       }
     ).events;
     expect(events.map((event) => event.user)).toEqual([
-      { id: authorised.id, handle: authorised.handle, partnerUserId: null },
+      {
+        id: authorised.id,
+        handle: authorised.handle,
+        isPublic: false,
+        avatarUrl: null,
+        partnerUserId: null,
+      },
     ]);
   });
 
@@ -243,5 +255,95 @@ describe('webhooks partenaires', () => {
     await deliverPartnerWebhooks(now, partner.send);
     expect(partner.sent).toHaveLength(0);
     expect((await db.partnerApp.findUnique({ where: { id: app.id } }))?.webhookCursor).toEqual(now);
+  });
+
+  it('garde les mêmes id d’événements quand un envoi est retenté', async () => {
+    const { game, achievements } = await setup();
+    const user = await player();
+    await db.partnerLink.create({
+      data: { userId: user.id, partner: SLUG, partnerUserId: 'lure-stable', method: 'AUTO' },
+    });
+    await unlock(user.id, game.id, achievements[0]!.id, at('2026-03-01T14:00:00Z'));
+
+    const failing = fakePartner(500);
+    await deliverPartnerWebhooks(at('2026-03-01T14:01:00Z'), failing.send);
+    const retry = fakePartner();
+    await deliverPartnerWebhooks(at('2026-03-01T14:03:00Z'), retry.send);
+
+    // Le lot raté et le lot renvoyé portent les mêmes id : Lure peut ignorer le doublon.
+    const ids = (body: string) =>
+      (JSON.parse(body) as { events: { id: string }[] }).events.map((event) => event.id);
+    expect(ids(failing.sent[0]!.body)).toHaveLength(1);
+    expect(ids(retry.sent[0]!.body)).toEqual(ids(failing.sent[0]!.body));
+  });
+
+  it('prévient le partenaire qu’un compte est relié, puis délié', async () => {
+    await setup();
+    const user = await player();
+    await db.partnerLink.create({
+      data: { userId: user.id, partner: SLUG, partnerUserId: 'lure-relie', method: 'AUTO' },
+    });
+    await queueAccountEvent(user.id, 'user.linked', {
+      app: { slug: SLUG },
+      via: 'AUTO',
+      partnerUserId: 'lure-relie',
+    });
+
+    const linked = fakePartner();
+    await deliverPartnerWebhooks(at('2026-03-02T10:00:00Z'), linked.send);
+    const [event] = (JSON.parse(linked.sent[0]!.body) as { events: Record<string, unknown>[] })
+      .events;
+    expect(event).toMatchObject({
+      type: 'user.linked',
+      via: 'auto',
+      user: { id: user.id, handle: user.handle, isPublic: true, partnerUserId: 'lure-relie' },
+    });
+
+    await unlinkPartner(user.id, SLUG);
+    const unlinked = fakePartner();
+    await deliverPartnerWebhooks(at('2026-03-02T10:01:00Z'), unlinked.send);
+    const events = (JSON.parse(unlinked.sent[0]!.body) as { events: Record<string, unknown>[] })
+      .events;
+    // Le lien n'existe plus, mais le partenaire sait quel compte retirer.
+    expect(events).toEqual([
+      expect.objectContaining({
+        type: 'user.unlinked',
+        user: expect.objectContaining({ partnerUserId: 'lure-relie' }),
+      }),
+    ]);
+
+    // Ce qui est arrivé ne repart pas.
+    const quiet = fakePartner();
+    await deliverPartnerWebhooks(at('2026-03-02T10:02:00Z'), quiet.send);
+    expect(quiet.sent).toHaveLength(0);
+  });
+
+  it('ne garde qu’un user.updated en attente, qui décrit l’état actuel', async () => {
+    await setup();
+    const user = await player();
+    await db.partnerLink.create({
+      data: { userId: user.id, partner: SLUG, partnerUserId: 'lure-maj', method: 'AUTO' },
+    });
+    await queueAccountEvent(user.id, 'user.updated');
+    await db.user.update({ where: { id: user.id }, data: { isPublic: false } });
+    await queueAccountEvent(user.id, 'user.updated');
+
+    const partner = fakePartner();
+    await deliverPartnerWebhooks(at('2026-03-03T10:00:00Z'), partner.send);
+    const events = (JSON.parse(partner.sent[0]!.body) as { events: Record<string, unknown>[] })
+      .events;
+    expect(events).toEqual([
+      expect.objectContaining({
+        type: 'user.updated',
+        user: expect.objectContaining({ isPublic: false }),
+      }),
+    ]);
+  });
+
+  it('ne note rien pour un joueur qu’aucun partenaire ne suit', async () => {
+    await setup();
+    const stranger = await player();
+    await queueAccountEvent(stranger.id, 'user.updated');
+    expect(await db.partnerEvent.count({ where: { userId: stranger.id } })).toBe(0);
   });
 });

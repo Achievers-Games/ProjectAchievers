@@ -16,6 +16,7 @@ import { grantSiteAchievement } from '#lib/server/site-achievements';
 import { leaveClan } from '#lib/server/social';
 import { activePartnerLinks, unlinkPartner as removePartnerLink } from '#lib/server/partner-link';
 import { activeGrants, revokeGrant } from '#lib/server/oauth-provider';
+import { queueAccountEvent } from '#lib/server/partner-webhooks';
 import { forgetPresence } from '#lib/server/presence';
 import { pushPublicKey } from '#lib/server/push';
 import { enqueueSync } from '#lib/server/sync/queue';
@@ -296,7 +297,11 @@ export const actions: Actions = {
   visibility: async ({ request, locals }) => {
     const user = requireUser(locals);
     const isPublic = (await request.formData()).get('isPublic') === 'on';
-    await db.user.update({ where: { id: user.id }, data: { isPublic } });
+    const { count } = await db.user.updateMany({
+      where: { id: user.id, isPublic: !isPublic },
+      data: { isPublic },
+    });
+    if (count) await queueAccountEvent(user.id, 'user.updated');
     forgetPresence();
     return { success: isPublic ? m.profile_public_ok() : m.profile_private_ok() };
   },

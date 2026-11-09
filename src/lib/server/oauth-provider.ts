@@ -3,6 +3,7 @@ import { json, type RequestEvent } from '@sveltejs/kit';
 import { pkceChallenge, randomToken, sha256 } from './crypto';
 import { db } from './db';
 import { rateLimit } from './rate-limit';
+import { queueAccountEvent } from './partner-webhooks';
 
 /**
  * Achievers fournisseur OAuth 2 : « Se connecter avec Achievers » chez un partenaire.
@@ -159,12 +160,19 @@ async function issueToken(
 
 /** Le joueur accepte : l'accord retient les portées, et un code à usage unique part chez le partenaire. */
 export async function approveAuthorization(userId: string, request: AuthorizeRequest) {
+  const before = await db.oAuthGrant.findUnique({
+    where: { userId_appId: { userId, appId: request.app.id } },
+    select: { revokedAt: true },
+  });
   const grant = await db.oAuthGrant.upsert({
     where: { userId_appId: { userId, appId: request.app.id } },
     create: { userId, appId: request.app.id, scopes: request.scopes },
     update: { scopes: request.scopes, revokedAt: null },
     select: { id: true },
   });
+  if (!before || before.revokedAt) {
+    await queueAccountEvent(userId, 'user.linked', { app: { id: request.app.id }, via: 'OAUTH' });
+  }
   const code = await issueToken(grant.id, 'CODE', request.scopes, CODE_TTL, {
     codeChallenge: request.codeChallenge,
     redirectUri: request.redirectUri,
@@ -411,4 +419,5 @@ export async function revokeGrant(userId: string, appId: string) {
   if (!grant) return;
   await db.oAuthGrant.update({ where: { id: grant.id }, data: { revokedAt: new Date() } });
   await burnGrant(grant.id);
+  await queueAccountEvent(userId, 'user.unlinked', { app: { id: appId }, via: 'OAUTH' });
 }

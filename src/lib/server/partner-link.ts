@@ -2,6 +2,7 @@ import { Prisma, type Provider } from '#prisma';
 import { logger } from '#lib/logger';
 import { db } from './db';
 import { env } from './env';
+import { queueAccountEvent } from './partner-webhooks';
 
 const log = logger('Partenaire');
 
@@ -121,6 +122,11 @@ export async function autoLinkLure(
     await db.partnerLink.create({
       data: { userId, partner: LURE, partnerUserId, method: 'AUTO' },
     });
+    await queueAccountEvent(userId, 'user.linked', {
+      app: { slug: LURE },
+      via: 'AUTO',
+      partnerUserId,
+    });
     return true;
   } catch (cause) {
     // Deux connexions à la fois : l'autre a écrit la ligne. Le compte Lure, lui, reste unique.
@@ -139,11 +145,19 @@ export async function autoLinkLure(
  * Délier ne touche qu'ici : le partenaire l'apprend à son prochain appel. La ligne reste,
  * datée : sans elle, la connexion suivante relierait aussitôt les mêmes identités.
  */
-export const unlinkPartner = (userId: string, partner: string) =>
-  db.partnerLink.updateMany({
+export async function unlinkPartner(userId: string, partner: string) {
+  const link = await db.partnerLink.findFirst({
     where: { userId, partner, revokedAt: null },
-    data: { revokedAt: new Date() },
+    select: { id: true, partnerUserId: true },
   });
+  if (!link) return;
+  await db.partnerLink.update({ where: { id: link.id }, data: { revokedAt: new Date() } });
+  await queueAccountEvent(userId, 'user.unlinked', {
+    app: { slug: partner },
+    via: 'AUTO',
+    partnerUserId: link.partnerUserId,
+  });
+}
 
 /** Les comptes partenaires reliés, sans ceux que le joueur a déliés. */
 export const activePartnerLinks = (userId: string) =>

@@ -1,6 +1,7 @@
 import { Prisma, type Platform, type Provider } from '#prisma';
 import { z } from 'zod';
 import { db } from './db';
+import { queueAccountEvent } from './partner-webhooks';
 import { encrypt } from './crypto';
 import { availableProviders } from './providers';
 import { isProfane } from '#lib/profanity';
@@ -50,8 +51,12 @@ export async function updateProfile(
     : null;
   if (input.avatarUrl && !account) return 'avatar_unknown';
 
+  const before = await db.user.findUnique({
+    where: { id: userId },
+    select: { handle: true, avatarUrl: true },
+  });
   try {
-    await db.user.update({
+    const after = await db.user.update({
       where: { id: userId },
       data: {
         displayName: input.displayName,
@@ -61,7 +66,11 @@ export async function updateProfile(
           avatarMotionUrl: account?.avatarMotionUrl ?? null,
         }),
       },
+      select: { handle: true, avatarUrl: true },
     });
+    if (before?.handle !== after.handle || before?.avatarUrl !== after.avatarUrl) {
+      await queueAccountEvent(userId, 'user.updated');
+    }
     return null;
   } catch (cause) {
     if (cause instanceof Prisma.PrismaClientKnownRequestError && cause.code === 'P2002') {

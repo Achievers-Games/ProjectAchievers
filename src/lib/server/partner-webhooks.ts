@@ -1,8 +1,8 @@
-import { createHmac, randomUUID } from 'node:crypto';
+import { createHash, createHmac } from 'node:crypto';
 import { logger } from '#lib/logger';
 import { decrypt, encrypt, randomToken } from './crypto';
 import { db } from './db';
-import { platformSlug } from './partner-api';
+import { apiAvatar, platformSlug } from './partner-api';
 
 const log = logger('Webhooks partenaires');
 
@@ -105,17 +105,57 @@ async function pendingUnlocks(app: { id: string; slug: string }, cursor: Date | 
  * Un événement par joueur et par jeu : les succès débloqués, la progression qui en résulte, et
  * `game.completed` quand elle atteint 100 %. Un jeu masqué par le joueur ne part pas.
  */
+type WebhookUser = {
+  id: string;
+  handle: string;
+  isPublic: boolean;
+  avatarUrl: string | null;
+  partnerUserId: string | null;
+};
+
+/** Les joueurs tels que les webhooks les décrivent, avec leur compte chez ce partenaire. */
+async function webhookUsers(slug: string, userIds: string[]) {
+  const [links, users] = await Promise.all([
+    db.partnerLink.findMany({
+      where: { partner: slug, userId: { in: userIds }, revokedAt: null },
+      select: { userId: true, partnerUserId: true },
+    }),
+    db.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, handle: true, isPublic: true, avatarUrl: true },
+    }),
+  ]);
+  const partnerIds = new Map(links.map((link) => [link.userId, link.partnerUserId]));
+  return new Map(
+    users.map((user): [string, WebhookUser] => [
+      user.id,
+      {
+        id: user.id,
+        handle: user.handle,
+        isPublic: user.isPublic,
+        avatarUrl: apiAvatar(user.avatarUrl),
+        partnerUserId: partnerIds.get(user.id) ?? null,
+      },
+    ]),
+  );
+}
+
+/**
+ * Un identifiant d'événement stable : le même lot renvoyé après un échec garde les mêmes `id`,
+ * et le partenaire peut ignorer ce qu'il a déjà traité.
+ */
+const stableId = (key: string) => {
+  const hex = createHash('sha256').update(key).digest('hex');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
+};
+
 async function buildEvents(slug: string, rows: UnlockRow[]) {
   // Un joueur autorisé par OAuth sans liaison n'a pas d'identifiant chez le partenaire : `id`
   // (Achievers, stable) suffit à le retrouver, puisque `/me` le donne aussi.
   const userIds = [...new Set(rows.map((row) => row.userId))];
   const gameIds = [...new Set(rows.map((row) => row.achievement.game.id))];
-  const [links, users, progress] = await Promise.all([
-    db.partnerLink.findMany({
-      where: { partner: slug, userId: { in: userIds }, revokedAt: null },
-      select: { userId: true, partnerUserId: true },
-    }),
-    db.user.findMany({ where: { id: { in: userIds } }, select: { id: true, handle: true } }),
+  const [users, progress] = await Promise.all([
+    webhookUsers(slug, userIds),
     db.userGame.findMany({
       where: { userId: { in: userIds }, gameId: { in: gameIds } },
       select: {
@@ -128,26 +168,23 @@ async function buildEvents(slug: string, rows: UnlockRow[]) {
       },
     }),
   ]);
-  const partnerIds = new Map(links.map((link) => [link.userId, link.partnerUserId]));
-  const handles = new Map(users.map((user) => [user.id, user.handle]));
   const progressOf = new Map(progress.map((row) => [`${row.userId}:${row.gameId}`, row]));
 
   const groups = Map.groupBy(rows, (row) => `${row.userId}:${row.achievement.game.id}`);
   return [...groups].flatMap(([key, unlocks]) => {
     const first = unlocks[0]!;
     const owned = progressOf.get(key);
-    if (owned?.hidden) return [];
+    const user = users.get(first.userId);
+    if (owned?.hidden || !user) return [];
     const { game } = first.achievement;
     const completed = (owned?.completion ?? 0) >= 100;
+    const ids = unlocks.map((row) => row.achievement.platformAchievementId).sort();
     return [
       {
-        id: randomUUID(),
+        id: stableId(`${key}:${ids.join(',')}`),
         type: completed ? 'game.completed' : 'achievements.unlocked',
-        user: {
-          id: first.userId,
-          handle: handles.get(first.userId) ?? null,
-          partnerUserId: partnerIds.get(first.userId) ?? null,
-        },
+        at: unlocks.at(-1)!.createdAt.toISOString(),
+        user,
         game: {
           platform: platformSlug(game.platform),
           platformGameId: game.platformGameId,
@@ -171,10 +208,94 @@ async function buildEvents(slug: string, rows: UnlockRow[]) {
   });
 }
 
+export type AccountEventType = 'user.linked' | 'user.unlinked' | 'user.updated';
+
 /**
- * Un tour d'envoi pour chaque partenaire qui a une adresse de webhook. Au moins une fois : le
- * curseur n'avance qu'après une réponse 2xx, et un échec retente plus tard, avec une attente
- * qui double. Le partenaire se sert de l'`id` de chaque événement pour ignorer un doublon.
+ * Note qu'un partenaire doit apprendre un changement de compte. `linked` et `unlinked` visent
+ * un partenaire précis ; `updated` (handle, avatar, profil public ou privé) va à chaque
+ * partenaire qui suit le joueur. Rien n'est noté pour un partenaire sans webhook.
+ */
+export async function queueAccountEvent(
+  userId: string,
+  type: AccountEventType,
+  options: {
+    app?: { slug: string } | { id: string };
+    via?: 'AUTO' | 'OAUTH';
+    partnerUserId?: string | null;
+  } = {},
+) {
+  const withWebhook = { revokedAt: null, webhookUrl: { not: null } };
+  const apps = options.app
+    ? await db.partnerApp.findMany({ where: { ...withWebhook, ...options.app } })
+    : await db.partnerApp.findMany({
+        where: {
+          ...withWebhook,
+          OR: [
+            { oauthGrants: { some: { userId, revokedAt: null } } },
+            {
+              slug: {
+                in: (
+                  await db.partnerLink.findMany({
+                    where: { userId, revokedAt: null },
+                    select: { partner: true },
+                  })
+                ).map((link) => link.partner),
+              },
+            },
+          ],
+        },
+      });
+
+  for (const app of apps) {
+    // Un seul `updated` en attente par joueur suffit : l'envoi décrit toujours l'état actuel.
+    if (type === 'user.updated') {
+      const pending = await db.partnerEvent.count({
+        where: { appId: app.id, userId, type, deliveredAt: null },
+      });
+      if (pending) continue;
+    }
+    await db.partnerEvent.create({
+      data: {
+        appId: app.id,
+        userId,
+        type,
+        via: options.via ?? null,
+        partnerUserId: options.partnerUserId ?? null,
+      },
+    });
+  }
+}
+
+/** Les événements de compte encore à envoyer, décrits avec l'état actuel du joueur. */
+async function pendingAccountEvents(app: { id: string; slug: string }) {
+  const rows = await db.partnerEvent.findMany({
+    where: { appId: app.id, deliveredAt: null },
+    orderBy: { createdAt: 'asc' },
+    take: WEBHOOK_BATCH,
+  });
+  const users = await webhookUsers(app.slug, [...new Set(rows.map((row) => row.userId))]);
+  const events = rows.flatMap((row) => {
+    const user = users.get(row.userId);
+    if (!user) return [];
+    return [
+      {
+        id: row.id,
+        type: row.type,
+        at: row.createdAt.toISOString(),
+        ...(row.via && { via: row.via.toLowerCase() }),
+        // Délié : le lien n'existe plus, c'est le compte d'alors qui compte.
+        user: { ...user, partnerUserId: row.partnerUserId ?? user.partnerUserId },
+      },
+    ];
+  });
+  return { ids: rows.map((row) => row.id), events };
+}
+
+/**
+ * Un tour d'envoi pour chaque partenaire qui a une adresse de webhook. Au moins une fois : rien
+ * n'est marqué envoyé avant une réponse 2xx, et un échec retente plus tard, avec une attente
+ * qui double. Le partenaire se sert de l'`id` de chaque événement, stable d'un essai à
+ * l'autre, pour ignorer un doublon.
  */
 export async function deliverPartnerWebhooks(now = new Date(), send: typeof fetch = fetch) {
   const apps = await db.partnerApp.findMany({
@@ -193,21 +314,29 @@ export async function deliverPartnerWebhooks(now = new Date(), send: typeof fetc
     ) {
       continue;
     }
-    // Premier branchement : on part de maintenant, sans renvoyer tout l'historique.
-    if (!app.webhookCursor) {
+    const target = { id: app.id, slug: app.slug! };
+    const account = await pendingAccountEvents(target);
+
+    // Premier branchement : les succès partent de maintenant, sans renvoyer l'historique.
+    let cursor = app.webhookCursor;
+    let unlocks: Awaited<ReturnType<typeof buildEvents>> = [];
+    if (!cursor) {
       await db.partnerApp.update({ where: { id: app.id }, data: { webhookCursor: now } });
-      continue;
+    } else {
+      const until = new Date(now.getTime() - SETTLE_MS);
+      const rows = await pendingUnlocks(target, cursor, until);
+      if (rows.length > 0) {
+        cursor = rows.at(-1)!.createdAt;
+        unlocks = await buildEvents(app.slug!, rows);
+        if (unlocks.length === 0 && account.events.length === 0) {
+          await db.partnerApp.update({ where: { id: app.id }, data: { webhookCursor: cursor } });
+          continue;
+        }
+      }
     }
 
-    const until = new Date(now.getTime() - SETTLE_MS);
-    const rows = await pendingUnlocks({ id: app.id, slug: app.slug! }, app.webhookCursor, until);
-    if (rows.length === 0) continue;
-    const cursor = rows.at(-1)!.createdAt;
-    const events = await buildEvents(app.slug!, rows);
-    if (events.length === 0) {
-      await db.partnerApp.update({ where: { id: app.id }, data: { webhookCursor: cursor } });
-      continue;
-    }
+    const events = [...account.events, ...unlocks];
+    if (events.length === 0) continue;
 
     const body = JSON.stringify({ events });
     const timestamp = Math.floor(now.getTime() / 1000);
@@ -240,15 +369,21 @@ export async function deliverPartnerWebhooks(now = new Date(), send: typeof fetc
         },
       });
     } else {
-      await db.partnerApp.update({
-        where: { id: app.id },
-        data: {
-          webhookCursor: cursor,
-          webhookFailures: 0,
-          webhookLastAttemptAt: now,
-          webhookLastError: null,
-        },
-      });
+      await db.$transaction([
+        db.partnerEvent.updateMany({
+          where: { id: { in: account.ids } },
+          data: { deliveredAt: now },
+        }),
+        db.partnerApp.update({
+          where: { id: app.id },
+          data: {
+            ...(cursor && { webhookCursor: cursor }),
+            webhookFailures: 0,
+            webhookLastAttemptAt: now,
+            webhookLastError: null,
+          },
+        }),
+      ]);
     }
   }
 }

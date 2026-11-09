@@ -275,6 +275,18 @@ export function listParams(url: URL): GameListParams | Response {
 
 export const absolute = (path: string) => `${env().ORIGIN}${path}`;
 
+/**
+ * L'avatar d'un joueur, toujours en `https://` ou `null` : les plateformes en donnent parfois en
+ * `http://` (PSN), qu'elles servent aussi en HTTPS, et un site partenaire ne peut pas les afficher.
+ */
+export function apiAvatar(url: string | null | undefined): string | null {
+  if (!url) return null;
+  if (url.startsWith('https://')) return url;
+  if (url.startsWith('http://')) return `https://${url.slice(7)}`;
+  if (url.startsWith('/')) return absolute(url);
+  return null;
+}
+
 export interface ApiGameFields {
   platform: Platform;
   platformGameId: string;

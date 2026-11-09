@@ -66,7 +66,11 @@ nom et la description d'un succès caché tant qu'il n'est pas obtenu, le temps 
 Les textes des succès sont dans la langue de la plateforme.
 
 **Identifier un joueur** : garde son `id` Achievers. Il ne change jamais, alors que le `handle`
-(l'adresse `/u/{handle}`) peut changer.
+(l'adresse `/u/{handle}`) peut changer. Toutes les routes `/users/{handle}…` acceptent l'un ou
+l'autre : `/users/kokki` et `/users/cmv0…` rendent le même profil.
+
+**Avatar** : `avatarUrl` est toujours une adresse `https://`, ou `null` si le joueur n'a pas
+d'image.
 
 **Identifier un jeu** : `platform` + `platformGameId`. Pour Steam, `platformGameId` est l'**appid**,
 comme sur Lure : `/games/steam/683320` correspond à `lureverse.fr/jeu/683320`. Plateformes :
@@ -439,9 +443,10 @@ du joueur, car c'est le signe d'un vol. Ne rejoue donc jamais une requête de je
 réponse. Le joueur peut aussi retirer l'accès à tout moment depuis son compte Achievers : la
 prochaine requête répond `401`, et il faut lui reproposer de se connecter.
 
-## 6. Recevoir les nouveaux succès (webhooks)
+## 6. Recevoir les nouveaux succès et les changements de compte (webhooks)
 
-Achievers prévient Lure dans la minute quand un joueur suivi débloque un succès. C'est le
+Achievers prévient Lure dans la minute quand un joueur suivi débloque un succès, et quand un
+compte est relié, délié ou modifié. C'est le
 complément de l'API : les webhooks disent **quand** ça change, l'API donne **l'état** (premier
 chargement, rattrapage après une panne).
 
@@ -469,7 +474,14 @@ X-Achievers-Signature: t=1794168000,v1=5f2c…
     {
       "id": "0b6f7c1e-…",
       "type": "achievements.unlocked",
-      "user": { "id": "cmv0…", "handle": "kokki", "partnerUserId": "id-du-compte-lure" },
+      "at": "2026-11-08T20:00:30.000Z",
+      "user": {
+        "id": "cmv0…",
+        "handle": "kokki",
+        "isPublic": true,
+        "avatarUrl": "https://…",
+        "partnerUserId": "id-du-compte-lure"
+      },
       "game": { "platform": "steam", "platformGameId": "219150", "name": "Hotline Miami" },
       "achievements": [
         { "id": "ACH_COMBO_KING", "name": "Combo King", "unlockedAt": "2026-11-08T20:00:00.000Z" }
@@ -484,6 +496,37 @@ X-Achievers-Signature: t=1794168000,v1=5f2c…
   `achievements.unlocked`.
 - `user.partnerUserId` est l'identifiant du compte Lure si les comptes sont reliés
   automatiquement ; `null` pour un joueur venu seulement par OAuth : retrouve-le par `user.id`.
+- `at` est le moment où Achievers a appris le changement.
+
+**Changements de compte** : dans le même envoi, avec la même forme de `user`.
+
+| `type`          | Quand                                                                            |
+| --------------- | -------------------------------------------------------------------------------- |
+| `user.linked`   | un compte Lure vient d'être relié : liaison automatique, ou premier accord OAuth |
+| `user.unlinked` | le joueur a délié Lure, ou retiré son accès, depuis son compte Achievers         |
+| `user.updated`  | le handle ou l'avatar a changé, ou le profil est passé public ou privé           |
+
+```json
+{
+  "id": "cmw9…",
+  "type": "user.linked",
+  "at": "2026-11-09T08:00:00.000Z",
+  "via": "auto",
+  "user": {
+    "id": "cmv0…",
+    "handle": "kokki",
+    "isPublic": true,
+    "avatarUrl": "https://…",
+    "partnerUserId": "56ea6c14-6299-4b6e-95a4-268eb4019444"
+  }
+}
+```
+
+- `via` vaut `auto` (identités communes, §4) ou `oauth` (« Se connecter avec Achievers », §5) ;
+  il n'y en a pas pour `user.updated`.
+- Pour `user.unlinked`, `partnerUserId` donne le compte Lure qui vient d'être délié.
+- `user.updated` décrit toujours l'**état actuel** : plusieurs changements rapprochés n'en
+  donnent qu'un.
 
 **Vérifier la signature** avant tout traitement. `X-Achievers-Signature` porte un HMAC-SHA256 de
 `"<t>.<corps brut>"` avec le secret `whsec_…`. Calcule-le sur le **corps brut**, avant de parser
@@ -504,8 +547,8 @@ function verify(rawBody, header, secret) {
 ```
 
 **Répondre** `2xx` rapidement, puis traiter. Sans `2xx`, Achievers renvoie le même lot après
-1 minute, puis 2, 4… jusqu'à 1 heure entre deux essais. Un succès peut donc arriver deux fois :
-ignore un `id` d'événement déjà traité, ou un couple joueur + succès déjà connu.
+1 minute, puis 2, 4… jusqu'à 1 heure entre deux essais. Un événement renvoyé garde **le même
+`id`** : ignore simplement un `id` déjà traité.
 
 ## 7. Liens et cartes sans API
 

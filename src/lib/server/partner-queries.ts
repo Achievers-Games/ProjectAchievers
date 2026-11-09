@@ -3,6 +3,7 @@ import { db } from './db';
 import { BURIED_SCORE, GUIDE_ORDER } from './guides';
 import {
   absolute,
+  apiAvatar,
   apiGame,
   apiGameSelect,
   nextCursor,
@@ -14,7 +15,7 @@ import { userStats } from './queries/stats';
 import { visibleGames } from './queries/shared';
 
 /**
- * Le joueur dont on parle : par son identifiant public (`handle`), il doit avoir un profil
+ * Le joueur dont on parle : par son `handle` ou son `id` Achievers, il doit avoir un profil
  * public, et l'API ne rend que ce qu'un visiteur anonyme verrait. Par `userId`, c'est le
  * joueur lui-même qui a donné son accord par OAuth : son profil peut être privé. Dans les deux
  * cas, un jeu masqué ou adulte ne sort pas.
@@ -23,7 +24,11 @@ export type PlayerRef = string | { userId: string };
 
 const publicPlayer = (who: PlayerRef) =>
   db.user.findFirst({
-    where: typeof who === 'string' ? { handle: who, isPublic: true } : { id: who.userId },
+    // Un handle a au plus 24 caractères, un id en a 25 : les deux formes ne se confondent pas.
+    where:
+      typeof who === 'string'
+        ? { isPublic: true, OR: [{ handle: who }, { id: who }] }
+        : { id: who.userId },
     select: {
       id: true,
       handle: true,
@@ -77,7 +82,7 @@ export async function partnerUser(handle: PlayerRef) {
     displayName: user.displayName,
     // Toujours vrai par l'identifiant public ; par OAuth, le joueur peut être privé.
     isPublic: user.isPublic,
-    avatarUrl: user.avatarUrl,
+    avatarUrl: apiAvatar(user.avatarUrl),
     url: absolute(`/u/${user.handle}`),
     cardUrl: absolute(`/u/${user.handle}/carte.svg`),
     // La même carte en PNG, pour Discord et les forums qui refusent le SVG.

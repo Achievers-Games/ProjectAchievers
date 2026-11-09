@@ -6,6 +6,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { resolveIdentity } from './accounts';
 import { db } from './db';
 import {
+  apiAvatar,
   authenticatePartner,
   issuePartnerKey,
   listParams,
@@ -209,6 +210,27 @@ describe('API partenaire', () => {
     });
     const adult = await game({ adultOnly: true });
     expect(await partnerGame('STEAM', adult.platformGameId)).toBeNull();
+  });
+});
+
+describe('profil par son id', () => {
+  it('lit un profil public par son id comme par son handle, jamais un profil privé', async () => {
+    const shown = await player();
+    const hidden = await player(false);
+    expect(await partnerUser(shown.id)).toMatchObject({ id: shown.id, handle: shown.handle });
+    expect(await partnerUser(hidden.id)).toBeNull();
+    expect(
+      await partnerUserGames(shown.id, { platform: null, limit: 10, cursor: null }),
+    ).toMatchObject({ items: [] });
+  });
+
+  it('donne toujours un avatar en https, ou null', () => {
+    expect(apiAvatar('http://static-resource.np.community.playstation.net/a.png')).toBe(
+      'https://static-resource.np.community.playstation.net/a.png',
+    );
+    expect(apiAvatar('https://cdn.discordapp.com/a.png')).toBe('https://cdn.discordapp.com/a.png');
+    expect(apiAvatar(null)).toBeNull();
+    expect(apiAvatar('ftp://ailleurs/a.png')).toBeNull();
   });
 });
 
