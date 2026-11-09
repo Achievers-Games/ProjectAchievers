@@ -57,7 +57,7 @@ async function refresh(steamAppId: string, fetcher: typeof fetch) {
   const base = baseUrl();
   const key = env().LURE_API_KEY;
   if (!base || !key) return;
-  let info: LureGameInfo | null = null;
+  let info: LureGameInfo | null;
   try {
     const response = await fetcher(`${base}/api/v1/partner/games/times`, {
       method: 'POST',
