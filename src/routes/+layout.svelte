@@ -298,6 +298,7 @@
   <span>Project Achievers</span>
   <a href="/confidentialite" class="hover:text-ink">{m.privacy()}</a>
   <a href="/contact" class="hover:text-ink">{m.contact_title()}</a>
+  <a href="/developpeurs" class="hover:text-ink">{m.nav_developers()}</a>
   {#if data.user}<a href="/retours" class="hover:text-ink">{m.feedback_title()}</a>{/if}
 </footer>
 

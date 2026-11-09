@@ -1815,5 +1815,6 @@
   "notification_clan_rename": "Nombre de clan retirado",
   "game_lure_link": "Ver en Lure",
   "game_lure_completionist": "{hours} h para el 100 % según Lure",
-  "game_completion_time": "{hours} h para el 100 % (mediana de {count} jugadores de Achievers)"
+  "game_completion_time": "{hours} h para el 100 % (mediana de {count} jugadores de Achievers)",
+  "nav_developers": "Desarrolladores"
 }

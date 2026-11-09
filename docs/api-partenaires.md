@@ -1,12 +1,15 @@
-# API partenaires Achievers — guide pour Lure
+# API partenaires Achievers
 
-Ce guide explique comment Lure peut utiliser Achievers : lire les profils et les jeux, relier
+Ce guide explique comment ton site peut utiliser Achievers : lire les profils et les jeux, relier
 automatiquement les comptes des joueurs, proposer « Se connecter avec Achievers » et recevoir les
 nouveaux succès en direct.
 
 - **Adresse** : `https://achievers.games`
 - **API** : `https://achievers.games/api/v1`
-- **Description OpenAPI 3.1** (lisible sans clé) : `https://achievers.games/api/v1/openapi.json`
+- **Description OpenAPI 3.1** (lisible sans clé, webhooks compris) :
+  `https://achievers.games/api/v1/openapi.json`
+- **Devenir partenaire** : écris à [contact@achievers.games](mailto:contact@achievers.games) avec
+  le nom et l'adresse de ton site, et ce que tu veux en faire (§1).
 
 ## Sommaire
 
@@ -15,20 +18,20 @@ nouveaux succès en direct.
 3. [Lire les profils et les jeux](#3-lire-les-profils-et-les-jeux)
 4. [Relier automatiquement les comptes](#4-relier-automatiquement-les-comptes)
 5. [« Se connecter avec Achievers » (OAuth 2)](#5-se-connecter-avec-achievers-oauth-2)
-6. [Recevoir les nouveaux succès (webhooks)](#6-recevoir-les-nouveaux-succès-webhooks)
+6. [Recevoir les nouveaux succès et les changements de compte (webhooks)](#6-recevoir-les-nouveaux-succès-et-les-changements-de-compte-webhooks)
 7. [Liens et cartes sans API](#7-liens-et-cartes-sans-api)
 
 ## 1. Ce que tu reçois, ce que tu renvoies
 
 Chaque fonctionnalité est indépendante : prends seulement celles qui te servent.
 
-| Fonctionnalité                        | Tu reçois d'Achievers                              | Tu renvoies à Achievers                                                   |
-| ------------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------- |
-| Lire l'API (§3)                       | la clé `ak_…`                                      | rien                                                                      |
-| Relier les comptes : Lure → Achievers | la même clé `ak_…`                                 | rien                                                                      |
-| Relier les comptes : Achievers → Lure | rien                                               | l'adresse de ton site et une clé que tu crées pour Achievers              |
-| « Se connecter avec Achievers » (§5)  | `client_id` (`ach_…`) et `client_secret` (`acs_…`) | ton adresse de retour, ex. `https://lureverse.fr/auth/achievers/callback` |
-| Webhooks (§6)                         | un secret de signature `whsec_…`                   | l'adresse HTTPS qui recevra les envois                                    |
+| Fonctionnalité                            | Tu reçois d'Achievers                              | Tu renvoies à Achievers                                                       |
+| ----------------------------------------- | -------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Lire l'API (§3)                           | la clé `ak_…`                                      | rien                                                                          |
+| Relier les comptes : ton site → Achievers | la même clé `ak_…`                                 | rien                                                                          |
+| Relier les comptes : Achievers → ton site | rien                                               | l'adresse de ton site et une clé que tu crées pour Achievers                  |
+| « Se connecter avec Achievers » (§5)      | `client_id` (`ach_…`) et `client_secret` (`acs_…`) | ton adresse de retour, ex. `https://ton-site.example/auth/achievers/callback` |
+| Webhooks (§6)                             | un secret de signature `whsec_…`                   | l'adresse HTTPS qui recevra les envois                                        |
 
 Les secrets ne s'affichent qu'une fois chez nous : garde-les côté serveur, jamais dans le
 navigateur ni dans un dépôt. Si l'un d'eux fuit, on en génère un nouveau et l'ancien cesse de
@@ -68,18 +71,18 @@ sinon dans la langue de la plateforme.
 
 **Identifier un joueur** : garde son `id` Achievers. Il ne change jamais, alors que le `handle`
 (l'adresse `/u/{handle}`) peut changer. Toutes les routes `/users/{handle}…` acceptent l'un ou
-l'autre : `/users/kokki` et `/users/cmv0…` rendent le même profil.
+l'autre : `/users/exemple` et `/users/cmv0…` rendent le même profil.
 
 **Avatar** : `avatarUrl` est toujours une adresse `https://`, ou `null` si le joueur n'a pas
 d'image.
 
 **Identifier un jeu** : `platform` + `platformGameId`. Pour Steam, `platformGameId` est l'**appid**,
-comme sur Lure : `/games/steam/683320` correspond à `lureverse.fr/jeu/683320`. Plateformes :
+l'identifiant utilisé par la plupart des sites de jeux : `/games/steam/683320`. Plateformes :
 `steam`, `psn`, `xbox`, `retro`, `blizzard`.
 
 Chaque jeu porte aussi `steamAppId` : l'appid Steam du même jeu, y compris pour une version PSN ou
 Xbox quand il existe sur Steam (`null` sinon). Un 100 % sur PS5 se range ainsi sur la bonne fiche
-Lure.
+de ton site.
 
 ## 3. Lire les profils et les jeux
 
@@ -99,19 +102,19 @@ Lure.
 ### Un joueur
 
 ```bash
-curl -H "Authorization: Bearer ak_…" https://achievers.games/api/v1/users/kokki
+curl -H "Authorization: Bearer ak_…" https://achievers.games/api/v1/users/exemple
 ```
 
 ```json
 {
   "id": "cmv0…",
-  "handle": "kokki",
+  "handle": "exemple",
   "displayName": "LaKokilletteCendrée",
   "isPublic": true,
   "avatarUrl": "https://…",
-  "url": "https://achievers.games/u/kokki",
-  "cardUrl": "https://achievers.games/u/kokki/carte.svg",
-  "cardPngUrl": "https://achievers.games/u/kokki/carte.png",
+  "url": "https://achievers.games/u/exemple",
+  "cardUrl": "https://achievers.games/u/exemple/carte.svg",
+  "cardPngUrl": "https://achievers.games/u/exemple/carte.png",
   "memberSince": "2026-10-01T18:00:00.000Z",
   "clan": {
     "name": "Achievers",
@@ -285,7 +288,7 @@ pas encore, ou les jeux adultes.
 `GET /games/steam/219150/achievements` rend `game` et ses `achievements`, du plus rare au plus
 courant : les mêmes champs que pour un joueur (sans `unlocked` ni `unlockedAt`), plus
 `guideUrl`, la page du succès avec ses guides, ou `null` s'il n'en a pas. Un succès caché garde
-son nom et sa description à `null`. De quoi afficher sur une fiche Lure les succès les plus rares,
+son nom et sa description à `null`. De quoi afficher sur ta fiche de jeu les succès les plus rares,
 les manquables à surveiller et les guides.
 
 ### Plusieurs joueurs d'un coup
@@ -295,7 +298,7 @@ Pour les cartes de tous les amis d'un joueur : 100 joueurs par appel, par handle
 ```bash
 curl -X POST https://achievers.games/api/v1/users/lookup \
   -H "Authorization: Bearer ak_…" -H "Content-Type: application/json" \
-  -d '{"users":["kokki","cmv1…"],"game":"steam:219150"}'
+  -d '{"users":["exemple","cmv1…"],"game":"steam:219150"}'
 ```
 
 `items` suit l'ordre de la demande, sans doublon, avec le même profil que `/users/{handle}`.
@@ -320,7 +323,7 @@ Classés par nombre de 100 % atteints sur la période, puis par nombre de joueur
 ### Les derniers 100 %
 
 `GET /completions/recent`, `limit` de 1 à 50 (20 par défaut), et `since` (date ISO) pour ne
-garder que les 100 % plus récents : un fil « ça vient de tomber » pour l'accueil de Lure.
+garder que les 100 % plus récents : un fil « ça vient de tomber » pour ta page d'accueil.
 
 ```json
 {
@@ -330,10 +333,10 @@ garder que les 100 % plus récents : un fil « ça vient de tomber » pour l'acc
       "platinum": false,
       "user": {
         "id": "cmv0…",
-        "handle": "kokki",
+        "handle": "exemple",
         "displayName": "Kokki",
         "avatarUrl": "https://…",
-        "url": "https://achievers.games/u/kokki"
+        "url": "https://achievers.games/u/exemple"
       },
       "game": { "…": "fiche du jeu" },
       "card": { "tier": 3, "rank": "gold" }
@@ -352,7 +355,7 @@ Quand un joueur se connecte des deux côtés avec le même compte Steam (ou Disc
 la même personne : Steam renvoie le même identifiant aux deux sites. Aucun des deux n'a à croire
 l'autre sur parole, et on ne compare jamais d'e-mail ni de pseudo.
 
-**Ce que Lure doit stocker** : pour chaque compte, l'identifiant brut que renvoie le fournisseur.
+**Ce que ton site doit stocker** : pour chaque compte, l'identifiant brut que renvoie le fournisseur.
 
 | Fournisseur | `provider` | `providerUserId`                  |
 | ----------- | ---------- | --------------------------------- |
@@ -363,9 +366,9 @@ l'autre sur parole, et on ne compare jamais d'e-mail ni de pseudo.
 | Epic        | `EPIC`     | `sub`                             |
 | Battle.net  | `BLIZZARD` | `sub`                             |
 
-### Lure → Achievers (disponible maintenant)
+### Ton site → Achievers
 
-Quand un joueur se connecte sur Lure, envoie **toutes** ses identités, pas seulement celle de la
+Quand un joueur se connecte sur ton site, envoie **toutes** ses identités, pas seulement celle de la
 connexion :
 
 ```bash
@@ -383,18 +386,18 @@ Plusieurs (Steam mène à un compte, Discord à un autre), ne relie pas automati
 joueur choisir. De 1 à 20 identités par appel. La réponse ne contient jamais de nom ni de donnée de
 profil.
 
-### Achievers → Lure (à construire côté Lure)
+### Achievers → ton site (sur demande)
 
-À chaque connexion sur Achievers, Achievers fait l'appel inverse. Pour l'activer, Lure expose le
-**même** point d'entrée et nous donne son adresse et une clé :
+À chaque connexion sur Achievers, Achievers peut faire l'appel inverse. Pour l'activer, ton site
+expose le **même** point d'entrée et nous donne son adresse et une clé :
 
-- `POST https://lureverse.fr/api/v1/partner/identities/lookup`
-- en-tête `Authorization: Bearer <la clé que Lure a créée pour Achievers>`
+- `POST https://ton-site.example/api/v1/partner/identities/lookup`
+- en-tête `Authorization: Bearer <la clé que tu as créée pour Achievers>`
 - corps `{"identities":[{"provider":"STEAM","providerUserId":"…"}]}`, `provider` en majuscules
-- réponse `{"partnerUserIds":["<id du compte Lure>"]}`, liste vide si aucun
+- réponse `{"partnerUserIds":["<id du compte chez toi>"]}`, liste vide si aucun
 
-Achievers attend au plus 2 secondes : une panne de Lure n'empêche jamais de se connecter, le lien
-se fera simplement plus tard. S'il trouve exactement un compte Lure, il garde son identifiant, et
+Achievers attend au plus 2 secondes : une panne de ton site n'empêche jamais de se connecter, le
+lien se fera simplement plus tard. S'il trouve exactement un compte, il garde son identifiant, et
 c'est lui qui revient dans les webhooks (`user.partnerUserId`). Le joueur peut délier depuis son
 compte Achievers ; le lien n'est alors plus recréé automatiquement.
 
@@ -402,7 +405,7 @@ compte Achievers ; le lien n'est alors plus recréé automatiquement.
 
 Pour un bouton « Se connecter avec Achievers », et pour lire les données d'un joueur **même si son
 profil est privé**, avec son accord. Le flux est le code d'autorisation avec **PKCE S256
-obligatoire** ; Lure est un client confidentiel (le secret reste sur le serveur).
+obligatoire** ; ton site est un client confidentiel (le secret reste sur le serveur).
 
 **Portées** :
 
@@ -431,14 +434,14 @@ obligatoire** ; Lure est un client confidentiel (le secret reste sur le serveur)
    https://achievers.games/oauth/authorize
      ?response_type=code
      &client_id=ach_…
-     &redirect_uri=https://lureverse.fr/auth/achievers/callback
+     &redirect_uri=https://ton-site.example/auth/achievers/callback
      &scope=library%20achievements
      &state=<state>
      &code_challenge=<challenge>
      &code_challenge_method=S256
    ```
 
-   Il se connecte si besoin, voit ce que Lure pourra lire et accepte. S'il a déjà accepté les
+   Il se connecte si besoin, voit ce que ton site pourra lire et accepte. S'il a déjà accepté les
    mêmes portées, il revient aussitôt, sans écran. `redirect_uri` doit être exactement celle
    déclarée chez nous.
 
@@ -455,7 +458,7 @@ obligatoire** ; Lure est un client confidentiel (le secret reste sur le serveur)
      "client_secret": "acs_…",
      "code": "ac_…",
      "code_verifier": "<verifier>",
-     "redirect_uri": "https://lureverse.fr/auth/achievers/callback"
+     "redirect_uri": "https://ton-site.example/auth/achievers/callback"
    }'
    ```
 
@@ -479,7 +482,7 @@ obligatoire** ; Lure est un client confidentiel (le secret reste sur le serveur)
    | `GET /api/v1/me/almost`                | `library`      | `/users/{handle}/almost`                  |
 
    `GET /me` donne l'`id` Achievers du joueur : c'est lui qu'il faut garder pour relier le compte
-   Lure. Un jeton expiré ou retiré répond `401 invalid_token` ; une portée manquante,
+   chez toi. Un jeton expiré ou retiré répond `401 invalid_token` ; une portée manquante,
    `403 insufficient_scope`.
 
 6. **Rafraîchir** avant l'heure, sur le même point d'entrée :
@@ -506,7 +509,7 @@ prochaine requête répond `401`, et il faut lui reproposer de se connecter.
 
 ## 6. Recevoir les nouveaux succès et les changements de compte (webhooks)
 
-Achievers prévient Lure dans la minute quand un joueur suivi débloque un succès, et quand un
+Achievers prévient ton site dans la minute quand un joueur suivi débloque un succès, et quand un
 compte est relié, délié ou modifié. C'est le
 complément de l'API : les webhooks disent **quand** ça change, l'API donne **l'état** (premier
 chargement, rattrapage après une panne).
@@ -514,7 +517,7 @@ chargement, rattrapage après une panne).
 **Joueurs suivis** :
 
 - ceux reliés automatiquement (§4) dont le profil est public ;
-- ceux qui ont autorisé Lure avec la portée `library` (§5), même au profil privé.
+- ceux qui ont autorisé ton site avec la portée `library` (§5), même au profil privé.
 
 Rien ne part pour un jeu masqué par le joueur ni pour un jeu adulte. Au premier branchement, les
 envois partent du moment présent : l'historique n'est pas renvoyé, utilise l'API pour lui.
@@ -538,10 +541,10 @@ X-Achievers-Signature: t=1794168000,v1=5f2c…
       "at": "2026-11-08T20:00:30.000Z",
       "user": {
         "id": "cmv0…",
-        "handle": "kokki",
+        "handle": "exemple",
         "isPublic": true,
         "avatarUrl": "https://…",
-        "partnerUserId": "id-du-compte-lure"
+        "partnerUserId": "id-du-compte-chez-toi"
       },
       "game": {
         "platform": "steam",
@@ -588,17 +591,17 @@ X-Achievers-Signature: t=1794168000,v1=5f2c…
 
 `card.earned` porte `"card": { "tier": 3, "rank": "gold" }` à la place de `achievement`.
 
-- `user.partnerUserId` est l'identifiant du compte Lure si les comptes sont reliés
+- `user.partnerUserId` est l'identifiant du compte chez toi si les comptes sont reliés
   automatiquement ; `null` pour un joueur venu seulement par OAuth : retrouve-le par `user.id`.
 - `at` est le moment où Achievers a appris le changement.
 
 **Changements de compte** : dans le même envoi, avec la même forme de `user`.
 
-| `type`          | Quand                                                                            |
-| --------------- | -------------------------------------------------------------------------------- |
-| `user.linked`   | un compte Lure vient d'être relié : liaison automatique, ou premier accord OAuth |
-| `user.unlinked` | le joueur a délié Lure, ou retiré son accès, depuis son compte Achievers         |
-| `user.updated`  | le handle ou l'avatar a changé, ou le profil est passé public ou privé           |
+| `type`          | Quand                                                                        |
+| --------------- | ---------------------------------------------------------------------------- |
+| `user.linked`   | un compte vient d'être relié : liaison automatique, ou premier accord OAuth  |
+| `user.unlinked` | le joueur a délié ton site, ou retiré son accès, depuis son compte Achievers |
+| `user.updated`  | le handle ou l'avatar a changé, ou le profil est passé public ou privé       |
 
 ```json
 {
@@ -608,17 +611,17 @@ X-Achievers-Signature: t=1794168000,v1=5f2c…
   "via": "auto",
   "user": {
     "id": "cmv0…",
-    "handle": "kokki",
+    "handle": "exemple",
     "isPublic": true,
     "avatarUrl": "https://…",
-    "partnerUserId": "56ea6c14-6299-4b6e-95a4-268eb4019444"
+    "partnerUserId": "id-du-compte-chez-toi"
   }
 }
 ```
 
 - `via` vaut `auto` (identités communes, §4) ou `oauth` (« Se connecter avec Achievers », §5) ;
   il n'y en a pas pour `user.updated`.
-- Pour `user.unlinked`, `partnerUserId` donne le compte Lure qui vient d'être délié.
+- Pour `user.unlinked`, `partnerUserId` donne le compte qui vient d'être délié.
 - `user.updated` décrit toujours l'**état actuel** : plusieurs changements rapprochés n'en
   donnent qu'un.
 
@@ -651,17 +654,17 @@ Rien de tout ceci ne demande de clé.
 **Lien vers un jeu par son appid** : `https://achievers.games/jeux/steam/683320` redirige vers la
 fiche du jeu sur Achievers, en gardant les paramètres (`?utm_source=lure`). Même forme pour
 `psn`, `xbox`, `retro` et `blizzard`. Pratique pour un lien « Voir les succès sur Achievers » sur
-chaque fiche Lure.
+chaque fiche de jeu.
 
 **Carte de joueur** à intégrer comme une image, en SVG (600×180) ou en PNG (1200×360, qui
 s'affiche aussi sur Discord) :
 
 ```html
 <img
-  src="https://achievers.games/u/kokki/carte.svg"
+  src="https://achievers.games/u/exemple/carte.svg"
   width="600"
   height="180"
-  alt="Carte Achievers de kokki"
+  alt="Carte Achievers d'exemple"
 />
 ```
 

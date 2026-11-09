@@ -298,6 +298,23 @@
   .prose-user h2 {
     @apply pt-3 text-lg font-bold;
   }
+  /* La documentation des partenaires : titres ancrés, tableaux et longs exemples de code. */
+  .prose-guide h2 {
+    @apply scroll-mt-20 border-t border-line pt-6 text-xl;
+  }
+  .prose-guide h3 {
+    @apply scroll-mt-20 pt-3 text-base font-bold;
+  }
+  .prose-guide table {
+    @apply block w-full overflow-x-auto text-xs;
+  }
+  .prose-guide th,
+  .prose-guide td {
+    @apply border border-line px-2 py-1 text-left align-top;
+  }
+  .prose-guide pre code {
+    @apply bg-transparent p-0;
+  }
   .prose-user h3 {
     @apply pt-2 text-base font-semibold;
   }

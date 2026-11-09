@@ -65,7 +65,8 @@ export function partnerOpenApi(origin: string) {
         'Read-only access to public Achievers profiles and games, plus an identity lookup used ' +
         'to link a player account across partner sites. Only public profiles are exposed; games ' +
         'hidden by the player and adult-only games never appear. Secret achievements stay masked ' +
-        `until unlocked. Limit: ${KEY_LIMIT} requests per minute per key.`,
+        `until unlocked. Limit: ${KEY_LIMIT} requests per minute per key. Step-by-step ` +
+        `guide: ${origin}/developpeurs`,
     },
     servers: [{ url: `${origin}/api/v1` }],
     security: [{ apiKey: [] }],
@@ -559,6 +560,57 @@ export function partnerOpenApi(origin: string) {
         },
       },
     },
+    // Ce qu'Achievers envoie au partenaire : décrit ici pour qu'un seul lien suffise.
+    webhooks: {
+      partnerEvents: {
+        post: {
+          operationId: 'receivePartnerEvents',
+          summary: 'Events sent to your webhook address, at most once a minute',
+          description:
+            'A JSON POST grouping up to 500 events. Verify X-Achievers-Signature on the raw ' +
+            'body before parsing: "t=<unix seconds>,v1=<hex>", where v1 is the HMAC-SHA256 of ' +
+            '"<t>.<raw body>" with your whsec_ secret; refuse a t older than 5 minutes. Answer ' +
+            '2xx quickly, then process. Without 2xx the same batch is sent again after 1 minute, ' +
+            'then 2, 4… up to 1 hour apart, with the same event ids: ignore an id already seen. ' +
+            'Followed players: those linked automatically with a public profile, and those who ' +
+            'authorised you with the library scope. Hidden and adult-only games never appear.',
+          security: [],
+          parameters: [
+            {
+              name: 'X-Achievers-Signature',
+              in: 'header',
+              required: true,
+              schema: { type: 'string', example: 't=1794168000,v1=5f2c…' },
+            },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['events'],
+                  properties: {
+                    events: {
+                      type: 'array',
+                      items: {
+                        oneOf: [
+                          ref('UnlockEvent'),
+                          ref('CardEvent'),
+                          ref('RareAchievementEvent'),
+                          ref('AccountEvent'),
+                        ],
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          responses: { '200': { description: 'Received: the batch is not sent again.' } },
+        },
+      },
+    },
     components: {
       securitySchemes: {
         apiKey: {
@@ -738,6 +790,112 @@ export function partnerOpenApi(origin: string) {
                 'The Steam appid: its own for a Steam game, the Steam version of the same game ' +
                 'for PSN or Xbox, or null when it is not on Steam.',
             }),
+          },
+        },
+        WebhookUser: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', description: 'Stable Achievers id.' },
+            handle: { type: 'string' },
+            isPublic: { type: 'boolean' },
+            avatarUrl: nullable('string', { description: 'Always https://, or null.' }),
+            partnerUserId: nullable('string', {
+              description:
+                'Your account id when linked automatically; null for a player who came only ' +
+                'through OAuth: find them by id.',
+            }),
+          },
+        },
+        WebhookGame: {
+          type: 'object',
+          properties: {
+            platform: { type: 'string', enum: Object.keys(API_PLATFORMS) },
+            platformGameId: { type: 'string' },
+            name: { type: 'string' },
+            steamAppId: nullable('string', {
+              description: 'The Steam appid of the same game, even for PSN or Xbox; or null.',
+            }),
+          },
+        },
+        UnlockEvent: {
+          type: 'object',
+          description: 'One per player and game: the new achievements and the resulting progress.',
+          properties: {
+            id: { type: 'string', description: 'Stable: the same when a batch is sent again.' },
+            type: { type: 'string', enum: ['achievements.unlocked', 'game.completed'] },
+            at: { type: 'string', format: 'date-time', description: 'When Achievers learnt it.' },
+            user: ref('WebhookUser'),
+            game: ref('WebhookGame'),
+            achievements: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string' },
+                  name: { type: 'string' },
+                  unlockedAt: { type: 'string', format: 'date-time' },
+                },
+              },
+            },
+            progress: {
+              type: ['object', 'null'],
+              properties: {
+                unlocked: { type: 'integer' },
+                total: { type: 'integer' },
+                completion: { type: 'number' },
+                completed: { type: 'boolean' },
+              },
+            },
+          },
+        },
+        CardEvent: {
+          type: 'object',
+          description: 'The game just reached 100 %: the card earned. Comes with game.completed.',
+          properties: {
+            id: { type: 'string' },
+            type: { type: 'string', enum: ['card.earned'] },
+            at: { type: 'string', format: 'date-time' },
+            user: ref('WebhookUser'),
+            game: ref('WebhookGame'),
+            card: ref('Card'),
+          },
+        },
+        RareAchievementEvent: {
+          type: 'object',
+          description: 'An achievement unlocked by less than 1 % of players, one event each.',
+          properties: {
+            id: { type: 'string' },
+            type: { type: 'string', enum: ['achievement.rare'] },
+            at: { type: 'string', format: 'date-time' },
+            user: ref('WebhookUser'),
+            game: ref('WebhookGame'),
+            achievement: {
+              type: 'object',
+              properties: {
+                id: { type: 'string' },
+                name: { type: 'string' },
+                rarity: { type: 'number', description: 'Percent of players who have it.' },
+                unlockedAt: { type: 'string', format: 'date-time' },
+              },
+            },
+          },
+        },
+        AccountEvent: {
+          type: 'object',
+          description:
+            'user.linked: an account was just linked. user.unlinked: the player unlinked you or ' +
+            'withdrew access (partnerUserId gives the account just unlinked). user.updated: ' +
+            'handle, avatar or visibility changed; it always describes the current state.',
+          properties: {
+            id: { type: 'string' },
+            type: { type: 'string', enum: ['user.linked', 'user.unlinked', 'user.updated'] },
+            at: { type: 'string', format: 'date-time' },
+            via: {
+              type: 'string',
+              enum: ['auto', 'oauth'],
+              description: 'Not present for user.updated.',
+            },
+            user: ref('WebhookUser'),
           },
         },
         Card: {

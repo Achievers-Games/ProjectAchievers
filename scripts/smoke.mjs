@@ -57,6 +57,7 @@ const checks = [
   ['/clans', status(200)],
   ['/communaute', status(200)],
   ['/sitemap.xml', status(200)],
+  ['/developpeurs', status(200)],
   ['/auth/steam/start', toProvider('steamcommunity.com')],
   ['/auth/discord/start', toProvider('discord.com')],
   ['/auth/google/start', toProvider('accounts.google.com')],
