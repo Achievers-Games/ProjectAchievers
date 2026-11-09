@@ -1812,5 +1812,7 @@
   "clans_ranking_rules": "La suma de los puntos de colección de los miembros.",
   "clans_points": "Puntos",
   "notification_clan_request": "Solicitud de clan",
-  "notification_clan_rename": "Nombre de clan retirado"
+  "notification_clan_rename": "Nombre de clan retirado",
+  "game_lure_link": "Ver en Lure",
+  "game_lure_completionist": "{hours} h para el 100 % según Lure"
 }

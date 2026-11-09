@@ -10,6 +10,7 @@ import { censor } from '#lib/profanity';
 import { compareAchievements } from '#lib/compare';
 import { SEASON, seasonState } from '#lib/season';
 import { getLocale } from '#lib/paraglide/runtime';
+import { lureGameFor } from '#lib/server/lure-games';
 import type { Actions, PageServerLoad } from './$types';
 import { m } from '#lib/paraglide/messages';
 
@@ -49,7 +50,7 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
   const withHandle = url.searchParams.get('avec')?.trim() || null;
 
   const viewerId = locals.user?.id;
-  const [progress, unlocks, players, others, rival, friends, guides] = await Promise.all([
+  const [progress, unlocks, players, others, rival, friends, guides, lure] = await Promise.all([
     locals.user
       ? db.userGame.findUnique({
           where: { userId_gameId: { userId: locals.user.id, gameId: game.id } },
@@ -105,6 +106,8 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
         _count: { select: { checks: { where: { userId: viewerId ?? '' } } } },
       },
     }),
+    // La fiche Lure du jeu et son temps pour le 100 %, si Lure le connaît : jamais attendu.
+    lureGameFor(game).catch(() => null),
   ]);
 
   // Seuls les amis qui possèdent cette version ont quelque chose à comparer.
@@ -218,6 +221,7 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
     progress,
     season,
     players,
+    lure,
     versions: others.map((other) => ({
       slug: other.slug,
       platform: other.platform,

@@ -1812,5 +1812,7 @@
   "clans_ranking_rules": "Die Summe der Sammelpunkte der Mitglieder.",
   "clans_points": "Punkte",
   "notification_clan_request": "Clan-Anfrage",
-  "notification_clan_rename": "Clanname entfernt"
+  "notification_clan_rename": "Clanname entfernt",
+  "game_lure_link": "Auf Lure ansehen",
+  "game_lure_completionist": "{hours} Std. bis 100 % laut Lure"
 }

@@ -1775,5 +1775,7 @@
   "clans_ranking_rules": "メンバーのコレクションポイントの合計。",
   "clans_points": "ポイント",
   "notification_clan_request": "クラン申請",
-  "notification_clan_rename": "クラン名の変更"
+  "notification_clan_rename": "クラン名の変更",
+  "game_lure_link": "Lure で見る",
+  "game_lure_completionist": "Lure によると 100% まで {hours} 時間"
 }

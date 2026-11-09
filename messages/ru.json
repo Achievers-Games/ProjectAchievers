@@ -1862,5 +1862,7 @@
   "clans_ranking_rules": "Сумма очков коллекции участников.",
   "clans_points": "Очки",
   "notification_clan_request": "Заявка в клан",
-  "notification_clan_rename": "Название клана удалено"
+  "notification_clan_rename": "Название клана удалено",
+  "game_lure_link": "Открыть на Lure",
+  "game_lure_completionist": "{hours} ч до 100 % по данным Lure"
 }

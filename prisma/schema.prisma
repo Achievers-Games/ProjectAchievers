@@ -817,3 +817,15 @@ model OAuthToken {
 
   @@index([grantId])
 }
+
+/// Ce que Lure sait d'un jeu Steam, relu au plus une fois par semaine : sa fiche et le temps qu'il
+/// faut pour le finir. `found` faux : Lure ne connaît pas le jeu (ou sa route n'existe pas encore).
+model LureGame {
+  steamAppId           String   @id
+  found                Boolean
+  url                  String?
+  mainMinutes          Int?
+  normalMinutes        Int?
+  completionistMinutes Int?
+  fetchedAt            DateTime
+}

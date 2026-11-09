@@ -183,6 +183,23 @@
         })}
         · {m.count_players({ count: data.players })}
       </p>
+      {#if data.lure}
+        <p class="flex flex-wrap items-center gap-x-2 text-sm text-muted" data-testid="lure">
+          {#if data.lure.completionistMinutes}
+            <span>
+              {m.game_lure_completionist({
+                hours: new Intl.NumberFormat(getLocale(), { maximumFractionDigits: 1 }).format(
+                  Math.round(data.lure.completionistMinutes / 30) / 2,
+                ),
+              })}
+            </span>
+            ·
+          {/if}
+          <a href={data.lure.url} target="_blank" rel="noopener" class="underline hover:text-ink">
+            {m.game_lure_link()} ↗
+          </a>
+        </p>
+      {/if}
       {#if data.versions.length}
         <p class="flex flex-wrap gap-2 text-sm">
           {#each data.versions as version (version.slug)}
