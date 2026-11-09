@@ -77,6 +77,10 @@ d'image.
 comme sur Lure : `/games/steam/683320` correspond à `lureverse.fr/jeu/683320`. Plateformes :
 `steam`, `psn`, `xbox`, `retro`, `blizzard`.
 
+Chaque jeu porte aussi `steamAppId` : l'appid Steam du même jeu, y compris pour une version PSN ou
+Xbox quand il existe sur Steam (`null` sinon). Un 100 % sur PS5 se range ainsi sur la bonne fiche
+Lure.
+
 ## 3. Lire les profils et les jeux
 
 | Méthode | Route                                   | Contenu                                                           |
@@ -90,6 +94,7 @@ comme sur Lure : `/games/steam/683320` correspond à `lureverse.fr/jeu/683320`. 
 | GET     | `/games/{platform}/{id}/achievements`   | les succès d'un jeu sans joueur, avec le lien de leurs guides     |
 | POST    | `/users/lookup`                         | jusqu'à 100 joueurs en un appel, avec leur progression sur un jeu |
 | GET     | `/games/popular`                        | jeux où les chasseurs de succès sont actifs                       |
+| GET     | `/completions/recent`                   | les derniers 100 % des joueurs publics                            |
 
 ### Un joueur
 
@@ -155,7 +160,8 @@ Légendaire.
         "totalAchievements": 35,
         "tier": 4,
         "tags": [1774, 492],
-        "familyKey": "hotline miami"
+        "familyKey": "hotline miami",
+        "steamAppId": "219150"
       },
       "progress": {
         "unlocked": 34,
@@ -310,6 +316,35 @@ curl -X POST https://achievers.games/api/v1/users/lookup \
 ```
 
 Classés par nombre de 100 % atteints sur la période, puis par nombre de joueurs actifs.
+
+### Les derniers 100 %
+
+`GET /completions/recent`, `limit` de 1 à 50 (20 par défaut), et `since` (date ISO) pour ne
+garder que les 100 % plus récents : un fil « ça vient de tomber » pour l'accueil de Lure.
+
+```json
+{
+  "items": [
+    {
+      "completedAt": "2026-11-09T18:42:00.000Z",
+      "platinum": false,
+      "user": {
+        "id": "cmv0…",
+        "handle": "kokki",
+        "displayName": "Kokki",
+        "avatarUrl": "https://…",
+        "url": "https://achievers.games/u/kokki"
+      },
+      "game": { "…": "fiche du jeu" },
+      "card": { "tier": 3, "rank": "gold" }
+    }
+  ]
+}
+```
+
+Du plus récent au plus ancien, seulement les joueurs publics. `card` est la carte gagnée : son
+palier (1 à 6 : `bronze`, `silver`, `gold`, `diamond`, `prismatic`, `legendary`) dit la
+difficulté du jeu.
 
 ## 4. Relier automatiquement les comptes
 
@@ -508,7 +543,12 @@ X-Achievers-Signature: t=1794168000,v1=5f2c…
         "avatarUrl": "https://…",
         "partnerUserId": "id-du-compte-lure"
       },
-      "game": { "platform": "steam", "platformGameId": "219150", "name": "Hotline Miami" },
+      "game": {
+        "platform": "steam",
+        "platformGameId": "219150",
+        "name": "Hotline Miami",
+        "steamAppId": "219150"
+      },
       "achievements": [
         { "id": "ACH_COMBO_KING", "name": "Combo King", "unlockedAt": "2026-11-08T20:00:00.000Z" }
       ],
@@ -520,6 +560,34 @@ X-Achievers-Signature: t=1794168000,v1=5f2c…
 
 - `type` vaut `game.completed` quand ces succès font passer le jeu à 100 %, sinon
   `achievements.unlocked`.
+- `game.steamAppId` est l'appid Steam du jeu, même pour un 100 % sur PS5 ou Xbox quand le jeu
+  existe aussi sur Steam ; `null` sinon.
+
+**Annonces** : en plus de l'événement du jeu, dans le même envoi.
+
+| `type`             | Quand                                                                   |
+| ------------------ | ----------------------------------------------------------------------- |
+| `card.earned`      | le jeu vient de passer à 100 % : la carte gagnée, `card.tier` et `rank` |
+| `achievement.rare` | un succès débloqué par moins de 1 % des joueurs : un par succès         |
+
+```json
+{
+  "id": "4c1d…",
+  "type": "achievement.rare",
+  "at": "2026-11-08T20:00:30.000Z",
+  "user": { "…": "comme plus haut" },
+  "game": { "…": "comme plus haut" },
+  "achievement": {
+    "id": "ACH_COMBO_KING",
+    "name": "Combo King",
+    "rarity": 0.4,
+    "unlockedAt": "2026-11-08T20:00:00.000Z"
+  }
+}
+```
+
+`card.earned` porte `"card": { "tier": 3, "rank": "gold" }` à la place de `achievement`.
+
 - `user.partnerUserId` est l'identifiant du compte Lure si les comptes sont reliés
   automatiquement ; `null` pour un joueur venu seulement par OAuth : retrouve-le par `user.id`.
 - `at` est le moment où Achievers a appris le changement.

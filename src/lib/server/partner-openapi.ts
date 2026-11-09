@@ -12,6 +12,8 @@ import {
   ALMOST_LIMIT,
   ALMOST_MAX,
   POPULAR_LIMIT,
+  RECENT_LIMIT,
+  RECENT_MAX,
   POPULAR_MAX,
   POPULAR_PERIODS,
 } from './partner-queries';
@@ -350,6 +352,60 @@ export function partnerOpenApi(origin: string) {
           },
         },
       },
+      '/completions/recent': {
+        get: {
+          operationId: 'getRecentCompletions',
+          summary: 'Latest 100 % reached by public players, newest first',
+          parameters: [
+            {
+              name: 'limit',
+              in: 'query',
+              schema: { type: 'integer', minimum: 1, maximum: RECENT_MAX, default: RECENT_LIMIT },
+            },
+            {
+              name: 'since',
+              in: 'query',
+              description: 'Only completions after this moment, for polling.',
+              schema: { type: 'string', format: 'date-time' },
+            },
+          ],
+          responses: {
+            '200': ok(
+              {
+                type: 'object',
+                properties: {
+                  items: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        completedAt: { type: 'string', format: 'date-time' },
+                        platinum: { type: 'boolean' },
+                        user: {
+                          type: 'object',
+                          properties: {
+                            id: { type: 'string' },
+                            handle: { type: 'string' },
+                            displayName: { type: 'string' },
+                            avatarUrl: nullable('string'),
+                            url: { type: 'string' },
+                          },
+                        },
+                        game: ref('GameCard'),
+                        card: ref('Card'),
+                      },
+                    },
+                  },
+                },
+              },
+              'The completions, newest first.',
+            ),
+            '400': { $ref: '#/components/responses/BadRequest' },
+            '401': { $ref: '#/components/responses/Unauthorized' },
+            '429': { $ref: '#/components/responses/RateLimited' },
+          },
+        },
+      },
       '/games/{platform}/{id}/achievements': {
         get: {
           operationId: 'getGameAchievements',
@@ -677,6 +733,22 @@ export function partnerOpenApi(origin: string) {
                 'Shared by the versions of one game across platforms; null when the game has ' +
                 'no sibling on another platform.',
             }),
+            steamAppId: nullable('string', {
+              description:
+                'The Steam appid: its own for a Steam game, the Steam version of the same game ' +
+                'for PSN or Xbox, or null when it is not on Steam.',
+            }),
+          },
+        },
+        Card: {
+          type: 'object',
+          description: 'The card a 100 % earns: its tier tells how hard the game is.',
+          properties: {
+            tier: { type: 'integer', minimum: 1, maximum: 6 },
+            rank: {
+              type: 'string',
+              enum: ['bronze', 'silver', 'gold', 'diamond', 'prismatic', 'legendary'],
+            },
           },
         },
         Progress: {

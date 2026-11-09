@@ -2,7 +2,7 @@ import { createHash, createHmac } from 'node:crypto';
 import { logger } from '#lib/logger';
 import { decrypt, encrypt, randomToken } from './crypto';
 import { db } from './db';
-import { apiAvatar, platformSlug } from './partner-api';
+import { apiAvatar, apiCard, platformSlug, steamAppIds } from './partner-api';
 
 const log = logger('Webhooks partenaires');
 
@@ -45,15 +45,21 @@ interface UnlockRow {
   achievement: {
     platformAchievementId: string;
     name: string;
+    globalRarity: number | null;
     game: {
       id: string;
       platform: Parameters<typeof platformSlug>[0];
       platformGameId: string;
       slug: string;
       name: string;
+      tier: number | null;
+      familyKey: string | null;
     };
   };
 }
+
+/** Sous ce pourcentage de joueurs, un succès vaut un événement à lui seul : achievement.rare. */
+export const RARE_ACHIEVEMENT = 1;
 
 /**
  * Qui le partenaire suit : les joueurs reliés automatiquement (même identité OAuth) au profil
@@ -85,8 +91,17 @@ async function pendingUnlocks(app: { id: string; slug: string }, cursor: Date | 
         select: {
           platformAchievementId: true,
           name: true,
+          globalRarity: true,
           game: {
-            select: { id: true, platform: true, platformGameId: true, slug: true, name: true },
+            select: {
+              id: true,
+              platform: true,
+              platformGameId: true,
+              slug: true,
+              name: true,
+              tier: true,
+              familyKey: true,
+            },
           },
         },
       },
@@ -154,7 +169,7 @@ async function buildEvents(slug: string, rows: UnlockRow[]) {
   // (Achievers, stable) suffit à le retrouver, puisque `/me` le donne aussi.
   const userIds = [...new Set(rows.map((row) => row.userId))];
   const gameIds = [...new Set(rows.map((row) => row.achievement.game.id))];
-  const [users, progress] = await Promise.all([
+  const [users, progress, steamIds] = await Promise.all([
     webhookUsers(slug, userIds),
     db.userGame.findMany({
       where: { userId: { in: userIds }, gameId: { in: gameIds } },
@@ -167,6 +182,7 @@ async function buildEvents(slug: string, rows: UnlockRow[]) {
         completion: true,
       },
     }),
+    steamAppIds(rows.map((row) => row.achievement.game)),
   ]);
   const progressOf = new Map(progress.map((row) => [`${row.userId}:${row.gameId}`, row]));
 
@@ -179,17 +195,54 @@ async function buildEvents(slug: string, rows: UnlockRow[]) {
     const { game } = first.achievement;
     const completed = (owned?.completion ?? 0) >= 100;
     const ids = unlocks.map((row) => row.achievement.platformAchievementId).sort();
+    const at = unlocks.at(-1)!.createdAt.toISOString();
+    const gameView = {
+      platform: platformSlug(game.platform),
+      platformGameId: game.platformGameId,
+      name: game.name,
+      // L'appid Steam du même jeu, pour un 100 % sur PS5 ou Xbox : les fiches Lure en dépendent.
+      steamAppId:
+        game.platform === 'STEAM'
+          ? game.platformGameId
+          : game.familyKey
+            ? (steamIds.get(game.familyKey) ?? null)
+            : null,
+    };
+    // Un succès très rare vaut une annonce à lui seul, en plus du lot.
+    const rare = unlocks
+      .filter((row) => (row.achievement.globalRarity ?? 100) < RARE_ACHIEVEMENT)
+      .map((row) => ({
+        id: stableId(`${key}:rare:${row.achievement.platformAchievementId}`),
+        type: 'achievement.rare',
+        at: row.createdAt.toISOString(),
+        user,
+        game: gameView,
+        achievement: {
+          id: row.achievement.platformAchievementId,
+          name: row.achievement.name,
+          rarity: row.achievement.globalRarity,
+          unlockedAt: row.unlockedAt.toISOString(),
+        },
+      }));
+    const card = completed
+      ? [
+          {
+            id: stableId(`${key}:card`),
+            type: 'card.earned',
+            at,
+            user,
+            game: gameView,
+            card: apiCard(game.tier),
+          },
+        ]
+      : [];
     return [
       {
         id: stableId(`${key}:${ids.join(',')}`),
         type: completed ? 'game.completed' : 'achievements.unlocked',
-        at: unlocks.at(-1)!.createdAt.toISOString(),
+        at,
         user,
-        game: {
-          platform: platformSlug(game.platform),
-          platformGameId: game.platformGameId,
-          name: game.name,
-        },
+        game: gameView,
         achievements: unlocks.map((row) => ({
           id: row.achievement.platformAchievementId,
           name: row.achievement.name,
@@ -204,6 +257,8 @@ async function buildEvents(slug: string, rows: UnlockRow[]) {
             }
           : null,
       },
+      ...card,
+      ...rare,
     ];
   });
 }

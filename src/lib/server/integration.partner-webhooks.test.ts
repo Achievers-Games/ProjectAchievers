@@ -180,7 +180,43 @@ describe('webhooks partenaires', () => {
         type: 'game.completed',
         user: expect.objectContaining({ partnerUserId: `lure-${done.id}` }),
       }),
+      // Le 100 % rapporte aussi une carte, palier 1 pour un jeu pas encore classé.
+      expect.objectContaining({ type: 'card.earned', card: { tier: 1, rank: 'bronze' } }),
     ]);
+  });
+
+  it('annonce la carte gagnée et les succès très rares, avec l’appid Steam', async () => {
+    const { game, achievements } = await setup();
+    await db.game.update({ where: { id: game.id }, data: { tier: 3 } });
+    await db.achievement.update({
+      where: { id: achievements[0]!.id },
+      data: { globalRarity: 0.4 },
+    });
+    await db.achievement.update({ where: { id: achievements[1]!.id }, data: { globalRarity: 30 } });
+    const user = await player();
+    await db.partnerLink.create({
+      data: { userId: user.id, partner: SLUG, partnerUserId: `lure-${user.id}`, method: 'AUTO' },
+    });
+    const arrived = at('2026-03-01T12:00:00Z');
+    await unlock(user.id, game.id, achievements[0]!.id, arrived);
+    await unlock(user.id, game.id, achievements[1]!.id, arrived, 100);
+
+    const partner = fakePartner();
+    await deliverPartnerWebhooks(at('2026-03-01T12:05:00Z'), partner.send);
+    const events = (JSON.parse(partner.sent[0]!.body) as { events: Record<string, unknown>[] })
+      .events;
+    expect(events.map((e) => e.type)).toEqual([
+      'game.completed',
+      'card.earned',
+      'achievement.rare',
+    ]);
+    const steam = { platform: 'steam', steamAppId: game.platformGameId };
+    expect(events[1]).toMatchObject({ game: steam, card: { tier: 3, rank: 'gold' } });
+    expect(events[2]).toMatchObject({
+      game: steam,
+      achievement: { id: 'UN', rarity: 0.4 },
+    });
+    expect(new Set(events.map((e) => e.id)).size).toBe(3);
   });
 
   it('suit aussi le joueur qui a autorisé le partenaire par OAuth, même au profil privé', async () => {

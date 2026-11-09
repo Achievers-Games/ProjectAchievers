@@ -301,7 +301,32 @@ export interface ApiGameFields {
   familyKey: string | null;
 }
 
-export const apiGame = (game: ApiGameFields) => ({
+/**
+ * Les appid Steam par famille de jeux : la version Steam d'un jeu PSN ou Xbox, quand elle existe.
+ * Les fiches de Lure sont rangées par appid Steam : c'est ce qui y relie un 100 % sur PS5.
+ */
+export async function steamAppIds(games: { platform: Platform; familyKey: string | null }[]) {
+  const families = [
+    ...new Set(
+      games.flatMap((game) =>
+        game.platform !== 'STEAM' && game.familyKey ? [game.familyKey] : [],
+      ),
+    ),
+  ];
+  if (families.length === 0) return new Map<string, string>();
+  const steam = await db.game.findMany({
+    where: { platform: 'STEAM', familyKey: { in: families } },
+    orderBy: { platformGameId: 'asc' },
+    select: { familyKey: true, platformGameId: true },
+  });
+  const ids = new Map<string, string>();
+  for (const game of steam) {
+    if (game.familyKey && !ids.has(game.familyKey)) ids.set(game.familyKey, game.platformGameId);
+  }
+  return ids;
+}
+
+export const apiGame = (game: ApiGameFields, steamIds: Map<string, string> = new Map()) => ({
   platform: platformSlug(game.platform),
   platformGameId: game.platformGameId,
   console: game.console,
@@ -314,6 +339,12 @@ export const apiGame = (game: ApiGameFields) => ({
   tier: game.tier,
   tags: game.tags,
   familyKey: game.familyKey,
+  steamAppId:
+    game.platform === 'STEAM'
+      ? game.platformGameId
+      : game.familyKey
+        ? (steamIds.get(game.familyKey) ?? null)
+        : null,
 });
 
 export const apiGameSelect = {
@@ -329,3 +360,19 @@ export const apiGameSelect = {
   tags: true,
   familyKey: true,
 } as const;
+
+/** Le rang d'une carte, du palier 1 au palier 6, comme sur le site. */
+export const CARD_RANKS = [
+  'bronze',
+  'silver',
+  'gold',
+  'diamond',
+  'prismatic',
+  'legendary',
+] as const;
+
+/** La carte qu'un 100 % rapporte : son palier dit la difficulté du jeu, de Bronze à Légendaire. */
+export function apiCard(gameTier: number | null) {
+  const tier = Math.min(Math.max(gameTier ?? 1, 1), CARD_RANKS.length);
+  return { tier, rank: CARD_RANKS[tier - 1] };
+}

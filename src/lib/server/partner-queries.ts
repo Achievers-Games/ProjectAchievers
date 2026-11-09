@@ -4,7 +4,9 @@ import { BURIED_SCORE, GUIDE_ORDER } from './guides';
 import {
   absolute,
   apiAvatar,
+  apiCard,
   apiGame,
+  steamAppIds,
   apiGameSelect,
   nextCursor,
   type ApiCursor,
@@ -14,7 +16,7 @@ import {
 import { userStats } from './queries/stats';
 import { ensureGameTexts, localizeAchievements } from './achievement-texts';
 import { baseLocale } from '#lib/paraglide/runtime';
-import { visibleGames } from './queries/shared';
+import { publicGames, visibleGames } from './queries/shared';
 
 /**
  * Le joueur dont on parle : par son `handle` ou son `id` Achievers, il doit avoir un profil
@@ -189,8 +191,9 @@ export async function partnerUserGames(
   });
   const page = rows.slice(0, limit);
   const last = page.at(-1);
+  const steamIds = await steamAppIds(page.map((row) => row.game));
   return {
-    items: page.map((row) => ({ game: apiGame(row.game), progress: progress(row) })),
+    items: page.map((row) => ({ game: apiGame(row.game, steamIds), progress: progress(row) })),
     nextCursor: rows.length > limit && last ? nextCursor(sort, last) : null,
   };
 }
@@ -238,9 +241,12 @@ export async function partnerUserGame(
   });
   if (!row) return null;
   const { achievements, ...game } = row.game;
-  const texts = await siteLanguage(game, achievements);
+  const [texts, steamIds] = await Promise.all([
+    siteLanguage(game, achievements),
+    steamAppIds([game]),
+  ]);
   return {
-    game: apiGame(game),
+    game: apiGame(game, steamIds),
     progress: progress(row),
     achievements: texts.map((a) => {
       const unlockedAt = a.unlocks[0]?.unlockedAt ?? null;
@@ -306,7 +312,7 @@ export async function partnerGames(keys: GameKey[]) {
     OR: [{ curatedKey: { not: null } }, { score: { gt: BURIED_SCORE } }],
   } satisfies Prisma.GuideWhereInput;
 
-  const [players, completions, missables, rarest, achievementGuides, gameGuides, times] =
+  const [players, completions, missables, rarest, achievementGuides, gameGuides, times, steamIds] =
     await Promise.all([
       db.userGame.groupBy({ by: ['gameId'], where: shown, _count: { _all: true } }),
       db.userGame.groupBy({
@@ -350,6 +356,7 @@ export async function partnerGames(keys: GameKey[]) {
           AND NOT ug.hidden AND u."isPublic"
         GROUP BY ug."gameId"
         HAVING count(*) >= ${COMPLETION_TIME_MIN_SAMPLE}`,
+      steamAppIds(games),
     ]);
 
   const count = (rows: { gameId: string; _count: { _all: number } }[]) =>
@@ -378,6 +385,7 @@ export async function partnerGames(keys: GameKey[]) {
         covered: covered.get(game.id) ?? 0,
         gameGuides: guidesByGame.get(game.id) ?? [],
         time: timeByGame.get(game.id) ?? null,
+        steamIds,
       }),
     );
   }
@@ -394,11 +402,12 @@ function gameCard(
     covered: number;
     gameGuides: string[];
     time: { median: number; sample: bigint } | null;
+    steamIds: Map<string, string>;
   },
 ) {
   const [bestGuide] = stats.gameGuides;
   return {
-    ...apiGame(game),
+    ...apiGame(game, stats.steamIds),
     players: stats.players,
     completions: stats.completions,
     completionRate: stats.players ? round1((stats.completions / stats.players) * 100) : null,
@@ -471,13 +480,14 @@ export async function partnerAlmost(handle: PlayerRef, limit = ALMOST_LIMIT) {
     select: { gameId: true, ...progressSelect, game: { select: apiGameSelect } },
   });
   const byGame = new Map(games.map((row) => [row.gameId, row]));
+  const steamIds = await steamAppIds(games.map((row) => row.game));
   return {
     items: rows.flatMap((row) => {
       const owned = byGame.get(row.gameId);
       if (!owned) return [];
       return [
         {
-          game: apiGame(owned.game),
+          game: apiGame(owned.game, steamIds),
           progress: progress(owned),
           remaining: {
             achievements: Number(row.remaining),
@@ -600,8 +610,9 @@ export async function partnerGameAchievements(platform: Platform, platformGameId
     }),
   ]);
   const guided = new Set(guides.map((guide) => guide.achievementId));
+  const steamIds = await steamAppIds([fields]);
   return {
-    game: apiGame(fields),
+    game: apiGame(fields, steamIds),
     achievements: texts.map((a) => ({
       id: a.platformAchievementId,
       name: a.hidden ? null : a.name,
@@ -674,4 +685,55 @@ export async function partnerUsersLookup(refs: string[], game: GameKey | null = 
     items.push(game ? { ...profile, gameProgress: progressOf.get(profile.id) ?? null } : profile);
   }
   return { items, missing };
+}
+
+export const RECENT_LIMIT = 20;
+export const RECENT_MAX = 50;
+
+/**
+ * Les derniers 100 % des joueurs publics, du plus récent au plus ancien : un fil « ça vient de
+ * tomber » pour l'accueil de Lure. Seuls les jeux des fils publics y entrent, comme sur le site.
+ * Avec `since`, seulement les 100 % plus récents que ce moment.
+ */
+export async function partnerRecentCompletions(limit = RECENT_LIMIT, since: Date | null = null) {
+  const rows = await db.userGame.findMany({
+    where: {
+      hidden: false,
+      completion: { gte: 100 },
+      lastUnlockedAt: since ? { gt: since } : { not: null },
+      user: { isPublic: true },
+      game: publicGames,
+    },
+    orderBy: [{ lastUnlockedAt: 'desc' }, { userId: 'asc' }, { gameId: 'asc' }],
+    take: limit,
+    select: {
+      platinum: true,
+      lastUnlockedAt: true,
+      user: { select: { id: true, handle: true, displayName: true, avatarUrl: true } },
+      game: { select: { platform: true, platformGameId: true, tier: true } },
+    },
+  });
+  const cards = await partnerGames(rows.map((row) => row.game));
+  return {
+    items: rows.flatMap((row) => {
+      const card = cards.get(keyOf(row.game));
+      if (!card) return [];
+      return [
+        {
+          // Le dernier succès du jeu : le moment où le 100 % est tombé.
+          completedAt: row.lastUnlockedAt!.toISOString(),
+          platinum: row.platinum,
+          user: {
+            id: row.user.id,
+            handle: row.user.handle,
+            displayName: row.user.displayName,
+            avatarUrl: apiAvatar(row.user.avatarUrl),
+            url: absolute(`/u/${row.user.handle}`),
+          },
+          game: card,
+          card: apiCard(row.game.tier),
+        },
+      ];
+    }),
+  };
 }

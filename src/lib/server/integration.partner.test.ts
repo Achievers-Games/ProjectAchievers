@@ -19,6 +19,7 @@ import {
   partnerGame,
   partnerGameAchievements,
   partnerPopularGames,
+  partnerRecentCompletions,
   partnerUser,
   partnerUserGame,
   partnerUserGames,
@@ -571,6 +572,71 @@ describe('jeux populaires', () => {
       [hot.platformGameId, 2, 2],
       [warm.platformGameId, 1, 2],
     ]);
+  });
+});
+
+describe('derniers 100 %', () => {
+  it('donne les 100 % récents des joueurs publics, le plus récent d’abord, avec la carte', async () => {
+    const [first, second, hidden] = [await game(), await game(), await game()];
+    await db.game.updateMany({
+      where: { id: { in: [first.id, second.id, hidden.id] } },
+      data: { contentCheckedAt: new Date('2026-01-01'), tier: 5 },
+    });
+    const done = async (
+      gameId: string,
+      at: string,
+      opts: { isPublic?: boolean; completion?: number } = {},
+    ) => {
+      const p = await player(opts.isPublic ?? true);
+      await owns(p.id, gameId, { completion: opts.completion ?? 100 });
+      await db.userGame.update({
+        where: { userId_gameId: { userId: p.id, gameId } },
+        data: { lastUnlockedAt: new Date(at) },
+      });
+      return p;
+    };
+    const alice = await done(first.id, '2031-01-02T10:00:00Z');
+    const bob = await done(second.id, '2031-01-03T10:00:00Z');
+    await done(first.id, '2031-01-04T10:00:00Z', { isPublic: false });
+    await done(second.id, '2031-01-05T10:00:00Z', { completion: 80 });
+    await done(hidden.id, '2031-01-01T10:00:00Z');
+
+    const recent = await partnerRecentCompletions(50, new Date('2031-01-01T12:00:00Z'));
+    expect(recent.items.map((item) => [item.user.id, item.game.platformGameId])).toEqual([
+      [bob.id, second.platformGameId],
+      [alice.id, first.platformGameId],
+    ]);
+    expect(recent.items[0]).toMatchObject({
+      completedAt: '2031-01-03T10:00:00.000Z',
+      card: { tier: 5, rank: 'prismatic' },
+      user: { handle: bob.handle },
+    });
+  });
+});
+
+describe('appid Steam des autres plateformes', () => {
+  it('donne à un jeu PSN l’appid de sa version Steam', async () => {
+    const family = appid();
+    const steam = await game();
+    await db.game.update({ where: { id: steam.id }, data: { familyKey: family } });
+    const psn = await db.game.create({
+      data: {
+        platform: 'PSN',
+        platformGameId: appid(),
+        name: `${PREFIX} jeu PSN`,
+        slug: appid(),
+        totalAchievements: 2,
+        familyKey: family,
+      },
+    });
+    const alone = await db.game.create({
+      data: { platform: 'XBOX', platformGameId: appid(), name: `${PREFIX} Xbox`, slug: appid() },
+    });
+    expect((await partnerGame('PSN', psn.platformGameId))?.steamAppId).toBe(steam.platformGameId);
+    expect((await partnerGame('STEAM', steam.platformGameId))?.steamAppId).toBe(
+      steam.platformGameId,
+    );
+    expect((await partnerGame('XBOX', alone.platformGameId))?.steamAppId).toBeNull();
   });
 });
 
