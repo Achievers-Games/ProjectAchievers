@@ -23,9 +23,9 @@ const minutes = (value: unknown) =>
   typeof value === 'number' && Number.isFinite(value) && value > 0 ? Math.round(value) : null;
 
 /**
- * Lit la réponse de `GET /api/v1/games/{appid}` chez Lure, avec la forme demandée : `url` et
- * `time_to_beat` (`main_minutes`, `normal_minutes`, `completionist_minutes`), comme dans leur
- * `/me/games`. Une réponse inattendue ne donne rien plutôt qu'une donnée fausse.
+ * Lit un jeu de la réponse de Lure : `time_to_beat` (`main_minutes`, `normal_minutes`,
+ * `completionist_minutes`), comme dans leur `/me/games`, et `url` s'ils l'ajoutent un jour.
+ * Une réponse inattendue ne donne rien plutôt qu'une donnée fausse.
  */
 export function parseLureGame(body: unknown, fallbackUrl: string): LureGameInfo | null {
   if (!body || typeof body !== 'object') return null;
@@ -49,26 +49,44 @@ export function parseLureGame(body: unknown, fallbackUrl: string): LureGameInfo 
 
 const baseUrl = () => env().LURE_API_URL?.replace(/\/+$/, '') ?? null;
 
-/** Interroge Lure et garde la réponse, trouvée ou non. Ne lève jamais : une panne ne coûte rien. */
+/**
+ * Interroge Lure (`POST /api/v1/partner/games/times`) et garde la réponse, trouvée ou non. Un jeu
+ * listé dans `missing` n'a pas de temps connu chez Lure. Ne lève jamais : une panne ne coûte rien.
+ */
 async function refresh(steamAppId: string, fetcher: typeof fetch) {
   const base = baseUrl();
   const key = env().LURE_API_KEY;
   if (!base || !key) return;
   let info: LureGameInfo | null = null;
   try {
-    const response = await fetcher(`${base}/api/v1/games/${encodeURIComponent(steamAppId)}`, {
-      headers: { Authorization: `Bearer ${key}`, Accept: 'application/json' },
+    const response = await fetcher(`${base}/api/v1/partner/games/times`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${key}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({ games: [{ platform: 'steam', id: steamAppId }] }),
       signal: AbortSignal.timeout(TIMEOUT),
     });
-    if (response.ok) {
-      info = parseLureGame(await response.json(), `${base}/jeu/${steamAppId}`);
-    } else if (response.status !== 404) {
-      // Panne passagère : on garde l'ancienne réponse et on réessaiera.
-      log.warn(`fiche Lure ${steamAppId} : ${response.status}`);
+    // Une page HTML à la place du JSON, c'est que la route n'est pas (ou plus) là : on réessaiera.
+    if (!response.ok || !response.headers.get('content-type')?.includes('application/json')) {
+      log.warn(`temps Lure ${steamAppId} : ${response.status}`);
       return;
     }
+    const body = (await response.json()) as { items?: unknown };
+    const item = Array.isArray(body.items)
+      ? (body.items as Record<string, unknown>[]).find(
+          (entry) => entry && String(entry.id) === steamAppId,
+        )
+      : undefined;
+    info = item ? parseLureGame(item, `${base}/jeu/${steamAppId}`) : null;
+    // Un jeu connu sans aucune durée ne vaut pas mieux qu'un jeu absent.
+    if (info && !info.mainMinutes && !info.normalMinutes && !info.completionistMinutes) {
+      info = null;
+    }
   } catch (cause) {
-    log.warn(`fiche Lure ${steamAppId} :`, cause);
+    log.warn(`temps Lure ${steamAppId} :`, cause);
     return;
   }
   const data = {
