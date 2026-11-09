@@ -12,6 +12,8 @@ import {
   type ApiSort,
 } from './partner-api';
 import { userStats } from './queries/stats';
+import { ensureGameTexts, localizeAchievements } from './achievement-texts';
+import { baseLocale } from '#lib/paraglide/runtime';
 import { visibleGames } from './queries/shared';
 
 /**
@@ -211,6 +213,7 @@ export async function partnerUserGame(
       ...progressSelect,
       game: {
         select: {
+          id: true,
           ...apiGameSelect,
           achievements: {
             orderBy: [{ globalRarity: { sort: 'desc', nulls: 'last' } }, { id: 'asc' }],
@@ -235,10 +238,11 @@ export async function partnerUserGame(
   });
   if (!row) return null;
   const { achievements, ...game } = row.game;
+  const texts = await siteLanguage(game, achievements);
   return {
     game: apiGame(game),
     progress: progress(row),
-    achievements: achievements.map((a) => {
+    achievements: texts.map((a) => {
       const unlockedAt = a.unlocks[0]?.unlockedAt ?? null;
       // Comme sur le site : un succès caché reste secret tant que le joueur ne l'a pas.
       const secret = a.hidden && !unlockedAt;
@@ -539,4 +543,135 @@ export async function partnerPopularGames(
         : [];
     }),
   };
+}
+
+/**
+ * Les textes des succès dans la langue du site (le français), quand la plateforme la fournit :
+ * Steam, Xbox et Battle.net sont déjà stockés ainsi, PSN se traduit à la première demande.
+ */
+async function siteLanguage<T extends { id: string; name: string; description?: string }>(
+  game: { id: string; platform: Platform; platformGameId: string },
+  achievements: T[],
+) {
+  await ensureGameTexts(game, baseLocale);
+  return localizeAchievements(achievements, baseLocale);
+}
+
+/**
+ * Les succès d'un jeu, sans joueur : nom, rareté, manquables et le lien du guide de chacun. Un
+ * succès caché garde son nom et sa description secrets, comme pour un visiteur du site.
+ */
+export async function partnerGameAchievements(platform: Platform, platformGameId: string) {
+  const game = await db.game.findFirst({
+    where: { ...visibleGames(false), platform, platformGameId },
+    select: {
+      id: true,
+      ...apiGameSelect,
+      achievements: {
+        orderBy: [{ globalRarity: { sort: 'asc', nulls: 'last' } }, { id: 'asc' }],
+        select: {
+          id: true,
+          platformAchievementId: true,
+          name: true,
+          description: true,
+          iconUrl: true,
+          iconLockedUrl: true,
+          hidden: true,
+          trophyType: true,
+          globalRarity: true,
+          points: true,
+          missable: true,
+        },
+      },
+    },
+  });
+  if (!game) return null;
+  const { achievements, ...fields } = game;
+  const [texts, guides] = await Promise.all([
+    siteLanguage(game, achievements),
+    db.guide.findMany({
+      where: {
+        achievementId: { in: achievements.map((a) => a.id) },
+        status: 'PUBLISHED',
+        OR: [{ curatedKey: { not: null } }, { score: { gt: BURIED_SCORE } }],
+      },
+      orderBy: GUIDE_ORDER,
+      select: { achievementId: true },
+    }),
+  ]);
+  const guided = new Set(guides.map((guide) => guide.achievementId));
+  return {
+    game: apiGame(fields),
+    achievements: texts.map((a) => ({
+      id: a.platformAchievementId,
+      name: a.hidden ? null : a.name,
+      description: a.hidden ? null : a.description,
+      iconUrl: a.hidden ? null : (a.iconUrl ?? a.iconLockedUrl),
+      hidden: a.hidden,
+      trophyType: a.trophyType.toLowerCase(),
+      rarity: a.globalRarity,
+      points: a.points,
+      missable: a.missable,
+      // La page du succès montre ses guides, l'officiel d'abord puis les mieux notés.
+      guideUrl: guided.has(a.id) ? absolute(`/succes/${a.id}`) : null,
+    })),
+  };
+}
+
+export const USERS_LOOKUP_MAX = 100;
+
+/**
+ * Jusqu'à 100 joueurs en un appel, par handle ou par id : leurs profils publics dans l'ordre
+ * demandé, et ceux qui manquent (inconnus ou privés). Avec `game`, la progression de chacun sur
+ * ce jeu, `null` s'il ne l'a pas : de quoi faire un classement entre amis.
+ */
+export async function partnerUsersLookup(refs: string[], game: GameKey | null = null) {
+  const unique = [...new Set(refs)];
+  const users = await db.user.findMany({
+    where: { isPublic: true, OR: [{ handle: { in: unique } }, { id: { in: unique } }] },
+    select: { id: true, handle: true },
+  });
+  const byRef = new Map<string, string>();
+  for (const user of users) {
+    byRef.set(user.id, user.id);
+    byRef.set(user.handle, user.id);
+  }
+
+  // Par petits lots : chaque profil lit ses statistiques, et la base ne doit pas s'engorger.
+  const profiles = new Map<string, NonNullable<Awaited<ReturnType<typeof partnerUser>>>>();
+  const ids = [...new Set(users.map((user) => user.id))];
+  for (let start = 0; start < ids.length; start += 10) {
+    const batch = await Promise.all(
+      ids.slice(start, start + 10).map((userId) => partnerUser({ userId })),
+    );
+    for (const profile of batch) if (profile) profiles.set(profile.id, profile);
+  }
+
+  const owned = game
+    ? await db.userGame.findMany({
+        where: {
+          userId: { in: ids },
+          hidden: false,
+          game: { ...visibleGames(false), ...game },
+        },
+        select: { userId: true, ...progressSelect },
+      })
+    : [];
+  const progressOf = new Map(owned.map((row) => [row.userId, progress(row)]));
+
+  const items = [];
+  const missing = [];
+  const seen = new Set<string>();
+  for (const ref of unique) {
+    const userId = byRef.get(ref);
+    const profile = userId ? profiles.get(userId) : undefined;
+    if (!profile) {
+      missing.push(ref);
+      continue;
+    }
+    if (seen.has(profile.id)) continue;
+    seen.add(profile.id);
+    items.push(game ? { ...profile, gameProgress: progressOf.get(profile.id) ?? null } : profile);
+  }
+  return { items, missing };
 }

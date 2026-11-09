@@ -8,6 +8,7 @@ import {
   PAGE_MAX,
 } from './partner-api';
 import {
+  USERS_LOOKUP_MAX,
   ALMOST_LIMIT,
   ALMOST_MAX,
   POPULAR_LIMIT,
@@ -342,6 +343,99 @@ export function partnerOpenApi(origin: string) {
                 },
               },
               'Most 100 % reached first, then most active players.',
+            ),
+            '400': { $ref: '#/components/responses/BadRequest' },
+            '401': { $ref: '#/components/responses/Unauthorized' },
+            '429': { $ref: '#/components/responses/RateLimited' },
+          },
+        },
+      },
+      '/games/{platform}/{id}/achievements': {
+        get: {
+          operationId: 'getGameAchievements',
+          summary: 'Achievements of a game, without a player, rarest first',
+          parameters: [platform, gameId],
+          responses: {
+            '200': ok(
+              {
+                type: 'object',
+                properties: {
+                  game: ref('Game'),
+                  achievements: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        id: { type: 'string' },
+                        name: nullable('string', { description: 'Null for a secret one.' }),
+                        description: nullable('string'),
+                        iconUrl: nullable('string'),
+                        hidden: { type: 'boolean' },
+                        trophyType: { type: 'string' },
+                        rarity: nullable('number'),
+                        points: { type: 'integer' },
+                        missable: { type: 'boolean' },
+                        guideUrl: nullable('string', {
+                          description: 'Achievement page with its guides, or null without one.',
+                        }),
+                      },
+                    },
+                  },
+                },
+              },
+              'The achievements, texts in the site language when the platform provides it.',
+            ),
+            ...errors,
+          },
+        },
+      },
+      '/users/lookup': {
+        post: {
+          operationId: 'lookupUsers',
+          summary: `Up to ${USERS_LOOKUP_MAX} public profiles in one call, by handle or id`,
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['users'],
+                  properties: {
+                    users: {
+                      type: 'array',
+                      minItems: 1,
+                      maxItems: USERS_LOOKUP_MAX,
+                      items: { type: 'string', description: 'Handle or Achievers id.' },
+                    },
+                    game: {
+                      type: 'string',
+                      description: 'Adds each player’s progress on this game, e.g. steam:219150.',
+                    },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            '200': ok(
+              {
+                type: 'object',
+                properties: {
+                  items: {
+                    type: 'array',
+                    description:
+                      'Profiles in request order, duplicates dropped; with game, gameProgress ' +
+                      '(null when the player does not own it).',
+                    items: ref('User'),
+                  },
+                  missing: {
+                    type: 'array',
+                    items: { type: 'string' },
+                    description: 'Unknown or private profiles.',
+                  },
+                },
+              },
+              'The profiles found, and the ones missing.',
             ),
             '400': { $ref: '#/components/responses/BadRequest' },
             '401': { $ref: '#/components/responses/Unauthorized' },

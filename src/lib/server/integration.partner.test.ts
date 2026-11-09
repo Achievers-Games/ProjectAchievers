@@ -17,10 +17,12 @@ import {
 import {
   partnerAlmost,
   partnerGame,
+  partnerGameAchievements,
   partnerPopularGames,
   partnerUser,
   partnerUserGame,
   partnerUserGames,
+  partnerUsersLookup,
 } from './partner-queries';
 import { PREFIX, identity, setupIntegration } from './test-helpers';
 import { POST as LOOKUP } from '../../routes/api/v1/games/lookup/+server';
@@ -568,6 +570,71 @@ describe('jeux populaires', () => {
     ).toEqual([
       [hot.platformGameId, 2, 2],
       [warm.platformGameId, 1, 2],
+    ]);
+  });
+});
+
+describe('succès d’un jeu sans joueur', () => {
+  it('range les plus rares d’abord, garde les secrets et donne le lien des guides', async () => {
+    const g = await game();
+    const author = await player();
+    const make = (id: string, rarity: number, extra = {}) =>
+      db.achievement.create({
+        data: { gameId: g.id, platformAchievementId: id, name: id, globalRarity: rarity, ...extra },
+      });
+    const common = await make('COURANT', 80);
+    const rare = await make('RARE', 2, { missable: true });
+    await make('SECRET', 40, { hidden: true, description: 'La fin' });
+    const buried = await make('ENTERRE', 50);
+    await db.guide.create({
+      data: { achievementId: rare.id, authorId: author.id, contentMd: 'Comment faire' },
+    });
+    await db.guide.create({
+      data: { achievementId: buried.id, authorId: author.id, contentMd: 'Faux', score: -5 },
+    });
+
+    const result = await partnerGameAchievements('STEAM', g.platformGameId);
+    expect(result?.achievements.map((a) => a.id)).toEqual(['RARE', 'SECRET', 'ENTERRE', 'COURANT']);
+    expect(result?.achievements[0]).toMatchObject({
+      missable: true,
+      guideUrl: expect.stringContaining(`/succes/${rare.id}`),
+    });
+    expect(result?.achievements[1]).toMatchObject({ name: null, description: null, hidden: true });
+    // Un guide enterré par les votes ne compte pas.
+    expect(result?.achievements[2]?.guideUrl).toBeNull();
+    expect(common.id).toBeTruthy();
+
+    const adult = await game({ adultOnly: true });
+    expect(await partnerGameAchievements('STEAM', adult.platformGameId)).toBeNull();
+  });
+});
+
+describe('plusieurs joueurs en un appel', () => {
+  it('rend les profils publics dans l’ordre, par handle ou par id, sans doublon', async () => {
+    const a = await player();
+    const b = await player();
+    const hidden = await player(false);
+
+    const result = await partnerUsersLookup([b.id, a.handle, a.id, hidden.handle, 'inconnu']);
+    expect(result.items.map((item) => item.id)).toEqual([b.id, a.id]);
+    expect(result.missing).toEqual([hidden.handle, 'inconnu']);
+  });
+
+  it('ajoute la progression sur un jeu, null pour qui ne l’a pas', async () => {
+    const g = await game();
+    const [fan, other] = [await player(), await player()];
+    await owns(fan.id, g.id, { completion: 100 });
+
+    const result = await partnerUsersLookup([fan.id, other.id], {
+      platform: 'STEAM',
+      platformGameId: g.platformGameId,
+    });
+    expect(result.items).toEqual([
+      expect.objectContaining({
+        id: fan.id,
+        gameProgress: expect.objectContaining({ completed: true }),
+      }),
+      expect.objectContaining({ id: other.id, gameProgress: null }),
     ]);
   });
 });

@@ -63,7 +63,8 @@ Les routes `/me` (§5) prennent un jeton OAuth à la place.
 
 **Ce qui ne sort jamais** : un profil privé, un jeu que le joueur a masqué, un jeu adulte, le
 nom et la description d'un succès caché tant qu'il n'est pas obtenu, le temps de jeu d'un joueur.
-Les textes des succès sont dans la langue de la plateforme.
+Les textes des succès sont en **français**, la langue du site, quand la plateforme la fournit ;
+sinon dans la langue de la plateforme.
 
 **Identifier un joueur** : garde son `id` Achievers. Il ne change jamais, alors que le `handle`
 (l'adresse `/u/{handle}`) peut changer. Toutes les routes `/users/{handle}…` acceptent l'un ou
@@ -78,15 +79,17 @@ comme sur Lure : `/games/steam/683320` correspond à `lureverse.fr/jeu/683320`. 
 
 ## 3. Lire les profils et les jeux
 
-| Méthode | Route                                   | Contenu                                       |
-| ------- | --------------------------------------- | --------------------------------------------- |
-| GET     | `/users/{handle}`                       | profil, clan, statistiques, liens de la carte |
-| GET     | `/users/{handle}/games`                 | jeux et progression, paginés                  |
-| GET     | `/users/{handle}/games/{platform}/{id}` | progression d'un jeu, succès par succès       |
-| GET     | `/users/{handle}/almost`                | jeux commencés les plus proches du 100 %      |
-| GET     | `/games/{platform}/{id}`                | fiche d'un jeu et ce que coûte son 100 %      |
-| POST    | `/games/lookup`                         | jusqu'à 100 fiches de jeux en un appel        |
-| GET     | `/games/popular`                        | jeux où les chasseurs de succès sont actifs   |
+| Méthode | Route                                   | Contenu                                                           |
+| ------- | --------------------------------------- | ----------------------------------------------------------------- |
+| GET     | `/users/{handle}`                       | profil, clan, statistiques, liens de la carte                     |
+| GET     | `/users/{handle}/games`                 | jeux et progression, paginés                                      |
+| GET     | `/users/{handle}/games/{platform}/{id}` | progression d'un jeu, succès par succès                           |
+| GET     | `/users/{handle}/almost`                | jeux commencés les plus proches du 100 %                          |
+| GET     | `/games/{platform}/{id}`                | fiche d'un jeu et ce que coûte son 100 %                          |
+| POST    | `/games/lookup`                         | jusqu'à 100 fiches de jeux en un appel                            |
+| GET     | `/games/{platform}/{id}/achievements`   | les succès d'un jeu sans joueur, avec le lien de leurs guides     |
+| POST    | `/users/lookup`                         | jusqu'à 100 joueurs en un appel, avec leur progression sur un jeu |
+| GET     | `/games/popular`                        | jeux où les chasseurs de succès sont actifs                       |
 
 ### Un joueur
 
@@ -270,6 +273,29 @@ curl -X POST https://achievers.games/api/v1/games/lookup \
 
 `items` suit l'ordre de la demande, sans doublon. `missing` liste les jeux qu'Achievers ne connaît
 pas encore, ou les jeux adultes.
+
+### Les succès d'un jeu, sans joueur
+
+`GET /games/steam/219150/achievements` rend `game` et ses `achievements`, du plus rare au plus
+courant : les mêmes champs que pour un joueur (sans `unlocked` ni `unlockedAt`), plus
+`guideUrl`, la page du succès avec ses guides, ou `null` s'il n'en a pas. Un succès caché garde
+son nom et sa description à `null`. De quoi afficher sur une fiche Lure les succès les plus rares,
+les manquables à surveiller et les guides.
+
+### Plusieurs joueurs d'un coup
+
+Pour les cartes de tous les amis d'un joueur : 100 joueurs par appel, par handle ou par `id`.
+
+```bash
+curl -X POST https://achievers.games/api/v1/users/lookup \
+  -H "Authorization: Bearer ak_…" -H "Content-Type: application/json" \
+  -d '{"users":["kokki","cmv1…"],"game":"steam:219150"}'
+```
+
+`items` suit l'ordre de la demande, sans doublon, avec le même profil que `/users/{handle}`.
+`missing` liste les comptes inconnus ou privés. Avec `game`, chaque profil porte en plus
+`gameProgress` sur ce jeu, `null` si le joueur ne l'a pas : « 3 de tes amis l'ont fini à
+100 % ».
 
 ### Les jeux du moment
 
