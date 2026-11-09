@@ -85,6 +85,9 @@ services:
       SMTP_PASS: ${SMTP_PASS:-}
       SMTP_FROM: ${SMTP_FROM:-}
       SMTP_FROM_NAME: ${SMTP_FROM_NAME:-}
+      # Liaison automatique des comptes avec Lure : vides, aucun appel ne part (scripts/nas-lure.sh).
+      LURE_API_URL: ${LURE_API_URL:-}
+      LURE_API_KEY: ${LURE_API_KEY:-}
       CONTACT_INBOX: ${CONTACT_INBOX:-}
 
   # Met le site à jour tout seul dès que la CI publie une image de `main` : c'est le NAS qui tire,
