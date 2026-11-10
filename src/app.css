@@ -1442,6 +1442,51 @@
   color: transparent;
   filter: drop-shadow(0 0 7px rgb(255 180 90 / 0.5));
 }
+/* L'encart Lure des fiches de jeu : leurs cadres (fond de nuit, filet bleuté, coins de 14 px),
+   leur logo lumineux, leur nom en Cinzel doré, leurs titres et leur texte. */
+.lure-card {
+  @apply flex max-w-md flex-wrap items-center gap-x-4 gap-y-2 px-3.5 py-2.5;
+  background:
+    radial-gradient(12rem 6rem at 0% 50%, rgb(255 150 60 / 0.14), transparent 70%), #141a33;
+  border: 1px solid #2d3660;
+  border-radius: 14px;
+  color: #f1f0ff;
+  font-family: 'Figtree Variable', 'Segoe UI', sans-serif;
+  transition: border-color 0.15s;
+}
+.lure-card:hover {
+  border-color: #ffb547;
+}
+.lure-card-brand {
+  @apply flex items-center gap-2;
+}
+.lure-card .lure-logo {
+  font-size: 1.6rem;
+}
+.lure-card .lure-wordmark {
+  font-size: 1.05rem;
+  filter: drop-shadow(0 0 4px rgb(255 180 90 / 0.45));
+}
+.lure-card-time {
+  @apply flex items-baseline gap-2;
+}
+.lure-card-label {
+  color: #a9b2d6;
+  font-size: 0.8125rem;
+}
+.lure-card-value {
+  font-family: 'Bricolage Grotesque Variable', 'Trebuchet MS', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+.lure-card-cta {
+  @apply ml-auto rounded-full px-3 py-1 text-xs font-semibold;
+  background: #ffb547;
+  color: #2a1500;
+}
+.lure-card:hover .lure-card-cta {
+  background: #ffd993;
+}
 @keyframes lure-beam {
   0%,
   100% {

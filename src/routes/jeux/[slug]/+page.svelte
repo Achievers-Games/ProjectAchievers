@@ -18,6 +18,7 @@
   import { submitWithToast } from '#lib/forms';
   import { HOLO_TIER } from '#lib/collection';
   import CardFx from '#lib/components/CardFx.svelte';
+  import LureCard from '#lib/components/LureCard.svelte';
   import Seo from '#lib/components/Seo.svelte';
   import {
     editionLabel,
@@ -192,29 +193,19 @@
         })}
         · {m.count_players({ count: data.players })}
       </p>
-      {#if data.completionTime || data.lure}
-        <p class="flex flex-wrap items-center gap-x-2 text-sm text-muted" data-testid="game-time">
-          {#if data.completionTime}
-            <span>
-              {m.game_completion_time({
-                hours: hours(data.completionTime.median),
-                count: data.completionTime.sample,
-              })}
-            </span>
-          {/if}
-          {#if data.lure?.completionistMinutes}
-            {#if data.completionTime}·{/if}
-            <span
-              >{m.game_lure_completionist({ hours: hours(data.lure.completionistMinutes) })}</span
-            >
-          {/if}
-          {#if data.lure}
-            {#if data.completionTime || data.lure.completionistMinutes}·{/if}
-            <a href={data.lure.url} target="_blank" rel="noopener" class="underline hover:text-ink">
-              {m.game_lure_link()} ↗
-            </a>
-          {/if}
+      {#if data.completionTime}
+        <p class="text-sm text-muted" data-testid="game-time">
+          {m.game_completion_time({
+            hours: hours(data.completionTime.median),
+            count: data.completionTime.sample,
+          })}
         </p>
+      {/if}
+      {#if data.lure}
+        <LureCard
+          url={data.lure.url}
+          hours={data.lure.completionistMinutes ? hours(data.lure.completionistMinutes) : null}
+        />
       {/if}
       {#if data.versions.length}
         <p class="flex flex-wrap gap-2 text-sm">

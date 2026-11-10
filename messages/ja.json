@@ -1777,7 +1777,8 @@
   "notification_clan_request": "クラン申請",
   "notification_clan_rename": "クラン名の変更",
   "game_lure_link": "Lure で見る",
-  "game_lure_completionist": "Lure によると 100% まで {hours} 時間",
   "game_completion_time": "100% まで {hours} 時間（Achievers プレイヤー {count} 人の中央値）",
-  "nav_developers": "開発者"
+  "nav_developers": "開発者",
+  "game_lure_time": "100% まで",
+  "game_lure_hours": "{hours} 時間"
 }

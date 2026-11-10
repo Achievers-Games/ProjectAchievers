@@ -1814,7 +1814,8 @@
   "notification_clan_request": "Clan request",
   "notification_clan_rename": "Clan name removed",
   "game_lure_link": "See on Lure",
-  "game_lure_completionist": "{hours} h to 100% according to Lure",
   "game_completion_time": "{hours} h to 100% (median of {count} Achievers players)",
-  "nav_developers": "Developers"
+  "nav_developers": "Developers",
+  "game_lure_time": "To 100%",
+  "game_lure_hours": "{hours} h"
 }
