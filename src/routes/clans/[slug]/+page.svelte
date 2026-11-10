@@ -1,5 +1,6 @@
 <script lang="ts">
   import { m } from '#lib/paraglide/messages';
+  import Seo from '#lib/components/Seo.svelte';
   import { enhance } from '$app/forms';
   import Avatar from '#lib/components/Avatar.svelte';
   import Progress from '#lib/components/Progress.svelte';
@@ -12,13 +13,10 @@
   const achievements = $derived(data.achievements);
 </script>
 
-<svelte:head>
-  <title>{clan.name} — Project Achievers</title>
-  <meta
-    name="description"
-    content="{clan.name} : {m.count_achievements({ count: clan.achievements })}"
-  />
-</svelte:head>
+<Seo
+  title="{clan.name} — Project Achievers"
+  description="{clan.name} : {m.count_achievements({ count: clan.achievements })}"
+/>
 
 <div class="mx-auto max-w-2xl space-y-6">
   <header class="space-y-1">

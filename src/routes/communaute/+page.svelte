@@ -1,5 +1,6 @@
 <script lang="ts">
   import { HOLO_TIER } from '#lib/collection';
+  import Seo from '#lib/components/Seo.svelte';
   import { m } from '#lib/paraglide/messages';
   import { invalidate } from '$app/navigation';
   import { fly } from 'svelte/transition';
@@ -98,10 +99,7 @@
   ];
 </script>
 
-<svelte:head>
-  <title>{m.nav_community()} — Project Achievers</title>
-  <meta name="description" content={m.community_description()} />
-</svelte:head>
+<Seo title="{m.nav_community()} — Project Achievers" description={m.community_description()} />
 
 <div class="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
   <section class="min-w-0 space-y-3" aria-labelledby="activite">

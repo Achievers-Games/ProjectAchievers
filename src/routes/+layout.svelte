@@ -191,8 +191,9 @@
 </script>
 
 <svelte:head>
+  <!-- Les pages publiques donnent leur description via `Seo` : une seule balise par page. -->
   <title>Project Achievers</title>
-  <meta name="description" content={m.site_description()} />
+  <meta property="og:site_name" content="Project Achievers" />
 </svelte:head>
 
 <a

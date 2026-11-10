@@ -18,6 +18,7 @@ import {
 import { rateLimit } from '#lib/server/rate-limit';
 import { canTranslate, translateContent } from '#lib/server/translate';
 import { anchorHeadings } from '#lib/guide-outline';
+import { excerpt } from '#lib/seo';
 import { commentActions, loadComments } from '#lib/server/comments';
 import { logger } from '#lib/logger';
 import { getLocale } from '#lib/paraglide/runtime';
@@ -50,6 +51,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
     where: { id: params.id, ...gameGuidesWhere(game) },
     include: {
       author: { select: publicUser },
+      game: { select: { slug: true } },
       votes: viewerId ? { where: { userId: viewerId }, select: { value: true } } : false,
       checks: viewerId ? { where: { userId: viewerId }, select: { item: true } } : false,
       translations: { where: { locale }, select: { contentMd: true }, take: 1 },
@@ -69,12 +71,15 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 
   return {
     game: { name: game.name, slug: game.slug },
+    // Le guide vaut pour toutes les versions du jeu : une seule adresse à indexer, la sienne.
+    canonicalPath: `/jeux/${guide.game?.slug ?? game.slug}/guides/${guide.id}`,
     canTranslate: canTranslate(),
     comments,
     guide: {
       id: guide.id,
       title: clean(guide.title ?? '', guide.locale),
       html: render(clean(guide.contentMd, guide.locale)),
+      excerpt: excerpt(clean(guide.contentMd, guide.locale)),
       autoTranslate,
       translatedHtml: cached ? render(clean(cached, locale)) : null,
       official: guide.curatedKey !== null,

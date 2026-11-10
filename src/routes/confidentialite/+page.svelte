@@ -1,8 +1,9 @@
 <script lang="ts">
   import { m } from '#lib/paraglide/messages';
+  import Seo from '#lib/components/Seo.svelte';
 </script>
 
-<svelte:head><title>{m.privacy()} — Project Achievers</title></svelte:head>
+<Seo title="{m.privacy()} — Project Achievers" description={m.privacy_intro()} />
 
 <article class="prose-user mx-auto max-w-2xl">
   <h1>{m.privacy()}</h1>

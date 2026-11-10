@@ -18,6 +18,7 @@
   import { submitWithToast } from '#lib/forms';
   import { HOLO_TIER } from '#lib/collection';
   import CardFx from '#lib/components/CardFx.svelte';
+  import Seo from '#lib/components/Seo.svelte';
   import {
     editionLabel,
     formatDate,
@@ -141,20 +142,22 @@
     );
 </script>
 
-<svelte:head>
-  <title>{data.game.name} — Project Achievers</title>
-  <meta
-    name="description"
-    content={m.game_description({
-      count: m.count_achievements({ count: data.achievements.length }),
-      game: data.game.name,
-    })}
-  />
-  <meta property="og:title" content={data.game.name} />
-  {#if data.game.headerUrl}<meta property="og:image" content={data.game.headerUrl} />{/if}
-  <!-- `?avec=` ne crée pas de variantes à indexer : une seule page par version. -->
-  <link rel="canonical" href={gameHref(data.game.slug)} />
-</svelte:head>
+<!-- `?avec=` ne crée pas de variantes à indexer : une seule page par version. -->
+<Seo
+  title="{data.game.name} — Project Achievers"
+  description={m.game_description({
+    count: m.count_achievements({ count: data.achievements.length }),
+    game: data.game.name,
+  })}
+  shareTitle={data.game.name}
+  path={gameHref(data.game.slug)}
+  image={data.game.headerUrl}
+  jsonLd={{
+    '@type': 'VideoGame',
+    name: data.game.name,
+    ...(data.game.headerUrl ? { image: data.game.headerUrl } : {}),
+  }}
+/>
 
 <div class="space-y-6">
   <header class="flex flex-col gap-4 sm:flex-row">

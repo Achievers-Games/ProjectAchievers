@@ -1,5 +1,6 @@
 <script lang="ts">
   import { m } from '#lib/paraglide/messages';
+  import Seo from '#lib/components/Seo.svelte';
   import { goto, snapshot } from '$app/navigation';
   import { page } from '$app/state';
   import LayoutGrid from '@lucide/svelte/icons/layout-grid';
@@ -177,7 +178,7 @@
   ];
 </script>
 
-<svelte:head><title>{heading} — Project Achievers</title></svelte:head>
+<Seo title="{heading} — Project Achievers" description={m.site_description()} />
 
 <div class="space-y-5">
   <div class="flex items-baseline justify-between gap-4">

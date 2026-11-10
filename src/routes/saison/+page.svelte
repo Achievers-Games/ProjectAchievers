@@ -1,5 +1,6 @@
 <script lang="ts">
   import { m } from '#lib/paraglide/messages';
+  import Seo from '#lib/components/Seo.svelte';
   import { onMount } from 'svelte';
   import Avatar from '#lib/components/Avatar.svelte';
   import Empty from '#lib/components/Empty.svelte';
@@ -67,10 +68,7 @@
   ]);
 </script>
 
-<svelte:head>
-  <title>{m.banner_season_title()} — Project Achievers</title>
-  <meta name="description" content={m.season_intro()} />
-</svelte:head>
+<Seo title="{m.banner_season_title()} — Project Achievers" description={m.season_intro()} />
 
 <div class="space-y-8">
   <header class="space-y-4">

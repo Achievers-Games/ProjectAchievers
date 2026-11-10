@@ -6,6 +6,7 @@
   import Link from '@lucide/svelte/icons/link';
   import Avatar from '#lib/components/Avatar.svelte';
   import Empty from '#lib/components/Empty.svelte';
+  import Seo from '#lib/components/Seo.svelte';
   import GameCard from '#lib/components/GameCard.svelte';
   import ProviderIcon from '#lib/components/ProviderIcon.svelte';
   import TrophyBadge from '#lib/components/TrophyBadge.svelte';
@@ -48,25 +49,29 @@
   }
 </script>
 
-<svelte:head>
-  <title>{profile.user.displayName} — Project Achievers</title>
-  <meta
-    name="description"
-    content={m.profile_description({
-      achievements: m.count_achievements({ count: profile.stats.unlocked }),
-      cards: profile.stats.tiers.reduce((sum, count) => sum + count, 0),
-    })}
-  />
-  <meta property="og:title" content={m.profile_og_title({ name: profile.user.displayName })} />
-  <meta
-    property="og:description"
-    content={m.profile_og_description({
-      achievements: m.count_achievements({ count: profile.stats.unlocked }),
-      games: m.count_games({ count: profile.stats.games }),
-    })}
-  />
-  {#if profile.user.avatarUrl}<meta property="og:image" content={profile.user.avatarUrl} />{/if}
-</svelte:head>
+<Seo
+  title="{profile.user.displayName} — Project Achievers"
+  description={m.profile_description({
+    achievements: m.count_achievements({ count: profile.stats.unlocked }),
+    cards: profile.stats.tiers.reduce((sum, count) => sum + count, 0),
+  })}
+  shareTitle={m.profile_og_title({ name: profile.user.displayName })}
+  shareDescription={m.profile_og_description({
+    achievements: m.count_achievements({ count: profile.stats.unlocked }),
+    games: m.count_games({ count: profile.stats.games }),
+  })}
+  image={profile.user.avatarUrl}
+  type="profile"
+  jsonLd={{
+    '@type': 'ProfilePage',
+    mainEntity: {
+      '@type': 'Person',
+      name: profile.user.displayName,
+      alternateName: profile.user.handle,
+      ...(profile.user.avatarUrl ? { image: profile.user.avatarUrl } : {}),
+    },
+  }}
+/>
 
 <div class="space-y-8">
   <header class="flex flex-wrap items-center gap-4">

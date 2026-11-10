@@ -10,6 +10,7 @@
   import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
   import Avatar from '#lib/components/Avatar.svelte';
   import Discussion from '#lib/components/Discussion.svelte';
+  import Seo from '#lib/components/Seo.svelte';
   import { guideChecks } from '#lib/actions/guide-checks';
   import { outlineOf } from '#lib/guide-outline';
   import { formatRelative } from '#lib/labels';
@@ -102,10 +103,20 @@
   };
 </script>
 
-<svelte:head>
-  <title>{data.guide.title} — {data.game.name}</title>
-  <meta name="description" content={m.game_guides_text()} />
-</svelte:head>
+<Seo
+  title="{data.guide.title} — {data.game.name}"
+  description={data.guide.excerpt || m.game_guides_text()}
+  path={data.canonicalPath}
+  type="article"
+  jsonLd={{
+    '@type': 'Article',
+    headline: data.guide.title,
+    about: { '@type': 'VideoGame', name: data.game.name },
+    author: { '@type': 'Person', name: data.guide.author.displayName },
+    datePublished: new Date(data.guide.createdAt).toISOString(),
+    dateModified: new Date(data.guide.updatedAt).toISOString(),
+  }}
+/>
 
 <div class="mx-auto max-w-5xl space-y-6">
   <header class="space-y-3">

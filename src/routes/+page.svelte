@@ -1,5 +1,7 @@
 <script lang="ts">
   import { m } from '#lib/paraglide/messages';
+  import Seo from '#lib/components/Seo.svelte';
+  import { page } from '$app/state';
   import Empty from '#lib/components/Empty.svelte';
   import GameCard from '#lib/components/GameCard.svelte';
   import HomeCarousel from '#lib/components/HomeCarousel.svelte';
@@ -11,6 +13,16 @@
 
   let { data } = $props();
 </script>
+
+<Seo
+  title="Project Achievers"
+  description={m.site_description()}
+  jsonLd={{
+    '@type': 'WebSite',
+    name: 'Project Achievers',
+    url: page.url.origin,
+  }}
+/>
 
 {#if data.home && data.user}
   <div class="space-y-8">

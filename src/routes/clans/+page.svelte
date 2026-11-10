@@ -1,5 +1,6 @@
 <script lang="ts">
   import { m } from '#lib/paraglide/messages';
+  import Seo from '#lib/components/Seo.svelte';
   import ActionButton from '#lib/components/ActionButton.svelte';
   import Avatar from '#lib/components/Avatar.svelte';
   import Empty from '#lib/components/Empty.svelte';
@@ -8,7 +9,7 @@
   let { data } = $props();
 </script>
 
-<svelte:head><title>{m.clans_title()} — Project Achievers</title></svelte:head>
+<Seo title="{m.clans_title()} — Project Achievers" description={m.clans_ranking_rules()} />
 
 <div class="mx-auto max-w-2xl space-y-4">
   <div>

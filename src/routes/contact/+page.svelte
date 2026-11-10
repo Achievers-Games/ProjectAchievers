@@ -1,5 +1,6 @@
 <script lang="ts">
   import { m } from '#lib/paraglide/messages';
+  import Seo from '#lib/components/Seo.svelte';
   import { enhance } from '$app/forms';
   import { submitWithToast } from '#lib/forms';
 
@@ -7,7 +8,7 @@
   const submit = submitWithToast();
 </script>
 
-<svelte:head><title>{m.contact_title()} — Project Achievers</title></svelte:head>
+<Seo title="{m.contact_title()} — Project Achievers" description={m.contact_intro()} />
 
 <div class="mx-auto max-w-2xl space-y-6">
   <h1>{m.contact_title()}</h1>

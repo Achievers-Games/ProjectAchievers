@@ -1,14 +1,12 @@
 <script lang="ts">
+  import Seo from '#lib/components/Seo.svelte';
   let { data } = $props();
 </script>
 
-<svelte:head>
-  <title>{data.title} — Project Achievers</title>
-  <meta
-    name="description"
-    content="L'API d'Achievers pour les sites partenaires : profils, jeux, liaison des comptes, Se connecter avec Achievers et webhooks."
-  />
-</svelte:head>
+<Seo
+  title="{data.title} — Project Achievers"
+  description="L'API d'Achievers pour les sites partenaires : profils, jeux, liaison des comptes, Se connecter avec Achievers et webhooks."
+/>
 
 <!-- Le guide vient du dépôt (docs/api-partenaires.md), jamais d'un utilisateur. -->
 <article class="prose-user prose-guide mx-auto max-w-3xl" lang="fr">

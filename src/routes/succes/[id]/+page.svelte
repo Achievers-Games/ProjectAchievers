@@ -13,6 +13,7 @@
   import AchievementIcon from '#lib/components/AchievementIcon.svelte';
   import Discussion from '#lib/components/Discussion.svelte';
   import Empty from '#lib/components/Empty.svelte';
+  import Seo from '#lib/components/Seo.svelte';
   import TrophyBadge from '#lib/components/TrophyBadge.svelte';
   import { formatDate, formatRarity, formatRelative } from '#lib/labels';
   import { guideChecks } from '#lib/actions/guide-checks';
@@ -149,10 +150,21 @@
   }
 </script>
 
-<svelte:head>
-  <title>{data.achievement.name} — {data.achievement.game.name}</title>
-  <meta name="description" content={data.achievement.description} />
-</svelte:head>
+<Seo
+  title="{data.achievement.name} — {data.achievement.game.name}"
+  description={data.achievement.description}
+  image={data.achievement.iconUrl}
+  noindex={data.secret}
+  type="article"
+  jsonLd={data.secret
+    ? null
+    : {
+        '@type': 'Article',
+        headline: `${data.achievement.name} — ${data.achievement.game.name}`,
+        description: data.achievement.description,
+        about: { '@type': 'VideoGame', name: data.achievement.game.name },
+      }}
+/>
 
 {#snippet translateButton(type: Target, item: Translatable)}
   {#if data.canTranslate}

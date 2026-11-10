@@ -1,5 +1,6 @@
 <script lang="ts">
   import { TIERS } from '#lib/collection';
+  import Seo from '#lib/components/Seo.svelte';
   import { m } from '#lib/paraglide/messages';
   import Avatar from '#lib/components/Avatar.svelte';
   import Empty from '#lib/components/Empty.svelte';
@@ -11,10 +12,7 @@
   const others = $derived(data.ranking.slice(3));
 </script>
 
-<svelte:head>
-  <title>{m.ranking()} — Project Achievers</title>
-  <meta name="description" content={m.ranking_rules()} />
-</svelte:head>
+<Seo title="{m.ranking()} — Project Achievers" description={m.ranking_rules()} />
 
 <div class="mx-auto max-w-3xl space-y-6">
   <div class="space-y-1">
