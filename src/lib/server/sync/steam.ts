@@ -77,12 +77,14 @@ async function fetchOwnedGames(steamId: string): Promise<OwnedGame[]> {
     skip_unvetted_apps: 0,
   });
   if (!response.ok) throw new Error(`GetOwnedGames a répondu ${response.status}`);
-  const data = (await response.json()) as { response?: { games?: OwnedGame[] } };
-  // Steam répond 200 avec un objet vide quand les détails de jeu sont privés.
-  if (!data.response?.games) {
-    throw new SyncError('sync_steam_private');
-  }
-  return data.response.games;
+  const data = (await response.json()) as {
+    response?: { games?: OwnedGame[]; game_count?: number };
+  };
+  // Steam répond 200 avec un objet vide quand les détails de jeu sont privés. Une bibliothèque
+  // publique mais vide donne `game_count: 0` sans `games` : ce n'est pas un profil privé.
+  if (data.response?.games) return data.response.games;
+  if (typeof data.response?.game_count === 'number') return [];
+  throw new SyncError('sync_steam_private');
 }
 
 export async function fetchRecentGames(steamId: string): Promise<OwnedGame[]> {

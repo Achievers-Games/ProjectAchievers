@@ -582,6 +582,17 @@ describe('synchronisation Steam', () => {
     expect(account.syncError).toBe('sync_steam_private');
   });
 
+  it('ne prend pas une bibliothèque publique mais vide pour un profil privé', async () => {
+    vi.stubGlobal('fetch', steamApi({ response: { game_count: 0 } }));
+    const userId = await steamUser();
+
+    await runSync({ userId, provider: 'STEAM' });
+
+    const account = await db.linkedAccount.findFirstOrThrow({ where: { userId } });
+    expect(account.syncError).toBeNull();
+    expect(account.syncStatus).not.toBe('FAILED');
+  });
+
   it('passe par la file de tâches et publie la progression', async () => {
     vi.stubGlobal('fetch', steamApi(ownedGames));
     await startWorkers();
