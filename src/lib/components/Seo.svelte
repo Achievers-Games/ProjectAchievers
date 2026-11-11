@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from '$app/state';
+  import { deLocalizeUrl, getLocale, locales, localizeUrl } from '#lib/paraglide/runtime';
 
   interface Props {
     /** Titre complet de l'onglet, déjà suivi du nom du site si besoin. */
@@ -35,7 +36,14 @@
 
   // Les moteurs et les aperçus de liens veulent des adresses complètes, jamais relatives.
   const absolute = (url: string) => new URL(url, page.url.origin).href;
-  const canonical = $derived(absolute(path ?? page.url.pathname));
+  // La page sans préfixe de langue : la même pour toutes les versions.
+  const base = $derived(new URL(path ?? deLocalizeUrl(page.url).pathname, page.url.origin));
+  // Chaque langue a son adresse (/fr/…, /en/…) : c'est elle que les moteurs gardent, même pour
+  // une visite arrivée par l'adresse sans préfixe, qui suit la langue du visiteur.
+  const canonical = $derived(localizeUrl(base, { locale: getLocale() }).href);
+  const alternates = $derived(
+    locales.map((locale) => ({ locale, href: localizeUrl(base, { locale }).href })),
+  );
   const picture = $derived(image ? absolute(image) : null);
   const summary = $derived(shareDescription ?? description);
 
@@ -53,6 +61,13 @@
   {#if description}<meta name="description" content={description} />{/if}
   {#if noindex}<meta name="robots" content="noindex" />{/if}
   <link rel="canonical" href={canonical} />
+  {#if !noindex}
+    {#each alternates as alternate (alternate.locale)}
+      <link rel="alternate" hreflang={alternate.locale} href={alternate.href} />
+    {/each}
+    <link rel="alternate" hreflang="x-default" href={base.href} />
+  {/if}
+  <meta property="og:locale" content={getLocale().replace('-', '_')} />
   <meta property="og:type" content={type} />
   <meta property="og:url" content={canonical} />
   <meta property="og:title" content={shareTitle ?? title} />

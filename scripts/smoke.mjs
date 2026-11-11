@@ -53,6 +53,8 @@ const checks = [
   ['/', status(200)],
   ['/connexion', status(200)],
   ['/jeux', status(200)],
+  // Une adresse par langue, pour les moteurs.
+  ['/en/jeux', status(200)],
   ['/classement', status(200)],
   ['/clans', status(200)],
   ['/communaute', status(200)],

@@ -1,6 +1,7 @@
 import { error } from '@sveltejs/kit';
 import { db } from '#lib/server/db';
 import { env } from '#lib/server/env';
+import { baseLocale, locales, localizeUrl } from '#lib/paraglide/runtime';
 import type { RequestHandler } from './$types';
 
 const CACHE_MS = 3_600_000;
@@ -57,12 +58,26 @@ async function entries(): Promise<Entry[]> {
   ];
 }
 
+/** L'adresse d'une page dans une langue : /fr/…, /en/… */
+const localized = (origin: string, path: string, locale: string) =>
+  localizeUrl(new URL(path, origin), { locale: locale as (typeof locales)[number] }).href;
+
+/**
+ * Chaque page une fois, à son adresse française, avec ses versions dans toutes les langues
+ * (hreflang) : les moteurs découvrent ainsi les huit langues sans un plan huit fois plus long.
+ */
 const urlset = (origin: string, list: Entry[]) =>
-  `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${list
-    .map(
-      ({ path, updated }) =>
-        `<url><loc>${escapeXml(origin + path)}</loc>${updated ? `<lastmod>${updated.toISOString()}</lastmod>` : ''}</url>`,
-    )
+  `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">${list
+    .map(({ path, updated }) => {
+      const alternates = locales
+        .map(
+          (locale) =>
+            `<xhtml:link rel="alternate" hreflang="${locale}" href="${escapeXml(localized(origin, path, locale))}"/>`,
+        )
+        .join('');
+      const fallback = `<xhtml:link rel="alternate" hreflang="x-default" href="${escapeXml(origin + path)}"/>`;
+      return `<url><loc>${escapeXml(localized(origin, path, baseLocale))}</loc>${updated ? `<lastmod>${updated.toISOString()}</lastmod>` : ''}${alternates}${fallback}</url>`;
+    })
     .join('')}</urlset>`;
 
 const sitemapIndex = (origin: string, files: number) =>

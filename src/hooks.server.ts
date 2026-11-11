@@ -3,7 +3,7 @@ import type { RequestEvent } from '@sveltejs/kit';
 import { dev } from '$app/env';
 import { themeOf } from '#lib/theme';
 import { m } from '#lib/paraglide/messages';
-import { getLocale } from '#lib/paraglide/runtime';
+import { extractLocaleFromUrl, getLocale } from '#lib/paraglide/runtime';
 import { paraglideMiddleware } from '#lib/paraglide/server';
 import { syncCuratedGuides } from '#lib/server/curated-guides';
 import { env } from '#lib/server/env';
@@ -79,6 +79,18 @@ const secured: Handle = async ({ event, resolve }) => {
         headers: { 'Retry-After': '60' },
       });
     }
+  }
+
+  // Arrivé par /en/… : la suite de la visite reste en anglais, même par les liens sans préfixe.
+  const urlLocale = extractLocaleFromUrl(event.url);
+  if (urlLocale && event.cookies.get('pa_lang') !== urlLocale) {
+    event.cookies.set('pa_lang', urlLocale, {
+      path: '/',
+      maxAge: 60 * 60 * 24 * 400,
+      sameSite: 'lax',
+      httpOnly: false,
+      secure: false,
+    });
   }
 
   event.locals.user = await validateSession(event.cookies);
