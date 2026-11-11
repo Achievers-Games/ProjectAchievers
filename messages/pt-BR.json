@@ -1817,5 +1817,20 @@
   "game_completion_time": "{hours} h para 100% (mediana de {count} jogadores do Achievers)",
   "nav_developers": "Desenvolvedores",
   "game_lure_time": "Para 100%",
-  "game_lure_hours": "{hours} h"
+  "game_lure_hours": "{hours} h",
+  "mod_signups": "Cadastros e logins",
+  "mod_signups_members": "{total} membros · {week} novos esta semana · {month} este mês",
+  "mod_signups_help": "Últimos 14 dias: cada ida ao Steam, Discord… termina em cadastro, login ou falha. Uma ida sem resultado é um visitante que desistiu no provedor (ou um bot).",
+  "mod_signups_day": "Dia",
+  "mod_signups_starts": "Idas",
+  "mod_signups_new": "Cadastros",
+  "mod_signups_logins": "Logins",
+  "mod_signups_errors": "Falhas",
+  "mod_signups_providers": "Por provedor (idas → sucessos):",
+  "mod_signups_reasons": "Motivos das falhas:",
+  "mod_signups_reason_expire": "link expirado ou cookie perdido",
+  "mod_signups_reason_cancelled": "recusado no provedor",
+  "mod_signups_reason_provider": "falha do provedor",
+  "mod_signups_reason_refused": "identidade não verificada",
+  "mod_signups_reason_taken": "conta já vinculada a outra"
 }

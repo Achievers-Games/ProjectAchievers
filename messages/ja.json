@@ -1780,5 +1780,20 @@
   "game_completion_time": "100% まで {hours} 時間（Achievers プレイヤー {count} 人の中央値）",
   "nav_developers": "開発者",
   "game_lure_time": "100% まで",
-  "game_lure_hours": "{hours} 時間"
+  "game_lure_hours": "{hours} 時間",
+  "mod_signups": "登録とログイン",
+  "mod_signups_members": "メンバー {total} 人 · 今週 {week} 人 · 今月 {month} 人",
+  "mod_signups_help": "直近 14 日間：Steam や Discord… への移動は、登録・ログイン・失敗のいずれかで終わります。結果のない移動は、提供元で離脱した訪問者（またはボット）です。",
+  "mod_signups_day": "日付",
+  "mod_signups_starts": "移動",
+  "mod_signups_new": "登録",
+  "mod_signups_logins": "ログイン",
+  "mod_signups_errors": "失敗",
+  "mod_signups_providers": "提供元別（移動 → 成功）：",
+  "mod_signups_reasons": "失敗の理由：",
+  "mod_signups_reason_expire": "リンク切れまたは Cookie 消失",
+  "mod_signups_reason_cancelled": "提供元で拒否",
+  "mod_signups_reason_provider": "提供元の障害",
+  "mod_signups_reason_refused": "本人確認できず",
+  "mod_signups_reason_taken": "アカウントは別のユーザーに連携済み"
 }

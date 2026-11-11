@@ -829,3 +829,19 @@ model LureGame {
   completionistMinutes Int?
   fetchedAt            DateTime
 }
+
+/// Le parcours de connexion, sans donnée personnelle : ni joueur, ni adresse IP. Sert à voir où
+/// les visiteurs décrochent (départ vers le fournisseur, inscription, connexion, échec et sa raison).
+/// Gardé 90 jours.
+model AuthEvent {
+  id        String   @id @default(cuid())
+  /// steam, discord, google, xbox, blizzard, epic
+  provider  String
+  /// START, SIGNUP, LOGIN ou ERROR
+  kind      String
+  /// Pour ERROR : expire, annule, fournisseur, refuse, deja_lie
+  reason    String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}

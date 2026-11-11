@@ -1817,5 +1817,20 @@
   "game_completion_time": "{hours} h to 100% (median of {count} Achievers players)",
   "nav_developers": "Developers",
   "game_lure_time": "To 100%",
-  "game_lure_hours": "{hours} h"
+  "game_lure_hours": "{hours} h",
+  "mod_signups": "Sign-ups and logins",
+  "mod_signups_members": "{total} members · {week} new this week · {month} this month",
+  "mod_signups_help": "Last 14 days: each trip to Steam, Discord… ends as a sign-up, a login or a failure. A trip with no outcome is a visitor who gave up at the provider (or a bot).",
+  "mod_signups_day": "Day",
+  "mod_signups_starts": "Starts",
+  "mod_signups_new": "Sign-ups",
+  "mod_signups_logins": "Logins",
+  "mod_signups_errors": "Failures",
+  "mod_signups_providers": "By provider (starts → successes):",
+  "mod_signups_reasons": "Failure reasons:",
+  "mod_signups_reason_expire": "link expired or cookie lost",
+  "mod_signups_reason_cancelled": "declined at the provider",
+  "mod_signups_reason_provider": "provider outage",
+  "mod_signups_reason_refused": "identity not verified",
+  "mod_signups_reason_taken": "account already linked elsewhere"
 }

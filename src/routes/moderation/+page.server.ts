@@ -1,4 +1,5 @@
 import { error, fail } from '@sveltejs/kit';
+import { signupStats } from '#lib/server/auth-events';
 import { z } from 'zod';
 import { db } from '#lib/server/db';
 import { issuePartnerKey, revokePartnerKey } from '#lib/server/partner-api';
@@ -126,6 +127,8 @@ export const load: PageServerLoad = async ({ locals }) => {
       ...clan,
       url: `/clans/${clan.slug}/image?v=${clan.imageAt!.getTime()}`,
     })),
+    // Le suivi des inscriptions : des chiffres sur tout le site, réservés aux administrateurs.
+    signups: moderator.role === 'ADMIN' ? await signupStats() : undefined,
     // Le jeton du site ne regarde que les administrateurs, qui le renouvellent.
     psnToken: moderator.role === 'ADMIN' ? await psnTokenState() : undefined,
     // Les clés de l'API partenaire aussi : elles ouvrent les données du site à un autre.

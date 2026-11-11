@@ -1817,5 +1817,20 @@
   "game_completion_time": "{hours} h pour le 100 % (médiane de {count} joueurs Achievers)",
   "nav_developers": "Développeurs",
   "game_lure_time": "À 100 %",
-  "game_lure_hours": "{hours} h"
+  "game_lure_hours": "{hours} h",
+  "mod_signups": "Inscriptions et connexions",
+  "mod_signups_members": "{total} membres · {week} nouveaux cette semaine · {month} ce mois-ci",
+  "mod_signups_help": "Les 14 derniers jours : chaque départ vers Steam, Discord… devient une inscription, une connexion ou un échec. Un départ sans suite, c'est un visiteur qui a renoncé chez le fournisseur (ou un robot).",
+  "mod_signups_day": "Jour",
+  "mod_signups_starts": "Départs",
+  "mod_signups_new": "Inscriptions",
+  "mod_signups_logins": "Connexions",
+  "mod_signups_errors": "Échecs",
+  "mod_signups_providers": "Par fournisseur (départs → réussites) :",
+  "mod_signups_reasons": "Raisons des échecs :",
+  "mod_signups_reason_expire": "lien expiré ou cookie perdu",
+  "mod_signups_reason_cancelled": "refusé chez le fournisseur",
+  "mod_signups_reason_provider": "panne du fournisseur",
+  "mod_signups_reason_refused": "identité non vérifiée",
+  "mod_signups_reason_taken": "compte déjà lié ailleurs"
 }

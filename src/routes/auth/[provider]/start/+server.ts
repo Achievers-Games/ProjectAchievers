@@ -14,9 +14,10 @@ import { steamAuthorizeUrl } from '#lib/server/providers/steam';
 import { xboxAuthorizeUrl } from '#lib/server/providers/xbox';
 import { blizzardAuthorizeUrl } from '#lib/server/providers/blizzard';
 import { epicAuthorizeUrl } from '#lib/server/providers/epic';
+import { recordAuthEvent } from '#lib/server/auth-events';
 import type { RequestHandler } from './$types';
 
-export const GET: RequestHandler = ({ params, url, cookies }) => {
+export const GET: RequestHandler = async ({ params, url, cookies }) => {
   const provider = params.provider as OAuthProvider;
   if (!(provider in OAUTH_PROVIDERS)) error(404, m.provider_unknown());
   if (!availableProviders()[OAUTH_PROVIDERS[provider]]) {
@@ -31,6 +32,8 @@ export const GET: RequestHandler = ({ params, url, cookies }) => {
     verifier,
     returnTo: safeReturnTo(url.searchParams.get('retour')),
   });
+
+  await recordAuthEvent(provider, 'START');
 
   // Le fournisseur d'identité est un autre site : SvelteKit 3 exige de le dire explicitement.
   const external = { external: true };

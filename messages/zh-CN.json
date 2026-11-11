@@ -1780,5 +1780,20 @@
   "game_completion_time": "100% 需 {hours} 小时（{count} 位 Achievers 玩家的中位数）",
   "nav_developers": "开发者",
   "game_lure_time": "100%",
-  "game_lure_hours": "{hours} 小时"
+  "game_lure_hours": "{hours} 小时",
+  "mod_signups": "注册与登录",
+  "mod_signups_members": "{total} 位成员 · 本周新增 {week} · 本月新增 {month}",
+  "mod_signups_help": "最近 14 天：每次前往 Steam、Discord… 都会以注册、登录或失败结束。没有结果的跳转是在提供方处放弃的访客（或机器人）。",
+  "mod_signups_day": "日期",
+  "mod_signups_starts": "跳转",
+  "mod_signups_new": "注册",
+  "mod_signups_logins": "登录",
+  "mod_signups_errors": "失败",
+  "mod_signups_providers": "按提供方（跳转 → 成功）：",
+  "mod_signups_reasons": "失败原因：",
+  "mod_signups_reason_expire": "链接过期或 Cookie 丢失",
+  "mod_signups_reason_cancelled": "在提供方处拒绝",
+  "mod_signups_reason_provider": "提供方故障",
+  "mod_signups_reason_refused": "身份未验证",
+  "mod_signups_reason_taken": "账号已关联到其他用户"
 }

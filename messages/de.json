@@ -1817,5 +1817,20 @@
   "game_completion_time": "{hours} Std. bis 100 % (Median von {count} Achievers-Spielern)",
   "nav_developers": "Entwickler",
   "game_lure_time": "Bis 100 %",
-  "game_lure_hours": "{hours} Std."
+  "game_lure_hours": "{hours} Std.",
+  "mod_signups": "Registrierungen und Anmeldungen",
+  "mod_signups_members": "{total} Mitglieder · {week} neu diese Woche · {month} diesen Monat",
+  "mod_signups_help": "Letzte 14 Tage: Jeder Weg zu Steam, Discord… endet als Registrierung, Anmeldung oder Fehler. Ein Weg ohne Ergebnis ist ein Besucher, der beim Anbieter aufgegeben hat (oder ein Bot).",
+  "mod_signups_day": "Tag",
+  "mod_signups_starts": "Starts",
+  "mod_signups_new": "Registrierungen",
+  "mod_signups_logins": "Anmeldungen",
+  "mod_signups_errors": "Fehler",
+  "mod_signups_providers": "Nach Anbieter (Starts → Erfolge):",
+  "mod_signups_reasons": "Fehlergründe:",
+  "mod_signups_reason_expire": "Link abgelaufen oder Cookie verloren",
+  "mod_signups_reason_cancelled": "beim Anbieter abgelehnt",
+  "mod_signups_reason_provider": "Störung beim Anbieter",
+  "mod_signups_reason_refused": "Identität nicht bestätigt",
+  "mod_signups_reason_taken": "Konto bereits anderswo verknüpft"
 }

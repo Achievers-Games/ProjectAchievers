@@ -11,6 +11,16 @@
   import { formatDate, formatRelative, PLATFORM_LABELS } from '#lib/labels';
 
   let { data, form } = $props();
+
+  /** La raison d'un échec de connexion, en mots. */
+  const AUTH_REASONS: Record<string, () => string> = {
+    expire: m.mod_signups_reason_expire,
+    annule: m.mod_signups_reason_cancelled,
+    fournisseur: m.mod_signups_reason_provider,
+    refuse: m.mod_signups_reason_refused,
+    deja_lie: m.mod_signups_reason_taken,
+  };
+  const authReason = (reason: string) => AUTH_REASONS[reason]?.() ?? reason;
 </script>
 
 <svelte:head>
@@ -20,6 +30,59 @@
 
 <div class="mx-auto max-w-3xl space-y-4">
   <h1>{m.moderation()}</h1>
+
+  {#if data.signups}
+    {@const stats = data.signups}
+    <section class="card space-y-3 p-4 text-sm" data-testid="signups">
+      <h2 class="text-base">{m.mod_signups()}</h2>
+      <p>
+        {m.mod_signups_members({ total: stats.members, week: stats.week, month: stats.month })}
+      </p>
+      <p class="text-muted">{m.mod_signups_help()}</p>
+      <div class="overflow-x-auto">
+        <table class="tabular w-full text-left text-xs">
+          <thead class="text-muted">
+            <tr>
+              <th class="py-1 pr-3 font-medium">{m.mod_signups_day()}</th>
+              <th class="py-1 pr-3 font-medium">{m.mod_signups_starts()}</th>
+              <th class="py-1 pr-3 font-medium">{m.mod_signups_new()}</th>
+              <th class="py-1 pr-3 font-medium">{m.mod_signups_logins()}</th>
+              <th class="py-1 font-medium">{m.mod_signups_errors()}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {#each stats.days as row (row.day)}
+              <tr class="border-t border-line">
+                <td class="py-1 pr-3">{formatDate(new Date(row.day))}</td>
+                <td class="py-1 pr-3">{row.starts}</td>
+                <td class="py-1 pr-3 {row.signups ? 'font-semibold text-ink' : ''}"
+                  >{row.signups}</td
+                >
+                <td class="py-1 pr-3">{row.logins}</td>
+                <td class="py-1 {row.errors ? 'text-danger' : ''}">{row.errors}</td>
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      </div>
+      {#if stats.providers.length}
+        <p>
+          <span class="text-muted">{m.mod_signups_providers()}</span>
+          {#each stats.providers as row, i (row.provider)}
+            {i ? ' · ' : ''}{row.provider} : {row.starts} → {row.signups + row.logins}
+          {/each}
+        </p>
+      {/if}
+      {#if stats.reasons.length}
+        <p>
+          <span class="text-muted">{m.mod_signups_reasons()}</span>
+          {#each stats.reasons as row, i (row.reason)}
+            {i ? ' · ' : ''}{authReason(row.reason)} : {row.count}
+          {/each}
+        </p>
+      {/if}
+    </section>
+  {/if}
 
   {#if data.psnToken !== undefined}
     {@const token = data.psnToken}

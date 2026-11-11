@@ -915,6 +915,10 @@ test.describe('membre', () => {
     await login(page);
     await page.goto('/moderation');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Modération');
+    // Le suivi des inscriptions : quatorze jours, même vides.
+    const signups = page.getByTestId('signups');
+    await expect(signups).toContainText('Inscriptions et connexions');
+    await expect(signups.getByRole('row')).toHaveCount(15);
   });
 
   test('se déconnecte', async ({ page }) => {

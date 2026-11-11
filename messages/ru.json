@@ -1867,5 +1867,20 @@
   "game_completion_time": "{hours} ч до 100 % (медиана по {count} игрокам Achievers)",
   "nav_developers": "Разработчикам",
   "game_lure_time": "До 100 %",
-  "game_lure_hours": "{hours} ч"
+  "game_lure_hours": "{hours} ч",
+  "mod_signups": "Регистрации и входы",
+  "mod_signups_members": "{total} участников · {week} новых за неделю · {month} за месяц",
+  "mod_signups_help": "Последние 14 дней: каждый переход в Steam, Discord… заканчивается регистрацией, входом или ошибкой. Переход без результата — посетитель передумал у провайдера (или бот).",
+  "mod_signups_day": "День",
+  "mod_signups_starts": "Переходы",
+  "mod_signups_new": "Регистрации",
+  "mod_signups_logins": "Входы",
+  "mod_signups_errors": "Ошибки",
+  "mod_signups_providers": "По провайдерам (переходы → успехи):",
+  "mod_signups_reasons": "Причины ошибок:",
+  "mod_signups_reason_expire": "ссылка устарела или cookie потерян",
+  "mod_signups_reason_cancelled": "отказ у провайдера",
+  "mod_signups_reason_provider": "сбой провайдера",
+  "mod_signups_reason_refused": "личность не подтверждена",
+  "mod_signups_reason_taken": "аккаунт уже привязан к другому"
 }
