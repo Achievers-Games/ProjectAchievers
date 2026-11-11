@@ -13,9 +13,11 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# Ubuntu 24.04 plutôt que ubuntu-latest : sur la nouvelle image (Ubuntu 26), les dépôts apt ne
+# répondaient plus et Playwright ne pouvait pas installer les dépendances de Chromium.
 jobs:
   verify:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
     services:
@@ -67,7 +69,7 @@ jobs:
   image:
     needs: verify
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: write
@@ -98,7 +100,7 @@ jobs:
   # ici prévient par courriel, au lieu de laisser une panne passer inaperçue.
   smoke:
     needs: image
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     permissions:
       contents: read
