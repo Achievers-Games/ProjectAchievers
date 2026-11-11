@@ -1732,8 +1732,6 @@
   "tagline_19": "Niemand urteilt. Na ja, wir schon.",
   "tagline_20": "{minutes} Minuten in {game}. Und du behauptest, du hättest es getestet.",
   "showcase_title": "Vitrine",
-  "showcase_featured": "Nr. 1",
-  "showcase_featured_help": "Deine Hauptkarte: groß auf deinem Profil und als Hintergrund deiner Spielerkarte und geteilten Links.",
   "showcase_edit": "Vitrine bearbeiten",
   "showcase_edit_help": "Wähle die Karten für dein Profil aus, bis zu {max}.",
   "showcase_selected": "In meiner Vitrine ({count}/{max})",

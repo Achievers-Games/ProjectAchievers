@@ -1782,8 +1782,6 @@
   "tagline_19": "Никто не осуждает. Ну, мы осуждаем.",
   "tagline_20": "Минут в {game}: {minutes}. И ты ещё говоришь, что попробовал.",
   "showcase_title": "Витрина",
-  "showcase_featured": "№ 1",
-  "showcase_featured_help": "Твоя главная карта: крупно в профиле и на фоне карточки игрока и ссылок, которыми ты делишься.",
   "showcase_edit": "Изменить витрину",
   "showcase_edit_help": "Выбери карты для профиля, до {max}.",
   "showcase_selected": "В витрине ({count}/{max})",

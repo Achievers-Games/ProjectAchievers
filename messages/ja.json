@@ -1695,8 +1695,6 @@
   "tagline_19": "誰も裁かない。まあ、私たちは裁くけど。",
   "tagline_20": "{game} を {minutes} 分だけ。それで試したと言うのか。",
   "showcase_title": "ショーケース",
-  "showcase_featured": "No.1",
-  "showcase_featured_help": "注目カード：プロフィールで大きく表示され、プレイヤーカードや共有リンクの背景にもなります。",
   "showcase_edit": "ショーケースを編集",
   "showcase_edit_help": "プロフィールに表示するカードを {max} 枚まで選べます。",
   "showcase_selected": "ショーケース（{count}/{max}）",

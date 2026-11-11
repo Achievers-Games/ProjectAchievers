@@ -3,7 +3,6 @@
   import { enhance } from '$app/forms';
   import ChevronDown from '@lucide/svelte/icons/chevron-down';
   import ChevronUp from '@lucide/svelte/icons/chevron-up';
-  import Crown from '@lucide/svelte/icons/crown';
   import Empty from '#lib/components/Empty.svelte';
   import GameCard from '#lib/components/GameCard.svelte';
   import { submitWithToast } from '#lib/forms';
@@ -32,22 +31,14 @@
 
   {#if !data.custom}
     <p class="card px-3 py-2 text-sm text-muted">{m.showcase_mode_best_help()}</p>
-    <p class="featured-hint">
-      <Crown size={16} aria-hidden="true" class="shrink-0 text-gold" />
-      {m.showcase_featured_help()}
-    </p>
   {:else}
     <section class="space-y-3">
       <h2>{m.showcase_selected({ count: data.selected.length, max: data.max })}</h2>
       {#if data.selected.length}
         <ul class="space-y-2">
           {#each data.selected as card, index (card.id)}
-            {#if index === 1}
-              <!-- Le numéro 1 se détache : les suivantes forment le reste de la vitrine. -->
-              <li class="border-t border-line pt-1" aria-hidden="true"></li>
-            {/if}
-            <li class="flex items-center gap-2" class:featured-row={index === 0}>
-              <div class="min-w-0 flex-1 space-y-2">
+            <li class="flex items-center gap-2">
+              <div class="min-w-0 flex-1">
                 <GameCard
                   game={card}
                   progress={card.progress}
@@ -56,14 +47,7 @@
                   copies={card.copies}
                   next={card.next}
                   layout="liste"
-                  featured={index === 0}
                 />
-                {#if index === 0}
-                  <p class="featured-hint">
-                    <Crown size={16} aria-hidden="true" class="shrink-0 text-gold" />
-                    {m.showcase_featured_help()}
-                  </p>
-                {/if}
               </div>
               <form method="POST" action="?/move" use:enhance={submit} class="flex">
                 {#each card.versions as version (version.slug)}

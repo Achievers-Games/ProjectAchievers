@@ -1732,8 +1732,6 @@
   "tagline_19": "Nobody's judging. Well, we are.",
   "tagline_20": "{minutes} minutes on {game}. And you dare say you tried it.",
   "showcase_title": "Showcase",
-  "showcase_featured": "No. 1",
-  "showcase_featured_help": "Your featured card: shown large on your profile, and as the background of your player card and shared links.",
   "showcase_edit": "Edit my showcase",
   "showcase_edit_help": "Choose the cards shown on your profile, up to {max}.",
   "showcase_selected": "In my showcase ({count}/{max})",

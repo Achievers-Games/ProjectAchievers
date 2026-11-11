@@ -1732,8 +1732,6 @@
   "tagline_19": "Nadie te juzga. Bueno, nosotros sí.",
   "tagline_20": "{minutes} minutos en {game}. Y te atreves a decir que lo has probado.",
   "showcase_title": "Vitrina",
-  "showcase_featured": "N.º 1",
-  "showcase_featured_help": "Tu carta destacada: se muestra en grande en tu perfil y de fondo en tu tarjeta de jugador y tus enlaces compartidos.",
   "showcase_edit": "Editar mi vitrina",
   "showcase_edit_help": "Elige las cartas que se muestran en tu perfil, hasta {max}.",
   "showcase_selected": "En mi vitrina ({count}/{max})",

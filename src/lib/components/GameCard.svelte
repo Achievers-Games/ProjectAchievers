@@ -1,7 +1,6 @@
 <script lang="ts">
   import { m } from '#lib/paraglide/messages';
   import type { Platform } from '#prisma';
-  import Crown from '@lucide/svelte/icons/crown';
   import Flame from '@lucide/svelte/icons/flame';
   import Gamepad2 from '@lucide/svelte/icons/gamepad-2';
   import CardFx from './CardFx.svelte';
@@ -33,8 +32,6 @@
     live?: boolean;
     /** Lien vers la fiche, quand il faut y ajouter la comparaison (`?avec=`). */
     href?: string;
-    /** Le numéro 1 de la vitrine : en grand, avec son badge, l'image remplit la place. */
-    featured?: boolean;
   }
 
   let {
@@ -49,10 +46,8 @@
     seasonEligible = false,
     live = false,
     href,
-    featured = false,
   }: Props = $props();
   const list = $derived(layout === 'liste');
-  const big = $derived(featured && !list);
   const complete = $derived(isComplete(progress));
   const level = $derived(tier || 1);
   const step = $derived(progress ? stepOf(progress.completion) : 0);
@@ -90,15 +85,12 @@
   class="game-card card group flex overflow-hidden"
   class:flex-col={!list}
   class:items-center={list}
-  class:featured={big}
 >
   <div
     use:watchImage
-    class="relative overflow-hidden bg-raised {list
-      ? 'h-14 w-28 shrink-0'
-      : big
-        ? 'aspect-[460/215] w-full shrink-0 lg:aspect-auto lg:min-h-0 lg:flex-1'
-        : 'aspect-[460/215] w-full shrink-0'}"
+    class="relative shrink-0 overflow-hidden bg-raised {list
+      ? 'h-14 w-28'
+      : 'aspect-[460/215] w-full'}"
   >
     {#if game.headerUrl && !imageFailed}
       <img
@@ -112,16 +104,7 @@
         <Gamepad2 size={24} />
       </span>
     {/if}
-    {#if featured}
-      <span
-        class="featured-badge absolute left-2 top-2"
-        class:list-badge={list}
-        title={m.showcase_featured_help()}
-      >
-        <Crown size={12} aria-hidden="true" />
-        {m.showcase_featured()}
-      </span>
-    {:else if seasonEligible && !list}
+    {#if seasonEligible && !list}
       <span class="season-badge absolute left-2 top-2" title={m.season_badge_help()}>
         <Flame size={11} aria-hidden="true" />
         {m.nav_season()}
@@ -143,9 +126,7 @@
   </div>
   <div class="min-w-0 flex-1 space-y-2 p-3">
     <div class="flex items-center justify-between gap-2">
-      <h3 class="truncate font-medium {big ? 'text-base font-semibold' : 'text-sm'}">
-        {game.name}
-      </h3>
+      <h3 class="truncate text-sm font-medium">{game.name}</h3>
       {#if seasonEligible && list}
         <span class="season-badge shrink-0" title={m.season_badge_help()}>
           <Flame size={11} aria-hidden="true" />
