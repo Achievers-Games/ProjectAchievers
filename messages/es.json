@@ -1842,5 +1842,6 @@
   "achievement_seo_title": "Cómo conseguir «{achievement}» en {game}",
   "achievement_seo_rarity": "Lo tiene el {rarity} % de los jugadores.",
   "achievement_seo_guides": "Guías para conseguirlo: {count}.",
-  "achievement_seo_missable": "Perdible: hazlo antes de que sea tarde."
+  "achievement_seo_missable": "Perdible: hazlo antes de que sea tarde.",
+  "guide_updated": "Guía actualizada."
 }

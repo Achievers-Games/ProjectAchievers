@@ -1892,5 +1892,6 @@
   "achievement_seo_title": "Как получить «{achievement}» в {game}",
   "achievement_seo_rarity": "Есть у {rarity} % игроков.",
   "achievement_seo_guides": "Гайды по получению: {count}.",
-  "achievement_seo_missable": "Можно пропустить: сделайте, пока не поздно."
+  "achievement_seo_missable": "Можно пропустить: сделайте, пока не поздно.",
+  "guide_updated": "Гайд обновлён."
 }

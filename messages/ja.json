@@ -1805,5 +1805,6 @@
   "achievement_seo_title": "{game} で「{achievement}」を獲得する方法",
   "achievement_seo_rarity": "プレイヤーの {rarity}% が獲得。",
   "achievement_seo_guides": "獲得ガイド：{count}。",
-  "achievement_seo_missable": "取り逃しあり：手遅れになる前に。"
+  "achievement_seo_missable": "取り逃しあり：手遅れになる前に。",
+  "guide_updated": "ガイドを更新しました。"
 }

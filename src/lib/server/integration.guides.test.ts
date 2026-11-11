@@ -212,8 +212,17 @@ describe('guides de jeu', () => {
       data: { guideId: guide.id, locale: 'en', contentMd: '## Start' },
     });
 
-    expect(await editGuide(guide.id, intruder, { title: 'Pirate', contentMd: '…' })).toBe(false);
-    expect(await editGuide(guide.id, author, { title: 'Après', contentMd: '## Fin' })).toBe(true);
+    const as = (id: string, role = 'USER') => ({ id, role });
+    expect(await editGuide(guide.id, as(intruder), { title: 'Pirate', contentMd: '…' })).toBe(
+      false,
+    );
+    // Modérer ne donne pas la main sur le guide d'un joueur : seulement sur les officiels.
+    expect(
+      await editGuide(guide.id, as(intruder, 'MODERATOR'), { title: 'Pirate', contentMd: '…' }),
+    ).toBe(false);
+    expect(await editGuide(guide.id, as(author), { title: 'Après', contentMd: '## Fin' })).toBe(
+      true,
+    );
     const edited = await db.guide.findUniqueOrThrow({ where: { id: guide.id } });
     expect(edited).toMatchObject({ title: 'Après', contentMd: '## Fin' });
     expect(await db.contentTranslation.count({ where: { guideId: guide.id } })).toBe(0);

@@ -192,6 +192,14 @@
                   : m.translate()}
             </button>
           {/if}
+          {#if data.canEditOfficial}
+            <a
+              class="text-xs text-muted hover:text-ink"
+              href="/jeux/{data.game.slug}/guides/ecrire?id={data.guide.id}"
+            >
+              {m.game_guide_edit()}
+            </a>
+          {/if}
           {#if data.guide.mine && !data.guide.official}
             <a
               class="text-xs text-muted hover:text-ink"

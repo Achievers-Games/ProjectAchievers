@@ -1,5 +1,8 @@
-import type { Platform } from '#prisma';
+import type { Platform, Prisma } from '#prisma';
+import { logger } from '#lib/logger';
 import { db } from './db';
+
+const log = logger('Guides');
 
 /** Compte fictif des guides officiels : sans compte lié, personne ne peut s'y connecter. */
 const OFFICIAL_AUTHOR = {
@@ -85,6 +88,48 @@ export function parseGuideFile(text: string): GuideFile {
   return { platform: platform as Platform, gameId, partial: flag === 'partiel', guides };
 }
 
+/**
+ * Importe un guide officiel. Le dépôt fait foi quand **son** texte change ; tant qu'il reste le
+ * même, une modification faite sur le site par un modérateur est gardée, déploiement après
+ * déploiement. Si le dépôt change un guide modifié sur le site, c'est le dépôt qui l'emporte : le
+ * journal le signale, pour reporter la modification dans le fichier si elle doit rester.
+ */
+async function importCurated(
+  curatedKey: string,
+  source: string,
+  text: { contentMd: string; title?: string },
+  create: Omit<Prisma.GuideUncheckedCreateInput, 'curatedKey' | 'curatedSource'>,
+) {
+  const known = await db.guide.findUnique({
+    where: { curatedKey },
+    select: { id: true, title: true, contentMd: true, curatedSource: true },
+  });
+  if (!known) {
+    await db.guide.create({ data: { ...create, curatedKey, curatedSource: source } });
+    return;
+  }
+  if (known.curatedSource === source) return;
+  const same =
+    known.contentMd === text.contentMd && (text.title === undefined || known.title === text.title);
+  // Guide importé avant ce suivi : rien n'a pu le modifier sur le site, il suffit de noter le texte.
+  if (same) {
+    await db.guide.update({ where: { id: known.id }, data: { curatedSource: source } });
+    return;
+  }
+  if (known.curatedSource !== null) {
+    const edited = known.contentMd !== importedText(known.curatedSource, text.title !== undefined);
+    if (edited)
+      log.warn(`Guide officiel ${curatedKey} : le dépôt remplace une modification du site`);
+  }
+  // Une traduction de l'ancien texte ne vaut plus pour le nouveau.
+  await db.contentTranslation.deleteMany({ where: { guideId: known.id } });
+  await db.guide.update({ where: { id: known.id }, data: { ...text, curatedSource: source } });
+}
+
+/** Le texte d'un guide tel que le dépôt l'avait donné : sans le titre, pour un guide de jeu. */
+const importedText = (source: string, withTitle: boolean) =>
+  withTitle ? source.slice(source.indexOf('\n\n') + 2) : source;
+
 /** Le dépôt fait foi : les guides officiels y sont ajoutés, modifiés ou retirés. */
 export async function syncCuratedGuides(
   files: string[] = Object.values(FILES),
@@ -136,21 +181,17 @@ export async function syncCuratedGuides(
       const curatedKey = `${file.platform}:${file.gameId}:${platformId}`;
       keys.push(curatedKey);
 
-      const known = await db.guide.findUnique({ where: { curatedKey } });
-      if (known?.contentMd === content) continue;
-      // Une traduction de l'ancien texte ne vaut plus pour le nouveau.
-      if (known) await db.contentTranslation.deleteMany({ where: { guideId: known.id } });
-      await db.guide.upsert({
-        where: { curatedKey },
-        update: { contentMd: content },
-        create: {
-          curatedKey,
+      await importCurated(
+        curatedKey,
+        content,
+        { contentMd: content },
+        {
           achievementId,
           authorId: OFFICIAL_AUTHOR.id,
           contentMd: content,
           locale: 'fr',
         },
-      });
+      );
     }
   }
   for (const file of gameFiles.map(parseGameGuideFile)) {
@@ -162,21 +203,18 @@ export async function syncCuratedGuides(
     const curatedKey = `${file.platform}:${file.gameId}:JEU`;
     keys.push(curatedKey);
 
-    const known = await db.guide.findUnique({ where: { curatedKey } });
-    if (known?.contentMd === file.content && known.title === file.title) continue;
-    if (known) await db.contentTranslation.deleteMany({ where: { guideId: known.id } });
-    await db.guide.upsert({
-      where: { curatedKey },
-      update: { title: file.title, contentMd: file.content },
-      create: {
-        curatedKey,
+    await importCurated(
+      curatedKey,
+      `${file.title}\n\n${file.content}`,
+      { title: file.title, contentMd: file.content },
+      {
         gameId: game.id,
         title: file.title,
         authorId: OFFICIAL_AUTHOR.id,
         contentMd: file.content,
         locale: 'fr',
       },
-    });
+    );
   }
 
   await db.guide.deleteMany({ where: { curatedKey: { not: null, notIn: keys } } });

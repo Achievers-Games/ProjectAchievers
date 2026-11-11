@@ -330,6 +330,23 @@
             <!-- eslint-disable-next-line svelte/no-at-html-tags -- assaini par renderGuide -->
             {@html shownHtml(guide)}
           </div>
+          {#if guide.source !== null}
+            <details class="text-sm">
+              <summary class="cursor-pointer text-xs text-muted hover:text-ink">
+                {m.game_guide_edit()}
+              </summary>
+              <form method="POST" action="?/editGuide" use:enhance={submit} class="mt-2 space-y-2">
+                <input type="hidden" name="id" value={guide.id} />
+                <textarea
+                  name="content"
+                  rows="14"
+                  class="input h-auto min-h-64 w-full py-2 font-mono text-xs"
+                  aria-label={m.game_guide_edit()}>{guide.source}</textarea
+                >
+                <button class="btn btn-primary h-8">{m.save()}</button>
+              </form>
+            </details>
+          {/if}
           <div class="flex gap-3">
             {#if !guide.mine}{@render translateButton('GUIDE', guide)}{/if}
             {#if guide.mine}

@@ -2,7 +2,7 @@ import { error, fail, redirect } from '@sveltejs/kit';
 import { z } from 'zod';
 import { requireLogin } from '#lib/server/auth';
 import { db } from '#lib/server/db';
-import { editGuide, gameGuidesWhere, guideGame } from '#lib/server/guides';
+import { editGuide, editableGuides, gameGuidesWhere, guideGame } from '#lib/server/guides';
 import { rateLimit } from '#lib/server/rate-limit';
 import { announce } from '#lib/server/indexnow';
 import { getLocale } from '#lib/paraglide/runtime';
@@ -26,15 +26,15 @@ const schema = z.object({
     .max(MAX_LENGTH),
 });
 
-/** Seul l'auteur reprend son guide ; un guide officiel se modifie dans le dépôt. */
+/** L'auteur reprend son guide ; un modérateur reprend aussi les guides officiels. */
 async function ownGuide(
   id: string,
-  authorId: string,
+  user: { id: string; role: string },
   game: { id: string; familyKey: string | null },
 ) {
   return db.guide.findFirst({
-    where: { id, authorId, curatedKey: null, ...gameGuidesWhere(game) },
-    select: { id: true, title: true, contentMd: true },
+    where: { AND: [{ id, ...gameGuidesWhere(game) }, editableGuides(user)] },
+    select: { id: true, title: true, contentMd: true, curatedKey: true },
   });
 }
 
@@ -42,12 +42,19 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
   const user = requireLogin(locals, url.pathname + url.search);
   const game = await guideGame(params.slug, locals.user);
   const id = url.searchParams.get('id');
-  const guide = id ? await ownGuide(id, user.id, game) : null;
+  const guide = id ? await ownGuide(id, user, game) : null;
   if (id && !guide) error(404, m.gone());
   return {
     game: { name: game.name, slug: game.slug },
     maxLength: MAX_LENGTH,
-    guide: guide ? { id: guide.id, title: guide.title ?? '', content: guide.contentMd } : null,
+    guide: guide
+      ? {
+          id: guide.id,
+          title: guide.title ?? '',
+          content: guide.contentMd,
+          official: guide.curatedKey !== null,
+        }
+      : null,
   };
 };
 
@@ -70,8 +77,8 @@ export const actions: Actions = {
     }
 
     if (id) {
-      if (!(await ownGuide(id, user.id, game))) return fail(404, { error: m.gone() });
-      await editGuide(id, user.id, { title, contentMd: content });
+      if (!(await ownGuide(id, user, game))) return fail(404, { error: m.gone() });
+      await editGuide(id, user, { title, contentMd: content });
       if (!game.adultOnly) announce(`/jeux/${game.slug}/guides/${id}`);
       redirect(303, `/jeux/${game.slug}/guides/${id}`);
     }

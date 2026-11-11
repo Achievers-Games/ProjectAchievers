@@ -1842,5 +1842,6 @@
   "achievement_seo_title": "So bekommst du „{achievement}“ in {game}",
   "achievement_seo_rarity": "Von {rarity} % der Spieler freigeschaltet.",
   "achievement_seo_guides": "Guides dafür: {count}.",
-  "achievement_seo_missable": "Verpassbar: erledige es, bevor es zu spät ist."
+  "achievement_seo_missable": "Verpassbar: erledige es, bevor es zu spät ist.",
+  "guide_updated": "Guide aktualisiert."
 }

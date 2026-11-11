@@ -6,6 +6,7 @@ import { censor } from '#lib/profanity';
 import { renderGuide } from '#lib/server/markdown';
 import { publicUser } from '#lib/server/queries';
 import {
+  canEditOfficial,
   checkGuideItem,
   countChecklist,
   deleteGuide,
@@ -93,6 +94,8 @@ export const load: PageServerLoad = async ({ params, locals }) => {
       updatedAt: guide.updatedAt,
       mine: guide.authorId === viewerId,
     },
+    // Un modérateur reprend le guide officiel depuis le site, sans passer par le dépôt.
+    canEditOfficial: guide.curatedKey !== null && canEditOfficial(locals.user),
   };
 };
 

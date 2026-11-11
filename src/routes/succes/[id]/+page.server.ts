@@ -9,7 +9,15 @@ import { ensureGameTexts, localizeAchievements } from '#lib/server/achievement-t
 import { logger } from '#lib/logger';
 import { rateLimit } from '#lib/server/rate-limit';
 import { announce } from '#lib/server/indexnow';
-import { GUIDE_ORDER, checkGuideItem, deleteGuide, isBuried, voteGuide } from '#lib/server/guides';
+import {
+  GUIDE_ORDER,
+  canEditOfficial,
+  checkGuideItem,
+  deleteGuide,
+  editGuide,
+  isBuried,
+  voteGuide,
+} from '#lib/server/guides';
 import { canTranslate, translateContent } from '#lib/server/translate';
 import { commentActions, loadComments } from '#lib/server/comments';
 import { getLocale } from '#lib/paraglide/runtime';
@@ -122,6 +130,8 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
       createdAt: guide.createdAt,
       mine: guide.authorId === viewerId,
       myVote: guide.votes?.[0]?.value ?? 0,
+      // Le texte brut d'un guide officiel, pour qu'un modérateur le reprenne sur place.
+      source: guide.curatedKey !== null && canEditOfficial(locals.user) ? guide.contentMd : null,
     })),
     comments,
   };
@@ -208,6 +218,19 @@ export const actions: Actions = {
     if (!(await checkGuideItem(guideId, user.id, item, Boolean(checked)))) {
       return fail(404, { error: m.gone() });
     }
+  },
+
+  /** Un modérateur corrige un guide officiel sur place ; l'import du dépôt garde sa version. */
+  editGuide: async ({ request, locals, url }) => {
+    const user = requireUser(locals, url);
+    if (!canEditOfficial(user)) return fail(404, { error: m.gone() });
+    const form = await request.formData();
+    const content = body(20_000).safeParse(form.get('content'));
+    if (!content.success) return fail(400, { error: content.error.issues[0]?.message });
+    if (!(await editGuide(String(form.get('id')), user, { contentMd: content.data }))) {
+      return fail(404, { error: m.gone() });
+    }
+    return { success: m.guide_updated() };
   },
 
   deleteGuide: async ({ request, locals, url }) => {

@@ -51,16 +51,31 @@ export async function voteGuide(guideId: string, userId: string, value: 1 | -1) 
   });
 }
 
+/** Les modérateurs et les administrateurs reprennent les guides officiels depuis le site. */
+export const canEditOfficial = (user: { role: string } | null | undefined) =>
+  user?.role === 'MODERATOR' || user?.role === 'ADMIN';
+
+/**
+ * Les guides qu'un joueur peut reprendre : les siens, ou les officiels s'il modère. Un guide
+ * officiel ne se supprime pas depuis le site : seul le dépôt le retire.
+ */
+export const editableGuides = (user: { id: string; role: string }) =>
+  ({
+    status: 'PUBLISHED',
+    OR: [
+      { authorId: user.id, curatedKey: null },
+      ...(canEditOfficial(user) ? [{ curatedKey: { not: null } }] : []),
+    ],
+  }) satisfies Prisma.GuideWhereInput;
+
 /** Le texte change : ses traductions ne valent plus, les votes restent acquis. */
 export async function editGuide(
   id: string,
-  authorId: string,
+  user: { id: string; role: string },
   data: { contentMd: string; title?: string | null },
 ) {
   return db.$transaction(async (tx) => {
-    const own = await tx.guide.count({
-      where: { id, authorId, status: 'PUBLISHED', curatedKey: null },
-    });
+    const own = await tx.guide.count({ where: { id, ...editableGuides(user) } });
     if (!own) return false;
     await tx.contentTranslation.deleteMany({ where: { guideId: id } });
     await tx.guide.update({ where: { id }, data });

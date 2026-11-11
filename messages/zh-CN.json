@@ -1805,5 +1805,6 @@
   "achievement_seo_title": "如何在 {game} 中获得“{achievement}”",
   "achievement_seo_rarity": "{rarity}% 的玩家已获得。",
   "achievement_seo_guides": "获得攻略：{count}。",
-  "achievement_seo_missable": "可错过：趁还来得及完成它。"
+  "achievement_seo_missable": "可错过：趁还来得及完成它。",
+  "guide_updated": "攻略已更新。"
 }

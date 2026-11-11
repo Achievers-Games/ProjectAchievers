@@ -16,6 +16,7 @@ import { db } from './db';
 import { onChat } from './sync/events';
 import { parseSteamPage } from './sync/steam';
 import { parseGameGuideFile, parseGuideFile, syncCuratedGuides } from './curated-guides';
+import { editGuide } from './guides';
 import { splitText, translateContent } from './translate';
 import { ensureGameTexts, localizeAchievements } from './achievement-texts';
 import { refreshDiscordAccounts } from './sync/discord';
@@ -397,6 +398,43 @@ describe('guides officiels', () => {
 
     await syncCuratedGuides([], []);
     expect(await guides()).toEqual([]);
+  });
+
+  it('garde la modification d’un modérateur tant que le dépôt ne change pas', async () => {
+    const game = await db.game.create({
+      data: {
+        platform: 'STEAM',
+        platformGameId: `${PREFIX}-guide-modere`,
+        name: `${PREFIX} guide modéré`,
+        slug: `${PREFIX}-guide-modere`,
+      },
+    });
+    const gameGuide = (body: string) => `STEAM ${PREFIX}-guide-modere\n\n# Le 100 %\n\n${body}\n`;
+    const official = () => db.guide.findFirstOrThrow({ where: { gameId: game.id } });
+
+    await syncCuratedGuides([], [gameGuide('Version du dépôt.')]);
+    const guide = await official();
+    const [user, moderator] = [
+      { id: `${PREFIX}-joueur`, role: 'USER' },
+      { id: `${PREFIX}-moderateur`, role: 'MODERATOR' },
+    ];
+    expect(await editGuide(guide.id, user, { title: 'Pirate', contentMd: '…' })).toBe(false);
+    expect(
+      await editGuide(guide.id, moderator, { title: 'Le 100 % corrigé', contentMd: 'Corrigé.' }),
+    ).toBe(true);
+
+    // Un nouveau déploiement, fichier inchangé : la correction du site reste.
+    await syncCuratedGuides([], [gameGuide('Version du dépôt.')]);
+    expect(await official()).toMatchObject({ title: 'Le 100 % corrigé', contentMd: 'Corrigé.' });
+
+    // Le dépôt change le guide : c'est lui qui l'emporte.
+    await syncCuratedGuides([], [gameGuide('Nouvelle version du dépôt.')]);
+    expect(await official()).toMatchObject({
+      title: 'Le 100 %',
+      contentMd: 'Nouvelle version du dépôt.',
+    });
+
+    await syncCuratedGuides([], []);
   });
 
   it('refuse un guide complet sans titre', () => {

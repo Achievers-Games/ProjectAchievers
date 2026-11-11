@@ -1842,5 +1842,6 @@
   "achievement_seo_title": "Comment obtenir « {achievement} » dans {game}",
   "achievement_seo_rarity": "Obtenu par {rarity} % des joueurs.",
   "achievement_seo_guides": "Guides pour l’obtenir : {count}.",
-  "achievement_seo_missable": "Manquable : à faire avant qu’il ne soit trop tard."
+  "achievement_seo_missable": "Manquable : à faire avant qu’il ne soit trop tard.",
+  "guide_updated": "Guide mis à jour."
 }

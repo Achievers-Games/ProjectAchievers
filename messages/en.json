@@ -1842,5 +1842,6 @@
   "achievement_seo_title": "How to get “{achievement}” in {game}",
   "achievement_seo_rarity": "Earned by {rarity}% of players.",
   "achievement_seo_guides": "Guides to get it: {count}.",
-  "achievement_seo_missable": "Missable: do it before it’s too late."
+  "achievement_seo_missable": "Missable: do it before it’s too late.",
+  "guide_updated": "Guide updated."
 }
