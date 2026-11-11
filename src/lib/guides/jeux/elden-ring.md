@@ -2,7 +2,8 @@ STEAM 1245620
 
 # Elden Ring : le 100 % pas à pas
 
-Ce guide mène aux 42 succès en **une seule partie**, grâce à une copie de sauvegarde avant la fin.
+Ce guide mène aux 42 succès en **une seule partie**, grâce à une copie de sauvegarde après le
+combat final.
 Compte **80 à 120 heures**. Les noms des objets sont ceux de la version anglaise du jeu, pour les
 retrouver facilement sur les wikis. Chaque succès a aussi son guide détaillé sur sa page, avec les
 emplacements et les vidéos.
@@ -145,21 +146,28 @@ page de chaque succès.
 
 ## Étape 9 : les trois fins
 
-- [ ] Arrive devant Radagon, **copie ta sauvegarde**, puis vaincs Radagon et la Bête d'Elden.
+Le combat final ne se fait **qu'une fois** : tout se joue après, devant la statue.
+
+- [ ] Vaincs Radagon et la Bête d'Elden. Au site de grâce **Fractured Marika** qui apparaît,
+      quitte le jeu et **copie ta sauvegarde**, sans rien toucher.
 - [ ] **Seigneur d'Elden** : touche la statue de Marika et répare l'Anneau d'Elden.
-- [ ] Remets la copie. **Âge des étoiles** : refais le combat, puis touche le signe d'invocation
-      bleu de Ranni, à côté de la statue.
+- [ ] Remets la copie. **Âge des étoiles** : touche le signe d'invocation bleu de Ranni, devant
+      la statue.
 - [ ] Remets la copie. **Seigneur de la Flamme exaltée** : téléporte-toi au site de grâce
-      Frenzied Flame Proscription, retire ton armure et ouvre la porte des Trois Doigts, puis
-      refais le combat final et touche la statue.
+      Frenzied Flame Proscription, retire ton armure et ouvre la porte des Trois Doigts. Reviens
+      à Fractured Marika et touche la statue.
 - [ ] **Cercle d'Elden** tombe avec le dernier succès.
 
-Si la porte ne s'ouvre plus à ce stade, garde **Seigneur de la Flamme exaltée** pour une Nouvelle
-Partie+ : c'est le seul succès qui demande alors de rejouer.
+Tu as déjà ouvert la porte des Trois Doigts plus tôt ? La Flamme exaltée bloque alors les deux
+autres fins. Elle s'éteint avec l'aiguille de Miquella, à utiliser dans l'arène de Placidusax, à
+Farum Azula : copie d'abord ta sauvegarde avec la Flamme, fais sa fin, remets la copie, puis
+éteins-la. L'aiguille se gagne au bout de la quête de Millicent, en donnant l'Unalloyed Gold Needle
+à la fleur laissée par Malenia.
 
 ## Sources
 
 - [Guide des trophées et feuille de route, PowerPyx](https://www.powerpyx.com/elden-ring-trophy-guide-roadmap/)
+- [Toutes les fins en une partie, PowerPyx](https://www.powerpyx.com/elden-ring-how-to-get-all-endings/)
 - [Boss et emplacements, Fextralife](https://eldenring.wiki.fextralife.com/Bosses)
 - [Ancient Dragon Smithing Stone, Fextralife](https://eldenring.wiki.fextralife.com/Ancient+Dragon+Smithing+Stone)
 - [Fins, Fextralife](https://eldenring.wiki.fextralife.com/Endings)
