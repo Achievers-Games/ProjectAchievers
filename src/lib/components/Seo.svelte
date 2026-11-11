@@ -11,6 +11,8 @@
     /** Chemin de l'adresse canonique : par défaut la page sans ses paramètres. */
     path?: string;
     image?: string | null;
+    /** Dimensions connues de l'image : l'aperçu s'affiche sans attendre de la télécharger. */
+    imageSize?: { width: number; height: number; alt: string } | null;
     type?: 'website' | 'article' | 'profile';
     /** Données structurées schema.org, lues par les moteurs pour les résultats enrichis. */
     jsonLd?: Record<string, unknown> | null;
@@ -25,6 +27,7 @@
     shareDescription,
     path,
     image = null,
+    imageSize = null,
     type = 'website',
     jsonLd = null,
     noindex = false,
@@ -55,6 +58,11 @@
   <meta property="og:title" content={shareTitle ?? title} />
   {#if summary}<meta property="og:description" content={summary} />{/if}
   {#if picture}<meta property="og:image" content={picture} />{/if}
+  {#if picture && imageSize}
+    <meta property="og:image:width" content={String(imageSize.width)} />
+    <meta property="og:image:height" content={String(imageSize.height)} />
+    <meta property="og:image:alt" content={imageSize.alt} />
+  {/if}
   <meta name="twitter:card" content={picture ? 'summary_large_image' : 'summary'} />
   <!-- eslint-disable-next-line svelte/no-at-html-tags -- JSON sérialisé et échappé ci-dessus -->
   {@html structured}

@@ -20,6 +20,10 @@
 
   const profile = $derived(data.profile);
   const isMe = $derived(data.user?.id === profile.user.id);
+  /** L'image de partage n'existe que pour un profil public : sinon, l'avatar seul. */
+  const shareImage = $derived(
+    profile.user.isPublic ? `/u/${profile.user.handle}/partage.png` : profile.user.avatarUrl,
+  );
 
   /** Sur une version que je possède, la carte ouvre directement la comparaison avec ce joueur. */
   const gameHref = (card: { id: string; slug: string }) =>
@@ -60,7 +64,14 @@
     achievements: m.count_achievements({ count: profile.stats.unlocked }),
     games: m.count_games({ count: profile.stats.games }),
   })}
-  image={profile.user.avatarUrl}
+  image={shareImage}
+  imageSize={profile.user.isPublic
+    ? {
+        width: 1200,
+        height: 630,
+        alt: m.player_card_alt({ name: profile.user.displayName }),
+      }
+    : null}
   type="profile"
   jsonLd={{
     '@type': 'ProfilePage',

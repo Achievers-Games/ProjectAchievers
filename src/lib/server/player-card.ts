@@ -133,8 +133,8 @@ export async function inlineAvatar(
   return data;
 }
 
-/** La carte d'un profil public, prête à servir ; `null` pour un profil inconnu ou privé. */
-export async function playerCardSvg(handle: string): Promise<string | null> {
+/** Ce que montrent la carte et l'image de partage ; `null` pour un profil inconnu ou privé. */
+export async function playerCardData(handle: string): Promise<PlayerCardData | null> {
   const user = await db.user.findUnique({
     where: { handle },
     select: {
@@ -150,7 +150,7 @@ export async function playerCardSvg(handle: string): Promise<string | null> {
   if (!user?.isPublic) return null;
 
   const [stats, avatar] = await Promise.all([userStats(user.id), inlineAvatar(user.avatarUrl)]);
-  return renderPlayerCard({
+  return {
     displayName: user.displayName,
     handle: user.handle,
     clan: user.clanMember?.clan.name ?? null,
@@ -159,7 +159,73 @@ export async function playerCardSvg(handle: string): Promise<string | null> {
     cards: stats.tiers.reduce((sum, count) => sum + count, 0),
     points: stats.points,
     avatar,
-  });
+  };
+}
+
+/** La carte d'un profil public, prête à servir ; `null` pour un profil inconnu ou privé. */
+export async function playerCardSvg(handle: string): Promise<string | null> {
+  const card = await playerCardData(handle);
+  return card ? renderPlayerCard(card) : null;
+}
+
+export const SHARE_WIDTH = 1200;
+export const SHARE_HEIGHT = 630;
+
+/**
+ * L'aperçu d'un lien de profil sur Discord, X ou Reddit : le format 1200 × 630 qu'ils attendent,
+ * en gros caractères pour rester lisible une fois réduit dans une conversation.
+ */
+export function renderShareImage(card: PlayerCardData): string {
+  const stats = [
+    { label: m.stat_games(), value: card.games },
+    { label: m.stat_achievements(), value: card.unlocked },
+    { label: m.player_card_cards(), value: card.cards },
+    { label: m.stat_points(), value: card.points },
+  ];
+  const initial = escapeXml([...card.displayName.trim()][0]?.toUpperCase() ?? '?');
+  const subtitle = card.clan ? `@${card.handle} · ${clip(card.clan, 32)}` : `@${card.handle}`;
+  const margin = 80;
+  const column = (SHARE_WIDTH - margin * 2) / stats.length;
+  const [cx, cy, r] = [190, 250, 110];
+
+  const avatar = card.avatar
+    ? `<image href="${escapeXml(card.avatar)}" x="${cx - r}" y="${cy - r}" width="${r * 2}" height="${r * 2}" clip-path="url(#avatar)" preserveAspectRatio="xMidYMid slice"/>`
+    : `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#2a1f4a"/><text x="${cx}" y="${cy}" class="initial" text-anchor="middle" dominant-baseline="central">${initial}</text>`;
+
+  const columns = stats
+    .map(
+      (stat, index) =>
+        `<g transform="translate(${margin + index * column} 450)">` +
+        `<text class="label">${escapeXml(stat.label.toUpperCase())}</text>` +
+        `<text y="66" class="value">${escapeXml(formatNumber(stat.value))}</text></g>`,
+    )
+    .join('');
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${SHARE_WIDTH}" height="${SHARE_HEIGHT}" viewBox="0 0 ${SHARE_WIDTH} ${SHARE_HEIGHT}" role="img" aria-label="${escapeXml(m.player_card_alt({ name: card.displayName }))}">
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2a0f3f"/><stop offset="1" stop-color="#0d0a1c"/></linearGradient>
+<radialGradient id="glow" cx=".85" cy=".1" r=".6"><stop offset="0" stop-color="#7c3aed" stop-opacity=".35"/><stop offset="1" stop-color="#7c3aed" stop-opacity="0"/></radialGradient>
+<clipPath id="avatar"><circle cx="${cx}" cy="${cy}" r="${r}"/></clipPath>
+<style>
+text{font-family:Inter,'Segoe UI',system-ui,sans-serif;fill:#fff}
+.name{font-size:68px;font-weight:800}
+.sub{font-size:32px;fill:rgba(255,255,255,.7)}
+.label{font-size:22px;font-weight:700;letter-spacing:.08em;fill:rgba(255,255,255,.6)}
+.value{font-size:60px;font-weight:800}
+.brand{font-size:28px;font-weight:800;letter-spacing:.14em;fill:#c4b5fd}
+.initial{font-size:96px;font-weight:800}
+</style>
+</defs>
+<rect width="${SHARE_WIDTH}" height="${SHARE_HEIGHT}" fill="url(#bg)"/>
+<rect width="${SHARE_WIDTH}" height="${SHARE_HEIGHT}" fill="url(#glow)"/>
+<line x1="${margin}" y1="400" x2="${SHARE_WIDTH - margin}" y2="400" stroke="rgba(255,255,255,.12)" stroke-width="2"/>
+${avatar}
+<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="4"/>
+<text x="${SHARE_WIDTH - margin}" y="96" class="brand" text-anchor="end">ACHIEVERS</text>
+<text x="340" y="250" class="name">${escapeXml(clip(card.displayName, 18))}</text>
+<text x="340" y="300" class="sub">${escapeXml(subtitle)}</text>
+${columns}
+</svg>`;
 }
 
 /** Assez frais pour suivre une séance de chasse, assez long pour ménager la base. */

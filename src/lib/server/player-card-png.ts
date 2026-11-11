@@ -90,11 +90,18 @@ function prepare() {
   return ready;
 }
 
-/** Le SVG de la carte, rendu en PNG au double de sa taille pour rester net sur écran dense. */
-export async function svgToPng(svg: string, width: number): Promise<Uint8Array<ArrayBuffer>> {
+/**
+ * Le SVG rendu en PNG, par défaut au double de sa taille pour rester net sur écran dense.
+ * L'image de partage reste à l'échelle 1 : les réseaux la veulent en 1200 × 630.
+ */
+export async function svgToPng(
+  svg: string,
+  width: number,
+  scale = 2,
+): Promise<Uint8Array<ArrayBuffer>> {
   const fontBuffers = await prepare();
   const resvg = new Resvg(svg, {
-    fitTo: { mode: 'width', value: width * 2 },
+    fitTo: { mode: 'width', value: width * scale },
     font: { fontBuffers, defaultFontFamily: 'Inter', sansSerifFamily: 'Inter' },
   });
   try {
