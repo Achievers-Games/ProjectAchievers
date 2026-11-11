@@ -1733,6 +1733,8 @@
   "tagline_19": "Personne ne juge. Enfin, nous, si.",
   "tagline_20": "{minutes} minutes sur {game}. Et tu oses dire que tu l'as testé.",
   "showcase_title": "Vitrine",
+  "showcase_featured": "N° 1",
+  "showcase_featured_help": "Ta carte vedette : elle s'affiche en grand sur ton profil, et en fond de ta carte de joueur et de tes liens partagés.",
   "showcase_edit": "Modifier ma vitrine",
   "showcase_edit_help": "Choisis les cartes affichées sur ton profil, jusqu'à {max}.",
   "showcase_selected": "Dans ma vitrine ({count}/{max})",

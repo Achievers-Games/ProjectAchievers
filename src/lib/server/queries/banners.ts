@@ -61,7 +61,7 @@ async function seasonBanner(userId?: string) {
  * qu'une — 150 ms sur le NAS, autant que sa page de profil entière. Seules les familles dont une
  * version est terminée donnent une carte : les autres lignes ne peuvent pas changer le résultat.
  */
-async function showcaseHead(handle: string) {
+export async function showcaseHead(handle: string) {
   const user = await db.user.findUnique({
     where: { handle },
     select: { id: true, showcaseCustom: true },

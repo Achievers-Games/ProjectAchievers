@@ -170,18 +170,22 @@
           </a>
         {/if}
       </div>
+      <!-- Le numéro 1 occupe deux colonnes sur deux rangées : les suivantes se rangent à côté. -->
       <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {#each profile.showcase as card (card.id)}
-          <GameCard
-            game={card}
-            progress={card.progress}
-            versions={card.versions}
-            tier={card.tier}
-            copies={card.copies}
-            next={card.next}
-            href={gameHref(card)}
-            live
-          />
+        {#each profile.showcase as card, index (card.id)}
+          <div class="grid {index === 0 ? 'sm:col-span-2 lg:row-span-2' : ''}">
+            <GameCard
+              game={card}
+              progress={card.progress}
+              versions={card.versions}
+              tier={card.tier}
+              copies={card.copies}
+              next={card.next}
+              href={gameHref(card)}
+              featured={index === 0}
+              live
+            />
+          </div>
         {/each}
       </div>
     </section>

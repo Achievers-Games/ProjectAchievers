@@ -1696,6 +1696,8 @@
   "tagline_19": "没人评判你。好吧，我们会。",
   "tagline_20": "{game} 只玩了 {minutes} 分钟，你还敢说试过了。",
   "showcase_title": "展示柜",
+  "showcase_featured": "第 1",
+  "showcase_featured_help": "你的精选卡牌：在个人资料中放大展示，并作为玩家卡片和分享链接的背景。",
   "showcase_edit": "编辑展示柜",
   "showcase_edit_help": "选择显示在个人资料上的卡牌，最多 {max} 张。",
   "showcase_selected": "我的展示柜（{count}/{max}）",

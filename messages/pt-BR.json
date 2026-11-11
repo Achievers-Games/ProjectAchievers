@@ -1733,6 +1733,8 @@
   "tagline_19": "Ninguém está julgando. Bom, nós estamos.",
   "tagline_20": "{minutes} minutos em {game}. E você ainda diz que testou.",
   "showcase_title": "Vitrine",
+  "showcase_featured": "Nº 1",
+  "showcase_featured_help": "Sua carta em destaque: aparece em tamanho grande no seu perfil e no fundo do seu cartão de jogador e dos links compartilhados.",
   "showcase_edit": "Editar minha vitrine",
   "showcase_edit_help": "Escolha as cartas exibidas no seu perfil, até {max}.",
   "showcase_selected": "Na minha vitrine ({count}/{max})",

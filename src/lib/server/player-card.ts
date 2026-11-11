@@ -1,5 +1,6 @@
 import { db } from './db';
 import { userStats } from './queries/stats';
+import { showcaseHead } from './queries/banners';
 import { m } from '#lib/paraglide/messages';
 import { formatNumber } from '#lib/labels';
 import { logger } from '#lib/logger';
@@ -13,6 +14,8 @@ const NAME_MAX = 24;
 
 /** Au-delà, ce n'est plus un avatar : la carte s'en passe plutôt que de grossir. */
 const AVATAR_MAX_BYTES = 400_000;
+/** Une image d'en-tête de jeu pèse plus qu'un avatar, mais reste bornée. */
+const BACKDROP_MAX_BYTES = 1_000_000;
 const AVATAR_TIMEOUT = 3_000;
 const AVATAR_CACHE_MAX = 500;
 const AVATAR_TTL = 6 * 60 * 60 * 1000;
@@ -27,7 +30,37 @@ export interface PlayerCardData {
   points: number;
   /** L'image déjà intégrée : un SVG affiché par `<img>` ne charge aucune ressource externe. */
   avatar: string | null;
+  /** Le jeu numéro 1 de la vitrine, en fond fondu ; intégré comme l'avatar. */
+  backdrop?: string | null;
 }
+
+/**
+ * Le jeu en fond, à droite, qui se fond dans le dégradé vers la gauche où vit le texte.
+ * Le voile reprend les couleurs du fond : le texte garde le même contraste qu'avant.
+ */
+function backdropLayer(
+  backdrop: string | null | undefined,
+  width: number,
+  height: number,
+  radius = 0,
+) {
+  if (!backdrop) return '';
+  return (
+    `<clipPath id="frame"><rect width="${width}" height="${height}" rx="${radius}"/></clipPath>` +
+    `<g clip-path="url(#frame)">` +
+    `<image href="${escapeXml(backdrop)}" x="${width * 0.3}" y="0" width="${width * 0.7}" height="${height}" preserveAspectRatio="xMidYMid slice" opacity=".6"/>` +
+    `<rect width="${width}" height="${height}" fill="url(#veil)"/>` +
+    `<rect width="${width}" height="${height}" fill="url(#shade)"/></g>`
+  );
+}
+
+/**
+ * Deux voiles aux couleurs du fond : l'un, de gauche à droite, couvre le nom et laisse voir
+ * le jeu sur la droite ; l'autre assombrit le bas, où passent les chiffres.
+ */
+const VEILS =
+  `<linearGradient id="veil" x1="0" y1="0" x2="1" y2="0"><stop offset=".3" stop-color="#1f0d33"/><stop offset=".6" stop-color="#1f0d33" stop-opacity=".7"/><stop offset="1" stop-color="#1f0d33" stop-opacity=".15"/></linearGradient>` +
+  `<linearGradient id="shade" x1="0" y1="0" x2="0" y2="1"><stop offset=".5" stop-color="#0d0a1c" stop-opacity="0"/><stop offset="1" stop-color="#0d0a1c" stop-opacity=".85"/></linearGradient>`;
 
 const XML_ENTITIES: Record<string, string> = {
   '&': '&amp;',
@@ -73,6 +106,7 @@ export function renderPlayerCard(card: PlayerCardData): string {
 <defs>
 <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2a0f3f"/><stop offset="1" stop-color="#0d0a1c"/></linearGradient>
 <clipPath id="avatar"><circle cx="80" cy="90" r="52"/></clipPath>
+${VEILS}
 <style>
 text{font-family:'Inter Variable',Inter,'Segoe UI',system-ui,sans-serif;fill:#fff}
 .name{font-size:26px;font-weight:800}
@@ -84,6 +118,7 @@ text{font-family:'Inter Variable',Inter,'Segoe UI',system-ui,sans-serif;fill:#ff
 </style>
 </defs>
 <rect width="${CARD_WIDTH}" height="${CARD_HEIGHT}" rx="16" fill="url(#bg)"/>
+${backdropLayer(card.backdrop, CARD_WIDTH, CARD_HEIGHT, 16)}
 <rect x=".5" y=".5" width="${CARD_WIDTH - 1}" height="${CARD_HEIGHT - 1}" rx="15.5" fill="none" stroke="rgba(255,255,255,.12)"/>
 ${avatar}
 <circle cx="80" cy="90" r="52" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="2"/>
@@ -103,6 +138,7 @@ const avatars = new Map<string, { data: string | null; at: number }>();
 export async function inlineAvatar(
   address: string | null,
   now = Date.now(),
+  maxBytes = AVATAR_MAX_BYTES,
 ): Promise<string | null> {
   // PSN donne encore ses avatars en http, mais les sert aussi en https.
   const url = address?.startsWith('http://') ? `https://${address.slice(7)}` : address;
@@ -118,9 +154,9 @@ export async function inlineAvatar(
     });
     const type = response.headers.get('content-type')?.split(';')[0]?.trim() ?? '';
     const length = Number(response.headers.get('content-length') ?? 0);
-    if (response.ok && /^image\/(png|jpeg|webp|gif)$/.test(type) && length <= AVATAR_MAX_BYTES) {
+    if (response.ok && /^image\/(png|jpeg|webp|gif)$/.test(type) && length <= maxBytes) {
       const bytes = Buffer.from(await response.arrayBuffer());
-      if (bytes.byteLength <= AVATAR_MAX_BYTES) {
+      if (bytes.byteLength <= maxBytes) {
         data = `data:${type};base64,${bytes.toString('base64')}`;
       }
     }
@@ -149,7 +185,13 @@ export async function playerCardData(handle: string): Promise<PlayerCardData | n
   // Un profil privé ne se montre pas plus ailleurs que sur le site.
   if (!user?.isPublic) return null;
 
-  const [stats, avatar] = await Promise.all([userStats(user.id), inlineAvatar(user.avatarUrl)]);
+  const [stats, avatar, backdrop] = await Promise.all([
+    userStats(user.id),
+    inlineAvatar(user.avatarUrl),
+    featuredHeader(user.id, user.handle).then((url) =>
+      inlineAvatar(url, Date.now(), BACKDROP_MAX_BYTES),
+    ),
+  ]);
   return {
     displayName: user.displayName,
     handle: user.handle,
@@ -159,7 +201,23 @@ export async function playerCardData(handle: string): Promise<PlayerCardData | n
     cards: stats.tiers.reduce((sum, count) => sum + count, 0),
     points: stats.points,
     avatar,
+    backdrop,
   };
+}
+
+/**
+ * Le jeu numéro 1 de la vitrine, comme sur le profil ; sans carte terminée, le jeu le plus
+ * avancé. Seuls les jeux visibles de tous comptent : ni masqués, ni réservés aux adultes.
+ */
+async function featuredHeader(userId: string, handle: string): Promise<string | null> {
+  const head = await showcaseHead(handle);
+  if (head?.headerUrl) return head.headerUrl;
+  const best = await db.userGame.findFirst({
+    where: { userId, hidden: false, game: { adultOnly: false, headerUrl: { not: null } } },
+    orderBy: [{ completion: 'desc' }, { unlockedCount: 'desc' }],
+    select: { game: { select: { headerUrl: true } } },
+  });
+  return best?.game.headerUrl ?? null;
 }
 
 /** La carte d'un profil public, prête à servir ; `null` pour un profil inconnu ou privé. */
@@ -206,6 +264,7 @@ export function renderShareImage(card: PlayerCardData): string {
 <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2a0f3f"/><stop offset="1" stop-color="#0d0a1c"/></linearGradient>
 <radialGradient id="glow" cx=".85" cy=".1" r=".6"><stop offset="0" stop-color="#7c3aed" stop-opacity=".35"/><stop offset="1" stop-color="#7c3aed" stop-opacity="0"/></radialGradient>
 <clipPath id="avatar"><circle cx="${cx}" cy="${cy}" r="${r}"/></clipPath>
+${VEILS}
 <style>
 text{font-family:Inter,'Segoe UI',system-ui,sans-serif;fill:#fff}
 .name{font-size:68px;font-weight:800}
@@ -217,6 +276,7 @@ text{font-family:Inter,'Segoe UI',system-ui,sans-serif;fill:#fff}
 </style>
 </defs>
 <rect width="${SHARE_WIDTH}" height="${SHARE_HEIGHT}" fill="url(#bg)"/>
+${backdropLayer(card.backdrop, SHARE_WIDTH, SHARE_HEIGHT)}
 <rect width="${SHARE_WIDTH}" height="${SHARE_HEIGHT}" fill="url(#glow)"/>
 <line x1="${margin}" y1="400" x2="${SHARE_WIDTH - margin}" y2="400" stroke="rgba(255,255,255,.12)" stroke-width="2"/>
 ${avatar}

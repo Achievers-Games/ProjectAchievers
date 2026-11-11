@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
-import { inlineAvatar, renderPlayerCard, type PlayerCardData } from './player-card';
+import {
+  inlineAvatar,
+  renderPlayerCard,
+  renderShareImage,
+  type PlayerCardData,
+} from './player-card';
 
 const base: PlayerCardData = {
   displayName: 'Ada',
@@ -49,5 +54,14 @@ describe('carte de joueur', () => {
     const svg = renderPlayerCard(base);
     expect(svg.startsWith('<svg xmlns="http://www.w3.org/2000/svg"')).toBe(true);
     expect(svg).not.toMatch(/href="https?:/);
+  });
+});
+
+describe('fond de la carte', () => {
+  it('intègre le jeu vedette en fond, et rien sans lui', () => {
+    const backdrop = 'data:image/jpeg;base64,BBBB';
+    expect(renderPlayerCard({ ...base, backdrop })).toContain(`href="${backdrop}"`);
+    expect(renderShareImage({ ...base, backdrop })).toContain(`href="${backdrop}"`);
+    expect(renderPlayerCard(base)).not.toContain('clip-path="url(#frame)"');
   });
 });
