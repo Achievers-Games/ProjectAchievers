@@ -4,6 +4,7 @@ import { requireLogin } from '#lib/server/auth';
 import { db } from '#lib/server/db';
 import { editGuide, gameGuidesWhere, guideGame } from '#lib/server/guides';
 import { rateLimit } from '#lib/server/rate-limit';
+import { announce } from '#lib/server/indexnow';
 import { getLocale } from '#lib/paraglide/runtime';
 import type { Actions, PageServerLoad } from './$types';
 import { m } from '#lib/paraglide/messages';
@@ -71,11 +72,14 @@ export const actions: Actions = {
     if (id) {
       if (!(await ownGuide(id, user.id, game))) return fail(404, { error: m.gone() });
       await editGuide(id, user.id, { title, contentMd: content });
+      if (!game.adultOnly) announce(`/jeux/${game.slug}/guides/${id}`);
       redirect(303, `/jeux/${game.slug}/guides/${id}`);
     }
     const guide = await db.guide.create({
       data: { gameId: game.id, authorId: user.id, title, contentMd: content, locale: getLocale() },
     });
+    // Un jeu réservé aux adultes reste hors du plan du site : ses guides ne s'annoncent pas.
+    if (!game.adultOnly) announce(`/jeux/${game.slug}/guides/${guide.id}`, `/jeux/${game.slug}`);
     redirect(303, `/jeux/${game.slug}/guides/${guide.id}`);
   },
 };

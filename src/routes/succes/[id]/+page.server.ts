@@ -8,6 +8,7 @@ import { publicUser } from '#lib/server/queries';
 import { ensureGameTexts, localizeAchievements } from '#lib/server/achievement-texts';
 import { logger } from '#lib/logger';
 import { rateLimit } from '#lib/server/rate-limit';
+import { announce } from '#lib/server/indexnow';
 import { GUIDE_ORDER, checkGuideItem, deleteGuide, isBuried, voteGuide } from '#lib/server/guides';
 import { canTranslate, translateContent } from '#lib/server/translate';
 import { commentActions, loadComments } from '#lib/server/comments';
@@ -172,7 +173,11 @@ export const actions: Actions = {
     const content = body(20_000).safeParse(form.get('content'));
     if (!content.success) return fail(400, { error: content.error.issues[0]?.message });
     if (tooFast(user.id)) return fail(429, { error: m.too_fast() });
-    if (!(await achievementExists(params.id))) return fail(404, { error: m.gone() });
+    const target = await db.achievement.findUnique({
+      where: { id: params.id },
+      select: { hidden: true, game: { select: { adultOnly: true } } },
+    });
+    if (!target) return fail(404, { error: m.gone() });
 
     await db.guide.create({
       data: {
@@ -182,6 +187,8 @@ export const actions: Actions = {
         locale: getLocale(),
       },
     });
+    // Mêmes règles que le plan du site : ni succès caché, ni jeu réservé aux adultes.
+    if (!target.hidden && !target.game.adultOnly) announce(`/succes/${params.id}`);
     return { success: m.guide_published() };
   },
 
