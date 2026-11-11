@@ -4,36 +4,12 @@ import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 import adapter from '@sveltejs/adapter-node';
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
 import tailwindcss from '@tailwindcss/vite';
-
-/** Les langues du site, comme dans project.inlang : la première est la langue de base. */
-const LOCALES = ['fr', 'en', 'es', 'de', 'pt-BR', 'ru', 'zh-CN', 'ja'] as const;
+import { paraglideOptions } from './paraglide.options.mjs';
 
 export default defineConfig({
   plugins: [
     tailwindcss(),
-    paraglideVitePlugin({
-      project: './project.inlang',
-      outdir: './src/lib/paraglide',
-      strategy: ['cookie', 'preferredLanguage', 'baseLocale'],
-      cookieName: 'pa_lang',
-      // Une adresse par langue pour les moteurs : /fr/…, /en/…, /de/… Sous ce préfixe, l'adresse
-      // décide de la langue, pour tout le monde. Sans préfixe, l'adresse d'avant reste valable et
-      // suit le choix du visiteur (cookie, puis langue du navigateur) : c'est la version x-default.
-      urlPatterns: [
-        {
-          pattern: ':protocol://:domain(.*)::port?/:path(.*)?',
-          localized: LOCALES.map((locale) => [
-            locale,
-            `:protocol://:domain(.*)::port?/${locale}/:path(.*)?`,
-          ]),
-        },
-      ],
-      // Comme SvelteKit, qui redirige /en/ vers /en : une adresse canonique ne doit pas rediriger.
-      trailingSlash: 'never',
-      routeStrategies: [
-        { match: `/:locale(${LOCALES.join('|')}){/:path(.*)}?`, strategy: ['url'] },
-      ],
-    }),
+    paraglideVitePlugin(paraglideOptions),
     // Depuis SvelteKit 3, la configuration du kit vit ici : `svelte.config.js` n'est plus lu.
     sveltekit({
       preprocess: vitePreprocess(),

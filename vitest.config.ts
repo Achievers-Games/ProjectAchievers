@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { defineConfig } from 'vitest/config';
 import path from 'node:path';
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
+import { paraglideOptions } from './paraglide.options.mjs';
 import { svelte, vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
 const database = new URL(process.env.DATABASE_URL ?? '');
@@ -9,12 +10,8 @@ database.pathname = '/achievers_test';
 
 export default defineConfig({
   plugins: [
-    paraglideVitePlugin({
-      project: './project.inlang',
-      outdir: './src/lib/paraglide',
-      strategy: ['cookie', 'preferredLanguage', 'baseLocale'],
-      cookieName: 'pa_lang',
-    }),
+    // Les mêmes réglages que le site : les adresses par langue se testent comme en production.
+    paraglideVitePlugin(paraglideOptions),
     // Les composants se montent dans happy-dom : le plugin les compile comme dans l'application.
     svelte({ preprocess: vitePreprocess() }),
   ],

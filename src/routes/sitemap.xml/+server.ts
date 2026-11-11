@@ -1,7 +1,8 @@
 import { error } from '@sveltejs/kit';
 import { db } from '#lib/server/db';
 import { env } from '#lib/server/env';
-import { baseLocale, locales, localizeUrl } from '#lib/paraglide/runtime';
+import { baseLocale, locales } from '#lib/paraglide/runtime';
+import { localizedPath } from '#lib/localized-path';
 import type { RequestHandler } from './$types';
 
 const CACHE_MS = 3_600_000;
@@ -21,7 +22,7 @@ const escapeXml = (value: string) =>
 
 type Entry = { path: string; updated?: Date };
 
-let cache: { entries: Entry[]; at: number } | null = null;
+let cache: { entries: Entry[]; at: number; xml: Map<string, string> } | null = null;
 
 async function entries(): Promise<Entry[]> {
   const [games, users, clans, guides, achievements] = await Promise.all([
@@ -58,10 +59,6 @@ async function entries(): Promise<Entry[]> {
   ];
 }
 
-/** L'adresse d'une page dans une langue : /fr/…, /en/… */
-const localized = (origin: string, path: string, locale: string) =>
-  localizeUrl(new URL(path, origin), { locale: locale as (typeof locales)[number] }).href;
-
 /**
  * Chaque page une fois, à son adresse française, avec ses versions dans toutes les langues
  * (hreflang) : les moteurs découvrent ainsi les huit langues sans un plan huit fois plus long.
@@ -72,11 +69,11 @@ const urlset = (origin: string, list: Entry[]) =>
       const alternates = locales
         .map(
           (locale) =>
-            `<xhtml:link rel="alternate" hreflang="${locale}" href="${escapeXml(localized(origin, path, locale))}"/>`,
+            `<xhtml:link rel="alternate" hreflang="${locale}" href="${escapeXml(origin + localizedPath(path, locale))}"/>`,
         )
         .join('');
       const fallback = `<xhtml:link rel="alternate" hreflang="x-default" href="${escapeXml(origin + path)}"/>`;
-      return `<url><loc>${escapeXml(localized(origin, path, baseLocale))}</loc>${updated ? `<lastmod>${updated.toISOString()}</lastmod>` : ''}${alternates}${fallback}</url>`;
+      return `<url><loc>${escapeXml(origin + localizedPath(path, baseLocale))}</loc>${updated ? `<lastmod>${updated.toISOString()}</lastmod>` : ''}${alternates}${fallback}</url>`;
     })
     .join('')}</urlset>`;
 
@@ -90,19 +87,23 @@ const sitemapIndex = (origin: string, files: number) =>
 export const GET: RequestHandler = async ({ url }) => {
   // Le plan du site change lentement : une heure de cache suffit, pour tous les visiteurs.
   if (!cache || Date.now() - cache.at > CACHE_MS) {
-    cache = { entries: await entries(), at: Date.now() };
+    cache = { entries: await entries(), at: Date.now(), xml: new Map() };
   }
   const origin = env().ORIGIN;
   const files = Math.ceil(cache.entries.length / PER_FILE);
   const asked = url.searchParams.get('page');
 
-  let xml: string;
-  if (asked === null) {
-    xml = files > 1 ? sitemapIndex(origin, files) : urlset(origin, cache.entries);
-  } else {
-    const index = Number(asked);
-    if (!Number.isInteger(index) || index < 1 || index > files) error(404);
-    xml = urlset(origin, cache.entries.slice((index - 1) * PER_FILE, index * PER_FILE));
+  // Le XML aussi est gardé l'heure durant : le reconstruire à chaque passage de robot coûte cher.
+  let xml = cache.xml.get(asked ?? '');
+  if (!xml) {
+    if (asked === null) {
+      xml = files > 1 ? sitemapIndex(origin, files) : urlset(origin, cache.entries);
+    } else {
+      const index = Number(asked);
+      if (!Number.isInteger(index) || index < 1 || index > files) error(404);
+      xml = urlset(origin, cache.entries.slice((index - 1) * PER_FILE, index * PER_FILE));
+    }
+    cache.xml.set(asked ?? '', xml);
   }
   return new Response(xml, {
     headers: {

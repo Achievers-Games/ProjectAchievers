@@ -12,7 +12,7 @@
     "dev:db": "node scripts/dev-db.mjs",
     "build": "vite build",
     "start": "node build",
-    "check": "paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
+    "check": "node scripts/paraglide.mjs && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
