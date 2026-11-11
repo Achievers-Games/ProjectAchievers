@@ -239,7 +239,6 @@
   "show_more": "もっと見る",
   "loading": "読み込み中…",
   "retry": "再試行",
-  "game_description": "{game} の{count}：レア度、ガイド、ヒント。",
   "game_hide": "このゲームを非表示",
   "game_unhide": "ライブラリに戻す",
   "game_hidden_ok": "ゲームをライブラリから非表示にしました。",
@@ -1797,5 +1796,16 @@
   "mod_signups_reason_cancelled": "提供元で拒否",
   "mod_signups_reason_provider": "提供元の障害",
   "mod_signups_reason_refused": "本人確認できず",
-  "mod_signups_reason_taken": "アカウントは別のユーザーに連携済み"
+  "mod_signups_reason_taken": "アカウントは別のユーザーに連携済み",
+  "game_seo_title": "{game}：{achievements}・100% 攻略",
+  "game_seo_title_platform": "{game}（{platform}）：{achievements}・100% 攻略",
+  "game_seo_description": "{game} の{achievements}を、レアな順に 100% 攻略ガイド付きで。",
+  "game_seo_missables": "取り逃し注意：{count}。",
+  "game_seo_no_missables": "取り逃しの実績はありません。",
+  "game_seo_time": "100% まで約 {hours} 時間。",
+  "game_seo_guides": "完全ガイド：{count}。",
+  "achievement_seo_title": "{game} で「{achievement}」を獲得する方法",
+  "achievement_seo_rarity": "プレイヤーの {rarity}% が獲得。",
+  "achievement_seo_guides": "獲得ガイド：{count}。",
+  "achievement_seo_missable": "取り逃しあり：手遅れになる前に。"
 }

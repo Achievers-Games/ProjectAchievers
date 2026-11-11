@@ -248,7 +248,6 @@
   "show_more": "Mehr anzeigen",
   "loading": "Wird geladen…",
   "retry": "Erneut versuchen",
-  "game_description": "{count} in {game}: Seltenheit, Guides und Tipps.",
   "game_hide": "Dieses Spiel ausblenden",
   "game_unhide": "Zurück in meine Bibliothek",
   "game_hidden_ok": "Spiel aus deiner Bibliothek ausgeblendet.",
@@ -1834,5 +1833,16 @@
   "mod_signups_reason_cancelled": "beim Anbieter abgelehnt",
   "mod_signups_reason_provider": "Störung beim Anbieter",
   "mod_signups_reason_refused": "Identität nicht bestätigt",
-  "mod_signups_reason_taken": "Konto bereits anderswo verknüpft"
+  "mod_signups_reason_taken": "Konto bereits anderswo verknüpft",
+  "game_seo_title": "{game}: {achievements}, 100-%-Guide",
+  "game_seo_title_platform": "{game} ({platform}): {achievements}, 100-%-Guide",
+  "game_seo_description": "{achievements} in {game}, vom seltensten bis zum häufigsten, mit Guides für 100 %.",
+  "game_seo_missables": "Verpassbare im Blick behalten: {count}.",
+  "game_seo_no_missables": "Keine verpassbaren Erfolge.",
+  "game_seo_time": "Etwa {hours} Std. bis 100 %.",
+  "game_seo_guides": "Komplettlösungen: {count}.",
+  "achievement_seo_title": "So bekommst du „{achievement}“ in {game}",
+  "achievement_seo_rarity": "Von {rarity} % der Spieler freigeschaltet.",
+  "achievement_seo_guides": "Guides dafür: {count}.",
+  "achievement_seo_missable": "Verpassbar: erledige es, bevor es zu spät ist."
 }

@@ -248,7 +248,6 @@
   "show_more": "Mostrar más",
   "loading": "Cargando…",
   "retry": "Reintentar",
-  "game_description": "{count} en {game}: rareza, guías y consejos.",
   "game_hide": "Ocultar este juego",
   "game_unhide": "Devolver a mi biblioteca",
   "game_hidden_ok": "Juego oculto de tu biblioteca.",
@@ -1834,5 +1833,16 @@
   "mod_signups_reason_cancelled": "rechazado en el proveedor",
   "mod_signups_reason_provider": "fallo del proveedor",
   "mod_signups_reason_refused": "identidad no verificada",
-  "mod_signups_reason_taken": "cuenta ya vinculada a otra"
+  "mod_signups_reason_taken": "cuenta ya vinculada a otra",
+  "game_seo_title": "{game}: {achievements}, guía del 100 %",
+  "game_seo_title_platform": "{game} ({platform}): {achievements}, guía del 100 %",
+  "game_seo_description": "{achievements} de {game}, del más raro al más común, con guías para el 100 %.",
+  "game_seo_missables": "Perdibles a vigilar: {count}.",
+  "game_seo_no_missables": "Ningún logro perdible.",
+  "game_seo_time": "Unas {hours} h para el 100 %.",
+  "game_seo_guides": "Guías completas: {count}.",
+  "achievement_seo_title": "Cómo conseguir «{achievement}» en {game}",
+  "achievement_seo_rarity": "Lo tiene el {rarity} % de los jugadores.",
+  "achievement_seo_guides": "Guías para conseguirlo: {count}.",
+  "achievement_seo_missable": "Perdible: hazlo antes de que sea tarde."
 }

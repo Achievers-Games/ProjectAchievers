@@ -266,7 +266,6 @@
   "show_more": "Показать ещё",
   "loading": "Загрузка…",
   "retry": "Повторить",
-  "game_description": "{count} в {game}: редкость, гайды и советы.",
   "game_hide": "Скрыть эту игру",
   "game_unhide": "Вернуть в библиотеку",
   "game_hidden_ok": "Игра скрыта из твоей библиотеки.",
@@ -1884,5 +1883,16 @@
   "mod_signups_reason_cancelled": "отказ у провайдера",
   "mod_signups_reason_provider": "сбой провайдера",
   "mod_signups_reason_refused": "личность не подтверждена",
-  "mod_signups_reason_taken": "аккаунт уже привязан к другому"
+  "mod_signups_reason_taken": "аккаунт уже привязан к другому",
+  "game_seo_title": "{game}: {achievements}, гайд на 100 %",
+  "game_seo_title_platform": "{game} ({platform}): {achievements}, гайд на 100 %",
+  "game_seo_description": "{achievements} в {game}, от самых редких к самым частым, с гайдами на 100 %.",
+  "game_seo_missables": "Пропускаемые: {count}.",
+  "game_seo_no_missables": "Пропускаемых достижений нет.",
+  "game_seo_time": "Около {hours} ч до 100 %.",
+  "game_seo_guides": "Полные гайды: {count}.",
+  "achievement_seo_title": "Как получить «{achievement}» в {game}",
+  "achievement_seo_rarity": "Есть у {rarity} % игроков.",
+  "achievement_seo_guides": "Гайды по получению: {count}.",
+  "achievement_seo_missable": "Можно пропустить: сделайте, пока не поздно."
 }

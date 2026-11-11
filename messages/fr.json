@@ -248,7 +248,6 @@
   "show_more": "Afficher plus",
   "loading": "Chargement…",
   "retry": "Réessayer",
-  "game_description": "{count} sur {game} : rareté, guides et conseils.",
   "game_hide": "Cacher ce jeu",
   "game_unhide": "Remettre dans ma bibliothèque",
   "game_hidden_ok": "Jeu caché de ta bibliothèque.",
@@ -1834,5 +1833,16 @@
   "mod_signups_reason_cancelled": "refusé chez le fournisseur",
   "mod_signups_reason_provider": "panne du fournisseur",
   "mod_signups_reason_refused": "identité non vérifiée",
-  "mod_signups_reason_taken": "compte déjà lié ailleurs"
+  "mod_signups_reason_taken": "compte déjà lié ailleurs",
+  "game_seo_title": "{game} : {achievements}, guide du 100 %",
+  "game_seo_title_platform": "{game} ({platform}) : {achievements}, guide du 100 %",
+  "game_seo_description": "{achievements} sur {game}, du plus rare au plus courant, avec les guides pour le 100 %.",
+  "game_seo_missables": "Manquables à surveiller : {count}.",
+  "game_seo_no_missables": "Aucun succès manquable.",
+  "game_seo_time": "Environ {hours} h pour le 100 %.",
+  "game_seo_guides": "Guides complets : {count}.",
+  "achievement_seo_title": "Comment obtenir « {achievement} » dans {game}",
+  "achievement_seo_rarity": "Obtenu par {rarity} % des joueurs.",
+  "achievement_seo_guides": "Guides pour l’obtenir : {count}.",
+  "achievement_seo_missable": "Manquable : à faire avant qu’il ne soit trop tard."
 }

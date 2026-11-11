@@ -248,7 +248,6 @@
   "show_more": "Show more",
   "loading": "Loading…",
   "retry": "Retry",
-  "game_description": "{count} in {game}: rarity, guides and tips.",
   "game_hide": "Hide this game",
   "game_unhide": "Put back in my library",
   "game_hidden_ok": "Game hidden from your library.",
@@ -1834,5 +1833,16 @@
   "mod_signups_reason_cancelled": "declined at the provider",
   "mod_signups_reason_provider": "provider outage",
   "mod_signups_reason_refused": "identity not verified",
-  "mod_signups_reason_taken": "account already linked elsewhere"
+  "mod_signups_reason_taken": "account already linked elsewhere",
+  "game_seo_title": "{game}: {achievements}, 100% guide",
+  "game_seo_title_platform": "{game} ({platform}): {achievements}, 100% guide",
+  "game_seo_description": "{achievements} in {game}, from rarest to most common, with guides for 100%.",
+  "game_seo_missables": "Missables to watch: {count}.",
+  "game_seo_no_missables": "No missable achievements.",
+  "game_seo_time": "About {hours} h to 100%.",
+  "game_seo_guides": "Full guides: {count}.",
+  "achievement_seo_title": "How to get “{achievement}” in {game}",
+  "achievement_seo_rarity": "Earned by {rarity}% of players.",
+  "achievement_seo_guides": "Guides to get it: {count}.",
+  "achievement_seo_missable": "Missable: do it before it’s too late."
 }

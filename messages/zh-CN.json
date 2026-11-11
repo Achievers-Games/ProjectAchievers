@@ -239,7 +239,6 @@
   "show_more": "显示更多",
   "loading": "加载中…",
   "retry": "重试",
-  "game_description": "{game} 的 {count}：稀有度、攻略和技巧。",
   "game_hide": "隐藏此游戏",
   "game_unhide": "放回我的游戏库",
   "game_hidden_ok": "游戏已从你的游戏库中隐藏。",
@@ -1797,5 +1796,16 @@
   "mod_signups_reason_cancelled": "在提供方处拒绝",
   "mod_signups_reason_provider": "提供方故障",
   "mod_signups_reason_refused": "身份未验证",
-  "mod_signups_reason_taken": "账号已关联到其他用户"
+  "mod_signups_reason_taken": "账号已关联到其他用户",
+  "game_seo_title": "{game}：{achievements}，100% 攻略",
+  "game_seo_title_platform": "{game}（{platform}）：{achievements}，100% 攻略",
+  "game_seo_description": "{game} 的{achievements}，从最稀有到最常见，附 100% 攻略。",
+  "game_seo_missables": "需留意的可错过成就：{count}。",
+  "game_seo_no_missables": "没有可错过的成就。",
+  "game_seo_time": "100% 约需 {hours} 小时。",
+  "game_seo_guides": "完整攻略：{count}。",
+  "achievement_seo_title": "如何在 {game} 中获得“{achievement}”",
+  "achievement_seo_rarity": "{rarity}% 的玩家已获得。",
+  "achievement_seo_guides": "获得攻略：{count}。",
+  "achievement_seo_missable": "可错过：趁还来得及完成它。"
 }

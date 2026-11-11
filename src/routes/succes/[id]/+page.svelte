@@ -151,8 +151,21 @@
 </script>
 
 <Seo
-  title="{data.achievement.name} — {data.achievement.game.name}"
-  description={data.achievement.description}
+  title={data.secret
+    ? `${data.achievement.name} — ${data.achievement.game.name}`
+    : `${m.achievement_seo_title({ achievement: data.achievement.name, game: data.achievement.game.name })} — Achievers`}
+  description={data.secret
+    ? data.achievement.description
+    : [
+        data.achievement.description,
+        data.achievement.globalRarity !== null
+          ? m.achievement_seo_rarity({ rarity: formatRarity(data.achievement.globalRarity) })
+          : null,
+        data.achievement.missable ? m.achievement_seo_missable() : null,
+        data.guides.length ? m.achievement_seo_guides({ count: data.guides.length }) : null,
+      ]
+        .filter(Boolean)
+        .join(' ')}
   image={data.achievement.iconUrl}
   noindex={data.secret}
   type="article"

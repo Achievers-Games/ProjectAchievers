@@ -141,15 +141,46 @@
     new Intl.NumberFormat(getLocale(), { maximumFractionDigits: 1 }).format(
       Math.max(0.5, Math.round(minutes / 30) / 2),
     );
+
+  // Pour les moteurs : ce que cherchent les chasseurs de succès (« Hotline Miami succès 100 % »).
+  // La plateforme s'ajoute quand le jeu a d'autres versions : deux fiches, deux titres distincts.
+  const seoAchievements = $derived(m.count_achievements({ count: data.achievements.length }));
+  const seoTitle = $derived(
+    data.achievements.length === 0
+      ? data.game.name
+      : data.versions.length
+        ? m.game_seo_title_platform({
+            game: data.game.name,
+            platform: editionLabel(data.game),
+            achievements: seoAchievements,
+          })
+        : m.game_seo_title({ game: data.game.name, achievements: seoAchievements }),
+  );
+  // Les vraies informations de la fiche, pas une formule creuse : manquables, temps, guides.
+  const seoDescription = $derived(
+    [
+      m.game_seo_description({ game: data.game.name, achievements: seoAchievements }),
+      data.missables && !data.missables.partial
+        ? data.missables.count
+          ? m.game_seo_missables({ count: data.missables.count })
+          : m.game_seo_no_missables()
+        : null,
+      data.completionTime
+        ? m.game_seo_time({ hours: hours(data.completionTime.median) })
+        : data.lure?.completionistMinutes
+          ? m.game_seo_time({ hours: hours(data.lure.completionistMinutes) })
+          : null,
+      data.guides.length ? m.game_seo_guides({ count: data.guides.length }) : null,
+    ]
+      .filter(Boolean)
+      .join(' '),
+  );
 </script>
 
 <!-- `?avec=` ne crée pas de variantes à indexer : une seule page par version. -->
 <Seo
-  title="{data.game.name} — Project Achievers"
-  description={m.game_description({
-    count: m.count_achievements({ count: data.achievements.length }),
-    game: data.game.name,
-  })}
+  title="{seoTitle} — Achievers"
+  description={seoDescription}
   shareTitle={data.game.name}
   path={gameHref(data.game.slug)}
   image={data.game.headerUrl}

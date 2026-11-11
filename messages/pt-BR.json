@@ -248,7 +248,6 @@
   "show_more": "Mostrar mais",
   "loading": "Carregando…",
   "retry": "Tentar novamente",
-  "game_description": "{count} em {game}: raridade, guias e dicas.",
   "game_hide": "Ocultar este jogo",
   "game_unhide": "Devolver à minha biblioteca",
   "game_hidden_ok": "Jogo oculto da sua biblioteca.",
@@ -1834,5 +1833,16 @@
   "mod_signups_reason_cancelled": "recusado no provedor",
   "mod_signups_reason_provider": "falha do provedor",
   "mod_signups_reason_refused": "identidade não verificada",
-  "mod_signups_reason_taken": "conta já vinculada a outra"
+  "mod_signups_reason_taken": "conta já vinculada a outra",
+  "game_seo_title": "{game}: {achievements}, guia de 100%",
+  "game_seo_title_platform": "{game} ({platform}): {achievements}, guia de 100%",
+  "game_seo_description": "{achievements} de {game}, do mais raro ao mais comum, com guias para os 100%.",
+  "game_seo_missables": "Perdíveis para ficar de olho: {count}.",
+  "game_seo_no_missables": "Nenhuma conquista perdível.",
+  "game_seo_time": "Cerca de {hours} h para os 100%.",
+  "game_seo_guides": "Guias completos: {count}.",
+  "achievement_seo_title": "Como conseguir “{achievement}” em {game}",
+  "achievement_seo_rarity": "Obtida por {rarity}% dos jogadores.",
+  "achievement_seo_guides": "Guias para conseguir: {count}.",
+  "achievement_seo_missable": "Perdível: faça antes que seja tarde."
 }
