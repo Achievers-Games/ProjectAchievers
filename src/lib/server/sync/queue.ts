@@ -1,5 +1,5 @@
 import { PgBoss } from 'pg-boss';
-import type { Provider } from '#prisma';
+import type { Provider, SyncStatus } from '#prisma';
 import { db } from '../db';
 import { env } from '../env';
 import { globals } from '../globals';
@@ -34,6 +34,8 @@ const CONTENT_QUEUE = 'content-rating';
 /** Les nouveaux succès des joueurs reliés, envoyés aux sites partenaires. */
 const WEBHOOK_QUEUE = 'partner-webhooks';
 const STALE_AFTER = 24 * 60 * 60 * 1000;
+/** Une synchronisation échouée attend avant qu'une visite ne la remette en file. */
+const FAILED_SYNC_COOLDOWN = 60 * 60 * 1000;
 const MAX_REWARDS = 10;
 /** Une rafale de succès ne doit pas noyer la page sous les annonces. */
 const MAX_POPS = 5;
@@ -91,7 +93,7 @@ export async function enqueueSync(userId: string, provider: Provider, quiet = fa
   return true;
 }
 
-/** Relance les comptes d'un joueur qui n'ont pas été lus depuis `cooldown`, échecs compris. */
+/** Relance les comptes arrivés à échéance, avec une pause plus longue après un échec. */
 export async function refreshAccounts(
   userId: string,
   cooldown: number | ((provider: Provider) => number),
@@ -106,14 +108,28 @@ export async function refreshAccounts(
         provider: { in: providers },
         syncStatus: { in: ['IDLE', 'COMPLETED', 'FAILED'] },
       },
-      select: { provider: true },
+      select: { provider: true, syncStatus: true },
     }),
-    db.syncRun.groupBy({ by: ['provider'], where: { userId }, _max: { startedAt: true } }),
+    db.syncRun.groupBy({
+      by: ['provider', 'status'],
+      where: { userId },
+      _max: { startedAt: true },
+    }),
   ]);
-  const lastRun = new Map(recent.map((run) => [run.provider, run._max.startedAt?.getTime() ?? 0]));
-  const due = accounts.filter(
-    ({ provider }) => Date.now() - (lastRun.get(provider) ?? 0) >= wait(provider),
-  );
+  const lastRun = new Map<Provider, { startedAt: number; status: SyncStatus }>();
+  for (const run of recent) {
+    const startedAt = run._max.startedAt?.getTime() ?? 0;
+    if (startedAt > (lastRun.get(run.provider)?.startedAt ?? 0)) {
+      lastRun.set(run.provider, { startedAt, status: run.status });
+    }
+  }
+  const now = Date.now();
+  const due = accounts.filter(({ provider, syncStatus }) => {
+    const last = lastRun.get(provider);
+    const failed = syncStatus === 'FAILED' || last?.status === 'FAILED';
+    const minimumWait = failed ? FAILED_SYNC_COOLDOWN : wait(provider);
+    return now - (last?.startedAt ?? 0) >= minimumWait;
+  });
   const started = await Promise.all(
     due.map((account) => enqueueSync(userId, account.provider, quiet)),
   );

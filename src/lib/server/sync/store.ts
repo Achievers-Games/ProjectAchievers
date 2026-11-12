@@ -1,4 +1,4 @@
-import type { Platform, Prisma, TrophyType } from '#prisma';
+import type { Platform, TrophyType } from '#prisma';
 import { db } from '../db';
 import { familyKey } from '../family';
 import { difficultyTier } from '#lib/collection';
@@ -11,6 +11,9 @@ const POINTS: Record<TrophyType, number> = {
   BRONZE: 15,
   ACHIEVEMENT: 10,
 };
+
+/** Les petits lots respectent les limites mémoire et transactionnelles du NAS. */
+const ACHIEVEMENTS_PER_TRANSACTION = 25;
 
 export interface GameInput {
   platform: Platform;
@@ -104,36 +107,38 @@ export async function fillGameTiers() {
 
 /** Remplace le catalogue de succès d'un jeu. Les succès déjà connus gardent leur identifiant. */
 export async function saveAchievements(gameId: string, achievements: AchievementInput[]) {
-  const writes: Prisma.PrismaPromise<unknown>[] = achievements.map((a) => {
-    const data = {
-      name: a.name,
-      description: a.description,
-      iconUrl: a.iconUrl,
-      iconLockedUrl: a.iconLockedUrl,
-      hidden: a.hidden,
-      trophyType: a.trophyType,
-      globalRarity: a.globalRarity,
-      points: a.points ?? POINTS[a.trophyType],
-    };
-    return db.achievement.upsert({
-      where: {
-        gameId_platformAchievementId: {
-          gameId,
-          platformAchievementId: a.platformAchievementId,
+  for (let offset = 0; offset < achievements.length; offset += ACHIEVEMENTS_PER_TRANSACTION) {
+    const batch = achievements.slice(offset, offset + ACHIEVEMENTS_PER_TRANSACTION);
+    const writes = batch.map((a) => {
+      const data = {
+        name: a.name,
+        description: a.description,
+        iconUrl: a.iconUrl,
+        iconLockedUrl: a.iconLockedUrl,
+        hidden: a.hidden,
+        trophyType: a.trophyType,
+        globalRarity: a.globalRarity,
+        points: a.points ?? POINTS[a.trophyType],
+      };
+      return db.achievement.upsert({
+        where: {
+          gameId_platformAchievementId: {
+            gameId,
+            platformAchievementId: a.platformAchievementId,
+          },
         },
-      },
-      // L'API ne décrit pas les succès cachés : ne pas effacer ce qui vient d'ailleurs.
-      update: { ...data, description: a.description || undefined },
-      create: { ...data, gameId, platformAchievementId: a.platformAchievementId },
+        // L'API ne décrit pas les succès cachés : ne pas effacer ce qui vient d'ailleurs.
+        update: { ...data, description: a.description || undefined },
+        create: { ...data, gameId, platformAchievementId: a.platformAchievementId },
+      });
     });
+    await db.$transaction(writes);
+  }
+  // Les upserts sont idempotents : une relance reprend un import interrompu par lots.
+  await db.game.update({
+    where: { id: gameId },
+    data: { totalAchievements: achievements.length, schemaSyncedAt: new Date() },
   });
-  writes.push(
-    db.game.update({
-      where: { id: gameId },
-      data: { totalAchievements: achievements.length, schemaSyncedAt: new Date() },
-    }),
-  );
-  await db.$transaction(writes);
   await refreshGameTier(gameId);
 }
 
