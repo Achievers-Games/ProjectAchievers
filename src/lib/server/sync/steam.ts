@@ -15,6 +15,7 @@ const API = 'https://api.steampowered.com';
 const CDN = 'https://cdn.cloudflare.steamstatic.com/steam/apps';
 const STORE = 'https://store.steampowered.com/api/appdetails';
 const SCHEMA_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
+const ACHIEVEMENT_RECHECK = 24 * 60 * 60 * 1000;
 const concurrency = () => env().STEAM_CONCURRENCY;
 /** Steam refuse 400 jeux d'un coup. */
 const APPS_PER_CALL = 300;
@@ -168,9 +169,9 @@ async function appsWithUnlocks(steamId: string, appIds: number[], limit = concur
 async function findSharedGames(
   { userId, account }: Pick<SyncContext, 'userId' | 'account'>,
   owned: Set<number>,
+  recent: OwnedGame[],
 ) {
   const steamId = account.providerUserId;
-  const recent = await fetchRecentGames(steamId);
   const candidates = new Map<number, OwnedGame>();
 
   const daily =
@@ -433,12 +434,17 @@ async function syncSteamGame(userId: string, steamId: string, source: OwnedGame,
     game.id,
     unlocks,
     // La bibliothèque d'un autre ne dit rien du temps passé par ce joueur.
-    shared
-      ? { playtimeMinutes: source.playtime_forever }
-      : {
-          playtimeMinutes: source.playtime_forever ?? 0,
-          lastPlayedAt: source.rtime_last_played ? new Date(source.rtime_last_played * 1000) : null,
-        },
+    {
+      achievementsCheckedAt: new Date(),
+      ...(shared
+        ? { playtimeMinutes: source.playtime_forever }
+        : {
+            playtimeMinutes: source.playtime_forever ?? 0,
+            lastPlayedAt: source.rtime_last_played
+              ? new Date(source.rtime_last_played * 1000)
+              : null,
+          }),
+    },
   );
   return { game, gained };
 }
@@ -530,12 +536,20 @@ export async function sweepSteamStore() {
   return found;
 }
 
-export const syncSteam: ProviderSync = async ({ userId, account, report, onUnlocked }) => {
+export const syncSteam: ProviderSync = async ({
+  userId,
+  account,
+  report,
+  onUnlocked,
+  force = false,
+}) => {
   const steamId = account.providerUserId;
   const owned = (await fetchOwnedGames(steamId)).filter((g) => g.has_community_visible_stats);
   const library = new Set(owned.map((game) => game.appid));
+  const recentGames = await fetchRecentGames(steamId).catch(() => []);
+  const recentlyPlayed = new Set(recentGames.map((game) => String(game.appid)));
   // Une méthode non documentée peut disparaître : la bibliothèque reste synchronisée.
-  const shared = await findSharedGames({ userId, account }, library).catch((cause) => {
+  const shared = await findSharedGames({ userId, account }, library, recentGames).catch((cause) => {
     log.error('Jeux partagés Steam :', cause);
     return [];
   });
@@ -545,6 +559,7 @@ export const syncSteam: ProviderSync = async ({ userId, account, report, onUnloc
     select: {
       lastPlayedAt: true,
       playtimeMinutes: true,
+      achievementsCheckedAt: true,
       game: { select: { platformGameId: true } },
     },
   });
@@ -563,10 +578,21 @@ export const syncSteam: ProviderSync = async ({ userId, account, report, onUnloc
         : null;
       const minutes = ownedGame.playtime_forever ?? 0;
 
-      // Un jeu non relancé depuis la dernière synchronisation ne peut pas avoir changé.
+      // Le temps de jeu ne prouve pas l'absence de nouveaux succès (publication tardive,
+      // déblocage rétroactif). Au moins une vraie lecture par jour, ou sur demande explicite.
       const known = knownProgress.get(appId);
-      const recent = ownedGame.playtime_2weeks ?? 0;
-      if (!borrowed && known && unchangedSince(known, playedAt, minutes, recent)) return;
+      const recent = recentlyPlayed.has(appId) ? 1 : (ownedGame.playtime_2weeks ?? 0);
+      const checkedAt = known?.achievementsCheckedAt?.getTime();
+      const checkedRecently =
+        checkedAt !== undefined && Date.now() - checkedAt < ACHIEVEMENT_RECHECK;
+      if (
+        !force &&
+        !borrowed &&
+        known &&
+        checkedRecently &&
+        unchangedSince(known, playedAt, minutes, recent)
+      )
+        return;
 
       const { game, gained } = await syncSteamGame(userId, steamId, ownedGame, borrowed);
       achievements += gained;

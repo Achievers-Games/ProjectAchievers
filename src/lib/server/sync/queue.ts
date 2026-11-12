@@ -287,22 +287,21 @@ export async function runLiveGame(
   if (unlocks.length <= owned.unlockedCount) {
     // Le temps de jeu a bougé sans nouveau succès : on le retient, sinon la relecture des jeux
     // récents redemanderait ce jeu à chaque passage.
-    if (playtimeMinutes !== undefined) {
-      await db.userGame.updateMany({
-        where: { userId, gameId: owned.game.id },
-        data: { playtimeMinutes },
-      });
-    }
+    await db.userGame.updateMany({
+      where: { userId, gameId: owned.game.id },
+      data: {
+        ...(playtimeMinutes !== undefined && { playtimeMinutes }),
+        achievementsCheckedAt: new Date(),
+      },
+    });
     return 0;
   }
 
   const before = await rareCards(userId);
-  const { gained, fresh } = await saveProgress(
-    userId,
-    owned.game.id,
-    unlocks,
-    playtimeMinutes === undefined ? {} : { playtimeMinutes },
-  );
+  const { gained, fresh } = await saveProgress(userId, owned.game.id, unlocks, {
+    ...(playtimeMinutes !== undefined && { playtimeMinutes }),
+    achievementsCheckedAt: new Date(),
+  });
   if (gained === 0) return 0;
 
   const user = await syncUser(userId);
@@ -370,6 +369,7 @@ async function runAccountSync({ userId, provider, quiet }: SyncJob) {
     const result = await syncer({
       userId,
       account,
+      force: !quiet,
       report: (processed, total, game) =>
         publishSync(userId, { provider, status: 'SYNCING', processed, total, game }),
       onUnlocked: (game, count) => {
@@ -399,6 +399,7 @@ async function runAccountSync({ userId, provider, quiet }: SyncJob) {
           AND g.platform = CAST(${provider} AS "Platform")`;
     }
     const rewards = await announceCards(user, userId, before);
+    if (result.achievements > 0) await reviewSiteAchievements(userId);
     publishSync(userId, {
       provider,
       status: 'COMPLETED',
@@ -411,7 +412,6 @@ async function runAccountSync({ userId, provider, quiet }: SyncJob) {
       rewards: rewards.slice(0, MAX_REWARDS),
       moreRewards: Math.max(0, rewards.length - MAX_REWARDS),
     });
-    if (result.achievements > 0) await reviewSiteAchievements(userId);
   } catch (error) {
     const known = error instanceof SyncError;
     if (!known) log.error(`Synchronisation ${provider} :`, error);

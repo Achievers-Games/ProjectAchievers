@@ -542,20 +542,22 @@ model Achievement {
 }
 
 model UserGame {
-  userId          String
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  gameId          String
-  game            Game      @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  unlockedCount   Int       @default(0)
-  totalCount      Int       @default(0)
-  completion      Float     @default(0)
-  platinum        Boolean   @default(false)
-  playtimeMinutes Int       @default(0)
-  lastPlayedAt    DateTime?
-  lastUnlockedAt  DateTime?
-  updatedAt       DateTime  @updatedAt
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gameId                String
+  game                  Game      @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  unlockedCount         Int       @default(0)
+  totalCount            Int       @default(0)
+  completion            Float     @default(0)
+  platinum              Boolean   @default(false)
+  playtimeMinutes       Int       @default(0)
+  lastPlayedAt          DateTime?
+  /// Dernière lecture réussie des succès chez le fournisseur, distincte du temps de jeu.
+  achievementsCheckedAt DateTime?
+  lastUnlockedAt        DateTime?
+  updatedAt             DateTime  @updatedAt
   /// Retiré de la bibliothèque par le joueur, sans toucher à sa progression.
-  hidden          Boolean   @default(false)
+  hidden                Boolean   @default(false)
 
   @@id([userId, gameId])
   @@index([userId, lastUnlockedAt])

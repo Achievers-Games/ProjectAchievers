@@ -187,7 +187,11 @@ export async function saveProgress(
   userId: string,
   gameId: string,
   unlocks: UnlockInput[],
-  activity: { playtimeMinutes?: number; lastPlayedAt?: Date | null } = {},
+  activity: {
+    playtimeMinutes?: number;
+    lastPlayedAt?: Date | null;
+    achievementsCheckedAt?: Date;
+  } = {},
 ): Promise<SaveResult> {
   return db.$transaction(
     async (db) => {
@@ -246,6 +250,9 @@ export async function saveProgress(
           playtimeMinutes: activity.playtimeMinutes,
         }),
         ...(activity.lastPlayedAt !== undefined && { lastPlayedAt: activity.lastPlayedAt }),
+        ...(activity.achievementsCheckedAt !== undefined && {
+          achievementsCheckedAt: activity.achievementsCheckedAt,
+        }),
       };
       await db.userGame.upsert({
         where: { userId_gameId: { userId, gameId } },

@@ -78,6 +78,91 @@ async function steamUser() {
 }
 
 describe('synchronisation Steam', () => {
+  async function delayedAchievement() {
+    const userId = await steamUser();
+    const original = steamApi(ownedGames);
+    const state = { late: false, recent: false, denied: false, reads: 0 };
+    vi.stubGlobal('fetch', async (input: string | URL) => {
+      const url = String(input);
+      if (url.includes('GetRecentlyPlayedGames')) {
+        return new Response(
+          JSON.stringify({
+            response: { games: state.recent ? [{ appid: 999001, playtime_forever: 90 }] : [] },
+          }),
+        );
+      }
+      if (url.includes('GetPlayerAchievements')) {
+        state.reads++;
+        if (state.denied) return new Response(null, { status: 403 });
+        return new Response(
+          JSON.stringify({
+            playerstats: {
+              achievements: [
+                { apiname: 'A', achieved: 1, unlocktime: 1700000000 },
+                { apiname: 'B', achieved: state.late ? 1 : 0, unlocktime: 1700000100 },
+              ],
+            },
+          }),
+        );
+      }
+      return original(input);
+    });
+    await runSync({ userId, provider: 'STEAM', quiet: true });
+    const game = await db.userGame.findFirstOrThrow({ where: { userId } });
+    expect(game.achievementsCheckedAt).not.toBeNull();
+    state.late = true;
+    state.reads = 0;
+    return { userId, game, state };
+  }
+
+  it('relit les succès après 24 heures même si le temps de jeu reste identique', async () => {
+    const { userId, game, state } = await delayedAchievement();
+    await runSync({ userId, provider: 'STEAM', quiet: true });
+    expect(state.reads).toBe(0);
+    await db.userGame.update({
+      where: { userId_gameId: { userId, gameId: game.gameId } },
+      data: { achievementsCheckedAt: new Date(Date.now() - 25 * 3600000) },
+    });
+    await runSync({ userId, provider: 'STEAM', quiet: true });
+    expect(state.reads).toBe(1);
+    expect(await db.userGame.findFirst({ where: { userId } })).toMatchObject({
+      unlockedCount: 2,
+      completion: 100,
+    });
+  });
+
+  it('une synchronisation explicite récupère immédiatement un succès publié en retard', async () => {
+    const { userId, state } = await delayedAchievement();
+    await runSync({ userId, provider: 'STEAM' });
+    expect(state.reads).toBe(1);
+    expect(await db.userGame.findFirst({ where: { userId } })).toMatchObject({ unlockedCount: 2 });
+  });
+
+  it('relit les jeux récents même si GetOwnedGames ne donne pas playtime_2weeks', async () => {
+    const { userId, state } = await delayedAchievement();
+    state.recent = true;
+    await runSync({ userId, provider: 'STEAM', quiet: true });
+    expect(state.reads).toBe(1);
+    expect(await db.userGame.findFirst({ where: { userId } })).toMatchObject({ unlockedCount: 2 });
+  });
+
+  it('ne repousse pas la prochaine vérification après une lecture Steam échouée', async () => {
+    const { userId, game, state } = await delayedAchievement();
+    const old = new Date(Date.now() - 25 * 3600000);
+    await db.userGame.update({
+      where: { userId_gameId: { userId, gameId: game.gameId } },
+      data: { achievementsCheckedAt: old },
+    });
+    state.denied = true;
+    await runSync({ userId, provider: 'STEAM', quiet: true });
+    expect(
+      (await db.userGame.findFirstOrThrow({ where: { userId } })).achievementsCheckedAt,
+    ).toEqual(old);
+    state.denied = false;
+    await runSync({ userId, provider: 'STEAM', quiet: true });
+    expect(await db.userGame.findFirst({ where: { userId } })).toMatchObject({ unlockedCount: 2 });
+  });
+
   it('importe 8 000 succès par petits lots sans perdre les compteurs ni répéter les annonces', async () => {
     const userId = await steamUser();
     const game = await upsertGame({
@@ -202,14 +287,14 @@ describe('synchronisation Steam', () => {
     expect(row.createdAt).toEqual(unlockedAt);
   });
 
-  it("ne relit pas un jeu qui n'a pas été relancé", async () => {
+  it('évite une relecture automatique inutile juste après une vérification réussie', async () => {
     const fetchMock = steamApi(ownedGames);
     vi.stubGlobal('fetch', fetchMock);
     const userId = await steamUser();
 
     await runSync({ userId, provider: 'STEAM' });
     fetchMock.mockClear();
-    await runSync({ userId, provider: 'STEAM' });
+    await runSync({ userId, provider: 'STEAM', quiet: true });
 
     const urls = fetchMock.mock.calls.map(([url]) => String(url));
     expect(urls.some((u) => u.includes('GetPlayerAchievements'))).toBe(false);
