@@ -47,7 +47,8 @@ const PSN_CODE_LIFETIME = 30 * 60 * 1000;
 
 const requireUser = (locals: App.Locals) => requireLogin(locals, '/compte');
 
-export const load: PageServerLoad = async ({ locals, url, cookies }) => {
+export const load: PageServerLoad = async ({ locals, url, cookies, depends }) => {
+  depends('app:sync');
   const user = requireUser(locals);
   const pendingMerge = readMerge(cookies, user.id);
 

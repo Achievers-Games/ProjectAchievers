@@ -7,7 +7,8 @@ import { relationWith } from '#lib/server/social';
 import type { PageServerLoad } from './$types';
 import { m } from '#lib/paraglide/messages';
 
-export const load: PageServerLoad = async ({ params, locals }) => {
+export const load: PageServerLoad = async ({ params, locals, depends }) => {
+  depends('app:sync');
   const profile = await userProfile(params.handle, locals.user?.id ?? null, locals.user?.showAdult);
   if (!profile) error(404, m.profile_not_found());
   // Les cartes du profil ouvrent la comparaison sur les versions que je possède déjà.

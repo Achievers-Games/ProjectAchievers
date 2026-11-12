@@ -7,6 +7,7 @@
   import CompleteBadge from './CompleteBadge.svelte';
   import Progress from './Progress.svelte';
   import { tilt } from '#lib/actions/tilt';
+  import { pauseEffects } from '#lib/actions/pause-effects';
   import { editionLabel, formatPercent } from '#lib/labels';
   import { HOLO_TIER, isComplete, stepOf, type CardProgress, type NextCopy } from '#lib/collection';
 
@@ -74,6 +75,7 @@
 <a
   href={href ?? `/jeux/${game.slug}`}
   use:tilt
+  use:pauseEffects
   data-complete={complete || undefined}
   data-tier={complete ? level : undefined}
   data-step={step || undefined}

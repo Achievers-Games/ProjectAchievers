@@ -1,7 +1,8 @@
 import type { Platform } from '#prisma';
 import { db } from '../db';
 import { groupLibrary } from '../library';
-import { bestCards, chosenCards, listGames } from './library';
+import { bestCards, chosenCards } from './library';
+import { publicCache } from '../public-cache';
 import { MAX_SHOWCASE } from './shared';
 import type { Collector } from './leaderboard';
 
@@ -32,26 +33,51 @@ export const toBanner = (game: {
 
 /** Le jeu le plus avancé du joueur ; à défaut, ou pour un invité, un jeu au hasard. */
 async function seasonBanner(userId?: string) {
-  const library = userId
-    ? await listGames({ sort: 'progression', page: 1, ownerId: userId, status: 'restants' }, userId)
-    : null;
-  const closest = library?.games.find((game) => game.headerUrl);
+  // Une seule ligne revient de Postgres, en conservant le regroupement et l'exemplaire suivant.
+  const [closest] = userId
+    ? await db.$queryRaw<{ name: string; slug: string; headerUrl: string; completion: number }[]>`
+    WITH versions AS (
+      SELECT g.name, g.slug, g."headerUrl", g."totalAchievements", ug.completion,
+        COALESCE(g."familyKey", g.id) AS family, COALESCE(g.console, g.platform::text) AS edition,
+        row_number() OVER (PARTITION BY COALESCE(g."familyKey", g.id) ORDER BY ug.completion DESC, g.slug) AS position
+      FROM "UserGame" ug JOIN "Game" g ON g.id = ug."gameId"
+      WHERE ug."userId" = ${userId} AND NOT ug.hidden AND NOT g."adultOnly"
+    ), finished AS (
+      SELECT DISTINCT family, edition FROM versions WHERE completion >= 100
+    ), next_versions AS (
+      SELECT v.family, max(v.completion) AS completion
+      FROM versions v LEFT JOIN finished done ON done.family = v.family AND done.edition = v.edition
+      WHERE done.family IS NULL AND v.completion > 0 AND v.completion < 100
+      GROUP BY v.family
+    ), cards AS (
+      SELECT best.name, best.slug, best."headerUrl", best."totalAchievements", best.completion,
+        next_versions.completion AS next
+      FROM versions best LEFT JOIN next_versions ON next_versions.family = best.family
+      WHERE position = 1
+    )
+    SELECT name, slug, "headerUrl", COALESCE(next, completion) AS completion FROM cards
+    WHERE "headerUrl" IS NOT NULL AND (next IS NOT NULL OR (completion < 100 AND "totalAchievements" > 0))
+    ORDER BY COALESCE(next, completion) DESC, name, slug LIMIT 1`
+    : [];
   if (closest?.headerUrl) {
     return toBanner({
       ...closest,
       headerUrl: closest.headerUrl,
-      completion: closest.next?.completion ?? closest.progress?.completion,
+      completion: closest.completion,
     });
   }
 
   // Un jeu pas encore classé pourrait être un jeu adulte : il ne s'affiche pas à l'accueil.
-  const [random] = await db.$queryRaw<{ name: string; slug: string; headerUrl: string }[]>`
+  const random = await publicCache.read('home:random-banner', async () => {
+    const [game] = await db.$queryRaw<{ name: string; slug: string; headerUrl: string }[]>`
     SELECT name, slug, "headerUrl"
     FROM "Game"
     WHERE NOT "adultOnly" AND "headerUrl" IS NOT NULL AND "totalAchievements" > 0
       AND (platform <> 'STEAM' OR "contentCheckedAt" IS NOT NULL)
     ORDER BY random()
     LIMIT 1`;
+    return game;
+  });
   return random ? toBanner(random) : null;
 }
 

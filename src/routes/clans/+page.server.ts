@@ -14,7 +14,8 @@ const ERRORS: Partial<Record<SocialFailure, () => string>> = {
   not_found: m.gone,
 };
 
-export const load: PageServerLoad = async ({ locals }) => {
+export const load: PageServerLoad = async ({ locals, depends }) => {
+  depends('app:sync');
   const userId = locals.user?.id ?? null;
   const [clans, mine] = await Promise.all([listClans(), userId ? myClan(userId) : null]);
   const requested = userId

@@ -6,6 +6,7 @@
   import CardFx from './CardFx.svelte';
   import CompleteBadge from './CompleteBadge.svelte';
   import { dragScroll } from '#lib/actions/drag-scroll';
+  import { pauseEffects } from '#lib/actions/pause-effects';
   import { subscribeJson } from '#lib/sse';
   import type { CardDrop } from '#lib/collection';
   import { formatRelative } from '#lib/labels';
@@ -52,6 +53,7 @@
           <a
             href="/jeux/{drop.game.slug}"
             class="drop-tile"
+            use:pauseEffects
             data-tier={tierOf(drop)}
             data-copies={copiesOf(drop) > 1 ? copiesOf(drop) : undefined}
           >

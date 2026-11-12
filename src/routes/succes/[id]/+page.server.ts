@@ -30,7 +30,8 @@ const log = logger('Traduction');
 const forViewer = (user: App.Locals['user']) => (text: string, locale: string | null) =>
   user?.allowProfanity ? text : censor(text, locale);
 
-export const load: PageServerLoad = async ({ params, locals, url }) => {
+export const load: PageServerLoad = async ({ params, locals, url, depends }) => {
+  depends('app:sync');
   const viewerId = locals.user?.id;
   const clean = forViewer(locals.user);
   const revealed = url.searchParams.has('caches');

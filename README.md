@@ -122,6 +122,14 @@ niveau passe à `warn` au-delà de 80 % du tas ou d'une seconde de retard. La li
 conteneur reste à 512 Mo et celle du tas à 320 Mo : ces mesures servent à vérifier les pics après
 déploiement, avant d'envisager un worker séparé et son budget mémoire supplémentaire.
 
+L'accueil et le classement partagent un cache mémoire public de 15 secondes, limité à huit clés.
+Les écritures, les synchronisations et les recalculs de rareté l'invalident ; les données
+personnelles restent lues par requête. La bannière de progression utilise une requête dédiée
+qui ne renvoie qu'un jeu. Après une synchro, les relectures ciblent `app:sync` et regroupent les
+événements rapprochés. Les animations de cartes sont suspendues hors écran et dans les onglets
+masqués. L'en-tête `Server-Timing` mesure la durée des pages ; les rendus dépassant 500 ms sont
+journalisés avec leur route, sans paramètres ni identité du visiteur.
+
 ### Formulaire de contact et email
 
 `/contact` envoie chaque message par SMTP à `CONTACT_INBOX` (par défaut `SMTP_FROM`) avec l'adresse

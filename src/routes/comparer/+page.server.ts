@@ -5,7 +5,8 @@ import { grantSiteAchievement } from '#lib/server/site-achievements';
 import type { PageServerLoad } from './$types';
 import { m } from '#lib/paraglide/messages';
 
-export const load: PageServerLoad = async ({ url, locals }) => {
+export const load: PageServerLoad = async ({ url, locals, depends }) => {
+  depends('app:sync');
   const [a, b] = [url.searchParams.get('a'), url.searchParams.get('b')];
   if (!a || !b) error(404, m.compare_pick_two());
 

@@ -5,7 +5,8 @@ import { siteAchievementBoard } from '#lib/server/site-achievements';
 import type { PageServerLoad } from './$types';
 import { m } from '#lib/paraglide/messages';
 
-export const load: PageServerLoad = async ({ params, locals }) => {
+export const load: PageServerLoad = async ({ params, locals, depends }) => {
+  depends('app:sync');
   const viewerId = locals.user?.id ?? null;
   const user = await db.user.findFirst({
     where: { handle: params.handle, OR: [{ isPublic: true }, { id: viewerId ?? '' }] },

@@ -5,12 +5,20 @@ import { unseenNotices } from '#lib/server/notifications';
 import type { LayoutServerLoad } from './$types';
 
 export const load: LayoutServerLoad = async ({ locals, cookies, depends }) => {
+  depends('app:sync');
   depends('app:invites');
   depends('app:notices');
+  const [unread, invites, unseen] = locals.user
+    ? await Promise.all([
+        unreadCount(locals.user.id),
+        pendingInvites(locals.user.id),
+        unseenNotices(locals.user.id),
+      ])
+    : [0, { friends: 0, clans: 0 }, 0];
   return {
-    unread: locals.user ? await unreadCount(locals.user.id) : 0,
-    invites: locals.user ? await pendingInvites(locals.user.id) : { friends: 0, clans: 0 },
-    notices: { unseen: locals.user ? await unseenNotices(locals.user.id) : 0 },
+    unread,
+    invites,
+    notices: { unseen },
     pushKey: pushPublicKey(),
     user: locals.user && {
       id: locals.user.id,

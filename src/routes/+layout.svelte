@@ -2,7 +2,7 @@
   import { m } from '#lib/paraglide/messages';
   import '../app.css';
   import { onMount } from 'svelte';
-  import { afterNavigate, invalidate, invalidateAll, onNavigate } from '$app/navigation';
+  import { afterNavigate, invalidate, onNavigate } from '$app/navigation';
   import { navigating, page } from '$app/state';
   import Compass from '@lucide/svelte/icons/compass';
   import Flame from '@lucide/svelte/icons/flame';
@@ -29,6 +29,7 @@
   import { refreshPresence, watchPresence } from '#lib/stores/presence';
   import { rewards, syncState, type SyncProgress } from '#lib/stores/sync';
   import { toast } from '#lib/stores/toast';
+  import { batchRefresh } from '#lib/refresh';
   import type { ChatEvent, InviteEvent, LiveEvent } from '#lib/server/sync/events';
 
   let { data, children } = $props();
@@ -134,8 +135,9 @@
   // Progression des synchronisations : suivie partout, pour notifier la fin sur toute page.
   $effect(() => {
     if (!userId) return;
+    const refreshData = batchRefresh(() => invalidate('app:sync'));
     // Le joueur apparaît en ligne dès que ce flux est ouvert.
-    return subscribeJson<SyncProgress | LiveEvent>(
+    const stop = subscribeJson<SyncProgress | LiveEvent>(
       '/api/sync/events',
       (event) => {
         if ('type' in event) {
@@ -163,16 +165,20 @@
               more: pending.more + (event.moreRewards ?? 0),
             }));
           }
-          void invalidateAll();
+          refreshData.request();
         } else if (event.quiet) {
           return;
         } else if (event.status === 'FAILED' || event.status === 'NEEDS_RELINK') {
           toast(syncErrorText(event.error) ?? m.sync_failed(), 'error');
-          void invalidateAll();
+          refreshData.request();
         }
       },
       () => void refreshPresence(),
     );
+    return () => {
+      stop();
+      refreshData.cancel();
+    };
   });
 
   onNavigate((navigation) => {

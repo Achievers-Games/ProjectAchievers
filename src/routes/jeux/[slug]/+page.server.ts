@@ -33,7 +33,8 @@ function missablesOf(
   return count ? { count, elsewhere: null, partial: true } : null;
 }
 
-export const load: PageServerLoad = async ({ params, locals, url }) => {
+export const load: PageServerLoad = async ({ params, locals, url, depends }) => {
+  depends('app:sync');
   const revealed = url.searchParams.has('caches');
   const game = await db.game.findUnique({
     where: { slug: params.slug },

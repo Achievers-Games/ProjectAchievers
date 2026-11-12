@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { pauseEffects } from '#lib/actions/pause-effects';
   let { copies, image }: { copies: number; image: string | null } = $props();
 
   /** Répartition fixe : les étincelles ne changent pas de place d'un rendu à l'autre. */
@@ -12,7 +13,7 @@
 </script>
 
 <!-- ×2 : des étincelles. ×3 : le fond prend vie. ×4 : le sujet se détache. -->
-<span class="card-fx" aria-hidden="true">
+<span class="card-fx" aria-hidden="true" use:pauseEffects>
   {#if copies >= 3}<span class="fx-aurora"></span>{/if}
   {#if copies >= 4 && image}
     <span class="fx-halo"></span>

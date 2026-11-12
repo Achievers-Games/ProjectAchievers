@@ -13,6 +13,7 @@ import { startDigests } from '#lib/server/push-digest';
 import { rateLimit } from '#lib/server/rate-limit';
 import { validateSession } from '#lib/server/session';
 import { logger } from '#lib/logger';
+import { invalidatePublicCache } from '#lib/server/public-cache';
 import { startLiveGames } from '#lib/server/sync/live';
 import { autoRefresh, startWorkers } from '#lib/server/sync/queue';
 import { startWorkloadMonitor } from '#lib/server/workload';
@@ -95,19 +96,31 @@ const secured: Handle = async ({ event, resolve }) => {
     });
   }
 
+  const started = performance.now();
   event.locals.user = await validateSession(event.cookies);
   if (event.locals.user && event.request.method === 'GET' && !path.startsWith('/api/')) {
     autoRefresh(event.locals.user.id);
   }
 
-  const response = await resolve(event, {
-    // Lu au rendu : une action peut avoir changé le cookie pendant cette requête.
-    transformPageChunk: ({ html }) =>
-      html
-        .replace('%lang%', getLocale())
-        .replace('%theme%', themeOf(event.cookies.get('pa_theme'))),
-  });
-
+  const mutation = !['GET', 'HEAD'].includes(event.request.method) || path.startsWith('/auth/');
+  if (mutation) invalidatePublicCache();
+  let response: Response;
+  try {
+    response = await resolve(event, {
+      // Lu au rendu : une action peut avoir changé le cookie pendant cette requête.
+      transformPageChunk: ({ html }) =>
+        html
+          .replace('%lang%', getLocale())
+          .replace('%theme%', themeOf(event.cookies.get('pa_theme'))),
+    });
+  } finally {
+    if (mutation) invalidatePublicCache();
+  }
+  if (!path.startsWith('/api/') && event.request.method === 'GET') {
+    const duration = Math.round(performance.now() - started);
+    response.headers.append('Server-Timing', `app;dur=${duration}`);
+    if (duration >= 500) log.warn('Page lente', { route: event.route.id, durationMs: duration });
+  }
   const csp = response.headers.get('content-security-policy');
   if (path === '/oauth/authorize' && csp) {
     response.headers.set(

@@ -1,6 +1,7 @@
 import { Prisma } from '#prisma';
 import { RARITY_STEPS, SIZE_STEPS } from '#lib/collection';
 import { db } from './db';
+import { invalidatePublicCache } from './public-cache';
 
 /** Même verrou que la création du catalogue : rattachements et recalculs restent cohérents. */
 export const lockCardCatalog = (tx: Prisma.TransactionClient) =>
@@ -64,6 +65,7 @@ export async function refreshSharedTier(gameId: string) {
     },
     { timeout: 30_000 },
   );
+  invalidatePublicCache();
 }
 
 /** Les anciennes et nouvelles familles sont recalculées, y compris après une séparation. */
@@ -86,4 +88,5 @@ export async function moveGameFamilies(
     },
     { timeout: 30_000 },
   );
+  invalidatePublicCache();
 }

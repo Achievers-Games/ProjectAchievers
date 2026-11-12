@@ -1,5 +1,6 @@
 import { Prisma } from '#prisma';
 import { db } from '../db';
+import { publicCache } from '../public-cache';
 import { TIER_POINTS, tierCounts, type TierCounts } from './shared';
 
 export type LeaderboardPeriod = 'semaine' | 'mois' | 'tout';
@@ -92,6 +93,11 @@ export async function collectors(limit = 100) {
   const rows = await rankedCollectors(limit);
   return rows.map(({ id: _id, ...row }) => row);
 }
+
+/** L'accueil partage uniquement le podium public ; les lectures métier restent fraîches. */
+export const publicCollectors = (limit = 100) =>
+  publicCache.read(`collectors:${limit}`, () => collectors(limit));
+export const homePodium = () => publicCollectors(3);
 
 /** Tout le classement, avec les identifiants : réservé à l'attribution des récompenses. */
 export const allCollectors = () => rankedCollectors(Number.MAX_SAFE_INTEGER);

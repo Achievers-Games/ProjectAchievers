@@ -7,7 +7,8 @@ import type { Actions, PageServerLoad } from './$types';
 
 const requireUser = (locals: App.Locals) => requireLogin(locals, '/compte/vitrine');
 
-export const load: PageServerLoad = async ({ locals, url }) => {
+export const load: PageServerLoad = async ({ locals, url, depends }) => {
+  depends('app:sync');
   const user = requireUser(locals);
   const q = url.searchParams.get('q')?.trim().toLowerCase().slice(0, 80) || '';
 

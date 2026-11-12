@@ -650,6 +650,16 @@
   animation: fx-rise var(--speed) ease-out infinite;
   animation-delay: var(--delay);
 }
+
+/* Le survol et les vitrines ne relancent pas une animation hors écran ou dans un onglet masqué. */
+[data-effects-paused='true'],
+[data-effects-paused='true'] *,
+[data-effects-paused='true']::before,
+[data-effects-paused='true']::after,
+[data-effects-paused='true'] *::before,
+[data-effects-paused='true'] *::after {
+  animation-play-state: paused !important;
+}
 /* Le voile flotte devant le fond : flou, il n'a pas de bord visible. */
 .fx-aurora {
   position: absolute;

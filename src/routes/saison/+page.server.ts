@@ -4,7 +4,8 @@ import type { PageServerLoad } from './$types';
 
 const WAITING_GAMES = 4;
 
-export const load: PageServerLoad = async ({ locals }) => {
+export const load: PageServerLoad = async ({ locals, depends }) => {
+  depends('app:sync');
   const userId = locals.user?.id;
   const [stats, library] = await Promise.all([
     seasonStats(SEASON),

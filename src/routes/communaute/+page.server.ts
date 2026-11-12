@@ -8,6 +8,7 @@ const TABS = ['amis', 'clan', 'global'] as const;
 type Tab = (typeof TABS)[number];
 
 export const load: PageServerLoad = async ({ url, locals, depends }) => {
+  depends('app:sync');
   depends('app:communaute');
   const requested = url.searchParams.get('periode') as LeaderboardPeriod;
   const period = PERIODS.includes(requested) ? requested : 'mois';

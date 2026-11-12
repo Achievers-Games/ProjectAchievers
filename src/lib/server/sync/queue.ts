@@ -1,5 +1,6 @@
 import { PgBoss } from 'pg-boss';
 import { backgroundWork } from '../workload';
+import { invalidatePublicCache } from '../public-cache';
 import type { Provider, SyncStatus } from '#prisma';
 import { db } from '../db';
 import { env } from '../env';
@@ -303,6 +304,7 @@ export async function runLiveGame(
     achievementsCheckedAt: new Date(),
   });
   if (gained === 0) return 0;
+  invalidatePublicCache();
 
   const user = await syncUser(userId);
   if (!owned.hidden) announceUnlock(user, userId, owned.game, gained);
@@ -328,7 +330,11 @@ export async function runLiveGame(
 }
 
 export function runSync(job: SyncJob) {
-  return backgroundWork(`Synchronisation ${job.provider}`, () => runAccountSync(job), 1);
+  return backgroundWork(
+    `Synchronisation ${job.provider}`,
+    () => runAccountSync(job).finally(invalidatePublicCache),
+    1,
+  );
 }
 
 async function runAccountSync({ userId, provider, quiet }: SyncJob) {

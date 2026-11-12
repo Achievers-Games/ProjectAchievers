@@ -1,6 +1,7 @@
 import { Prisma, type Platform } from '#prisma';
 import { consolesOf } from '#lib/collection';
 import { db } from '../db';
+import { publicCache } from '../public-cache';
 import { groupLibrary, type LibraryCard } from '../library';
 import { seasonStartedGames } from './stats';
 import {
@@ -177,6 +178,37 @@ async function withProgress<T extends { id: string }>(games: T[], viewerId: stri
 }
 
 export type GameListItem = Awaited<ReturnType<typeof listGames>>['games'][number];
+
+/** Huit jeux publics pour l'accueil, sans charger une page de 36 jeux ni compter le catalogue. */
+export const homePopularGames = () =>
+  publicCache.read('home:popular', async () => {
+    const games = await db.game.findMany({
+      where: { adultOnly: false },
+      orderBy: [{ totalAchievements: 'desc' }, { id: 'asc' }],
+      take: 8,
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        platform: true,
+        console: true,
+        coverUrl: true,
+        headerUrl: true,
+        totalAchievements: true,
+        tier: true,
+      },
+    });
+    return games.map((game) => ({
+      ...game,
+      progress: null,
+      versions: [],
+      tier: game.tier ?? 1,
+      target: game.tier ?? 1,
+      copies: 1,
+      next: null,
+      seasonEligible: false,
+    }));
+  });
 
 /**
  * Les cartes obtenues par le joueur, les plus avancées d'abord.

@@ -1,10 +1,10 @@
 import {
   barelyPlayedGame,
   cardFeed,
-  collectors,
+  homePodium,
+  homePopularGames,
   dashboard,
   homeBanners,
-  listGames,
   toBanner,
 } from '#lib/server/queries';
 import { unlinkedPlatforms } from '#lib/server/accounts';
@@ -12,14 +12,16 @@ import { db } from '#lib/server/db';
 import { randomTagline } from '#lib/taglines';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ locals }) => {
+export const load: PageServerLoad = async ({ locals, depends }) => {
+  depends('app:sync');
+  const podiumTask = homePodium();
   if (locals.user) {
-    const podium = await collectors(3);
-    const [home, accounts, cards, banners, barelyPlayed, unlinked] = await Promise.all([
+    const [podium, home, accounts, cards, banners, barelyPlayed, unlinked] = await Promise.all([
+      podiumTask,
       dashboard(locals.user.id, locals.user.showAdult),
       db.linkedAccount.count({ where: { userId: locals.user.id } }),
       cardFeed(locals.user.showAdult),
-      homeBanners(podium[0], locals.user.id),
+      podiumTask.then((podium) => homeBanners(podium[0], locals.user!.id)),
       barelyPlayedGame(locals.user.id, locals.user.showAdult),
       unlinkedPlatforms(locals.user.id),
     ]);
@@ -34,11 +36,11 @@ export const load: PageServerLoad = async ({ locals }) => {
     if (aboutBarelyPlayed && barelyPlayed) banners.season = toBanner(barelyPlayed);
     return { home, accounts, unlinked, cards, podium, banners, popular: null, tagline };
   }
-  const podium = await collectors(3);
-  const [{ games }, cards, banners] = await Promise.all([
-    listGames({ sort: 'succes', page: 1 }, null),
+  const [podium, games, cards, banners] = await Promise.all([
+    podiumTask,
+    homePopularGames(),
     cardFeed(),
-    homeBanners(podium[0]),
+    podiumTask.then((podium) => homeBanners(podium[0])),
   ]);
   return {
     home: null,
@@ -47,7 +49,7 @@ export const load: PageServerLoad = async ({ locals }) => {
     cards,
     podium,
     banners,
-    popular: games.slice(0, 8),
+    popular: games,
     tagline: randomTagline().text,
   };
 };

@@ -5,7 +5,8 @@ import { clanPage, flagClanName } from '#lib/server/social';
 import { m } from '#lib/paraglide/messages';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ params, locals }) => {
+export const load: PageServerLoad = async ({ params, locals, depends }) => {
+  depends('app:sync');
   const [clan, row] = await Promise.all([
     clanPage(params.slug),
     db.clan.findUnique({ where: { slug: params.slug }, select: { id: true } }),
