@@ -92,6 +92,19 @@ et `XFF_DEPTH=1` pour que les limites de débit voient la vraie adresse des visi
 
 Le site tourne en **un seul processus** : limites de débit et événements temps réel vivent en mémoire.
 
+### Rareté des cartes
+
+Toutes les versions d'une même famille de jeux partagent une rareté. Le calcul prend le taux
+du succès le plus rare de chaque liste, moyenne les listes d'une même plateforme, puis moyenne
+les plateformes à poids égal. Les taux absents, nuls ou hors de 0–100 % sont exclus. S'il n'existe
+aucun taux exploitable, le nombre moyen de succès par plateforme sert de recours. Les seuils
+Bronze à Légendaire restent ceux de `src/lib/collection.ts`.
+
+La rareté évolue avec les données de synchronisation, indépendamment des comptes liés par le
+joueur. Terminer d'autres versions ajoute des exemplaires ×2, ×3 puis ×4 ; chaque jeu ne compte
+qu'une fois au classement des collections. La modération peut séparer les éditions non
+équivalentes : le calcul recalcule alors les deux familles.
+
 Sur le TS-233, le budget est limité à un traitement lourd à la fois : imports, suivi Steam en
 direct et maintenance partagent `BACKGROUND_CONCURRENCY=1`. Les imports passent avant la maintenance
 en attente ; le balayage Steam libère ce budget entre ses pages de 1 000 jeux. Les concurrences

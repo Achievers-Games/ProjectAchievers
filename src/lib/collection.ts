@@ -49,10 +49,10 @@ export const HOLO_TIER = 3;
 
 /** Part de joueurs ayant le succès le plus rare, du Bronze au Prismatique ; en dessous, Légendaire. */
 export const RARITY_STEPS = [10, 4, 2, 1, 0.3];
-/** Sans rareté publiée (Xbox, Battle.net), le nombre de succès mesure l'effort demandé. */
-const SIZE_STEPS = [20, 40, 70, 120, 300];
+/** Sans taux exploitable, le nombre de succès sert de recours. */
+export const SIZE_STEPS = [20, 40, 70, 120, 300];
 
-/** Le niveau d'un jeu vient de sa difficulté, jamais du nombre de plateformes où il existe. */
+/** Applique les seuils à la moyenne des taux par plateforme (ou au nombre de succès sans taux). */
 export function difficultyTier(rarest: number | null, achievements: number) {
   const step =
     rarest === null

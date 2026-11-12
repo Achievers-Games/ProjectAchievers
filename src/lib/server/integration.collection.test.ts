@@ -204,14 +204,20 @@ describe('jeux sur plusieurs plateformes', () => {
     expect(consolesOf('PS4/PS5')).toEqual(['PS4', 'PS5']);
   });
 
-  it('garde le niveau de la version finie la plus dure', () => {
-    const version = (platform: 'STEAM' | 'PSN', completion: number, tier: number) => {
+  it('utilise le niveau commun quel que soit le compte terminé', () => {
+    const version = (platform: 'STEAM' | 'PSN', completion: number) => {
       const version = row(platform, completion);
-      version.game.tier = tier;
+      version.game.tier = 3;
       return version;
     };
-    expect(groupLibrary([version('PSN', 100, 5), version('STEAM', 100, 2)])[0]?.tier).toBe(5);
-    expect(groupLibrary([version('STEAM', 100, 2), version('PSN', 50, 6)])[0]?.tier).toBe(2);
+    expect(groupLibrary([version('PSN', 100), version('STEAM', 100)])[0]).toMatchObject({
+      tier: 3,
+      copies: 2,
+    });
+    expect(groupLibrary([version('STEAM', 100), version('PSN', 50)])[0]).toMatchObject({
+      tier: 3,
+      copies: 1,
+    });
   });
 
   it('classe un jeu selon son succès le plus rare, sinon selon sa taille', () => {

@@ -2,6 +2,7 @@ import { error, fail } from '@sveltejs/kit';
 import { signupStats } from '#lib/server/auth-events';
 import { z } from 'zod';
 import { db } from '#lib/server/db';
+import { moveGameFamilies } from '#lib/server/card-rarity';
 import { issuePartnerKey, revokePartnerKey } from '#lib/server/partner-api';
 import { issueWebhookSecret } from '#lib/server/partner-webhooks';
 import { isRedirectUri, issueOAuthClient, rotateOAuthSecret } from '#lib/server/oauth-provider';
@@ -320,10 +321,7 @@ export const actions: Actions = {
   separate: async ({ request, locals }) => {
     requireModerator(locals);
     const id = String((await request.formData()).get('id'));
-    await db.game.updateMany({
-      where: { id },
-      data: { familyKey: `seul-${id}`, familyLocked: true },
-    });
+    await moveGameFamilies([id], { familyKey: `seul-${id}`, familyLocked: true });
   },
 
   join: async ({ request, locals }) => {
@@ -337,10 +335,7 @@ export const actions: Actions = {
     if (!first || !second) return fail(404, { error: m.mod_game_missing() });
 
     const familyKey = first.familyKey ?? first.id;
-    await db.game.updateMany({
-      where: { id: { in: [first.id, second.id] } },
-      data: { familyKey, familyLocked: true },
-    });
+    await moveGameFamilies([first.id, second.id], { familyKey, familyLocked: true });
   },
 
   resolve: async ({ request, locals }) => {

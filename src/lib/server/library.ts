@@ -46,7 +46,7 @@ export interface LibraryCard {
 
 /**
  * Réunit les versions d'un jeu en une seule carte, celle de la version la plus avancée.
- * Finir une seule version suffit à obtenir la carte, au niveau de la version finie la plus dure ;
+ * Finir une seule version suffit à obtenir la carte, au niveau commun à toutes les plateformes ;
  * chaque autre plateforme ou console lui ajoute un exemplaire.
  */
 export function groupLibrary(rows: LibraryRow[]): LibraryCard[] {

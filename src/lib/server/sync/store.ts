@@ -1,7 +1,7 @@
 import type { Prisma, Platform, TrophyType } from '#prisma';
 import { db } from '../db';
 import { familyKey } from '../family';
-import { difficultyTier } from '#lib/collection';
+import { lockCardCatalog, refreshSharedTier, updateFamilyTiers } from '../card-rarity';
 import { slugify } from '#lib/slug';
 
 const POINTS: Record<TrophyType, number> = {
@@ -65,7 +65,7 @@ async function availableSlug(
 export async function upsertGame(input: GameInput) {
   return db.$transaction(async (db) => {
     // Les créations sont courtes et partagent l'espace unique des slugs.
-    await db.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended('game-catalog', 0))::text`;
+    await lockCardCatalog(db);
 
     const key = { platform: input.platform, platformGameId: input.platformGameId };
     const existing = await db.game.findUnique({ where: { platform_platformGameId: key } });
@@ -79,9 +79,20 @@ export async function upsertGame(input: GameInput) {
     if (existing) {
       const family =
         existing.familyLocked || existing.familyMatched ? {} : { familyKey: familyKey(input.name) };
-      return db.game.update({ where: { id: existing.id }, data: { ...fields, ...family } });
+      const updated = await db.game.update({
+        where: { id: existing.id },
+        data: { ...fields, ...family },
+      });
+      if (updated.familyKey !== existing.familyKey) {
+        await updateFamilyTiers(db, [
+          existing.familyKey ?? existing.id,
+          updated.familyKey ?? updated.id,
+        ]);
+        return db.game.findUniqueOrThrow({ where: { id: updated.id } });
+      }
+      return updated;
     }
-    return db.game.create({
+    const created = await db.game.create({
       data: {
         ...key,
         ...fields,
@@ -89,6 +100,8 @@ export async function upsertGame(input: GameInput) {
         slug: await availableSlug(db, input.name, input.platform, input.platformGameId),
       },
     });
+    await updateFamilyTiers(db, [created.familyKey ?? created.id]);
+    return db.game.findUniqueOrThrow({ where: { id: created.id } });
   });
 }
 
@@ -106,17 +119,7 @@ export async function fillConsoles(platform: Platform, consoles: Map<string, str
 
 /** Un taux de 0 % veut dire « aucune donnée » : il ne compte pas comme une rareté. */
 export async function refreshGameTier(gameId: string) {
-  const [count, { _min }] = await Promise.all([
-    db.achievement.count({ where: { gameId } }),
-    db.achievement.aggregate({
-      where: { gameId, globalRarity: { gt: 0 } },
-      _min: { globalRarity: true },
-    }),
-  ]);
-  await db.game.update({
-    where: { id: gameId },
-    data: { tier: difficultyTier(_min.globalRarity, count) },
-  });
+  await refreshSharedTier(gameId);
 }
 
 /** Rattrape les jeux déjà connus, une fois, au démarrage. */

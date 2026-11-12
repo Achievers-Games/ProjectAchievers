@@ -107,7 +107,7 @@ const ruleFormat = () =>
 const relativeFormat = () =>
   cached('relative', () => new Intl.RelativeTimeFormat(getLocale(), { numeric: 'auto' }));
 
-/** Le niveau d'une carte vient de la rareté du succès le plus dur du jeu. */
+/** Les seuils s'appliquent à la moyenne des taux les plus rares entre plateformes. */
 export function tierRule(tier: number) {
   const low = RARITY_STEPS[tier - 1];
   const high = RARITY_STEPS[tier - 2];

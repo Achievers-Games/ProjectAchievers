@@ -51,11 +51,11 @@ async function rankedCollectors(limit: number) {
     } & TierCounts)[]
   >`
     WITH cards AS (
-      SELECT ug."userId", COALESCE(g.tier, 1) AS tier
+      SELECT ug."userId", max(COALESCE(g.tier, 1)) AS tier
       FROM "UserGame" ug
       JOIN "Game" g ON g.id = ug."gameId"
       WHERE ug.completion >= 100 AND NOT ug.hidden
-      GROUP BY ug."userId", COALESCE(g."familyKey", g.id), COALESCE(g.tier, 1)
+      GROUP BY ug."userId", COALESCE(g."familyKey", g.id)
     ), counts AS (
       SELECT "userId",
              count(*) FILTER (WHERE tier = 1) AS t1,

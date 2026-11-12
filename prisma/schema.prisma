@@ -453,7 +453,7 @@ model PsnVerification {
 // ── Catalogue ──────────────────────────────────────────────────────────
 
 model Game {
-  /// Niveau de difficulté de 1 (Bronze) à 6 (Légendaire), calculé depuis ses succès.
+  /// Rareté commune à la famille, de 1 à 6 : moyenne du taux le plus rare par plateforme.
   tier              Int?
   id                String            @id @default(cuid())
   platform          Platform

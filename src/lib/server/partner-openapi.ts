@@ -726,7 +726,8 @@ export function partnerOpenApi(origin: string) {
                         'count is then complete. False: only the known ones are counted.',
                     },
                     rarestAchievement: nullable('number', {
-                      description: 'Percent of Steam players who have the rarest achievement.',
+                      description:
+                        'Percent of players on this version’s platform who have its rarest achievement. Card rarity uses a shared average across platforms.',
                     }),
                   },
                 },
@@ -772,7 +773,10 @@ export function partnerOpenApi(origin: string) {
             coverUrl: nullable('string'),
             headerUrl: nullable('string'),
             totalAchievements: { type: 'integer' },
-            tier: nullable('integer', { description: 'Difficulty, 1 (Bronze) to 6 (Legendary).' }),
+            tier: nullable('integer', {
+              description:
+                'Shared card rarity, 1 (Bronze) to 6 (Legendary). Based on the mean rarest achievement rate per platform; lists on the same platform are averaged first. Missing rates are excluded. Uses achievement counts only when no rates are available.',
+            }),
             tags: {
               type: 'array',
               items: { type: 'integer' },

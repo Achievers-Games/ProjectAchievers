@@ -251,12 +251,12 @@ async function announceCards(user: SyncUser, userId: string, before: Map<string,
     .filter(({ game }) => user.showAdult || !game.adultOnly);
   if (user.isPublic) {
     const { displayName, handle, avatarUrl, avatarMotionUrl, frame, frameMotionUrl } = user;
-    for (const { game, unlockedAt, copies } of rewards) {
+    for (const { game, unlockedAt, copies, tier } of rewards) {
       const recent = unlockedAt && Date.now() - unlockedAt.getTime() < LIVE_CARD_MAX_AGE;
       if (unlockedAt && recent && isPublicGame(game)) {
         publishCard({
           user: { displayName, handle, avatarUrl, avatarMotionUrl, frame, frameMotionUrl },
-          game: { ...game, tier: game.tier ?? 1 },
+          game: { ...game, tier },
           copies,
           unlockedAt,
         });

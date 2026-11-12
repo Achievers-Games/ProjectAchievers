@@ -1,5 +1,6 @@
 import type { Platform } from '#prisma';
 import { db } from './db';
+import { moveGameFamilies } from './card-rarity';
 
 /** Mentions commerciales : elles ne changent pas le jeu, seulement son emballage. */
 const EDITIONS =
@@ -27,7 +28,7 @@ export async function fillFamilies() {
     select: { id: true, name: true },
   });
   for (const game of games) {
-    await db.game.update({ where: { id: game.id }, data: { familyKey: familyKey(game.name) } });
+    await moveGameFamilies([game.id], { familyKey: familyKey(game.name) });
   }
 }
 
@@ -80,7 +81,7 @@ export async function matchFamilies() {
       ? { familyKey: target, familyMatched: target !== familyKey(row.name) }
       : { familyKey: familyKey(row.name), familyMatched: false };
     if (data.familyKey === row.familyKey && data.familyMatched === row.familyMatched) continue;
-    await db.game.update({ where: { id: row.id }, data });
+    await moveGameFamilies([row.id], data);
     moved += 1;
   }
   return moved;
