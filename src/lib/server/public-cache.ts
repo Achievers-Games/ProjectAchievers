@@ -1,9 +1,9 @@
-/** Petit cache de lectures publiques : une seule requête en vol par clé, huit clés au plus. */
+/** Petit cache de lectures publiques : une seule requête en vol par clé, douze clés au plus. */
 export class PublicCache {
   private entries = new Map<string, { expires: number; value: Promise<unknown> }>();
 
   constructor(
-    private readonly maximum = 8,
+    private readonly maximum = 12,
     private readonly now = Date.now,
   ) {}
 

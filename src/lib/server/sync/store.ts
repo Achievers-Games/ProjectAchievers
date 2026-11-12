@@ -65,12 +65,29 @@ async function availableSlug(
   return slug;
 }
 
+/** Un champ que l'appelant ne précise pas reste tel quel : il ne compte pas comme un changement. */
+const kept = (next: string | null | undefined, current: string | null) =>
+  next === undefined || next === current;
+
 export async function upsertGame(input: GameInput) {
+  const key = { platform: input.platform, platformGameId: input.platformGameId };
+  // Le cas de loin le plus fréquent : un jeu connu, relu sans que rien n'ait bougé. Aucune
+  // écriture ni verrou du catalogue, que toutes les synchronisations se disputaient sinon.
+  const known = await db.game.findUnique({ where: { platform_platformGameId: key } });
+  if (
+    known &&
+    known.name === input.name &&
+    kept(input.coverUrl, known.coverUrl) &&
+    kept(input.headerUrl, known.headerUrl) &&
+    kept(input.console, known.console) &&
+    (known.familyLocked || known.familyMatched || known.familyKey === familyKey(input.name))
+  ) {
+    return known;
+  }
   return db.$transaction(async (db) => {
     // Les créations sont courtes et partagent l'espace unique des slugs.
     await lockCardCatalog(db);
 
-    const key = { platform: input.platform, platformGameId: input.platformGameId };
     const existing = await db.game.findUnique({ where: { platform_platformGameId: key } });
     const fields = {
       name: input.name,

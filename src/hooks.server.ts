@@ -63,6 +63,31 @@ function limitFor(request: Request, path: string): number | null {
   return 120;
 }
 
+/** Écritures qui ne touchent rien de ce que l'accueil et le classement mettent en cache. */
+const PRIVATE_WRITES = [
+  '/api/erreur',
+  '/api/v1/',
+  '/api/push',
+  '/api/messages',
+  '/api/notifications',
+  '/oauth/token',
+  '/oauth/revoke',
+  '/contact',
+  '/retours',
+];
+
+/**
+ * Le cache public est vidé autour de chaque écriture, et d'un retour de connexion qui peut créer
+ * un profil. Un rapport d'erreur du navigateur ou un message privé n'y changent rien : les
+ * compter vidait le cache en continu sur un site fréquenté.
+ */
+function changesPublicData(method: string, path: string) {
+  if (method === 'GET' || method === 'HEAD') {
+    return path.startsWith('/auth/') && !path.endsWith('/start');
+  }
+  return !PRIVATE_WRITES.some((prefix) => path.startsWith(prefix));
+}
+
 /** Le client peut déjà être parti : ce n'est pas une raison de répondre 500. */
 function clientAddress(event: RequestEvent): string {
   try {
@@ -111,7 +136,7 @@ const secured: Handle = async ({ event, resolve }) => {
     autoRefresh(event.locals.user.id);
   }
 
-  const mutation = !['GET', 'HEAD'].includes(event.request.method) || path.startsWith('/auth/');
+  const mutation = changesPublicData(event.request.method, path);
   if (mutation) invalidatePublicCache();
   let response: Response;
   try {

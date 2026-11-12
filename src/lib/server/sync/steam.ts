@@ -415,11 +415,16 @@ export async function fetchUnlocks(steamId: string, appId: number) {
 /** Lit un jeu et les succès du joueur. Sans réponse pour un jeu emprunté, le jeu est laissé. */
 async function syncSteamGame(userId: string, steamId: string, source: OwnedGame, shared: boolean) {
   const appId = String(source.appid);
+  // Les images ne se cherchent qu'une fois : sinon chaque relecture coûtait un appel par jeu.
+  const known = await db.game.findUnique({
+    where: { platform_platformGameId: { platform: 'STEAM', platformGameId: appId } },
+    select: { headerUrl: true },
+  });
   const game = await upsertGame({
     platform: 'STEAM',
     platformGameId: appId,
     name: source.name,
-    ...(await steamImages(appId)),
+    ...(known?.headerUrl ? {} : await steamImages(appId)),
   });
 
   const stale = !game.schemaSyncedAt || Date.now() - game.schemaSyncedAt.getTime() > SCHEMA_MAX_AGE;

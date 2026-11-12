@@ -1,6 +1,7 @@
 import { db } from '#lib/server/db';
 import { activityFeed, highlights, leaderboard, type LeaderboardPeriod } from '#lib/server/queries';
 import { clanMateIds, friendIds } from '#lib/server/social';
+import { publicCache } from '#lib/server/public-cache';
 import type { PageServerLoad } from './$types';
 
 const PERIODS: LeaderboardPeriod[] = ['semaine', 'mois', 'tout'];
@@ -25,7 +26,10 @@ export const load: PageServerLoad = async ({ url, locals, depends }) => {
   const circle = tab === 'amis' ? friends : clan;
 
   const [ranking, feed, moments, handles] = await Promise.all([
-    leaderboard(period, 20, tab === 'global' ? undefined : [...circle, userId as string]),
+    // Le classement de tout le site est le même pour chacun : il passe par le cache public.
+    tab === 'global'
+      ? publicCache.read(`leaderboard:${period}`, () => leaderboard(period, 20))
+      : leaderboard(period, 20, [...circle, userId as string]),
     tab === 'global' ? [] : activityFeed(showAdult, { userIds: circle }),
     tab === 'global' ? highlights(showAdult) : [],
     tab === 'global'

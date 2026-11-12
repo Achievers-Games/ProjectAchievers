@@ -35,6 +35,9 @@ export async function fillFamilies() {
 /** En dessous, une liste identique peut n'être qu'une coïncidence (« Victoire », « Tutoriel »). */
 const MIN_SHARED = 5;
 
+/** L'état du catalogue au dernier passage qui n'a rien eu à déplacer. */
+let matchedCatalog: string | null = null;
+
 interface ListRow {
   id: string;
   name: string;
@@ -51,6 +54,13 @@ interface ListRow {
  * Renvoie le nombre de jeux déplacés.
  */
 export async function matchFamilies() {
+  // La comparaison relit tous les succès du site : inutile tant que le catalogue n'a pas bougé.
+  // Toute création, tout renommage et tout import de succès modifient une ligne de `Game`.
+  const [state] = await db.$queryRaw<{ games: bigint; changed: Date | null }[]>`
+    SELECT count(*) AS games, max("updatedAt") AS changed FROM "Game"`;
+  const catalog = `${state?.games ?? 0}:${state?.changed?.getTime() ?? 0}`;
+  if (catalog === matchedCatalog) return 0;
+
   const rows = await db.$queryRaw<ListRow[]>`
     WITH names AS (
       SELECT DISTINCT "gameId", lower(regexp_replace(name, '[^[:alnum:]]', '', 'g')) AS n
@@ -75,6 +85,8 @@ export async function matchFamilies() {
   }
 
   let moved = 0;
+  // Un passage sans déplacement laisse le catalogue tel qu'il a été lu : le suivant peut s'en passer.
+  matchedCatalog = catalog;
   for (const row of rows) {
     const target = targets.get(row.id);
     const data = target
@@ -84,5 +96,7 @@ export async function matchFamilies() {
     await moveGameFamilies([row.id], data);
     moved += 1;
   }
+  // Un déplacement peut en permettre un autre : le prochain passage relit tout.
+  if (moved) matchedCatalog = null;
   return moved;
 }

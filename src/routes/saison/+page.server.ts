@@ -1,5 +1,6 @@
 import { SEASON, seasonState } from '#lib/season';
 import { listGames, seasonStats } from '#lib/server/queries';
+import { publicCache } from '#lib/server/public-cache';
 import type { PageServerLoad } from './$types';
 
 const WAITING_GAMES = 4;
@@ -8,7 +9,9 @@ export const load: PageServerLoad = async ({ locals, depends }) => {
   depends('app:sync');
   const userId = locals.user?.id;
   const [stats, library] = await Promise.all([
-    seasonStats(SEASON),
+    // Le même classement pour tous, et un calcul lourd : une seule lecture par fenêtre de cache.
+    // Une synchronisation terminée le vide, donc les points du joueur suivent ses succès.
+    publicCache.read('season', () => seasonStats(SEASON)),
     userId
       ? listGames(
           {
