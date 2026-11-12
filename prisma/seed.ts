@@ -1,6 +1,7 @@
 // Données de démonstration, pour le développement uniquement.
 import 'dotenv/config';
-import { difficultyTier } from '../src/lib/collection';
+import { sharedTierUpdate } from '../src/lib/server/card-rarity';
+import { familyKey } from '../src/lib/server/family';
 import { type TrophyType } from '#prisma';
 import { createPrismaClient } from '../src/lib/server/prisma';
 
@@ -63,11 +64,6 @@ async function main() {
       },
     });
 
-    await db.game.update({
-      where: { id: game.id },
-      data: { tier: difficultyTier(Math.max(0.6, 92 - ((g.count - 1) * 90) / g.count), g.count) },
-    });
-
     const achievements = [];
     for (let i = 0; i < g.count; i++) {
       const trophyType: TrophyType = 'ACHIEVEMENT';
@@ -114,7 +110,7 @@ async function main() {
     }
   }
 
-  // Une carte de chaque rareté.
+  // Deux cartes terminées, dont une rare sur plusieurs plateformes.
   const demo = users[0] as (typeof users)[number];
   const marco = await db.user.findUniqueOrThrow({ where: { handle: 'marco' } });
   // Un profil Steam privé : le compte doit montrer comment l'ouvrir.
@@ -213,7 +209,6 @@ async function main() {
       slug: 'astro-bot-steam',
       headerUrl: platinumGame.headerUrl,
       totalAchievements: 10,
-      tier: 1,
     },
   });
   const astroStarted = { unlockedCount: 4, totalCount: 10, completion: 40 };
@@ -234,7 +229,6 @@ async function main() {
       slug: 'hades-psn',
       headerUrl: perfect.headerUrl,
       totalAchievements: 1,
-      tier: 5,
     },
   });
   const hadesDouble = {
@@ -267,6 +261,27 @@ async function main() {
     update: hadesDouble,
     create: { ...hadesDouble, userId: demo.id, gameId: hadesXbox.id },
   });
+
+  // Des taux réels dans le jeu de données, jamais un niveau forcé :
+  // Steam 0,6 %, PSN 0,4 %, Xbox 0,8 % donnent une moyenne de 0,6 % (Prismatique).
+  await db.achievement.update({
+    where: { gameId_platformAchievementId: { gameId: perfect.id, platformAchievementId: 'A48' } },
+    data: { globalRarity: 0.6 },
+  });
+  for (const [game, globalRarity] of [
+    [hadesPsn, 0.4],
+    [hadesXbox, 0.8],
+  ] as const) {
+    const achievement = await db.achievement.upsert({
+      where: { gameId_platformAchievementId: { gameId: game.id, platformAchievementId: '0' } },
+      update: { globalRarity },
+      create: { gameId: game.id, platformAchievementId: '0', name: 'Terminer Hades', globalRarity },
+    });
+    await db.userAchievement.createMany({
+      data: [{ userId: demo.id, achievementId: achievement.id, unlockedAt: new Date() }],
+      skipDuplicates: true,
+    });
+  }
 
   // Un jeu masqué par défaut, dans la bibliothèque de Léa.
   const adultGame = await db.game.upsert({
@@ -302,6 +317,15 @@ async function main() {
       },
     });
   }
+  // Même regroupement et même calcul que le site, dès la fin du seed.
+  const ungrouped = await db.game.findMany({
+    where: { familyKey: null },
+    select: { id: true, name: true },
+  });
+  for (const game of ungrouped) {
+    await db.game.update({ where: { id: game.id }, data: { familyKey: familyKey(game.name) } });
+  }
+  await db.$executeRaw(sharedTierUpdate());
 }
 
 await main();
