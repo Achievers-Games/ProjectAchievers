@@ -5,7 +5,7 @@
   import Eye from '@lucide/svelte/icons/eye';
   import Edit from '@lucide/svelte/icons/edit';
   import { untrack } from 'svelte';
-  import { renderGuidePreview } from '#lib/guide-preview';
+  import { renderGuide } from '#lib/guide-preview';
 
   let { data, form } = $props();
 
@@ -16,7 +16,7 @@
   let showPreview = $state(false);
 
   // Prévisualisation live
-  const previewHtml = $derived(renderGuidePreview(content));
+  const previewHtml = $derived(renderGuide(content));
 </script>
 
 <svelte:head>

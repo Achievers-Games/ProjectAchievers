@@ -137,15 +137,10 @@ export async function fillConsoles(platform: Platform, consoles: Map<string, str
   }
 }
 
-/** Un taux de 0 % veut dire « aucune donnée » : il ne compte pas comme une rareté. */
-export async function refreshGameTier(gameId: string) {
-  await refreshSharedTier(gameId);
-}
-
 /** Rattrape les jeux déjà connus, une fois, au démarrage. */
 export async function fillGameTiers() {
   const games = await db.game.findMany({ where: { tier: null }, select: { id: true } });
-  for (const { id } of games) await refreshGameTier(id);
+  for (const { id } of games) await refreshSharedTier(id);
 }
 
 /** Remplace le catalogue de succès d'un jeu. Les succès déjà connus gardent leur identifiant. */
@@ -190,7 +185,7 @@ export async function saveAchievements(gameId: string, achievements: Achievement
       schemaSyncedAt: new Date(),
     },
   });
-  await refreshGameTier(gameId);
+  await refreshSharedTier(gameId);
 }
 
 /**

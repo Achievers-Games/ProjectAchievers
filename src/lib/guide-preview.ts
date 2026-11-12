@@ -33,11 +33,11 @@ const guideMarked = new Marked({
 });
 
 /**
- * Prévisualise un guide Markdown exactement comme le serveur le rend.
- * Identique à `renderGuide` de `#lib/server/markdown`, mais utilisable côté client :
- * les cases à cocher sont numérotées de la même manière pour rester cohérentes.
+ * Le rendu d'un guide, le même sur le serveur (`#lib/server/markdown` le réexporte) et dans
+ * l'aperçu du navigateur. Un guide va plus loin qu'un commentaire : titres, médias et cases à
+ * cocher y sont permis.
  */
-export function renderGuidePreview(source: string): string {
+export function renderGuide(source: string): string {
   const html = sanitizeHtml(guideMarked.parse(source, { async: false }) as string, {
     allowedTags: [
       ...(sanitizeHtml.defaults.allowedTags as string[]),
@@ -60,6 +60,7 @@ export function renderGuidePreview(source: string): string {
     allowedIframeHostnames: ['www.youtube-nocookie.com'],
     transformTags: LINKS,
   });
+  // Le rang identifie la case : il reste le même dans toutes les traductions du guide.
   let item = 0;
   return html.replace(/<input[^>]*>/g, () => `<input type="checkbox" data-check="${item++}" />`);
 }

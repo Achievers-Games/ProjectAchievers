@@ -8,12 +8,8 @@ import {
   saveFlow,
   type OAuthProvider,
 } from '#lib/server/providers';
-import { discordAuthorizeUrl } from '#lib/server/providers/discord';
-import { googleAuthorizeUrl } from '#lib/server/providers/google';
+import { CODE_FLOWS } from '#lib/server/providers/flows';
 import { steamAuthorizeUrl } from '#lib/server/providers/steam';
-import { xboxAuthorizeUrl } from '#lib/server/providers/xbox';
-import { blizzardAuthorizeUrl } from '#lib/server/providers/blizzard';
-import { epicAuthorizeUrl } from '#lib/server/providers/epic';
 import { recordAuthEvent } from '#lib/server/auth-events';
 import type { RequestHandler } from './$types';
 
@@ -38,10 +34,5 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
   // Le fournisseur d'identité est un autre site : SvelteKit 3 exige de le dire explicitement.
   const external = { external: true };
   if (provider === 'steam') redirect(303, steamAuthorizeUrl(state), external);
-  if (provider === 'epic') redirect(303, epicAuthorizeUrl(state), external);
-  if (provider === 'blizzard') redirect(303, blizzardAuthorizeUrl(state), external);
-  if (provider === 'discord')
-    redirect(303, discordAuthorizeUrl(state, verifier as string), external);
-  if (provider === 'google') redirect(303, googleAuthorizeUrl(state, verifier as string), external);
-  redirect(303, xboxAuthorizeUrl(state, verifier as string), external);
+  redirect(303, CODE_FLOWS[provider].authorizeUrl(state, verifier as string), external);
 };

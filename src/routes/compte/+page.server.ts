@@ -1,8 +1,8 @@
-import { fail, redirect } from '@sveltejs/kit';
+import { fail, redirect, type Cookies } from '@sveltejs/kit';
 import { themeOf } from '#lib/theme';
 import { z } from 'zod';
 import type { Provider } from '#prisma';
-import { profileSchema, resolveIdentity, updateProfile } from '#lib/server/accounts';
+import { profileSchema, resolveIdentity, updateProfile, type Identity } from '#lib/server/accounts';
 import { requireLogin } from '#lib/server/auth';
 import { secureCookie } from '#lib/server/cookies';
 import { db } from '#lib/server/db';
@@ -142,6 +142,66 @@ const providerSchema = z.enum([
   'EPIC',
   'BLIZZARD',
 ]);
+
+/**
+ * PSN et RetroAchievements n'ont pas de connexion OAuth : le joueur prouve qu'il possède le
+ * profil en y posant un code. Les trois étapes sont les mêmes pour les deux plateformes.
+ */
+type BioProvider = 'PSN' | 'RETRO';
+
+/** Un nouveau code remplace le précédent : une seule vérification en cours par joueur. */
+async function startBioCheck(
+  userId: string,
+  provider: BioProvider,
+  onlineId: string,
+  accountId: string,
+) {
+  const data = {
+    provider,
+    onlineId,
+    accountId,
+    code: newPsnCode(),
+    expiresAt: new Date(Date.now() + PSN_CODE_LIFETIME),
+  };
+  await db.psnVerification.upsert({
+    where: { userId },
+    update: data,
+    create: { ...data, userId },
+  });
+}
+
+/** La vérification en cours pour cette plateforme, si elle n'a pas expiré. */
+async function pendingBioCheck(userId: string, provider: BioProvider) {
+  const pending = await db.psnVerification.findUnique({ where: { userId } });
+  return pending?.provider === provider && pending.expiresAt >= new Date() ? pending : null;
+}
+
+/** Le code est sur le profil : le compte est lié, ou une fusion est proposée s'il a déjà un profil. */
+async function finishBioCheck(
+  userId: string,
+  cookies: Cookies,
+  identity: Identity & { provider: BioProvider },
+  linked: () => string,
+) {
+  const result = await resolveIdentity(identity, userId);
+  if (!result.ok && result.reason === 'provider_taken') {
+    return fail(409, { error: NOTICES[result.reason]?.() });
+  }
+
+  await db.psnVerification.delete({ where: { userId } });
+  if (!result.ok) {
+    saveMerge(cookies, {
+      sourceId: result.ownerId,
+      targetId: userId,
+      provider: identity.provider,
+      providerUserId: identity.providerUserId,
+    });
+    return { success: m.psn_other_profile() };
+  }
+
+  await enqueueSync(userId, identity.provider);
+  return { success: linked() };
+}
 
 export const actions: Actions = {
   profile: async ({ request, locals }) => {
@@ -382,27 +442,13 @@ export const actions: Actions = {
       return fail(502, { error: m.psn_down() });
     }
     if (!profile) return fail(404, { error: m.psn_not_found() });
-
-    const data = {
-      provider: 'PSN' as const,
-      onlineId: profile.onlineId,
-      accountId: profile.accountId,
-      code: newPsnCode(),
-      expiresAt: new Date(Date.now() + PSN_CODE_LIFETIME),
-    };
-    await db.psnVerification.upsert({
-      where: { userId: user.id },
-      update: data,
-      create: { ...data, userId: user.id },
-    });
+    await startBioCheck(user.id, 'PSN', profile.onlineId, profile.accountId);
   },
 
   psnConfirm: async ({ locals, cookies }) => {
     const user = requireUser(locals);
-    const pending = await db.psnVerification.findUnique({ where: { userId: user.id } });
-    if (pending?.provider !== 'PSN' || pending.expiresAt < new Date()) {
-      return fail(410, { error: m.psn_code_expired() });
-    }
+    const pending = await pendingBioCheck(user.id, 'PSN');
+    if (!pending) return fail(410, { error: m.psn_code_expired() });
 
     let profile;
     try {
@@ -415,12 +461,12 @@ export const actions: Actions = {
       return fail(404, { error: m.psn_changed() });
     }
     if (!bioContainsCode(profile.aboutMe, pending.code)) {
-      return fail(409, {
-        error: m.psn_code_missing({ code: pending.code }),
-      });
+      return fail(409, { error: m.psn_code_missing({ code: pending.code }) });
     }
 
-    const result = await resolveIdentity(
+    return finishBioCheck(
+      user.id,
+      cookies,
       {
         provider: 'PSN',
         providerUserId: profile.accountId,
@@ -428,25 +474,8 @@ export const actions: Actions = {
         avatarUrl: profile.avatarUrl,
         profileUrl: `https://psnprofiles.com/${encodeURIComponent(profile.onlineId)}`,
       },
-      user.id,
+      m.psn_linked,
     );
-    if (!result.ok && result.reason === 'provider_taken') {
-      return fail(409, { error: NOTICES[result.reason]?.() });
-    }
-
-    await db.psnVerification.delete({ where: { userId: user.id } });
-    if (!result.ok) {
-      saveMerge(cookies, {
-        sourceId: result.ownerId,
-        targetId: user.id,
-        provider: 'PSN',
-        providerUserId: profile.accountId,
-      });
-      return { success: m.psn_other_profile() };
-    }
-
-    await enqueueSync(user.id, 'PSN');
-    return { success: m.psn_linked() };
   },
 
   retroStart: async ({ request, locals }) => {
@@ -460,27 +489,13 @@ export const actions: Actions = {
     });
     if (profile === undefined) return fail(502, { error: m.retro_down() });
     if (!profile) return fail(404, { error: m.retro_not_found() });
-
-    const data = {
-      provider: 'RETRO' as const,
-      onlineId: profile.username,
-      accountId: profile.ulid,
-      code: newPsnCode(),
-      expiresAt: new Date(Date.now() + PSN_CODE_LIFETIME),
-    };
-    await db.psnVerification.upsert({
-      where: { userId: user.id },
-      update: data,
-      create: { ...data, userId: user.id },
-    });
+    await startBioCheck(user.id, 'RETRO', profile.username, profile.ulid);
   },
 
   retroConfirm: async ({ locals, cookies }) => {
     const user = requireUser(locals);
-    const pending = await db.psnVerification.findUnique({ where: { userId: user.id } });
-    if (pending?.provider !== 'RETRO' || pending.expiresAt < new Date()) {
-      return fail(410, { error: m.psn_code_expired() });
-    }
+    const pending = await pendingBioCheck(user.id, 'RETRO');
+    if (!pending) return fail(410, { error: m.psn_code_expired() });
 
     const profile = await findRetroProfile(pending.accountId).catch((cause) => {
       log.error('Vérification RetroAchievements :', cause);
@@ -492,7 +507,9 @@ export const actions: Actions = {
       return fail(409, { error: m.retro_code_missing({ code: pending.code }) });
     }
 
-    const result = await resolveIdentity(
+    return finishBioCheck(
+      user.id,
+      cookies,
       {
         provider: 'RETRO',
         providerUserId: profile.ulid,
@@ -500,25 +517,8 @@ export const actions: Actions = {
         avatarUrl: profile.avatarUrl,
         profileUrl: `https://retroachievements.org/user/${encodeURIComponent(profile.username)}`,
       },
-      user.id,
+      m.retro_linked,
     );
-    if (!result.ok && result.reason === 'provider_taken') {
-      return fail(409, { error: NOTICES[result.reason]?.() });
-    }
-
-    await db.psnVerification.delete({ where: { userId: user.id } });
-    if (!result.ok) {
-      saveMerge(cookies, {
-        sourceId: result.ownerId,
-        targetId: user.id,
-        provider: 'RETRO',
-        providerUserId: profile.ulid,
-      });
-      return { success: m.psn_other_profile() };
-    }
-
-    await enqueueSync(user.id, 'RETRO');
-    return { success: m.retro_linked() };
   },
 
   psnCancel: async ({ locals }) => {

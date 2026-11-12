@@ -1,6 +1,7 @@
 import { fail } from '@sveltejs/kit';
 import { z } from 'zod';
 import { m } from '#lib/paraglide/messages';
+import { clientAddress } from '#lib/server/client-address';
 import { sendMail } from '#lib/server/email';
 import { env } from '#lib/server/env';
 import { rateLimit } from '#lib/server/rate-limit';
@@ -57,12 +58,8 @@ export const actions: Actions = {
     const to = inbox();
     if (!to) return fail(503, { error: m.contact_unavailable() });
 
-    let ip = 'unknown';
-    try {
-      ip = getClientAddress();
-    } catch {
-      // Adresse indisponible : la limite reste appliquée sous la clé partagée.
-    }
+    // Adresse indisponible : la limite reste appliquée sous une clé partagée.
+    const ip = clientAddress({ getClientAddress });
     if (!rateLimit(`contact:${ip}`, PER_HOUR, 3_600_000)) {
       return fail(429, { error: m.too_fast() });
     }

@@ -1,11 +1,11 @@
 import type { Handle, ServerInit } from '@sveltejs/kit/hooks';
-import type { RequestEvent } from '@sveltejs/kit';
 import { dev } from '$app/env';
 import { themeOf } from '#lib/theme';
 import { m } from '#lib/paraglide/messages';
 import { extractLocaleFromUrl, getLocale } from '#lib/paraglide/runtime';
 import { paraglideMiddleware } from '#lib/paraglide/server';
 import { syncCuratedGuides } from '#lib/server/curated-guides';
+import { clientAddress } from '#lib/server/client-address';
 import { env } from '#lib/server/env';
 import { grantFramesThrottled } from '#lib/server/frames';
 import { withPartnerFormAction } from '#lib/server/oauth-provider';
@@ -86,15 +86,6 @@ function changesPublicData(method: string, path: string) {
     return path.startsWith('/auth/') && !path.endsWith('/start');
   }
   return !PRIVATE_WRITES.some((prefix) => path.startsWith(prefix));
-}
-
-/** Le client peut déjà être parti : ce n'est pas une raison de répondre 500. */
-function clientAddress(event: RequestEvent): string {
-  try {
-    return event.getClientAddress();
-  } catch {
-    return 'inconnue';
-  }
 }
 
 const secured: Handle = async ({ event, resolve }) => {

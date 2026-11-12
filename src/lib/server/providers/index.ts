@@ -3,6 +3,7 @@ import type { Provider } from '#prisma';
 import { secureCookie } from '../cookies';
 import { decrypt, encrypt } from '../crypto';
 import { env } from '../env';
+import { exchangeCodeForProfile } from './oauth';
 
 export type OAuthProvider = 'steam' | 'discord' | 'xbox' | 'google' | 'epic' | 'blizzard';
 
@@ -42,9 +43,12 @@ interface CodeExchange {
 
 /** Échange un code d'autorisation contre le profil du joueur ; aucun jeton n'est conservé. */
 export async function fetchOAuthProfile<T>(flow: CodeExchange, code: string, verifier: string) {
-  const tokenResponse = await fetch(flow.tokenUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+  // Discord et Google lisent l'identité du site dans le corps, avec PKCE ; Epic et Blizzard dans
+  // l'en-tête. L'échange lui-même est le même pour tous.
+  const { profile } = await exchangeCodeForProfile<T>({
+    name: flow.name,
+    tokenUrl: flow.tokenUrl,
+    profileUrl: flow.profileUrl,
     body: new URLSearchParams({
       grant_type: 'authorization_code',
       code,
@@ -53,17 +57,8 @@ export async function fetchOAuthProfile<T>(flow: CodeExchange, code: string, ver
       redirect_uri: callbackUrl(flow.provider),
       code_verifier: verifier,
     }),
-    signal: AbortSignal.timeout(10_000),
   });
-  if (!tokenResponse.ok) throw new Error(`${flow.name} a refusé le code (${tokenResponse.status})`);
-  const tokens = (await tokenResponse.json()) as { access_token: string };
-
-  const userResponse = await fetch(flow.profileUrl, {
-    headers: { Authorization: `Bearer ${tokens.access_token}` },
-    signal: AbortSignal.timeout(10_000),
-  });
-  if (!userResponse.ok) throw new Error(`Profil ${flow.name} illisible (${userResponse.status})`);
-  return (await userResponse.json()) as T;
+  return profile;
 }
 
 const FLOW_COOKIE = 'pa_oauth';

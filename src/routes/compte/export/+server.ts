@@ -68,6 +68,20 @@ export const GET: RequestHandler = async ({ locals }) => {
       reactions: { select: { commentId: true, type: true } },
       reports: { select: { targetType: true, targetId: true, reason: true, createdAt: true } },
       sessions: { select: { userAgent: true, createdAt: true, lastUsedAt: true } },
+      partnerLinks: {
+        select: { partner: true, method: true, createdAt: true, revokedAt: true },
+      },
+      oauthGrants: {
+        select: {
+          scopes: true,
+          createdAt: true,
+          revokedAt: true,
+          app: { select: { name: true } },
+        },
+      },
+      clanInvites: { select: { createdAt: true, clan: { select: { name: true } } } },
+      clanRequests: { select: { createdAt: true, clan: { select: { name: true } } } },
+      conversations: { select: { conversationId: true, lastReadAt: true } },
     },
   });
 

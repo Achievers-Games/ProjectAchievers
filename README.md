@@ -6,7 +6,7 @@ Site web communautaire pour les chasseurs de succès : la progression se synchro
 
 | Couche          | Choix                                                     |
 | --------------- | --------------------------------------------------------- |
-| Application     | SvelteKit 2, Svelte 5, `adapter-node`                     |
+| Application     | SvelteKit 3, Svelte 5, `adapter-node`                     |
 | Base de données | PostgreSQL, Prisma                                        |
 | Synchronisation | File de tâches pg-boss, progression en Server-Sent Events |
 | Style           | Tailwind, tokens CSS dans `src/app.css`                   |
@@ -201,7 +201,7 @@ prisma/                    Schéma et migrations
 src/hooks.server.ts        Sessions, limites de débit, en-têtes, démarrage des tâches
 src/lib/server/providers/  Authentification Steam, Discord, Google, Xbox, PSN, Retro, Epic, Blizzard
 src/lib/server/sync/       Synchronisation par plateforme et file de tâches
-src/lib/server/queries.ts  Lectures partagées entre les pages
+src/lib/server/queries/    Lectures partagées entre les pages
 src/routes/                Pages et points d'accès
 e2e/                       Tests Playwright
 ```

@@ -32,16 +32,19 @@ export async function recordAuthEvent(
   }
 }
 
+/** Les événements de plus de 90 jours s'effacent au balayage horaire, pas à l'affichage. */
+export const purgeAuthEvents = (now = new Date()) =>
+  db.authEvent.deleteMany({
+    where: { createdAt: { lt: new Date(now.getTime() - KEEP_DAYS * DAY) } },
+  });
+
 const dayKey = (date: Date) => date.toISOString().slice(0, 10);
 
 /**
  * Le suivi des inscriptions pour la modération : les membres, et sur `days` jours, ce que
- * devient chaque départ vers un fournisseur. Les événements de plus de 90 jours s'effacent ici.
+ * devient chaque départ vers un fournisseur.
  */
 export async function signupStats(days = 14, now = new Date()) {
-  await db.authEvent.deleteMany({
-    where: { createdAt: { lt: new Date(now.getTime() - KEEP_DAYS * DAY) } },
-  });
   const since = new Date(now.getTime() - days * DAY);
   const [members, week, month, events] = await Promise.all([
     db.user.count(),

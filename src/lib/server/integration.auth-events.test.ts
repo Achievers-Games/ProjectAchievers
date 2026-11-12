@@ -2,7 +2,7 @@
 import 'dotenv/config';
 import { afterAll, describe, expect, it } from 'vitest';
 import { db } from './db';
-import { recordAuthEvent, signupStats } from './auth-events';
+import { purgeAuthEvents, recordAuthEvent, signupStats } from './auth-events';
 import { setupIntegration } from './test-helpers';
 
 setupIntegration();
@@ -53,6 +53,8 @@ describe('suivi des inscriptions', () => {
       errors: 1,
     });
     expect(stats.reasons).toContainEqual({ reason: 'expire', count: 1 });
+    // L'affichage ne supprime rien : c'est le balayage horaire qui efface les vieux événements.
+    await purgeAuthEvents(now);
     expect(
       await db.authEvent.count({
         where: { provider: PROVIDER, createdAt: { lt: at('2031-01-01') } },

@@ -17,7 +17,8 @@ export async function exchangeCodeForProfile<T>(options: {
   name: string;
   tokenUrl: string;
   profileUrl: string;
-  authorization: string;
+  /** Absent quand le fournisseur lit l'identité du site dans le corps de la demande. */
+  authorization?: string;
   body: URLSearchParams;
 }): Promise<{ token: string; profile: T }> {
   const tokenResponse = await request(
@@ -25,7 +26,7 @@ export async function exchangeCodeForProfile<T>(options: {
     {
       method: 'POST',
       headers: {
-        Authorization: options.authorization,
+        ...(options.authorization && { Authorization: options.authorization }),
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: options.body,

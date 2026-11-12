@@ -1,6 +1,7 @@
 import type { Locale } from '#lib/paraglide/runtime';
 import type { AchievementText } from '../achievement-texts';
 import type { BlizzardCharacter } from '../accounts';
+import { refreshSharedTier } from '../card-rarity';
 import { db } from '../db';
 import { env } from '../env';
 import { backgroundWork } from '../workload';
@@ -11,7 +12,6 @@ const log = logger('WoW');
 import { mapLimit, syncGames } from './errors';
 import {
   saveAchievements,
-  refreshGameTier,
   saveProgress,
   upsertGame,
   type AchievementInput,
@@ -194,7 +194,7 @@ async function refreshWowCatalog() {
     where: { id: game.id },
     data: { totalAchievements: names.size, schemaSyncedAt: new Date() },
   });
-  await refreshGameTier(game.id);
+  await refreshSharedTier(game.id);
   return game;
 }
 

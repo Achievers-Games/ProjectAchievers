@@ -2,6 +2,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { json } from '@sveltejs/kit';
 import type { RequestEvent } from '@sveltejs/kit';
 import type { Platform } from '#prisma';
+import { clientAddress } from './client-address';
 import { db } from './db';
 import { env } from './env';
 import { rateLimit } from './rate-limit';
@@ -67,14 +68,6 @@ export async function issuePartnerKey(name: string) {
 
 export const revokePartnerKey = (id: string) =>
   db.partnerApp.update({ where: { id }, data: { revokedAt: new Date() } });
-
-const clientAddress = (event: RequestEvent) => {
-  try {
-    return event.getClientAddress();
-  } catch {
-    return 'inconnue';
-  }
-};
 
 /** Le partenaire qui appelle, ou la réponse d'erreur à renvoyer telle quelle. */
 export async function authenticatePartner(

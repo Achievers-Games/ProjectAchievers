@@ -7,6 +7,7 @@ import { env } from '../env';
 import { globals } from '../globals';
 import { logger } from '#lib/logger';
 import { availableProviders } from '../providers';
+import { purgeAuthEvents } from '../auth-events';
 import { fillFamilies, matchFamilies } from '../family';
 import { announceSeason } from '../push';
 import { warnPsnToken } from '../service-token';
@@ -467,6 +468,7 @@ async function sweep() {
   const now = new Date();
   await db.session.deleteMany({ where: { expiresAt: { lt: now } } });
   await db.psnVerification.deleteMany({ where: { expiresAt: { lt: now } } });
+  await purgeAuthEvents(now);
   await db.syncRun.deleteMany({
     where: { startedAt: { lt: new Date(now.getTime() - RUN_HISTORY) } },
   });
