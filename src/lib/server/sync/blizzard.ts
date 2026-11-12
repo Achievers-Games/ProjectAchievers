@@ -2,6 +2,8 @@ import type { Locale } from '#lib/paraglide/runtime';
 import type { AchievementText } from '../achievement-texts';
 import type { BlizzardCharacter } from '../accounts';
 import { db } from '../db';
+import { env } from '../env';
+import { backgroundWork } from '../workload';
 import { logger } from '#lib/logger';
 import { blizzardGet } from '../providers/blizzard';
 
@@ -20,11 +22,9 @@ import type { ProviderSync, SyncContext } from './types';
 export const WOW_GAME = 'wow';
 export const SC2_GAME = 'sc2';
 
-const CONCURRENCY = 4;
-const DETAIL_CONCURRENCY = 8;
+const concurrency = () => env().SYNC_GAME_CONCURRENCY;
 const CATALOG_MAX_AGE = 7 * 86_400_000;
 /** Blizzard compte les requêtes à l'heure : le catalogue WoW se remplit par morceaux. */
-const DETAILS_PER_RUN = 3_000;
 /** Les serveurs européens : le catalogue est le même partout. */
 const SC2_REGION = 2;
 
@@ -154,7 +154,7 @@ async function fetchWowCatalog() {
   const names = new Map<number, string>();
   await mapLimit(
     categories.filter((category) => !excluded.has(category.id)),
-    DETAIL_CONCURRENCY,
+    concurrency(),
     async ({ id }) => {
       const { achievements = [] } = await readJson<{
         achievements?: { id: number; name: Texts }[];
@@ -245,9 +245,9 @@ export function fillWowCatalog() {
         game: { platform: 'BLIZZARD', platformGameId: WOW_GAME },
       },
       select: { id: true, platformAchievementId: true },
-      take: DETAILS_PER_RUN,
+      take: env().BLIZZARD_DETAILS_PER_RUN,
     });
-    await mapLimit(missing, DETAIL_CONCURRENCY, (achievement) =>
+    await mapLimit(missing, concurrency(), (achievement) =>
       fillWowDetail(achievement).catch((cause) =>
         log.error(`Succès WoW ${achievement.platformAchievementId} :`, cause),
       ),
@@ -274,12 +274,14 @@ async function syncWow({ userId, account, onUnlocked }: SyncContext) {
   const lists: UnlockInput[][] = [];
   await syncGames(
     characters,
-    { platform: WOW_NAME, concurrency: CONCURRENCY, name: (c) => c.name, report: () => {} },
+    { platform: WOW_NAME, concurrency: concurrency(), name: (c) => c.name, report: () => {} },
     async (character) => void lists.push(await fetchCharacterUnlocks(character)),
   );
   const { gained } = await saveProgress(userId, game.id, mergeUnlocks(lists));
   if (gained > 0) onUnlocked(game, gained);
-  void fillWowCatalog().catch((cause) => log.error('Catalogue WoW :', cause));
+  void backgroundWork('Catalogue WoW après import', () => fillWowCatalog(), -1).catch((cause) =>
+    log.error('Catalogue WoW :', cause),
+  );
   return gained;
 }
 

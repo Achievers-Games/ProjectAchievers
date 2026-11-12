@@ -1,4 +1,5 @@
 import { db } from '../db';
+import { env } from '../env';
 import { decrypt, encrypt } from '../crypto';
 import { logger } from '#lib/logger';
 import {
@@ -20,7 +21,6 @@ import type { ProviderSync } from './types';
 import { xboxConsole } from '#lib/collection';
 
 const log = logger('Xbox');
-const CONCURRENCY = 3;
 const MAX_TITLES = 10_000;
 
 interface XboxTitle {
@@ -223,7 +223,7 @@ export const syncXbox: ProviderSync = async ({ userId, account, report, onUnlock
 
   const games = await syncGames(
     titles,
-    { platform: 'Xbox', concurrency: CONCURRENCY, name: (t) => t.name, report },
+    { platform: 'Xbox', concurrency: env().SYNC_GAME_CONCURRENCY, name: (t) => t.name, report },
     async (title) => {
       if (known.get(title.titleId) === title.achievement?.currentAchievements) return;
 

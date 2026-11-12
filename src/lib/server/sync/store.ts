@@ -1,4 +1,4 @@
-import type { Platform, TrophyType } from '#prisma';
+import type { Prisma, Platform, TrophyType } from '#prisma';
 import { db } from '../db';
 import { familyKey } from '../family';
 import { difficultyTier } from '#lib/collection';
@@ -41,34 +41,54 @@ export interface UnlockInput {
   unlockedAt: Date;
 }
 
-async function availableSlug(name: string, platform: Platform, platformGameId: string) {
+async function availableSlug(
+  db: Prisma.TransactionClient,
+  name: string,
+  platform: Platform,
+  platformGameId: string,
+) {
   const base = slugify(name) || 'jeu';
   const taken = await db.game.findUnique({ where: { slug: base }, select: { id: true } });
-  return taken ? `${base}-${platform.toLowerCase()}-${slugify(platformGameId)}` : base;
+  if (!taken) return base;
+  const suffix = `${base}-${platform.toLowerCase()}-${slugify(platformGameId)}`;
+  let slug = suffix;
+  for (
+    let attempt = 2;
+    await db.game.findUnique({ where: { slug }, select: { id: true } });
+    attempt++
+  ) {
+    slug = `${suffix}-${attempt}`;
+  }
+  return slug;
 }
 
 export async function upsertGame(input: GameInput) {
-  const key = { platform: input.platform, platformGameId: input.platformGameId };
-  const existing = await db.game.findUnique({ where: { platform_platformGameId: key } });
-  const fields = {
-    name: input.name,
-    coverUrl: input.coverUrl,
-    headerUrl: input.headerUrl,
-    console: input.console,
-  };
+  return db.$transaction(async (db) => {
+    // Les créations sont courtes et partagent l'espace unique des slugs.
+    await db.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended('game-catalog', 0))::text`;
 
-  if (existing) {
-    const family =
-      existing.familyLocked || existing.familyMatched ? {} : { familyKey: familyKey(input.name) };
-    return db.game.update({ where: { id: existing.id }, data: { ...fields, ...family } });
-  }
-  return db.game.create({
-    data: {
-      ...key,
-      ...fields,
-      familyKey: familyKey(input.name),
-      slug: await availableSlug(input.name, input.platform, input.platformGameId),
-    },
+    const key = { platform: input.platform, platformGameId: input.platformGameId };
+    const existing = await db.game.findUnique({ where: { platform_platformGameId: key } });
+    const fields = {
+      name: input.name,
+      coverUrl: input.coverUrl,
+      headerUrl: input.headerUrl,
+      console: input.console,
+    };
+
+    if (existing) {
+      const family =
+        existing.familyLocked || existing.familyMatched ? {} : { familyKey: familyKey(input.name) };
+      return db.game.update({ where: { id: existing.id }, data: { ...fields, ...family } });
+    }
+    return db.game.create({
+      data: {
+        ...key,
+        ...fields,
+        familyKey: familyKey(input.name),
+        slug: await availableSlug(db, input.name, input.platform, input.platformGameId),
+      },
+    });
   });
 }
 
@@ -152,7 +172,7 @@ export interface NewUnlock {
 export interface SaveResult {
   /** Nombre de succès réellement ajoutés. */
   gained: number;
-  /** Ceux qu'il vient d'obtenir : la page les fête en direct. */
+  /** Au plus cinq nouveaux succès : la page ne fête pas tout un premier import. */
   fresh: NewUnlock[];
 }
 
@@ -166,93 +186,79 @@ export async function saveProgress(
   unlocks: UnlockInput[],
   activity: { playtimeMinutes?: number; lastPlayedAt?: Date | null } = {},
 ): Promise<SaveResult> {
-  const known = await db.achievement.findMany({
-    where: { gameId },
-    select: { id: true, platformAchievementId: true, trophyType: true, name: true, iconUrl: true },
-  });
-  const byPlatformId = new Map(known.map((a) => [a.platformAchievementId, a]));
+  return db.$transaction(
+    async (db) => {
+      // Sérialise import complet et suivi en direct du même jeu pour ce joueur.
+      await db.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${JSON.stringify([userId, gameId])}, 0))::text`;
 
-  // L'état d'avant l'écriture : il dit à la fois ce qui est déjà acquis et ce qui est nouveau.
-  const mine = await db.userAchievement.findMany({
-    where: { userId, achievement: { gameId } },
-    select: {
-      achievementId: true,
-      unlockedAt: true,
-      achievement: { select: { trophyType: true } },
+      let gained = 0;
+      const freshIds: string[] = [];
+      // La taille du SQL et des résultats Prisma reste bornée, même pour 8 000 succès WoW.
+      const batchSize = 250;
+      for (let offset = 0; offset < unlocks.length; offset += batchSize) {
+        const batch = unlocks.slice(offset, offset + batchSize);
+        const platformIds = batch.map((row) => row.platformAchievementId);
+        const known = await db.$queryRaw<{ id: string; platformAchievementId: string }[]>`
+          SELECT id, "platformAchievementId" FROM "Achievement"
+          WHERE "gameId" = ${gameId} AND "platformAchievementId" = ANY(${platformIds}::text[])`;
+        const byPlatformId = new Map(known.map((row) => [row.platformAchievementId, row]));
+        const pending = new Map<string, Date>();
+        for (const unlock of batch) {
+          const achievement = byPlatformId.get(unlock.platformAchievementId);
+          if (achievement && !pending.has(achievement.id))
+            pending.set(achievement.id, unlock.unlockedAt);
+        }
+        if (!pending.size) continue;
+        // Deux tableaux paramétrés évitent de construire un gros arbre de requête Prisma.
+        const ids = [...pending.keys()];
+        const dates = [...pending.values()].map((date) => date.toISOString());
+        const inserted = await db.$queryRaw<{ achievementId: string }[]>`
+          INSERT INTO "UserAchievement" ("userId", "achievementId", "unlockedAt")
+          SELECT ${userId}, row.id, row.at
+          FROM unnest(${ids}::text[], ${dates}::timestamp[]) AS row(id, at)
+          ON CONFLICT ("userId", "achievementId") DO NOTHING
+          RETURNING "achievementId"`;
+        gained += inserted.length;
+        for (const row of inserted.slice(0, 5 - freshIds.length)) freshIds.push(row.achievementId);
+      }
+
+      // Les agrégats restent dans Postgres : inutile de charger chaque succès déjà acquis.
+      const [total, progress] = await Promise.all([
+        db.achievement.count({ where: { gameId } }),
+        db.$queryRaw<{ unlockedCount: number; lastUnlockedAt: Date | null; platinum: boolean }[]>`
+          SELECT count(*)::int AS "unlockedCount", max(ua."unlockedAt") AS "lastUnlockedAt",
+            coalesce(bool_or(a."trophyType" = 'PLATINUM'), false) AS platinum
+          FROM "UserAchievement" ua
+          JOIN "Achievement" a ON a.id = ua."achievementId"
+          WHERE ua."userId" = ${userId} AND a."gameId" = ${gameId}`,
+      ]);
+      const { unlockedCount, lastUnlockedAt, platinum } = progress[0]!;
+      const data = {
+        unlockedCount,
+        totalCount: total,
+        completion: total > 0 ? (unlockedCount / total) * 100 : 0,
+        platinum,
+        lastUnlockedAt,
+        ...(activity.playtimeMinutes !== undefined && {
+          playtimeMinutes: activity.playtimeMinutes,
+        }),
+        ...(activity.lastPlayedAt !== undefined && { lastPlayedAt: activity.lastPlayedAt }),
+      };
+      await db.userGame.upsert({
+        where: { userId_gameId: { userId, gameId } },
+        update: data,
+        create: { ...data, userId, gameId },
+      });
+      const fresh = freshIds.length
+        ? await db.achievement.findMany({
+            where: { id: { in: freshIds } },
+            select: { id: true, name: true, iconUrl: true },
+          })
+        : [];
+      return { gained, fresh };
     },
-  });
-  const have = new Set(mine.map((row) => row.achievementId));
-
-  // Une plateforme peut répéter un succès : une seule ligne par succès.
-  const pending = new Map<
-    string,
-    {
-      achievementId: string;
-      unlockedAt: Date;
-      trophyType: string;
-      name: string;
-      iconUrl: string | null;
-    }
-  >();
-  for (const unlock of unlocks) {
-    const achievement = byPlatformId.get(unlock.platformAchievementId);
-    if (!achievement || have.has(achievement.id) || pending.has(achievement.id)) continue;
-    pending.set(achievement.id, {
-      achievementId: achievement.id,
-      unlockedAt: unlock.unlockedAt,
-      trophyType: achievement.trophyType,
-      name: achievement.name,
-      iconUrl: achievement.iconUrl,
-    });
-  }
-  const rows = [...pending.values()].map(({ achievementId, unlockedAt }) => ({
-    userId,
-    achievementId,
-    unlockedAt,
-  }));
-  // Une synchronisation parallèle a pu écrire les mêmes lignes entre-temps : seules celles
-  // réellement insérées ici se fêtent, sans quoi le même succès s'afficherait deux fois.
-  const inserted = await db.userAchievement.createManyAndReturn({
-    data: rows,
-    skipDuplicates: true,
-    select: { achievementId: true },
-  });
-  const count = inserted.length;
-  const ours = new Set(inserted.map((row) => row.achievementId));
-
-  const total = known.length;
-  // Insérées ici ou par l'autre synchronisation, toutes les lignes en attente existent désormais.
-  const unlockedCount = mine.length + pending.size;
-  const completion = total > 0 ? (unlockedCount / total) * 100 : 0;
-  const platinum =
-    mine.some((o) => o.achievement.trophyType === 'PLATINUM') ||
-    [...pending.values()].some((o) => o.trophyType === 'PLATINUM');
-  const lastUnlockedAt = [
-    ...mine.map((o) => o.unlockedAt),
-    ...pending.values().map((o) => o.unlockedAt),
-  ].reduce<Date | null>((latest, date) => (!latest || date > latest ? date : latest), null);
-
-  const data = {
-    unlockedCount,
-    totalCount: total,
-    completion,
-    platinum,
-    lastUnlockedAt,
-    ...(activity.playtimeMinutes !== undefined && { playtimeMinutes: activity.playtimeMinutes }),
-    ...(activity.lastPlayedAt !== undefined && { lastPlayedAt: activity.lastPlayedAt }),
-  };
-  await db.userGame.upsert({
-    where: { userId_gameId: { userId, gameId } },
-    update: data,
-    create: { ...data, userId, gameId },
-  });
-
-  return {
-    gained: count,
-    fresh: [...pending.values()]
-      .filter(({ achievementId }) => ours.has(achievementId))
-      .map(({ achievementId, name, iconUrl }) => ({ id: achievementId, name, iconUrl })),
-  };
+    { timeout: 30_000 },
+  );
 }
 
 /** Au-delà, un succès retrouvé à la visite suivante n'est plus une nouvelle. */

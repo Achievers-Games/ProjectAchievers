@@ -1,5 +1,6 @@
 import { error, json } from '@sveltejs/kit';
 import { z } from 'zod';
+import { db } from '#lib/server/db';
 import { rateLimit } from '#lib/server/rate-limit';
 import { markRead, readConversation, sendMessage, unreadCount } from '#lib/server/social';
 import type { RequestHandler } from './$types';
@@ -30,8 +31,21 @@ export const POST: RequestHandler = async ({ locals, params, request }) => {
 };
 
 /** Le message reçu pendant que la discussion est ouverte est déjà lu. */
-export const PUT: RequestHandler = async ({ locals, params }) => {
+export const PUT: RequestHandler = async ({ locals, params, request }) => {
   if (!locals.user) error(401, m.login_required());
-  await markRead(locals.user.id, params.id);
+  const parsed = z
+    .object({ messageId: z.string().min(1).max(100) })
+    .safeParse(await request.json().catch(() => null));
+  if (!parsed.success) error(400, m.action_failed());
+  const message = await db.message.findFirst({
+    where: {
+      id: parsed.data.messageId,
+      conversationId: params.id,
+      conversation: { members: { some: { userId: locals.user.id } } },
+    },
+    select: { createdAt: true },
+  });
+  if (!message) error(404, m.gone());
+  await markRead(locals.user.id, params.id, message.createdAt);
   return new Response(null, { status: 204 });
 };

@@ -5,6 +5,7 @@ import { listGames } from './queries';
 import { resolveIdentity } from './accounts';
 import { type CardDrop } from '#lib/collection';
 import { db } from './db';
+import { globals } from './globals';
 import { checkLiveGames } from './sync/live';
 import { enqueueSync, refreshAccounts, runSync, startWorkers } from './sync/queue';
 import { isAdultOnly, rateGames, tagGames } from './sync/content';
@@ -77,6 +78,85 @@ async function steamUser() {
 }
 
 describe('synchronisation Steam', () => {
+  it('importe 8 000 succès par petits lots sans perdre les compteurs ni répéter les annonces', async () => {
+    const userId = await steamUser();
+    const game = await upsertGame({
+      platform: 'STEAM',
+      platformGameId: `${PREFIX}-${Math.random()}`,
+      name: `${PREFIX} gros import`,
+    });
+    for (let start = 0; start < 8000; start += 250) {
+      await db.achievement.createMany({
+        data: Array.from({ length: 250 }, (_, index) => ({
+          gameId: game.id,
+          platformAchievementId: String(start + index),
+          name: `Succès ${start + index}`,
+        })),
+      });
+    }
+    const unlockedAt = new Date('2026-01-01T12:00:00Z');
+    const unlocks = Array.from({ length: 8000 }, (_, index) => ({
+      platformAchievementId: String(index),
+      unlockedAt,
+    }));
+    const imported = await saveProgress(userId, game.id, [...unlocks, unlocks[0]!]);
+    expect(imported.gained).toBe(8000);
+    expect(imported.fresh).toHaveLength(5);
+    expect(
+      await db.userGame.findUnique({ where: { userId_gameId: { userId, gameId: game.id } } }),
+    ).toMatchObject({
+      unlockedCount: 8000,
+      totalCount: 8000,
+      completion: 100,
+      lastUnlockedAt: unlockedAt,
+    });
+    expect(await saveProgress(userId, game.id, unlocks)).toEqual({ gained: 0, fresh: [] });
+  });
+
+  it('crée une seule fiche lors de deux imports concurrents et résout les slugs identiques', async () => {
+    const input = {
+      platform: 'STEAM' as const,
+      platformGameId: `${PREFIX}-${Math.random()}`,
+      name: `${PREFIX} collision ${Math.random()}`,
+    };
+    const same = await Promise.all([upsertGame(input), upsertGame(input)]);
+    expect(same[0]!.id).toBe(same[1]!.id);
+    const different = await Promise.all(
+      ['1', '2'].map((suffix) =>
+        upsertGame({ ...input, platformGameId: `${input.platformGameId}-${suffix}` }),
+      ),
+    );
+    expect(new Set([same[0]!.slug, ...different.map((game) => game.slug)]).size).toBe(3);
+  });
+
+  it('conserve tous les compteurs quand deux imports apportent des succès différents', async () => {
+    const userId = await steamUser();
+    const game = await upsertGame({
+      platform: 'STEAM',
+      platformGameId: `${PREFIX}-${Math.random()}`,
+      name: `${PREFIX} progression concurrente`,
+    });
+    await saveAchievements(
+      game.id,
+      ['A', 'B'].map((id) => ({
+        platformAchievementId: id,
+        name: id,
+        description: '',
+        hidden: false,
+        trophyType: 'ACHIEVEMENT' as const,
+      })),
+    );
+    const results = await Promise.all(
+      ['A', 'B'].map((id) =>
+        saveProgress(userId, game.id, [{ platformAchievementId: id, unlockedAt: new Date() }]),
+      ),
+    );
+    expect(results.reduce((sum, result) => sum + result.gained, 0)).toBe(2);
+    expect(
+      await db.userGame.findUnique({ where: { userId_gameId: { userId, gameId: game.id } } }),
+    ).toMatchObject({ unlockedCount: 2, totalCount: 2, completion: 100 });
+  });
+
   it('importe jeux, succès et rareté', async () => {
     vi.stubGlobal('fetch', steamApi(ownedGames));
     const userId = await steamUser();
@@ -236,6 +316,44 @@ describe('synchronisation Steam', () => {
     await db.linkedAccount.updateMany({ where: { userId }, data: { storeSweptAt: old } });
     await requestStoreSweep(userId);
     expect(await sweptAt()).toBeNull();
+  });
+
+  it('traite le catalogue Steam page par page avant de demander la suite', async () => {
+    await db.linkedAccount.updateMany({
+      where: { provider: 'STEAM' },
+      data: { storeSweptAt: new Date() },
+    });
+    const userId = await steamUser();
+    const events: string[] = [];
+    const api = sharedGameApi();
+    vi.stubGlobal('fetch', async (input: string | URL) => {
+      const url = new URL(String(input));
+      if (url.pathname.includes('GetAppList')) {
+        expect(url.searchParams.get('max_results')).toBe('1000');
+        const next = url.searchParams.get('last_appid') !== '0';
+        events.push(next ? 'page-2' : 'page-1');
+        return new Response(
+          JSON.stringify({
+            response: {
+              apps: [{ appid: next ? 999004 : 999003, name: `${PREFIX} page` }],
+              have_more_results: !next,
+              last_appid: next ? 999004 : 999003,
+            },
+          }),
+        );
+      }
+      if (url.pathname.includes('GetTopAchievementsForGames')) {
+        const id = url.searchParams.get('appids[0]');
+        events.push(`lecture-${id}`);
+        return new Response(
+          JSON.stringify({ response: { games: [{ appid: Number(id), achievements: [{}] }] } }),
+        );
+      }
+      return api(input);
+    });
+    expect(await sweepSteamStore()).toBe(2);
+    expect(events).toEqual(['page-1', 'lecture-999003', 'page-2', 'lecture-999004']);
+    expect(await db.userGame.count({ where: { userId } })).toBe(2);
   });
 
   it('demande à la boutique l’image des jeux récents', async () => {
@@ -594,8 +712,22 @@ describe('synchronisation Steam', () => {
   });
 
   it('passe par la file de tâches et publie la progression', async () => {
-    vi.stubGlobal('fetch', steamApi(ownedGames));
+    // Une erreur d'envoi après l'écriture du statut doit annuler toute la transaction.
     await startWorkers();
+    const retryUser = await steamUser();
+    const instance = await globals.paBoss!;
+    const send = vi.spyOn(instance, 'send').mockRejectedValueOnce(new Error('file indisponible'));
+    try {
+      await expect(enqueueSync(retryUser, 'STEAM')).rejects.toThrow('file indisponible');
+      expect(
+        await db.linkedAccount.findUnique({
+          where: { userId_provider: { userId: retryUser, provider: 'STEAM' } },
+        }),
+      ).toMatchObject({ syncStatus: 'IDLE' });
+    } finally {
+      send.mockRestore();
+    }
+    vi.stubGlobal('fetch', steamApi(ownedGames));
     const userId = await steamUser();
 
     const events: SyncEvent[] = [];

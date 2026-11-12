@@ -1,6 +1,6 @@
 // Tests sur un vrai PostgreSQL : `npm run dev:db` ou le service de la CI.
 import 'dotenv/config';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { activityFeed, hasRecentFeat, highlights, leaderboard } from './queries';
 import { resolveIdentity } from './accounts';
 import { db } from './db';
@@ -23,6 +23,7 @@ import {
   kickFromClan,
   leaveClan,
   listClans,
+  markRead,
   markInvitesSeen,
   openDirect,
   pendingInvites,
@@ -38,6 +39,7 @@ import {
 } from './social';
 import { MAX_CLAN_MEMBERS, MAX_FRIENDS } from './social/shared';
 import { PREFIX, identity, setupIntegration } from './test-helpers';
+import { PUT as acknowledgeMessage } from '../../routes/api/messages/[id]/+server';
 
 setupIntegration();
 
@@ -72,6 +74,51 @@ describe('amis, clans et discussions', () => {
     await blockUser(b.id, a.id);
     expect(await sendMessage(a.id, id as string, 'Encore')).toBe('not_friends');
     expect(await requestFriend(a.id, b.handle)).toBe('not_found');
+  });
+
+  it('ne marque pas comme lu un message arrivé après la lecture de la conversation', async () => {
+    const [a, b] = await players();
+    await requestFriend(a.id, b.handle);
+    await acceptFriend(b.id, a.id);
+    const conversationId = (await openDirect(a.id, b.id))!;
+    const earlier = new Date('2026-01-01T12:00:00Z');
+    const later = new Date(earlier.getTime() + 1000);
+    const first = await db.message.create({
+      data: { conversationId, authorId: a.id, content: 'Premier', createdAt: earlier },
+    });
+    const findMany = db.message.findMany.bind(db.message);
+    const intercept = async (args: Parameters<typeof db.message.findMany>[0]) => {
+      const rows = await findMany(args);
+      await db.message.create({
+        data: { conversationId, authorId: a.id, content: 'Arrivé ensuite', createdAt: later },
+      });
+      return rows;
+    };
+    const spy = vi
+      .spyOn(db.message, 'findMany')
+      .mockImplementationOnce(intercept as unknown as typeof db.message.findMany);
+    try {
+      expect((await readConversation(b.id, conversationId))?.messages).toHaveLength(1);
+      expect(await unreadCount(b.id)).toBe(1);
+      const acknowledge = (messageId: string) =>
+        acknowledgeMessage({
+          locals: { user: b },
+          params: { id: conversationId },
+          request: new Request('http://localhost/api/messages/read', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ messageId }),
+          }),
+        } as unknown as Parameters<typeof acknowledgeMessage>[0]);
+      expect((await acknowledge(first.id)).status).toBe(204);
+      expect(await unreadCount(b.id)).toBe(1);
+      await expect(acknowledge('message-inconnu')).rejects.toMatchObject({ status: 404 });
+      await markRead(b.id, conversationId, later);
+      await markRead(b.id, conversationId, earlier);
+      expect(await unreadCount(b.id)).toBe(0);
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it('retire du badge une demande vue, sans la refuser', async () => {

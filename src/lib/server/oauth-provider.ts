@@ -1,4 +1,5 @@
 import { timingSafeEqual } from 'node:crypto';
+import type { Prisma } from '#prisma';
 import { json, type RequestEvent } from '@sveltejs/kit';
 import { pkceChallenge, randomToken, sha256 } from './crypto';
 import { db } from './db';
@@ -143,9 +144,10 @@ async function issueToken(
   ttl: number,
   extra: { codeChallenge?: string; redirectUri?: string } = {},
   now = Date.now(),
+  client: Prisma.TransactionClient = db,
 ) {
   const token = `${PREFIX[kind]}${randomToken(32)}`;
-  await db.oAuthToken.create({
+  await client.oAuthToken.create({
     data: {
       grantId,
       kind,
@@ -209,16 +211,21 @@ async function authenticateClient(clientId: unknown, clientSecret: unknown) {
 }
 
 /** Un vol se trahit par le réemploi : tout ce que l'accord a délivré cesse aussitôt de valoir. */
-const burnGrant = (grantId: string) =>
-  db.oAuthToken.updateMany({
+const burnGrant = (grantId: string, client: Prisma.TransactionClient = db) =>
+  client.oAuthToken.updateMany({
     where: { grantId, usedAt: null },
     data: { usedAt: new Date() },
   });
 
-async function tokenPair(grantId: string, scopes: string[], now: number) {
+async function tokenPair(
+  grantId: string,
+  scopes: string[],
+  now: number,
+  client: Prisma.TransactionClient,
+) {
   const [accessToken, refreshToken] = await Promise.all([
-    issueToken(grantId, 'ACCESS', scopes, ACCESS_TTL, {}, now),
-    issueToken(grantId, 'REFRESH', scopes, REFRESH_TTL, {}, now),
+    issueToken(grantId, 'ACCESS', scopes, ACCESS_TTL, {}, now, client),
+    issueToken(grantId, 'REFRESH', scopes, REFRESH_TTL, {}, now, client),
   ]);
   return json(
     {
@@ -243,66 +250,79 @@ export async function tokenEndpoint(body: Record<string, unknown>, now = Date.no
     return tokenError('slow_down', 429);
   }
 
-  if (body.grant_type === 'authorization_code') {
-    if (typeof body.code !== 'string' || typeof body.code_verifier !== 'string') {
-      return tokenError('invalid_request');
+  const raw = body.grant_type === 'authorization_code' ? body.code : body.refresh_token;
+  const found =
+    typeof raw === 'string'
+      ? await db.oAuthToken.findUnique({
+          where: { hash: hashToken(raw) },
+          select: { grantId: true, grant: { select: { appId: true } } },
+        })
+      : null;
+  if (found && found.grant.appId !== app.id) return tokenError('invalid_grant');
+  return db.$transaction(async (tx) => {
+    if (found)
+      await tx.$queryRaw`SELECT id FROM "OAuthGrant" WHERE id = ${found.grantId} FOR UPDATE`;
+    if (body.grant_type === 'authorization_code') {
+      if (typeof body.code !== 'string' || typeof body.code_verifier !== 'string') {
+        return tokenError('invalid_request');
+      }
+      const code = await tx.oAuthToken.findUnique({
+        where: { hash: hashToken(body.code) },
+        include: { grant: { select: { appId: true, revokedAt: true } } },
+      });
+      if (!code || code.kind !== 'CODE' || code.grant.appId !== app.id) {
+        return tokenError('invalid_grant');
+      }
+      if (code.usedAt) {
+        await burnGrant(code.grantId, tx);
+        return tokenError('invalid_grant', 400, 'Code already used.');
+      }
+      // Usage unique, même en cas d'échec ensuite : un code ne se retente pas.
+      const { count } = await tx.oAuthToken.updateMany({
+        where: { id: code.id, usedAt: null },
+        data: { usedAt: new Date(now) },
+      });
+      if (count === 0) {
+        await burnGrant(code.grantId, tx);
+        return tokenError('invalid_grant', 400, 'Code already used.');
+      }
+      if (
+        code.expiresAt.getTime() <= now ||
+        code.grant.revokedAt ||
+        code.redirectUri !== body.redirect_uri ||
+        code.codeChallenge !== pkceChallenge(body.code_verifier)
+      ) {
+        return tokenError('invalid_grant');
+      }
+      return tokenPair(code.grantId, code.scopes, now, tx);
     }
-    const code = await db.oAuthToken.findUnique({
-      where: { hash: hashToken(body.code) },
-      include: { grant: { select: { appId: true, revokedAt: true } } },
-    });
-    if (!code || code.kind !== 'CODE' || code.grant.appId !== app.id) {
-      return tokenError('invalid_grant');
-    }
-    if (code.usedAt) {
-      await burnGrant(code.grantId);
-      return tokenError('invalid_grant', 400, 'Code already used.');
-    }
-    // Usage unique, même en cas d'échec ensuite : un code ne se retente pas.
-    const { count } = await db.oAuthToken.updateMany({
-      where: { id: code.id, usedAt: null },
-      data: { usedAt: new Date(now) },
-    });
-    if (count === 0) {
-      await burnGrant(code.grantId);
-      return tokenError('invalid_grant', 400, 'Code already used.');
-    }
-    if (
-      code.expiresAt.getTime() <= now ||
-      code.grant.revokedAt ||
-      code.redirectUri !== body.redirect_uri ||
-      code.codeChallenge !== pkceChallenge(body.code_verifier)
-    ) {
-      return tokenError('invalid_grant');
-    }
-    return tokenPair(code.grantId, code.scopes, now);
-  }
 
-  if (body.grant_type === 'refresh_token') {
-    if (typeof body.refresh_token !== 'string') return tokenError('invalid_request');
-    const refresh = await db.oAuthToken.findUnique({
-      where: { hash: hashToken(body.refresh_token) },
-      include: { grant: { select: { appId: true, revokedAt: true } } },
-    });
-    if (!refresh || refresh.kind !== 'REFRESH' || refresh.grant.appId !== app.id) {
-      return tokenError('invalid_grant');
+    if (body.grant_type === 'refresh_token') {
+      if (typeof body.refresh_token !== 'string') return tokenError('invalid_request');
+      const refresh = await tx.oAuthToken.findUnique({
+        where: { hash: hashToken(body.refresh_token) },
+        include: { grant: { select: { appId: true, revokedAt: true } } },
+      });
+      if (!refresh || refresh.kind !== 'REFRESH' || refresh.grant.appId !== app.id) {
+        return tokenError('invalid_grant');
+      }
+      const { count } = await tx.oAuthToken.updateMany({
+        where: { id: refresh.id, usedAt: null },
+        data: { usedAt: new Date(now) },
+      });
+      if (count === 0) {
+        // Un rafraîchissement déjà employé revient : quelqu'un d'autre le détient.
+        await burnGrant(refresh.grantId, tx);
+        return tokenError('invalid_grant', 400, 'Refresh token already used.');
+      }
+      if (refresh.expiresAt.getTime() <= now || refresh.grant.revokedAt) {
+        return tokenError('invalid_grant');
+      }
+      return tokenPair(refresh.grantId, refresh.scopes, now, tx);
     }
-    const { count } = await db.oAuthToken.updateMany({
-      where: { id: refresh.id, usedAt: null },
-      data: { usedAt: new Date(now) },
-    });
-    if (count === 0) {
-      // Un rafraîchissement déjà employé revient : quelqu'un d'autre le détient.
-      await burnGrant(refresh.grantId);
-      return tokenError('invalid_grant', 400, 'Refresh token already used.');
-    }
-    if (refresh.expiresAt.getTime() <= now || refresh.grant.revokedAt) {
-      return tokenError('invalid_grant');
-    }
-    return tokenPair(refresh.grantId, refresh.scopes, now);
-  }
 
-  return tokenError('unsupported_grant_type');
+    return tokenError('unsupported_grant_type');
+  });
 }
 
 /**
@@ -319,8 +339,11 @@ export async function revokeEndpoint(body: Record<string, unknown>) {
     });
     if (token && token.grant.appId === app.id) {
       // Retirer un rafraîchissement retire tout l'accord ; un jeton d'accès, seulement lui.
-      if (token.kind === 'REFRESH') await burnGrant(token.grantId);
-      else await db.oAuthToken.update({ where: { id: token.id }, data: { usedAt: new Date() } });
+      await db.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT id FROM "OAuthGrant" WHERE id = ${token.grantId} FOR UPDATE`;
+        if (token.kind === 'REFRESH') await burnGrant(token.grantId, tx);
+        else await tx.oAuthToken.update({ where: { id: token.id }, data: { usedAt: new Date() } });
+      });
     }
   }
   return new Response(null, { status: 200, headers: { 'Cache-Control': 'no-store' } });
@@ -417,8 +440,10 @@ export async function revokeGrant(userId: string, appId: string) {
     select: { id: true },
   });
   if (!grant) return;
-  await db.oAuthGrant.update({ where: { id: grant.id }, data: { revokedAt: new Date() } });
-  await burnGrant(grant.id);
+  await db.$transaction(async (tx) => {
+    await tx.oAuthGrant.update({ where: { id: grant.id }, data: { revokedAt: new Date() } });
+    await burnGrant(grant.id, tx);
+  });
   await queueAccountEvent(userId, 'user.unlinked', { app: { id: appId }, via: 'OAUTH' });
 }
 

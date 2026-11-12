@@ -39,6 +39,7 @@ const backoff = (failures: number) =>
   Math.min(BACKOFF_BASE * 2 ** Math.max(0, failures - 1), BACKOFF_MAX);
 
 interface UnlockRow {
+  achievementId: string;
   createdAt: Date;
   unlockedAt: Date;
   userId: string;
@@ -74,17 +75,37 @@ const followedBy = (app: { id: string; slug: string }) => ({
 });
 
 /** Les succès arrivés après le curseur, pour les joueurs suivis, sur des jeux visibles. */
-async function pendingUnlocks(app: { id: string; slug: string }, cursor: Date | null, until: Date) {
+type UnlockCursor = { at: Date; userId: string | null; achievementId: string | null };
+
+async function pendingUnlocks(
+  app: { id: string; slug: string },
+  cursor: UnlockCursor,
+  until: Date,
+) {
   const rows: UnlockRow[] = await db.userAchievement.findMany({
     where: {
-      createdAt: { ...(cursor && { gt: cursor }), lte: until },
+      createdAt: { lte: until },
+      OR: [
+        { createdAt: { gt: cursor.at } },
+        ...(cursor.userId && cursor.achievementId
+          ? [
+              { createdAt: cursor.at, userId: { gt: cursor.userId } },
+              {
+                createdAt: cursor.at,
+                userId: cursor.userId,
+                achievementId: { gt: cursor.achievementId },
+              },
+            ]
+          : []),
+      ],
       user: followedBy(app),
       achievement: { game: { adultOnly: false } },
     },
-    orderBy: { createdAt: 'asc' },
+    orderBy: [{ createdAt: 'asc' }, { userId: 'asc' }, { achievementId: 'asc' }],
     take: WEBHOOK_BATCH,
     select: {
       createdAt: true,
+      achievementId: true,
       unlockedAt: true,
       userId: true,
       achievement: {
@@ -107,12 +128,6 @@ async function pendingUnlocks(app: { id: string; slug: string }, cursor: Date | 
       },
     },
   });
-  // Un lot plein peut couper au milieu d'un même instant : ces lignes partiront au prochain envoi.
-  if (rows.length === WEBHOOK_BATCH) {
-    const last = rows.at(-1)!.createdAt.getTime();
-    const cut = rows.filter((row) => row.createdAt.getTime() < last);
-    if (cut.length > 0) return cut;
-  }
   return rows;
 }
 
@@ -374,17 +389,35 @@ export async function deliverPartnerWebhooks(now = new Date(), send: typeof fetc
 
     // Premier branchement : les succès partent de maintenant, sans renvoyer l'historique.
     let cursor = app.webhookCursor;
+    let cursorUserId = app.webhookCursorUserId;
+    let cursorAchievementId = app.webhookCursorAchievementId;
     let unlocks: Awaited<ReturnType<typeof buildEvents>> = [];
     if (!cursor) {
-      await db.partnerApp.update({ where: { id: app.id }, data: { webhookCursor: now } });
+      await db.partnerApp.update({
+        where: { id: app.id },
+        data: { webhookCursor: now, webhookCursorUserId: null, webhookCursorAchievementId: null },
+      });
     } else {
       const until = new Date(now.getTime() - SETTLE_MS);
-      const rows = await pendingUnlocks(target, cursor, until);
+      const rows = await pendingUnlocks(
+        target,
+        { at: cursor, userId: cursorUserId, achievementId: cursorAchievementId },
+        until,
+      );
       if (rows.length > 0) {
         cursor = rows.at(-1)!.createdAt;
+        cursorUserId = rows.at(-1)!.userId;
+        cursorAchievementId = rows.at(-1)!.achievementId;
         unlocks = await buildEvents(app.slug!, rows);
         if (unlocks.length === 0 && account.events.length === 0) {
-          await db.partnerApp.update({ where: { id: app.id }, data: { webhookCursor: cursor } });
+          await db.partnerApp.update({
+            where: { id: app.id },
+            data: {
+              webhookCursor: cursor,
+              webhookCursorUserId: cursorUserId,
+              webhookCursorAchievementId: cursorAchievementId,
+            },
+          });
           continue;
         }
       }
@@ -433,6 +466,8 @@ export async function deliverPartnerWebhooks(now = new Date(), send: typeof fetc
           where: { id: app.id },
           data: {
             ...(cursor && { webhookCursor: cursor }),
+            webhookCursorUserId: cursorUserId,
+            webhookCursorAchievementId: cursorAchievementId,
             webhookFailures: 0,
             webhookLastAttemptAt: now,
             webhookLastError: null,

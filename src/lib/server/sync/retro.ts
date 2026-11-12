@@ -1,11 +1,11 @@
 import { db } from '../db';
+import { env } from '../env';
 import { RETRO_MEDIA, retroGet } from '../providers/retro';
 import { syncGames } from './errors';
 import { saveAchievements, saveProgress, upsertGame, type AchievementInput } from './store';
 import type { ProviderSync } from './types';
 
 const PAGE = 500;
-const CONCURRENCY = 2;
 /** « Events » et « Hubs » du site RetroAchievements : ce ne sont pas des jeux. */
 const VIRTUAL_CONSOLES = new Set([100, 101]);
 
@@ -100,7 +100,12 @@ export const syncRetro: ProviderSync = async ({ userId, account, report, onUnloc
 
   const games = await syncGames(
     list,
-    { platform: 'RetroAchievements', concurrency: CONCURRENCY, name: (g) => g.Title, report },
+    {
+      platform: 'RetroAchievements',
+      concurrency: env().SYNC_GAME_CONCURRENCY,
+      name: (g) => g.Title,
+      report,
+    },
     async (summary) => {
       const gameId = String(summary.GameID);
       // Sans déblocage hardcore de plus, inutile de relire le jeu.

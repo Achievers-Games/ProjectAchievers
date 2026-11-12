@@ -46,7 +46,7 @@
     return incoming.subscribe((event) => {
       if (event?.conversationId !== id) return;
       add(event.message);
-      void fetch(`/api/messages/${id}`, { method: 'PUT' }).catch(() => {});
+      void sendJson(`/api/messages/${id}`, { messageId: event.message.id }, 'PUT');
     });
   });
 

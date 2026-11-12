@@ -576,6 +576,7 @@ model UserAchievement {
   @@id([userId, achievementId])
   @@index([unlockedAt])
   @@index([userId, createdAt])
+  @@index([createdAt, userId, achievementId])
   @@index([achievementId])
 }
 
@@ -742,17 +743,19 @@ model PartnerApp {
   revokedAt  DateTime?
 
   /// Le nom du partenaire dans `PartnerLink.partner` (« lure ») : les joueurs reliés à lui.
-  slug                 String?   @unique
+  slug                       String?   @unique
   /// Adresse HTTPS où envoyer les nouveaux succès des joueurs reliés ; vide, rien ne part.
-  webhookUrl           String?
+  webhookUrl                 String?
   /// Secret de signature HMAC, chiffré : il faut le relire pour signer chaque envoi.
-  webhookSecret        String?
+  webhookSecret              String?
   /// Arrivée sur le site du dernier succès déjà envoyé : la suite part de là.
-  webhookCursor        DateTime?
+  webhookCursor              DateTime?
+  webhookCursorUserId        String?
+  webhookCursorAchievementId String?
   /// Échecs d'affilée : chacun double l'attente avant le prochain essai.
-  webhookFailures      Int       @default(0)
-  webhookLastAttemptAt DateTime?
-  webhookLastError     String?
+  webhookFailures            Int       @default(0)
+  webhookLastAttemptAt       DateTime?
+  webhookLastError           String?
 
   /// Identifiant public du client OAuth : « Se connecter avec Achievers » chez le partenaire.
   oauthClientId     String?        @unique

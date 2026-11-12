@@ -117,6 +117,38 @@ describe('demande d’autorisation', () => {
 });
 
 describe('échange de jetons', () => {
+  it('invalide aussi les jetons émis pendant un double échange concurrent', async () => {
+    const c = await client();
+    const user = await player();
+    const { code, verifier } = await authorize(user.id, c.clientId);
+    const responses = await Promise.all([exchange(c, code, verifier), exchange(c, code, verifier)]);
+    expect(responses.map((response) => response.status).sort()).toEqual([200, 400]);
+    const tokens = await responses.find((response) => response.status === 200)!.json();
+    expect(
+      ((await authenticateBearer(bearer(tokens.access_token), 'profile')) as Response).status,
+    ).toBe(401);
+  });
+
+  it('invalide la paire issue de deux rafraîchissements concurrents', async () => {
+    const c = await client();
+    const user = await player();
+    const { code, verifier } = await authorize(user.id, c.clientId);
+    const first = await (await exchange(c, code, verifier)).json();
+    const refresh = () =>
+      tokenEndpoint({
+        grant_type: 'refresh_token',
+        client_id: c.clientId,
+        client_secret: c.clientSecret,
+        refresh_token: first.refresh_token,
+      });
+    const responses = await Promise.all([refresh(), refresh()]);
+    expect(responses.map((response) => response.status).sort()).toEqual([200, 400]);
+    const tokens = await responses.find((response) => response.status === 200)!.json();
+    expect(
+      ((await authenticateBearer(bearer(tokens.access_token), 'profile')) as Response).status,
+    ).toBe(401);
+  });
+
   it('donne un accès au profil, même privé, avec les portées accordées et pas plus', async () => {
     const c = await client();
     const user = await player(false);

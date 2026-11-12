@@ -1,4 +1,5 @@
 import { db } from '../db';
+import { backgroundWork } from '../workload';
 import { globals } from '../globals';
 import { logger } from '#lib/logger';
 import { availableProviders } from '../providers';
@@ -99,7 +100,7 @@ async function tick() {
   if (checking) return;
   checking = true;
   try {
-    await checkLiveGames();
+    await backgroundWork('Steam en direct', () => checkLiveGames());
   } catch (cause) {
     log.error(cause);
   } finally {

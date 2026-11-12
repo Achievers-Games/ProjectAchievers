@@ -15,11 +15,13 @@ import { validateSession } from '#lib/server/session';
 import { logger } from '#lib/logger';
 import { startLiveGames } from '#lib/server/sync/live';
 import { autoRefresh, startWorkers } from '#lib/server/sync/queue';
+import { startWorkloadMonitor } from '#lib/server/workload';
 
 const log = logger('Serveur');
 
 export const init: ServerInit = async () => {
   env();
+  startWorkloadMonitor();
   await startWorkers();
   startLiveGames();
   startDigests();

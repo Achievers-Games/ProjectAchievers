@@ -2,6 +2,7 @@ import { baseLocale, type Locale } from '#lib/paraglide/runtime';
 import { applyAccountLook, identityLook } from '../accounts';
 import { db } from '../db';
 import { env } from '../env';
+import { backgroundWork } from '../workload';
 import { logger } from '#lib/logger';
 import { fetchSteamIdentity } from '../providers/steam';
 
@@ -14,7 +15,7 @@ const API = 'https://api.steampowered.com';
 const CDN = 'https://cdn.cloudflare.steamstatic.com/steam/apps';
 const STORE = 'https://store.steampowered.com/api/appdetails';
 const SCHEMA_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
-const CONCURRENCY = 4;
+const concurrency = () => env().STEAM_CONCURRENCY;
 /** Steam refuse 400 jeux d'un coup. */
 const APPS_PER_CALL = 300;
 const SHARED_CHECK_EVERY = 24 * 60 * 60 * 1000;
@@ -108,29 +109,30 @@ async function fetchFriendGames(steamId: string) {
     friendslist?: { friends?: { steamid: string }[] };
   };
   const friends = (data.friendslist?.friends ?? []).slice(0, MAX_FRIENDS);
-  const games: OwnedGame[] = [];
-  await mapLimit(friends, CONCURRENCY, async ({ steamid }) => {
-    games.push(...(await fetchOwnedGames(steamid).catch(() => [])));
+  const games = new Map<number, OwnedGame>();
+  await mapLimit(friends, concurrency(), async ({ steamid }) => {
+    for (const game of await fetchOwnedGames(steamid).catch(() => [])) games.set(game.appid, game);
   });
-  return games;
+  return [...games.values()];
 }
 
-async function fetchStoreApps() {
-  const apps: OwnedGame[] = [];
+async function* fetchStorePages() {
   let lastApp = 0;
   for (;;) {
     const response = await steamGet('/IStoreService/GetAppList/v1/', {
       include_games: 'true',
       include_dlc: 'false',
-      max_results: 50_000,
+      max_results: 1_000,
       last_appid: lastApp,
     });
     if (!response.ok) throw new Error(`GetAppList a répondu ${response.status}`);
     const { response: page } = (await response.json()) as {
       response?: { apps?: OwnedGame[]; have_more_results?: boolean; last_appid?: number };
     };
-    apps.push(...(page?.apps ?? []));
-    if (!page?.have_more_results || !page.last_appid) return apps;
+    yield page?.apps ?? [];
+    if (!page?.have_more_results) return;
+    if (!page.last_appid || page.last_appid <= lastApp)
+      throw new Error('Pagination Steam sans progression');
     lastApp = page.last_appid;
   }
 }
@@ -139,12 +141,12 @@ async function fetchStoreApps() {
  * Steam ne dit pas quels jeux un joueur emprunte, mais cette méthode, non documentée, répond
  * pour n'importe quel jeu et ne renvoie vide que si le joueur n'y a aucun succès.
  */
-async function appsWithUnlocks(steamId: string, appIds: number[], concurrency = CONCURRENCY) {
+async function appsWithUnlocks(steamId: string, appIds: number[], limit = concurrency()) {
   const batches = Array.from({ length: Math.ceil(appIds.length / APPS_PER_CALL) }, (_, index) =>
     appIds.slice(index * APPS_PER_CALL, (index + 1) * APPS_PER_CALL),
   );
   const found = new Set<number>();
-  await mapLimit(batches, concurrency, async (batch) => {
+  await mapLimit(batches, limit, async (batch) => {
     const params: Record<string, string | number> = { steamid: steamId, max_achievements: 1 };
     batch.forEach((appId, index) => (params[`appids[${index}]`] = appId));
     const response = await steamGet('/IPlayerService/GetTopAchievementsForGames/v1/', params);
@@ -469,35 +471,63 @@ export async function sweepSteamStore() {
   if (!account) return 0;
 
   const steamId = account.providerUserId;
-  const [apps, owned, known] = await Promise.all([
-    fetchStoreApps(),
-    fetchOwnedGames(steamId).catch(() => null),
-    db.userGame.findMany({
-      where: { userId: account.userId, game: { platform: 'STEAM' } },
-      select: { game: { select: { platformGameId: true } } },
-    }),
-  ]);
-  const skipped = new Set([
-    ...(owned ?? []).map((game) => game.appid),
-    ...known.map(({ game }) => Number(game.platformGameId)),
-  ]);
-  const candidates = apps.filter((app) => !skipped.has(app.appid));
-  const played = owned
-    ? await appsWithUnlocks(
-        steamId,
-        candidates.map((app) => app.appid),
-        1,
-      )
-    : [];
-  const found = new Set(played);
-  for (const app of candidates) {
-    if (found.has(app.appid)) await syncSteamGame(account.userId, steamId, app, true);
+  const owned = await backgroundWork(
+    'Steam : bibliothèque du balayage',
+    () => fetchOwnedGames(steamId).catch(() => null),
+    -1,
+  );
+  // Ne jamais marquer un balayage comme terminé si la bibliothèque est inaccessible.
+  if (!owned) return 0;
+  const skipped = new Set(owned.map((game) => game.appid));
+  let found = 0;
+  // Chaque page libère le budget de fond : un import en attente passe avant la page suivante.
+  const pages = fetchStorePages();
+  for (;;) {
+    const page = await backgroundWork('Steam : page du catalogue', () => pages.next(), -1);
+    if (page.done) break;
+    const candidates = page.value.filter((app) => !skipped.has(app.appid));
+    if (!candidates.length) continue;
+    for (let offset = 0; offset < candidates.length; offset += APPS_PER_CALL) {
+      const batch = candidates.slice(offset, offset + APPS_PER_CALL);
+      const playedGames = await backgroundWork(
+        'Steam : recherche des jeux empruntés',
+        async () => {
+          const known = await db.userGame.findMany({
+            where: {
+              userId: account.userId,
+              game: {
+                platform: 'STEAM',
+                platformGameId: { in: batch.map((game) => String(game.appid)) },
+              },
+            },
+            select: { game: { select: { platformGameId: true } } },
+          });
+          const have = new Set(known.map(({ game }) => Number(game.platformGameId)));
+          const missing = batch.filter((game) => !have.has(game.appid));
+          const played = await appsWithUnlocks(
+            steamId,
+            missing.map((game) => game.appid),
+            1,
+          );
+          return missing.filter((game) => played.has(game.appid));
+        },
+        -1,
+      );
+      for (const game of playedGames) {
+        await backgroundWork(
+          'Steam : import d’un jeu emprunté',
+          () => syncSteamGame(account.userId, steamId, game, true),
+          -1,
+        );
+        found++;
+      }
+    }
   }
   await db.linkedAccount.update({
     where: { id: account.id },
     data: { storeSweptAt: new Date() },
   });
-  return found.size;
+  return found;
 }
 
 export const syncSteam: ProviderSync = async ({ userId, account, report, onUnlocked }) => {
@@ -524,7 +554,7 @@ export const syncSteam: ProviderSync = async ({ userId, account, report, onUnloc
 
   const games = await syncGames(
     [...owned, ...shared],
-    { platform: 'Steam', concurrency: CONCURRENCY, name: (g) => g.name, report },
+    { platform: 'Steam', concurrency: concurrency(), name: (g) => g.name, report },
     async (ownedGame) => {
       const appId = String(ownedGame.appid);
       const borrowed = !library.has(ownedGame.appid);

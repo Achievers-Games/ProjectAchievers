@@ -101,6 +101,9 @@ export async function fetchRetry(url: string | URL, init?: RequestInit, attempts
     if (response && response.status !== 429 && response.status < 500) return response;
     if (response && attempt >= attempts) return response;
 
+    // Libère le corps avant la pause et la prochaine tentative, sans attendre le GC.
+    await response?.body?.cancel().catch(() => {});
+
     const retryAfter = Number(response?.headers.get('retry-after'));
     const delay = retryAfter > 0 ? retryAfter * 1000 : 500 * 2 ** attempt;
     await sleep(Math.min(delay, 30_000));

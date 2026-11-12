@@ -1,4 +1,5 @@
 import { PgBoss } from 'pg-boss';
+import { backgroundWork } from '../workload';
 import type { Provider, SyncStatus } from '#prisma';
 import { db } from '../db';
 import { env } from '../env';
@@ -79,17 +80,29 @@ function boss(): Promise<PgBoss> {
 export async function enqueueSync(userId: string, provider: Provider, quiet = false) {
   if (!SYNCERS[provider] || !availableProviders()[provider]) return false;
 
-  // Une seule requête : deux clics simultanés ne peuvent pas lancer deux synchronisations.
-  const { count } = await db.linkedAccount.updateMany({
-    where: { userId, provider, syncStatus: { notIn: ['QUEUED', 'SYNCING'] } },
-    data: { syncStatus: 'QUEUED', syncError: null },
-  });
-  if (count === 0) return false;
-
-  publishSync(userId, { provider, status: 'QUEUED', processed: 0, total: 0 });
-
+  const instance = await boss();
   const job: SyncJob = { userId, provider, quiet };
-  await (await boss()).send(SYNC_QUEUE, job, { retryLimit: 1, retryDelay: 60 });
+  // L'état et la tâche sont validés ensemble, même si le processus s'arrête brutalement.
+  const queued = await db.$transaction(async (tx) => {
+    const { count } = await tx.linkedAccount.updateMany({
+      where: { userId, provider, syncStatus: { notIn: ['QUEUED', 'SYNCING'] } },
+      data: { syncStatus: 'QUEUED', syncError: null },
+    });
+    if (count === 0) return false;
+    const id = await instance.send(SYNC_QUEUE, job, {
+      retryLimit: 1,
+      retryDelay: 60,
+      db: {
+        executeSql: async (sql, values = []) => ({
+          rows: await tx.$queryRawUnsafe(sql, ...values),
+        }),
+      },
+    });
+    if (!id) throw new Error('La tâche de synchronisation n’a pas été créée.');
+    return true;
+  });
+  if (!queued) return false;
+  publishSync(userId, { provider, status: 'QUEUED', processed: 0, total: 0 });
   return true;
 }
 
@@ -146,7 +159,9 @@ const SITE_CHECK = 10 * 60 * 1000;
 /** À chaque visite, sans la ralentir : au plus une vérification par minute et par joueur. */
 export function autoRefresh(userId: string) {
   if (!rateLimit(`rafraichissement:${userId}`, 1, AUTO_CHECK)) return;
-  if (rateLimit(`succes-site:${userId}`, 1, SITE_CHECK)) void reviewSiteAchievements(userId);
+  if (rateLimit(`succes-site:${userId}`, 1, SITE_CHECK)) {
+    void backgroundWork('Succès du site', () => reviewSiteAchievements(userId), -1);
+  }
   void refreshAccounts(userId, autoInterval, true).catch((cause) =>
     log.error('Rafraîchissement :', cause),
   );
@@ -313,7 +328,11 @@ export async function runLiveGame(
   return gained;
 }
 
-export async function runSync({ userId, provider, quiet }: SyncJob) {
+export function runSync(job: SyncJob) {
+  return backgroundWork(`Synchronisation ${job.provider}`, () => runAccountSync(job), 1);
+}
+
+async function runAccountSync({ userId, provider, quiet }: SyncJob) {
   const syncer = SYNCERS[provider];
   if (!syncer) return;
 
@@ -431,16 +450,34 @@ async function sweep() {
     take: 500,
   });
   for (const account of accounts) await enqueueSync(account.userId, account.provider);
-  await reviewNewPlayers().catch((cause) => log.error('Succès du site :', cause));
-  await announceSeason().catch((cause) => log.error('Annonce :', cause));
-  await warnPsnToken().catch((cause) => log.error('Jeton PSN :', cause));
-  await flagProfaneClans().catch((cause) => log.error('Noms de clan :', cause));
-  await checkAllClans().catch((cause) => log.error('Succès de clan :', cause));
-  await refreshDiscordAccounts().catch((cause) => log.error('Discord :', cause));
-  await fillHiddenDescriptions().catch((cause) => log.error('Succès cachés :', cause));
-  await fillWowCatalog().catch((cause) => log.error('Catalogue WoW :', cause));
+  await backgroundWork('reviewNewPlayers', () => reviewNewPlayers(), -1).catch((cause) =>
+    log.error('Succès du site :', cause),
+  );
+  await backgroundWork('announceSeason', () => announceSeason(), -1).catch((cause) =>
+    log.error('Annonce :', cause),
+  );
+  await backgroundWork('warnPsnToken', () => warnPsnToken(), -1).catch((cause) =>
+    log.error('Jeton PSN :', cause),
+  );
+  await backgroundWork('flagProfaneClans', () => flagProfaneClans(), -1).catch((cause) =>
+    log.error('Noms de clan :', cause),
+  );
+  await backgroundWork('checkAllClans', () => checkAllClans(), -1).catch((cause) =>
+    log.error('Succès de clan :', cause),
+  );
+  await backgroundWork('refreshDiscordAccounts', () => refreshDiscordAccounts(), -1).catch(
+    (cause) => log.error('Discord :', cause),
+  );
+  await backgroundWork('fillHiddenDescriptions', () => fillHiddenDescriptions(), -1).catch(
+    (cause) => log.error('Succès cachés :', cause),
+  );
+  await backgroundWork('fillWowCatalog', () => fillWowCatalog(), -1).catch((cause) =>
+    log.error('Catalogue WoW :', cause),
+  );
   await sweepSteamStore().catch((cause) => log.error('Boutique Steam :', cause));
-  await matchFamilies().catch((cause) => log.error('Familles :', cause));
+  await backgroundWork('matchFamilies', () => matchFamilies(), -1).catch((cause) =>
+    log.error('Familles :', cause),
+  );
 }
 
 /** Démarre le traitement des synchronisations dans le processus du site. */
@@ -470,11 +507,13 @@ export async function startWorkers() {
   await instance.work(SWEEP_QUEUE, async () => sweep());
   await instance.schedule(SWEEP_QUEUE, '0 * * * *');
   await instance.work(CONTENT_QUEUE, async () => {
-    await rateGames();
-    await tagGames();
+    await backgroundWork('Classification des jeux', () => rateGames(), -1);
+    await backgroundWork('Genres des jeux', () => tagGames(), -1);
   });
   await instance.schedule(CONTENT_QUEUE, '*/5 * * * *');
-  // À part de la synchronisation : un partenaire lent ou en panne ne la retarde jamais.
-  await instance.work(WEBHOOK_QUEUE, async () => deliverPartnerWebhooks());
+  // File indépendante, mais le même budget de fond protège la mémoire du NAS.
+  await instance.work(WEBHOOK_QUEUE, async () =>
+    backgroundWork('Webhooks partenaires', () => deliverPartnerWebhooks(), -1),
+  );
   await instance.schedule(WEBHOOK_QUEUE, '* * * * *');
 }

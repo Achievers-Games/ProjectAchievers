@@ -8,6 +8,7 @@ import type { TrophyType } from '#prisma';
 import { psnConsole } from '#lib/collection';
 import type { Locale } from '#lib/paraglide/runtime';
 import { db } from '../db';
+import { env } from '../env';
 import { psnAuthorization } from '../providers/psn';
 import { SyncError, syncGames } from './errors';
 import {
@@ -20,7 +21,6 @@ import {
 import type { ProviderSync } from './types';
 
 const PAGE = 800;
-const CONCURRENCY = 3;
 
 const TROPHY_TYPES: Record<string, TrophyType> = {
   platinum: 'PLATINUM',
@@ -119,7 +119,12 @@ export const syncPsn: ProviderSync = async ({ userId, account, report, onUnlocke
 
   const games = await syncGames(
     titles,
-    { platform: 'PSN', concurrency: CONCURRENCY, name: (t) => t.trophyTitleName, report },
+    {
+      platform: 'PSN',
+      concurrency: env().SYNC_GAME_CONCURRENCY,
+      name: (t) => t.trophyTitleName,
+      report,
+    },
     async (title) => {
       // PSN donne le total obtenu par jeu : inutile de relire un jeu sans nouveauté.
       const earned = Object.values(title.earnedTrophies).reduce((sum, n) => sum + n, 0);

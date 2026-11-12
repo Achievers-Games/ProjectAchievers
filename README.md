@@ -92,6 +92,18 @@ et `XFF_DEPTH=1` pour que les limites de débit voient la vraie adresse des visi
 
 Le site tourne en **un seul processus** : limites de débit et événements temps réel vivent en mémoire.
 
+Sur le TS-233, le budget est limité à un traitement lourd à la fois : imports, suivi Steam en
+direct et maintenance partagent `BACKGROUND_CONCURRENCY=1`. Les imports passent avant la maintenance
+en attente ; le balayage Steam libère ce budget entre ses pages de 1 000 jeux. Les concurrences
+`SYNC_CONCURRENCY`, `SYNC_GAME_CONCURRENCY` et `STEAM_CONCURRENCY` valent aussi `1` sur le NAS.
+`BLIZZARD_DETAILS_PER_RUN=50` borne le remplissage horaire des détails WoW.
+
+Les logs `Charge serveur` indiquent la mémoire au début et à la fin des tâches, leur durée, puis
+toutes les minutes le tas JavaScript, la mémoire résidente et le retard de la boucle Node. Le
+niveau passe à `warn` au-delà de 80 % du tas ou d'une seconde de retard. La limite mémoire du
+conteneur reste à 512 Mo et celle du tas à 320 Mo : ces mesures servent à vérifier les pics après
+déploiement, avant d'envisager un worker séparé et son budget mémoire supplémentaire.
+
 ### Formulaire de contact et email
 
 `/contact` envoie chaque message par SMTP à `CONTACT_INBOX` (par défaut `SMTP_FROM`) avec l'adresse

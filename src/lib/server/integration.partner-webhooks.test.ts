@@ -8,6 +8,7 @@ import { issuePartnerKey } from './partner-api';
 import {
   deliverPartnerWebhooks,
   issueWebhookSecret,
+  WEBHOOK_BATCH,
   queueAccountEvent,
   signWebhook,
 } from './partner-webhooks';
@@ -281,6 +282,49 @@ describe('webhooks partenaires', () => {
       webhookFailures: 0,
       webhookLastError: null,
     });
+  });
+
+  it('envoie tous les succès même si plus d’un lot partage le même instant', async () => {
+    const { game } = await setup();
+    const user = await player();
+    await db.partnerLink.create({
+      data: { userId: user.id, partner: SLUG, partnerUserId: 'lure-large', method: 'AUTO' },
+    });
+    const achievements = await db.achievement.createManyAndReturn({
+      data: Array.from({ length: WEBHOOK_BATCH + 3 }, (_, i) => ({
+        gameId: game.id,
+        platformAchievementId: `batch-${i}`,
+        name: `batch-${i}`,
+      })),
+    });
+    await db.userGame.create({
+      data: {
+        userId: user.id,
+        gameId: game.id,
+        unlockedCount: achievements.length,
+        totalCount: achievements.length,
+        completion: 100,
+      },
+    });
+    await db.userAchievement.createMany({
+      data: achievements.map((achievement) => ({
+        userId: user.id,
+        achievementId: achievement.id,
+        unlockedAt: at('2026-03-01T12:00:00Z'),
+        createdAt: at('2026-03-01T12:00:00Z'),
+      })),
+    });
+    const partner = fakePartner();
+    for (let i = 0; i < 3; i++)
+      await deliverPartnerWebhooks(at('2026-03-01T12:05:00Z'), partner.send);
+    expect(partner.sent).toHaveLength(2);
+    const delivered = partner.sent.flatMap(({ body }) =>
+      (JSON.parse(body).events as { achievements?: { id: string }[] }[]).flatMap(
+        (event) => event.achievements ?? [],
+      ),
+    );
+    expect(delivered).toHaveLength(achievements.length);
+    expect(new Set(delivered.map((achievement) => achievement.id)).size).toBe(achievements.length);
   });
 
   it('commence à maintenant au premier branchement, sans renvoyer l’historique', async () => {

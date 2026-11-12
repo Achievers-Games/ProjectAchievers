@@ -80,7 +80,7 @@ test.describe('pages délaissées', () => {
       // Depuis la fiche, « Message » ouvre la discussion et mène directement dedans.
       await page.goto('/u/lea');
       await ready(page);
-      await page.getByRole('button', { name: 'Message' }).click();
+      await page.getByRole('button', { name: 'Message', exact: true }).click();
       await expect(page).toHaveURL(/\/messages\/./);
       await ready(page);
       await page.goto('/messages');

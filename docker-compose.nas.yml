@@ -58,6 +58,10 @@ services:
       ADDRESS_HEADER: CF-Connecting-IP
       NODE_OPTIONS: --max-old-space-size=320
       SYNC_CONCURRENCY: '1'
+      SYNC_GAME_CONCURRENCY: '1'
+      STEAM_CONCURRENCY: '1'
+      BACKGROUND_CONCURRENCY: '1'
+      BLIZZARD_DETAILS_PER_RUN: '50'
       # `docker compose logs site` reste lisible : debug pour les enquêtes, info par défaut.
       LOG_LEVEL: ${LOG_LEVEL:-info}
       STEAM_API_KEY: ${STEAM_API_KEY:-}

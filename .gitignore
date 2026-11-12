@@ -5,6 +5,7 @@ vite.config.ts.timestamp-*
 test-results/
 playwright-report/
 coverage/
+.vitest/
 
 .env
 .env.*

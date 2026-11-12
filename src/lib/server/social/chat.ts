@@ -121,10 +121,10 @@ export async function conversationTitle(userId: string, conversationId: string) 
   return conversation.clan?.name ?? conversation.members[0]?.user.displayName ?? '';
 }
 
-export async function markRead(userId: string, conversationId: string) {
+export async function markRead(userId: string, conversationId: string, through: Date) {
   await db.conversationMember.updateMany({
-    where: { userId, conversationId },
-    data: { lastReadAt: new Date() },
+    where: { userId, conversationId, lastReadAt: { lt: through } },
+    data: { lastReadAt: through },
   });
 }
 
@@ -146,7 +146,7 @@ export async function readConversation(userId: string, conversationId: string) {
       author: { select: personSelect },
     },
   });
-  await markRead(userId, conversationId);
+  if (messages[0]) await markRead(userId, conversationId, messages[0].createdAt);
   return {
     id: conversationId,
     title,
