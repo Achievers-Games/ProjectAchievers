@@ -15,7 +15,8 @@ import { validateSession } from '#lib/server/session';
 import { logger } from '#lib/logger';
 import { invalidatePublicCache } from '#lib/server/public-cache';
 import { startLiveGames } from '#lib/server/sync/live';
-import { autoRefresh, startWorkers } from '#lib/server/sync/queue';
+import { autoRefresh, startWorkers, stopWorkers } from '#lib/server/sync/queue';
+import { db } from '#lib/server/db';
 import { startWorkloadMonitor } from '#lib/server/workload';
 
 const log = logger('Serveur');
@@ -28,6 +29,14 @@ export const init: ServerInit = async () => {
   startDigests();
   await grantFramesThrottled().catch((cause) => log.error('Cadres :', cause));
   await syncCuratedGuides().catch((cause) => log.error('Guides officiels :', cause));
+  // `adapter-node` l'émet sur SIGTERM, une fois les requêtes terminées : la file et la base se
+  // ferment proprement au lieu d'attendre que Docker tue le processus.
+  process.once('sveltekit:shutdown', () => {
+    void stopWorkers()
+      .then(() => db.$disconnect())
+      .catch((cause) => log.error('Arrêt :', cause))
+      .finally(() => process.exit(0));
+  });
 };
 
 const WINDOW = 60_000;

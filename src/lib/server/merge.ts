@@ -6,6 +6,7 @@ import { db } from './db';
 import { directKey, leaveClan } from './social';
 
 const MERGE_COOKIE = 'pa_merge';
+const MERGE_ATTEMPTS = 3;
 
 /** Tables qui n'acceptent qu'une ligne par utilisateur et par élément. */
 const PER_USER_TABLES = [
@@ -169,91 +170,92 @@ export async function mergeUsers(
 ): Promise<MergeFailure | null> {
   const { sourceId, targetId, provider, providerUserId } = merge;
 
-  return db.$transaction(
-    async (tx) => {
-      const proof = await tx.linkedAccount.findUnique({
-        where: { provider_providerUserId: { provider, providerUserId } },
-        select: { userId: true },
-      });
-      if (proof?.userId !== sourceId || sourceId === targetId) return 'stale';
+  const attempt = () =>
+    db.$transaction(
+      async (tx) => {
+        const proof = await tx.linkedAccount.findUnique({
+          where: { provider_providerUserId: { provider, providerUserId } },
+          select: { userId: true },
+        });
+        if (proof?.userId !== sourceId || sourceId === targetId) return 'stale';
 
-      const accounts = await tx.linkedAccount.findMany({
-        where: { userId: { in: [sourceId, targetId] } },
-        select: { userId: true, provider: true, syncStatus: true },
-      });
-      if (accounts.some((a) => a.syncStatus === 'QUEUED' || a.syncStatus === 'SYNCING')) {
-        return 'sync_running';
-      }
-      const taken = new Set(accounts.filter((a) => a.userId === targetId).map((a) => a.provider));
-      if (accounts.some((a) => a.userId === sourceId && taken.has(a.provider))) {
-        return 'provider_conflict';
-      }
+        const accounts = await tx.linkedAccount.findMany({
+          where: { userId: { in: [sourceId, targetId] } },
+          select: { userId: true, provider: true, syncStatus: true },
+        });
+        if (accounts.some((a) => a.syncStatus === 'QUEUED' || a.syncStatus === 'SYNCING')) {
+          return 'sync_running';
+        }
+        const taken = new Set(accounts.filter((a) => a.userId === targetId).map((a) => a.provider));
+        if (accounts.some((a) => a.userId === sourceId && taken.has(a.provider))) {
+          return 'provider_conflict';
+        }
 
-      const [source, target, sourceClans, targetClans] = await Promise.all([
-        tx.user.findUniqueOrThrow({ where: { id: sourceId } }),
-        tx.user.findUniqueOrThrow({ where: { id: targetId } }),
-        tx.clanMember.count({ where: { userId: sourceId } }),
-        tx.clanMember.count({ where: { userId: targetId } }),
-      ]);
-      if (sourceClans && targetClans && !clanChoice) return 'clan_choice';
+        const [source, target, sourceClans, targetClans] = await Promise.all([
+          tx.user.findUniqueOrThrow({ where: { id: sourceId } }),
+          tx.user.findUniqueOrThrow({ where: { id: targetId } }),
+          tx.clanMember.count({ where: { userId: sourceId } }),
+          tx.clanMember.count({ where: { userId: targetId } }),
+        ]);
+        if (sourceClans && targetClans && !clanChoice) return 'clan_choice';
 
-      // En cas de doublon, la ligne du profil conservé fait foi.
-      for (const [table, key] of PER_USER_TABLES) {
-        await tx.$executeRawUnsafe(
-          `DELETE FROM "${table}" s USING "${table}" t
+        // En cas de doublon, la ligne du profil conservé fait foi.
+        for (const [table, key] of PER_USER_TABLES) {
+          await tx.$executeRawUnsafe(
+            `DELETE FROM "${table}" s USING "${table}" t
            WHERE s."userId" = $1 AND t."userId" = $2 AND s."${key}" = t."${key}"`,
-          sourceId,
-          targetId,
-        );
-      }
-      await tx.$executeRaw`
+            sourceId,
+            targetId,
+          );
+        }
+        await tx.$executeRaw`
         DELETE FROM "GuideCheck" s USING "GuideCheck" t
         WHERE s."userId" = ${sourceId} AND t."userId" = ${targetId}
           AND s."guideId" = t."guideId" AND s."item" = t."item"`;
-      await tx.$executeRaw`
+        await tx.$executeRaw`
         DELETE FROM "Report" s USING "Report" t
         WHERE s."reporterId" = ${sourceId} AND t."reporterId" = ${targetId}
           AND s."targetType" = t."targetType" AND s."targetId" = t."targetId"`;
-      // Un seul compte par site partenaire : celui du profil conservé fait foi.
-      await tx.$executeRaw`
+        // Un seul compte par site partenaire : celui du profil conservé fait foi.
+        await tx.$executeRaw`
         DELETE FROM "PartnerLink" s USING "PartnerLink" t
         WHERE s."userId" = ${sourceId} AND t."userId" = ${targetId} AND s."partner" = t."partner"`;
 
-      const owner = { where: { userId: sourceId }, data: { userId: targetId } };
-      await tx.linkedAccount.updateMany(owner);
-      await tx.partnerLink.updateMany(owner);
-      await tx.userGame.updateMany(owner);
-      await tx.userAchievement.updateMany(owner);
-      await tx.guideVote.updateMany(owner);
-      await tx.feedback.updateMany(owner);
-      await tx.guideCheck.updateMany(owner);
-      await tx.commentReaction.updateMany(owner);
-      await tx.syncRun.updateMany(owner);
-      await tx.userFrame.updateMany(owner);
-      await tx.siteUnlock.updateMany(owner);
-      await tx.pinnedGame.updateMany(owner);
-      await tx.clanRequest.updateMany(owner);
+        const owner = { where: { userId: sourceId }, data: { userId: targetId } };
+        await tx.linkedAccount.updateMany(owner);
+        await tx.partnerLink.updateMany(owner);
+        await tx.userGame.updateMany(owner);
+        await tx.userAchievement.updateMany(owner);
+        await tx.guideVote.updateMany(owner);
+        await tx.feedback.updateMany(owner);
+        await tx.guideCheck.updateMany(owner);
+        await tx.commentReaction.updateMany(owner);
+        await tx.syncRun.updateMany(owner);
+        await tx.userFrame.updateMany(owner);
+        await tx.siteUnlock.updateMany(owner);
+        await tx.pinnedGame.updateMany(owner);
+        await tx.clanRequest.updateMany(owner);
 
-      const author = { where: { authorId: sourceId }, data: { authorId: targetId } };
-      await tx.guide.updateMany(author);
-      await tx.comment.updateMany(author);
-      await tx.report.updateMany({
-        where: { reporterId: sourceId },
-        data: { reporterId: targetId },
-      });
+        const author = { where: { authorId: sourceId }, data: { authorId: targetId } };
+        await tx.guide.updateMany(author);
+        await tx.comment.updateMany(author);
+        await tx.report.updateMany({
+          where: { reporterId: sourceId },
+          data: { reporterId: targetId },
+        });
 
-      // Un vote écarté comme doublon ne compte plus dans le score du guide.
-      await tx.$executeRaw`
+        // Un vote écarté comme doublon ne compte plus dans le score du guide.
+        await tx.$executeRaw`
         UPDATE "Guide" g
         SET "score" = COALESCE((SELECT SUM(v."value") FROM "GuideVote" v WHERE v."guideId" = g."id"), 0)
         WHERE g."id" IN (SELECT "guideId" FROM "GuideVote" WHERE "userId" = ${targetId})`;
 
-      // Rien de social ne se perd : amis, blocages, clan et discussions suivent le profil gardé.
-      await tx.$executeRaw`
+        // Rien de social ne se perd : amis, blocages, clan et discussions suivent le profil gardé.
+        await tx.$executeRaw`
         DELETE FROM "Friendship" s
         WHERE (s."requesterId" = ${sourceId} AND s."addresseeId" = ${targetId})
            OR (s."requesterId" = ${targetId} AND s."addresseeId" = ${sourceId})`;
-      await tx.$executeRaw`
+        await tx.$executeRaw`
         DELETE FROM "Friendship" s
         WHERE (s."requesterId" = ${sourceId} OR s."addresseeId" = ${sourceId})
           AND EXISTS (
@@ -262,52 +264,62 @@ export async function mergeUsers(
               AND CASE WHEN t."requesterId" = ${targetId} THEN t."addresseeId" ELSE t."requesterId" END
                 = CASE WHEN s."requesterId" = ${sourceId} THEN s."addresseeId" ELSE s."requesterId" END
           )`;
-      await tx.friendship.updateMany({
-        where: { requesterId: sourceId },
-        data: { requesterId: targetId },
-      });
-      await tx.friendship.updateMany({
-        where: { addresseeId: sourceId },
-        data: { addresseeId: targetId },
-      });
-      await tx.$executeRaw`
+        await tx.friendship.updateMany({
+          where: { requesterId: sourceId },
+          data: { requesterId: targetId },
+        });
+        await tx.friendship.updateMany({
+          where: { addresseeId: sourceId },
+          data: { addresseeId: targetId },
+        });
+        await tx.$executeRaw`
         INSERT INTO "Block" ("blockerId", "blockedId")
         SELECT ${targetId}, "blockedId" FROM "Block"
         WHERE "blockerId" = ${sourceId} AND "blockedId" <> ${targetId}
         ON CONFLICT DO NOTHING`;
-      // Ceux qui avaient bloqué le profil absorbé restent à l'abri : sinon la fusion suffirait à
-      // effacer un blocage.
-      await tx.$executeRaw`
+        // Ceux qui avaient bloqué le profil absorbé restent à l'abri : sinon la fusion suffirait à
+        // effacer un blocage.
+        await tx.$executeRaw`
         INSERT INTO "Block" ("blockerId", "blockedId")
         SELECT "blockerId", ${targetId} FROM "Block"
         WHERE "blockedId" = ${sourceId} AND "blockerId" <> ${targetId}
         ON CONFLICT DO NOTHING`;
-      // Un blocage défait l'amitié, comme le fait blockUser.
-      await tx.$executeRaw`
+        // Un blocage défait l'amitié, comme le fait blockUser.
+        await tx.$executeRaw`
         DELETE FROM "Friendship" f USING "Block" b
         WHERE (b."blockerId" = ${targetId} OR b."blockedId" = ${targetId})
           AND ((f."requesterId" = b."blockerId" AND f."addresseeId" = b."blockedId")
             OR (f."requesterId" = b."blockedId" AND f."addresseeId" = b."blockerId"))`;
-      await mergeClans(tx, sourceId, targetId, clanChoice);
-      await mergeConversations(tx, sourceId, targetId);
+        await mergeClans(tx, sourceId, targetId, clanChoice);
+        await mergeConversations(tx, sourceId, targetId);
 
-      await tx.psnVerification.deleteMany({ where: { userId: sourceId } });
-      await tx.user.update({
-        where: { id: targetId },
-        data: {
-          // Un profil privé ne doit pas devenir public à cause d'une fusion.
-          isPublic: source.isPublic && target.isPublic,
-          role: ROLE_RANK[source.role] > ROLE_RANK[target.role] ? source.role : target.role,
-          avatarUrl: target.avatarUrl ?? source.avatarUrl,
-          avatarMotionUrl: target.avatarUrl ? target.avatarMotionUrl : source.avatarMotionUrl,
-          frame: target.frame ?? source.frame,
-          showcaseCustom: target.showcaseCustom || source.showcaseCustom,
-          frameMotionUrl: target.frame ? target.frameMotionUrl : source.frameMotionUrl,
-        },
-      });
-      await tx.user.delete({ where: { id: sourceId } });
-      return null;
-    },
-    { isolationLevel: 'Serializable' },
-  );
+        await tx.psnVerification.deleteMany({ where: { userId: sourceId } });
+        await tx.user.update({
+          where: { id: targetId },
+          data: {
+            // Un profil privé ne doit pas devenir public à cause d'une fusion.
+            isPublic: source.isPublic && target.isPublic,
+            role: ROLE_RANK[source.role] > ROLE_RANK[target.role] ? source.role : target.role,
+            avatarUrl: target.avatarUrl ?? source.avatarUrl,
+            avatarMotionUrl: target.avatarUrl ? target.avatarMotionUrl : source.avatarMotionUrl,
+            frame: target.frame ?? source.frame,
+            showcaseCustom: target.showcaseCustom || source.showcaseCustom,
+            frameMotionUrl: target.frame ? target.frameMotionUrl : source.frameMotionUrl,
+          },
+        });
+        await tx.user.delete({ where: { id: sourceId } });
+        return null;
+      },
+      // Cinq secondes, le délai par défaut, ne suffisent pas à déplacer une grosse bibliothèque.
+      { isolationLevel: 'Serializable', maxWait: 10_000, timeout: 60_000 },
+    );
+  // Une synchronisation ou un message qui croise la fusion la fait échouer en conflit de
+  // sérialisation : rien n'a été écrit, elle se rejoue telle quelle.
+  for (let tries = 1; ; tries++) {
+    try {
+      return await attempt();
+    } catch (cause) {
+      if ((cause as { code?: string }).code !== 'P2034' || tries >= MERGE_ATTEMPTS) throw cause;
+    }
+  }
 }

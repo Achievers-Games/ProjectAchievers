@@ -2,6 +2,7 @@ import { error } from '@sveltejs/kit';
 import type { Prisma } from '#prisma';
 import { m } from '#lib/paraglide/messages';
 import { db } from './db';
+import { renderGuide } from './markdown';
 
 /** Score net à partir duquel la communauté a jugé un guide mauvais : il se replie par défaut. */
 export const BURIED_SCORE = -5;
@@ -123,10 +124,12 @@ export async function reportGuide(guideId: string, reporterId: string, reason: s
   return true;
 }
 
-const CHECKBOX = /^\s*[-*] \[[ x]\]/gim;
-
-/** Le nombre de cases à cocher d'un guide, dans l'ordre où le rendu les numérote. */
-export const countChecklist = (contentMd: string) => contentMd.match(CHECKBOX)?.length ?? 0;
+/**
+ * Le nombre de cases à cocher d'un guide, compté sur le rendu lui-même : une case écrite dans un
+ * bloc de code ne s'affiche pas, et un décompte fait sur le Markdown la comptait quand même.
+ */
+export const countChecklist = (contentMd: string) =>
+  renderGuide(contentMd).match(/data-check="/g)?.length ?? 0;
 
 /** Le jeu d'une page de guide, avec ce qu'il faut pour retrouver les guides de ses versions. */
 export async function guideGame(slug: string, user: App.Locals['user']) {

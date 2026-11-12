@@ -178,6 +178,19 @@ export async function resolveIdentity(
   identity: Identity,
   currentUserId: string | null,
 ): Promise<LinkResult> {
+  try {
+    return await resolveOnce(identity, currentUserId);
+  } catch (cause) {
+    // Deux connexions à la fois (double clic, deux onglets) : l'autre a créé le compte ou pris
+    // l'identifiant entre la lecture et l'écriture. La seconde lecture retrouve ce qu'elle a écrit.
+    if (cause instanceof Prisma.PrismaClientKnownRequestError && cause.code === 'P2002') {
+      return resolveOnce(identity, currentUserId);
+    }
+    throw cause;
+  }
+}
+
+async function resolveOnce(identity: Identity, currentUserId: string | null): Promise<LinkResult> {
   const where = {
     provider_providerUserId: {
       provider: identity.provider,

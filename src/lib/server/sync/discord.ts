@@ -9,7 +9,7 @@ const BATCH = 100;
 const PAUSE = 1_000;
 
 /** Relit l'apparence des comptes Discord : le bot évite de garder un jeton par joueur. */
-export async function refreshDiscordAccounts(pause = PAUSE) {
+export async function refreshDiscordAccounts(pause = PAUSE, limit = BATCH) {
   const token = env().DISCORD_BOT_TOKEN;
   if (!token) return 0;
 
@@ -19,7 +19,7 @@ export async function refreshDiscordAccounts(pause = PAUSE) {
       OR: [{ lastSyncedAt: null }, { lastSyncedAt: { lt: new Date(Date.now() - STALE_AFTER) } }],
     },
     orderBy: { lastSyncedAt: { sort: 'asc', nulls: 'first' } },
-    take: BATCH,
+    take: limit,
   });
 
   let refreshed = 0;

@@ -446,6 +446,23 @@ async function runAccountSync({ userId, provider, quiet }: SyncJob) {
   }
 }
 
+/**
+ * Découpe un entretien long en petits lots, chacun rendant le budget de fond : ces tâches
+ * dorment entre deux appels aux plateformes, et un import demandé par un joueur attendait
+ * sinon plusieurs minutes derrière elles. Un lot incomplet veut dire qu'il ne reste rien, ou
+ * que la plateforme a dit stop.
+ */
+async function inSlices(
+  name: string,
+  slices: number,
+  size: number,
+  run: (limit: number) => Promise<number>,
+) {
+  for (let slice = 0; slice < slices; slice++) {
+    if ((await backgroundWork(name, () => run(size), -1)) < size) return;
+  }
+}
+
 async function sweep() {
   const now = new Date();
   await db.session.deleteMany({ where: { expiresAt: { lt: now } } });
@@ -501,11 +518,12 @@ async function sweep() {
   await backgroundWork('checkAllClans', () => checkAllClans(), -1).catch((cause) =>
     log.error('Succès de clan :', cause),
   );
-  await backgroundWork('refreshDiscordAccounts', () => refreshDiscordAccounts(), -1).catch(
-    (cause) => log.error('Discord :', cause),
-  );
-  await backgroundWork('fillHiddenDescriptions', () => fillHiddenDescriptions(), -1).catch(
-    (cause) => log.error('Succès cachés :', cause),
+  await inSlices('refreshDiscordAccounts', 5, 20, (limit) =>
+    refreshDiscordAccounts(undefined, limit),
+  ).catch((cause) => log.error('Discord :', cause));
+  // Le nombre rendu est celui des jeux complétés : un lot qui n'apporte rien arrête la série.
+  await inSlices('fillHiddenDescriptions', 3, 1, () => fillHiddenDescriptions(20)).catch((cause) =>
+    log.error('Succès cachés :', cause),
   );
   await backgroundWork('fillWowCatalog', () => fillWowCatalog(), -1).catch((cause) =>
     log.error('Catalogue WoW :', cause),
@@ -514,6 +532,12 @@ async function sweep() {
   await backgroundWork('matchFamilies', () => matchFamilies(), -1).catch((cause) =>
     log.error('Familles :', cause),
   );
+}
+
+/** Rend les tâches en cours à la file avant l'arrêt : elles repartiront au prochain démarrage. */
+export async function stopWorkers() {
+  const instance = await globals.paBoss?.catch(() => undefined);
+  await instance?.stop({ graceful: false, timeout: 5_000 });
 }
 
 /** Démarre le traitement des synchronisations dans le processus du site. */
@@ -543,8 +567,8 @@ export async function startWorkers() {
   await instance.work(SWEEP_QUEUE, async () => sweep());
   await instance.schedule(SWEEP_QUEUE, '0 * * * *');
   await instance.work(CONTENT_QUEUE, async () => {
-    await backgroundWork('Classification des jeux', () => rateGames(), -1);
-    await backgroundWork('Genres des jeux', () => tagGames(), -1);
+    await inSlices('Classification des jeux', 15, 10, (limit) => rateGames(limit));
+    await inSlices('Genres des jeux', 10, 30, (limit) => tagGames(limit));
   });
   await instance.schedule(CONTENT_QUEUE, '*/5 * * * *');
   // File indépendante, mais le même budget de fond protège la mémoire du NAS.

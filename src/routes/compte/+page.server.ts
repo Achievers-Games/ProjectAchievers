@@ -8,7 +8,7 @@ import { secureCookie } from '#lib/server/cookies';
 import { db } from '#lib/server/db';
 import { logger } from '#lib/logger';
 import { clearMerge, mergePreview, mergeUsers, readMerge, saveMerge } from '#lib/server/merge';
-import { availableProviders } from '#lib/server/providers';
+import { availableProviders, OAUTH_PROVIDERS } from '#lib/server/providers';
 import { bioContainsCode, findPsnProfile, newPsnCode } from '#lib/server/providers/psn';
 import { findRetroProfile } from '#lib/server/providers/retro';
 import { destroySession } from '#lib/server/session';
@@ -42,7 +42,8 @@ const PROFILE_ERRORS = {
   avatar_unknown: m.profile_avatar_unknown,
 };
 
-const LOGIN_PROVIDERS: Provider[] = ['STEAM', 'DISCORD', 'XBOX', 'GOOGLE'];
+/** Tout fournisseur qui ouvre une session, Epic et Blizzard compris. */
+const LOGIN_PROVIDERS: Provider[] = Object.values(OAUTH_PROVIDERS);
 const PSN_CODE_LIFETIME = 30 * 60 * 1000;
 
 const requireUser = (locals: App.Locals) => requireLogin(locals, '/compte');
@@ -530,10 +531,17 @@ export const actions: Actions = {
     if ((await request.formData()).get('confirmation') !== user.handle) {
       return fail(400, { error: m.delete_account_confirm() });
     }
-    await destroySession(cookies);
     await db.psnVerification.deleteMany({ where: { userId: user.id } });
     await leaveClan(user.id);
-    await db.user.delete({ where: { id: user.id } });
+    await db.$transaction([
+      // Une discussion à deux ne survit pas à l'un des deux : elle resterait orpheline.
+      db.conversation.deleteMany({
+        where: { directKey: { not: null }, members: { some: { userId: user.id } } },
+      }),
+      db.user.delete({ where: { id: user.id } }),
+    ]);
+    // En dernier : si la suppression échoue, le joueur reste connecté et peut réessayer.
+    await destroySession(cookies);
     redirect(303, '/');
   },
 };
