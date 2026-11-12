@@ -35,6 +35,8 @@ const SWEEP_QUEUE = 'sync-sweep';
 const CONTENT_QUEUE = 'content-rating';
 /** Les nouveaux succès des joueurs reliés, envoyés aux sites partenaires. */
 const WEBHOOK_QUEUE = 'partner-webhooks';
+/** Six heures, en secondes : assez pour le plus gros import, loin du plafond de 24 h de pg-boss. */
+const JOB_EXPIRATION = 6 * 60 * 60;
 const STALE_AFTER = 24 * 60 * 60 * 1000;
 /** Une synchronisation échouée attend avant qu'une visite ne la remette en file. */
 const FAILED_SYNC_COOLDOWN = 60 * 60 * 1000;
@@ -70,10 +72,19 @@ function boss(): Promise<PgBoss> {
     const instance = new PgBoss(env().DATABASE_URL);
     instance.on('error', (error) => log.error('pg-boss :', error));
     await instance.start();
-    await instance.createQueue(SYNC_QUEUE);
-    await instance.createQueue(SWEEP_QUEUE);
-    await instance.createQueue(CONTENT_QUEUE);
-    await instance.createQueue(WEBHOOK_QUEUE);
+    // pg-boss abandonne une tâche après 15 minutes par défaut, puis la rejoue : un premier import
+    // sur le NAS dure bien plus longtemps et repartait alors de zéro. Les files déjà créées
+    // gardent leurs anciens réglages, d'où la mise à jour après la création.
+    for (const name of [SYNC_QUEUE, SWEEP_QUEUE, CONTENT_QUEUE, WEBHOOK_QUEUE]) {
+      // Une synchronisation interrompue par un arrêt du serveur mérite un second essai ;
+      // l'entretien, lui, revient de toute façon à l'heure suivante.
+      const options = {
+        expireInSeconds: JOB_EXPIRATION,
+        retryLimit: name === SYNC_QUEUE ? 1 : 0,
+      };
+      await instance.createQueue(name, options);
+      await instance.updateQueue(name, options);
+    }
     return instance;
   })());
 }
@@ -452,10 +463,29 @@ async function sweep() {
       syncStatus: { in: ['IDLE', 'COMPLETED', 'FAILED'] },
       OR: [{ lastSyncedAt: null }, { lastSyncedAt: { lt: new Date(Date.now() - STALE_AFTER) } }],
     },
-    select: { userId: true, provider: true },
+    select: { userId: true, provider: true, syncStatus: true },
     take: 500,
   });
-  for (const account of accounts) await enqueueSync(account.userId, account.provider);
+  // Un échec ne touche pas `lastSyncedAt` : sans ce garde-fou, un profil privé repartait à chaque
+  // heure, sans fin. Un compte en échec n'est relancé d'ici qu'une fois par jour.
+  const failed = accounts.filter((account) => account.syncStatus === 'FAILED');
+  const retried = failed.length
+    ? await db.syncRun.groupBy({
+        by: ['userId', 'provider'],
+        where: {
+          userId: { in: failed.map((account) => account.userId) },
+          startedAt: { gte: new Date(now.getTime() - STALE_AFTER) },
+        },
+      })
+    : [];
+  const recent = new Set(retried.map((run) => `${run.userId}:${run.provider}`));
+  for (const account of accounts) {
+    if (account.syncStatus === 'FAILED' && recent.has(`${account.userId}:${account.provider}`)) {
+      continue;
+    }
+    // Personne n'a rien demandé : pas de relecture forcée, ni de message sans nouveauté.
+    await enqueueSync(account.userId, account.provider, true);
+  }
   await backgroundWork('reviewNewPlayers', () => reviewNewPlayers(), -1).catch((cause) =>
     log.error('Succès du site :', cause),
   );

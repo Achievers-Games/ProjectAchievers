@@ -23,6 +23,8 @@ const SHARED_CHECK_EVERY = 24 * 60 * 60 * 1000;
 const STORE_SWEEP_EVERY = 30 * 24 * 60 * 60 * 1000;
 /** Toute la boutique coûte des centaines d'appels : le joueur ne peut pas la relancer à volonté. */
 const STORE_SWEEP_FORCED_EVERY = 7 * 24 * 60 * 60 * 1000;
+/** Un balayage qui échoue (profil privé, panne de Steam) est retenté le lendemain. */
+const STORE_SWEEP_RETRY = 24 * 60 * 60 * 1000;
 const MAX_FRIENDS = 300;
 
 interface OwnedGame {
@@ -112,7 +114,10 @@ async function fetchFriendGames(steamId: string) {
   const friends = (data.friendslist?.friends ?? []).slice(0, MAX_FRIENDS);
   const games = new Map<number, OwnedGame>();
   await mapLimit(friends, concurrency(), async ({ steamid }) => {
-    for (const game of await fetchOwnedGames(steamid).catch(() => [])) games.set(game.appid, game);
+    // Seuls l'identifiant et le nom valent pour le joueur : le temps de jeu est celui de l'ami.
+    for (const { appid, name } of await fetchOwnedGames(steamid).catch(() => [])) {
+      games.set(appid, { appid, name });
+    }
   });
   return [...games.values()];
 }
@@ -482,8 +487,32 @@ export async function sweepSteamStore() {
     () => fetchOwnedGames(steamId).catch(() => null),
     -1,
   );
-  // Ne jamais marquer un balayage comme terminé si la bibliothèque est inaccessible.
-  if (!owned) return 0;
+  // Ne jamais marquer un balayage comme terminé si la bibliothèque est inaccessible : il est
+  // seulement repoussé, sinon ce compte repasserait en tête à chaque heure et bloquerait les autres.
+  if (!owned) {
+    await postponeSweep(account.id);
+    return 0;
+  }
+  try {
+    return await sweepStoreFor(account, owned);
+  } catch (cause) {
+    await postponeSweep(account.id);
+    throw cause;
+  }
+}
+
+/** Remet le balayage d'un compte au lendemain, derrière ceux qui attendent encore. */
+const postponeSweep = (accountId: string) =>
+  db.linkedAccount.update({
+    where: { id: accountId },
+    data: { storeSweptAt: new Date(Date.now() - STORE_SWEEP_EVERY + STORE_SWEEP_RETRY) },
+  });
+
+async function sweepStoreFor(
+  account: { id: string; userId: string; providerUserId: string },
+  owned: OwnedGame[],
+) {
+  const steamId = account.providerUserId;
   const skipped = new Set(owned.map((game) => game.appid));
   let found = 0;
   // Chaque page libère le budget de fond : un import en attente passe avant la page suivante.

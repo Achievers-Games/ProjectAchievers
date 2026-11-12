@@ -3,6 +3,9 @@ import { db } from '../db';
 import { familyKey } from '../family';
 import { lockCardCatalog, refreshSharedTier, updateFamilyTiers } from '../card-rarity';
 import { slugify } from '#lib/slug';
+import { logger } from '#lib/logger';
+
+const log = logger('Catalogue');
 
 const POINTS: Record<TrophyType, number> = {
   PLATINUM: 180,
@@ -157,12 +160,60 @@ export async function saveAchievements(gameId: string, achievements: Achievement
     });
     await db.$transaction(writes);
   }
-  // Les upserts sont idempotents : une relance reprend un import interrompu par lots.
+  await pruneAchievements(
+    gameId,
+    achievements.map((a) => a.platformAchievementId),
+  );
+  // Les upserts sont idempotents : une relance reprend un import interrompu par lots. Le total
+  // est celui des lignes réellement gardées, le même que lit `saveProgress`.
   await db.game.update({
     where: { id: gameId },
-    data: { totalAchievements: achievements.length, schemaSyncedAt: new Date() },
+    data: {
+      totalAchievements: await db.achievement.count({ where: { gameId } }),
+      schemaSyncedAt: new Date(),
+    },
   });
   await refreshGameTier(gameId);
+}
+
+/**
+ * Retire les succès que la plateforme a supprimés : sans cela, ils comptaient encore dans le
+ * total des joueurs, qui ne pouvaient plus atteindre 100 %. Une liste vide ou amputée de plus
+ * de la moitié ressemble davantage à une réponse incomplète qu'à un vrai retrait : rien n'est
+ * alors supprimé, ni les déblocages ni les guides attachés.
+ */
+async function pruneAchievements(gameId: string, kept: string[]) {
+  if (!kept.length) return;
+  const stale = await db.achievement.findMany({
+    where: { gameId, platformAchievementId: { notIn: kept } },
+    select: { id: true },
+  });
+  if (!stale.length) return;
+  if (stale.length > kept.length) {
+    log.warn(`Catalogue réduit de ${stale.length} succès pour ${gameId} : retrait ignoré`);
+    return;
+  }
+  await db.$transaction([
+    db.achievement.deleteMany({ where: { id: { in: stale.map((row) => row.id) } } }),
+    // Les joueurs du jeu ne repassent pas forcément par `saveProgress` : leur progression suit ici.
+    db.$executeRaw`
+      UPDATE "UserGame" ug
+      SET "unlockedCount" = p.unlocked, "totalCount" = p.total,
+        completion = CASE WHEN p.total > 0 THEN p.unlocked * 100.0 / p.total ELSE 0 END,
+        platinum = p.platinum, "lastUnlockedAt" = p.last
+      FROM (
+        SELECT ug2."userId", count(ua."achievementId")::int AS unlocked,
+          (SELECT count(*)::int FROM "Achievement" WHERE "gameId" = ${gameId}) AS total,
+          coalesce(bool_or(a."trophyType" = 'PLATINUM') FILTER (WHERE ua."achievementId" IS NOT NULL), false) AS platinum,
+          max(ua."unlockedAt") AS last
+        FROM "UserGame" ug2
+        LEFT JOIN "Achievement" a ON a."gameId" = ug2."gameId"
+        LEFT JOIN "UserAchievement" ua ON ua."achievementId" = a.id AND ua."userId" = ug2."userId"
+        WHERE ug2."gameId" = ${gameId}
+        GROUP BY ug2."userId"
+      ) p
+      WHERE ug."gameId" = ${gameId} AND ug."userId" = p."userId"`,
+  ]);
 }
 
 /** Un succès qui vient de tomber : de quoi le montrer au joueur sans recharger sa page. */

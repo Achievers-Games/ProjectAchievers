@@ -287,6 +287,44 @@ describe('synchronisation Steam', () => {
     expect(row.createdAt).toEqual(unlockedAt);
   });
 
+  it('retire un succès supprimé par la plateforme et rend le 100 % atteignable', async () => {
+    const userId = await steamUser();
+    const game = await upsertGame({
+      platform: 'STEAM',
+      platformGameId: `${PREFIX}-${Math.random()}`,
+      name: `${PREFIX} catalogue réduit`,
+    });
+    const entry = (id: string) => ({
+      platformAchievementId: id,
+      name: `${PREFIX} ${id}`,
+      description: '',
+      hidden: false,
+      trophyType: 'ACHIEVEMENT' as const,
+    });
+    await saveAchievements(game.id, ['A', 'B', 'C'].map(entry));
+    const unlockedAt = new Date('2024-01-01T00:00:00Z');
+    await saveProgress(
+      userId,
+      game.id,
+      ['A', 'B'].map((platformAchievementId) => ({ platformAchievementId, unlockedAt })),
+    );
+    const where = { userId_gameId: { userId, gameId: game.id } };
+    expect((await db.userGame.findUniqueOrThrow({ where })).completion).toBeLessThan(100);
+
+    // La plateforme retire « C » : le joueur, qui a tout le reste, a terminé le jeu.
+    await saveAchievements(game.id, ['A', 'B'].map(entry));
+    const progress = await db.userGame.findUniqueOrThrow({ where });
+    expect(progress).toMatchObject({ unlockedCount: 2, totalCount: 2, completion: 100 });
+    expect((await db.game.findUniqueOrThrow({ where: { id: game.id } })).totalAchievements).toBe(2);
+
+    // Une liste amputée de plus de la moitié ressemble à une réponse incomplète : rien ne part.
+    await saveAchievements(game.id, ['A', 'B', 'C', 'D', 'E'].map(entry));
+    await saveAchievements(game.id, [entry('A')]);
+    expect(await db.achievement.count({ where: { gameId: game.id } })).toBe(5);
+    await saveAchievements(game.id, []);
+    expect(await db.achievement.count({ where: { gameId: game.id } })).toBe(5);
+  });
+
   it('évite une relecture automatique inutile juste après une vérification réussie', async () => {
     const fetchMock = steamApi(ownedGames);
     vi.stubGlobal('fetch', fetchMock);
