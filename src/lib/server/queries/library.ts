@@ -1,18 +1,9 @@
 import { Prisma, type Platform } from '#prisma';
-import { consolesOf } from '#lib/collection';
 import { db } from '../db';
 import { publicCache } from '../public-cache';
 import { groupLibrary, type LibraryCard } from '../library';
-import { seasonStartedGames } from './stats';
-import {
-  PAGE_SIZE,
-  cardSelect,
-  isUnfinished,
-  rarityOf,
-  shownProgress,
-  tierProgress,
-  visibleGames,
-} from './shared';
+import { libraryPage } from './library-page';
+import { PAGE_SIZE, cardSelect, tierProgress, visibleGames } from './shared';
 
 /**
  * - `termines` : au moins une version à 100 %, la carte est obtenue ;
@@ -44,66 +35,33 @@ async function listLibrary(
   where: Prisma.GameWhereInput,
   viewerId: string | null,
 ) {
+  const page = await libraryPage(filters, ownerId, viewerId);
+  if (!page.entries.length) return { games: [], total: page.total };
+  const families = page.entries.map((entry) => entry.family);
   const rows = await db.userGame.findMany({
-    where: { userId: ownerId, hidden: filters.status === 'caches', game: where },
+    where: {
+      userId: ownerId,
+      hidden: filters.status === 'caches',
+      game: {
+        AND: [
+          where,
+          { OR: [{ familyKey: { in: families } }, { familyKey: null, id: { in: families } }] },
+        ],
+      },
+    },
+    orderBy: { game: { slug: 'asc' } },
     select: cardSelect,
   });
-  const search = filters.q?.toLowerCase();
-  const started = ownerId === viewerId ? await seasonStartedGames(ownerId) : new Set<string>();
-  const startedSlugs = new Set(
-    rows.filter((row) => started.has(row.game.id)).map((row) => row.game.slug),
-  );
-  // Le niveau dépend de toutes les versions : la plateforme se filtre une fois les cartes réunies.
-  const cards = groupLibrary(rows)
-    .map((card) => ({
-      ...card,
-      // Seule une version commencée rapporte des points : il faut qu'il lui reste des succès.
-      seasonEligible: card.versions.some(
-        (version) => version.completion < 100 && startedSlugs.has(version.slug),
-      ),
-    }))
-    .filter(
-      (card) =>
-        (!search || card.versions.some((v) => v.name.toLowerCase().includes(search))) &&
-        (!filters.platform ||
-          card.versions.some(
-            (v) =>
-              v.platform === filters.platform &&
-              (!filters.consoles ||
-                consolesOf(v.console).some((name) => filters.consoles?.includes(name))),
-          )) &&
-        (!filters.tier || rarityOf(card) === filters.tier) &&
-        (filters.status !== 'termines' || card.tier > 0) &&
-        (filters.status !== 'restants' || isUnfinished(card)) &&
-        (filters.status !== 'saison' || card.seasonEligible),
-    );
-  const ongoing = filters.status === 'restants' || filters.status === 'saison';
-
-  const byName = (a: (typeof cards)[number], b: (typeof cards)[number]) =>
-    a.name.localeCompare(b.name, 'fr');
-  cards.sort((a, b) => {
-    if (filters.sort === 'succes') {
-      return b.totalAchievements - a.totalAchievements || byName(a, b);
-    }
-    if (filters.sort === 'progression') {
-      // Parmi les jeux à finir, seul compte ce qui est presque fini.
-      if (ongoing) return shownProgress(b) - shownProgress(a) || byName(a, b);
-      // Les exemplaires d'abord (×4, ×3, ×2) : la rareté a son propre tri.
-      return b.copies - a.copies || tierProgress(b) - tierProgress(a) || byName(a, b);
-    }
-    if (filters.sort === 'rarete') {
-      // La carte la plus rare d'abord, puis celle qui est le plus près d'être finie.
-      return rarityOf(b) - rarityOf(a) || shownProgress(b) - shownProgress(a) || byName(a, b);
-    }
-    if (filters.sort === 'recent') {
-      const time = (card: typeof a) => card.lastUnlockedAt?.getTime() ?? 0;
-      return time(b) - time(a) || byName(a, b);
-    }
-    return byName(a, b);
-  });
-
-  const start = (filters.page - 1) * PAGE_SIZE;
-  return { games: cards.slice(start, start + PAGE_SIZE), total: cards.length };
+  const cards = groupLibrary(rows);
+  const byFamily = new Map(rows.map((row) => [row.game.slug, row.game.familyKey ?? row.game.id]));
+  const grouped = new Map(cards.map((card) => [byFamily.get(card.slug), card]));
+  return {
+    games: page.entries.flatMap((entry) => {
+      const card = grouped.get(entry.family);
+      return card ? [{ ...card, seasonEligible: entry.seasonEligible }] : [];
+    }),
+    total: page.total,
+  };
 }
 
 export async function listGames(filters: GameFilters, viewerId: string | null) {

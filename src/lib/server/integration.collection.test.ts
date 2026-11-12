@@ -657,3 +657,50 @@ describe('lecture de la bibliothèque d’un profil', () => {
     }
   });
 });
+
+describe('pagination de la bibliothèque', () => {
+  it('pagine les familles en base sans couper ni dupliquer une carte', async () => {
+    const result = await resolveIdentity(identity(), null);
+    if (!result.ok) throw new Error('compte non créé');
+    const ownerId = result.userId;
+    const tag = `${PREFIX}${Math.random().toString(36).slice(2, 8)}`;
+    // 40 familles, dont la première existe sur Steam et PSN : 41 versions, 40 cartes.
+    for (let index = 0; index < 40; index++) {
+      const platforms = index === 0 ? (['STEAM', 'PSN'] as const) : (['STEAM'] as const);
+      for (const platform of platforms) {
+        const game = await db.game.create({
+          data: {
+            platform,
+            platformGameId: `${PREFIX}-${Math.random()}`,
+            name: `${tag} jeu ${String(index).padStart(2, '0')}`,
+            slug: `${PREFIX}-${Math.random().toString(36).slice(2)}`,
+            totalAchievements: 10,
+            familyKey: `${tag}-${index}`,
+            tier: 2,
+          },
+        });
+        await db.userGame.create({
+          data: {
+            userId: ownerId,
+            gameId: game.id,
+            completion: 100,
+            unlockedCount: 10,
+            totalCount: 10,
+          },
+        });
+      }
+    }
+    const first = await listGames({ sort: 'nom', page: 1, ownerId }, ownerId);
+    const second = await listGames({ sort: 'nom', page: 2, ownerId }, ownerId);
+    expect(first.total).toBe(40);
+    expect(second.total).toBe(40);
+    expect(first.games).toHaveLength(36);
+    expect(second.games).toHaveLength(4);
+    const names = [...first.games, ...second.games].map((card) => card.name);
+    expect(names).toEqual(
+      Array.from({ length: 40 }, (_, index) => `${tag} jeu ${String(index).padStart(2, '0')}`),
+    );
+    expect(first.games[0]).toMatchObject({ copies: 2, tier: 2 });
+    expect(first.games[0]?.versions).toHaveLength(2);
+  });
+});
