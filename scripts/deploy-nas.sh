@@ -56,7 +56,19 @@ echo "Redémarrage…"
 # Il est donc mis en pause le temps du redémarrage ; `up` le relance avec le reste.
 nas "$compose stop deployer" || true
 # Un premier essai peut échouer sur une règle réseau de QTS : le second suffit.
-nas "$compose up -d --no-build || $compose up -d --no-build"
+if [[ "$HOST" == *ssh.achievers.games ]]; then
+  # Par le tunnel, ce redémarrage coupe la connexion qui le commande : lancé tel quel, il
+  # s'arrêtait en route et laissait le site et le tunnel éteints (14 novembre). Il tourne donc
+  # détaché sur le NAS, et la vérification attend que le tunnel revienne.
+  nas "nohup sh -c '$compose up -d --no-build || $compose up -d --no-build' > $DIR/.deploy.log 2>&1 &"
+  echo "Redémarrage lancé sur le NAS, attente du retour du tunnel…"
+  for _ in $(seq 1 40); do
+    sleep 6
+    nas true 2> /dev/null && break
+  done
+else
+  nas "$compose up -d --no-build || $compose up -d --no-build"
+fi
 
 echo "Vérification…"
 nas "n=0; until curl -fs -o /dev/null http://127.0.0.1:3100/ || [ \$n -ge 60 ]; do sleep 2; n=\$((n+1)); done
