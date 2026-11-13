@@ -26,7 +26,6 @@ import { queueAccountDeletion, queueAccountEvent } from '#lib/server/partner-web
 import { forgetPresence } from '#lib/server/presence';
 import { pushPublicKey } from '#lib/server/push';
 import { enqueueSync } from '#lib/server/sync/queue';
-import { requestStoreSweep } from '#lib/server/sync/steam';
 import type { Actions, PageServerLoad } from './$types';
 import { m } from '#lib/paraglide/messages';
 
@@ -91,6 +90,7 @@ export const load: PageServerLoad = async ({ locals, url, cookies, depends }) =>
           syncStatus: true,
           syncError: true,
           lastSyncedAt: true,
+          playtimeHidden: true,
         },
       }),
       db.session.findMany({
@@ -176,7 +176,6 @@ export const actions: Actions = {
     const provider = providerSchema.safeParse((await request.formData()).get('provider'));
     if (!provider.success) return fail(400, { error: m.account_unknown() });
     const started = await enqueueSync(user.id, provider.data);
-    if (started && provider.data === 'STEAM') await requestStoreSweep(user.id);
     return started ? { success: m.sync_started() } : fail(409, { error: m.sync_already() });
   },
 

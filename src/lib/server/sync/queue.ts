@@ -28,7 +28,7 @@ import { grantFramesThrottled } from '../frames';
 import { checkSiteAchievements, reviewNewPlayers } from '../site-achievements';
 import { syncPsn } from './psn';
 import { syncRetro } from './retro';
-import { fetchUnlocks, fillHiddenDescriptions, sweepSteamStore, syncSteam } from './steam';
+import { fetchUnlocks, fillHiddenDescriptions, syncSteam } from './steam';
 import { fillGameTiers, recentUnlocks, saveProgress } from './store';
 import { syncXbox } from './xbox';
 import type { ProviderSync, UnlockedGame } from './types';
@@ -584,7 +584,6 @@ const MAINTENANCE: { label: string; run: () => Promise<unknown>; budget?: false 
     budget: false,
   },
   { label: 'Catalogue WoW', run: () => fillWowCatalog() },
-  { label: 'Boutique Steam', run: () => sweepSteamStore(), budget: false },
   { label: 'Familles', run: () => matchFamilies() },
 ];
 

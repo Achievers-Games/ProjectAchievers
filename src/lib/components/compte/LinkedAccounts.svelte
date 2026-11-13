@@ -25,6 +25,7 @@
     lastSyncedAt: Date | string | null;
     frameUrl: string | null;
     frameMotionUrl: string | null;
+    playtimeHidden: boolean;
   }
 
   let {
@@ -38,6 +39,9 @@
     retro: { onlineId: string; code: string } | null;
     psn: { onlineId: string; code: string } | null;
   } = $props();
+
+  /** Les réglages de confidentialité du joueur connecté à Steam : `my` mène à son propre profil. */
+  const STEAM_PRIVACY_URL = 'https://steamcommunity.com/my/edit/settings';
 
   const submit = submitWithToast();
   const accounts = $derived(new Map(accountList.map((a) => [a.provider, a])));
@@ -130,6 +134,20 @@
 
         {#if error}
           <p class="text-xs text-danger">{error}</p>
+        {/if}
+
+        {#if provider === 'STEAM' && account?.playtimeHidden}
+          <p class="text-xs text-muted" data-testid="steam-playtime-private">
+            {m.steam_playtime_private()}
+            <a
+              href={STEAM_PRIVACY_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="underline hover:text-ink"
+            >
+              {m.steam_playtime_private_link()}
+            </a>
+          </p>
         {/if}
 
         {#if account && PRIVACY[provider] && isClosedError(errorOf(provider))}

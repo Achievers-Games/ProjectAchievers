@@ -407,12 +407,8 @@ model LinkedAccount {
   syncStatus      SyncStatus @default(IDLE)
   syncError       String?
   lastSyncedAt    DateTime?
-  /// Steam : dernière recherche des jeux joués hors bibliothèque, partagés en famille surtout.
-  sharedCheckedAt DateTime?
   /// Steam : le joueur garde son temps de jeu privé ; le site affiche « privé » plutôt que rien.
   playtimeHidden  Boolean    @default(false)
-  /// Steam : dernier balayage de toute la boutique pour cette recherche.
-  storeSweptAt    DateTime?
   linkedAt        DateTime   @default(now())
 
   @@unique([provider, providerUserId])

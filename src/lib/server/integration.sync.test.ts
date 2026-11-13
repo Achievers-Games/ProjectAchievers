@@ -10,7 +10,7 @@ import { checkLiveGames } from './sync/live';
 import { enqueueSync, refreshAccounts, runSync, startWorkers } from './sync/queue';
 import { isAdultOnly, rateGames, tagGames } from './sync/content';
 import { onCard, onSync, type SyncEvent } from './sync/events';
-import { parseSteamPage, requestStoreSweep, steamImages, sweepSteamStore } from './sync/steam';
+import { parseSteamPage, steamImages } from './sync/steam';
 import { saveAchievements, saveProgress, upsertGame } from './sync/store';
 import { PREFIX, STEAM_ID, identity, setupIntegration } from './test-helpers';
 
@@ -440,36 +440,6 @@ describe('synchronisation Steam', () => {
     expect(urls.some((u) => u.includes('GetPlayerAchievements'))).toBe(false);
   });
 
-  /** Un ami possède le jeu 999003 ; le joueur y a des succès sans l'avoir en bibliothèque. */
-  function sharedGameApi(calls: string[] = []) {
-    const api = steamApi(ownedGames);
-    const body = (value: unknown) => new Response(JSON.stringify(value));
-    const friend = '76561190000000002';
-    const borrowed = { appid: 999003, name: `${PREFIX} emprunté` };
-    return vi.fn(async (input: string | URL) => {
-      const url = String(input);
-      calls.push(url);
-      if (url.includes('GetFriendList')) {
-        return body({ friendslist: { friends: [{ steamid: friend }] } });
-      }
-      if (url.includes('GetOwnedGames') && url.includes(friend)) {
-        return body({ response: { games: [borrowed] } });
-      }
-      if (url.includes('GetTopAchievementsForGames')) {
-        const asked = url.includes('999003');
-        return body({
-          response: {
-            games: asked ? [{ appid: 999003, achievements: [{ name: 'Alpha' }] }] : [],
-          },
-        });
-      }
-      if (url.includes('GetAppList')) {
-        return body({ response: { apps: [{ appid: 999003, name: borrowed.name }] } });
-      }
-      return api(input);
-    });
-  }
-
   it('prend dans la bibliothèque les jeux partagés en famille, avec le temps du joueur', async () => {
     const [game] = ownedGames.response.games;
     const family = {
@@ -527,7 +497,7 @@ describe('synchronisation Steam', () => {
     expect(ids.toSorted()).toEqual(['999001', '999005']);
   });
 
-  it('garde la synchronisation si la recherche des jeux partagés échoue', async () => {
+  it('garde la synchronisation si les décomptes de Steam échouent', async () => {
     const api = steamApi(ownedGames);
     vi.stubGlobal('fetch', async (input: string | URL) =>
       String(input).includes('GetTopAchievementsForGames')
@@ -540,80 +510,6 @@ describe('synchronisation Steam', () => {
 
     const account = await db.linkedAccount.findFirstOrThrow({ where: { userId } });
     expect(account.syncStatus).toBe('COMPLETED');
-    expect(account.sharedCheckedAt).toBeNull();
-  });
-
-  it('balaye la boutique pour un compte, puis le laisse tranquille', async () => {
-    const calls: string[] = [];
-    vi.stubGlobal('fetch', sharedGameApi(calls));
-    await db.linkedAccount.updateMany({
-      where: { provider: 'STEAM' },
-      data: { storeSweptAt: new Date() },
-    });
-    const userId = await steamUser();
-    await db.linkedAccount.updateMany({ where: { userId }, data: { playtimeHidden: true } });
-
-    expect(await sweepSteamStore()).toBe(1);
-    expect(await db.userGame.count({ where: { userId } })).toBe(1);
-
-    calls.length = 0;
-    expect(await sweepSteamStore()).toBe(0);
-    expect(calls).toEqual([]);
-  });
-
-  it('avance le balayage à la demande du joueur, au plus une fois par semaine', async () => {
-    const userId = await steamUser();
-    const sweptAt = async () =>
-      (await db.linkedAccount.findFirstOrThrow({ where: { userId } })).storeSweptAt;
-    const recent = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
-    await db.linkedAccount.updateMany({ where: { userId }, data: { storeSweptAt: recent } });
-
-    await requestStoreSweep(userId);
-    expect(await sweptAt()).toEqual(recent);
-
-    const old = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000);
-    await db.linkedAccount.updateMany({ where: { userId }, data: { storeSweptAt: old } });
-    await requestStoreSweep(userId);
-    expect(await sweptAt()).toBeNull();
-  });
-
-  it('traite le catalogue Steam page par page avant de demander la suite', async () => {
-    await db.linkedAccount.updateMany({
-      where: { provider: 'STEAM' },
-      data: { storeSweptAt: new Date() },
-    });
-    const userId = await steamUser();
-    await db.linkedAccount.updateMany({ where: { userId }, data: { playtimeHidden: true } });
-    const events: string[] = [];
-    const api = sharedGameApi();
-    vi.stubGlobal('fetch', async (input: string | URL) => {
-      const url = new URL(String(input));
-      if (url.pathname.includes('GetAppList')) {
-        expect(url.searchParams.get('max_results')).toBe('1000');
-        const next = url.searchParams.get('last_appid') !== '0';
-        events.push(next ? 'page-2' : 'page-1');
-        return new Response(
-          JSON.stringify({
-            response: {
-              apps: [{ appid: next ? 999004 : 999003, name: `${PREFIX} page` }],
-              have_more_results: !next,
-              last_appid: next ? 999004 : 999003,
-            },
-          }),
-        );
-      }
-      if (url.pathname.includes('GetTopAchievementsForGames')) {
-        const id = url.searchParams.get('appids[0]');
-        events.push(`lecture-${id}`);
-        return new Response(
-          JSON.stringify({ response: { games: [{ appid: Number(id), achievements: [{}] }] } }),
-        );
-      }
-      return api(input);
-    });
-    expect(await sweepSteamStore()).toBe(2);
-    expect(events).toEqual(['page-1', 'lecture-999003', 'page-2', 'lecture-999004']);
-    expect(await db.userGame.count({ where: { userId } })).toBe(2);
   });
 
   it('demande à la boutique l’image des jeux récents', async () => {

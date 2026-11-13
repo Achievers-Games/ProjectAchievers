@@ -2,14 +2,13 @@ import { baseLocale, type Locale } from '#lib/paraglide/runtime';
 import { applyAccountLook, identityLook } from '../accounts';
 import { db } from '../db';
 import { env } from '../env';
-import { backgroundWork } from '../workload';
 import { logger } from '#lib/logger';
 import { fetchPlayingGames, fetchSteamIdentity } from '../providers/steam';
 
 const log = logger('Steam');
 import { fetchRetry, mapLimit, sleep, SyncError, syncGames } from './errors';
 import { saveAchievements, saveProgress, upsertGame, type AchievementInput } from './store';
-import type { ProviderSync, SyncContext } from './types';
+import type { ProviderSync } from './types';
 
 const API = 'https://api.steampowered.com';
 const CDN = 'https://cdn.cloudflare.steamstatic.com/steam/apps';
@@ -19,12 +18,6 @@ const ACHIEVEMENT_RECHECK = 24 * 60 * 60 * 1000;
 const concurrency = () => env().STEAM_CONCURRENCY;
 /** Steam refuse 400 jeux d'un coup. */
 const APPS_PER_CALL = 300;
-const SHARED_CHECK_EVERY = 24 * 60 * 60 * 1000;
-const STORE_SWEEP_EVERY = 30 * 24 * 60 * 60 * 1000;
-/** Toute la boutique coûte des centaines d'appels : le joueur ne peut pas la relancer à volonté. */
-const STORE_SWEEP_FORCED_EVERY = 7 * 24 * 60 * 60 * 1000;
-/** Un balayage qui échoue (profil privé, panne de Steam) est retenté le lendemain. */
-const STORE_SWEEP_RETRY = 24 * 60 * 60 * 1000;
 
 export interface OwnedGame {
   appid: number;
@@ -124,36 +117,6 @@ export async function fetchRecentGames(steamId: string): Promise<OwnedGame[]> {
   return data.response?.games ?? [];
 }
 
-async function* fetchStorePages() {
-  let lastApp = 0;
-  for (;;) {
-    const response = await steamGet('/IStoreService/GetAppList/v1/', {
-      include_games: 'true',
-      include_dlc: 'false',
-      max_results: 1_000,
-      last_appid: lastApp,
-    });
-    if (!response.ok) throw new Error(`GetAppList a répondu ${response.status}`);
-    const { response: page } = (await response.json()) as {
-      response?: { apps?: OwnedGame[]; have_more_results?: boolean; last_appid?: number };
-    };
-    yield page?.apps ?? [];
-    if (!page?.have_more_results) return;
-    if (!page.last_appid || page.last_appid <= lastApp)
-      throw new Error('Pagination Steam sans progression');
-    lastApp = page.last_appid;
-  }
-}
-
-/**
- * Steam ne dit pas quels jeux un joueur emprunte, mais cette méthode, non documentée, répond
- * pour n'importe quel jeu et ne renvoie vide que si le joueur n'y a aucun succès.
- */
-async function appsWithUnlocks(steamId: string, appIds: number[], limit = concurrency()) {
-  const counts = await achievementCounts(steamId, appIds, 1, limit);
-  return new Set([...counts].flatMap(([appId, { unlocked }]) => (unlocked > 0 ? [appId] : [])));
-}
-
 /** Au-delà d'aucun jeu connu : la réponse porte alors tous les succès obtenus, donc leur nombre. */
 const ALL_ACHIEVEMENTS = 10_000;
 
@@ -191,65 +154,6 @@ async function achievementCounts(
     }
   });
   return counts;
-}
-
-/**
- * Ce que la bibliothèque ne liste pas : un jeu prêté hors famille Steam, ou retiré du compte. La
- * synchronisation part toutes les quelques minutes : seuls les jeux récents sont cherchés à
- * chaque fois, et une fois par jour ceux que le site connaît déjà.
- */
-async function findSharedGames(
-  { userId, account }: Pick<SyncContext, 'userId' | 'account'>,
-  owned: Set<number>,
-  recent: OwnedGame[],
-) {
-  const steamId = account.providerUserId;
-  const candidates = new Map<number, OwnedGame>();
-
-  const daily =
-    !account.sharedCheckedAt ||
-    Date.now() - account.sharedCheckedAt.getTime() >= SHARED_CHECK_EVERY;
-  if (daily) {
-    const [catalog, known] = await Promise.all([
-      // Les identifiants seuls : les noms de tout le catalogue pesaient sur la mémoire du NAS
-      // pour quelques jeux réellement empruntés. Ils sont relus plus bas, pour ceux-là seulement.
-      db.game.findMany({
-        where: { platform: 'STEAM', totalAchievements: { gt: 0 } },
-        select: { platformGameId: true },
-      }),
-      db.userGame.findMany({
-        where: { userId, game: { platform: 'STEAM' } },
-        select: { game: { select: { platformGameId: true } } },
-      }),
-    ]);
-    const stored = [...catalog, ...known.map(({ game }) => game)];
-    for (const { platformGameId } of stored) {
-      candidates.set(Number(platformGameId), { appid: Number(platformGameId), name: '' });
-    }
-  }
-  for (const game of recent) candidates.set(game.appid, game);
-  for (const appId of owned) candidates.delete(appId);
-
-  const played = await appsWithUnlocks(steamId, [...candidates.keys()]);
-  if (daily) {
-    await db.linkedAccount.update({
-      where: { id: account.id },
-      data: { sharedCheckedAt: new Date() },
-    });
-  }
-  const found = [...played].flatMap((appId) => candidates.get(appId) ?? []);
-  const unnamed = found.filter((game) => !game.name).map((game) => String(game.appid));
-  const names = unnamed.length
-    ? await db.game.findMany({
-        where: { platform: 'STEAM', platformGameId: { in: unnamed } },
-        select: { platformGameId: true, name: true },
-      })
-    : [];
-  const nameOf = new Map(names.map((game) => [game.platformGameId, game.name]));
-  return found.map((game) => ({
-    ...game,
-    name: game.name || nameOf.get(String(game.appid)) || `Steam ${game.appid}`,
-  }));
 }
 
 /**
@@ -504,126 +408,11 @@ async function syncSteamGame(
   return { game, gained };
 }
 
-/** Une resynchronisation demandée par le joueur avance son prochain balayage. */
-export async function requestStoreSweep(userId: string) {
-  await db.linkedAccount.updateMany({
-    where: {
-      userId,
-      provider: 'STEAM',
-      storeSweptAt: { lt: new Date(Date.now() - STORE_SWEEP_FORCED_EVERY) },
-    },
-    data: { storeSweptAt: null },
-  });
-}
-
-/**
- * Rattrape les jeux qu'aucune recherche rapide ne voit, un compte à la fois. Seuls les comptes
- * au temps de jeu privé en ont : pour les autres, la bibliothèque dit déjà tout.
- */
-export async function sweepSteamStore() {
-  const account = await db.linkedAccount.findFirst({
-    where: {
-      provider: 'STEAM',
-      playtimeHidden: true,
-      syncStatus: { notIn: ['QUEUED', 'SYNCING'] },
-      OR: [
-        { storeSweptAt: null },
-        { storeSweptAt: { lt: new Date(Date.now() - STORE_SWEEP_EVERY) } },
-      ],
-    },
-    orderBy: { storeSweptAt: { sort: 'asc', nulls: 'first' } },
-  });
-  if (!account) return 0;
-
-  const steamId = account.providerUserId;
-  const owned = await backgroundWork(
-    'Steam : bibliothèque du balayage',
-    () => fetchOwnedGames(steamId).catch(() => null),
-    -1,
-  );
-  // Ne jamais marquer un balayage comme terminé si la bibliothèque est inaccessible : il est
-  // seulement repoussé, sinon ce compte repasserait en tête à chaque heure et bloquerait les autres.
-  if (!owned) {
-    await postponeSweep(account.id);
-    return 0;
-  }
-  try {
-    return await sweepStoreFor(account, owned);
-  } catch (cause) {
-    await postponeSweep(account.id);
-    throw cause;
-  }
-}
-
-/** Remet le balayage d'un compte au lendemain, derrière ceux qui attendent encore. */
-const postponeSweep = (accountId: string) =>
-  db.linkedAccount.update({
-    where: { id: accountId },
-    data: { storeSweptAt: new Date(Date.now() - STORE_SWEEP_EVERY + STORE_SWEEP_RETRY) },
-  });
-
-async function sweepStoreFor(
-  account: { id: string; userId: string; providerUserId: string },
-  owned: OwnedGame[],
-) {
-  const steamId = account.providerUserId;
-  const skipped = new Set(owned.map((game) => game.appid));
-  let found = 0;
-  // Chaque page libère le budget de fond : un import en attente passe avant la page suivante.
-  const pages = fetchStorePages();
-  for (;;) {
-    const page = await backgroundWork('Steam : page du catalogue', () => pages.next(), -1);
-    if (page.done) break;
-    const candidates = page.value.filter((app) => !skipped.has(app.appid));
-    if (!candidates.length) continue;
-    for (let offset = 0; offset < candidates.length; offset += APPS_PER_CALL) {
-      const batch = candidates.slice(offset, offset + APPS_PER_CALL);
-      const playedGames = await backgroundWork(
-        'Steam : recherche des jeux empruntés',
-        async () => {
-          const known = await db.userGame.findMany({
-            where: {
-              userId: account.userId,
-              game: {
-                platform: 'STEAM',
-                platformGameId: { in: batch.map((game) => String(game.appid)) },
-              },
-            },
-            select: { game: { select: { platformGameId: true } } },
-          });
-          const have = new Set(known.map(({ game }) => Number(game.platformGameId)));
-          const missing = batch.filter((game) => !have.has(game.appid));
-          const played = await appsWithUnlocks(
-            steamId,
-            missing.map((game) => game.appid),
-            1,
-          );
-          return missing.filter((game) => played.has(game.appid));
-        },
-        -1,
-      );
-      for (const game of playedGames) {
-        await backgroundWork(
-          'Steam : import d’un jeu emprunté',
-          () => syncSteamGame(account.userId, steamId, game, true),
-          -1,
-        );
-        found++;
-      }
-    }
-  }
-  await db.linkedAccount.update({
-    where: { id: account.id },
-    data: { storeSweptAt: new Date() },
-  });
-  return found;
-}
-
 /**
  * Steam ne dit pas qu'un joueur garde son temps de jeu privé : il renvoie simplement zéro
  * partout. Une bibliothèque entière à zéro, chez quelqu'un qui y a pourtant des succès, ne peut
- * être que ce réglage. Les temps déjà enregistrés ne sont alors pas les siens (un jeu emprunté
- * a pu reprendre celui d'un ami) : ils sont effacés.
+ * être que ce réglage : sa page de compte l'invite alors à le rendre public. Les temps déjà
+ * enregistrés ne sont pas les siens : ils sont effacés.
  */
 async function notePlaytimePrivacy(
   userId: string,
@@ -659,22 +448,7 @@ export const syncSteam: ProviderSync = async ({
   const everything = await fetchOwnedGames(steamId);
   const owned = everything.filter((g) => g.has_community_visible_stats);
   const library = new Set(owned.map((game) => game.appid));
-  const recentGames = await fetchRecentGames(steamId).catch(() => []);
   const activeAppId = (await fetchPlayingGames([steamId]).catch(() => null))?.get(steamId);
-  // Steam ne liste un jeu gratuit que s'il le sait « joué », et il en juge au temps de jeu. Un
-  // joueur qui garde ce temps privé a donc des succès sur des jeux absents de sa bibliothèque ;
-  // les autres n'en ont aucun (vérifié sur tous les comptes du site : 0 jeu manquant sur 10
-  // comptes publics, 6 à 28 sur chacun des 4 comptes privés). La recherche hors bibliothèque ne
-  // sert qu'aux premiers.
-  const playtimePrivate = everything.every((game) => !game.playtime_forever);
-  // Une méthode non documentée peut disparaître : la bibliothèque reste synchronisée.
-  const shared = playtimePrivate
-    ? await findSharedGames({ userId, account }, library, recentGames).catch((cause) => {
-        log.error('Jeux hors bibliothèque Steam :', cause);
-        return [];
-      })
-    : [];
-
   const previous = await db.userGame.findMany({
     where: { userId, game: { platform: 'STEAM' } },
     select: {
@@ -695,15 +469,17 @@ export const syncSteam: ProviderSync = async ({
   });
   const knownProgress = new Map(previous.map((row) => [row.game.platformGameId, row]));
 
-  // Les jeux empruntés déjà connus ne sont dans aucune liste de Steam : ils se vérifient par
-  // leur décompte, comme les autres, au lieu d'attendre la recherche quotidienne.
-  const listed = new Set([...owned, ...shared].map((game) => game.appid));
+  // La bibliothèque fait foi : jeux possédés, partagés en famille, gratuits lancés. Steam ne
+  // cache des jeux qu'à un joueur dont le temps de jeu est privé (ses jeux gratuits) ; le site le
+  // lui dit sur sa page de compte, au lieu de fouiller Steam pour les retrouver. Les jeux déjà
+  // connus hors bibliothèque restent suivis : leur décompte part dans le même appel.
+  const listed = new Set(owned.map((game) => game.appid));
   const lingering: OwnedGame[] = previous.flatMap(({ game }) =>
     listed.has(Number(game.platformGameId))
       ? []
       : [{ appid: Number(game.platformGameId), name: game.name }],
   );
-  const items: OwnedGame[] = [...owned, ...shared, ...lingering];
+  const items: OwnedGame[] = [...owned, ...lingering];
 
   // Une méthode non documentée peut disparaître : sans elle, la règle des 24 heures reprend.
   const counts = await achievementCounts(
