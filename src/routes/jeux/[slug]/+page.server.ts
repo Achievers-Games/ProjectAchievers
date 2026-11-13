@@ -1,7 +1,7 @@
 import { error, fail } from '@sveltejs/kit';
 import { copiesFor, copyKey, nextCopy } from '#lib/collection';
 import { db } from '#lib/server/db';
-import { ensureGameTexts, localizeAchievements } from '#lib/server/achievement-texts';
+import { ensureGameTexts } from '#lib/server/achievement-texts';
 import { compareGame, seasonStartedGames, visibleGames } from '#lib/server/queries';
 import { friendList } from '#lib/server/social';
 import { GUIDE_ORDER, countChecklist, gameGuidesWhere, isBuried } from '#lib/server/guides';
@@ -45,12 +45,6 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
   const revealed = url.searchParams.has('caches');
   const game = await db.game.findUnique({
     where: { slug: params.slug },
-    include: {
-      achievements: {
-        orderBy: [{ globalRarity: { sort: 'desc', nulls: 'last' } }, { name: 'asc' }],
-        include: { _count: { select: { guides: { where: OFFICIAL_GUIDE } } } },
-      },
-    },
   });
   if (!game || (game.adultOnly && !locals.user?.showAdult)) {
     error(404, m.game_not_found());
@@ -60,7 +54,33 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
   const withHandle = url.searchParams.get('avec')?.trim() || null;
 
   const viewerId = locals.user?.id;
-  const [progress, unlocks, players, others, rival, friends, guides, lure, times] =
+  const locale = getLocale();
+  const achievementQuery = async () => {
+    const startedAt = performance.now();
+    await ensureGameTexts(game, locale);
+    timings.push(`game_texts;dur=${Math.round(performance.now() - startedAt)}`);
+    const queryStartedAt = performance.now();
+    const achievements = await db.achievement.findMany({
+      where: { gameId: game.id },
+      orderBy: [{ globalRarity: { sort: 'desc', nulls: 'last' } }, { name: 'asc' }],
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        hidden: true,
+        trophyType: true,
+        globalRarity: true,
+        iconUrl: true,
+        iconLockedUrl: true,
+        missable: true,
+        translations: { where: { locale }, select: { name: true, description: true } },
+        guides: { where: OFFICIAL_GUIDE, select: { id: true }, take: 1 },
+      },
+    });
+    timings.push(`game_achievements;dur=${Math.round(performance.now() - queryStartedAt)}`);
+    return achievements;
+  };
+  const [progress, unlocks, players, others, rival, friends, guides, lure, times, achievements] =
     await Promise.all([
       locals.user
         ? db.userGame.findUnique({
@@ -120,6 +140,7 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
       // La fiche Lure du jeu et son temps pour le 100 %, si Lure le connaît : jamais attendu.
       lureGameFor(game).catch(() => null),
       completionTimes([game.id]),
+      achievementQuery(),
     ]);
 
   // Seuls les amis qui possèdent cette version ont quelque chose à comparer.
@@ -172,12 +193,8 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
       ? { state, counts }
       : null;
 
-  const locale = getLocale();
-  await ensureGameTexts(game, locale);
-  const achievements = await localizeAchievements(game.achievements, locale);
-
-  mark('game_texts');
   const rows = achievements.map((a) => {
+    const [translation] = a.translations;
     const unlocked = unlockedAt.get(a.id) ?? null;
     // Un succès caché reste masqué tant que le joueur ne l'a pas obtenu ou demandé à le voir.
     const secret = a.hidden && !unlocked;
@@ -188,13 +205,13 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
       masked,
       trophyType: a.trophyType,
       globalRarity: a.globalRarity,
-      name: masked ? m.achievement_hidden() : a.name,
-      description: masked ? '' : a.description,
+      name: masked ? m.achievement_hidden() : (translation?.name ?? a.name),
+      description: masked ? '' : translation?.description || a.description,
       iconUrl: masked ? null : unlocked ? a.iconUrl : (a.iconLockedUrl ?? a.iconUrl),
       unlockedAt: unlocked,
       // Même caché, un succès manquable se signale : c'est avant de jouer qu'il faut le savoir.
       missable: a.missable,
-      guided: a._count.guides > 0,
+      guided: a.guides.length > 0,
     };
   });
 
@@ -203,7 +220,7 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
 
   setHeaders({ 'Server-Timing': timings.join(', ') });
   return {
-    game: { ...game, achievements: undefined },
+    game,
     // Les guides complets du jeu : on les lit sur leur propre page, ici seulement la liste.
     guides: guides.map((guide) => ({
       id: guide.id,
@@ -234,7 +251,7 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
       : null,
     friends: friends.filter((friend) => owning.has(friend.id)),
     revealed,
-    missables: missablesOf(game, others),
+    missables: missablesOf({ guideReviewedAt: game.guideReviewedAt, achievements }, others),
     progress,
     season,
     players,
