@@ -470,28 +470,61 @@ describe('synchronisation Steam', () => {
     });
   }
 
-  it('retrouve un jeu partagé en famille grâce à la bibliothèque d’un ami', async () => {
-    vi.stubGlobal('fetch', sharedGameApi());
+  it('prend dans la bibliothèque les jeux partagés en famille, avec le temps du joueur', async () => {
+    const [game] = ownedGames.response.games;
+    const family = {
+      appid: 999003,
+      name: `${PREFIX} emprunté`,
+      playtime_forever: 240,
+      has_community_visible_stats: true,
+      family_shared: true,
+    };
+    const api = steamApi({ response: { games: [game, family] } });
+    const calls: string[] = [];
+    vi.stubGlobal('fetch', async (input: string | URL) => {
+      calls.push(String(input));
+      return api(input);
+    });
     const userId = await steamUser();
 
     await runSync({ userId, provider: 'STEAM' });
 
+    expect(calls.some((url) => url.includes('include_family_licenses=1'))).toBe(true);
+    // La bibliothèque des amis n'est plus lue : Steam donne déjà les jeux de la famille.
+    expect(calls.some((url) => url.includes('GetFriendList'))).toBe(false);
     const row = await db.userGame.findFirstOrThrow({
       where: { userId, game: { platformGameId: '999003' } },
     });
-    expect(row).toMatchObject({ unlockedCount: 1, completion: 50, lastPlayedAt: null });
+    expect(row).toMatchObject({ unlockedCount: 1, completion: 50, playtimeMinutes: 240 });
   });
 
-  it('ne cherche les jeux partagés chez les amis qu’une fois par jour', async () => {
-    const calls: string[] = [];
-    vi.stubGlobal('fetch', sharedGameApi(calls));
+  it('ne garde d’un jeu gratuit que celui qui a été lancé', async () => {
+    const [game] = ownedGames.response.games;
+    const free = (appid: number, playtime_forever: number) => ({
+      appid,
+      name: `${PREFIX} gratuit ${appid}`,
+      playtime_forever,
+      has_community_visible_stats: true,
+    });
+    const api = steamApi(ownedGames);
+    vi.stubGlobal('fetch', async (input: string | URL) =>
+      String(input).includes('include_all_free_games=1')
+        ? new Response(
+            JSON.stringify({ response: { games: [game, free(999005, 30), free(999006, 0)] } }),
+          )
+        : api(input),
+    );
     const userId = await steamUser();
 
     await runSync({ userId, provider: 'STEAM' });
-    calls.length = 0;
-    await runSync({ userId, provider: 'STEAM' });
 
-    expect(calls.some((url) => url.includes('GetFriendList'))).toBe(false);
+    const ids = (
+      await db.userGame.findMany({
+        where: { userId },
+        select: { game: { select: { platformGameId: true } } },
+      })
+    ).map((row) => row.game.platformGameId);
+    expect(ids.toSorted()).toEqual(['999001', '999005']);
   });
 
   it('garde la synchronisation si la recherche des jeux partagés échoue', async () => {

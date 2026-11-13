@@ -231,8 +231,34 @@ async function rareCards(userId: string) {
 }
 
 /** Cartes apparues depuis `before`. */
-function newRewards(before: Map<string, CardReward>, after: Map<string, CardReward>) {
-  return [...after].filter(([id]) => !before.has(id)).map(([, card]) => card);
+/** Les cartes annoncées il y a peu, par joueur et par jeu. */
+const announced = new Map<string, number>();
+const ANNOUNCED_FOR = 10 * 60_000;
+
+/**
+ * Deux synchronisations d'un même joueur peuvent alterner (elles rendent leur créneau tous les
+ * vingt jeux) : la carte gagnée par l'une figure alors aussi dans le relevé final de l'autre.
+ * Elle ne se révèle qu'une fois.
+ */
+function firstAnnouncement(userId: string, gameId: string, now = Date.now()) {
+  if (announced.size > 5_000) {
+    for (const [key, at] of announced) if (now - at > ANNOUNCED_FOR) announced.delete(key);
+  }
+  const key = `${userId}:${gameId}`;
+  const last = announced.get(key);
+  if (last !== undefined && now - last <= ANNOUNCED_FOR) return false;
+  announced.set(key, now);
+  return true;
+}
+
+function newRewards(
+  userId: string,
+  before: Map<string, CardReward>,
+  after: Map<string, CardReward>,
+) {
+  return [...after]
+    .filter(([id]) => !before.has(id) && firstAnnouncement(userId, id))
+    .map(([, card]) => card);
 }
 
 const syncUser = (userId: string) =>
@@ -265,7 +291,7 @@ function announceUnlock(user: SyncUser, userId: string, game: UnlockedGame, coun
 async function announceCards(user: SyncUser, userId: string, before: Map<string, CardReward>) {
   const after = await rareCards(userId);
   const families = Map.groupBy(after.values(), ({ game }) => game.familyKey ?? game.slug);
-  const rewards = newRewards(before, after)
+  const rewards = newRewards(userId, before, after)
     .map((card) => {
       const family = families.get(card.game.familyKey ?? card.game.slug) ?? [card];
       return {

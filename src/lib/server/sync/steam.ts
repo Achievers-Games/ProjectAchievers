@@ -25,8 +25,6 @@ const STORE_SWEEP_EVERY = 30 * 24 * 60 * 60 * 1000;
 const STORE_SWEEP_FORCED_EVERY = 7 * 24 * 60 * 60 * 1000;
 /** Un balayage qui échoue (profil privé, panne de Steam) est retenté le lendemain. */
 const STORE_SWEEP_RETRY = 24 * 60 * 60 * 1000;
-const MAX_FRIENDS = 300;
-const FRIEND_READS = 4;
 
 export interface OwnedGame {
   appid: number;
@@ -35,6 +33,8 @@ export interface OwnedGame {
   playtime_2weeks?: number;
   rtime_last_played?: number;
   has_community_visible_stats?: boolean;
+  /** Prêté par un membre de la famille Steam : le temps de jeu reste celui du joueur. */
+  family_shared?: boolean;
 }
 
 interface SchemaAchievement {
@@ -72,13 +72,21 @@ async function steamGet(path: string, params: Record<string, string | number>) {
   return fetchRetry(url);
 }
 
-async function fetchOwnedGames(steamId: string): Promise<OwnedGame[]> {
+const LIBRARY = {
+  include_appinfo: 1,
+  include_played_free_games: 1,
+  // Par défaut, Steam retire de la liste les jeux qu'il n'a pas validés.
+  skip_unvetted_apps: 0,
+  // Les jeux d'une famille Steam, avec le temps de jeu du joueur lui-même : sans ce paramètre,
+  // ils n'étaient retrouvés qu'en lisant la bibliothèque de chaque ami, et sans leur temps.
+  include_family_licenses: 1,
+};
+
+async function ownedGames(steamId: string, extra: Record<string, number> = {}) {
   const response = await steamGet('/IPlayerService/GetOwnedGames/v1/', {
     steamid: steamId,
-    include_appinfo: 1,
-    include_played_free_games: 1,
-    // Par défaut, Steam retire de la liste les jeux qu'il n'a pas validés.
-    skip_unvetted_apps: 0,
+    ...LIBRARY,
+    ...extra,
   });
   if (!response.ok) throw new Error(`GetOwnedGames a répondu ${response.status}`);
   const data = (await response.json()) as {
@@ -91,6 +99,22 @@ async function fetchOwnedGames(steamId: string): Promise<OwnedGame[]> {
   throw new SyncError('sync_steam_private');
 }
 
+/**
+ * La bibliothèque du joueur. Les jeux gratuits forment une seconde liste, bien plus longue : n'en
+ * sont gardés que ceux qu'il a réellement lancés, pour ne pas remplir son profil de jeux jamais vus.
+ */
+async function fetchOwnedGames(steamId: string): Promise<OwnedGame[]> {
+  const games = await ownedGames(steamId);
+  const free = await ownedGames(steamId, { include_free_sub: 1, include_all_free_games: 1 }).catch(
+    () => [],
+  );
+  const listed = new Set(games.map((game) => game.appid));
+  return [
+    ...games,
+    ...free.filter((game) => !listed.has(game.appid) && (game.playtime_forever ?? 0) > 0),
+  ];
+}
+
 export async function fetchRecentGames(steamId: string): Promise<OwnedGame[]> {
   const response = await steamGet('/IPlayerService/GetRecentlyPlayedGames/v1/', {
     steamid: steamId,
@@ -98,28 +122,6 @@ export async function fetchRecentGames(steamId: string): Promise<OwnedGame[]> {
   if (!response.ok) return [];
   const data = (await response.json()) as { response?: { games?: OwnedGame[] } };
   return data.response?.games ?? [];
-}
-
-/** Les membres d'une famille Steam sont le plus souvent amis, et leur bibliothèque peut être lue. */
-async function fetchFriendGames(steamId: string) {
-  const response = await steamGet('/ISteamUser/GetFriendList/v1/', {
-    steamid: steamId,
-    relationship: 'friend',
-  });
-  // 401 : la liste d'amis est privée.
-  if (!response.ok) return [];
-  const data = (await response.json()) as {
-    friendslist?: { friends?: { steamid: string }[] };
-  };
-  const friends = (data.friendslist?.friends ?? []).slice(0, MAX_FRIENDS);
-  const games = new Map<number, OwnedGame>();
-  await mapLimit(friends, Math.max(concurrency(), FRIEND_READS), async ({ steamid }) => {
-    // Seuls l'identifiant et le nom valent pour le joueur : le temps de jeu est celui de l'ami.
-    for (const { appid, name } of await fetchOwnedGames(steamid).catch(() => [])) {
-      games.set(appid, { appid, name });
-    }
-  });
-  return [...games.values()];
 }
 
 async function* fetchStorePages() {
@@ -192,8 +194,9 @@ async function achievementCounts(
 }
 
 /**
- * Les jeux empruntés n'apparaissent pas dans la bibliothèque du joueur. La synchronisation part
- * toutes les quelques minutes : seuls les jeux récents sont cherchés à chaque fois.
+ * Ce que la bibliothèque ne liste pas : un jeu prêté hors famille Steam, ou retiré du compte. La
+ * synchronisation part toutes les quelques minutes : seuls les jeux récents sont cherchés à
+ * chaque fois, et une fois par jour ceux que le site connaît déjà.
  */
 async function findSharedGames(
   { userId, account }: Pick<SyncContext, 'userId' | 'account'>,
@@ -207,8 +210,7 @@ async function findSharedGames(
     !account.sharedCheckedAt ||
     Date.now() - account.sharedCheckedAt.getTime() >= SHARED_CHECK_EVERY;
   if (daily) {
-    const [friends, catalog, known] = await Promise.all([
-      fetchFriendGames(steamId),
+    const [catalog, known] = await Promise.all([
       // Les identifiants seuls : les noms de tout le catalogue pesaient sur la mémoire du NAS
       // pour quelques jeux réellement empruntés. Ils sont relus plus bas, pour ceux-là seulement.
       db.game.findMany({
@@ -224,8 +226,6 @@ async function findSharedGames(
     for (const { platformGameId } of stored) {
       candidates.set(Number(platformGameId), { appid: Number(platformGameId), name: '' });
     }
-    // Après le catalogue : la bibliothèque d'un ami connaît le nom du jeu.
-    for (const game of friends) candidates.set(game.appid, game);
   }
   for (const game of recent) candidates.set(game.appid, game);
   for (const appId of owned) candidates.delete(appId);
