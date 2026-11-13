@@ -138,7 +138,18 @@ services:
           after=$$(docker image inspect -f '{{index .RepoDigests 0}}' "$$image" 2>/dev/null)
           if [ -n "$$after" ] && [ "$$after" != "$$before" ]; then
             echo "Nouvelle image : $$after"
-            docker compose up -d --no-build site && echo "$$after" > "$$state"
+            if ! docker compose up -d --no-build --wait --wait-timeout 240 site; then
+              echo "ÉCHEC du démarrage de $$after" >&2
+              sleep 180
+              continue
+            fi
+            version=$$(docker compose exec -T site printenv APP_VERSION)
+            if [ -z "$$version" ] || ! docker compose exec -T site node --input-type=module - https://achievers.games "$$version" 90 < /app/scripts/smoke.mjs; then
+              echo "ÉCHEC du contrôle de production pour $$after" >&2
+              sleep 180
+              continue
+            fi
+            echo "$$after" > "$$state"
             # Une seule version suffit : sans cela, chaque déploiement laisse derrière lui son image.
             # « rmi » sans -f refuse justement l'image que fait tourner un conteneur.
             repo=$${image%:latest}

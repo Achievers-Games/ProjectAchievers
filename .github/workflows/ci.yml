@@ -94,19 +94,3 @@ jobs:
             ghcr.io/rbasic/projectachievers:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-  # Le NAS récupère l'image en quelques minutes : on attend cette version en ligne, puis on vérifie
-  # que les pages répondent et que la connexion part bien chez Steam, Discord, Google… Un échec
-  # ici prévient par courriel, au lieu de laisser une panne passer inaperçue.
-  smoke:
-    needs: image
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
-        with:
-          node-version: 22
-      - run: node scripts/smoke.mjs https://achievers.games ${{ github.sha }}

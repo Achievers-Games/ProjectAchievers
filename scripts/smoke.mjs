@@ -10,6 +10,7 @@
  */
 const base = (process.argv[2] ?? 'https://achievers.games').replace(/\/$/, '');
 const expected = process.argv[3];
+const waitMs = process.argv[4] === undefined ? 20 * 60_000 : Number(process.argv[4]) * 1000;
 
 const get = (path) =>
   fetch(`${base}${path}`, {
@@ -19,7 +20,7 @@ const get = (path) =>
   });
 
 async function waitForVersion() {
-  const deadline = Date.now() + 20 * 60 * 1000;
+  const deadline = Date.now() + waitMs;
   let seen = '?';
   while (Date.now() < deadline) {
     try {
@@ -29,7 +30,9 @@ async function waitForVersion() {
     } catch {
       // Le site redémarre pendant la mise à jour : on réessaie.
     }
-    await new Promise((resolve) => setTimeout(resolve, 20_000));
+    const remaining = deadline - Date.now();
+    if (remaining > 0)
+      await new Promise((resolve) => setTimeout(resolve, Math.min(remaining, 20_000)));
   }
   throw new Error(`le site sert toujours ${seen}, pas ${expected}`);
 }
