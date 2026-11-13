@@ -7,7 +7,7 @@ import { friendList } from '#lib/server/social';
 import { GUIDE_ORDER, countChecklist, gameGuidesWhere, isBuried } from '#lib/server/guides';
 import { publicUser } from '#lib/server/queries';
 import { censor } from '#lib/profanity';
-import { compareAchievements } from '#lib/compare';
+import { compareAchievements, compareBucket } from '#lib/compare';
 import { SEASON, seasonState } from '#lib/season';
 import { getLocale } from '#lib/paraglide/runtime';
 import { lureGameFor } from '#lib/server/lure-games';
@@ -218,6 +218,33 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
   const clean = (text: string, from: string | null) =>
     locals.user?.allowProfanity ? text : censor(text, from);
 
+  const comparing = Boolean(rival?.progress && progress);
+  const requestedFilter = url.searchParams.get('succes');
+  const filters = comparing ? ['commun', 'moi', 'lui'] : ['obtenus', 'restants', 'manquables'];
+  const filter = filters.find((value) => value === requestedFilter) ?? 'tous';
+  const sort = url.searchParams.get('tri') === 'nom' ? 'nom' : 'rarete';
+  const theirUnlocks = new Set(rival?.unlocked);
+  const visible = rows.filter((row) => {
+    if (filter === 'obtenus') return row.unlockedAt !== null;
+    if (filter === 'restants') return row.unlockedAt === null;
+    if (filter === 'manquables') return row.missable;
+    if (filter === 'tous') return true;
+    const bucket = compareBucket(row, theirUnlocks);
+    return bucket === (filter === 'commun' ? 'common' : filter === 'moi' ? 'mine' : 'theirs');
+  });
+  const collator = new Intl.Collator(locale);
+  visible.sort(
+    sort === 'nom'
+      ? (a, b) => collator.compare(a.name, b.name)
+      : (a, b) => (a.globalRarity ?? 101) - (b.globalRarity ?? 101),
+  );
+  const pageSize = 60;
+  const requested = Number(url.searchParams.get('affiches'));
+  const shown = Number.isSafeInteger(requested) ? Math.max(pageSize, requested) : pageSize;
+  const displayed = visible.slice(0, shown);
+  const displayedIds = new Set(displayed.map((row) => row.id));
+  const comparison = rival?.progress && progress ? compareAchievements(rows, theirUnlocks) : null;
+  mark('game_list');
   setHeaders({ 'Server-Timing': timings.join(', ') });
   return {
     game,
@@ -234,15 +261,22 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
       steps: countChecklist(guide.contentMd),
       checked: guide._count.checks,
     })),
-    achievements: rows,
+    achievements: displayed,
+    achievementTotal: rows.length,
+    secrets: rows.filter((row) => row.secret).length,
+    hasMissables: rows.some((row) => row.missable),
+    missingMissables: rows.filter((row) => row.missable && !row.unlockedAt).length,
+    filter,
+    sort,
+    nextAchievements: shown < visible.length ? shown + pageSize : null,
     compare: rival
       ? {
           user: rival.user,
           progress: rival.progress,
           // Deux versions différentes ne se comparent pas : sans l'une des deux progressions,
           // la page explique pourquoi au lieu d'afficher des marques trompeuses.
-          ...(rival.progress && progress
-            ? compareAchievements(rows, rival.unlocked)
+          ...(comparison
+            ? { ...comparison, visible: comparison.visible.filter((id) => displayedIds.has(id)) }
             : {
                 visible: [] as string[],
                 counts: { common: 0, mine: 0, theirs: 0, neither: 0 },

@@ -1,6 +1,8 @@
 <script lang="ts">
   import { m } from '#lib/paraglide/messages';
   import { enhance } from '$app/forms';
+  import { goto } from '$app/navigation';
+  import { page } from '$app/state';
   import Check from '@lucide/svelte/icons/check';
   import Eye from '@lucide/svelte/icons/eye';
   import EyeOff from '@lucide/svelte/icons/eye-off';
@@ -42,35 +44,26 @@
   const theirUnlocks = $derived(new Set(data.compare?.visible ?? []));
   const withHandle = $derived(data.compare?.user.handle ?? null);
 
-  let filter = $state<Filter>('tous');
-  let sort = $state<'rarete' | 'nom'>('rarete');
+  const filter = $derived(data.filter);
+  const sort = $derived(data.sort);
 
   type GameGuide = (typeof data.guides)[number];
   let showBuried = $state(false);
   const shownGuides = $derived(data.guides.filter((guide) => !guide.buried));
   const buriedGuides = $derived(data.guides.filter((guide) => guide.buried));
 
-  const visible = $derived(
-    data.achievements
-      .filter((a) => {
-        if (comparing) {
-          const bucket = compareBucket(a, theirUnlocks);
-          if (filter === 'commun') return bucket === 'common';
-          if (filter === 'moi') return bucket === 'mine';
-          if (filter === 'lui') return bucket === 'theirs';
-          return true;
-        }
-        if (filter === 'obtenus') return a.unlockedAt;
-        if (filter === 'restants') return !a.unlockedAt;
-        if (filter === 'manquables') return a.missable;
-        return true;
-      })
-      .toSorted((a, b) =>
-        sort === 'nom'
-          ? a.name.localeCompare(b.name, getLocale())
-          : (a.globalRarity ?? 101) - (b.globalRarity ?? 101),
-      ),
-  );
+  function achievementHref(changes: Record<string, string | null>) {
+    const url = new URL(page.url.href);
+    for (const [key, value] of Object.entries(changes)) {
+      if (value === null) url.searchParams.delete(key);
+      else url.searchParams.set(key, value);
+    }
+    return url.pathname + url.search;
+  }
+
+  function changeAchievements(changes: Record<string, string | null>) {
+    void goto(achievementHref({ affiches: null, ...changes }), { reset: false });
+  }
 
   /** Les paramètres de la page voyagent ensemble : révéler les succès cachés garde `avec`. */
   function gameHref(slug: string, options: { avec?: string | null; caches?: boolean } = {}) {
@@ -91,12 +84,7 @@
         ? 'yes'
         : 'no';
 
-  /** World of Warcraft dépasse 8 000 succès : le navigateur n'en dessine pas tant d'un coup. */
-  const PAGE = 300;
-  let shown = $state(PAGE);
-  let view = $state('');
-
-  const secrets = $derived(data.achievements.filter((a) => a.secret).length);
+  const secrets = $derived(data.secrets);
 
   const filters: { value: Filter; label: string }[] = $derived(
     comparing
@@ -113,28 +101,13 @@
           { value: 'tous', label: m.filter_all() },
           { value: 'obtenus', label: m.filter_unlocked() },
           { value: 'restants', label: m.filter_remaining() },
-          ...(data.achievements.some((a) => a.missable)
+          ...(data.hasMissables
             ? [{ value: 'manquables' as const, label: m.filter_missable() }]
             : []),
         ],
   );
 
-  // Changer de mode, de filtre ou de tri repart du début de la liste. Quitter la comparaison
-  // laisse un filtre qui n'existe plus : il revient à « tous ».
-  $effect(() => {
-    if (!filters.some((item) => item.value === filter)) {
-      filter = 'tous';
-      return;
-    }
-    const next = `${comparing}|${filter}|${sort}`;
-    if (next === view) return;
-    view = next;
-    shown = PAGE;
-  });
-
-  const missingMissables = $derived(
-    data.achievements.filter((a) => a.missable && !a.unlockedAt).length,
-  );
+  const missingMissables = $derived(data.missingMissables);
 
   /** Des minutes en heures, à la demi-heure près, écrites dans la langue du visiteur. */
   const hours = (minutes: number) =>
@@ -144,9 +117,9 @@
 
   // Pour les moteurs : ce que cherchent les chasseurs de succès (« Hotline Miami succès 100 % »).
   // La plateforme s'ajoute quand le jeu a d'autres versions : deux fiches, deux titres distincts.
-  const seoAchievements = $derived(m.count_achievements({ count: data.achievements.length }));
+  const seoAchievements = $derived(m.count_achievements({ count: data.achievementTotal }));
   const seoTitle = $derived(
-    data.achievements.length === 0
+    data.achievementTotal === 0
       ? data.game.name
       : data.versions.length
         ? m.game_seo_title_platform({
@@ -220,7 +193,7 @@
       <h1>{data.game.name}</h1>
       <p class="text-sm text-muted">
         {editionLabel(data.game)} · {m.count_achievements({
-          count: data.achievements.length,
+          count: data.achievementTotal,
         })}
         · {m.count_players({ count: data.players })}
       </p>
@@ -495,7 +468,7 @@
       {#each filters as item (item.value)}
         <button
           type="button"
-          onclick={() => (filter = item.value)}
+          onclick={() => changeAchievements({ succes: item.value === 'tous' ? null : item.value })}
           aria-pressed={filter === item.value}
           class="px-3 py-1.5 text-sm transition-colors"
           class:bg-raised={filter === item.value}
@@ -520,14 +493,20 @@
         {/if}
       </a>
     {/if}
-    <select class="input ml-auto w-auto" aria-label={m.sort_achievements_label()} bind:value={sort}>
+    <select
+      class="input ml-auto w-auto"
+      aria-label={m.sort_achievements_label()}
+      value={sort}
+      onchange={(event) =>
+        changeAchievements({ tri: event.currentTarget.value === 'nom' ? 'nom' : null })}
+    >
       <option value="rarete">{m.sort_rarest()}</option>
       <option value="nom">{m.sort_name()}</option>
     </select>
   </div>
 
   <ul class="card divide-y divide-line">
-    {#each visible.slice(0, shown) as achievement (achievement.id)}
+    {#each data.achievements as achievement (achievement.id)}
       <li>
         <a
           href="/succes/{achievement.id}{data.revealed && achievement.secret ? '?caches=1' : ''}"
@@ -623,9 +602,13 @@
       </li>
     {/each}
   </ul>
-  {#if visible.length > shown}
-    <button type="button" class="btn mx-auto block" onclick={() => (shown += PAGE)}>
+  {#if data.nextAchievements}
+    <a
+      class="btn mx-auto block"
+      data-sveltekit-reset="false"
+      href={achievementHref({ affiches: String(data.nextAchievements) })}
+    >
       {m.show_more()}
-    </button>
+    </a>
   {/if}
 </div>

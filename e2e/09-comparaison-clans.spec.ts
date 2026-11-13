@@ -42,8 +42,30 @@ test.describe('comparaison par jeu', () => {
     await expect(conceal).toHaveAttribute('href', /avec=lea/);
   });
 
-  test('propose de comparer avec un ami qui possède la version', async ({ page }) => {
+  test('propose de comparer avec un ami qui possède la version', async ({ page, browser }) => {
     await login(page);
+    await page.goto('/u/marco');
+    await ready(page);
+    const add = page.getByRole('button', { name: 'Ajouter', exact: true });
+    if (await add.isVisible()) {
+      await add.click();
+      await expect(page.getByText('Demande envoyée.')).toBeVisible();
+      const context = await browser.newContext();
+      try {
+        const marco = await context.newPage();
+        await marco.goto('/auth/dev?compte=marco');
+        await marco.goto('/amis');
+        await ready(marco);
+        await marco
+          .getByRole('listitem')
+          .filter({ hasText: 'Demo' })
+          .getByRole('button', { name: 'Accepter' })
+          .click();
+        await expect(marco.getByRole('button', { name: 'Accepter' })).toHaveCount(0);
+      } finally {
+        await context.close();
+      }
+    }
     await page.goto('/jeux/hades');
     await ready(page);
 
