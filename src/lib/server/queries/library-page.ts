@@ -21,10 +21,13 @@ export async function libraryPage(
   viewerId: string | null,
 ) {
   const eligible = ownerId === viewerId && seasonState(SEASON) !== 'ended';
-  const season = eligible
-    ? Prisma.sql`EXISTS (SELECT 1 FROM "Achievement" a JOIN "UserAchievement" ua ON ua."achievementId" = a.id
-        WHERE a."gameId" = g.id AND ua."userId" = ${ownerId} AND ua."unlockedAt" < ${SEASON.startsAt})`
-    : Prisma.sql`false`;
+  const seasonGames = eligible
+    ? Prisma.sql`season_games AS (
+        SELECT DISTINCT a."gameId"
+        FROM "UserAchievement" ua JOIN "Achievement" a ON a.id = ua."achievementId"
+        WHERE ua."userId" = ${ownerId} AND ua."unlockedAt" < ${SEASON.startsAt}
+      ),`
+    : Prisma.empty;
   const platform = filters.platform
     ? Prisma.sql`g.platform = ${filters.platform}::"Platform" ${filters.consoles ? Prisma.sql`AND string_to_array(regexp_replace(COALESCE(g.console, ''), '^Xbox ', ''), '/') && ${filters.consoles}::text[]` : Prisma.empty}`
     : Prisma.sql`true`;
@@ -44,14 +47,16 @@ export async function libraryPage(
   const [result] = await db.$queryRaw<
     { total: bigint; entries: { family: string; seasonEligible: boolean }[] }[]
   >`
-    WITH versions AS (
+    WITH ${seasonGames} versions AS (
       SELECT g.id, g.name, g.slug, g."totalAchievements", COALESCE(g.tier, 1) AS tier,
         ug.completion, ug."lastUnlockedAt", COALESCE(g."familyKey", g.id) AS family,
         COALESCE(g.console, g.platform::text) AS edition,
-        ${season} AS started, ${platform} AS matching_platform,
+        ${eligible ? Prisma.sql`sg."gameId" IS NOT NULL` : Prisma.sql`false`} AS started,
+        ${platform} AS matching_platform,
         strpos(lower(g.name), lower(${filters.q ?? ''})) > 0 AS matching_name,
         row_number() OVER (PARTITION BY COALESCE(g."familyKey", g.id) ORDER BY ug.completion DESC, g.slug) AS position
       FROM "UserGame" ug JOIN "Game" g ON g.id = ug."gameId"
+      ${eligible ? Prisma.sql`LEFT JOIN season_games sg ON sg."gameId" = g.id` : Prisma.empty}
       WHERE ug."userId" = ${ownerId} AND ug.hidden = ${filters.status === 'caches'}
         ${filters.showAdult ? Prisma.empty : Prisma.sql`AND NOT g."adultOnly"`}
     ), finished AS (
