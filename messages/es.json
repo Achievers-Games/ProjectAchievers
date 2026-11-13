@@ -1574,6 +1574,8 @@
   "game_not_found": "No se encuentra este juego.",
   "achievement_not_found": "No se encuentra este logro.",
   "profile_playing_steam": "Jugando a {game} en Steam",
+  "profile_playing_playstation": "Está jugando a {game} en PlayStation",
+  "profile_playing_retro": "Jugó recientemente a {game} en RetroAchievements",
   "profile_not_found": "Este perfil no existe o es privado.",
   "provider_unknown": "Proveedor desconocido",
   "login_required": "Hay que iniciar sesión",

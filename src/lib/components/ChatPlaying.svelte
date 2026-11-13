@@ -3,7 +3,7 @@
   import { subscribeJson } from '#lib/sse';
 
   let { handle }: { handle: string } = $props();
-  let playing = $state<{ name: string; slug: string } | null>(null);
+  let playing = $state<{ name: string; slug: string; platform?: 'PSN' | 'RETRO' } | null>(null);
 
   $effect(() => {
     const url = `/u/${encodeURIComponent(handle)}/jeu-en-cours`;
@@ -27,6 +27,10 @@
 
 {#if playing}
   <a href="/jeux/{playing.slug}" class="block truncate text-xs text-muted hover:text-ink">
-    {m.profile_playing_steam({ game: playing.name })}
+    {playing.platform === 'PSN'
+      ? m.profile_playing_playstation({ game: playing.name })
+      : playing.platform === 'RETRO'
+        ? m.profile_playing_retro({ game: playing.name })
+        : m.profile_playing_steam({ game: playing.name })}
   </a>
 {/if}

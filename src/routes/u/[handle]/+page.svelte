@@ -21,7 +21,7 @@
   const friendSubmit = submitWithToast();
 
   const profile = $derived(data.profile);
-  let playing = $state<{ name: string; slug: string } | null>(null);
+  let playing = $state<{ name: string; slug: string; platform?: 'PSN' | 'RETRO' } | null>(null);
   $effect(() => {
     const handle = profile.user.handle;
     playing = null;
@@ -31,7 +31,7 @@
       stop = undefined;
       if (document.hidden) return;
       playing = null;
-      stop = subscribeJson<{ name: string; slug: string } | null>(
+      stop = subscribeJson<typeof playing>(
         `/u/${encodeURIComponent(handle)}/jeu-en-cours`,
         (game) => {
           playing = game;
@@ -124,7 +124,13 @@
           class="inline-flex max-w-full items-center gap-2 text-sm text-ink hover:underline"
         >
           <Gamepad2 size={16} class="shrink-0" aria-hidden="true" />
-          <span>{m.profile_playing_steam({ game: playing.name })}</span>
+          <span
+            >{playing.platform === 'PSN'
+              ? m.profile_playing_playstation({ game: playing.name })
+              : playing.platform === 'RETRO'
+                ? m.profile_playing_retro({ game: playing.name })
+                : m.profile_playing_steam({ game: playing.name })}</span
+          >
         </a>
       {/if}
       <p class="text-muted">
