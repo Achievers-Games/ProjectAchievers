@@ -1,4 +1,4 @@
-export interface OutlineEntry {
+interface OutlineEntry {
   id: string;
   level: 2 | 3;
   text: string;

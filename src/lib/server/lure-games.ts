@@ -11,7 +11,7 @@ const FRESH = 7 * 24 * 60 * 60 * 1000;
 const RETRY = 24 * 60 * 60 * 1000;
 const TIMEOUT = 3000;
 
-export interface LureGameInfo {
+interface LureGameInfo {
   url: string;
   /** En minutes, `null` si Lure ne le sait pas. */
   mainMinutes: number | null;

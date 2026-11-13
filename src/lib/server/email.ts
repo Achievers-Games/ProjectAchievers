@@ -26,7 +26,7 @@ function getTransporter(): Transporter {
   return transporter;
 }
 
-export interface SendMailOptions {
+interface SendMailOptions {
   to: string;
   subject: string;
   text?: string;

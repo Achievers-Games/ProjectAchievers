@@ -468,34 +468,29 @@ async function inSlices(
   }
 }
 
-async function sweep() {
-  const now = new Date();
+/** Ce qui a fait son temps : chaque table a sa durée de conservation. */
+async function purgeExpired(now: Date) {
+  const before = (age: number) => ({ lt: new Date(now.getTime() - age) });
   await db.session.deleteMany({ where: { expiresAt: { lt: now } } });
   await db.psnVerification.deleteMany({ where: { expiresAt: { lt: now } } });
   await purgeAuthEvents(now);
   // Un jeton expiré ne sert plus à rien, même pour repérer un réemploi : il est refusé à sa date.
-  await db.oAuthToken.deleteMany({
-    where: { expiresAt: { lt: new Date(now.getTime() - STALE_AFTER) } },
-  });
-  await db.partnerEvent.deleteMany({
-    where: { deliveredAt: { lt: new Date(now.getTime() - DELIVERED_EVENTS) } },
-  });
+  await db.oAuthToken.deleteMany({ where: { expiresAt: before(STALE_AFTER) } });
+  await db.partnerEvent.deleteMany({ where: { deliveredAt: before(DELIVERED_EVENTS) } });
   // Les signalements retenus restent : ils comptent pour un succès du site.
-  await db.report.deleteMany({
-    where: { upheld: false, resolvedAt: { lt: new Date(now.getTime() - RESOLVED_REPORTS) } },
-  });
-  await db.syncRun.deleteMany({
-    where: { startedAt: { lt: new Date(now.getTime() - RUN_HISTORY) } },
-  });
-  await db.message.deleteMany({
-    where: { createdAt: { lt: new Date(now.getTime() - MESSAGE_RETENTION) } },
-  });
+  await db.report.deleteMany({ where: { upheld: false, resolvedAt: before(RESOLVED_REPORTS) } });
+  await db.syncRun.deleteMany({ where: { startedAt: before(RUN_HISTORY) } });
+  await db.message.deleteMany({ where: { createdAt: before(MESSAGE_RETENTION) } });
+}
 
+/** Remet en file les comptes que personne n'a synchronisés depuis un jour. */
+async function requeueStaleAccounts(now: Date) {
+  const stale = new Date(now.getTime() - STALE_AFTER);
   const accounts = await db.linkedAccount.findMany({
     where: {
       provider: { in: Object.keys(SYNCERS) as Provider[] },
       syncStatus: { in: ['IDLE', 'COMPLETED', 'FAILED'] },
-      OR: [{ lastSyncedAt: null }, { lastSyncedAt: { lt: new Date(Date.now() - STALE_AFTER) } }],
+      OR: [{ lastSyncedAt: null }, { lastSyncedAt: { lt: stale } }],
     },
     select: { userId: true, provider: true, syncStatus: true },
     take: 500,
@@ -508,7 +503,7 @@ async function sweep() {
         by: ['userId', 'provider'],
         where: {
           userId: { in: failed.map((account) => account.userId) },
-          startedAt: { gte: new Date(now.getTime() - STALE_AFTER) },
+          startedAt: { gte: stale },
         },
       })
     : [];
@@ -520,37 +515,46 @@ async function sweep() {
     // Personne n'a rien demandé : pas de relecture forcée, ni de message sans nouveauté.
     await enqueueSync(account.userId, account.provider, true);
   }
-  await backgroundWork('reviewNewPlayers', () => reviewNewPlayers(), -1).catch((cause) =>
-    log.error('Succès du site :', cause),
-  );
-  await backgroundWork('announceSeason', () => announceSeason(), -1).catch((cause) =>
-    log.error('Annonce :', cause),
-  );
-  await backgroundWork('warnPsnToken', () => warnPsnToken(), -1).catch((cause) =>
-    log.error('Jeton PSN :', cause),
-  );
-  await warnStaleBackup().catch((cause) => log.error('Sauvegarde :', cause));
-  await rewrapSecrets().catch((cause) => log.error('Chiffrement :', cause));
-  await backgroundWork('flagProfaneClans', () => flagProfaneClans(), -1).catch((cause) =>
-    log.error('Noms de clan :', cause),
-  );
-  await backgroundWork('checkAllClans', () => checkAllClans(), -1).catch((cause) =>
-    log.error('Succès de clan :', cause),
-  );
-  await inSlices('refreshDiscordAccounts', 5, 20, (limit) =>
-    refreshDiscordAccounts(undefined, limit),
-  ).catch((cause) => log.error('Discord :', cause));
-  // Le nombre rendu est celui des jeux complétés : un lot qui n'apporte rien arrête la série.
-  await inSlices('fillHiddenDescriptions', 3, 1, () => fillHiddenDescriptions(20)).catch((cause) =>
-    log.error('Succès cachés :', cause),
-  );
-  await backgroundWork('fillWowCatalog', () => fillWowCatalog(), -1).catch((cause) =>
-    log.error('Catalogue WoW :', cause),
-  );
-  await sweepSteamStore().catch((cause) => log.error('Boutique Steam :', cause));
-  await backgroundWork('matchFamilies', () => matchFamilies(), -1).catch((cause) =>
-    log.error('Familles :', cause),
-  );
+}
+
+/**
+ * L'entretien horaire, dans l'ordre. Chaque tâche rend le budget de fond en finissant, et son
+ * échec est journalisé sans arrêter les suivantes. Celles qui s'exécutent hors budget le gèrent
+ * elles-mêmes (le balayage de la boutique le rend à chaque page) ou ne font qu'une lecture.
+ */
+const MAINTENANCE: { label: string; run: () => Promise<unknown>; budget?: false }[] = [
+  { label: 'Succès du site', run: () => reviewNewPlayers() },
+  { label: 'Annonce', run: () => announceSeason() },
+  { label: 'Jeton PSN', run: () => warnPsnToken() },
+  { label: 'Sauvegarde', run: () => warnStaleBackup(), budget: false },
+  { label: 'Chiffrement', run: () => rewrapSecrets(), budget: false },
+  { label: 'Noms de clan', run: () => flagProfaneClans() },
+  { label: 'Succès de clan', run: () => checkAllClans() },
+  {
+    label: 'Discord',
+    run: () => inSlices('Discord', 5, 20, (limit) => refreshDiscordAccounts(undefined, limit)),
+    budget: false,
+  },
+  {
+    label: 'Succès cachés',
+    // Le nombre rendu est celui des jeux complétés : un lot qui n'apporte rien arrête la série.
+    run: () => inSlices('Succès cachés', 3, 1, () => fillHiddenDescriptions(20)),
+    budget: false,
+  },
+  { label: 'Catalogue WoW', run: () => fillWowCatalog() },
+  { label: 'Boutique Steam', run: () => sweepSteamStore(), budget: false },
+  { label: 'Familles', run: () => matchFamilies() },
+];
+
+async function sweep() {
+  const now = new Date();
+  await purgeExpired(now);
+  await requeueStaleAccounts(now);
+  for (const { label, run, budget } of MAINTENANCE) {
+    await (budget === false ? run() : backgroundWork(label, run, -1)).catch((cause) =>
+      log.error(`${label} :`, cause),
+    );
+  }
 }
 
 /** Rend les tâches en cours à la file avant l'arrêt : elles repartiront au prochain démarrage. */

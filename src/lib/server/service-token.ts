@@ -8,7 +8,7 @@ const DAY = 24 * 60 * 60 * 1000;
 /** Sony annonce 60 jours ; le jeton peut mourir avant, d'où l'alerte d'échec. */
 const LIFETIME = 60 * DAY;
 /** Assez tôt pour le renouveler sans se presser. */
-export const WARN_BEFORE = 21 * DAY;
+const WARN_BEFORE = 21 * DAY;
 
 const fingerprint = (token: string) =>
   createHash('sha256').update(token).digest('hex').slice(0, 16);
@@ -32,7 +32,7 @@ export async function notePsnToken(token: string, error?: string, now = new Date
   }
 }
 
-export interface TokenState {
+interface TokenState {
   since: Date;
   expiresAt: Date;
   daysLeft: number;

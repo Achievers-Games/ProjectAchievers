@@ -20,7 +20,7 @@ const SUBSETS = ['latin', 'latin-ext', 'cyrillic'];
  * Un WOFF n'est qu'un TTF dont chaque table est compressée à part : on le remet à plat.
  * resvg ne lit que les polices TTF ou OTF, et `@fontsource` ne livre que du WOFF.
  */
-export function woffToSfnt(woff: Uint8Array): Uint8Array {
+function woffToSfnt(woff: Uint8Array): Uint8Array {
   const view = new DataView(woff.buffer, woff.byteOffset, woff.byteLength);
   if (view.getUint32(0) !== 0x774f4646) throw new Error('Pas un fichier WOFF');
   const flavor = view.getUint32(4);

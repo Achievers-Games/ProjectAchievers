@@ -17,10 +17,10 @@ import { queueAccountEvent } from './partner-webhooks';
 
 /** Ce qu'un partenaire peut demander. `profile` est toujours accordé avec le reste. */
 export const OAUTH_SCOPES = ['profile', 'library', 'achievements'] as const;
-export type OAuthScope = (typeof OAUTH_SCOPES)[number];
+type OAuthScope = (typeof OAUTH_SCOPES)[number];
 
 const CODE_TTL = 10 * 60_000;
-export const ACCESS_TTL = 60 * 60_000;
+const ACCESS_TTL = 60 * 60_000;
 const REFRESH_TTL = 60 * 24 * 60 * 60_000;
 const MINUTE = 60_000;
 /** Un partenaire échange ses codes depuis un seul serveur : la limite suit son client. */
@@ -39,7 +39,7 @@ function sameHash(a: string, b: string) {
 }
 
 /** Les portées demandées, connues et dédoublonnées ; `profile` vient toujours avec. */
-export function parseScopes(raw: string | null): OAuthScope[] | null {
+function parseScopes(raw: string | null): OAuthScope[] | null {
   const asked = (raw ?? '').split(/[\s+]+/).filter(Boolean);
   if (asked.some((scope) => !OAUTH_SCOPES.includes(scope as OAuthScope))) return null;
   return OAUTH_SCOPES.filter((scope) => scope === 'profile' || asked.includes(scope));

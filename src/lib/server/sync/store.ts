@@ -18,7 +18,7 @@ const POINTS: Record<TrophyType, number> = {
 /** Les petits lots respectent les limites mémoire et transactionnelles du NAS. */
 const ACHIEVEMENTS_PER_TRANSACTION = 25;
 
-export interface GameInput {
+interface GameInput {
   platform: Platform;
   platformGameId: string;
   name: string;
@@ -229,13 +229,13 @@ async function pruneAchievements(gameId: string, kept: string[]) {
 }
 
 /** Un succès qui vient de tomber : de quoi le montrer au joueur sans recharger sa page. */
-export interface NewUnlock {
+interface NewUnlock {
   id: string;
   name: string;
   iconUrl: string | null;
 }
 
-export interface SaveResult {
+interface SaveResult {
   /** Nombre de succès réellement ajoutés. */
   gained: number;
   /** Au plus cinq nouveaux succès : la page ne fête pas tout un premier import. */

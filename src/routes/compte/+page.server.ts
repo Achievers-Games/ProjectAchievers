@@ -1,16 +1,21 @@
-import { fail, redirect, type Cookies } from '@sveltejs/kit';
+import { fail, redirect } from '@sveltejs/kit';
 import { themeOf } from '#lib/theme';
 import { z } from 'zod';
 import type { Provider } from '#prisma';
-import { profileSchema, resolveIdentity, updateProfile, type Identity } from '#lib/server/accounts';
+import { profileSchema, updateProfile } from '#lib/server/accounts';
 import { requireLogin } from '#lib/server/auth';
 import { secureCookie } from '#lib/server/cookies';
+import {
+  bioSearchTooFast,
+  finishBioCheck,
+  pendingBioCheck,
+  startBioCheck,
+} from '#lib/server/bio-check';
 import { db } from '#lib/server/db';
-import { rateLimit } from '#lib/server/rate-limit';
 import { logger } from '#lib/logger';
-import { clearMerge, mergePreview, mergeUsers, readMerge, saveMerge } from '#lib/server/merge';
+import { clearMerge, mergePreview, mergeUsers, readMerge } from '#lib/server/merge';
 import { availableProviders, OAUTH_PROVIDERS } from '#lib/server/providers';
-import { bioContainsCode, findPsnProfile, newPsnCode } from '#lib/server/providers/psn';
+import { bioContainsCode, findPsnProfile } from '#lib/server/providers/psn';
 import { findRetroProfile } from '#lib/server/providers/retro';
 import { destroySession } from '#lib/server/session';
 import { grantSiteAchievement } from '#lib/server/site-achievements';
@@ -45,7 +50,6 @@ const PROFILE_ERRORS = {
 
 /** Tout fournisseur qui ouvre une session, Epic et Blizzard compris. */
 const LOGIN_PROVIDERS: Provider[] = Object.values(OAUTH_PROVIDERS);
-const PSN_CODE_LIFETIME = 30 * 60 * 1000;
 
 const requireUser = (locals: App.Locals) => requireLogin(locals, '/compte');
 
@@ -143,70 +147,6 @@ const providerSchema = z.enum([
   'EPIC',
   'BLIZZARD',
 ]);
-
-/**
- * PSN et RetroAchievements n'ont pas de connexion OAuth : le joueur prouve qu'il possède le
- * profil en y posant un code. Les trois étapes sont les mêmes pour les deux plateformes.
- */
-type BioProvider = 'PSN' | 'RETRO';
-
-/** Chaque recherche sollicite le compte de service du site : dix essais par quart d'heure suffisent. */
-const bioSearchTooFast = (userId: string) =>
-  !rateLimit(`recherche-profil:${userId}`, 10, 15 * 60_000);
-
-/** Un nouveau code remplace le précédent : une seule vérification en cours par joueur. */
-async function startBioCheck(
-  userId: string,
-  provider: BioProvider,
-  onlineId: string,
-  accountId: string,
-) {
-  const data = {
-    provider,
-    onlineId,
-    accountId,
-    code: newPsnCode(),
-    expiresAt: new Date(Date.now() + PSN_CODE_LIFETIME),
-  };
-  await db.psnVerification.upsert({
-    where: { userId },
-    update: data,
-    create: { ...data, userId },
-  });
-}
-
-/** La vérification en cours pour cette plateforme, si elle n'a pas expiré. */
-async function pendingBioCheck(userId: string, provider: BioProvider) {
-  const pending = await db.psnVerification.findUnique({ where: { userId } });
-  return pending?.provider === provider && pending.expiresAt >= new Date() ? pending : null;
-}
-
-/** Le code est sur le profil : le compte est lié, ou une fusion est proposée s'il a déjà un profil. */
-async function finishBioCheck(
-  userId: string,
-  cookies: Cookies,
-  identity: Identity & { provider: BioProvider },
-  linked: () => string,
-) {
-  const result = await resolveIdentity(identity, userId);
-  if (!result.ok && result.reason === 'provider_taken') {
-    return fail(409, { error: NOTICES[result.reason]?.() });
-  }
-
-  await db.psnVerification.delete({ where: { userId } });
-  if (!result.ok) {
-    saveMerge(cookies, {
-      sourceId: result.ownerId,
-      targetId: userId,
-      provider: identity.provider,
-      providerUserId: identity.providerUserId,
-    });
-    return { success: m.psn_other_profile() };
-  }
-
-  await enqueueSync(userId, identity.provider);
-  return { success: linked() };
-}
 
 export const actions: Actions = {
   profile: async ({ request, locals }) => {

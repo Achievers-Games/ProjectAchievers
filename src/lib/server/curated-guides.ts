@@ -26,7 +26,7 @@ const GAME_FILES = import.meta.glob<string>('/src/lib/guides/jeux/*.md', {
   eager: true,
 });
 
-export interface GameGuideFile {
+interface GameGuideFile {
   platform: Platform;
   gameId: string;
   title: string;
@@ -54,7 +54,7 @@ export function parseGameGuideFile(text: string): GameGuideFile {
   };
 }
 
-export interface GuideFile {
+interface GuideFile {
   platform: Platform;
   gameId: string;
   /** Le relevé des manquables n'est pas encore complet : le site ne promet rien d'autre. */

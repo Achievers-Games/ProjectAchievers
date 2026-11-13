@@ -27,7 +27,7 @@ export const PROVIDER_LABELS: Record<Provider, string> = {
 };
 
 /** Les sites partenaires reliés à un compte. */
-export const PARTNER_LABELS: Record<string, string> = { lure: 'Lure' };
+const PARTNER_LABELS: Record<string, string> = { lure: 'Lure' };
 
 export const partnerLabel = (partner: string) => PARTNER_LABELS[partner] ?? partner;
 

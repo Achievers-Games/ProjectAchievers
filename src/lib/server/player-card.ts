@@ -289,7 +289,7 @@ ${columns}
 }
 
 /** Assez frais pour suivre une séance de chasse, assez long pour ménager la base. */
-export const CARD_MAX_AGE = 30 * 60;
+const CARD_MAX_AGE = 30 * 60;
 
 /** Les en-têtes communs aux deux formats : d'autres sites l'affichent, c'est tout l'intérêt. */
 export const cardHeaders = (type: string) => ({

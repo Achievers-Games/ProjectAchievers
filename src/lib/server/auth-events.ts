@@ -3,15 +3,8 @@ import { logger } from '#lib/logger';
 
 const log = logger('Connexion');
 
-export type AuthEventKind = 'START' | 'SIGNUP' | 'LOGIN' | 'ERROR';
-export const AUTH_ERROR_REASONS = [
-  'expire',
-  'annule',
-  'fournisseur',
-  'refuse',
-  'deja_lie',
-] as const;
-export type AuthErrorReason = (typeof AUTH_ERROR_REASONS)[number];
+type AuthEventKind = 'START' | 'SIGNUP' | 'LOGIN' | 'ERROR';
+export type AuthErrorReason = 'expire' | 'annule' | 'fournisseur' | 'refuse' | 'deja_lie';
 
 const KEEP_DAYS = 90;
 const DAY = 24 * 60 * 60 * 1000;

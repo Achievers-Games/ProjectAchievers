@@ -154,9 +154,7 @@ export async function readConversation(userId: string, conversationId: string) {
   };
 }
 
-export type ChatMessage = NonNullable<
-  Awaited<ReturnType<typeof readConversation>>
->['messages'][number];
+type ChatMessage = NonNullable<Awaited<ReturnType<typeof readConversation>>>['messages'][number];
 
 export async function sendMessage(
   userId: string,

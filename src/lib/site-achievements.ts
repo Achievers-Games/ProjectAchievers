@@ -119,7 +119,7 @@ type StepCodes<T> = {
     : never;
 }[keyof T];
 export type GenreKey = keyof typeof GENRES | keyof typeof THEMES;
-export type GenreCode = StepCodes<typeof GENRES> | StepCodes<typeof THEMES>;
+type GenreCode = StepCodes<typeof GENRES> | StepCodes<typeof THEMES>;
 
 const ALL_GENRES: Record<string, GenreDef> = { ...GENRES, ...THEMES };
 
@@ -152,8 +152,8 @@ type SeriesCodes<T> = {
 export type FriendKey = keyof typeof FRIEND_SERIES;
 export type ClanKey = keyof typeof CLAN_SERIES;
 export type SeriesKey = FriendKey | ClanKey;
-export type FriendCode = SeriesCodes<typeof FRIEND_SERIES>;
-export type ClanSeriesCode = SeriesCodes<typeof CLAN_SERIES>;
+type FriendCode = SeriesCodes<typeof FRIEND_SERIES>;
+type ClanSeriesCode = SeriesCodes<typeof CLAN_SERIES>;
 
 const ALL_SERIES: Record<string, readonly number[]> = { ...FRIEND_SERIES, ...CLAN_SERIES };
 
@@ -309,7 +309,6 @@ export const SITE_CATEGORIES = {
   secret,
 };
 
-export type SiteCategory = keyof typeof SITE_CATEGORIES;
 /** Les succès à une règle propre ; ceux des genres se lisent avec `genreOf`. */
 export type BaseCode =
   | (typeof BASE_CATEGORIES)[keyof typeof BASE_CATEGORIES][number]

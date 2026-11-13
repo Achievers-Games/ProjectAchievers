@@ -26,7 +26,7 @@ export interface SyncProgress {
 
 export const syncState = writable<Partial<Record<Provider, SyncProgress>>>({});
 
-export interface PendingRewards {
+interface PendingRewards {
   cards: Reward[];
   /** Cartes obtenues en plus de celles envoyées par le serveur. */
   more: number;

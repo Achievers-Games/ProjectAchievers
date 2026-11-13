@@ -81,7 +81,7 @@ async function mergeConversations(tx: Transaction, sourceId: string, targetId: s
 
 const ROLE_RANK: Record<Role, number> = { USER: 0, MODERATOR: 1, ADMIN: 2 };
 
-export interface PendingMerge {
+interface PendingMerge {
   /** Profil absorbé, puis supprimé. */
   sourceId: string;
   /** Profil conservé : celui de la session en cours. */
@@ -93,7 +93,7 @@ export interface PendingMerge {
 type MergeFailure = 'stale' | 'sync_running' | 'provider_conflict' | 'clan_choice';
 
 /** Le clan à garder quand les deux profils en ont un. */
-export type ClanChoice = 'source' | 'target';
+type ClanChoice = 'source' | 'target';
 
 /** La demande reste chez le navigateur, chiffrée, pendant 10 minutes. */
 export function saveMerge(cookies: Cookies, merge: PendingMerge) {

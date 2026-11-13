@@ -1,8 +1,9 @@
-import { createHash, randomBytes } from 'node:crypto';
+import { randomBytes } from 'node:crypto';
 import { json } from '@sveltejs/kit';
 import type { RequestEvent } from '@sveltejs/kit';
 import type { Platform } from '#prisma';
 import { clientAddress } from './client-address';
+import { sha256 } from './crypto';
 import { db } from './db';
 import { env } from './env';
 import { rateLimit } from './rate-limit';
@@ -44,9 +45,7 @@ export const API_PLATFORMS: Record<string, Platform> = {
 };
 export const platformSlug = (platform: Platform) => platform.toLowerCase();
 
-const hashKey = (key: string) => createHash('sha256').update(key).digest('hex');
-
-export type ApiErrorCode =
+type ApiErrorCode =
   'unauthorized' | 'rate_limited' | 'not_found' | 'bad_request' | 'unknown_platform';
 
 /** Toutes les erreurs ont la même forme : un code stable et une phrase pour le développeur. */
@@ -57,7 +56,7 @@ export function apiError(status: number, error: ApiErrorCode, message: string, h
 /** La clé ne s'affiche qu'ici : seule son empreinte est gardée. Recréer remplace l'ancienne. */
 export async function issuePartnerKey(name: string) {
   const key = `${KEY_PREFIX}${randomBytes(32).toString('base64url')}`;
-  const data = { keyHash: hashKey(key), keyPrefix: key.slice(0, 10), revokedAt: null };
+  const data = { keyHash: sha256(key), keyPrefix: key.slice(0, 10), revokedAt: null };
   const app = await db.partnerApp.upsert({
     where: { name },
     create: { name, ...data },
@@ -78,7 +77,7 @@ export async function authenticatePartner(
   const key = header.startsWith('Bearer ') ? header.slice(7).trim() : '';
   const app = key.startsWith(KEY_PREFIX)
     ? await db.partnerApp.findUnique({
-        where: { keyHash: hashKey(key) },
+        where: { keyHash: sha256(key) },
         select: { id: true, name: true, revokedAt: true, lastUsedAt: true },
       })
     : null;
@@ -141,7 +140,7 @@ export interface ApiCursor {
 /** Préfixe des curseurs récents : sans lui, un curseur reste l'identifiant du dernier jeu. */
 const CURSOR_PREFIX = 'k1.';
 
-export const encodeCursor = (cursor: ApiCursor) =>
+const encodeCursor = (cursor: ApiCursor) =>
   CURSOR_PREFIX +
   Buffer.from(JSON.stringify([cursor.sort, cursor.value, cursor.id])).toString('base64url');
 
@@ -192,7 +191,7 @@ function cursorValueFits(sort: ApiSort, value: unknown): value is string | numbe
 }
 
 /** Le curseur reçu, ou la réponse `400` qui explique pourquoi il ne vaut rien pour cet ordre. */
-export function decodeCursor(raw: string, sort: ApiSort): ApiCursor | Response {
+function decodeCursor(raw: string, sort: ApiSort): ApiCursor | Response {
   if (!raw.startsWith(CURSOR_PREFIX)) {
     // Curseur de la première version : l'identifiant du dernier jeu, valable pour l'ordre par défaut.
     return sort === 'default'
@@ -215,7 +214,7 @@ export function decodeCursor(raw: string, sort: ApiSort): ApiCursor | Response {
   return cursorValueFits(sort, value) ? { sort, value, id } : invalidCursor();
 }
 
-export interface GameListParams {
+interface GameListParams {
   limit: number;
   sort: ApiSort;
   status: ApiGameStatus | null;
@@ -280,7 +279,7 @@ export function apiAvatar(url: string | null | undefined): string | null {
   return null;
 }
 
-export interface ApiGameFields {
+interface ApiGameFields {
   platform: Platform;
   platformGameId: string;
   console: string | null;
@@ -355,14 +354,7 @@ export const apiGameSelect = {
 } as const;
 
 /** Le rang d'une carte, du palier 1 au palier 6, comme sur le site. */
-export const CARD_RANKS = [
-  'bronze',
-  'silver',
-  'gold',
-  'diamond',
-  'prismatic',
-  'legendary',
-] as const;
+const CARD_RANKS = ['bronze', 'silver', 'gold', 'diamond', 'prismatic', 'legendary'] as const;
 
 /** La carte qu'un 100 % rapporte : son palier dit la difficulté du jeu, de Bronze à Légendaire. */
 export function apiCard(gameTier: number | null) {

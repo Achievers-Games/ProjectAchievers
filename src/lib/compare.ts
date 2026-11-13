@@ -4,16 +4,16 @@
  * Un succès masqué (caché et pas encore révélé) reste `neither` même si l'autre l'a déjà
  * débloqué : son état ne doit pas fuiter avant « Révéler les succès cachés ».
  */
-export type CompareBucket = 'common' | 'mine' | 'theirs' | 'neither';
+type CompareBucket = 'common' | 'mine' | 'theirs' | 'neither';
 
-export interface CompareCounts {
+interface CompareCounts {
   common: number;
   mine: number;
   theirs: number;
   neither: number;
 }
 
-export interface ComparableAchievement {
+interface ComparableAchievement {
   id: string;
   masked: boolean;
   unlockedAt: Date | null;

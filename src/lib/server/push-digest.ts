@@ -8,7 +8,7 @@ import { m } from '#lib/paraglide/messages';
 const INTERVAL = 30_000;
 
 /** Comme sur Discord : rien tant que le joueur est là, un seul résumé quand il s'en va. */
-export async function sendDigests() {
+async function sendDigests() {
   for (const userId of usersWhoLeft()) {
     const [user, unread, invites] = await Promise.all([
       db.user.findUnique({

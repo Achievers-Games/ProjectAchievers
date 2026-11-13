@@ -54,22 +54,11 @@ export const cardSelect = {
   },
 } satisfies Prisma.UserGameSelect;
 
-/** Le pourcentage affiché sur la carte : celui de l'exemplaire suivant, s'il est en cours. */
-export const shownProgress = (card: LibraryCard) =>
-  card.next?.completion ?? card.progress.completion;
-
 /** Position sur l'échelle : une carte Or à 58 % de son exemplaire suivant vaut 3,58. */
 export const tierProgress = (card: LibraryCard) =>
   card.tier
     ? card.tier * 10 + card.copies + (card.next?.completion ?? 0) / 100
     : card.progress.completion / 100;
-
-/** La rareté du jeu : la carte obtenue, sinon celle qu'il rapportera. */
-export const rarityOf = (card: LibraryCard) => card.tier || card.target;
-
-/** Il reste une version commencée à finir : vers la carte, ou vers l'exemplaire suivant. */
-export const isUnfinished = (card: LibraryCard) =>
-  Boolean(card.next) || (card.progress.completion < 100 && card.totalAchievements > 0);
 
 /** Une Légendaire pèse 27 cartes Or. Les exemplaires ne comptent pas : racheter un jeu ne rapporte rien. */
 export const TIER_POINTS = [25, 50, 100, 300, 900, 2700];

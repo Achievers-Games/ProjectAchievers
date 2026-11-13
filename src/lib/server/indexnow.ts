@@ -49,7 +49,7 @@ const pending = new Set<string>();
 let timer: ReturnType<typeof setTimeout> | null = null;
 
 /** Envoie ce qui attend ; un échec se contente d'un avertissement, le plan du site prendra le relais. */
-export async function flushIndexNow() {
+async function flushIndexNow() {
   timer = null;
   if (!pending.size) return;
   const paths = [...pending];

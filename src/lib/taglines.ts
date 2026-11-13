@@ -1,7 +1,7 @@
 import { formatNumber } from '#lib/labels';
 import { m } from '#lib/paraglide/messages';
 
-export interface TaglineStats {
+interface TaglineStats {
   games: number;
   finished: number;
   /** Avancement du jeu le plus proche de la fin. */

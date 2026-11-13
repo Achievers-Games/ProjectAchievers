@@ -123,7 +123,7 @@ const steamImage = (path: string | undefined) => (path ? `${STEAM_IMAGES}${path}
  * Ces images sont un plus : une panne de Steam ne doit jamais empêcher de se connecter.
  * `null` veut dire « inconnu », à ne pas confondre avec un joueur sans cadre.
  */
-export async function fetchSteamLook(steamId: string): Promise<AccountLook | null> {
+async function fetchSteamLook(steamId: string): Promise<AccountLook | null> {
   try {
     const [avatar, frame] = await Promise.all([
       fetchSteamItem('GetAnimatedAvatar', steamId),

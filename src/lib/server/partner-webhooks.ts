@@ -60,7 +60,7 @@ interface UnlockRow {
 }
 
 /** Sous ce pourcentage de joueurs, un succès vaut un événement à lui seul : achievement.rare. */
-export const RARE_ACHIEVEMENT = 1;
+const RARE_ACHIEVEMENT = 1;
 
 /**
  * Qui le partenaire suit : les joueurs reliés automatiquement (même identité OAuth) au profil
@@ -278,7 +278,7 @@ async function buildEvents(slug: string, rows: UnlockRow[]) {
   });
 }
 
-export type AccountEventType = 'user.linked' | 'user.unlinked' | 'user.updated' | 'user.deleted';
+type AccountEventType = 'user.linked' | 'user.unlinked' | 'user.updated' | 'user.deleted';
 
 /**
  * Note qu'un partenaire doit apprendre un changement de compte. `linked` et `unlinked` visent

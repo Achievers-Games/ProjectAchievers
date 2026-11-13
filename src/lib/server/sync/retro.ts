@@ -19,7 +19,7 @@ interface RetroGameSummary {
   MostRecentAwardedDate?: string | null;
 }
 
-export interface RetroAchievement {
+interface RetroAchievement {
   ID: number;
   Title: string;
   Description?: string;

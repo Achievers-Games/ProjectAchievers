@@ -19,8 +19,8 @@ import {
 } from './store';
 import type { ProviderSync, SyncContext } from './types';
 
-export const WOW_GAME = 'wow';
-export const SC2_GAME = 'sc2';
+const WOW_GAME = 'wow';
+const SC2_GAME = 'sc2';
 
 const concurrency = () => env().SYNC_GAME_CONCURRENCY;
 const CATALOG_MAX_AGE = 7 * 86_400_000;
@@ -55,13 +55,13 @@ interface WowEarned {
   completed_timestamp?: number;
 }
 
-export interface Sc2Earned {
+interface Sc2Earned {
   achievementId: string;
   completionDate?: number;
   isComplete?: boolean;
 }
 
-export interface Sc2Achievement {
+interface Sc2Achievement {
   id: string;
   title: string;
   description?: string;

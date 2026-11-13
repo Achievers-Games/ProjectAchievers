@@ -10,7 +10,7 @@ import { SEASON, seasonState, type Season } from '#lib/season';
 
 const log = logger('Notifications');
 
-export type PushKind = 'message' | 'invite' | 'event' | 'digest';
+type PushKind = 'message' | 'invite' | 'event' | 'digest';
 
 interface PushContent {
   title: string;

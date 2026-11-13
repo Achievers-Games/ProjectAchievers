@@ -25,7 +25,7 @@ import { publicGames, visibleGames } from './queries/shared';
  * joueur lui-même qui a donné son accord par OAuth : son profil peut être privé. Dans les deux
  * cas, un jeu masqué ou adulte ne sort pas.
  */
-export type PlayerRef = string | { userId: string };
+type PlayerRef = string | { userId: string };
 
 const publicPlayer = (who: PlayerRef) =>
   db.user.findFirst({
@@ -157,7 +157,7 @@ const afterCursor = (sort: ApiSort, cursor: ApiCursor): Prisma.UserGameWhereInpu
   }
 };
 
-export interface UserGamesFilter {
+interface UserGamesFilter {
   platform: Platform | null;
   limit: number;
   cursor: ApiCursor | null;

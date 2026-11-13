@@ -87,13 +87,13 @@ export interface InviteEvent {
 }
 
 /** Un ou plusieurs succès du site : le navigateur demande leur titre dans sa langue. */
-export interface SiteAchievementEvent {
+interface SiteAchievementEvent {
   type: 'site-achievement';
   codes: string[];
 }
 
 /** Des succès de plateforme débloqués pendant que la page était fermée : à fêter en arrivant. */
-export interface UnlocksEvent {
+interface UnlocksEvent {
   type: 'unlocks';
   achievements: UnlockPop[];
 }

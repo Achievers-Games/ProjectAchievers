@@ -16,7 +16,7 @@ const TOGETHER = 3;
 const GHOST_DAYS = 30;
 
 /** Où en est un clan : un compte par série, et les succès sans palier. */
-export interface ClanFacts {
+interface ClanFacts {
   counts: Record<ClanKey, number>;
   nobodyBehind: boolean;
   loyal: boolean;
@@ -141,7 +141,7 @@ export async function clanFacts(clanId: string, now = Date.now()): Promise<ClanF
 }
 
 /** Les succès de clan que ces faits méritent. */
-export function clanCodes(facts: ClanFacts): ClanCode[] {
+function clanCodes(facts: ClanFacts): ClanCode[] {
   const series = (Object.entries(CLAN_SERIES) as [ClanKey, readonly number[]][]).flatMap(
     ([key, steps]) =>
       steps.filter((step) => facts.counts[key] >= step).map((step) => `${key}_${step}` as ClanCode),

@@ -4,7 +4,7 @@ import type { ChatEvent } from '#lib/server/sync/events';
 const STORAGE_KEY = 'pa_discussions';
 const MAX_OPEN = 3;
 
-export interface DockChat {
+interface DockChat {
   id: string;
   title: string;
   folded: boolean;

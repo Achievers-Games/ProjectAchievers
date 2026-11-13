@@ -22,7 +22,7 @@ const LANGUAGES: Record<Locale, string> = {
 };
 
 /** Qui demande, et combien de nouvelles traductions il peut déclencher par heure. */
-export interface TranslationQuota {
+interface TranslationQuota {
   key: string;
   perHour: number;
 }
@@ -38,7 +38,7 @@ export const translationQuota = (
     ? { key: `joueur:${event.locals.user.id}`, perHour: 30 }
     : { key: `adresse:${clientAddress(event)}`, perHour: 5 };
 
-export type TranslationTarget = { guideId: string } | { commentId: string };
+type TranslationTarget = { guideId: string } | { commentId: string };
 
 export const canTranslate = () => Boolean(env().CLOUDFLARE_ACCOUNT_ID && env().CLOUDFLARE_AI_TOKEN);
 

@@ -37,7 +37,7 @@ interface XboxTitle {
   titleHistory?: { lastTimePlayed?: string };
 }
 
-export interface XboxAchievement {
+interface XboxAchievement {
   id: string;
   name: string;
   description?: string;
@@ -51,7 +51,7 @@ export interface XboxAchievement {
 }
 
 /** Les jeux Xbox 360 ont leur propre format, à la version 1 du service. */
-export interface Xbox360Achievement {
+interface Xbox360Achievement {
   id: number | string;
   name: string;
   description?: string;

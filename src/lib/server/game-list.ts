@@ -15,7 +15,7 @@ const CONSOLES: Record<string, { platform: Platform; consoles: string[] }> = {
   XONE: { platform: 'XBOX', consoles: ['One', 'Series'] },
 };
 
-export const TIER_FILTERS = ['bronze', 'argent', 'or', 'diamant', 'prismatique', 'legendaire'];
+const TIER_FILTERS = ['bronze', 'argent', 'or', 'diamant', 'prismatique', 'legendaire'];
 
 const query = z.object({
   q: z.string().trim().max(80).optional().catch(undefined),

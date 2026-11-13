@@ -3,7 +3,7 @@ import { SEASON, seasonState } from '#lib/season';
 import { db } from '../db';
 import { PAGE_SIZE } from './shared';
 
-export interface LibraryFilters {
+interface LibraryFilters {
   q?: string;
   platform?: Platform;
   consoles?: string[];

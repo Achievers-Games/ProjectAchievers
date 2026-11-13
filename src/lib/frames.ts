@@ -11,7 +11,7 @@ export const FRAMES = [
   'podium-1',
 ] as const;
 
-export type Frame = (typeof FRAMES)[number];
+type Frame = (typeof FRAMES)[number];
 
 export const isFrame = (value: unknown): value is Frame => FRAMES.includes(value as Frame);
 

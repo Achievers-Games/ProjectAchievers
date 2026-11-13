@@ -12,7 +12,7 @@ export async function retroGet(endpoint: string, params: Record<string, string |
   return fetchRetry(url);
 }
 
-export interface RetroProfile {
+interface RetroProfile {
   /** Stable, contrairement au pseudo qui peut changer. */
   ulid: string;
   username: string;

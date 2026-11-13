@@ -10,7 +10,7 @@ const log = logger('Partenaire');
 export const LURE = 'lure';
 
 /** L'identité d'un fournisseur, telle que les deux sites peuvent la comparer. */
-export interface ProviderIdentity {
+interface ProviderIdentity {
   provider: Provider;
   providerUserId: string;
 }
@@ -22,7 +22,7 @@ const LOOKUP_TIMEOUT = 2_000;
 export const lureConfigured = () => Boolean(env().LURE_API_URL && env().LURE_API_KEY);
 
 /** Les identités vérifiées du compte : celles qui peuvent exister des deux côtés. */
-export const providerIdentities = (userId: string): Promise<ProviderIdentity[]> =>
+const providerIdentities = (userId: string): Promise<ProviderIdentity[]> =>
   db.linkedAccount.findMany({
     where: { userId },
     select: { provider: true, providerUserId: true },
@@ -50,7 +50,7 @@ export async function findUsersByIdentities(identities: ProviderIdentity[]): Pro
  * Une panne, une lenteur ou une réponse inattendue rendent une liste vide : la connexion
  * continue, simplement sans liaison.
  */
-export async function lookupAtLure(identities: ProviderIdentity[]): Promise<string[]> {
+async function lookupAtLure(identities: ProviderIdentity[]): Promise<string[]> {
   const { LURE_API_URL, LURE_API_KEY } = env();
   if (!LURE_API_URL || !LURE_API_KEY || identities.length === 0) return [];
 

@@ -5,7 +5,7 @@ import { logger } from '#lib/logger';
 const log = logger('Image de clan');
 
 /** Le navigateur réduit l'image avant l'envoi : au-delà, ce n'est pas un emblème. */
-export const MAX_IMAGE_BYTES = 300_000;
+const MAX_IMAGE_BYTES = 300_000;
 const MODEL = '@cf/meta/llama-3.2-11b-vision-instruct';
 const CHECK_TIMEOUT = 30_000;
 const QUESTION =
@@ -23,7 +23,7 @@ export function imageType(bytes: Uint8Array) {
   return null;
 }
 
-export type ImageVerdict = 'safe' | 'unsafe' | 'unsure';
+type ImageVerdict = 'safe' | 'unsafe' | 'unsure';
 
 async function askModel(bytes: Uint8Array, prompt: string) {
   const { CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_AI_TOKEN } = env();

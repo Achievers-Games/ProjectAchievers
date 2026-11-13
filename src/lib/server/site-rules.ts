@@ -42,7 +42,7 @@ export interface UnlockFact {
   burst?: boolean;
 }
 
-export interface CardFact {
+interface CardFact {
   gameId: string;
   tier: number;
   copies: number;

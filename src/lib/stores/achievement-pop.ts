@@ -15,7 +15,7 @@ export interface SitePop {
 }
 
 /** Une annonce de la pile : un succès à la fois. */
-export interface PopItem {
+interface PopItem {
   id: number;
   pop: SitePop;
 }
