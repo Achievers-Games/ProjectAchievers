@@ -1575,7 +1575,7 @@
   "achievement_not_found": "Ce succès est introuvable.",
   "profile_playing_steam": "Joue à {game} sur Steam",
   "profile_playing_playstation": "Joue à {game} sur PlayStation",
-  "profile_playing_retro": "A joué récemment à {game} sur RetroAchievements",
+  "profile_playing_retro": "Joue à {game} sur RetroAchievements",
   "profile_not_found": "Ce profil est introuvable ou privé.",
   "provider_unknown": "Fournisseur inconnu",
   "login_required": "Connexion requise",

@@ -1623,7 +1623,7 @@
   "achievement_not_found": "Это достижение не найдено.",
   "profile_playing_steam": "Играет в {game} в Steam",
   "profile_playing_playstation": "Играет в {game} на PlayStation",
-  "profile_playing_retro": "Недавно играл в {game} на RetroAchievements",
+  "profile_playing_retro": "Играет в {game} на RetroAchievements",
   "profile_not_found": "Этот профиль не найден или закрыт.",
   "provider_unknown": "Неизвестный провайдер",
   "login_required": "Требуется вход",

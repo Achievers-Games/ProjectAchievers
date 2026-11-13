@@ -1539,7 +1539,7 @@
   "achievement_not_found": "この実績は見つかりません。",
   "profile_playing_steam": "Steamで{game}をプレイ中",
   "profile_playing_playstation": "PlayStationで{game}をプレイ中",
-  "profile_playing_retro": "最近RetroAchievementsで{game}をプレイ",
+  "profile_playing_retro": "RetroAchievementsで{game}をプレイ中",
   "profile_not_found": "このプロフィールは見つからないか、非公開です。",
   "provider_unknown": "不明なプロバイダーです",
   "login_required": "ログインが必要です",

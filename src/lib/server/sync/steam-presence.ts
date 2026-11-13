@@ -8,7 +8,11 @@ import { mapLimit } from './errors';
 import { retroGet } from '../providers/retro';
 
 type Game = { name: string; slug: string; platform?: 'PSN' | 'RETRO' };
-const retroCache = new WeakMap<object, { accountId: string; until: number; gameId?: string }>();
+const RETRO_SIGNAL_MAX_AGE = 5 * 60_000;
+const retroCache = new WeakMap<
+  object,
+  { accountId: string; until: number; gameId?: string; expiresAt?: number }
+>();
 type Listener = (game: Game | null) => void;
 const watched = new Map<string, { listeners: Set<Listener>; game?: Game | null }>();
 let timer: ReturnType<typeof setInterval> | undefined;
@@ -137,12 +141,13 @@ async function refresh() {
               !game ||
               !Number.isFinite(playedAt) ||
               playedAt > Date.now() ||
-              Date.now() - playedAt > 600_000
+              Date.now() - playedAt >= RETRO_SIGNAL_MAX_AGE
             )
               return;
             cached.gameId = String(game.GameID);
+            cached.expiresAt = playedAt + RETRO_SIGNAL_MAX_AGE;
           }
-          if (!cached.gameId) return;
+          if (!cached.gameId || !cached.expiresAt || cached.expiresAt <= Date.now()) return;
           const row = await db.userGame.findFirst({
             where: {
               userId: account.userId,

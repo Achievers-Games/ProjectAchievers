@@ -1575,7 +1575,7 @@
   "achievement_not_found": "Esta conquista não foi encontrada.",
   "profile_playing_steam": "Jogando {game} no Steam",
   "profile_playing_playstation": "Jogando {game} no PlayStation",
-  "profile_playing_retro": "Jogou {game} recentemente no RetroAchievements",
+  "profile_playing_retro": "Jogando {game} no RetroAchievements",
   "profile_not_found": "Este perfil não foi encontrado ou é privado.",
   "provider_unknown": "Provedor desconhecido",
   "login_required": "É preciso entrar",
