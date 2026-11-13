@@ -66,9 +66,13 @@
   }
 
   /** Les paramètres de la page voyagent ensemble : révéler les succès cachés garde `avec`. */
-  function gameHref(slug: string, options: { avec?: string | null; caches?: boolean } = {}) {
+  function gameHref(
+    slug: string,
+    options: { avec?: string | null; joueur?: string | null; caches?: boolean } = {},
+  ) {
     // eslint-disable-next-line svelte/prefer-svelte-reactivity -- copie locale, jamais observée
     const search = new URLSearchParams();
+    if (options.joueur) search.set('joueur', options.joueur);
     if (options.avec) search.set('avec', options.avec);
     if (options.caches) search.set('caches', '1');
     const query = search.toString();
@@ -215,7 +219,11 @@
         <p class="flex flex-wrap gap-2 text-sm">
           {#each data.versions as version (version.slug)}
             <a
-              href={gameHref(version.slug, { avec: withHandle, caches: data.revealed })}
+              href={gameHref(version.slug, {
+                avec: withHandle,
+                joueur: data.player?.user.handle,
+                caches: data.revealed,
+              })}
               class="btn h-8"
             >
               {m.version_of({ platform: editionLabel(version) })}
@@ -302,11 +310,61 @@
             {data.progress.unlockedCount} / {data.progress.totalCount} · {formatPercent(
               data.progress.completion,
             )}
+            {#if data.progress.playtimeMinutes > 0}
+              · {m.playtime_hours({ hours: hours(data.progress.playtimeMinutes) })}
+            {/if}
           </p>
         </div>
       {/if}
     </div>
   </header>
+
+  {#if data.player}
+    <section class="card space-y-3 p-3" data-testid="game-player">
+      <div class="flex flex-wrap items-center gap-2">
+        <h2 class="text-base">
+          <a href="/u/{data.player.user.handle}" class="hover:underline">
+            {m.game_player_progress({ name: data.player.user.displayName })}
+          </a>
+        </h2>
+        <div class="ml-auto flex flex-wrap gap-2">
+          {#if data.player.canCompare}
+            <a
+              class="btn h-8"
+              href={gameHref(data.game.slug, {
+                avec: data.player.user.handle,
+                caches: data.revealed,
+              })}
+            >
+              {m.game_player_compare()}
+            </a>
+          {/if}
+          {#if !data.player.self}
+            <a
+              class="btn h-8"
+              href={gameHref(data.game.slug, { caches: data.revealed })}
+              data-sveltekit-reset="false"
+            >
+              {m.game_player_close()}
+            </a>
+          {/if}
+        </div>
+      </div>
+      <div class="max-w-sm space-y-1">
+        <Progress value={data.player.progress.completion} tier={0} />
+        <p class="tabular text-sm text-muted">
+          {data.player.progress.unlockedCount} / {data.player.progress.totalCount} · {formatPercent(
+            data.player.progress.completion,
+          )}
+          {#if data.player.progress.playtimeMinutes > 0}
+            · <span data-testid="game-player-time"
+              >{m.playtime_hours({ hours: hours(data.player.progress.playtimeMinutes) })}</span
+            >
+          {/if}
+        </p>
+      </div>
+    </section>
+  {/if}
 
   {#if data.compare}
     <section class="card space-y-3 p-3" data-testid="compare">

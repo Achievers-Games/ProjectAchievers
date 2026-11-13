@@ -3,6 +3,7 @@ import { copiesFor, copyKey, nextCopy } from '#lib/collection';
 import { db } from '#lib/server/db';
 import { ensureGameTexts } from '#lib/server/achievement-texts';
 import { compareGame, seasonStartedGames, visibleGames } from '#lib/server/queries';
+import { gamePlayer } from '#lib/server/queries/compare';
 import { friendList } from '#lib/server/social';
 import { GUIDE_ORDER, countChecklist, gameGuidesWhere, isBuried } from '#lib/server/guides';
 import { publicUser } from '#lib/server/queries';
@@ -51,7 +52,9 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
   }
 
   mark('game_query');
-  const withHandle = url.searchParams.get('avec')?.trim() || null;
+  // `?joueur=` : la fiche du jeu telle que ce joueur l'a vécue. Elle passe avant `?avec=`.
+  const ofHandle = url.searchParams.get('joueur')?.trim() || null;
+  const withHandle = ofHandle ? null : url.searchParams.get('avec')?.trim() || null;
 
   const viewerId = locals.user?.id;
   const locale = getLocale();
@@ -80,68 +83,80 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
     timings.push(`game_achievements;dur=${Math.round(performance.now() - queryStartedAt)}`);
     return achievements;
   };
-  const [progress, unlocks, players, others, rival, friends, guides, lure, times, achievements] =
-    await Promise.all([
-      locals.user
-        ? db.userGame.findUnique({
-            where: { userId_gameId: { userId: locals.user.id, gameId: game.id } },
-          })
-        : null,
-      locals.user
-        ? db.userAchievement.findMany({
-            where: { userId: locals.user.id, achievement: { gameId: game.id } },
-            select: { achievementId: true, unlockedAt: true },
-          })
-        : [],
-      db.userGame.count({ where: { gameId: game.id, user: { isPublic: true } } }),
-      game.familyKey
-        ? db.game.findMany({
-            where: {
-              familyKey: game.familyKey,
-              NOT: { id: game.id },
-              ...visibleGames(locals.user?.showAdult),
+  const [
+    progress,
+    unlocks,
+    players,
+    others,
+    rival,
+    friends,
+    guides,
+    lure,
+    times,
+    achievements,
+    player,
+  ] = await Promise.all([
+    locals.user
+      ? db.userGame.findUnique({
+          where: { userId_gameId: { userId: locals.user.id, gameId: game.id } },
+        })
+      : null,
+    locals.user
+      ? db.userAchievement.findMany({
+          where: { userId: locals.user.id, achievement: { gameId: game.id } },
+          select: { achievementId: true, unlockedAt: true },
+        })
+      : [],
+    db.userGame.count({ where: { gameId: game.id, user: { isPublic: true } } }),
+    game.familyKey
+      ? db.game.findMany({
+          where: {
+            familyKey: game.familyKey,
+            NOT: { id: game.id },
+            ...visibleGames(locals.user?.showAdult),
+          },
+          select: {
+            id: true,
+            slug: true,
+            platform: true,
+            console: true,
+            tier: true,
+            guideReviewedAt: true,
+            _count: { select: { achievements: { where: { missable: true } } } },
+            players: {
+              where: { userId: locals.user?.id ?? '' },
+              select: { completion: true },
             },
-            select: {
-              id: true,
-              slug: true,
-              platform: true,
-              console: true,
-              tier: true,
-              guideReviewedAt: true,
-              _count: { select: { achievements: { where: { missable: true } } } },
-              players: {
-                where: { userId: locals.user?.id ?? '' },
-                select: { completion: true },
-              },
-            },
-          })
-        : [],
-      locals.user && withHandle
-        ? compareGame({ viewerId: locals.user.id, gameId: game.id, handle: withHandle })
-        : null,
-      locals.user ? friendList(locals.user.id) : [],
-      db.guide.findMany({
-        where: gameGuidesWhere(game),
-        orderBy: GUIDE_ORDER,
-        take: 50,
-        select: {
-          id: true,
-          title: true,
-          contentMd: true,
-          locale: true,
-          score: true,
-          curatedKey: true,
-          createdAt: true,
-          updatedAt: true,
-          author: { select: publicUser },
-          _count: { select: { checks: { where: { userId: viewerId ?? '' } } } },
-        },
-      }),
-      // La fiche Lure du jeu et son temps pour le 100 %, si Lure le connaît : jamais attendu.
-      lureGameFor(game).catch(() => null),
-      completionTimes([game.id]),
-      achievementQuery(),
-    ]);
+          },
+        })
+      : [],
+    locals.user && withHandle
+      ? compareGame({ viewerId: locals.user.id, gameId: game.id, handle: withHandle })
+      : null,
+    locals.user ? friendList(locals.user.id) : [],
+    db.guide.findMany({
+      where: gameGuidesWhere(game),
+      orderBy: GUIDE_ORDER,
+      take: 50,
+      select: {
+        id: true,
+        title: true,
+        contentMd: true,
+        locale: true,
+        score: true,
+        curatedKey: true,
+        createdAt: true,
+        updatedAt: true,
+        author: { select: publicUser },
+        _count: { select: { checks: { where: { userId: viewerId ?? '' } } } },
+      },
+    }),
+    // La fiche Lure du jeu et son temps pour le 100 %, si Lure le connaît : jamais attendu.
+    lureGameFor(game).catch(() => null),
+    completionTimes([game.id]),
+    achievementQuery(),
+    ofHandle ? gamePlayer({ viewerId: viewerId ?? null, gameId: game.id, handle: ofHandle }) : null,
+  ]);
 
   // Seuls les amis qui possèdent cette version ont quelque chose à comparer.
   mark('game_related');
@@ -162,7 +177,11 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
       : [],
   );
 
-  const unlockedAt = new Map(unlocks.map((u) => [u.achievementId, u.unlockedAt]));
+  const mine = new Map(unlocks.map((u) => [u.achievementId, u.unlockedAt]));
+  // Les dates affichées sont celles du joueur regardé, sinon celles du visiteur.
+  const unlockedAt = player
+    ? new Map(player.unlocks.map((u) => [u.achievementId, u.unlockedAt]))
+    : mine;
 
   const owned = [
     ...(progress
@@ -196,8 +215,9 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
   const rows = achievements.map((a) => {
     const [translation] = a.translations;
     const unlocked = unlockedAt.get(a.id) ?? null;
-    // Un succès caché reste masqué tant que le joueur ne l'a pas obtenu ou demandé à le voir.
-    const secret = a.hidden && !unlocked;
+    // Un succès caché reste masqué tant que le visiteur ne l'a pas obtenu ou demandé à le voir :
+    // regarder la fiche d'un autre ne dévoile pas ce qu'il a trouvé.
+    const secret = a.hidden && !(player && !player.self ? mine.get(a.id) : unlocked);
     const masked = secret && !revealed;
     return {
       id: a.id,
@@ -285,6 +305,13 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
       : null,
     friends: friends.filter((friend) => owning.has(friend.id)),
     revealed,
+    player: player && {
+      user: player.user,
+      self: player.self,
+      progress: player.progress,
+      // Comparer n'a de sens que si le visiteur possède aussi cette version.
+      canCompare: Boolean(progress && !player.self),
+    },
     missables: missablesOf({ guideReviewedAt: game.guideReviewedAt, achievements }, others),
     progress,
     season,

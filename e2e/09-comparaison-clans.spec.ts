@@ -7,10 +7,17 @@ test.describe('comparaison par jeu', () => {
     await page.goto('/u/lea');
     await ready(page);
 
-    // La carte du jeu mène à la version avec `?avec=`, quand les deux la possèdent.
-    const card = page.locator('a[href^="/jeux/"][href*="avec=lea"]').first();
+    // La carte du jeu ouvre la fiche telle que ce joueur l'a faite : sa progression à lui.
+    const card = page.locator('a[href^="/jeux/"][href*="joueur=lea"]').first();
     await expect(card).toBeVisible();
     await card.click();
+    await expect(page).toHaveURL(/\/jeux\/[^?]+\?joueur=lea/);
+    await ready(page);
+    const theirs = page.getByTestId('game-player');
+    await expect(theirs.getByRole('heading', { level: 2 })).toContainText('Progression de');
+
+    // De là, la comparaison s'ouvre quand je possède aussi cette version.
+    await theirs.getByRole('link', { name: 'Comparer avec moi' }).click();
     await expect(page).toHaveURL(/\/jeux\/[^?]+\?avec=lea/);
     await ready(page);
 

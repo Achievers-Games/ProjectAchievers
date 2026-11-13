@@ -2,6 +2,58 @@ import { db } from '../db';
 import { isBlocked, personSelect } from '../social/shared';
 
 /**
+ * Ce qu'un joueur a fait d'un jeu, pour le montrer sur la fiche du jeu : ses succès, sa
+ * progression, son temps de jeu. Un profil privé, un blocage ou un jeu caché rendent `null`,
+ * sans dire lequel ; chacun peut toujours regarder sa propre fiche.
+ */
+export async function gamePlayer({
+  viewerId,
+  gameId,
+  handle,
+}: {
+  viewerId: string | null;
+  gameId: string;
+  handle: string;
+}) {
+  const user = await db.user.findUnique({
+    where: { handle: handle.trim().toLowerCase() },
+    select: { ...personSelect, isPublic: true },
+  });
+  if (!user) return null;
+  const self = user.id === viewerId;
+  if (!self && !user.isPublic) return null;
+  if (!self && viewerId && (await isBlocked(viewerId, user.id))) return null;
+
+  const progress = await db.userGame.findUnique({
+    where: { userId_gameId: { userId: user.id, gameId } },
+    select: {
+      unlockedCount: true,
+      totalCount: true,
+      completion: true,
+      playtimeMinutes: true,
+      hidden: true,
+    },
+  });
+  if (!progress || (progress.hidden && !self)) return null;
+
+  const unlocks = await db.userAchievement.findMany({
+    where: { userId: user.id, achievement: { gameId } },
+    select: { achievementId: true, unlockedAt: true },
+  });
+  return {
+    user: { ...user, isPublic: undefined },
+    self,
+    progress: {
+      unlockedCount: progress.unlockedCount,
+      totalCount: progress.totalCount,
+      completion: progress.completion,
+      playtimeMinutes: progress.playtimeMinutes,
+    },
+    unlocks,
+  };
+}
+
+/**
  * La comparaison porte sur une version précise du jeu : les identifiants de succès changent
  * d'une version à l'autre, donc seule la même ligne `Game` se compare vraiment.
  */

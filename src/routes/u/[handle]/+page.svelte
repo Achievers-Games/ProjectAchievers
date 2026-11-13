@@ -13,7 +13,7 @@
   import ProviderIcon from '#lib/components/ProviderIcon.svelte';
   import TrophyBadge from '#lib/components/TrophyBadge.svelte';
   import StatGrid from '#lib/components/StatGrid.svelte';
-  import { formatDate, formatRelative, PROVIDER_LABELS } from '#lib/labels';
+  import { formatDate, formatNumber, formatRelative, PROVIDER_LABELS } from '#lib/labels';
   import { toast } from '#lib/stores/toast';
   import { SITE_TOTAL } from '#lib/site-achievements';
 
@@ -51,11 +51,10 @@
     profile.user.isPublic ? `/u/${profile.user.handle}/partage.png` : profile.user.avatarUrl,
   );
 
-  /** Sur une version que je possède, la carte ouvre directement la comparaison avec ce joueur. */
-  const gameHref = (card: { id: string; slug: string }) =>
-    data.compareIds.includes(card.id)
-      ? `/jeux/${card.slug}?avec=${profile.user.handle}`
-      : undefined;
+  /** Depuis un profil, une carte ouvre le jeu tel que ce joueur l'a fait : ses succès, son temps. */
+  const gameHref = (card: { slug: string }) =>
+    isMe ? undefined : `/jeux/${card.slug}?joueur=${profile.user.handle}`;
+  const playedHours = $derived(Math.round(profile.stats.playtimeMinutes / 60));
   /** Le lien de l'image, prêt à coller sur un forum, Lure ou un README. */
   async function shareCard() {
     // Le PNG s’affiche partout, Discord compris ; le SVG reste servi pour qui le préfère.
@@ -126,6 +125,11 @@
       {/if}
       <p class="text-muted">
         {m.member_since({ date: formatDate(profile.user.createdAt) })}
+        {#if playedHours > 0}
+          · <span data-testid="profile-playtime"
+            >{m.playtime_hours({ hours: formatNumber(playedHours) })}</span
+          >
+        {/if}
         {#if !profile.user.isPublic}· {m.private_profile()}{/if}
         {#if profile.user.clanMember}
           ·

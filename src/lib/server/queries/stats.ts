@@ -129,7 +129,7 @@ export async function seasonStats(season: Season) {
 }
 
 export async function userStats(userId: string) {
-  const [collection, unlocked] = await Promise.all([
+  const [collection, unlocked, played] = await Promise.all([
     db.$queryRaw<(TierCounts & { games: bigint })[]>`
       SELECT count(*) AS games,
              count(*) FILTER (WHERE tier = 1) AS t1,
@@ -146,6 +146,8 @@ export async function userStats(userId: string) {
         GROUP BY COALESCE(g."familyKey", g.id)
       ) families`,
     db.userAchievement.count({ where: { userId } }),
+    // Toutes plateformes confondues ; un jeu caché par le joueur ne compte pas.
+    db.userGame.aggregate({ where: { userId, hidden: false }, _sum: { playtimeMinutes: true } }),
   ]);
   const tiers = tierCounts(collection[0]);
   return {
@@ -153,5 +155,6 @@ export async function userStats(userId: string) {
     tiers,
     unlocked,
     points: cardScore(tiers),
+    playtimeMinutes: played._sum.playtimeMinutes ?? 0,
   };
 }
