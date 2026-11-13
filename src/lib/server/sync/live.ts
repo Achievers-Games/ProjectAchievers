@@ -1,20 +1,24 @@
 import { db } from '../db';
-import { backgroundWork } from '../workload';
+import { WorkScheduler } from '../workload';
 import { globals } from '../globals';
 import { logger } from '#lib/logger';
 import { availableProviders } from '../providers';
 import { fetchPlayingGames } from '../providers/steam';
 import { connectedUsers } from './events';
 import { runLiveGame } from './queue';
+import { mapLimit } from './errors';
 import { fetchRecentGames, type OwnedGame } from './steam';
 
 /** Steam n'envoie aucune notification : seuls les joueurs présents sur le site sont surveillés. */
 const INTERVAL = 10_000;
 const STEAM_BATCH = 100;
+const LIVE_CONCURRENCY = 2;
 /** Un succès peut tomber après la fermeture du jeu : on relit les jeux récents, sans harceler Steam. */
 const CATCH_UP = 3 * 60_000;
 const CATCH_UP_GAMES = 5;
 const log = logger('Succès en direct');
+// Les imports complets peuvent occuper le budget général pendant plusieurs minutes.
+const liveWork = new WorkScheduler(1);
 
 /** Le dernier jeu vu : il est relu une dernière fois après sa fermeture. */
 const lastGames = new Map<string, string>();
@@ -89,14 +93,22 @@ export async function checkLiveGames() {
     for (const [steamId, appId] of games) playing.set(steamId, appId);
   }
 
-  for (const { userId, providerUserId: steamId } of accounts) {
-    const appId = playing.get(steamId) ?? lastGames.get(steamId);
+  const checks = accounts.map(({ userId, providerUserId: steamId }) => ({
+    userId,
+    steamId,
+    appId: playing.get(steamId) ?? lastGames.get(steamId),
+  }));
+  // Vérifier les jeux actifs avant de relire l'historique des autres joueurs.
+  await mapLimit(checks, LIVE_CONCURRENCY, async ({ userId, steamId, appId }) => {
     if (appId) await runLiveGame(userId, steamId, appId).catch((cause) => log.error(cause));
-    await catchUpRecent(userId, steamId, appId).catch((cause) => log.error(cause));
-  }
+  });
 
   lastGames.clear();
   for (const [steamId, appId] of playing) lastGames.set(steamId, appId);
+
+  await mapLimit(checks, LIVE_CONCURRENCY, async ({ userId, steamId, appId }) => {
+    await catchUpRecent(userId, steamId, appId).catch((cause) => log.error(cause));
+  });
 
   // Un joueur qui ferme sa page ne doit pas laisser son horodatage en mémoire.
   const connected = new Set(accounts.map((account) => account.userId));
@@ -112,7 +124,7 @@ async function tick() {
   if (checking) return;
   checking = true;
   try {
-    await backgroundWork('Steam en direct', () => checkLiveGames());
+    await liveWork.run('Steam en direct', checkLiveGames);
   } catch (cause) {
     log.error(cause);
   } finally {

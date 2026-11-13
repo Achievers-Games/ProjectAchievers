@@ -22,7 +22,7 @@ import { fillWowCatalog, syncBlizzard } from './blizzard';
 import { rateGames, tagGames } from './content';
 import { refreshDiscordAccounts } from './discord';
 import { SyncError } from './errors';
-import { publishCard, publishHighlight, publishSync, publishUnlock } from './events';
+import { publishCard, publishChat, publishHighlight, publishSync, publishUnlock } from './events';
 import { deliverPartnerWebhooks } from '../partner-webhooks';
 import { grantFramesThrottled } from '../frames';
 import { checkSiteAchievements, reviewNewPlayers } from '../site-achievements';
@@ -322,6 +322,14 @@ export async function runLiveGame(
   if (gained === 0) return 0;
   invalidatePublicCache();
 
+  const achievements = fresh.slice(0, MAX_POPS).map(({ id, name, iconUrl }) => ({
+    id,
+    title: name,
+    icon: iconUrl,
+    game: owned.game.name,
+  }));
+  if (achievements.length) publishChat(userId, { type: 'unlocks', achievements });
+
   const user = await syncUser(userId);
   if (!owned.hidden) announceUnlock(user, userId, owned.game, gained);
   const rewards = await announceCards(user, userId, before);
@@ -332,12 +340,7 @@ export async function runLiveGame(
     total: 1,
     achievements: gained,
     // Le joueur a la page ouverte : chaque succès s'y fête tout de suite, sans rechargement.
-    unlocks: fresh.slice(0, MAX_POPS).map(({ id, name, iconUrl }) => ({
-      id,
-      title: name,
-      icon: iconUrl,
-      game: owned.game.name,
-    })),
+    unlocks: achievements,
     quiet: true,
     rewards: rewards.slice(0, MAX_REWARDS),
     moreRewards: Math.max(0, rewards.length - MAX_REWARDS),
