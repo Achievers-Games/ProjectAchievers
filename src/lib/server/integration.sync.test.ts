@@ -551,6 +551,7 @@ describe('synchronisation Steam', () => {
       data: { storeSweptAt: new Date() },
     });
     const userId = await steamUser();
+    await db.linkedAccount.updateMany({ where: { userId }, data: { playtimeHidden: true } });
 
     expect(await sweepSteamStore()).toBe(1);
     expect(await db.userGame.count({ where: { userId } })).toBe(1);
@@ -582,6 +583,7 @@ describe('synchronisation Steam', () => {
       data: { storeSweptAt: new Date() },
     });
     const userId = await steamUser();
+    await db.linkedAccount.updateMany({ where: { userId }, data: { playtimeHidden: true } });
     const events: string[] = [];
     const api = sharedGameApi();
     vi.stubGlobal('fetch', async (input: string | URL) => {

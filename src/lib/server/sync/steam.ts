@@ -516,11 +516,15 @@ export async function requestStoreSweep(userId: string) {
   });
 }
 
-/** Rattrape les jeux qu'aucune recherche rapide ne voit, un compte à la fois. */
+/**
+ * Rattrape les jeux qu'aucune recherche rapide ne voit, un compte à la fois. Seuls les comptes
+ * au temps de jeu privé en ont : pour les autres, la bibliothèque dit déjà tout.
+ */
 export async function sweepSteamStore() {
   const account = await db.linkedAccount.findFirst({
     where: {
       provider: 'STEAM',
+      playtimeHidden: true,
       syncStatus: { notIn: ['QUEUED', 'SYNCING'] },
       OR: [
         { storeSweptAt: null },
@@ -657,11 +661,19 @@ export const syncSteam: ProviderSync = async ({
   const library = new Set(owned.map((game) => game.appid));
   const recentGames = await fetchRecentGames(steamId).catch(() => []);
   const activeAppId = (await fetchPlayingGames([steamId]).catch(() => null))?.get(steamId);
+  // Steam ne liste un jeu gratuit que s'il le sait « joué », et il en juge au temps de jeu. Un
+  // joueur qui garde ce temps privé a donc des succès sur des jeux absents de sa bibliothèque ;
+  // les autres n'en ont aucun (vérifié sur tous les comptes du site : 0 jeu manquant sur 10
+  // comptes publics, 6 à 28 sur chacun des 4 comptes privés). La recherche hors bibliothèque ne
+  // sert qu'aux premiers.
+  const playtimePrivate = everything.every((game) => !game.playtime_forever);
   // Une méthode non documentée peut disparaître : la bibliothèque reste synchronisée.
-  const shared = await findSharedGames({ userId, account }, library, recentGames).catch((cause) => {
-    log.error('Jeux partagés Steam :', cause);
-    return [];
-  });
+  const shared = playtimePrivate
+    ? await findSharedGames({ userId, account }, library, recentGames).catch((cause) => {
+        log.error('Jeux hors bibliothèque Steam :', cause);
+        return [];
+      })
+    : [];
 
   const previous = await db.userGame.findMany({
     where: { userId, game: { platform: 'STEAM' } },
