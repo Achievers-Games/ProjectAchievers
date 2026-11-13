@@ -585,12 +585,7 @@ async function sweepStoreFor(
   return found;
 }
 
-export const syncSteam: ProviderSync = async ({
-  userId,
-  account,
-  report,
-  onUnlocked,
-}) => {
+export const syncSteam: ProviderSync = async ({ userId, account, report, onUnlocked }) => {
   const steamId = account.providerUserId;
   const owned = (await fetchOwnedGames(steamId)).filter((g) => g.has_community_visible_stats);
   const library = new Set(owned.map((game) => game.appid));
@@ -633,12 +628,7 @@ export const syncSteam: ProviderSync = async ({
       const checkedAt = known?.achievementsCheckedAt?.getTime();
       const checkedRecently =
         checkedAt !== undefined && Date.now() - checkedAt < ACHIEVEMENT_RECHECK;
-      if (
-        !borrowed &&
-        known &&
-        checkedRecently &&
-        unchangedSince(known, playedAt, minutes, recent)
-      )
+      if (!borrowed && known && checkedRecently && unchangedSince(known, playedAt, minutes, recent))
         return;
 
       const { game, gained } = await syncSteamGame(userId, steamId, ownedGame, borrowed);
