@@ -470,16 +470,9 @@ export const syncSteam: ProviderSync = async ({
   const knownProgress = new Map(previous.map((row) => [row.game.platformGameId, row]));
 
   // La bibliothèque fait foi : jeux possédés, partagés en famille, gratuits lancés. Steam ne
-  // cache des jeux qu'à un joueur dont le temps de jeu est privé (ses jeux gratuits) ; le site le
-  // lui dit sur sa page de compte, au lieu de fouiller Steam pour les retrouver. Les jeux déjà
-  // connus hors bibliothèque restent suivis : leur décompte part dans le même appel.
-  const listed = new Set(owned.map((game) => game.appid));
-  const lingering: OwnedGame[] = previous.flatMap(({ game }) =>
-    listed.has(Number(game.platformGameId))
-      ? []
-      : [{ appid: Number(game.platformGameId), name: game.name }],
-  );
-  const items: OwnedGame[] = [...owned, ...lingering];
+  // cache des jeux qu'à un joueur dont le temps de jeu est privé (ses jeux gratuits) : le site le
+  // lui dit sur sa page de compte, et ne suit plus ce que Steam ne liste pas.
+  const items = owned;
 
   // Une méthode non documentée peut disparaître : sans elle, la règle des 24 heures reprend.
   const counts = await achievementCounts(

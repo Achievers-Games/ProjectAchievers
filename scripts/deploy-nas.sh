@@ -17,8 +17,14 @@ if [ "$REF" = HEAD ] && [ -n "$(git status --porcelain)" ]; then
   exit 1
 fi
 
+SSH=(ssh -i "$KEY" -o BatchMode=yes -o IdentitiesOnly=yes -o ServerAliveInterval=30)
+# Hors du réseau local : NAS_HOST=BasicRem@ssh.achievers.games passe par le tunnel Cloudflare.
+if [[ "$HOST" == *ssh.achievers.games ]]; then
+  SSH+=(-o "ProxyCommand=cloudflared access ssh --hostname %h")
+fi
+
 nas() {
-  ssh -i "$KEY" -o BatchMode=yes -o IdentitiesOnly=yes -o ServerAliveInterval=30 "$HOST" "$@"
+  "${SSH[@]}" "$HOST" "$@"
 }
 
 # QTS n'offre pas de dossier personnel utilisable par Docker Compose en SSH.
