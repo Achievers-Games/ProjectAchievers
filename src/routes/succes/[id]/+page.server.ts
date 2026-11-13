@@ -31,7 +31,14 @@ const log = logger('Traduction');
 const forViewer = (user: App.Locals['user']) => (text: string, locale: string | null) =>
   user?.allowProfanity ? text : censor(text, locale);
 
-export const load: PageServerLoad = async ({ params, locals, url, depends }) => {
+export const load: PageServerLoad = async ({ params, locals, url, depends, setHeaders }) => {
+  const timings: string[] = [];
+  let startedAt = performance.now();
+  const mark = (metric: string) => {
+    const now = performance.now();
+    timings.push(`${metric};dur=${Math.round(now - startedAt)}`);
+    startedAt = now;
+  };
   depends('app:sync');
   const viewerId = locals.user?.id;
   const clean = forViewer(locals.user);
@@ -56,9 +63,11 @@ export const load: PageServerLoad = async ({ params, locals, url, depends }) => 
     error(404, m.achievement_not_found());
   }
 
+  mark('achievement_query');
   const locale = getLocale();
   await ensureGameTexts(achievement.game, locale);
   const [text = achievement] = await localizeAchievements([achievement], locale);
+  mark('achievement_texts');
   const translations = { where: { locale }, select: { contentMd: true }, take: 1 };
 
   /** Traduit d'office ce qui vient d'une autre langue : les textes anciens gardent le bouton seul. */
@@ -96,10 +105,12 @@ export const load: PageServerLoad = async ({ params, locals, url, depends }) => 
     db.userAchievement.count({ where: { achievementId: params.id, user: { isPublic: true } } }),
   ]);
 
+  mark('achievement_related');
   const unlock = achievement.unlocks?.[0]?.unlockedAt ?? null;
   const secret = achievement.hidden && !unlock;
   const masked = secret && !revealed;
 
+  setHeaders({ 'Server-Timing': timings.join(', ') });
   return {
     secret,
     revealed,

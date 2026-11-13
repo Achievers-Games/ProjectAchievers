@@ -33,7 +33,14 @@ function missablesOf(
   return count ? { count, elsewhere: null, partial: true } : null;
 }
 
-export const load: PageServerLoad = async ({ params, locals, url, depends }) => {
+export const load: PageServerLoad = async ({ params, locals, url, depends, setHeaders }) => {
+  const timings: string[] = [];
+  let startedAt = performance.now();
+  const mark = (metric: string) => {
+    const now = performance.now();
+    timings.push(`${metric};dur=${Math.round(now - startedAt)}`);
+    startedAt = now;
+  };
   depends('app:sync');
   const revealed = url.searchParams.has('caches');
   const game = await db.game.findUnique({
@@ -49,6 +56,7 @@ export const load: PageServerLoad = async ({ params, locals, url, depends }) => 
     error(404, m.game_not_found());
   }
 
+  mark('game_query');
   const withHandle = url.searchParams.get('avec')?.trim() || null;
 
   const viewerId = locals.user?.id;
@@ -115,6 +123,7 @@ export const load: PageServerLoad = async ({ params, locals, url, depends }) => 
     ]);
 
   // Seuls les amis qui possèdent cette version ont quelque chose à comparer.
+  mark('game_related');
   const owning = new Set(
     locals.user && friends.length
       ? (
@@ -153,7 +162,9 @@ export const load: PageServerLoad = async ({ params, locals, url, depends }) => 
   const finished = owned.filter((version) => version.completion >= 100);
 
   const state = seasonState(SEASON);
+  mark('game_ownership');
   const started = locals.user ? await seasonStartedGames(locals.user.id) : new Set<string>();
+  mark('game_season');
   const unfinished = !progress || owned.some((version) => version.completion < 100);
   const counts = owned.some((version) => version.completion < 100 && started.has(version.id));
   const season =
@@ -165,6 +176,7 @@ export const load: PageServerLoad = async ({ params, locals, url, depends }) => 
   await ensureGameTexts(game, locale);
   const achievements = await localizeAchievements(game.achievements, locale);
 
+  mark('game_texts');
   const rows = achievements.map((a) => {
     const unlocked = unlockedAt.get(a.id) ?? null;
     // Un succès caché reste masqué tant que le joueur ne l'a pas obtenu ou demandé à le voir.
@@ -189,6 +201,7 @@ export const load: PageServerLoad = async ({ params, locals, url, depends }) => 
   const clean = (text: string, from: string | null) =>
     locals.user?.allowProfanity ? text : censor(text, from);
 
+  setHeaders({ 'Server-Timing': timings.join(', ') });
   return {
     game: { ...game, achievements: undefined },
     // Les guides complets du jeu : on les lit sur leur propre page, ici seulement la liste.
