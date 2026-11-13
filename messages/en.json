@@ -1843,6 +1843,7 @@
   "game_seo_no_missables": "No missable achievements.",
   "game_seo_time": "About {hours} h to 100%.",
   "playtime_hours": "{hours} h played",
+  "playtime_private": "Playtime: private",
   "game_player_progress": "{name}'s progress",
   "game_player_compare": "Compare with me",
   "game_player_close": "Back to my view",

@@ -55,6 +55,10 @@
   const gameHref = (card: { slug: string }) =>
     isMe ? undefined : `/jeux/${card.slug}?joueur=${profile.user.handle}`;
   const playedHours = $derived(Math.round(profile.stats.playtimeMinutes / 60));
+  /** Steam est la seule source de temps de jeu : s'il le garde privé, il n'y a rien à additionner. */
+  const playtimePrivate = $derived(
+    playedHours === 0 && profile.user.accounts.some((account) => account.playtimeHidden),
+  );
   /** Le lien de l'image, prêt à coller sur un forum, Lure ou un README. */
   async function shareCard() {
     // Le PNG s’affiche partout, Discord compris ; le SVG reste servi pour qui le préfère.
@@ -125,7 +129,9 @@
       {/if}
       <p class="text-muted">
         {m.member_since({ date: formatDate(profile.user.createdAt) })}
-        {#if playedHours > 0}
+        {#if playtimePrivate}
+          · <span data-testid="profile-playtime">{m.playtime_private()}</span>
+        {:else if playedHours > 0}
           · <span data-testid="profile-playtime"
             >{m.playtime_hours({ hours: formatNumber(playedHours) })}</span
           >

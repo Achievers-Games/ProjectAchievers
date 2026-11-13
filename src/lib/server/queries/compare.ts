@@ -17,7 +17,11 @@ export async function gamePlayer({
 }) {
   const user = await db.user.findUnique({
     where: { handle: handle.trim().toLowerCase() },
-    select: { ...personSelect, isPublic: true },
+    select: {
+      ...personSelect,
+      isPublic: true,
+      accounts: { where: { provider: 'STEAM' }, select: { playtimeHidden: true } },
+    },
   });
   if (!user) return null;
   const self = user.id === viewerId;
@@ -41,8 +45,10 @@ export async function gamePlayer({
     select: { achievementId: true, unlockedAt: true },
   });
   return {
-    user: { ...user, isPublic: undefined },
+    user: { ...user, isPublic: undefined, accounts: undefined },
     self,
+    /** Vrai quand Steam ne donne aucun temps de jeu pour ce joueur. */
+    steamPlaytimeHidden: user.accounts.some((account) => account.playtimeHidden),
     progress: {
       unlockedCount: progress.unlockedCount,
       totalCount: progress.totalCount,

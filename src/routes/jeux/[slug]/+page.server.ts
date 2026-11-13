@@ -309,6 +309,7 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
       user: player.user,
       self: player.self,
       progress: player.progress,
+      playtimePrivate: game.platform === 'STEAM' && player.steamPlaytimeHidden,
       // Comparer n'a de sens que si le visiteur possède aussi cette version.
       canCompare: Boolean(progress && !player.self),
     },

@@ -356,7 +356,9 @@
           {data.player.progress.unlockedCount} / {data.player.progress.totalCount} · {formatPercent(
             data.player.progress.completion,
           )}
-          {#if data.player.progress.playtimeMinutes > 0}
+          {#if data.player.playtimePrivate}
+            · <span data-testid="game-player-time">{m.playtime_private()}</span>
+          {:else if data.player.progress.playtimeMinutes > 0}
             · <span data-testid="game-player-time"
               >{m.playtime_hours({ hours: hours(data.player.progress.playtimeMinutes) })}</span
             >

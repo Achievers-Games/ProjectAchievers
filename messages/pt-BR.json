@@ -1843,6 +1843,7 @@
   "game_seo_no_missables": "Nenhuma conquista perdível.",
   "game_seo_time": "Cerca de {hours} h para os 100%.",
   "playtime_hours": "{hours} h jogadas",
+  "playtime_private": "Tempo de jogo: privado",
   "game_player_progress": "Progresso de {name}",
   "game_player_compare": "Comparar comigo",
   "game_player_close": "Voltar à minha ficha",

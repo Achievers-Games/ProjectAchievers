@@ -44,7 +44,7 @@ export async function userProfile(handle: string, viewerId: string | null, showA
       clanMember: { select: { clan: { select: { name: true, slug: true } } } },
       accounts: {
         where: { provider: { notIn: ['DISCORD', 'GOOGLE'] } },
-        select: { provider: true, displayName: true, profileUrl: true },
+        select: { provider: true, displayName: true, profileUrl: true, playtimeHidden: true },
       },
     },
   });

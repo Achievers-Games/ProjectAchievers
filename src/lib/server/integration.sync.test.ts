@@ -257,6 +257,30 @@ describe('synchronisation Steam', () => {
     expect(progress.game.achievements.find((a) => a.name === 'Alpha')?.globalRarity).toBe(42.5);
   });
 
+  it('reconnaît un temps de jeu gardé privé et efface celui qui ne vient pas du joueur', async () => {
+    const [game] = ownedGames.response.games;
+    const silent = { response: { games: [{ ...game, playtime_forever: 0 }] } };
+    vi.stubGlobal('fetch', steamApi(silent));
+    const userId = await steamUser();
+    await runSync({ userId, provider: 'STEAM' });
+    // Un temps repris d'ailleurs, comme celui de la bibliothèque d'un ami sur un jeu emprunté.
+    await db.userGame.updateMany({ where: { userId }, data: { playtimeMinutes: 1176 } });
+
+    await runSync({ userId, provider: 'STEAM' });
+    expect((await db.linkedAccount.findFirstOrThrow({ where: { userId } })).playtimeHidden).toBe(
+      true,
+    );
+    expect((await db.userGame.findFirstOrThrow({ where: { userId } })).playtimeMinutes).toBe(0);
+
+    // Le joueur rend son temps public : le site le reprend, et le réglage est oublié.
+    vi.stubGlobal('fetch', steamApi(ownedGames));
+    await runSync({ userId, provider: 'STEAM' });
+    expect((await db.linkedAccount.findFirstOrThrow({ where: { userId } })).playtimeHidden).toBe(
+      false,
+    );
+    expect((await db.userGame.findFirstOrThrow({ where: { userId } })).playtimeMinutes).toBe(90);
+  });
+
   it('date aussi à leur déblocage les succès laissés par un premier import interrompu', async () => {
     vi.stubGlobal('fetch', steamApi(ownedGames));
     const userId = await steamUser();

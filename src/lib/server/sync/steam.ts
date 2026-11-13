@@ -585,9 +585,39 @@ async function sweepStoreFor(
   return found;
 }
 
+/**
+ * Steam ne dit pas qu'un joueur garde son temps de jeu privé : il renvoie simplement zéro
+ * partout. Une bibliothèque entière à zéro, chez quelqu'un qui y a pourtant des succès, ne peut
+ * être que ce réglage. Les temps déjà enregistrés ne sont alors pas les siens (un jeu emprunté
+ * a pu reprendre celui d'un ami) : ils sont effacés.
+ */
+async function notePlaytimePrivacy(
+  userId: string,
+  account: { id: string; playtimeHidden: boolean },
+  games: OwnedGame[],
+) {
+  const silent = games.length > 0 && games.every((game) => !game.playtime_forever);
+  const hidden =
+    silent &&
+    (await db.userAchievement.count({
+      where: { userId, achievement: { game: { platform: 'STEAM' } } },
+      take: 1,
+    })) > 0;
+  if (hidden) {
+    await db.userGame.updateMany({
+      where: { userId, playtimeMinutes: { gt: 0 }, game: { platform: 'STEAM' } },
+      data: { playtimeMinutes: 0 },
+    });
+  }
+  if (hidden !== account.playtimeHidden) {
+    await db.linkedAccount.update({ where: { id: account.id }, data: { playtimeHidden: hidden } });
+  }
+}
+
 export const syncSteam: ProviderSync = async ({ userId, account, report, onUnlocked }) => {
   const steamId = account.providerUserId;
-  const owned = (await fetchOwnedGames(steamId)).filter((g) => g.has_community_visible_stats);
+  const everything = await fetchOwnedGames(steamId);
+  const owned = everything.filter((g) => g.has_community_visible_stats);
   const library = new Set(owned.map((game) => game.appid));
   const recentGames = await fetchRecentGames(steamId).catch(() => []);
   const recentlyPlayed = new Set(recentGames.map((game) => String(game.appid)));
@@ -636,6 +666,8 @@ export const syncSteam: ProviderSync = async ({ userId, account, report, onUnloc
       if (gained > 0) onUnlocked(game, gained);
     },
   );
+
+  await notePlaytimePrivacy(userId, account, everything);
 
   // Le joueur a pu changer d'avatar ou de cadre sur Steam depuis sa dernière connexion.
   const identity = await fetchSteamIdentity(steamId).catch(() => null);
