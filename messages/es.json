@@ -1845,6 +1845,7 @@
   "game_seo_no_missables": "Ningún logro perdible.",
   "game_seo_time": "Unas {hours} h para el 100 %.",
   "playtime_hours": "{hours} h jugadas",
+  "playtime_total": "Total · {time}",
   "playtime_private": "Tiempo de juego: privado",
   "playtime_launch": "Steam no comparte tu tiempo en este juego: ábrelo para que el sitio lo recupere.",
   "game_player_progress": "Progreso de {name}",

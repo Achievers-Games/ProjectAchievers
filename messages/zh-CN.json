@@ -1808,6 +1808,7 @@
   "game_seo_no_missables": "没有可错过的成就。",
   "game_seo_time": "100% 约需 {hours} 小时。",
   "playtime_hours": "已游玩 {hours} 小时",
+  "playtime_total": "总计 · {time}",
   "playtime_private": "游玩时间：未公开",
   "playtime_launch": "Steam 未提供你在此游戏中的游玩时间：启动游戏后，网站即可获取。",
   "game_player_progress": "{name} 的进度",

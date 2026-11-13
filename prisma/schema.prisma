@@ -555,6 +555,8 @@ model UserGame {
   completion            Float     @default(0)
   platinum              Boolean   @default(false)
   playtimeMinutes       Int       @default(0)
+  ps4PlaytimeMinutes    Int       @default(0)
+  ps5PlaytimeMinutes    Int       @default(0)
   lastPlayedAt          DateTime?
   /// Dernière lecture réussie des succès chez le fournisseur, distincte du temps de jeu.
   achievementsCheckedAt DateTime?

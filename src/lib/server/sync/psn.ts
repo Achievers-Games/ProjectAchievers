@@ -1,11 +1,14 @@
 import {
   getTitleTrophies,
+  getUserPlayedGames,
+  getUserTrophiesForSpecificTitle,
   getUserTitles,
   getUserTrophiesEarnedForTitle,
   type TrophyTitle,
 } from 'psn-api';
 import type { TrophyType } from '#prisma';
 import { psnConsole } from '#lib/collection';
+import { logger } from '#lib/logger';
 import type { Locale } from '#lib/paraglide/runtime';
 import { db } from '../db';
 import { env } from '../env';
@@ -21,6 +24,78 @@ import {
 import type { ProviderSync } from './types';
 
 const PAGE = 800;
+const log = logger('PlayStation');
+
+async function syncPsnPlaytime(userId: string, accountId: string, titles: TrophyTitle[]) {
+  const authorization = await psnAuthorization();
+  const trophyIds = new Set(titles.map((title) => title.npCommunicationId));
+  const played = new Map<string, number>();
+  const limit = 100;
+  for (let offset = 0; ;) {
+    const page = await getUserPlayedGames(authorization, accountId, {
+      categories: 'ps4_game,ps5_native_game',
+      limit,
+      offset,
+    });
+    assertPsnResponse(page);
+    for (const { titleId, playDuration } of page.titles) {
+      if (!/^(?:CUSA|PPSA)\d+(?:_\d+)?$/u.test(titleId)) continue;
+      const duration = /^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?$/u.exec(playDuration);
+      if (!duration || !duration.slice(1).some(Boolean)) continue;
+      const seconds =
+        Number(duration[1] ?? 0) * 3600 + Number(duration[2] ?? 0) * 60 + Number(duration[3] ?? 0);
+      if (Number.isFinite(seconds))
+        played.set(titleId, Math.max(played.get(titleId) ?? 0, seconds));
+    }
+    const next = page.nextOffset ?? offset + page.titles.length;
+    if (next <= offset || next >= page.totalItemCount || !page.titles.length) break;
+    offset = next;
+  }
+
+  const totals = new Map<string, { ps4: number; ps5: number }>();
+  const ids = [...played.keys()];
+  for (let offset = 0; offset < ids.length; offset += 5) {
+    const batch = ids.slice(offset, offset + 5);
+    const response = await getUserTrophiesForSpecificTitle(authorization, accountId, {
+      npTitleIds: batch.join(','),
+    });
+    assertPsnResponse(response);
+    for (const titleId of batch) {
+      const matches = new Set(
+        response.titles
+          .filter((title) => title.npTitleId === titleId)
+          .flatMap((title) => (title.trophyTitles ?? []).map((trophy) => trophy.npCommunicationId))
+          .filter((id) => trophyIds.has(id)),
+      );
+      if (matches.size !== 1) continue;
+      const [id] = matches;
+      if (!id) continue;
+      const total = totals.get(id) ?? { ps4: 0, ps5: 0 };
+      const console = titleId.startsWith('CUSA') ? 'ps4' : 'ps5';
+      total[console] += played.get(titleId) ?? 0;
+      totals.set(id, total);
+    }
+  }
+
+  for (const [platformGameId, seconds] of totals) {
+    const ps4PlaytimeMinutes = Math.floor(seconds.ps4 / 60);
+    const ps5PlaytimeMinutes = Math.floor(seconds.ps5 / 60);
+    const playtimeMinutes = ps4PlaytimeMinutes + ps5PlaytimeMinutes;
+    if (playtimeMinutes > 2_147_483_647) continue;
+    await db.userGame.updateMany({
+      where: {
+        userId,
+        OR: [
+          { playtimeMinutes: { not: playtimeMinutes } },
+          { ps4PlaytimeMinutes: { not: ps4PlaytimeMinutes } },
+          { ps5PlaytimeMinutes: { not: ps5PlaytimeMinutes } },
+        ],
+        game: { platform: 'PSN', platformGameId },
+      },
+      data: { playtimeMinutes, ps4PlaytimeMinutes, ps5PlaytimeMinutes },
+    });
+  }
+}
 
 const TROPHY_TYPES: Record<string, TrophyType> = {
   platinum: 'PLATINUM',
@@ -177,5 +252,8 @@ export const syncPsn: ProviderSync = async ({ userId, account, report, onUnlocke
     },
   );
 
+  await syncPsnPlaytime(userId, accountId, titles).catch(() => {
+    log.warn('Temps de jeu PSN indisponible');
+  });
   return { games, achievements };
 };

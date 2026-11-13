@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { PLATFORM_LABELS } from '#lib/labels';
   import { subscribeJson } from '#lib/sse';
   import { enhance } from '$app/forms';
   import { submitWithToast } from '#lib/forms';
@@ -139,7 +140,9 @@
           · <span data-testid="profile-playtime">{m.playtime_private()}</span>
         {:else if playedHours > 0}
           · <span data-testid="profile-playtime"
-            >{m.playtime_hours({ hours: formatNumber(playedHours) })}</span
+            >{m.playtime_total({
+              time: m.playtime_hours({ hours: formatNumber(playedHours) }),
+            })}</span
           >
         {/if}
         {#if !profile.user.isPublic}· {m.private_profile()}{/if}
@@ -150,6 +153,20 @@
           </a>
         {/if}
       </p>
+      {#if profile.stats.playtimeByPlatform.length}
+        <dl class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted">
+          {#each profile.stats.playtimeByPlatform as row (row.platform)}
+            <div class="flex gap-1">
+              <dt>
+                {PLATFORM_LABELS[row.platform as keyof typeof PLATFORM_LABELS] ?? row.platform}
+              </dt>
+              <dd class="tabular">
+                {m.playtime_hours({ hours: formatNumber(Math.round(row.minutes / 60)) })}
+              </dd>
+            </div>
+          {/each}
+        </dl>
+      {/if}
       <ul class="mt-1 flex gap-3 text-muted">
         {#each profile.user.accounts as account (account.provider)}
           <li>

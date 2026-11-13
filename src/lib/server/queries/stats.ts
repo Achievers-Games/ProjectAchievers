@@ -147,7 +147,13 @@ export async function userStats(userId: string) {
       ) families`,
     db.userAchievement.count({ where: { userId } }),
     // Toutes plateformes confondues ; un jeu caché par le joueur ne compte pas.
-    db.userGame.aggregate({ where: { userId, hidden: false }, _sum: { playtimeMinutes: true } }),
+    db.$queryRaw<{ platform: string; minutes: bigint; ps4: bigint; ps5: bigint }[]>`
+      SELECT g.platform::text AS platform, sum(ug."playtimeMinutes") AS minutes,
+             sum(ug."ps4PlaytimeMinutes") AS ps4, sum(ug."ps5PlaytimeMinutes") AS ps5
+      FROM "UserGame" ug JOIN "Game" g ON g.id = ug."gameId"
+      WHERE ug."userId" = ${userId} AND NOT ug.hidden AND ug."playtimeMinutes" > 0
+      GROUP BY g.platform ORDER BY g.platform
+    `,
   ]);
   const tiers = tierCounts(collection[0]);
   return {
@@ -155,6 +161,15 @@ export async function userStats(userId: string) {
     tiers,
     unlocked,
     points: cardScore(tiers),
-    playtimeMinutes: played._sum.playtimeMinutes ?? 0,
+    playtimeMinutes: played.reduce((total, row) => total + Number(row.minutes), 0),
+    playtimeByPlatform: played.flatMap(({ platform, minutes, ps4, ps5 }) =>
+      platform === 'PSN'
+        ? [
+            { platform: 'PS4', minutes: Number(ps4) },
+            { platform: 'PS5', minutes: Number(ps5) },
+            { platform: 'PSN', minutes: Number(minutes - ps4 - ps5) },
+          ].filter((row) => row.minutes > 0)
+        : [{ platform, minutes: Number(minutes) }],
+    ),
   };
 }

@@ -1895,6 +1895,7 @@
   "game_seo_no_missables": "Пропускаемых достижений нет.",
   "game_seo_time": "Около {hours} ч до 100 %.",
   "playtime_hours": "{hours} ч. в игре",
+  "playtime_total": "Всего · {time}",
   "playtime_private": "Время в игре: скрыто",
   "playtime_launch": "Steam не сообщает ваше время в этой игре: запустите её, чтобы сайт его получил.",
   "game_player_progress": "Прогресс игрока {name}",
