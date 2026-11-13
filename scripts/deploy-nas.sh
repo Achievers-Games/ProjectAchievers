@@ -45,6 +45,10 @@ else
 fi
 
 echo "Redémarrage…"
+# Le déploiement automatique recrée le site dès qu'il voit la nouvelle image : s'il le fait au même
+# instant que ce script, Docker refuse le nom du conteneur et le site reste arrêté (13 novembre).
+# Il est donc mis en pause le temps du redémarrage ; `up` le relance avec le reste.
+nas "$compose stop deployer" || true
 # Un premier essai peut échouer sur une règle réseau de QTS : le second suffit.
 nas "$compose up -d --no-build || $compose up -d --no-build"
 

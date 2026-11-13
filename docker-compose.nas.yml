@@ -51,10 +51,16 @@ services:
     # Accessible seulement depuis le NAS : le public passe par le tunnel.
     ports:
       - '127.0.0.1:3100:3000'
+    # En lecture seule : le site vérifie seulement que la sauvegarde du jour existe.
+    volumes:
+      - ${BACKUP_DIR:-./backups}:/backups:ro
     environment:
       DATABASE_URL: postgresql://achievers:${POSTGRES_PASSWORD}@db:5432/achievers
       ORIGIN: ${ORIGIN:?URL publique du site}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:?32 octets en hexadécimal}
+      # Pendant un changement de clé seulement : l'ancienne, le temps que tout soit rechiffré.
+      ENCRYPTION_KEY_PREVIOUS: ${ENCRYPTION_KEY_PREVIOUS:-}
+      BACKUP_DIR: /backups
       ADDRESS_HEADER: CF-Connecting-IP
       NODE_OPTIONS: --max-old-space-size=320
       SYNC_CONCURRENCY: '1'
@@ -176,7 +182,8 @@ services:
         done
 
   tunnel:
-    image: cloudflare/cloudflared:latest
+    # Version épinglée : avec `latest`, une mise à jour cassée arriverait sans prévenir. À relever à la main.
+    image: cloudflare/cloudflared:2026.10.7
     profiles: [tunnel]
     restart: unless-stopped
     mem_limit: 96m

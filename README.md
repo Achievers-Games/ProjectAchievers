@@ -131,6 +131,26 @@ qui ne renvoie qu'un jeu. Après une synchro, les relectures ciblent `app:sync` 
 masqués. L'en-tête `Server-Timing` mesure la durée des pages ; les rendus dépassant 500 ms sont
 journalisés avec leur route, sans paramètres ni identité du visiteur.
 
+### Changer la clé de chiffrement
+
+`ENCRYPTION_KEY` chiffre les jetons Xbox des joueurs et les secrets de webhook des partenaires.
+Pour la remplacer sans rien perdre :
+
+1. génère une nouvelle clé, mets-la dans `ENCRYPTION_KEY` et déplace l'ancienne dans
+   `ENCRYPTION_KEY_PREVIOUS` (plusieurs anciennes clés se séparent par des virgules) ;
+2. redéploie avec `bash scripts/deploy-nas.sh` : tout reste lisible, et le balayage horaire
+   rechiffre ce qui était sous l'ancienne clé ;
+3. quand le journal `Chiffrement` n'annonce plus rien « sous une ancienne clé », vide
+   `ENCRYPTION_KEY_PREVIOUS` et redéploie.
+
+La clé IndexNow du site est dérivée de `ENCRYPTION_KEY` : elle change avec elle, sans action.
+
+### Sauvegardes surveillées
+
+Le site lit le dossier des sauvegardes (`BACKUP_DIR`, monté en lecture seule sur le NAS). Si la
+plus récente a plus de 36 heures, les administrateurs reçoivent une notification, une fois par
+jour, et le journal `Sauvegarde` le signale.
+
 ### Formulaire de contact et email
 
 `/contact` envoie chaque message par SMTP à `CONTACT_INBOX` (par défaut `SMTP_FROM`) avec l'adresse

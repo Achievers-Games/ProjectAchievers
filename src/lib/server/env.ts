@@ -5,6 +5,22 @@ const schema = z.object({
   DATABASE_URL: z.string().min(1),
   ORIGIN: z.url(),
   ENCRYPTION_KEY: z.string().regex(/^[0-9a-f]{64}$/i, 'doit contenir 32 octets en hexadécimal'),
+  /**
+   * Anciennes clés, séparées par des virgules : elles ne servent plus qu'à relire ce qui n'a pas
+   * encore été rechiffré avec `ENCRYPTION_KEY`.
+   */
+  ENCRYPTION_KEY_PREVIOUS: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z
+      .string()
+      .regex(
+        /^[0-9a-f]{64}([\s,]+[0-9a-f]{64})*$/i,
+        'doit lister des clés de 32 octets en hexadécimal',
+      )
+      .optional(),
+  ),
+  /** Dossier des sauvegardes, monté en lecture seule : le site alerte si la dernière est trop vieille. */
+  BACKUP_DIR: z.preprocess((value) => (value === '' ? undefined : value), z.string().optional()),
   STEAM_API_KEY: z.string().optional(),
   BLIZZARD_CLIENT_ID: z.string().optional(),
   BLIZZARD_CLIENT_SECRET: z.string().optional(),

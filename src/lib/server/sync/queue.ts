@@ -8,6 +8,8 @@ import { globals } from '../globals';
 import { logger } from '#lib/logger';
 import { availableProviders } from '../providers';
 import { purgeAuthEvents } from '../auth-events';
+import { warnStaleBackup } from '../backup-watch';
+import { rewrapSecrets } from '../secret-rotation';
 import { fillFamilies, matchFamilies } from '../family';
 import { announceSeason } from '../push';
 import { warnPsnToken } from '../service-token';
@@ -527,6 +529,8 @@ async function sweep() {
   await backgroundWork('warnPsnToken', () => warnPsnToken(), -1).catch((cause) =>
     log.error('Jeton PSN :', cause),
   );
+  await warnStaleBackup().catch((cause) => log.error('Sauvegarde :', cause));
+  await rewrapSecrets().catch((cause) => log.error('Chiffrement :', cause));
   await backgroundWork('flagProfaneClans', () => flagProfaneClans(), -1).catch((cause) =>
     log.error('Noms de clan :', cause),
   );

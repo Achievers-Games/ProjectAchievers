@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Cookies } from '@sveltejs/kit';
-import { decrypt, encrypt, pkceChallenge } from './crypto';
+import { createCipheriv, randomBytes } from 'node:crypto';
+import { decrypt, encrypt, isUnderCurrentKey, pkceChallenge } from './crypto';
 import { renderGuide, renderMarkdown } from './markdown';
 import { isPushEndpoint } from './push';
 import { safeReturnTo, saveFlow, takeFlow } from './providers';
@@ -40,6 +41,25 @@ afterEach(() => vi.unstubAllGlobals());
 describe('chiffrement', () => {
   it('relit ce qui a été chiffré', () => {
     expect(decrypt(encrypt('jeton secret'))).toBe('jeton secret');
+  });
+
+  it('nomme la clé employée, et relit encore l’ancien format sans nom', () => {
+    const sealed = encrypt('jeton');
+    expect(sealed.split('.')).toHaveLength(4);
+    expect(isUnderCurrentKey(sealed)).toBe(true);
+
+    // Ce que le site écrivait avant la rotation : iv.tag.texte, sous la clé des tests.
+    const iv = randomBytes(12);
+    const cipher = createCipheriv('aes-256-gcm', Buffer.from('a'.repeat(64), 'hex'), iv);
+    const data = Buffer.concat([cipher.update('ancien', 'utf8'), cipher.final()]);
+    const legacy = [iv, cipher.getAuthTag(), data].map((p) => p.toString('base64url')).join('.');
+    expect(decrypt(legacy)).toBe('ancien');
+    expect(isUnderCurrentKey(legacy)).toBe(false);
+  });
+
+  it('refuse un contenu chiffré sous une clé qu’il ne connaît pas', () => {
+    const [, ...rest] = encrypt('jeton').split('.');
+    expect(() => decrypt(['AAAAAAAA', ...rest].join('.'))).toThrow();
   });
 
   it('refuse un contenu altéré', () => {
