@@ -166,6 +166,8 @@ export async function refreshAccounts(
 const autoInterval = (provider: Provider) => (provider === 'STEAM' ? 5 : 15) * 60 * 1000;
 const RUN_HISTORY = 30 * 24 * 60 * 60 * 1000;
 const MESSAGE_RETENTION = 365 * 24 * 60 * 60 * 1000;
+const DELIVERED_EVENTS = 30 * 24 * 60 * 60 * 1000;
+const RESOLVED_REPORTS = 180 * 24 * 60 * 60 * 1000;
 const AUTO_CHECK = 60_000;
 const SITE_CHECK = 10 * 60 * 1000;
 
@@ -469,6 +471,17 @@ async function sweep() {
   await db.session.deleteMany({ where: { expiresAt: { lt: now } } });
   await db.psnVerification.deleteMany({ where: { expiresAt: { lt: now } } });
   await purgeAuthEvents(now);
+  // Un jeton expiré ne sert plus à rien, même pour repérer un réemploi : il est refusé à sa date.
+  await db.oAuthToken.deleteMany({
+    where: { expiresAt: { lt: new Date(now.getTime() - STALE_AFTER) } },
+  });
+  await db.partnerEvent.deleteMany({
+    where: { deliveredAt: { lt: new Date(now.getTime() - DELIVERED_EVENTS) } },
+  });
+  // Les signalements retenus restent : ils comptent pour un succès du site.
+  await db.report.deleteMany({
+    where: { upheld: false, resolvedAt: { lt: new Date(now.getTime() - RESOLVED_REPORTS) } },
+  });
   await db.syncRun.deleteMany({
     where: { startedAt: { lt: new Date(now.getTime() - RUN_HISTORY) } },
   });

@@ -30,6 +30,8 @@ export const POST: RequestHandler = async ({ request }) => {
   if (!parsed.success) return new Response(null, { status: 400 });
 
   const { message, stack, context } = parsed.data;
-  log.error(`${context ?? 'page'} : ${message}`, stack ? `\n${stack}` : '');
+  // Un saut de ligne dans le message permettrait de forger de fausses lignes de journal.
+  const line = (text: string) => text.replace(/[\r\n]+/g, ' ');
+  log.error(`${line(context ?? 'page')} : ${line(message)}`, stack ? `\n${stack}` : '');
   return new Response(null, { status: 204 });
 };

@@ -4,10 +4,10 @@ import { m } from '#lib/paraglide/messages';
 import type { RequestHandler } from './$types';
 
 /** L'emblème d'un clan. En attente de modération, seuls ses membres et les modérateurs le voient. */
-export const GET: RequestHandler = async ({ params, locals }) => {
+export const GET: RequestHandler = async ({ params, locals, url }) => {
   const clan = await db.clan.findUnique({
     where: { slug: params.slug },
-    select: { id: true, image: true, imageType: true, imagePending: true },
+    select: { id: true, image: true, imageType: true, imagePending: true, imageAt: true },
   });
   if (!clan?.image || !clan.imageType) error(404, m.gone());
   if (clan.imagePending) {
@@ -22,10 +22,13 @@ export const GET: RequestHandler = async ({ params, locals }) => {
     headers: {
       'Content-Type': clan.imageType,
       'X-Content-Type-Options': 'nosniff',
-      // L'adresse change à chaque nouvel emblème : la version publiée ne bouge plus.
+      // L'adresse datée change à chaque nouvel emblème : elle seule peut rester en cache un an.
+      // Sans sa date, ou avec une ancienne, un emblème retiré resterait servi par les caches.
       'Cache-Control': clan.imagePending
         ? 'private, no-store'
-        : 'public, max-age=31536000, immutable',
+        : url.searchParams.get('v') === String(clan.imageAt?.getTime())
+          ? 'public, max-age=31536000, immutable'
+          : 'public, max-age=300',
     },
   });
 };

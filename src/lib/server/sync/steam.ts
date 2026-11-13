@@ -185,20 +185,23 @@ async function findSharedGames(
   if (daily) {
     const [friends, catalog, known] = await Promise.all([
       fetchFriendGames(steamId),
+      // Les identifiants seuls : les noms de tout le catalogue pesaient sur la mémoire du NAS
+      // pour quelques jeux réellement empruntés. Ils sont relus plus bas, pour ceux-là seulement.
       db.game.findMany({
         where: { platform: 'STEAM', totalAchievements: { gt: 0 } },
-        select: { platformGameId: true, name: true },
+        select: { platformGameId: true },
       }),
       db.userGame.findMany({
         where: { userId, game: { platform: 'STEAM' } },
-        select: { game: { select: { platformGameId: true, name: true } } },
+        select: { game: { select: { platformGameId: true } } },
       }),
     ]);
     const stored = [...catalog, ...known.map(({ game }) => game)];
-    for (const game of friends) candidates.set(game.appid, game);
-    for (const { platformGameId, name } of stored) {
-      candidates.set(Number(platformGameId), { appid: Number(platformGameId), name });
+    for (const { platformGameId } of stored) {
+      candidates.set(Number(platformGameId), { appid: Number(platformGameId), name: '' });
     }
+    // Après le catalogue : la bibliothèque d'un ami connaît le nom du jeu.
+    for (const game of friends) candidates.set(game.appid, game);
   }
   for (const game of recent) candidates.set(game.appid, game);
   for (const appId of owned) candidates.delete(appId);
@@ -210,7 +213,19 @@ async function findSharedGames(
       data: { sharedCheckedAt: new Date() },
     });
   }
-  return [...played].flatMap((appId) => candidates.get(appId) ?? []);
+  const found = [...played].flatMap((appId) => candidates.get(appId) ?? []);
+  const unnamed = found.filter((game) => !game.name).map((game) => String(game.appid));
+  const names = unnamed.length
+    ? await db.game.findMany({
+        where: { platform: 'STEAM', platformGameId: { in: unnamed } },
+        select: { platformGameId: true, name: true },
+      })
+    : [];
+  const nameOf = new Map(names.map((game) => [game.platformGameId, game.name]));
+  return found.map((game) => ({
+    ...game,
+    name: game.name || nameOf.get(String(game.appid)) || `Steam ${game.appid}`,
+  }));
 }
 
 /**

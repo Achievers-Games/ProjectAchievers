@@ -1,6 +1,7 @@
 import { error, fail } from '@sveltejs/kit';
 import { z } from 'zod';
 import { requireLogin } from '#lib/server/auth';
+import { commentLimit } from '#lib/comments';
 import { db } from '#lib/server/db';
 import { censor } from '#lib/profanity';
 import { renderGuide, renderMarkdown } from '#lib/server/markdown';
@@ -18,7 +19,7 @@ import {
   isBuried,
   voteGuide,
 } from '#lib/server/guides';
-import { canTranslate, translateContent } from '#lib/server/translate';
+import { canTranslate, translateContent, translationQuota } from '#lib/server/translate';
 import { commentActions, loadComments } from '#lib/server/comments';
 import { getLocale } from '#lib/paraglide/runtime';
 import type { Actions, PageServerLoad } from './$types';
@@ -91,7 +92,7 @@ export const load: PageServerLoad = async ({ params, locals, url, depends }) => 
         translations,
       },
     }),
-    loadComments({ achievementId: params.id }, locals.user),
+    loadComments({ achievementId: params.id }, locals.user, commentLimit(url)),
     db.userAchievement.count({ where: { achievementId: params.id, user: { isPublic: true } } }),
   ]);
 
@@ -241,7 +242,7 @@ export const actions: Actions = {
     return { success: m.guide_deleted() };
   },
 
-  translate: async ({ request, params, locals }) => {
+  translate: async ({ request, params, locals, getClientAddress }) => {
     const parsed = translateSchema.safeParse(Object.fromEntries(await request.formData()));
     if (!parsed.success || !canTranslate()) return fail(400, { error: m.translate_failed() });
 
@@ -256,7 +257,12 @@ export const actions: Actions = {
 
     const target = targetType === 'GUIDE' ? { guideId: targetId } : { commentId: targetId };
     try {
-      const translated = await translateContent(target, source.contentMd, getLocale());
+      const translated = await translateContent(
+        target,
+        source.contentMd,
+        getLocale(),
+        translationQuota({ locals, getClientAddress }),
+      );
       if (translated === null) return fail(429, { error: m.translate_failed() });
       const html = targetType === 'GUIDE' ? renderGuide : renderMarkdown;
       return { html: html(forViewer(locals.user)(translated, getLocale())) };

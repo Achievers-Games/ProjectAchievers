@@ -889,10 +889,15 @@ export function partnerOpenApi(origin: string) {
           description:
             'user.linked: an account was just linked. user.unlinked: the player unlinked you or ' +
             'withdrew access (partnerUserId gives the account just unlinked). user.updated: ' +
-            'handle, avatar or visibility changed; it always describes the current state.',
+            'handle, avatar or visibility changed; it always describes the current state. ' +
+            'user.deleted: the player deleted their Achievers account; user then only carries ' +
+            'id and partnerUserId.',
           properties: {
             id: { type: 'string' },
-            type: { type: 'string', enum: ['user.linked', 'user.unlinked', 'user.updated'] },
+            type: {
+              type: 'string',
+              enum: ['user.linked', 'user.unlinked', 'user.updated', 'user.deleted'],
+            },
             at: { type: 'string', format: 'date-time' },
             via: {
               type: 'string',

@@ -1,11 +1,14 @@
 import { error, json } from '@sveltejs/kit';
 import { db } from '#lib/server/db';
+import { rateLimit } from '#lib/server/rate-limit';
 import type { RequestHandler } from './$types';
 import { m } from '#lib/paraglide/messages';
 
 /** Export RGPD : tout ce qui concerne l'utilisateur, sans les jetons chiffrés. */
 export const GET: RequestHandler = async ({ locals }) => {
   if (!locals.user) error(401, m.login_required());
+  // Tout l'historique du joueur tient en mémoire le temps de la réponse : pas en rafale.
+  if (!rateLimit(`export:${locals.user.id}`, 3, 3_600_000)) error(429, m.too_fast());
 
   const data = await db.user.findUniqueOrThrow({
     where: { id: locals.user.id },

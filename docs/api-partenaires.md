@@ -602,6 +602,7 @@ X-Achievers-Signature: t=1794168000,v1=5f2c…
 | `user.linked`   | un compte vient d'être relié : liaison automatique, ou premier accord OAuth  |
 | `user.unlinked` | le joueur a délié ton site, ou retiré son accès, depuis son compte Achievers |
 | `user.updated`  | le handle ou l'avatar a changé, ou le profil est passé public ou privé       |
+| `user.deleted`  | le joueur a supprimé son compte Achievers : efface ce que tu gardes de lui   |
 
 ```json
 {
@@ -624,6 +625,8 @@ X-Achievers-Signature: t=1794168000,v1=5f2c…
 - Pour `user.unlinked`, `partnerUserId` donne le compte qui vient d'être délié.
 - `user.updated` décrit toujours l'**état actuel** : plusieurs changements rapprochés n'en
   donnent qu'un.
+- Pour `user.deleted`, `user` ne porte plus que `id` et `partnerUserId` : le compte n'existe
+  plus, il n'y a ni handle ni avatar à décrire.
 
 **Vérifier la signature** avant tout traitement. `X-Achievers-Signature` porte un HMAC-SHA256 de
 `"<t>.<corps brut>"` avec le secret `whsec_…`. Calcule-le sur le **corps brut**, avant de parser

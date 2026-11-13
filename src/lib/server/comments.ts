@@ -1,6 +1,7 @@
 import { fail, type RequestEvent } from '@sveltejs/kit';
 import { z } from 'zod';
 import type { ReactionType } from '#prisma';
+import { COMMENTS_STEP } from '#lib/comments';
 import { censor } from '#lib/profanity';
 import { logger } from '#lib/logger';
 import { m } from '#lib/paraglide/messages';
@@ -10,7 +11,7 @@ import { db } from './db';
 import { renderMarkdown } from './markdown';
 import { publicUser } from './queries';
 import { rateLimit } from './rate-limit';
-import { canTranslate, translateContent } from './translate';
+import { canTranslate, translateContent, translationQuota } from './translate';
 
 /**
  * La discussion d'une page : sous un succès, ou sous un guide complet de jeu. Le chargement et
@@ -25,7 +26,15 @@ const forViewer = (user: App.Locals['user']) => (text: string, locale: string | 
   user?.allowProfanity ? text : censor(text, locale);
 
 /** Les commentaires d'une page et leurs réponses, prêts à afficher pour ce lecteur. */
-export async function loadComments(target: CommentTarget, user: App.Locals['user']) {
+/**
+ * Rend un commentaire de plus que `limit` quand il en reste : la page sait ainsi, sans second
+ * comptage, qu'elle doit proposer « Afficher plus ».
+ */
+export async function loadComments(
+  target: CommentTarget,
+  user: App.Locals['user'],
+  limit = COMMENTS_STEP,
+) {
   const viewerId = user?.id;
   const clean = forViewer(user);
   const locale = getLocale();
@@ -39,7 +48,7 @@ export async function loadComments(target: CommentTarget, user: App.Locals['user
   const comments = await db.comment.findMany({
     where: { ...target, parentId: null, status: { not: 'HIDDEN' } },
     orderBy: { createdAt: 'asc' },
-    take: 100,
+    take: limit + 1,
     include: {
       ...entry,
       replies: {
@@ -182,7 +191,12 @@ export function commentActions(target: (event: RequestEvent) => Promise<CommentT
         : null;
       if (!source) return fail(404, { error: m.gone() });
       try {
-        const translated = await translateContent({ commentId: id }, source.contentMd, getLocale());
+        const translated = await translateContent(
+          { commentId: id },
+          source.contentMd,
+          getLocale(),
+          translationQuota(event),
+        );
         if (translated === null) return fail(429, { error: m.translate_failed() });
         return { html: renderMarkdown(forViewer(event.locals.user)(translated, getLocale())) };
       } catch (cause) {

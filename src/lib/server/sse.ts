@@ -1,21 +1,34 @@
 /** Au-delà, un flux ouvert ne peut plus l'être : le serveur garde de quoi répondre au reste. */
 const MAX_STREAMS = 2_000;
+/** Une douzaine d'onglets, pas davantage : une seule adresse ne doit pas remplir le plafond global. */
+const MAX_PER_OWNER = 12;
 let openStreams = 0;
+const openByOwner = new Map<string, number>();
 
-/** Flux Server-Sent Events. `subscribe` renvoie la fonction de désinscription. */
+/**
+ * Flux Server-Sent Events. `subscribe` renvoie la fonction de désinscription. `owner` désigne
+ * celui qui ouvre le flux (une adresse, un joueur) : ses flux simultanés sont plafonnés.
+ */
 export function eventStream<T>(
   subscribe: (send: (event: T) => void) => () => void,
   signal: AbortSignal,
+  owner?: string,
 ): Response {
-  if (openStreams >= MAX_STREAMS) {
+  const mine = owner === undefined ? 0 : (openByOwner.get(owner) ?? 0);
+  if (openStreams >= MAX_STREAMS || mine >= MAX_PER_OWNER) {
     return new Response(null, { status: 503, headers: { 'Retry-After': '60' } });
   }
   openStreams += 1;
+  if (owner !== undefined) openByOwner.set(owner, mine + 1);
   let released = false;
   const release = () => {
     if (released) return;
     released = true;
     openStreams -= 1;
+    if (owner === undefined) return;
+    const left = (openByOwner.get(owner) ?? 1) - 1;
+    if (left > 0) openByOwner.set(owner, left);
+    else openByOwner.delete(owner);
   };
 
   let cleanup = () => {};

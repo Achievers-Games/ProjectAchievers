@@ -42,7 +42,17 @@ async function fromNpsso() {
  */
 export async function psnAuthorization(): Promise<AuthorizationPayload> {
   if (tokens && tokens.expiresAt > Date.now() + 60_000) return { accessToken: tokens.accessToken };
+  // Deux jeux lus de front demandaient chacun un nouveau jeton avec le même rafraîchissement,
+  // que Sony n'accepte qu'une fois : tous attendent désormais le même échange.
+  refreshing ??= renewTokens().finally(() => {
+    refreshing = undefined;
+  });
+  return { accessToken: (await refreshing).accessToken };
+}
 
+let refreshing: Promise<ServiceTokens> | undefined;
+
+async function renewTokens() {
   const response = await (tokens
     ? exchangeRefreshTokenForAuthTokens(tokens.refreshToken).catch(fromNpsso)
     : fromNpsso());
@@ -52,7 +62,7 @@ export async function psnAuthorization(): Promise<AuthorizationPayload> {
     refreshToken: response.refreshToken,
     expiresAt: Date.now() + response.expiresIn * 1000,
   };
-  return { accessToken: tokens.accessToken };
+  return tokens;
 }
 
 interface PsnProfile {
@@ -64,6 +74,7 @@ interface PsnProfile {
 
 /** La recherche du compte retourne souvent sur le même pseudo ; la preuve de bio, jamais en cache. */
 const PROFILE_TTL = 10 * 60_000;
+const MAX_PROFILES = 500;
 const profiles = new Map<string, { profile: PsnProfile; at: number }>();
 
 export async function findPsnProfile(onlineId: string, fresh = false): Promise<PsnProfile | null> {
@@ -80,6 +91,8 @@ export async function findPsnProfile(onlineId: string, fresh = false): Promise<P
       avatarUrl: profile.avatarUrls?.at(-1)?.avatarUrl ?? null,
     };
     profiles.set(onlineId, { profile: found, at: Date.now() });
+    // Les pseudos viennent des visiteurs : sans plafond, le cache grossirait sans fin.
+    if (profiles.size > MAX_PROFILES) profiles.delete(profiles.keys().next().value as string);
     return found;
   } catch (error) {
     if (error instanceof Error && /not found|2105356/i.test(error.message)) return null;

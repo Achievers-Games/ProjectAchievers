@@ -1,3 +1,5 @@
+import type { RequestEvent } from '@sveltejs/kit';
+import { clientAddress } from './client-address';
 import { db } from './db';
 import { env } from './env';
 import { rateLimit } from './rate-limit';
@@ -18,6 +20,23 @@ const LANGUAGES: Record<Locale, string> = {
   'zh-CN': 'Simplified Chinese',
   ja: 'Japanese',
 };
+
+/** Qui demande, et combien de nouvelles traductions il peut déclencher par heure. */
+export interface TranslationQuota {
+  key: string;
+  perHour: number;
+}
+
+/**
+ * Le quota du site est commun à tous : sans part individuelle, un seul visiteur anonyme pouvait
+ * l'épuiser pour tout le monde. Un membre a droit à davantage qu'une adresse sans compte.
+ */
+export const translationQuota = (
+  event: Pick<RequestEvent, 'getClientAddress' | 'locals'>,
+): TranslationQuota =>
+  event.locals.user
+    ? { key: `joueur:${event.locals.user.id}`, perHour: 30 }
+    : { key: `adresse:${clientAddress(event)}`, perHour: 5 };
 
 export type TranslationTarget = { guideId: string } | { commentId: string };
 
@@ -94,9 +113,13 @@ export async function translateContent(
   target: TranslationTarget,
   source: string,
   locale: Locale,
+  // Sans demandeur (tâche interne), seul le quota du site s'applique.
+  quota: TranslationQuota = { key: 'site', perHour: TRANSLATIONS_PER_HOUR },
 ): Promise<string | null> {
   const cached = await db.contentTranslation.findFirst({ where: { ...target, locale } });
   if (cached) return cached.contentMd;
+  // Ce qui est déjà traduit reste servi à tous : seules les nouvelles demandes sont comptées.
+  if (!rateLimit(`traduction:${quota.key}`, quota.perHour, 3_600_000)) return null;
   if (!rateLimit('traduction', TRANSLATIONS_PER_HOUR, 3_600_000)) return null;
 
   const parts: string[] = [];

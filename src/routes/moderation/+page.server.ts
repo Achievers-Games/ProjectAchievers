@@ -184,6 +184,14 @@ function requireAdmin(locals: App.Locals) {
 
 const partnerName = z.string().trim().min(2).max(40);
 
+/** Un nom de domaine public : ni adresse IP, ni nom interne, que le serveur pourrait joindre chez lui. */
+function isPublicHost(value: string) {
+  if (!URL.canParse(value)) return false;
+  const host = new URL(value).hostname.toLowerCase();
+  if (/^[\d.]+$/.test(host) || host.includes(':') || host.startsWith('[')) return false;
+  return host.includes('.') && !/(^|\.)(localhost|local|internal|lan|home)$/.test(host);
+}
+
 /** Seule une adresse HTTPS reçoit les succès : ils ne doivent pas circuler en clair. */
 const partnerWebhook = z.object({
   id: z.string().min(1),
@@ -196,7 +204,7 @@ const partnerWebhook = z.object({
     .string()
     .trim()
     .max(500)
-    .refine((value) => value === '' || /^https:\/\/[^\s]+$/.test(value)),
+    .refine((value) => value === '' || (/^https:\/\/[^\s]+$/.test(value) && isPublicHost(value))),
 });
 
 export const actions: Actions = {

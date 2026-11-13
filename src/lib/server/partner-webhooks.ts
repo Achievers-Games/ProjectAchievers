@@ -278,7 +278,7 @@ async function buildEvents(slug: string, rows: UnlockRow[]) {
   });
 }
 
-export type AccountEventType = 'user.linked' | 'user.unlinked' | 'user.updated';
+export type AccountEventType = 'user.linked' | 'user.unlinked' | 'user.updated' | 'user.deleted';
 
 /**
  * Note qu'un partenaire doit apprendre un changement de compte. `linked` et `unlinked` visent
@@ -336,6 +336,40 @@ export async function queueAccountEvent(
   }
 }
 
+/**
+ * À appeler juste avant de supprimer un compte : chaque partenaire qui le suivait apprendra
+ * qu'il doit effacer ce qu'il en garde. L'événement porte l'identifiant du joueur et son compte
+ * chez le partenaire, puisque plus rien d'autre n'existera au moment de l'envoi.
+ */
+export async function queueAccountDeletion(userId: string) {
+  const links = await db.partnerLink.findMany({
+    where: { userId, revokedAt: null },
+    select: { partner: true, partnerUserId: true },
+  });
+  const partnerIds = new Map(links.map((link) => [link.partner, link.partnerUserId]));
+  const apps = await db.partnerApp.findMany({
+    where: {
+      revokedAt: null,
+      webhookUrl: { not: null },
+      OR: [
+        { oauthGrants: { some: { userId, revokedAt: null } } },
+        { slug: { in: [...partnerIds.keys()] } },
+      ],
+    },
+    select: { id: true, slug: true },
+  });
+  if (!apps.length) return;
+  await db.partnerEvent.createMany({
+    data: apps.map((app) => ({
+      appId: app.id,
+      userId,
+      subjectId: userId,
+      type: 'user.deleted',
+      partnerUserId: (app.slug && partnerIds.get(app.slug)) || null,
+    })),
+  });
+}
+
 /** Les événements de compte encore à envoyer, décrits avec l'état actuel du joueur. */
 async function pendingAccountEvents(app: { id: string; slug: string }) {
   const rows = await db.partnerEvent.findMany({
@@ -343,9 +377,23 @@ async function pendingAccountEvents(app: { id: string; slug: string }) {
     orderBy: { createdAt: 'asc' },
     take: WEBHOOK_BATCH,
   });
-  const users = await webhookUsers(app.slug, [...new Set(rows.map((row) => row.userId))]);
+  const users = await webhookUsers(app.slug, [...new Set(rows.flatMap((row) => row.userId ?? []))]);
   const events = rows.flatMap((row) => {
-    const user = users.get(row.userId);
+    if (row.type === 'user.deleted') {
+      // Le compte n'existe plus : seuls ses identifiants restent à transmettre.
+      return row.subjectId
+        ? [
+            {
+              id: row.id,
+              type: row.type,
+              at: row.createdAt.toISOString(),
+              user: { id: row.subjectId, partnerUserId: row.partnerUserId },
+            },
+          ]
+        : [];
+    }
+    // Un événement plus ancien d'un compte supprimé depuis n'a plus rien à décrire.
+    const user = row.userId ? users.get(row.userId) : undefined;
     if (!user) return [];
     return [
       {

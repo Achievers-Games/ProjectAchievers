@@ -5,6 +5,8 @@
   import { formatRelative } from '#lib/labels';
   import { submitWithToast } from '#lib/forms';
   import { toast } from '#lib/stores/toast';
+  import { page } from '$app/state';
+  import { COMMENTS_PARAM, COMMENTS_STEP, commentLimit } from '#lib/comments';
   import type { CommentView } from '#lib/server/comments';
 
   /**
@@ -25,6 +27,16 @@
   } = $props();
 
   type Item = CommentView | CommentView['replies'][number];
+
+  // Le serveur envoie un commentaire de plus que demandé quand il en reste.
+  const limit = $derived(commentLimit(page.url));
+  const shown = $derived(comments.slice(0, limit));
+  const moreHref = $derived.by(() => {
+    if (comments.length <= limit) return null;
+    const next = new URL(page.url.href);
+    next.searchParams.set(COMMENTS_PARAM, String(limit + COMMENTS_STEP));
+    return `${next.pathname}${next.search}`;
+  });
 
   const MAX_AUTO_TRANSLATIONS = 10;
   const REACTIONS = [
@@ -216,7 +228,7 @@
   {/snippet}
 
   <div class="space-y-5">
-    {#each comments as comment (comment.id)}
+    {#each shown as comment (comment.id)}
       <div class="space-y-3">
         {@render commentView(comment, false)}
         {#if comment.replies.length || replyTo === comment.id}
@@ -231,6 +243,11 @@
     {:else}
       <p class="text-sm text-muted">{m.comments_empty()}</p>
     {/each}
+    {#if moreHref}
+      <a href={moreHref} class="btn btn-ghost" data-sveltekit-noscroll data-sveltekit-replacestate>
+        {m.show_more()}
+      </a>
+    {/if}
   </div>
 
   {#if signedIn}

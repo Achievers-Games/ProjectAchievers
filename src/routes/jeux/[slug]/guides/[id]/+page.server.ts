@@ -1,6 +1,7 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import { z } from 'zod';
 import { requireLogin } from '#lib/server/auth';
+import { commentLimit } from '#lib/comments';
 import { db } from '#lib/server/db';
 import { censor } from '#lib/profanity';
 import { renderGuide } from '#lib/server/markdown';
@@ -17,7 +18,7 @@ import {
   voteGuide,
 } from '#lib/server/guides';
 import { rateLimit } from '#lib/server/rate-limit';
-import { canTranslate, translateContent } from '#lib/server/translate';
+import { canTranslate, translateContent, translationQuota } from '#lib/server/translate';
 import { anchorHeadings } from '#lib/guide-outline';
 import { excerpt } from '#lib/seo';
 import { commentActions, loadComments } from '#lib/server/comments';
@@ -43,7 +44,7 @@ async function findGuide(slug: string, id: string, locals: App.Locals) {
   return game;
 }
 
-export const load: PageServerLoad = async ({ params, locals }) => {
+export const load: PageServerLoad = async ({ params, locals, url }) => {
   const viewerId = locals.user?.id;
   const clean = forViewer(locals.user);
   const game = await guideGame(params.slug, locals.user);
@@ -68,7 +69,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
     guide.authorId !== viewerId;
   const cached = autoTranslate ? guide.translations[0]?.contentMd : undefined;
 
-  const comments = await loadComments({ guideId: guide.id }, locals.user);
+  const comments = await loadComments({ guideId: guide.id }, locals.user, commentLimit(url));
 
   return {
     game: { name: game.name, slug: game.slug },
@@ -152,7 +153,7 @@ export const actions: Actions = {
     redirect(303, `/jeux/${params.slug}`);
   },
 
-  translate: async ({ params, locals }) => {
+  translate: async ({ params, locals, getClientAddress }) => {
     if (!canTranslate()) return fail(400, { error: m.translate_failed() });
     const game = await guideGame(params.slug, locals.user);
     const source = await db.guide.findFirst({
@@ -165,6 +166,7 @@ export const actions: Actions = {
         { guideId: params.id },
         source.contentMd,
         getLocale(),
+        translationQuota({ locals, getClientAddress }),
       );
       if (translated === null) return fail(429, { error: m.translate_failed() });
       return { html: render(forViewer(locals.user)(translated, getLocale())) };

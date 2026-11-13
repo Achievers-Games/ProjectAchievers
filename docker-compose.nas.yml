@@ -162,9 +162,16 @@ services:
       - -c
       - |
         while true; do
-          pg_dump -h db -U achievers -Fc achievers > /backups/achievers-$$(date +%F).dump.tmp &&
+          # Une sauvegarde ratée se voit dans `docker compose logs backup`, ne laisse pas de fichier
+          # tronqué, et n'efface aucune ancienne : les 14 jours ne se vident pas pendant une panne.
+          if pg_dump -h db -U achievers -Fc achievers > /backups/achievers-$$(date +%F).dump.tmp; then
             mv /backups/achievers-$$(date +%F).dump.tmp /backups/achievers-$$(date +%F).dump
-          find /backups -name 'achievers-*.dump' -mtime +14 -delete
+            find /backups -name 'achievers-*.dump' -mtime +14 -delete
+            echo "Sauvegarde du $$(date +%F) écrite."
+          else
+            rm -f /backups/achievers-$$(date +%F).dump.tmp
+            echo "ÉCHEC de la sauvegarde du $$(date +%F) : les précédentes sont conservées." >&2
+          fi
           sleep 86400
         done
 

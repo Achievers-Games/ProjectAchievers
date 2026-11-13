@@ -491,6 +491,8 @@ model Game {
 
   @@unique([platform, platformGameId])
   @@index([name])
+  /// Recherche par fragment de nom, insensible à la casse.
+  @@index([name(ops: raw("gin_trgm_ops"))], map: "Game_name_trgm_idx", type: Gin)
   @@index([adultOnly])
   @@index([familyKey])
 }
@@ -775,9 +777,12 @@ model PartnerEvent {
   id            String     @id @default(cuid())
   appId         String
   app           PartnerApp @relation(fields: [appId], references: [id], onDelete: Cascade)
-  userId        String
-  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  /// user.linked, user.unlinked ou user.updated
+  /// Vide une fois le compte supprimé : l'événement reste à envoyer.
+  userId        String?
+  user          User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  /// Le joueur d'un `user.deleted`, gardé à part puisque le compte n'existe plus.
+  subjectId     String?
+  /// user.linked, user.unlinked, user.updated ou user.deleted
   type          String
   /// AUTO (identités communes) ou OAUTH (« Se connecter avec Achievers ») ; vide pour updated.
   via           String?

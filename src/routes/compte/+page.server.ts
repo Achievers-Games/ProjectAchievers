@@ -6,6 +6,7 @@ import { profileSchema, resolveIdentity, updateProfile, type Identity } from '#l
 import { requireLogin } from '#lib/server/auth';
 import { secureCookie } from '#lib/server/cookies';
 import { db } from '#lib/server/db';
+import { rateLimit } from '#lib/server/rate-limit';
 import { logger } from '#lib/logger';
 import { clearMerge, mergePreview, mergeUsers, readMerge, saveMerge } from '#lib/server/merge';
 import { availableProviders, OAUTH_PROVIDERS } from '#lib/server/providers';
@@ -16,7 +17,7 @@ import { grantSiteAchievement } from '#lib/server/site-achievements';
 import { leaveClan } from '#lib/server/social';
 import { activePartnerLinks, unlinkPartner as removePartnerLink } from '#lib/server/partner-link';
 import { activeGrants, revokeGrant } from '#lib/server/oauth-provider';
-import { queueAccountEvent } from '#lib/server/partner-webhooks';
+import { queueAccountDeletion, queueAccountEvent } from '#lib/server/partner-webhooks';
 import { forgetPresence } from '#lib/server/presence';
 import { pushPublicKey } from '#lib/server/push';
 import { enqueueSync } from '#lib/server/sync/queue';
@@ -148,6 +149,10 @@ const providerSchema = z.enum([
  * profil en y posant un code. Les trois étapes sont les mêmes pour les deux plateformes.
  */
 type BioProvider = 'PSN' | 'RETRO';
+
+/** Chaque recherche sollicite le compte de service du site : dix essais par quart d'heure suffisent. */
+const bioSearchTooFast = (userId: string) =>
+  !rateLimit(`recherche-profil:${userId}`, 10, 15 * 60_000);
 
 /** Un nouveau code remplace le précédent : une seule vérification en cours par joueur. */
 async function startBioCheck(
@@ -433,6 +438,7 @@ export const actions: Actions = {
     const user = requireUser(locals);
     const parsed = onlineId.safeParse((await request.formData()).get('onlineId'));
     if (!parsed.success) return fail(400, { error: parsed.error.issues[0]?.message });
+    if (bioSearchTooFast(user.id)) return fail(429, { error: m.too_fast() });
 
     let profile;
     try {
@@ -482,6 +488,7 @@ export const actions: Actions = {
     const user = requireUser(locals);
     const parsed = retroName.safeParse((await request.formData()).get('username'));
     if (!parsed.success) return fail(400, { error: parsed.error.issues[0]?.message });
+    if (bioSearchTooFast(user.id)) return fail(429, { error: m.too_fast() });
 
     const profile = await findRetroProfile(parsed.data).catch((cause) => {
       log.error('Recherche RetroAchievements :', cause);
@@ -533,6 +540,8 @@ export const actions: Actions = {
     }
     await db.psnVerification.deleteMany({ where: { userId: user.id } });
     await leaveClan(user.id);
+    // Avant la suppression : après, plus rien ne dit quels partenaires suivaient ce joueur.
+    await queueAccountDeletion(user.id);
     await db.$transaction([
       // Une discussion à deux ne survit pas à l'un des deux : elle resterait orpheline.
       db.conversation.deleteMany({
