@@ -179,6 +179,18 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
 
   const mine = new Map(unlocks.map((u) => [u.achievementId, u.unlockedAt]));
   // Les dates affichées sont celles du joueur regardé, sinon celles du visiteur.
+  // Des succès sans une minute de jeu : Steam ne donne pas le temps d'un jeu emprunté (partage
+  // familial), sauf dans les deux semaines qui suivent un lancement. Le joueur peut donc le faire
+  // revenir en relançant le jeu, à condition de ne pas garder son temps privé.
+  const playtimeMissing =
+    progress !== null &&
+    game.platform === 'STEAM' &&
+    progress.playtimeMinutes === 0 &&
+    progress.unlockedCount > 0 &&
+    (await db.linkedAccount.count({
+      where: { userId: progress.userId, provider: 'STEAM', playtimeHidden: false },
+    })) > 0;
+
   const unlockedAt = player
     ? new Map(player.unlocks.map((u) => [u.achievementId, u.unlockedAt]))
     : mine;
@@ -305,6 +317,7 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
       : null,
     friends: friends.filter((friend) => owning.has(friend.id)),
     revealed,
+    playtimeMissing,
     player: player && {
       user: player.user,
       self: player.self,

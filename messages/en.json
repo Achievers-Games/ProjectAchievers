@@ -1844,6 +1844,7 @@
   "game_seo_time": "About {hours} h to 100%.",
   "playtime_hours": "{hours} h played",
   "playtime_private": "Playtime: private",
+  "playtime_launch": "Steam doesn't share your playtime for this game: launch it so the site can pick it up.",
   "game_player_progress": "{name}'s progress",
   "game_player_compare": "Compare with me",
   "game_player_close": "Back to my view",

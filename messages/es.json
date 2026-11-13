@@ -1844,6 +1844,7 @@
   "game_seo_time": "Unas {hours} h para el 100 %.",
   "playtime_hours": "{hours} h jugadas",
   "playtime_private": "Tiempo de juego: privado",
+  "playtime_launch": "Steam no comparte tu tiempo en este juego: ábrelo para que el sitio lo recupere.",
   "game_player_progress": "Progreso de {name}",
   "game_player_compare": "Comparar conmigo",
   "game_player_close": "Volver a mi ficha",

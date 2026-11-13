@@ -314,6 +314,9 @@
               · {m.playtime_hours({ hours: hours(data.progress.playtimeMinutes) })}
             {/if}
           </p>
+          {#if data.playtimeMissing}
+            <p class="text-xs text-muted" data-testid="playtime-missing">{m.playtime_launch()}</p>
+          {/if}
         </div>
       {/if}
     </div>

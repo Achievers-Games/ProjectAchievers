@@ -1844,6 +1844,7 @@
   "game_seo_time": "Etwa {hours} Std. bis 100 %.",
   "playtime_hours": "{hours} Std. gespielt",
   "playtime_private": "Spielzeit: privat",
+  "playtime_launch": "Steam gibt deine Spielzeit für dieses Spiel nicht weiter: Starte es, damit die Seite sie übernimmt.",
   "game_player_progress": "Fortschritt von {name}",
   "game_player_compare": "Mit mir vergleichen",
   "game_player_close": "Zurück zu meiner Ansicht",

@@ -1894,6 +1894,7 @@
   "game_seo_time": "Около {hours} ч до 100 %.",
   "playtime_hours": "{hours} ч. в игре",
   "playtime_private": "Время в игре: скрыто",
+  "playtime_launch": "Steam не сообщает ваше время в этой игре: запустите её, чтобы сайт его получил.",
   "game_player_progress": "Прогресс игрока {name}",
   "game_player_compare": "Сравнить со мной",
   "game_player_close": "Вернуться к моей странице",

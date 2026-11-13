@@ -1807,6 +1807,7 @@
   "game_seo_time": "100% まで約 {hours} 時間。",
   "playtime_hours": "プレイ時間 {hours} 時間",
   "playtime_private": "プレイ時間：非公開",
+  "playtime_launch": "Steam はこのゲームのプレイ時間を提供していません。ゲームを起動するとサイトが取得します。",
   "game_player_progress": "{name} の進捗",
   "game_player_compare": "自分と比較",
   "game_player_close": "自分の表示に戻る",
