@@ -27,7 +27,7 @@ const STORE_SWEEP_FORCED_EVERY = 7 * 24 * 60 * 60 * 1000;
 const STORE_SWEEP_RETRY = 24 * 60 * 60 * 1000;
 const MAX_FRIENDS = 300;
 
-interface OwnedGame {
+export interface OwnedGame {
   appid: number;
   name: string;
   playtime_forever?: number;
@@ -590,7 +590,6 @@ export const syncSteam: ProviderSync = async ({
   account,
   report,
   onUnlocked,
-  force = false,
 }) => {
   const steamId = account.providerUserId;
   const owned = (await fetchOwnedGames(steamId)).filter((g) => g.has_community_visible_stats);
@@ -628,14 +627,13 @@ export const syncSteam: ProviderSync = async ({
       const minutes = ownedGame.playtime_forever ?? 0;
 
       // Le temps de jeu ne prouve pas l'absence de nouveaux succès (publication tardive,
-      // déblocage rétroactif). Au moins une vraie lecture par jour, ou sur demande explicite.
+      // déblocage rétroactif). Une vraie lecture par jour couvre aussi les jeux sans activité.
       const known = knownProgress.get(appId);
       const recent = recentlyPlayed.has(appId) ? 1 : (ownedGame.playtime_2weeks ?? 0);
       const checkedAt = known?.achievementsCheckedAt?.getTime();
       const checkedRecently =
         checkedAt !== undefined && Date.now() - checkedAt < ACHIEVEMENT_RECHECK;
       if (
-        !force &&
         !borrowed &&
         known &&
         checkedRecently &&

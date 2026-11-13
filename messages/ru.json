@@ -1621,6 +1621,7 @@
   "back_home": "На главную",
   "game_not_found": "Эта игра не найдена.",
   "achievement_not_found": "Это достижение не найдено.",
+  "profile_playing_steam": "Играет в {game} в Steam",
   "profile_not_found": "Этот профиль не найден или закрыт.",
   "provider_unknown": "Неизвестный провайдер",
   "login_required": "Требуется вход",

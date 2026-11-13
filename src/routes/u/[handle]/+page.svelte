@@ -1,7 +1,9 @@
 <script lang="ts">
+  import { subscribeJson } from '#lib/sse';
   import { enhance } from '$app/forms';
   import { submitWithToast } from '#lib/forms';
   import { m } from '#lib/paraglide/messages';
+  import Gamepad2 from '@lucide/svelte/icons/gamepad-2';
   import IdCard from '@lucide/svelte/icons/id-card';
   import Link from '@lucide/svelte/icons/link';
   import Avatar from '#lib/components/Avatar.svelte';
@@ -19,6 +21,30 @@
   const friendSubmit = submitWithToast();
 
   const profile = $derived(data.profile);
+  let playing = $state<{ name: string; slug: string } | null>(null);
+  $effect(() => {
+    const handle = profile.user.handle;
+    playing = null;
+    let stop: (() => void) | undefined;
+    function updateSubscription() {
+      stop?.();
+      stop = undefined;
+      if (document.hidden) return;
+      playing = null;
+      stop = subscribeJson<{ name: string; slug: string } | null>(
+        `/u/${encodeURIComponent(handle)}/jeu-en-cours`,
+        (game) => {
+          playing = game;
+        },
+      );
+    }
+    updateSubscription();
+    document.addEventListener('visibilitychange', updateSubscription);
+    return () => {
+      stop?.();
+      document.removeEventListener('visibilitychange', updateSubscription);
+    };
+  });
   const isMe = $derived(data.user?.id === profile.user.id);
   /** L'image de partage n'existe que pour un profil public : sinon, l'avatar seul. */
   const shareImage = $derived(
@@ -89,6 +115,15 @@
     <Avatar person={profile.user} play="always" size={112} />
     <div class="min-w-0">
       <h1>{profile.user.displayName}</h1>
+      {#if playing}
+        <a
+          href="/jeux/{playing.slug}"
+          class="inline-flex max-w-full items-center gap-2 text-sm text-ink hover:underline"
+        >
+          <Gamepad2 size={16} class="shrink-0" aria-hidden="true" />
+          <span>{m.profile_playing_steam({ game: playing.name })}</span>
+        </a>
+      {/if}
       <p class="text-muted">
         {m.member_since({ date: formatDate(profile.user.createdAt) })}
         {#if !profile.user.isPublic}· {m.private_profile()}{/if}

@@ -391,7 +391,6 @@ async function runAccountSync({ userId, provider, quiet }: SyncJob) {
     const result = await syncer({
       userId,
       account,
-      force: !quiet,
       report: (processed, total, game) =>
         publishSync(userId, { provider, status: 'SYNCING', processed, total, game }),
       onUnlocked: (game, count) => {

@@ -69,8 +69,8 @@ Les comptes se synchronisent à la liaison, puis automatiquement toutes les 24 h
 
 Les visites déclenchent aussi une synchronisation plus fréquente. Sur Steam, les jeux récents
 sont relus même si leur temps de jeu n'a pas changé ; les autres sont revérifiés au moins toutes
-les 24 heures lors d'une synchronisation. Le bouton d'actualisation force cette relecture sans
-attendre. Seule une lecture réussie des succès repousse la prochaine vérification.
+les 24 heures lors d'une synchronisation. Le bouton d'actualisation applique la même sélection.
+Seule une lecture réussie des succès repousse la prochaine vérification.
 
 **Un profil, plusieurs comptes** : chaque compte lié ouvre le même profil. Lier un compte qui
 appartient déjà à un autre profil propose de fusionner les deux, après confirmation. Un e-mail ou un

@@ -8,8 +8,6 @@ export type UnlockedGame = Pick<
 export interface SyncContext {
   userId: string;
   account: LinkedAccount;
-  /** Une synchronisation explicite relit aussi les jeux sans activité nouvelle. */
-  force?: boolean;
   report: (processed: number, total: number, game: string) => void;
   onUnlocked: (game: UnlockedGame, count: number) => void;
 }

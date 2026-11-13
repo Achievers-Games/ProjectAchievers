@@ -1573,6 +1573,7 @@
   "back_home": "Back to home",
   "game_not_found": "This game cannot be found.",
   "achievement_not_found": "This achievement cannot be found.",
+  "profile_playing_steam": "Playing {game} on Steam",
   "profile_not_found": "This profile cannot be found or is private.",
   "provider_unknown": "Unknown provider",
   "login_required": "Sign-in required",

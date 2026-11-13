@@ -1537,6 +1537,7 @@
   "back_home": "返回首页",
   "game_not_found": "找不到此游戏。",
   "achievement_not_found": "找不到此成就。",
+  "profile_playing_steam": "正在 Steam 上玩{game}",
   "profile_not_found": "此个人资料不存在或为私密。",
   "provider_unknown": "未知服务商",
   "login_required": "需要登录",
