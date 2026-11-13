@@ -34,10 +34,14 @@ async function listLibrary(
   ownerId: string,
   where: Prisma.GameWhereInput,
   viewerId: string | null,
+  recordTiming?: (metric: string, duration: number) => void,
 ) {
+  const pageStart = performance.now();
   const page = await libraryPage(filters, ownerId, viewerId);
+  recordTiming?.('library_page', performance.now() - pageStart);
   if (!page.entries.length) return { games: [], total: page.total };
   const families = page.entries.map((entry) => entry.family);
+  const cardsStart = performance.now();
   const rows = await db.userGame.findMany({
     where: {
       userId: ownerId,
@@ -52,6 +56,7 @@ async function listLibrary(
     orderBy: { game: { slug: 'asc' } },
     select: cardSelect,
   });
+  recordTiming?.('library_cards', performance.now() - cardsStart);
   const cards = groupLibrary(rows);
   const byFamily = new Map(rows.map((row) => [row.game.slug, row.game.familyKey ?? row.game.id]));
   const grouped = new Map(cards.map((card) => [byFamily.get(card.slug), card]));
@@ -64,9 +69,13 @@ async function listLibrary(
   };
 }
 
-export async function listGames(filters: GameFilters, viewerId: string | null) {
+export async function listGames(
+  filters: GameFilters,
+  viewerId: string | null,
+  recordTiming?: (metric: string, duration: number) => void,
+) {
   const where: Prisma.GameWhereInput = visibleGames(filters.showAdult);
-  if (filters.ownerId) return listLibrary(filters, filters.ownerId, where, viewerId);
+  if (filters.ownerId) return listLibrary(filters, filters.ownerId, where, viewerId, recordTiming);
   if (filters.q) where.name = { contains: filters.q, mode: 'insensitive' };
   if (filters.platform) where.platform = filters.platform;
   const and: Prisma.GameWhereInput[] = [];

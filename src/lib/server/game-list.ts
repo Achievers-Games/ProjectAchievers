@@ -70,7 +70,11 @@ const query = z.object({
 });
 
 /** Lecture commune à la page Jeux et au chargement au défilement. */
-export async function gamesFromUrl(url: URL, user: App.Locals['user']) {
+export async function gamesFromUrl(
+  url: URL,
+  user: App.Locals['user'],
+  recordTiming?: (metric: string, duration: number) => void,
+) {
   const parsed = query.parse(Object.fromEntries(url.searchParams));
   // Les anciens liens passaient le niveau dans « filtre ».
   const legacy = TIER_FILTERS.includes(parsed.filtre ?? '') ? parsed.filtre : undefined;
@@ -118,6 +122,7 @@ export async function gamesFromUrl(url: URL, user: App.Locals['user']) {
       showAdult: user?.showAdult,
     },
     user?.id ?? null,
+    recordTiming,
   );
 
   return {
