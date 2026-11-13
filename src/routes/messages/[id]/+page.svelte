@@ -2,6 +2,7 @@
   import { m } from '#lib/paraglide/messages';
   import ChevronLeft from '@lucide/svelte/icons/chevron-left';
   import Conversation from '#lib/components/Conversation.svelte';
+  import ChatPlaying from '#lib/components/ChatPlaying.svelte';
 
   let { data } = $props();
   const me = $derived(data.user?.id ?? '');
@@ -14,7 +15,10 @@
     <a href="/messages" class="text-muted hover:text-ink" aria-label={m.nav_messages()}>
       <ChevronLeft size={18} aria-hidden="true" />
     </a>
-    <h1 class="truncate text-base">{data.title}</h1>
+    <div class="min-w-0">
+      <h1 class="truncate text-base">{data.title}</h1>
+      {#if data.partnerHandle}<ChatPlaying handle={data.partnerHandle} />{/if}
+    </div>
   </header>
   <div class="min-h-0 flex-1">
     {#key data.id}<Conversation id={data.id} {me} />{/key}

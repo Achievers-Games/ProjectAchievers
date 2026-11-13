@@ -16,11 +16,13 @@
     id,
     me,
     onTitle,
+    onPartner,
     onGone,
   }: {
     id: string;
     me: string;
     onTitle?: (title: string) => void;
+    onPartner?: (handle: string | null) => void;
     /** La discussion n'existe plus pour ce joueur : clan quitté, par exemple. */
     onGone?: () => void;
   } = $props();
@@ -59,12 +61,14 @@
     if (!response?.ok) return;
     const conversation = (await response.json()) as {
       title: string;
+      partnerHandle: string | null;
       messages: Message[];
       unread: number;
     };
     messages = conversation.messages;
     unread.set(conversation.unread);
     onTitle?.(conversation.title);
+    onPartner?.(conversation.partnerHandle);
     void scrollDown();
   }
 

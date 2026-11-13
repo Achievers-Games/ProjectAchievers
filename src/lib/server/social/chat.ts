@@ -104,21 +104,26 @@ export async function unreadCount(userId: string) {
   return [...unread.values()].reduce((sum, count) => sum + count, 0);
 }
 
-/** Le nom affiché d'une discussion, ou null si le joueur n'en fait pas partie. */
-export async function conversationTitle(userId: string, conversationId: string) {
+/** L'en-tête d'une discussion, accessible à ses membres. */
+export async function conversationHeader(userId: string, conversationId: string) {
   const conversation = await db.conversation.findFirst({
     where: { id: conversationId, members: { some: { userId } } },
     select: {
+      directKey: true,
       clan: { select: { name: true } },
       members: {
         where: { NOT: { userId } },
         take: 1,
-        select: { user: { select: { displayName: true } } },
+        select: { user: { select: { displayName: true, handle: true } } },
       },
     },
   });
   if (!conversation) return null;
-  return conversation.clan?.name ?? conversation.members[0]?.user.displayName ?? '';
+  const person = conversation.members[0]?.user;
+  return {
+    title: conversation.clan?.name ?? person?.displayName ?? '',
+    partnerHandle: conversation.directKey ? (person?.handle ?? null) : null,
+  };
 }
 
 export async function markRead(userId: string, conversationId: string, through: Date) {
@@ -130,8 +135,8 @@ export async function markRead(userId: string, conversationId: string, through: 
 
 /** Renvoie les derniers messages, ou null si le joueur n'est pas dans cette discussion. */
 export async function readConversation(userId: string, conversationId: string) {
-  const title = await conversationTitle(userId, conversationId);
-  if (title === null) return null;
+  const header = await conversationHeader(userId, conversationId);
+  if (!header) return null;
 
   const messages = await db.message.findMany({
     // Un clan réunit parfois deux joueurs brouillés : chacun cesse de voir les messages de l'autre.
@@ -149,7 +154,7 @@ export async function readConversation(userId: string, conversationId: string) {
   if (messages[0]) await markRead(userId, conversationId, messages[0].createdAt);
   return {
     id: conversationId,
-    title,
+    ...header,
     messages: messages.reverse(),
   };
 }

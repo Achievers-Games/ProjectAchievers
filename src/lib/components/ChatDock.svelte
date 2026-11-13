@@ -7,6 +7,7 @@
   import X from '@lucide/svelte/icons/x';
   import Avatar from './Avatar.svelte';
   import Conversation from './Conversation.svelte';
+  import ChatPlaying from './ChatPlaying.svelte';
   import {
     closeChat,
     dockChats,
@@ -33,6 +34,7 @@
   let shown = $state(false);
   let listOpen = $state(false);
   let rows = $state<Row[]>([]);
+  let partners = $state<Record<string, string | null>>({});
 
   onMount(() => {
     shown = hasDock();
@@ -59,24 +61,32 @@
     listOpen = false;
     unread.update((count) => Math.max(0, count - row.unread));
     openChat(row.id, row.title);
+    partners[row.id] = row.person?.handle ?? null;
   }
 </script>
 
 {#if shown}<div class="fixed bottom-0 right-4 z-[var(--z-dock)] hidden items-end gap-2 md:flex">
     {#each $dockChats as chat (chat.id)}
-      <section class="card w-72 overflow-hidden rounded-b-none shadow-lg" aria-label={chat.title}>
+      {@const partner = partners[chat.id]}
+      <section
+        class="chat-enter card w-72 overflow-hidden rounded-b-none shadow-lg"
+        aria-label={chat.title}
+      >
         <header
           class="flex items-center gap-2 border-b border-line px-3 py-2"
           class:chat-waiting={chat.pending}
         >
-          <button
-            type="button"
-            class="min-w-0 flex-1 truncate text-left text-sm font-medium"
-            aria-expanded={!chat.folded}
-            onclick={() => openChat(chat.id, chat.title, !chat.folded)}
-          >
-            {chat.title}
-          </button>
+          <div class="min-w-0 flex-1">
+            <button
+              type="button"
+              class="block w-full truncate text-left text-sm font-medium"
+              aria-expanded={!chat.folded}
+              onclick={() => openChat(chat.id, chat.title, !chat.folded)}
+            >
+              {chat.title}
+            </button>
+            {#if partner && !chat.folded}<ChatPlaying handle={partner} />{/if}
+          </div>
           {#if chat.pending}<span class="social-badge">{chat.pending}</span>{/if}
           <button
             type="button"
@@ -88,11 +98,12 @@
           </button>
         </header>
         {#if !chat.folded}
-          <div class="h-80">
+          <div class="chat-body h-80">
             <Conversation
               id={chat.id}
               {me}
               onTitle={(title) => renameChat(chat.id, title)}
+              onPartner={(handle) => (partners[chat.id] = handle)}
               onGone={() => closeChat(chat.id)}
             />
           </div>
@@ -102,7 +113,9 @@
 
     <div class="w-64">
       {#if listOpen}
-        <ul class="card max-h-96 divide-y divide-line overflow-y-auto rounded-b-none shadow-lg">
+        <ul
+          class="chat-enter card max-h-96 divide-y divide-line overflow-y-auto rounded-b-none shadow-lg"
+        >
           {#each rows as row (row.id)}
             <li>
               <button
@@ -142,3 +155,24 @@
       </button>
     </div>
   </div>{/if}
+
+<style>
+  @media (prefers-reduced-motion: no-preference) {
+    .chat-enter,
+    .chat-body {
+      transform-origin: bottom;
+      animation: chat-open 200ms ease-out;
+    }
+
+    @keyframes chat-open {
+      from {
+        opacity: 0;
+        transform: translateY(10px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+  }
+</style>
