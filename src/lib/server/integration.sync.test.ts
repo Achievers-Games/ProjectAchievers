@@ -137,12 +137,11 @@ describe('synchronisation Steam', () => {
     expect(state.reads).toBe(0);
   });
 
-  it('relit les jeux récents même si GetOwnedGames ne donne pas playtime_2weeks', async () => {
+  it('saute un jeu récent inchangé déjà vérifié', async () => {
     const { userId, state } = await delayedAchievement();
     state.recent = true;
     await runSync({ userId, provider: 'STEAM', quiet: true });
-    expect(state.reads).toBe(1);
-    expect(await db.userGame.findFirst({ where: { userId } })).toMatchObject({ unlockedCount: 2 });
+    expect(state.reads).toBe(0);
   });
 
   it('ne repousse pas la prochaine vérification après une lecture Steam échouée', async () => {
@@ -255,6 +254,86 @@ describe('synchronisation Steam', () => {
     });
     expect(progress).toMatchObject({ unlockedCount: 1, totalCount: 2, completion: 50 });
     expect(progress.game.achievements.find((a) => a.name === 'Alpha')?.globalRarity).toBe(42.5);
+  });
+
+  /** Steam annonce, d'un seul appel, combien de succès le joueur a sur chaque jeu. */
+  function steamWithCounts(unlocked: number) {
+    const api = steamApi(ownedGames);
+    return vi.fn(async (input: string | URL) =>
+      String(input).includes('GetTopAchievementsForGames')
+        ? new Response(
+            JSON.stringify({
+              response: {
+                games: [
+                  { appid: 999001, total_achievements: 2, achievements: Array(unlocked).fill({}) },
+                ],
+              },
+            }),
+          )
+        : api(input),
+    );
+  }
+  const reads = (mock: ReturnType<typeof steamWithCounts>, method: string) =>
+    mock.mock.calls.filter(([url]) => String(url).includes(method)).length;
+
+  it('ne relit que les jeux dont le nombre de succès a bougé', async () => {
+    vi.stubGlobal('fetch', steamApi(ownedGames));
+    const userId = await steamUser();
+    await runSync({ userId, provider: 'STEAM' });
+    // Même vérifié il y a plus d'un jour : le décompte de Steam suffit à dire que rien n'a bougé.
+    await db.userGame.updateMany({
+      where: { userId },
+      data: { achievementsCheckedAt: new Date(Date.now() - 25 * 3_600_000) },
+    });
+
+    const same = steamWithCounts(1);
+    vi.stubGlobal('fetch', same);
+    await runSync({ userId, provider: 'STEAM', quiet: true });
+    expect(reads(same, 'GetPlayerAchievements')).toBe(0);
+    // La date de vérification suit quand même, pour le jour où les décomptes manqueraient.
+    const checked = (await db.userGame.findFirstOrThrow({ where: { userId } }))
+      .achievementsCheckedAt;
+    expect(Date.now() - (checked?.getTime() ?? 0)).toBeLessThan(60_000);
+
+    const more = steamWithCounts(2);
+    vi.stubGlobal('fetch', more);
+    await runSync({ userId, provider: 'STEAM', quiet: true });
+    expect(reads(more, 'GetPlayerAchievements')).toBe(1);
+  });
+
+  it('ajoute sans rien lire un jeu sans succès que le site connaît déjà', async () => {
+    vi.stubGlobal('fetch', steamApi(ownedGames));
+    await runSync({ userId: await steamUser(), provider: 'STEAM' });
+
+    const none = steamWithCounts(0);
+    vi.stubGlobal('fetch', none);
+    const userId = await steamUser();
+    await runSync({ userId, provider: 'STEAM' });
+    expect(reads(none, 'GetPlayerAchievements')).toBe(0);
+    expect(reads(none, 'GetSchemaForGame')).toBe(0);
+    expect(await db.userGame.findFirstOrThrow({ where: { userId } })).toMatchObject({
+      unlockedCount: 0,
+      totalCount: 2,
+      playtimeMinutes: 90,
+    });
+  });
+
+  it('reprend le temps de jeu d’un jeu inchangé sans relire ses succès', async () => {
+    vi.stubGlobal('fetch', steamApi(ownedGames));
+    const userId = await steamUser();
+    await runSync({ userId, provider: 'STEAM' });
+
+    const [game] = ownedGames.response.games;
+    const longer = { response: { games: [{ ...game, playtime_forever: 150 }] } };
+    const api = steamApi(longer);
+    const counted = steamWithCounts(1);
+    const mock = vi.fn(async (input: string | URL) =>
+      String(input).includes('GetTopAchievementsForGames') ? counted(input) : api(input),
+    );
+    vi.stubGlobal('fetch', mock);
+    await runSync({ userId, provider: 'STEAM', quiet: true });
+    expect(reads(mock, 'GetPlayerAchievements')).toBe(0);
+    expect((await db.userGame.findFirstOrThrow({ where: { userId } })).playtimeMinutes).toBe(150);
   });
 
   it('reconnaît un temps de jeu gardé privé et efface celui qui ne vient pas du joueur', async () => {

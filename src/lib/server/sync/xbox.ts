@@ -206,7 +206,13 @@ async function connect(account: Parameters<ProviderSync>[0]['account']): Promise
   }
 }
 
-export const syncXbox: ProviderSync = async ({ userId, account, report, onUnlocked }) => {
+export const syncXbox: ProviderSync = async ({
+  userId,
+  account,
+  report,
+  onUnlocked,
+  yieldSlot,
+}) => {
   const session = await connect(account);
   const history = await fetchTitles(session);
   const titles = history.filter(hasAchievements);
@@ -223,7 +229,13 @@ export const syncXbox: ProviderSync = async ({ userId, account, report, onUnlock
 
   const games = await syncGames(
     titles,
-    { platform: 'Xbox', concurrency: env().SYNC_GAME_CONCURRENCY, name: (t) => t.name, report },
+    {
+      platform: 'Xbox',
+      concurrency: env().SYNC_GAME_CONCURRENCY,
+      name: (t) => t.name,
+      report,
+      yieldSlot,
+    },
     async (title) => {
       if (known.get(title.titleId) === title.achievement?.currentAchievements) return;
 

@@ -66,6 +66,8 @@ interface SyncJob {
   provider: Provider;
   /** Lancée sans que le joueur ne demande rien : pas de message s'il n'y a rien à annoncer. */
   quiet?: boolean;
+  /** Rattrapage horaire d'un joueur absent : il cède le pas à ceux qui sont sur le site. */
+  background?: boolean;
 }
 
 const log = logger('Synchronisation');
@@ -92,11 +94,16 @@ function boss(): Promise<PgBoss> {
   })());
 }
 
-export async function enqueueSync(userId: string, provider: Provider, quiet = false) {
+export async function enqueueSync(
+  userId: string,
+  provider: Provider,
+  quiet = false,
+  background = false,
+) {
   if (!SYNCERS[provider] || !availableProviders()[provider]) return false;
 
   const instance = await boss();
-  const job: SyncJob = { userId, provider, quiet };
+  const job: SyncJob = { userId, provider, quiet, background };
   // L'état et la tâche sont validés ensemble, même si le processus s'arrête brutalement.
   const queued = await db.$transaction(async (tx) => {
     const { count } = await tx.linkedAccount.updateMany({
@@ -107,6 +114,8 @@ export async function enqueueSync(userId: string, provider: Provider, quiet = fa
     const id = await instance.send(SYNC_QUEUE, job, {
       retryLimit: 1,
       retryDelay: 60,
+      // Une visite ou une demande explicite sort de la file avant le rattrapage des absents.
+      priority: background ? 0 : 10,
       db: {
         executeSql: async (sql, values = []) => ({
           rows: await tx.$queryRawUnsafe(sql, ...values),
@@ -351,12 +360,16 @@ export async function runLiveGame(
 export function runSync(job: SyncJob) {
   return backgroundWork(
     `Synchronisation ${job.provider}`,
-    () => runAccountSync(job).finally(invalidatePublicCache),
-    1,
+    (yieldSlot) => runAccountSync(job, yieldSlot).finally(invalidatePublicCache),
+    // Même ordre dans le budget de fond : présent, puis absent, puis entretien.
+    job.background ? 0 : 1,
   );
 }
 
-async function runAccountSync({ userId, provider, quiet }: SyncJob) {
+async function runAccountSync(
+  { userId, provider, quiet }: SyncJob,
+  yieldSlot: () => Promise<void>,
+) {
   const syncer = SYNCERS[provider];
   if (!syncer) return;
 
@@ -394,6 +407,7 @@ async function runAccountSync({ userId, provider, quiet }: SyncJob) {
     const result = await syncer({
       userId,
       account,
+      yieldSlot,
       report: (processed, total, game) =>
         publishSync(userId, { provider, status: 'SYNCING', processed, total, game }),
       onUnlocked: (game, count) => {
@@ -515,7 +529,7 @@ async function requeueStaleAccounts(now: Date) {
       continue;
     }
     // Personne n'a rien demandé : pas de relecture forcée, ni de message sans nouveauté.
-    await enqueueSync(account.userId, account.provider, true);
+    await enqueueSync(account.userId, account.provider, true, true);
   }
 }
 
@@ -584,7 +598,8 @@ export async function startWorkers() {
 
   await instance.work<SyncJob>(
     SYNC_QUEUE,
-    { localConcurrency: env().SYNC_CONCURRENCY },
+    // Garde des comptes prêts à reprendre le créneau rendu entre deux lots.
+    { localConcurrency: env().SYNC_CONCURRENCY + 2 },
     async (jobs) => {
       for (const job of jobs) await runSync(job.data);
     },

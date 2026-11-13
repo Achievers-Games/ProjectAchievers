@@ -23,19 +23,31 @@ export class WorkScheduler {
     return this.waiting.length;
   }
 
-  async run<T>(name: string, task: () => Promise<T>, priority = 0): Promise<T> {
-    await new Promise<void>((resolve) => {
-      this.waiting.push({ priority, start: resolve });
-      this.waiting.sort((a, b) => b.priority - a.priority);
-      this.drain();
-    });
+  async run<T>(
+    name: string,
+    task: (yieldSlot: () => Promise<void>) => Promise<T>,
+    priority = 0,
+  ): Promise<T> {
+    const acquire = () =>
+      new Promise<void>((resolve) => {
+        this.waiting.push({ priority, start: resolve });
+        this.waiting.sort((a, b) => b.priority - a.priority);
+        this.drain();
+      });
+    await acquire();
     const started = performance.now();
     // Un identifiant interne distingue deux imports du même fournisseur.
     const label = `${name} #${++this.sequence}`;
     this.active.add(label);
     log.info('Début', { task: name, ...memory(), waiting: this.pending });
     try {
-      return await task();
+      return await task(async () => {
+        if (!this.pending) return;
+        this.active.delete(label);
+        this.running--;
+        await acquire();
+        this.active.add(label);
+      });
     } finally {
       log.info('Fin', {
         task: name,
@@ -57,8 +69,11 @@ export class WorkScheduler {
 }
 
 let scheduler: WorkScheduler | undefined;
-export const backgroundWork = <T>(name: string, task: () => Promise<T>, priority = 0) =>
-  (scheduler ??= new WorkScheduler(env().BACKGROUND_CONCURRENCY)).run(name, task, priority);
+export const backgroundWork = <T>(
+  name: string,
+  task: (yieldSlot: () => Promise<void>) => Promise<T>,
+  priority = 0,
+) => (scheduler ??= new WorkScheduler(env().BACKGROUND_CONCURRENCY)).run(name, task, priority);
 
 let timer: NodeJS.Timeout | undefined;
 /** Mesures périodiques sans snapshot du tas ni collecte forcée sur le petit CPU du NAS. */

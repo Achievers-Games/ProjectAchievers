@@ -8,6 +8,7 @@ export type UnlockedGame = Pick<
 export interface SyncContext {
   userId: string;
   account: LinkedAccount;
+  yieldSlot?: () => Promise<void>;
   report: (processed: number, total: number, game: string) => void;
   onUnlocked: (game: UnlockedGame, count: number) => void;
 }

@@ -50,6 +50,7 @@ interface GameLoop<T> {
   concurrency: number;
   name: (item: T) => string;
   report: (processed: number, total: number, game: string) => void;
+  yieldSlot?: () => Promise<void>;
 }
 
 /**
@@ -60,13 +61,13 @@ interface GameLoop<T> {
  */
 export async function syncGames<T>(
   items: T[],
-  { platform, concurrency, name, report }: GameLoop<T>,
+  { platform, concurrency, name, report, yieldSlot }: GameLoop<T>,
   task: (item: T) => Promise<void>,
 ): Promise<number> {
   let processed = 0;
   let failed = 0;
 
-  await mapLimit(items, concurrency, async (item) => {
+  const syncItem = async (item: T) => {
     try {
       await task(item);
     } catch (error) {
@@ -76,7 +77,12 @@ export async function syncGames<T>(
     }
     processed += 1;
     report(processed, items.length, name(item));
-  });
+  };
+  const batchSize = 20;
+  for (let offset = 0; offset < items.length; offset += batchSize) {
+    if (offset > 0) await yieldSlot?.();
+    await mapLimit(items.slice(offset, offset + batchSize), concurrency, syncItem);
+  }
 
   if (failed > 0 && failed === items.length) {
     throw new Error(`Aucun jeu ${platform} n'a pu être synchronisé`);

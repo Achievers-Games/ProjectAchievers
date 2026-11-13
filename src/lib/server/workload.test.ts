@@ -2,6 +2,35 @@ import { describe, expect, it, vi } from 'vitest';
 import { WorkScheduler } from './workload';
 
 describe('budget des traitements de fond', () => {
+  it('laisse un troisième import démarrer avant la reprise du premier', async () => {
+    const queue = new WorkScheduler(2);
+    const order: string[] = [];
+    let finish!: () => void;
+    const blocked = new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    const first = queue.run(
+      'premier',
+      async (yieldSlot) => {
+        order.push('premier lot');
+        await yieldSlot();
+        order.push('reprise');
+      },
+      1,
+    );
+    const second = queue.run('deuxième', () => blocked, 1);
+    const third = queue.run(
+      'troisième',
+      async () => {
+        order.push('troisième');
+        finish();
+      },
+      1,
+    );
+    await Promise.all([first, second, third]);
+    expect(order).toEqual(['premier lot', 'troisième', 'reprise']);
+  });
+
   it('partage le budget et laisse un import dépasser la maintenance en attente', async () => {
     const queue = new WorkScheduler(1);
     const order: string[] = [];

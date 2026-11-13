@@ -13,6 +13,7 @@ import type { Locale } from '#lib/paraglide/runtime';
 import { db } from '../db';
 import { env } from '../env';
 import { psnAuthorization } from '../providers/psn';
+import { rateLimit } from '../rate-limit';
 import { SyncError, syncGames } from './errors';
 import {
   fillConsoles,
@@ -25,6 +26,7 @@ import type { ProviderSync } from './types';
 
 const PAGE = 800;
 const log = logger('PlayStation');
+const PLAYTIME_EVERY = 6 * 60 * 60 * 1000;
 
 async function syncPsnPlaytime(userId: string, accountId: string, titles: TrophyTitle[]) {
   const authorization = await psnAuthorization();
@@ -175,7 +177,7 @@ async function allTitles(accountId: string) {
   }
 }
 
-export const syncPsn: ProviderSync = async ({ userId, account, report, onUnlocked }) => {
+export const syncPsn: ProviderSync = async ({ userId, account, report, onUnlocked, yieldSlot }) => {
   const accountId = account.providerUserId;
 
   const titles = await allTitles(accountId);
@@ -191,6 +193,7 @@ export const syncPsn: ProviderSync = async ({ userId, account, report, onUnlocke
   );
 
   let achievements = 0;
+  let reread = false;
 
   const games = await syncGames(
     titles,
@@ -199,11 +202,13 @@ export const syncPsn: ProviderSync = async ({ userId, account, report, onUnlocke
       concurrency: env().SYNC_GAME_CONCURRENCY,
       name: (t) => t.trophyTitleName,
       report,
+      yieldSlot,
     },
     async (title) => {
       // PSN donne le total obtenu par jeu : inutile de relire un jeu sans nouveauté.
       const earned = Object.values(title.earnedTrophies).reduce((sum, n) => sum + n, 0);
       if (known.get(title.npCommunicationId) === earned) return;
+      reread = true;
 
       const authorization = await psnAuthorization();
       const options = { npServiceName: title.npServiceName };
@@ -252,8 +257,12 @@ export const syncPsn: ProviderSync = async ({ userId, account, report, onUnlocke
     },
   );
 
-  await syncPsnPlaytime(userId, accountId, titles).catch(() => {
-    log.warn('Temps de jeu PSN indisponible');
-  });
+  // Après une partie (un trophée de plus), ou au plus toutes les six heures : relire le temps de
+  // chaque jeu à chaque visite coûtait une trentaine d'appels à Sony pour rien.
+  if (reread || rateLimit(`psn-temps:${userId}`, 1, PLAYTIME_EVERY)) {
+    await syncPsnPlaytime(userId, accountId, titles).catch((cause) => {
+      log.warn('Temps de jeu PSN indisponible :', cause);
+    });
+  }
   return { games, achievements };
 };

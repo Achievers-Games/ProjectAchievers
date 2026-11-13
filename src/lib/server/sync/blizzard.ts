@@ -350,7 +350,13 @@ export const syncBlizzard: ProviderSync = async (context) => {
   let achievements = 0;
   const games = await syncGames(
     GAMES,
-    { platform: 'Battle.net', concurrency: 1, name: (g) => g.name, report: context.report },
+    {
+      platform: 'Battle.net',
+      concurrency: 1,
+      name: (g) => g.name,
+      report: context.report,
+      yieldSlot: context.yieldSlot,
+    },
     async ({ sync }) => {
       achievements += await sync(context);
     },

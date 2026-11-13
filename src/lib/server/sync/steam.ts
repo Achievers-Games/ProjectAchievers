@@ -4,7 +4,7 @@ import { db } from '../db';
 import { env } from '../env';
 import { backgroundWork } from '../workload';
 import { logger } from '#lib/logger';
-import { fetchSteamIdentity } from '../providers/steam';
+import { fetchPlayingGames, fetchSteamIdentity } from '../providers/steam';
 
 const log = logger('Steam');
 import { fetchRetry, mapLimit, sleep, SyncError, syncGames } from './errors';
@@ -26,6 +26,7 @@ const STORE_SWEEP_FORCED_EVERY = 7 * 24 * 60 * 60 * 1000;
 /** Un balayage qui échoue (profil privé, panne de Steam) est retenté le lendemain. */
 const STORE_SWEEP_RETRY = 24 * 60 * 60 * 1000;
 const MAX_FRIENDS = 300;
+const FRIEND_READS = 4;
 
 export interface OwnedGame {
   appid: number;
@@ -50,9 +51,8 @@ interface SchemaAchievement {
  * en plus. `GetOwnedGames` n'envoie plus `rtime_last_played` : deux dates absentes ne disaient donc
  * rien, et le jeu était sauté à chaque passage — plus aucun succès Steam n'arrivait.
  *
- * Le temps de jeu seul ne suffit pas non plus : Steam publie les succès avec retard, et la relecture
- * en direct enregistre parfois le temps de jeu avant que le succès soit visible. Un jeu joué ces
- * deux dernières semaines est donc toujours relu.
+ * Cette règle n'est plus qu'un recours : la synchronisation compare d'abord le nombre de succès
+ * que Steam annonce par jeu (`achievementCounts`), ce qui voit aussi un succès publié en retard.
  */
 export const unchangedSince = (
   known: { lastPlayedAt: Date | null; playtimeMinutes: number },
@@ -113,7 +113,7 @@ async function fetchFriendGames(steamId: string) {
   };
   const friends = (data.friendslist?.friends ?? []).slice(0, MAX_FRIENDS);
   const games = new Map<number, OwnedGame>();
-  await mapLimit(friends, concurrency(), async ({ steamid }) => {
+  await mapLimit(friends, Math.max(concurrency(), FRIEND_READS), async ({ steamid }) => {
     // Seuls l'identifiant et le nom valent pour le joueur : le temps de jeu est celui de l'ami.
     for (const { appid, name } of await fetchOwnedGames(steamid).catch(() => [])) {
       games.set(appid, { appid, name });
@@ -148,23 +148,47 @@ async function* fetchStorePages() {
  * pour n'importe quel jeu et ne renvoie vide que si le joueur n'y a aucun succès.
  */
 async function appsWithUnlocks(steamId: string, appIds: number[], limit = concurrency()) {
+  const counts = await achievementCounts(steamId, appIds, 1, limit);
+  return new Set([...counts].flatMap(([appId, { unlocked }]) => (unlocked > 0 ? [appId] : [])));
+}
+
+/** Au-delà d'aucun jeu connu : la réponse porte alors tous les succès obtenus, donc leur nombre. */
+const ALL_ACHIEVEMENTS = 10_000;
+
+/**
+ * Par jeu, le nombre de succès que le joueur a obtenus et le total du jeu, pour 300 jeux par
+ * appel. C'est ce qui dit, sans lire chaque jeu, lesquels ont bougé : une bibliothèque de 700
+ * jeux se vérifie en trois appels au lieu de 700. Avec `max` à 1, la réponse reste légère et
+ * dit seulement si le joueur a quelque chose sur le jeu.
+ */
+async function achievementCounts(
+  steamId: string,
+  appIds: number[],
+  max = ALL_ACHIEVEMENTS,
+  limit = concurrency(),
+) {
   const batches = Array.from({ length: Math.ceil(appIds.length / APPS_PER_CALL) }, (_, index) =>
     appIds.slice(index * APPS_PER_CALL, (index + 1) * APPS_PER_CALL),
   );
-  const found = new Set<number>();
+  const counts = new Map<number, { unlocked: number; total: number }>();
   await mapLimit(batches, limit, async (batch) => {
-    const params: Record<string, string | number> = { steamid: steamId, max_achievements: 1 };
+    const params: Record<string, string | number> = { steamid: steamId, max_achievements: max };
     batch.forEach((appId, index) => (params[`appids[${index}]`] = appId));
     const response = await steamGet('/IPlayerService/GetTopAchievementsForGames/v1/', params);
     if (!response.ok) throw new Error(`GetTopAchievementsForGames a répondu ${response.status}`);
     const data = (await response.json()) as {
-      response?: { games?: { appid: number; achievements?: unknown[] }[] };
+      response?: {
+        games?: { appid: number; total_achievements?: number; achievements?: unknown[] }[];
+      };
     };
     for (const game of data.response?.games ?? []) {
-      if (game.achievements?.length) found.add(game.appid);
+      counts.set(game.appid, {
+        unlocked: game.achievements?.length ?? 0,
+        total: game.total_achievements ?? 0,
+      });
     }
   });
-  return found;
+  return counts;
 }
 
 /**
@@ -428,7 +452,13 @@ export async function fetchUnlocks(steamId: string, appId: number) {
 }
 
 /** Lit un jeu et les succès du joueur. Sans réponse pour un jeu emprunté, le jeu est laissé. */
-async function syncSteamGame(userId: string, steamId: string, source: OwnedGame, shared: boolean) {
+async function syncSteamGame(
+  userId: string,
+  steamId: string,
+  source: OwnedGame,
+  shared: boolean,
+  refreshSchema = false,
+) {
   const appId = String(source.appid);
   // Les images ne se cherchent qu'une fois : sinon chaque relecture coûtait un appel par jeu.
   const known = await db.game.findUnique({
@@ -443,7 +473,7 @@ async function syncSteamGame(userId: string, steamId: string, source: OwnedGame,
   });
 
   const stale = !game.schemaSyncedAt || Date.now() - game.schemaSyncedAt.getTime() > SCHEMA_MAX_AGE;
-  if (stale) {
+  if (stale || refreshSchema) {
     const schema = await fetchSchema(source.appid);
     if (schema) await saveAchievements(game.id, schema);
   }
@@ -614,13 +644,19 @@ async function notePlaytimePrivacy(
   }
 }
 
-export const syncSteam: ProviderSync = async ({ userId, account, report, onUnlocked }) => {
+export const syncSteam: ProviderSync = async ({
+  userId,
+  account,
+  report,
+  onUnlocked,
+  yieldSlot,
+}) => {
   const steamId = account.providerUserId;
   const everything = await fetchOwnedGames(steamId);
   const owned = everything.filter((g) => g.has_community_visible_stats);
   const library = new Set(owned.map((game) => game.appid));
   const recentGames = await fetchRecentGames(steamId).catch(() => []);
-  const recentlyPlayed = new Set(recentGames.map((game) => String(game.appid)));
+  const activeAppId = (await fetchPlayingGames([steamId]).catch(() => null))?.get(steamId);
   // Une méthode non documentée peut disparaître : la bibliothèque reste synchronisée.
   const shared = await findSharedGames({ userId, account }, library, recentGames).catch((cause) => {
     log.error('Jeux partagés Steam :', cause);
@@ -630,19 +666,63 @@ export const syncSteam: ProviderSync = async ({ userId, account, report, onUnloc
   const previous = await db.userGame.findMany({
     where: { userId, game: { platform: 'STEAM' } },
     select: {
+      unlockedCount: true,
       lastPlayedAt: true,
       playtimeMinutes: true,
       achievementsCheckedAt: true,
-      game: { select: { platformGameId: true } },
+      game: {
+        select: {
+          id: true,
+          name: true,
+          platformGameId: true,
+          totalAchievements: true,
+          schemaSyncedAt: true,
+        },
+      },
     },
   });
   const knownProgress = new Map(previous.map((row) => [row.game.platformGameId, row]));
 
+  // Les jeux empruntés déjà connus ne sont dans aucune liste de Steam : ils se vérifient par
+  // leur décompte, comme les autres, au lieu d'attendre la recherche quotidienne.
+  const listed = new Set([...owned, ...shared].map((game) => game.appid));
+  const lingering: OwnedGame[] = previous.flatMap(({ game }) =>
+    listed.has(Number(game.platformGameId))
+      ? []
+      : [{ appid: Number(game.platformGameId), name: game.name }],
+  );
+  const items: OwnedGame[] = [...owned, ...shared, ...lingering];
+
+  // Une méthode non documentée peut disparaître : sans elle, la règle des 24 heures reprend.
+  const counts = await achievementCounts(
+    steamId,
+    items.map((game) => game.appid),
+  ).catch((cause) => {
+    log.error('Décomptes Steam :', cause);
+    return null;
+  });
+
+  // Les jeux jamais vus sans aucun succès : s'ils sont au catalogue, rien n'est à lire chez Steam.
+  const fresh = items.filter(
+    (game) => !knownProgress.has(String(game.appid)) && counts?.get(game.appid)?.unlocked === 0,
+  );
+  const catalog = fresh.length
+    ? await db.game.findMany({
+        where: {
+          platform: 'STEAM',
+          platformGameId: { in: fresh.map((game) => String(game.appid)) },
+          schemaSyncedAt: { gte: new Date(Date.now() - SCHEMA_MAX_AGE) },
+        },
+        select: { id: true, platformGameId: true },
+      })
+    : [];
+  const inCatalog = new Map(catalog.map((game) => [game.platformGameId, game.id]));
+
   let achievements = 0;
 
   const games = await syncGames(
-    [...owned, ...shared],
-    { platform: 'Steam', concurrency: concurrency(), name: (g) => g.name, report },
+    items,
+    { platform: 'Steam', concurrency: concurrency(), name: (g) => g.name, report, yieldSlot },
     async (ownedGame) => {
       const appId = String(ownedGame.appid);
       const borrowed = !library.has(ownedGame.appid);
@@ -650,22 +730,76 @@ export const syncSteam: ProviderSync = async ({ userId, account, report, onUnloc
         ? new Date(ownedGame.rtime_last_played * 1000)
         : null;
       const minutes = ownedGame.playtime_forever ?? 0;
-
-      // Le temps de jeu ne prouve pas l'absence de nouveaux succès (publication tardive,
-      // déblocage rétroactif). Une vraie lecture par jour couvre aussi les jeux sans activité.
       const known = knownProgress.get(appId);
-      const recent = recentlyPlayed.has(appId) ? 1 : (ownedGame.playtime_2weeks ?? 0);
-      const checkedAt = known?.achievementsCheckedAt?.getTime();
-      const checkedRecently =
-        checkedAt !== undefined && Date.now() - checkedAt < ACHIEVEMENT_RECHECK;
-      if (!borrowed && known && checkedRecently && unchangedSince(known, playedAt, minutes, recent))
-        return;
+      const count = counts?.get(ownedGame.appid);
+      const playing = appId === activeAppId;
 
-      const { game, gained } = await syncSteamGame(userId, steamId, ownedGame, borrowed);
+      let refreshSchema = false;
+      if (!playing && known && count) {
+        // Steam vient de dire combien de succès le joueur a sur ce jeu : s'il n'y en a pas un de
+        // plus, il n'y a rien à lire. Seul le temps de jeu peut avoir bougé.
+        refreshSchema =
+          count.total !== known.game.totalAchievements &&
+          Date.now() - (known.game.schemaSyncedAt?.getTime() ?? 0) > ACHIEVEMENT_RECHECK;
+        if (count.unlocked === known.unlockedCount && !refreshSchema) {
+          const played = borrowed ? ownedGame.playtime_forever : minutes;
+          if (played !== undefined && played !== known.playtimeMinutes) {
+            await db.userGame.update({
+              where: { userId_gameId: { userId, gameId: known.game.id } },
+              data: { playtimeMinutes: played, ...(playedAt && { lastPlayedAt: playedAt }) },
+            });
+          }
+          return;
+        }
+      } else if (!playing && known) {
+        // Sans décompte : le temps de jeu ne prouve pas l'absence de nouveaux succès (publication
+        // tardive, déblocage rétroactif). Une vraie lecture par jour couvre les jeux sans activité.
+        const checkedAt = known.achievementsCheckedAt?.getTime();
+        const checkedRecently =
+          checkedAt !== undefined && Date.now() - checkedAt < ACHIEVEMENT_RECHECK;
+        if (
+          checkedRecently &&
+          unchangedSince(
+            known,
+            borrowed ? known.lastPlayedAt : playedAt,
+            borrowed && ownedGame.playtime_forever === undefined ? known.playtimeMinutes : minutes,
+          )
+        )
+          return;
+      } else if (!playing && !known && inCatalog.has(appId)) {
+        // Un jeu de la bibliothèque sans succès, déjà connu du site : il entre tel quel.
+        await saveProgress(userId, inCatalog.get(appId)!, [], {
+          achievementsCheckedAt: new Date(),
+          ...(!borrowed && { playtimeMinutes: minutes, lastPlayedAt: playedAt }),
+        });
+        return;
+      }
+
+      const { game, gained } = await syncSteamGame(
+        userId,
+        steamId,
+        ownedGame,
+        borrowed,
+        refreshSchema,
+      );
       achievements += gained;
       if (gained > 0) onUnlocked(game, gained);
     },
   );
+
+  // Tous les jeux viennent d'être vérifiés d'un coup : la date ne s'écrit qu'une fois par jour,
+  // elle ne sert qu'au jour où les décomptes manqueraient.
+  if (counts) {
+    const dayAgo = new Date(Date.now() - ACHIEVEMENT_RECHECK);
+    await db.userGame.updateMany({
+      where: {
+        userId,
+        game: { platform: 'STEAM' },
+        OR: [{ achievementsCheckedAt: null }, { achievementsCheckedAt: { lt: dayAgo } }],
+      },
+      data: { achievementsCheckedAt: new Date() },
+    });
+  }
 
   await notePlaytimePrivacy(userId, account, everything);
 

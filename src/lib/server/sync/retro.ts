@@ -84,7 +84,13 @@ async function fetchGame(ulid: string, gameId: number) {
   return (await response.json()) as RetroGame;
 }
 
-export const syncRetro: ProviderSync = async ({ userId, account, report, onUnlocked }) => {
+export const syncRetro: ProviderSync = async ({
+  userId,
+  account,
+  report,
+  onUnlocked,
+  yieldSlot,
+}) => {
   const ulid = account.providerUserId;
   const list = (await fetchGames(ulid)).filter(
     (game) => game.MaxPossible > 0 && !VIRTUAL_CONSOLES.has(game.ConsoleID ?? 0),
@@ -105,6 +111,7 @@ export const syncRetro: ProviderSync = async ({ userId, account, report, onUnloc
       concurrency: env().SYNC_GAME_CONCURRENCY,
       name: (g) => g.Title,
       report,
+      yieldSlot,
     },
     async (summary) => {
       const gameId = String(summary.GameID);
