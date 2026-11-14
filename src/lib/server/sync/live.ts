@@ -4,7 +4,7 @@ import { globals } from '../globals';
 import { logger } from '#lib/logger';
 import { applyAccountLook, type AccountLook } from '../accounts';
 import { availableProviders } from '../providers';
-import { fetchSteamLook, fetchSteamSummaries } from '../providers/steam';
+import { fetchSteamLook, fetchSteamSummaries, type SteamSummary } from '../providers/steam';
 import { visibleUsers } from './events';
 import { enqueueSync, runLiveGame } from './queue';
 import { mapLimit } from './errors';
@@ -23,7 +23,6 @@ import { achievementCounts, fetchLibrary, fetchRecentGames, playtimeIsPublic } f
 const INTERVAL = 10_000;
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
-const STEAM_BATCH = 100;
 const LIVE_CONCURRENCY = 2;
 const log = logger('Succès en direct');
 // Les imports complets peuvent occuper le budget général pendant plusieurs minutes.
@@ -198,23 +197,22 @@ export async function checkLiveGames() {
       })
     : [];
 
-  // Un seul appel pour 100 joueurs : le jeu en cours et l'avatar.
+  // Un seul appel pour 100 joueurs, partagé avec la page « jeu en cours » des profils.
   const playing = new Map<string, string>();
-  for (let index = 0; index < accounts.length; index += STEAM_BATCH) {
-    const batch = accounts.slice(index, index + STEAM_BATCH);
-    const summaries = await fetchSteamSummaries(batch.map((account) => account.providerUserId));
-    for (const account of batch) {
-      const summary = summaries.get(account.providerUserId);
-      if (summary?.gameId) playing.set(account.providerUserId, summary.gameId);
-      if (summary?.avatarUrl && summary.avatarUrl !== account.avatarUrl) {
-        const { avatarMotionUrl, frameUrl, frameMotionUrl } = account;
-        await applyAccountLook(
-          account,
-          { avatarMotionUrl, frameUrl, frameMotionUrl },
-          summary.avatarUrl,
-        ).catch((cause) => log.error('Avatar Steam :', cause));
-        account.avatarUrl = summary.avatarUrl;
-      }
+  const summaries = accounts.length
+    ? await fetchSteamSummaries(accounts.map((account) => account.providerUserId))
+    : new Map<string, SteamSummary>();
+  for (const account of accounts) {
+    const summary = summaries.get(account.providerUserId);
+    if (summary?.gameId) playing.set(account.providerUserId, summary.gameId);
+    if (summary?.avatarUrl && summary.avatarUrl !== account.avatarUrl) {
+      const { avatarMotionUrl, frameUrl, frameMotionUrl } = account;
+      await applyAccountLook(
+        account,
+        { avatarMotionUrl, frameUrl, frameMotionUrl },
+        summary.avatarUrl,
+      ).catch((cause) => log.error('Avatar Steam :', cause));
+      account.avatarUrl = summary.avatarUrl;
     }
   }
 

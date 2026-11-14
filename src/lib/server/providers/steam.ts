@@ -87,10 +87,14 @@ export interface SteamSummary {
 }
 
 /**
- * Le résumé public de chaque joueur, par SteamID : jusqu'à 100 joueurs par appel. Le jeu en
- * cours n'y figure que pour un profil public, et pas pour un joueur apparaissant hors ligne.
+ * Le suivi en direct et la page « jeu en cours » des profils demandent le même résumé, au même
+ * rythme : une réponse plus jeune que ce délai sert aux deux, sans second appel.
  */
-export async function fetchSteamSummaries(steamIds: string[]) {
+export const SUMMARY_MAX_AGE = 9_000;
+const SUMMARY_BATCH = 100;
+const summaryCache = new Map<string, { summary: SteamSummary; at: number }>();
+
+async function requestSummaries(steamIds: string[]) {
   const url = new URL('https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/');
   url.searchParams.set('key', env().STEAM_API_KEY ?? '');
   url.searchParams.set('steamids', steamIds.join(','));
@@ -100,17 +104,44 @@ export async function fetchSteamSummaries(steamIds: string[]) {
   const data = (await response.json()) as {
     response?: { players?: { steamid: string; gameid?: string; avatarfull?: string }[] };
   };
-  return new Map<string, SteamSummary>(
-    (data.response?.players ?? []).map((player) => [
-      player.steamid,
-      { gameId: player.gameid, avatarUrl: player.avatarfull },
-    ]),
+  const players = new Map(
+    (data.response?.players ?? []).map((player) => [player.steamid, player] as const),
+  );
+  const at = Date.now();
+  for (const steamId of steamIds) {
+    const player = players.get(steamId);
+    // Un joueur absent de la réponse est retenu aussi : il ne coûte pas un appel à chaque fois.
+    const summary = { gameId: player?.gameid, avatarUrl: player?.avatarfull };
+    summaryCache.set(steamId, { summary, at });
+  }
+}
+
+/**
+ * Le résumé public de chaque joueur, par SteamID, par lots de 100 joueurs par appel. Le jeu en
+ * cours n'y figure que pour un profil public, et pas pour un joueur apparaissant hors ligne.
+ */
+export async function fetchSteamSummaries(steamIds: string[], maxAge = SUMMARY_MAX_AGE) {
+  const now = Date.now();
+  if (summaryCache.size > 5_000) {
+    for (const [id, { at }] of summaryCache) if (now - at > 60_000) summaryCache.delete(id);
+  }
+  const stale = [...new Set(steamIds)].filter(
+    (steamId) => now - (summaryCache.get(steamId)?.at ?? 0) > maxAge,
+  );
+  for (let index = 0; index < stale.length; index += SUMMARY_BATCH) {
+    await requestSummaries(stale.slice(index, index + SUMMARY_BATCH));
+  }
+  return new Map(
+    steamIds.flatMap((steamId) => {
+      const cached = summaryCache.get(steamId);
+      return cached ? [[steamId, cached.summary] as const] : [];
+    }),
   );
 }
 
 /** Les jeux lancés en ce moment, par SteamID. */
-export async function fetchPlayingGames(steamIds: string[]) {
-  const summaries = await fetchSteamSummaries(steamIds);
+export async function fetchPlayingGames(steamIds: string[], maxAge?: number) {
+  const summaries = await fetchSteamSummaries(steamIds, maxAge);
   return new Map(
     [...summaries].flatMap(([steamId, { gameId }]) => (gameId ? [[steamId, gameId] as const] : [])),
   );

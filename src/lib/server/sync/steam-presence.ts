@@ -45,12 +45,12 @@ async function refresh() {
     });
     const steam = accounts.filter((account) => account.provider === 'STEAM');
     const current = new Map(steam.map((account) => [account.user.handle, account]));
-    const playing = new Map<string, string>();
-    for (let i = 0; i < steam.length; i += 100) {
-      const ids = steam.slice(i, i + 100).map((account) => account.providerUserId);
-      const games = await fetchPlayingGames(ids).catch(() => null);
-      for (const [id, app] of games ?? []) playing.set(id, app);
-    }
+    // Même appel que le suivi en direct : un joueur suivi des deux côtés ne coûte qu'une fois.
+    const playing = steam.length
+      ? ((await fetchPlayingGames(steam.map((account) => account.providerUserId)).catch(
+          () => null,
+        )) ?? new Map<string, string>())
+      : new Map<string, string>();
     const games = await db.game.findMany({
       where: {
         ...publicGames,
@@ -199,7 +199,8 @@ export function watchSteamPresence(handle: string, send: Listener) {
   entry.listeners.add(send);
   send(entry.game ?? null);
   if (!timer) {
-    timer = setInterval(() => void refresh(), 5_000);
+    // Au rythme du suivi en direct, pour partager ses réponses de Steam.
+    timer = setInterval(() => void refresh(), 10_000);
     timer.unref();
     void refresh();
   }

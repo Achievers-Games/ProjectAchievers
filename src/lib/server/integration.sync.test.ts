@@ -7,6 +7,7 @@ import { type CardDrop } from '#lib/collection';
 import { db } from './db';
 import { globals } from './globals';
 import { checkLiveGames, steamDailyPass } from './sync/live';
+import { fetchPlayingGames, fetchSteamSummaries } from './providers/steam';
 import { enqueueSync, refreshAccounts, runSync, startWorkers } from './sync/queue';
 import { isAdultOnly, rateGames, tagGames } from './sync/content';
 import { markVisible, onCard, onSync, type SyncEvent } from './sync/events';
@@ -540,8 +541,8 @@ describe('synchronisation Steam', () => {
         : api(input);
     });
     const userId = await steamUser();
-    await runSync({ userId, provider: 'STEAM' });
     steamid = (await db.linkedAccount.findFirstOrThrow({ where: { userId } })).providerUserId;
+    await runSync({ userId, provider: 'STEAM' });
     const events: SyncEvent[] = [];
     const stop = onSync(userId, (event) => events.push(event));
     markVisible(userId);
@@ -751,6 +752,20 @@ describe('synchronisation Steam', () => {
   const json = (value: unknown) => new Response(JSON.stringify(value));
   const nobodyPlaying = (url: string) =>
     url.includes('GetPlayerSummaries') ? json({ response: { players: [] } }) : undefined;
+
+  it('sert un même résumé Steam au suivi en direct et à la page « jeu en cours »', async () => {
+    const steamId = `${STEAM_ID}${Math.floor(Math.random() * 1e6)}`;
+    const mock = vi.fn(async () =>
+      json({ response: { players: [{ steamid: steamId, gameid: '999001' }] } }),
+    );
+    vi.stubGlobal('fetch', mock);
+    expect((await fetchSteamSummaries([steamId])).get(steamId)?.gameId).toBe('999001');
+    expect((await fetchPlayingGames([steamId])).get(steamId)).toBe('999001');
+    expect(mock).toHaveBeenCalledTimes(1);
+    // Une réponse trop vieille pour qui la demande fraîche part de nouveau chez Steam.
+    await fetchPlayingGames([steamId], 0);
+    expect(mock).toHaveBeenCalledTimes(2);
+  });
 
   it('laisse tranquille un onglet resté en arrière-plan', async () => {
     const { userId, mock } = await liveUser(nobodyPlaying);
