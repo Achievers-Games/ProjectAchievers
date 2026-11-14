@@ -5,9 +5,9 @@ import { logger } from '#lib/logger';
 import { availableProviders } from '../providers';
 import { fetchPlayingGames } from '../providers/steam';
 import { connectedUsers } from './events';
-import { runLiveGame } from './queue';
+import { enqueueSync, runLiveGame } from './queue';
 import { mapLimit } from './errors';
-import { fetchRecentGames, type OwnedGame } from './steam';
+import { fetchRecentGames, playtimeIsPublic, type OwnedGame } from './steam';
 
 /** Steam n'envoie aucune notification : seuls les joueurs présents sur le site sont surveillés. */
 const INTERVAL = 10_000;
@@ -73,8 +73,38 @@ async function catchUpRecent(userId: string, steamId: string, checkedAppId?: str
   }
 }
 
+/** Assez souvent pour que le joueur n'attende pas, sans interroger Steam à chaque passage. */
+const PRIVACY_CHECK = 20_000;
+let lastPrivacyCheck = 0;
+
+/**
+ * Un joueur à qui le site vient de dire que son temps de jeu est privé part le régler dans
+ * Steam, puis revient : sans cela il attendrait la prochaine synchronisation en croyant à une
+ * panne. Tant qu'il est sur le site, on regarde si Steam annonce de nouveau du temps de jeu, et
+ * la synchronisation repart aussitôt.
+ */
+async function resyncUnhidden(userIds: string[]) {
+  if (!userIds.length || Date.now() - lastPrivacyCheck < PRIVACY_CHECK) return;
+  lastPrivacyCheck = Date.now();
+  const accounts = await db.linkedAccount.findMany({
+    where: {
+      provider: 'STEAM',
+      playtimeHidden: true,
+      userId: { in: userIds },
+      syncStatus: { notIn: ['QUEUED', 'SYNCING'] },
+    },
+    select: { userId: true, providerUserId: true },
+  });
+  await mapLimit(accounts, LIVE_CONCURRENCY, async ({ userId, providerUserId }) => {
+    if (await playtimeIsPublic(providerUserId).catch(() => false)) {
+      await enqueueSync(userId, 'STEAM', true);
+    }
+  });
+}
+
 export async function checkLiveGames() {
   const userIds = connectedUsers();
+  await resyncUnhidden(userIds).catch((cause) => log.error(cause));
   const accounts = userIds.length
     ? await db.linkedAccount.findMany({
         where: {

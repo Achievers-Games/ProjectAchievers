@@ -93,6 +93,20 @@ async function ownedGames(steamId: string, extra: Record<string, number> = {}) {
 }
 
 /**
+ * Vrai dès que Steam annonce du temps de jeu pour ce joueur : un seul appel léger, sans le nom
+ * des jeux, pour savoir s'il vient de rendre son temps public.
+ */
+export async function playtimeIsPublic(steamId: string) {
+  const response = await steamGet('/IPlayerService/GetOwnedGames/v1/', {
+    steamid: steamId,
+    include_played_free_games: 1,
+  });
+  if (!response.ok) return false;
+  const data = (await response.json()) as { response?: { games?: OwnedGame[] } };
+  return (data.response?.games ?? []).some((game) => (game.playtime_forever ?? 0) > 0);
+}
+
+/**
  * La bibliothèque du joueur. Les jeux gratuits forment une seconde liste, bien plus longue : n'en
  * sont gardés que ceux qu'il a réellement lancés, pour ne pas remplir son profil de jeux jamais vus.
  */

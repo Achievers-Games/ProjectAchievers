@@ -17,6 +17,7 @@
   import CommandPalette from '#lib/components/CommandPalette.svelte';
   import NotificationBell from '#lib/components/NotificationBell.svelte';
   import PushPrompt from '#lib/components/PushPrompt.svelte';
+  import SteamPrivacyPrompt from '#lib/components/SteamPrivacyPrompt.svelte';
   import RewardReveal from '#lib/components/RewardReveal.svelte';
   import Toasts from '#lib/components/Toasts.svelte';
   import AchievementPop from '#lib/components/AchievementPop.svelte';
@@ -332,6 +333,9 @@
 
 {#if data.user && !inSocial}<ChatDock me={data.user.id} />{/if}
 {#if data.user}<PushPrompt publicKey={data.pushKey} />{/if}
+{#if data.user}
+  <SteamPrivacyPrompt userId={data.user.id} hidden={data.steamPlaytimePrivate} />
+{/if}
 <CommandPalette bind:open={paletteOpen} />
 <RewardReveal />
 <Toasts />

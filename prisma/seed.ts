@@ -144,6 +144,29 @@ async function main() {
     },
   });
 
+  // Un compte Steam au temps de jeu privé : le site doit le dire au joueur, où qu'il soit.
+  const nora = await db.user.upsert({
+    where: { handle: 'nora' },
+    update: {},
+    create: { handle: 'nora', displayName: 'Nora' },
+  });
+  const hiddenPlaytime = {
+    syncStatus: 'COMPLETED' as const,
+    lastSyncedAt: new Date(),
+    playtimeHidden: true,
+  };
+  await db.linkedAccount.upsert({
+    where: { provider_providerUserId: { provider: 'STEAM', providerUserId: 'nora-steam' } },
+    update: hiddenPlaytime,
+    create: {
+      userId: nora.id,
+      provider: 'STEAM',
+      providerUserId: 'nora-steam',
+      displayName: 'Nora',
+      ...hiddenPlaytime,
+    },
+  });
+
   const perfect = await db.game.findUniqueOrThrow({ where: { slug: 'hades' } });
   const steps = await db.achievement.findMany({ where: { gameId: perfect.id } });
   await db.userAchievement.createMany({
