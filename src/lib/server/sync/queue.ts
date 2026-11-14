@@ -135,9 +135,10 @@ export async function refreshAccounts(
   userId: string,
   cooldown: number | ((provider: Provider) => number),
   quiet = false,
+  only?: Provider,
 ) {
   const wait = typeof cooldown === 'number' ? () => cooldown : cooldown;
-  const providers = Object.keys(SYNCERS) as Provider[];
+  const providers = only ? [only] : (Object.keys(SYNCERS) as Provider[]);
   const [accounts, recent] = await Promise.all([
     db.linkedAccount.findMany({
       where: {
@@ -173,8 +174,21 @@ export async function refreshAccounts(
   return started.filter(Boolean).length;
 }
 
-/** L'API Steam est officielle ; PSN passe par un compte de service unique, à ménager. */
-const autoInterval = (provider: Provider) => (provider === 'STEAM' ? 5 : 15) * 60 * 1000;
+/**
+ * Tous les délais de synchronisation complète, au même endroit. Steam n'en a pas besoin à la
+ * visite : le suivi en direct (live.ts) relit toutes les 10 s le jeu en cours et chaque minute
+ * les jeux dont le nombre de succès a bougé, et les absents passent chaque jour par la même
+ * tournée. Les autres plateformes n'ont pas ce suivi : une visite les relit toutes les
+ * 15 minutes, et le balayage horaire les rattrape une fois par jour.
+ */
+export const SYNC_DELAYS = {
+  /** Le bouton du joueur, global ou par compte. */
+  manual: 2 * 60 * 1000,
+  /** Une visite, pour les plateformes sans suivi en direct. */
+  visit: 15 * 60 * 1000,
+} as const;
+const visitInterval = (provider: Provider) =>
+  provider === 'STEAM' ? Number.POSITIVE_INFINITY : SYNC_DELAYS.visit;
 const RUN_HISTORY = 30 * 24 * 60 * 60 * 1000;
 const MESSAGE_RETENTION = 365 * 24 * 60 * 60 * 1000;
 const DELIVERED_EVENTS = 30 * 24 * 60 * 60 * 1000;
@@ -188,7 +202,7 @@ export function autoRefresh(userId: string) {
   if (rateLimit(`succes-site:${userId}`, 1, SITE_CHECK)) {
     void backgroundWork('Succès du site', () => reviewSiteAchievements(userId), -1);
   }
-  void refreshAccounts(userId, autoInterval, true).catch((cause) =>
+  void refreshAccounts(userId, visitInterval, true).catch((cause) =>
     log.error('Rafraîchissement :', cause),
   );
 }
@@ -321,7 +335,7 @@ async function announceCards(user: SyncUser, userId: string, before: Map<string,
 
 /**
  * Relit un seul jeu, celui que le joueur a ouvert : les succès arrivent sur sa page en direct.
- * Un jeu encore inconnu attend la synchronisation complète, qui saura lire son catalogue.
+ * Un jeu encore inconnu passe par la synchronisation complète, qui saura lire son catalogue.
  */
 export async function runLiveGame(
   userId: string,
@@ -333,7 +347,8 @@ export async function runLiveGame(
     where: { userId, game: { platform: 'STEAM', platformGameId: appId } },
     select: { unlockedCount: true, hidden: true, game: true },
   });
-  if (!owned) return 0;
+  // `null` : le jeu n'est pas encore au profil, le suivi en direct le fait importer.
+  if (!owned) return null;
 
   const unlocks = await fetchUnlocks(steamId, Number(appId));
   if (unlocks.length <= owned.unlockedCount) {
@@ -525,7 +540,7 @@ async function purgeExpired(now: Date) {
   await db.message.deleteMany({ where: { createdAt: before(MESSAGE_RETENTION) } });
 }
 
-/** Remet en file les comptes que personne n'a synchronisés depuis un jour. */
+/** Relit les comptes que personne n'a synchronisés depuis un jour. */
 async function requeueStaleAccounts(now: Date) {
   const stale = new Date(now.getTime() - STALE_AFTER);
   const accounts = await db.linkedAccount.findMany({
@@ -534,7 +549,7 @@ async function requeueStaleAccounts(now: Date) {
       syncStatus: { in: ['IDLE', 'COMPLETED', 'FAILED'] },
       OR: [{ lastSyncedAt: null }, { lastSyncedAt: { lt: stale } }],
     },
-    select: { userId: true, provider: true, syncStatus: true },
+    select: { userId: true, provider: true, syncStatus: true, lastSyncedAt: true },
     take: 500,
   });
   // Un échec ne touche pas `lastSyncedAt` : sans ce garde-fou, un profil privé repartait à chaque
@@ -554,8 +569,29 @@ async function requeueStaleAccounts(now: Date) {
     if (account.syncStatus === 'FAILED' && recent.has(`${account.userId}:${account.provider}`)) {
       continue;
     }
+    // Steam a sa tournée légère, la même que pour un joueur présent : la synchronisation
+    // complète ne sert qu'au premier import, et à reprendre un compte en échec.
+    if (account.provider === 'STEAM' && account.lastSyncedAt && account.syncStatus !== 'FAILED') {
+      await steamPass(account.userId);
+      continue;
+    }
     // Personne n'a rien demandé : pas de relecture forcée, ni de message sans nouveauté.
     await enqueueSync(account.userId, account.provider, true, true);
+  }
+}
+
+/** Un échec est journalisé : le compte repassera le lendemain. */
+async function steamPass(userId: string) {
+  // Import différé : le suivi en direct dépend lui-même de cette file.
+  const { steamDailyPass } = await import('./live');
+  try {
+    await backgroundWork('Tournée Steam', () => steamDailyPass(userId), 0);
+    await db.linkedAccount.updateMany({
+      where: { userId, provider: 'STEAM' },
+      data: { lastSyncedAt: new Date() },
+    });
+  } catch (cause) {
+    log.error('Tournée Steam :', cause);
   }
 }
 

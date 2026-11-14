@@ -1,5 +1,6 @@
 import type { AccountLook, Identity } from '../accounts';
 import { env } from '../env';
+import { countSteamCall } from '../steam-quota';
 import { callbackUrl } from './index';
 
 const OPENID_ENDPOINT = 'https://steamcommunity.com/openid/login';
@@ -61,6 +62,7 @@ export async function fetchSteamIdentity(steamId: string): Promise<Identity> {
   url.searchParams.set('key', env().STEAM_API_KEY ?? '');
   url.searchParams.set('steamids', steamId);
 
+  countSteamCall(url);
   const response = await fetch(url, { signal: AbortSignal.timeout(10_000) });
   if (!response.ok) throw new Error(`Steam a répondu ${response.status}`);
   const data = (await response.json()) as {
@@ -78,23 +80,39 @@ export async function fetchSteamIdentity(steamId: string): Promise<Identity> {
   };
 }
 
+export interface SteamSummary {
+  /** Le jeu lancé en ce moment, s'il y en a un. */
+  gameId?: string;
+  avatarUrl?: string;
+}
+
 /**
- * Les jeux lancés en ce moment, par SteamID : jusqu'à 100 joueurs par appel.
- * Steam ne le dit que pour un profil public, et pas à un joueur apparaissant hors ligne.
+ * Le résumé public de chaque joueur, par SteamID : jusqu'à 100 joueurs par appel. Le jeu en
+ * cours n'y figure que pour un profil public, et pas pour un joueur apparaissant hors ligne.
  */
-export async function fetchPlayingGames(steamIds: string[]) {
+export async function fetchSteamSummaries(steamIds: string[]) {
   const url = new URL('https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/');
   url.searchParams.set('key', env().STEAM_API_KEY ?? '');
   url.searchParams.set('steamids', steamIds.join(','));
+  countSteamCall(url);
   const response = await fetch(url, { signal: AbortSignal.timeout(10_000) });
   if (!response.ok) throw new Error(`Steam a répondu ${response.status}`);
   const data = (await response.json()) as {
-    response?: { players?: { steamid: string; gameid?: string }[] };
+    response?: { players?: { steamid: string; gameid?: string; avatarfull?: string }[] };
   };
+  return new Map<string, SteamSummary>(
+    (data.response?.players ?? []).map((player) => [
+      player.steamid,
+      { gameId: player.gameid, avatarUrl: player.avatarfull },
+    ]),
+  );
+}
+
+/** Les jeux lancés en ce moment, par SteamID. */
+export async function fetchPlayingGames(steamIds: string[]) {
+  const summaries = await fetchSteamSummaries(steamIds);
   return new Map(
-    (data.response?.players ?? []).flatMap((player) =>
-      player.gameid ? [[player.steamid, player.gameid] as const] : [],
-    ),
+    [...summaries].flatMap(([steamId, { gameId }]) => (gameId ? [[steamId, gameId] as const] : [])),
   );
 }
 
@@ -105,34 +123,29 @@ interface SteamItem {
   image_large?: string;
 }
 
-async function fetchSteamItem(method: string, steamId: string) {
-  const url = new URL(`https://api.steampowered.com/IPlayerService/${method}/v1/`);
-  url.searchParams.set('key', env().STEAM_API_KEY ?? '');
-  url.searchParams.set('steamid', steamId);
-  const response = await fetch(url, { signal: AbortSignal.timeout(10_000) });
-  if (!response.ok) throw new Error(`${method} a répondu ${response.status}`);
-  const data = (await response.json()) as {
-    response?: { avatar?: SteamItem; avatar_frame?: SteamItem };
-  };
-  return data.response ?? {};
-}
-
 const steamImage = (path: string | undefined) => (path ? `${STEAM_IMAGES}${path}` : null);
 
 /**
  * Ces images sont un plus : une panne de Steam ne doit jamais empêcher de se connecter.
  * `null` veut dire « inconnu », à ne pas confondre avec un joueur sans cadre.
  */
-async function fetchSteamLook(steamId: string): Promise<AccountLook | null> {
+export async function fetchSteamLook(steamId: string): Promise<AccountLook | null> {
   try {
-    const [avatar, frame] = await Promise.all([
-      fetchSteamItem('GetAnimatedAvatar', steamId),
-      fetchSteamItem('GetAvatarFrame', steamId),
-    ]);
+    // Un seul appel pour tous les objets équipés, au lieu d'un par objet.
+    const url = new URL('https://api.steampowered.com/IPlayerService/GetProfileItemsEquipped/v1/');
+    url.searchParams.set('key', env().STEAM_API_KEY ?? '');
+    url.searchParams.set('steamid', steamId);
+    countSteamCall(url);
+    const response = await fetch(url, { signal: AbortSignal.timeout(10_000) });
+    if (!response.ok) throw new Error(`GetProfileItemsEquipped a répondu ${response.status}`);
+    const data = (await response.json()) as {
+      response?: { animated_avatar?: SteamItem; avatar_frame?: SteamItem };
+    };
+    const items = data.response ?? {};
     return {
-      avatarMotionUrl: steamImage(avatar.avatar?.image_small),
-      frameUrl: steamImage(frame.avatar_frame?.image_large),
-      frameMotionUrl: steamImage(frame.avatar_frame?.image_small),
+      avatarMotionUrl: steamImage(items.animated_avatar?.image_small),
+      frameUrl: steamImage(items.avatar_frame?.image_large),
+      frameMotionUrl: steamImage(items.avatar_frame?.image_small),
     };
   } catch {
     return null;

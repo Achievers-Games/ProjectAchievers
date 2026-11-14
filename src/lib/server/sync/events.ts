@@ -59,6 +59,25 @@ export const connectedUsers = () =>
       typeof name === 'string' && name.startsWith('sync:') ? [name.slice('sync:'.length)] : [],
     );
 
+/** Une page visible demande la présence toutes les 30 s : au-delà, l'onglet est en arrière-plan. */
+const VISIBLE_FOR = 75_000;
+const lastVisible = new Map<string, number>();
+
+/** L'onglet du joueur est au premier plan : la page vient de le signaler. */
+export function markVisible(userId: string, now = Date.now()) {
+  lastVisible.set(userId, now);
+  if (lastVisible.size > 10_000) {
+    for (const [id, at] of lastVisible) if (now - at > VISIBLE_FOR) lastVisible.delete(id);
+  }
+}
+
+/**
+ * Les joueurs qui ont une page ouverte et visible. Un onglet oublié en arrière-plan ne coûte
+ * plus d'appels Steam : à son retour au premier plan, le passage suivant rattrape tout.
+ */
+export const visibleUsers = (now = Date.now()) =>
+  connectedUsers().filter((userId) => now - (lastVisible.get(userId) ?? 0) <= VISIBLE_FOR);
+
 export interface ChatEvent {
   type: 'chat';
   conversationId: string;

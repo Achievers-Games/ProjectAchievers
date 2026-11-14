@@ -2,6 +2,7 @@ import { monitorEventLoopDelay } from 'node:perf_hooks';
 import { getHeapStatistics } from 'node:v8';
 import { logger } from '#lib/logger';
 import { env } from './env';
+import { steamCalls } from './steam-quota';
 
 const log = logger('Charge serveur');
 const mib = (bytes: number) => Math.round(bytes / 1024 / 1024);
@@ -93,6 +94,8 @@ export function startWorkloadMonitor() {
       eventLoopMaxMs,
       active: [...(scheduler?.active ?? [])],
       waiting: scheduler?.pending ?? 0,
+      // Le détail par méthode n'arrive qu'avec l'avertissement et le bilan du jour.
+      steamCallsToday: steamCalls().total,
     };
     if (usage.heapUsed / heapLimit > 0.8 || eventLoopMaxMs > 1000) log.warn(stats);
     else log.info(stats);

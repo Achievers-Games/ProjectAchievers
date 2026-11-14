@@ -6,10 +6,10 @@ import { resolveIdentity } from './accounts';
 import { type CardDrop } from '#lib/collection';
 import { db } from './db';
 import { globals } from './globals';
-import { checkLiveGames } from './sync/live';
+import { checkLiveGames, steamDailyPass } from './sync/live';
 import { enqueueSync, refreshAccounts, runSync, startWorkers } from './sync/queue';
 import { isAdultOnly, rateGames, tagGames } from './sync/content';
-import { onCard, onSync, type SyncEvent } from './sync/events';
+import { markVisible, onCard, onSync, type SyncEvent } from './sync/events';
 import { parseSteamPage, steamImages } from './sync/steam';
 import { saveAchievements, saveProgress, upsertGame } from './sync/store';
 import { PREFIX, STEAM_ID, identity, setupIntegration } from './test-helpers';
@@ -544,6 +544,7 @@ describe('synchronisation Steam', () => {
     steamid = (await db.linkedAccount.findFirstOrThrow({ where: { userId } })).providerUserId;
     const events: SyncEvent[] = [];
     const stop = onSync(userId, (event) => events.push(event));
+    markVisible(userId);
 
     unlocked.push({ apiname: 'B', achieved: 1, unlocktime: 1_700_000_100 });
     await checkLiveGames();
@@ -567,6 +568,15 @@ describe('synchronisation Steam', () => {
       if (url.includes('GetRecentlyPlayedGames')) {
         return new Response(JSON.stringify({ response: { games: recents } }));
       }
+      // Steam annonce le nombre de succès obtenus : c'est lui qui désigne les jeux à relire.
+      if (url.includes('GetTopAchievementsForGames')) {
+        const achievements = unlocked.map(() => ({}));
+        return new Response(
+          JSON.stringify({
+            response: { games: [{ appid: 999001, total_achievements: 2, achievements }] },
+          }),
+        );
+      }
       return url.includes('GetPlayerAchievements')
         ? new Response(JSON.stringify({ playerstats: { achievements: unlocked } }))
         : api(input);
@@ -575,6 +585,7 @@ describe('synchronisation Steam', () => {
     await runSync({ userId, provider: 'STEAM' });
     const events: SyncEvent[] = [];
     const stop = onSync(userId, (event) => events.push(event));
+    markVisible(userId);
 
     // Le joueur a débloqué un succès puis fermé le jeu : seul le temps de jeu a bougé.
     recents = [{ appid: 999001, playtime_forever: 120 }];
@@ -603,6 +614,15 @@ describe('synchronisation Steam', () => {
       if (url.includes('GetRecentlyPlayedGames')) {
         return new Response(JSON.stringify({ response: { games: recents } }));
       }
+      // Steam annonce le nombre de succès obtenus : c'est lui qui désigne les jeux à relire.
+      if (url.includes('GetTopAchievementsForGames')) {
+        const achievements = unlocked.map(() => ({}));
+        return new Response(
+          JSON.stringify({
+            response: { games: [{ appid: 999001, total_achievements: 2, achievements }] },
+          }),
+        );
+      }
       return url.includes('GetPlayerAchievements')
         ? new Response(JSON.stringify({ playerstats: { achievements: unlocked } }))
         : api(input);
@@ -611,10 +631,11 @@ describe('synchronisation Steam', () => {
     await runSync({ userId, provider: 'STEAM' });
     const events: SyncEvent[] = [];
     const stop = onSync(userId, (event) => events.push(event));
+    markVisible(userId);
 
     await db.userGame.updateMany({
       where: { userId },
-      data: { achievementsCheckedAt: new Date(Date.now() - 4 * 60_000) },
+      data: { achievementsCheckedAt: new Date() },
     });
     recents = [{ appid: 999001, playtime_forever: 90 }];
     unlocked.push({ apiname: 'B', achieved: 1, unlocktime: 1_700_000_100 });
@@ -627,6 +648,191 @@ describe('synchronisation Steam', () => {
     expect(events[0].unlocks).toMatchObject([
       { title: 'Bêta', icon: 'i', game: `${PREFIX} steam` },
     ]);
+  });
+
+  it('ne relit pas un jeu récent dont le nombre de succès n’a pas bougé', async () => {
+    const api = steamApi(ownedGames);
+    const mock = vi.fn(async (input: string | URL) => {
+      const url = String(input);
+      if (url.includes('GetPlayerSummaries')) {
+        return new Response(JSON.stringify({ response: { players: [] } }));
+      }
+      if (url.includes('GetRecentlyPlayedGames')) {
+        return new Response(
+          JSON.stringify({ response: { games: [{ appid: 999001, playtime_forever: 200 }] } }),
+        );
+      }
+      return api(input);
+    });
+    vi.stubGlobal('fetch', mock);
+    const userId = await steamUser();
+    await runSync({ userId, provider: 'STEAM' });
+    const { unlockedCount } = await db.userGame.findFirstOrThrow({ where: { userId } });
+    mock.mockClear();
+    const counted = vi.fn(async (input: string | URL) =>
+      String(input).includes('GetTopAchievementsForGames')
+        ? new Response(
+            JSON.stringify({
+              response: {
+                games: [
+                  {
+                    appid: 999001,
+                    total_achievements: 2,
+                    achievements: Array(unlockedCount).fill({}),
+                  },
+                ],
+              },
+            }),
+          )
+        : mock(input),
+    );
+    vi.stubGlobal('fetch', counted);
+    const stop = onSync(userId, () => {});
+    markVisible(userId);
+    await checkLiveGames();
+    stop();
+
+    expect(reads(counted, 'GetPlayerAchievements')).toBe(0);
+    // Le temps de jeu, lui, suit sans appel de plus.
+    expect((await db.userGame.findFirstOrThrow({ where: { userId } })).playtimeMinutes).toBe(200);
+  });
+
+  it('relance la synchronisation dès que le joueur rend son temps de jeu public', async () => {
+    let library = { response: { games: [{ appid: 999001, playtime_forever: 0 }] } };
+    const api = steamApi(ownedGames);
+    const mock = vi.fn(async (input: string | URL) => {
+      const url = String(input);
+      if (url.includes('GetPlayerSummaries')) {
+        return new Response(JSON.stringify({ response: { players: [] } }));
+      }
+      // L'appel léger de la vérification : sans le nom des jeux.
+      if (url.includes('GetOwnedGames') && !url.includes('include_appinfo')) {
+        return new Response(JSON.stringify(library));
+      }
+      return api(input);
+    });
+    vi.stubGlobal('fetch', mock);
+    const userId = await steamUser();
+    await runSync({ userId, provider: 'STEAM' });
+    await db.linkedAccount.updateMany({ where: { userId }, data: { playtimeHidden: true } });
+    const events: SyncEvent[] = [];
+    const stop = onSync(userId, (event) => events.push(event));
+    markVisible(userId);
+
+    try {
+      // Encore privé : rien ne repart, et les jeux récents, muets, ne sont pas demandés.
+      await checkLiveGames();
+      expect(events).toHaveLength(0);
+      expect(reads(mock, 'GetRecentlyPlayedGames')).toBe(0);
+
+      // Rendu public : la synchronisation complète part au passage de la minute suivante.
+      library = { response: { games: [{ appid: 999001, playtime_forever: 90 }] } };
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(Date.now() + 61_000);
+      markVisible(userId);
+      await checkLiveGames();
+      expect(events.map((event) => event.status)).toContain('QUEUED');
+    } finally {
+      vi.useRealTimers();
+      stop();
+    }
+  });
+
+  /** Un compte Steam synchronisé, puis une API Steam réglable pour le suivi en direct. */
+  async function liveUser(steam: (url: string) => Response | undefined) {
+    const api = steamApi(ownedGames);
+    vi.stubGlobal('fetch', api);
+    const userId = await steamUser();
+    await runSync({ userId, provider: 'STEAM' });
+    const mock = vi.fn(async (input: string | URL) => steam(String(input)) ?? api(input));
+    vi.stubGlobal('fetch', mock);
+    return { userId, mock };
+  }
+  const json = (value: unknown) => new Response(JSON.stringify(value));
+  const nobodyPlaying = (url: string) =>
+    url.includes('GetPlayerSummaries') ? json({ response: { players: [] } }) : undefined;
+
+  it('laisse tranquille un onglet resté en arrière-plan', async () => {
+    const { userId, mock } = await liveUser(nobodyPlaying);
+    const stop = onSync(userId, () => {});
+    // La page est ouverte, mais elle n'a pas signalé d'onglet visible.
+    await checkLiveGames();
+    stop();
+    expect(mock).not.toHaveBeenCalled();
+  });
+
+  it('fait importer un jeu neuf lancé par le joueur', async () => {
+    const steamid = { value: '' };
+    const { userId } = await liveUser((url) => {
+      if (url.includes('GetPlayerSummaries')) {
+        return json({ response: { players: [{ steamid: steamid.value, gameid: '999777' }] } });
+      }
+      if (url.includes('GetTopAchievementsForGames')) {
+        return json({ response: { games: [{ appid: 999777, total_achievements: 12 }] } });
+      }
+    });
+    steamid.value = (await db.linkedAccount.findFirstOrThrow({ where: { userId } })).providerUserId;
+    const events: SyncEvent[] = [];
+    const stop = onSync(userId, (event) => events.push(event));
+    markVisible(userId);
+    await checkLiveGames();
+    stop();
+    expect(events.map((event) => event.status)).toContain('QUEUED');
+  });
+
+  it('suit l’avatar, le cadre et l’avatar animé changés sur Steam', async () => {
+    const steamid = { value: '' };
+    const { userId } = await liveUser((url) => {
+      if (url.includes('GetPlayerSummaries')) {
+        return json({
+          response: { players: [{ steamid: steamid.value, avatarfull: 'https://a/neuf.jpg' }] },
+        });
+      }
+      if (url.includes('GetProfileItemsEquipped')) {
+        return json({
+          response: {
+            avatar_frame: { image_small: 'cadre.png', image_large: 'cadre-grand.png' },
+            animated_avatar: { image_small: 'anime.webm' },
+          },
+        });
+      }
+    });
+    steamid.value = (await db.linkedAccount.findFirstOrThrow({ where: { userId } })).providerUserId;
+    const stop = onSync(userId, () => {});
+    markVisible(userId);
+    await checkLiveGames();
+    stop();
+
+    const account = await db.linkedAccount.findFirstOrThrow({ where: { userId } });
+    expect(account.avatarUrl).toBe('https://a/neuf.jpg');
+    expect(account.frameUrl).toContain('cadre-grand.png');
+    expect(account.avatarMotionUrl).toContain('anime.webm');
+  });
+
+  it('rattrape un joueur absent par la tournée du jour, sans synchronisation complète', async () => {
+    const unlocked = [{ apiname: 'A', achieved: 1, unlocktime: 1_700_000_000 }];
+    const { userId, mock } = await liveUser((url) => {
+      if (url.includes('GetRecentlyPlayedGames')) {
+        return json({ response: { games: [{ appid: 999001, playtime_forever: 95 }] } });
+      }
+      if (url.includes('GetTopAchievementsForGames')) {
+        const achievements = unlocked.map(() => ({}));
+        return json({
+          response: { games: [{ appid: 999001, total_achievements: 2, achievements }] },
+        });
+      }
+      if (url.includes('GetPlayerAchievements')) {
+        return json({ playerstats: { achievements: unlocked } });
+      }
+    });
+    unlocked.push({ apiname: 'B', achieved: 1, unlocktime: 1_700_000_100 });
+    await steamDailyPass(userId);
+
+    const row = await db.userGame.findFirstOrThrow({ where: { userId } });
+    expect(row.unlockedCount).toBe(2);
+    // Une seule relecture, celle du jeu qui a bougé : la bibliothèque n'a été lue qu'une fois.
+    expect(reads(mock, 'GetPlayerAchievements')).toBe(1);
+    expect(reads(mock, 'GetOwnedGames')).toBe(1);
   });
 
   it('annonce une carte quand un jeu atteint 100 %, une seule fois', async () => {
@@ -648,6 +854,7 @@ describe('synchronisation Steam', () => {
     const userId = await steamUser();
     const events: SyncEvent[] = [];
     const stop = onSync(userId, (event) => events.push(event));
+    markVisible(userId);
 
     await runSync({ userId, provider: 'STEAM' });
     expect(events.at(-1)?.rewards).toMatchObject([

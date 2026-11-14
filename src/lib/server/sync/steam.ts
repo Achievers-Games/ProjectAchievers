@@ -2,6 +2,7 @@ import { baseLocale, type Locale } from '#lib/paraglide/runtime';
 import { applyAccountLook, identityLook } from '../accounts';
 import { db } from '../db';
 import { env } from '../env';
+import { countSteamCall } from '../steam-quota';
 import { logger } from '#lib/logger';
 import { fetchPlayingGames, fetchSteamIdentity } from '../providers/steam';
 
@@ -62,6 +63,7 @@ async function steamGet(path: string, params: Record<string, string | number>) {
   url.searchParams.set('key', env().STEAM_API_KEY ?? '');
   url.searchParams.set('format', 'json');
   for (const [key, value] of Object.entries(params)) url.searchParams.set(key, String(value));
+  countSteamCall(url);
   return fetchRetry(url);
 }
 
@@ -90,6 +92,14 @@ async function ownedGames(steamId: string, extra: Record<string, number> = {}) {
   if (data.response?.games) return data.response.games;
   if (typeof data.response?.game_count === 'number') return [];
   throw new SyncError('sync_steam_private');
+}
+
+/**
+ * Les jeux de la bibliothèque qui ont des statistiques, en un appel : de quoi repérer un jeu
+ * acheté sans relire tous les succès. Les jeux gratuits jamais lancés n'y sont pas.
+ */
+export async function fetchLibrary(steamId: string) {
+  return (await ownedGames(steamId)).filter((game) => game.has_community_visible_stats);
 }
 
 /**
@@ -140,7 +150,7 @@ const ALL_ACHIEVEMENTS = 10_000;
  * jeux se vérifie en trois appels au lieu de 700. Avec `max` à 1, la réponse reste légère et
  * dit seulement si le joueur a quelque chose sur le jeu.
  */
-async function achievementCounts(
+export async function achievementCounts(
   steamId: string,
   appIds: number[],
   max = ALL_ACHIEVEMENTS,

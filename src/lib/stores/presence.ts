@@ -26,10 +26,16 @@ export function watchPresence() {
   noteGesture();
   const gestures = ['pointerdown', 'pointermove', 'keydown', 'scroll'];
   for (const name of gestures) addEventListener(name, noteGesture, { passive: true });
+  // De retour au premier plan, l'onglet le dit tout de suite : le suivi Steam reprend aussitôt.
+  const onVisible = () => {
+    if (!document.hidden) void refreshPresence();
+  };
+  document.addEventListener('visibilitychange', onVisible);
   void refreshPresence();
   const timer = setInterval(refreshPresence, POLL);
   return () => {
     clearInterval(timer);
+    document.removeEventListener('visibilitychange', onVisible);
     for (const name of gestures) removeEventListener(name, noteGesture);
   };
 }

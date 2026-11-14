@@ -25,7 +25,7 @@ import { activeGrants, revokeGrant } from '#lib/server/oauth-provider';
 import { queueAccountDeletion, queueAccountEvent } from '#lib/server/partner-webhooks';
 import { forgetPresence } from '#lib/server/presence';
 import { pushPublicKey } from '#lib/server/push';
-import { enqueueSync } from '#lib/server/sync/queue';
+import { enqueueSync, refreshAccounts, SYNC_DELAYS } from '#lib/server/sync/queue';
 import type { Actions, PageServerLoad } from './$types';
 import { m } from '#lib/paraglide/messages';
 
@@ -175,8 +175,20 @@ export const actions: Actions = {
     const user = requireUser(locals);
     const provider = providerSchema.safeParse((await request.formData()).get('provider'));
     if (!provider.success) return fail(400, { error: m.account_unknown() });
-    const started = await enqueueSync(user.id, provider.data);
-    return started ? { success: m.sync_started() } : fail(409, { error: m.sync_already() });
+    const account = await db.linkedAccount.findUnique({
+      where: { userId_provider: { userId: user.id, provider: provider.data } },
+      select: { syncStatus: true },
+    });
+    if (!account) return fail(404, { error: m.account_not_linked() });
+    if (account.syncStatus === 'QUEUED' || account.syncStatus === 'SYNCING') {
+      return fail(409, { error: m.sync_already() });
+    }
+    // Même délai que le bouton global ; un compte à reconnecter peut toujours réessayer.
+    const started =
+      account.syncStatus === 'NEEDS_RELINK'
+        ? await enqueueSync(user.id, provider.data)
+        : (await refreshAccounts(user.id, SYNC_DELAYS.manual, false, provider.data)) > 0;
+    return started ? { success: m.sync_started() } : fail(429, { error: m.refresh_wait() });
   },
 
   unlink: async ({ request, locals }) => {
