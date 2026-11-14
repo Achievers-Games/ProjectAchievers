@@ -1,4 +1,5 @@
 import type { Cookies } from '@sveltejs/kit';
+import { psnNpsso } from '../psn-npsso';
 import type { Provider } from '#prisma';
 import { secureCookie } from '../cookies';
 import { decrypt, encrypt } from '../crypto';
@@ -22,7 +23,7 @@ export function availableProviders(): Record<Provider, boolean> {
     STEAM: Boolean(e.STEAM_API_KEY),
     DISCORD: Boolean(e.DISCORD_CLIENT_ID && e.DISCORD_CLIENT_SECRET),
     XBOX: Boolean(e.XBOX_CLIENT_ID && e.XBOX_CLIENT_SECRET),
-    PSN: Boolean(e.PSN_SERVICE_NPSSO),
+    PSN: Boolean(psnNpsso()),
     RETRO: Boolean(e.RETRO_API_KEY),
     EPIC: Boolean(e.EPIC_CLIENT_ID && e.EPIC_CLIENT_SECRET),
     BLIZZARD: Boolean(e.BLIZZARD_CLIENT_ID && e.BLIZZARD_CLIENT_SECRET),

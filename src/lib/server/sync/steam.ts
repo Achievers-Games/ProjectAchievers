@@ -417,6 +417,39 @@ export async function fetchUnlocks(steamId: string, appId: number) {
     }));
 }
 
+/**
+ * Relit la liste des succès des jeux Steam qu'au moins un joueur possède, les plus anciennes
+ * d'abord. Le suivi en direct ne relit que les jeux joués : sans ce passage, une extension
+ * ajoutée à un vieux jeu laissait ses joueurs à 100 % sur un total faux, et sa rareté se figeait.
+ * Un appel par jeu, partagé par tous ses joueurs. Renvoie le nombre de jeux relus.
+ */
+export async function refreshStaleSchemas(limit = 10) {
+  if (!env().STEAM_API_KEY) return 0;
+  const games = await db.game.findMany({
+    where: {
+      platform: 'STEAM',
+      players: { some: {} },
+      OR: [
+        { schemaSyncedAt: null },
+        { schemaSyncedAt: { lt: new Date(Date.now() - SCHEMA_MAX_AGE) } },
+      ],
+    },
+    orderBy: { schemaSyncedAt: { sort: 'asc', nulls: 'first' } },
+    select: { id: true, name: true, platformGameId: true },
+    take: limit,
+  });
+  for (const game of games) {
+    const schema = await fetchSchema(Number(game.platformGameId)).catch((cause: unknown) => {
+      log.error(`Liste des succès de « ${game.name} » :`, cause);
+      return null;
+    });
+    if (schema) await saveAchievements(game.id, schema);
+    // Sans réponse, le jeu repasse dans une semaine : il ne bloque pas la tête de la file.
+    else await db.game.update({ where: { id: game.id }, data: { schemaSyncedAt: new Date() } });
+  }
+  return games.length;
+}
+
 /** Le jeu au catalogue du site, avec ses images et la liste de ses succès. */
 async function steamCatalogGame(source: OwnedGame, refreshSchema = false) {
   const appId = String(source.appid);
@@ -485,6 +518,8 @@ async function syncSteamGame(
               : null,
           }),
     },
+    // GetPlayerAchievements rend tous les succès du joueur sur ce jeu.
+    { complete: true },
   );
   return { game, gained };
 }

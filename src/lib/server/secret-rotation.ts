@@ -18,7 +18,8 @@ function rewrap(sealed: string | null) {
 
 /**
  * Remet sous la clé en service tout ce qui est encore chiffré avec une ancienne clé, ou à
- * l'ancien format : jetons Xbox des joueurs et secrets de webhook des partenaires. Tant que ce
+ * l'ancien format : jetons Xbox des joueurs, secrets de webhook des partenaires et NPSSO du
+ * compte de service PSN. Tant que ce
  * compte ne tombe pas à zéro, l'ancienne clé doit rester dans `ENCRYPTION_KEY_PREVIOUS`.
  * Renvoie le nombre de lignes encore à traiter après ce passage.
  */
@@ -69,11 +70,27 @@ export async function rewrapSecrets() {
     done += count;
   }
 
-  const [accountsLeft, appsLeft] = await Promise.all([
+  const staleTokens = { valueEnc: { not: null }, NOT: { valueEnc: current } };
+  const tokens = await db.serviceToken.findMany({
+    where: staleTokens,
+    select: { name: true, valueEnc: true },
+  });
+  for (const token of tokens) {
+    const valueEnc = rewrap(token.valueEnc);
+    if (!valueEnc) continue;
+    const { count } = await db.serviceToken.updateMany({
+      where: { name: token.name, valueEnc: token.valueEnc },
+      data: { valueEnc },
+    });
+    done += count;
+  }
+
+  const [accountsLeft, appsLeft, tokensLeft] = await Promise.all([
     db.linkedAccount.count({ where: staleAccounts }),
     db.partnerApp.count({ where: staleApps }),
+    db.serviceToken.count({ where: staleTokens }),
   ]);
-  const left = accountsLeft + appsLeft;
+  const left = accountsLeft + appsLeft + tokensLeft;
   if (done || left) log.info(`${done} secrets rechiffrés, ${left} encore sous une ancienne clé`);
   return left;
 }

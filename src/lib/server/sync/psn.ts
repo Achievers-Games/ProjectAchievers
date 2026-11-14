@@ -249,9 +249,14 @@ export const syncPsn: ProviderSync = async ({ userId, account, report, onUnlocke
           platformAchievementId: String(t.trophyId),
           unlockedAt: new Date(t.earnedDateTime as string),
         }));
-      const { gained } = await saveProgress(userId, game.id, unlocks, {
-        lastPlayedAt: new Date(title.lastUpdatedDateTime),
-      });
+      // Sony rend tous les trophées du jeu, obtenus ou non : la liste est complète.
+      const { gained } = await saveProgress(
+        userId,
+        game.id,
+        unlocks,
+        { lastPlayedAt: new Date(title.lastUpdatedDateTime) },
+        { complete: true },
+      );
       achievements += gained;
       if (gained > 0) onUnlocked(game, gained);
     },

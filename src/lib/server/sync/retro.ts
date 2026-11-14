@@ -136,9 +136,14 @@ export const syncRetro: ProviderSync = async ({
       );
 
       const played = summary.MostRecentAwardedDate;
-      const { gained } = await saveProgress(userId, game.id, retroUnlocks(catalog), {
-        lastPlayedAt: played ? new Date(played) : null,
-      });
+      // Le détail du jeu liste tous ses succès, avec la date hardcore de ceux obtenus.
+      const { gained } = await saveProgress(
+        userId,
+        game.id,
+        retroUnlocks(catalog),
+        { lastPlayedAt: played ? new Date(played) : null },
+        { complete: true },
+      );
       achievements += gained;
       if (gained > 0) onUnlocked(game, gained);
     },

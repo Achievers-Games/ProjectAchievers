@@ -6,7 +6,7 @@ import { moveGameFamilies } from '#lib/server/card-rarity';
 import { issuePartnerKey, revokePartnerKey } from '#lib/server/partner-api';
 import { issueWebhookSecret } from '#lib/server/partner-webhooks';
 import { isRedirectUri, issueOAuthClient, rotateOAuthSecret } from '#lib/server/oauth-provider';
-import { psnTokenState } from '#lib/server/service-token';
+import { psnTokenState, savePsnNpsso } from '#lib/server/service-token';
 import type { Actions, PageServerLoad } from './$types';
 import { m } from '#lib/paraglide/messages';
 
@@ -207,7 +207,25 @@ const partnerWebhook = z.object({
     .refine((value) => value === '' || (/^https:\/\/[^\s]+$/.test(value) && isPublicHost(value))),
 });
 
+/** Un NPSSO fait 64 caractères ; la marge couvre un changement de format chez Sony. */
+const npsso = z
+  .string()
+  .trim()
+  .min(32)
+  .max(256)
+  .regex(/^[A-Za-z0-9_-]+$/);
+
 export const actions: Actions = {
+  /** Remplace le jeton du compte de service PSN, vérifié par Sony avant d'être enregistré. */
+  psnToken: async ({ request, locals }) => {
+    requireAdmin(locals);
+    const parsed = npsso.safeParse((await request.formData()).get('npsso'));
+    const rejected = { psn: true, error: m.mod_psn_token_rejected() };
+    if (!parsed.success) return fail(400, rejected);
+    if (!(await savePsnNpsso(parsed.data))) return fail(400, rejected);
+    return { psn: true, success: m.mod_psn_token_saved() };
+  },
+
   /** Crée la clé d'un partenaire, ou la remplace : elle ne s'affiche qu'une fois. */
   partnerKey: async ({ request, locals }) => {
     requireAdmin(locals);

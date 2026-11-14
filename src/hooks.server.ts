@@ -12,6 +12,7 @@ import { env } from '#lib/server/env';
 import { grantFramesThrottled } from '#lib/server/frames';
 import { withPartnerFormAction } from '#lib/server/oauth-provider';
 import { startDigests } from '#lib/server/push-digest';
+import { loadSavedNpsso } from '#lib/server/service-token';
 import { rateLimit } from '#lib/server/rate-limit';
 import { validateSession } from '#lib/server/session';
 import { logger } from '#lib/logger';
@@ -25,6 +26,8 @@ const log = logger('Serveur');
 
 export const init: ServerInit = async () => {
   env();
+  // Avant les tâches : la synchro PSN doit partir avec le jeton saisi sur le site.
+  await loadSavedNpsso().catch((cause) => log.error('Jeton PSN :', cause));
   startWorkloadMonitor();
   await startWorkers();
   startLiveGames();

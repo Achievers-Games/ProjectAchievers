@@ -104,8 +104,25 @@
           })}
         </p>
       {/if}
-      {#if token?.warn}
-        <p class="text-muted">{m.mod_psn_token_help()}</p>
+      <p class="text-muted">{m.mod_psn_token_help()}</p>
+      <form method="POST" action="?/psnToken" use:enhance class="flex flex-wrap gap-2 pt-2">
+        <label class="sr-only" for="npsso">{m.mod_psn_token_field()}</label>
+        <input
+          id="npsso"
+          name="npsso"
+          type="password"
+          autocomplete="off"
+          spellcheck="false"
+          class="input h-9 min-w-0 flex-1"
+          placeholder={m.mod_psn_token_field()}
+          required
+        />
+        <button class="btn h-9">{m.mod_psn_token_save()}</button>
+      </form>
+      {#if form?.psn && form.error}
+        <p class="text-danger" role="alert">{form.error}</p>
+      {:else if form?.psn && form.success}
+        <p class="text-muted" role="status">{form.success}</p>
       {/if}
     </section>
   {/if}

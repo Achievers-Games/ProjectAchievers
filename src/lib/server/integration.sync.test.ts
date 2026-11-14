@@ -195,7 +195,11 @@ describe('synchronisation Steam', () => {
       completion: 100,
       lastUnlockedAt: unlockedAt,
     });
-    expect(await saveProgress(userId, game.id, unlocks)).toEqual({ gained: 0, fresh: [] });
+    expect(await saveProgress(userId, game.id, unlocks)).toEqual({
+      gained: 0,
+      fresh: [],
+      removed: 0,
+    });
   });
 
   it('crée une seule fiche lors de deux imports concurrents et résout les slugs identiques', async () => {

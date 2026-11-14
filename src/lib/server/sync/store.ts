@@ -145,6 +145,10 @@ export async function fillGameTiers() {
 
 /** Remplace le catalogue de succès d'un jeu. Les succès déjà connus gardent leur identifiant. */
 export async function saveAchievements(gameId: string, achievements: AchievementInput[]) {
+  const before = await db.game.findUnique({
+    where: { id: gameId },
+    select: { totalAchievements: true },
+  });
   for (let offset = 0; offset < achievements.length; offset += ACHIEVEMENTS_PER_TRANSACTION) {
     const batch = achievements.slice(offset, offset + ACHIEVEMENTS_PER_TRANSACTION);
     const writes = batch.map((a) => {
@@ -172,20 +176,44 @@ export async function saveAchievements(gameId: string, achievements: Achievement
     });
     await db.$transaction(writes);
   }
-  await pruneAchievements(
+  const pruned = await pruneAchievements(
     gameId,
     achievements.map((a) => a.platformAchievementId),
   );
   // Les upserts sont idempotents : une relance reprend un import interrompu par lots. Le total
   // est celui des lignes réellement gardées, le même que lit `saveProgress`.
+  const totalAchievements = await db.achievement.count({ where: { gameId } });
   await db.game.update({
     where: { id: gameId },
-    data: {
-      totalAchievements: await db.achievement.count({ where: { gameId } }),
-      schemaSyncedAt: new Date(),
-    },
+    data: { totalAchievements, schemaSyncedAt: new Date() },
   });
+  // Un succès ajouté (une extension) ou retiré change le pourcentage de tous les joueurs du jeu,
+  // même de ceux qui n'y rejouent pas : leur progression suit ici.
+  if (pruned || (before && before.totalAchievements !== totalAchievements)) {
+    await refreshOwners(gameId);
+  }
   await refreshSharedTier(gameId);
+}
+
+/** Recalcule la progression de tous les joueurs d'un jeu, depuis leurs déblocages enregistrés. */
+async function refreshOwners(gameId: string) {
+  await db.$executeRaw`
+    UPDATE "UserGame" ug
+    SET "unlockedCount" = p.unlocked, "totalCount" = p.total,
+      completion = CASE WHEN p.total > 0 THEN p.unlocked * 100.0 / p.total ELSE 0 END,
+      platinum = p.platinum, "lastUnlockedAt" = p.last
+    FROM (
+      SELECT ug2."userId", count(ua."achievementId")::int AS unlocked,
+        (SELECT count(*)::int FROM "Achievement" WHERE "gameId" = ${gameId}) AS total,
+        coalesce(bool_or(a."trophyType" = 'PLATINUM') FILTER (WHERE ua."achievementId" IS NOT NULL), false) AS platinum,
+        max(ua."unlockedAt") AS last
+      FROM "UserGame" ug2
+      LEFT JOIN "Achievement" a ON a."gameId" = ug2."gameId"
+      LEFT JOIN "UserAchievement" ua ON ua."achievementId" = a.id AND ua."userId" = ug2."userId"
+      WHERE ug2."gameId" = ${gameId}
+      GROUP BY ug2."userId"
+    ) p
+    WHERE ug."gameId" = ${gameId} AND ug."userId" = p."userId"`;
 }
 
 /**
@@ -194,38 +222,20 @@ export async function saveAchievements(gameId: string, achievements: Achievement
  * de la moitié ressemble davantage à une réponse incomplète qu'à un vrai retrait : rien n'est
  * alors supprimé, ni les déblocages ni les guides attachés.
  */
-async function pruneAchievements(gameId: string, kept: string[]) {
-  if (!kept.length) return;
+async function pruneAchievements(gameId: string, kept: string[]): Promise<number> {
+  if (!kept.length) return 0;
   const stale = await db.achievement.findMany({
     where: { gameId, platformAchievementId: { notIn: kept } },
     select: { id: true },
   });
-  if (!stale.length) return;
+  if (!stale.length) return 0;
   if (stale.length > kept.length) {
     log.warn(`Catalogue réduit de ${stale.length} succès pour ${gameId} : retrait ignoré`);
-    return;
+    return 0;
   }
-  await db.$transaction([
-    db.achievement.deleteMany({ where: { id: { in: stale.map((row) => row.id) } } }),
-    // Les joueurs du jeu ne repassent pas forcément par `saveProgress` : leur progression suit ici.
-    db.$executeRaw`
-      UPDATE "UserGame" ug
-      SET "unlockedCount" = p.unlocked, "totalCount" = p.total,
-        completion = CASE WHEN p.total > 0 THEN p.unlocked * 100.0 / p.total ELSE 0 END,
-        platinum = p.platinum, "lastUnlockedAt" = p.last
-      FROM (
-        SELECT ug2."userId", count(ua."achievementId")::int AS unlocked,
-          (SELECT count(*)::int FROM "Achievement" WHERE "gameId" = ${gameId}) AS total,
-          coalesce(bool_or(a."trophyType" = 'PLATINUM') FILTER (WHERE ua."achievementId" IS NOT NULL), false) AS platinum,
-          max(ua."unlockedAt") AS last
-        FROM "UserGame" ug2
-        LEFT JOIN "Achievement" a ON a."gameId" = ug2."gameId"
-        LEFT JOIN "UserAchievement" ua ON ua."achievementId" = a.id AND ua."userId" = ug2."userId"
-        WHERE ug2."gameId" = ${gameId}
-        GROUP BY ug2."userId"
-      ) p
-      WHERE ug."gameId" = ${gameId} AND ug."userId" = p."userId"`,
-  ]);
+  // `saveAchievements` recalcule ensuite la progression des joueurs du jeu.
+  await db.achievement.deleteMany({ where: { id: { in: stale.map((row) => row.id) } } });
+  return stale.length;
 }
 
 /** Un succès qui vient de tomber : de quoi le montrer au joueur sans recharger sa page. */
@@ -240,6 +250,53 @@ interface SaveResult {
   gained: number;
   /** Au plus cinq nouveaux succès : la page ne fête pas tout un premier import. */
   fresh: NewUnlock[];
+  /** Succès retirés parce que la plateforme ne les montre plus, après confirmation. */
+  removed: number;
+}
+
+/** Le délai minimal entre la lecture qui repère un retrait et celle qui le confirme. */
+export const REMOVAL_CONFIRM = 60 * 60 * 1000;
+
+type Tx = Parameters<Parameters<typeof db.$transaction>[0]>[0];
+
+/**
+ * Les succès enregistrés que la plateforme ne montre plus. Rien n'est retiré sur une liste vide :
+ * elle ressemble davantage à une réponse ratée qu'à une progression remise à zéro. Une première
+ * lecture note le constat ; une seconde, au moins une heure plus tard, le confirme et retire
+ * les succès encore absents. L'heure d'écart couvre aussi les succès que le suivi en direct
+ * enregistre avant que la liste complète ne les montre. Renvoie `seenAt` à écrire sur le jeu.
+ */
+async function reviewRemovals(
+  tx: Tx,
+  userId: string,
+  gameId: string,
+  unlocks: UnlockInput[],
+  now = Date.now(),
+): Promise<{ seenAt: Date | null; removed: number } | undefined> {
+  if (!unlocks.length) return undefined;
+  const reported = new Set(unlocks.map((unlock) => unlock.platformAchievementId));
+  const stored = await tx.$queryRaw<{ achievementId: string; platformAchievementId: string }[]>`
+    SELECT ua."achievementId", a."platformAchievementId"
+    FROM "UserAchievement" ua
+    JOIN "Achievement" a ON a.id = ua."achievementId"
+    WHERE ua."userId" = ${userId} AND a."gameId" = ${gameId}`;
+  const missing = stored
+    .filter((row) => !reported.has(row.platformAchievementId))
+    .map((row) => row.achievementId);
+  const seen = (
+    await tx.userGame.findUnique({
+      where: { userId_gameId: { userId, gameId } },
+      select: { removalSeenAt: true },
+    })
+  )?.removalSeenAt;
+
+  if (!missing.length) return seen ? { seenAt: null, removed: 0 } : undefined;
+  if (!seen) return { seenAt: new Date(now), removed: 0 };
+  if (now - seen.getTime() < REMOVAL_CONFIRM) return undefined;
+
+  await tx.userAchievement.deleteMany({ where: { userId, achievementId: { in: missing } } });
+  log.info('Succès retirés', { userId, gameId, count: missing.length });
+  return { seenAt: null, removed: missing.length };
 }
 
 /**
@@ -255,6 +312,12 @@ export async function saveProgress(
     lastPlayedAt?: Date | null;
     achievementsCheckedAt?: Date;
   } = {},
+  /**
+   * `complete` : `unlocks` est toute la liste que la plateforme donne pour ce jeu, pas un
+   * extrait. Un succès enregistré qu'elle ne montre plus (progression réinitialisée) peut alors
+   * être retiré, avec les garde-fous de `REMOVAL_CONFIRM`.
+   */
+  { complete = false }: { complete?: boolean } = {},
 ): Promise<SaveResult> {
   return db.$transaction(
     async (db) => {
@@ -297,6 +360,8 @@ export async function saveProgress(
         for (const row of inserted.slice(0, 5 - freshIds.length)) freshIds.push(row.achievementId);
       }
 
+      const removal = complete ? await reviewRemovals(db, userId, gameId, unlocks) : undefined;
+
       // Les agrégats restent dans Postgres : inutile de charger chaque succès déjà acquis.
       const [total, progress] = await Promise.all([
         db.achievement.count({ where: { gameId } }),
@@ -321,6 +386,7 @@ export async function saveProgress(
         ...(activity.achievementsCheckedAt !== undefined && {
           achievementsCheckedAt: activity.achievementsCheckedAt,
         }),
+        ...(removal !== undefined && { removalSeenAt: removal.seenAt }),
       };
       await db.userGame.upsert({
         where: { userId_gameId: { userId, gameId } },
@@ -333,7 +399,7 @@ export async function saveProgress(
             select: { id: true, name: true, iconUrl: true },
           })
         : [];
-      return { gained, fresh };
+      return { gained, fresh, removed: removal?.removed ?? 0 };
     },
     { timeout: 30_000 },
   );

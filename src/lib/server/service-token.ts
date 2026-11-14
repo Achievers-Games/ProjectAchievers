@@ -1,5 +1,9 @@
 import { createHash } from 'node:crypto';
+import { decrypt, encrypt } from './crypto';
 import { db } from './db';
+import { logger } from '#lib/logger';
+import { setSavedNpsso } from './psn-npsso';
+import { checkNpsso, forgetPsnTokens } from './providers/psn';
 import { notify } from './push';
 import { m } from '#lib/paraglide/messages';
 
@@ -12,6 +16,52 @@ const WARN_BEFORE = 21 * DAY;
 
 const fingerprint = (token: string) =>
   createHash('sha256').update(token).digest('hex').slice(0, 16);
+
+const log = logger('Jeton PSN');
+
+/** Au démarrage : le NPSSO saisi sur le site, s'il y en a un, passe avant la variable d'environnement. */
+export async function loadSavedNpsso() {
+  const token = await db.serviceToken.findUnique({
+    where: { name: PSN },
+    select: { valueEnc: true },
+  });
+  if (!token?.valueEnc) return;
+  try {
+    setSavedNpsso(decrypt(token.valueEnc));
+  } catch (cause) {
+    log.error('NPSSO enregistré illisible, la variable d’environnement sert :', cause);
+  }
+}
+
+/**
+ * Remplace le NPSSO depuis la modération, sans toucher au NAS. Sony le vérifie d'abord : un
+ * jeton refusé n'est jamais enregistré, et l'ancien continue de servir. Renvoie `false` s'il
+ * est refusé.
+ */
+export async function savePsnNpsso(npsso: string, now = new Date()) {
+  try {
+    await checkNpsso(npsso);
+  } catch (cause) {
+    log.warn('NPSSO refusé par Sony :', cause instanceof Error ? cause.message : cause);
+    return false;
+  }
+  const valueEnc = encrypt(npsso);
+  const data = {
+    fingerprint: fingerprint(npsso),
+    since: now,
+    okAt: now,
+    failedAt: null,
+    error: null,
+  };
+  await db.serviceToken.upsert({
+    where: { name: PSN },
+    create: { name: PSN, ...data, valueEnc },
+    update: { ...data, valueEnc },
+  });
+  setSavedNpsso(npsso);
+  forgetPsnTokens();
+  return true;
+}
 
 /** Note chaque échange du NPSSO ; un nouveau jeton remet le compte à zéro. */
 export async function notePsnToken(token: string, error?: string, now = new Date()) {

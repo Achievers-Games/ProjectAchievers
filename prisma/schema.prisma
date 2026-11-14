@@ -564,6 +564,9 @@ model UserGame {
   updatedAt             DateTime  @updatedAt
   /// Retiré de la bibliothèque par le joueur, sans toucher à sa progression.
   hidden                Boolean   @default(false)
+  /// Une lecture complète n'a plus montré certains succès enregistrés : ils ne sont retirés que
+  /// si une seconde lecture, au moins une heure plus tard, le confirme.
+  removalSeenAt         DateTime?
 
   @@id([userId, gameId])
   @@index([userId, lastUnlockedAt])
@@ -736,6 +739,9 @@ model ServiceToken {
   okAt        DateTime?
   failedAt    DateTime?
   error       String?
+  /// Le jeton lui-même, chiffré, quand un administrateur l'a saisi sur le site. Sans lui, la
+  /// variable d'environnement sert.
+  valueEnc    String?
 }
 
 /// Un site partenaire (Lure…) qui lit l'API publique `/api/v1` avec sa clé.

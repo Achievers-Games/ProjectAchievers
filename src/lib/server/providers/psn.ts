@@ -6,7 +6,7 @@ import {
   type AuthorizationPayload,
 } from 'psn-api';
 import { randomBytes } from 'node:crypto';
-import { env } from '../env';
+import { psnNpsso } from '../psn-npsso';
 import { notePsnToken } from '../service-token';
 
 interface ServiceTokens {
@@ -17,9 +17,19 @@ interface ServiceTokens {
 
 let tokens: ServiceTokens | undefined;
 
+/** Un nouveau NPSSO vient d'être saisi : les jetons tirés de l'ancien ne servent plus. */
+export function forgetPsnTokens() {
+  tokens = undefined;
+}
+
+/** Vérifie un NPSSO auprès de Sony, sans rien enregistrer. Lève une erreur s'il est refusé. */
+export async function checkNpsso(npsso: string) {
+  await exchangeNpssoForAccessCode(npsso);
+}
+
 /** Seul le refus du NPSSO compte comme un jeton mort : une panne réseau ne dit rien de lui. */
 async function fromNpsso() {
-  const npsso = env().PSN_SERVICE_NPSSO ?? '';
+  const npsso = psnNpsso();
   let code: string;
   try {
     code = await exchangeNpssoForAccessCode(npsso);

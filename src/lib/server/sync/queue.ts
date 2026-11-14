@@ -32,6 +32,7 @@ import {
   fetchTopGame,
   fetchUnlocks,
   fillHiddenDescriptions,
+  refreshStaleSchemas,
   syncSteam,
   type TopGame,
 } from './steam';
@@ -674,6 +675,13 @@ const MAINTENANCE: { label: string; run: () => Promise<unknown>; budget?: false 
     label: 'Succès cachés',
     // Le nombre rendu est celui des jeux complétés : un lot qui n'apporte rien arrête la série.
     run: () => inSlices('Succès cachés', 3, 1, () => fillHiddenDescriptions(20)),
+    budget: false,
+  },
+  {
+    label: 'Listes Steam',
+    // Dix jeux par lot, trois lots par heure : 720 jeux par jour, de quoi relire chaque jeu
+    // possédé au moins une fois par semaine tant que le catalogue reste sous les 5 000 jeux.
+    run: () => inSlices('Listes Steam', 3, 10, (limit) => refreshStaleSchemas(limit)),
     budget: false,
   },
   { label: 'Catalogue WoW', run: () => fillWowCatalog() },
