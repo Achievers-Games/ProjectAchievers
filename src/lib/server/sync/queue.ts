@@ -76,6 +76,11 @@ interface SyncJob {
   quiet?: boolean;
   /** Rattrapage horaire d'un joueur absent : il cède le pas à ceux qui sont sur le site. */
   background?: boolean;
+  /**
+   * Compte Steam déjà importé : la tournée quotidienne remplace la relecture de la bibliothèque.
+   * Mesuré sur le NAS : un bouton relisait plus de 99 % de jeux inchangés, en une à trois minutes.
+   */
+  light?: boolean;
 }
 
 const log = logger('Synchronisation');
@@ -107,11 +112,12 @@ export async function enqueueSync(
   provider: Provider,
   quiet = false,
   background = false,
+  light = false,
 ) {
   if (!SYNCERS[provider] || !availableProviders()[provider]) return false;
 
   const instance = await boss();
-  const job: SyncJob = { userId, provider, quiet, background };
+  const job: SyncJob = { userId, provider, quiet, background, ...(light && { light }) };
   // L'état et la tâche sont validés ensemble, même si le processus s'arrête brutalement.
   const queued = await db.$transaction(async (tx) => {
     const { count } = await tx.linkedAccount.updateMany({
@@ -154,7 +160,7 @@ export async function refreshAccounts(
         provider: { in: providers },
         syncStatus: { in: ['IDLE', 'COMPLETED', 'FAILED'] },
       },
-      select: { provider: true, syncStatus: true },
+      select: { provider: true, syncStatus: true, lastSyncedAt: true },
     }),
     db.syncRun.groupBy({
       by: ['provider', 'status'],
@@ -170,14 +176,24 @@ export async function refreshAccounts(
     }
   }
   const now = Date.now();
+  const failedLast = (provider: Provider, syncStatus: SyncStatus) =>
+    syncStatus === 'FAILED' || lastRun.get(provider)?.status === 'FAILED';
   const due = accounts.filter(({ provider, syncStatus }) => {
-    const last = lastRun.get(provider);
-    const failed = syncStatus === 'FAILED' || last?.status === 'FAILED';
-    const minimumWait = failed ? FAILED_SYNC_COOLDOWN : wait(provider);
-    return now - (last?.startedAt ?? 0) >= minimumWait;
+    const minimumWait = failedLast(provider, syncStatus) ? FAILED_SYNC_COOLDOWN : wait(provider);
+    return now - (lastRun.get(provider)?.startedAt ?? 0) >= minimumWait;
   });
+  // Comme la tournée horaire : la synchronisation complète de Steam ne sert qu'au premier
+  // import, et à reprendre un compte en échec.
   const started = await Promise.all(
-    due.map((account) => enqueueSync(userId, account.provider, quiet)),
+    due.map(({ provider, syncStatus, lastSyncedAt }) =>
+      enqueueSync(
+        userId,
+        provider,
+        quiet,
+        false,
+        provider === 'STEAM' && lastSyncedAt !== null && !failedLast(provider, syncStatus),
+      ),
+    ),
   );
   return started.filter(Boolean).length;
 }
@@ -449,6 +465,19 @@ export async function runLiveGame(
   return gained;
 }
 
+/**
+ * Le bouton sur un compte Steam déjà importé : la tournée quotidienne (jeux des deux dernières
+ * semaines, bibliothèque, apparence). Chaque jeu qui a bougé s'y annonce lui-même, succès et
+ * cartes compris, comme en jouant. Le décompte final n'en refait donc pas l'annonce.
+ */
+async function steamLightPass(userId: string) {
+  // Import différé : le suivi en direct dépend lui-même de cette file.
+  const { steamDailyPass } = await import('./live');
+  await steamDailyPass(userId);
+  const games = await db.userGame.count({ where: { userId, game: { platform: 'STEAM' } } });
+  return { games, achievements: 0 };
+}
+
 export function runSync(job: SyncJob) {
   return backgroundWork(
     `Synchronisation ${job.provider}`,
@@ -459,7 +488,7 @@ export function runSync(job: SyncJob) {
 }
 
 async function runAccountSync(
-  { userId, provider, quiet }: SyncJob,
+  { userId, provider, quiet, light }: SyncJob,
   yieldSlot: () => Promise<void>,
 ) {
   const syncer = SYNCERS[provider];
@@ -496,16 +525,19 @@ async function runAccountSync(
     });
     const hidden = new Set(hiddenGames.map((row) => row.gameId));
     const before = await rareCards(userId);
-    const result = await syncer({
-      userId,
-      account,
-      yieldSlot,
-      report: (processed, total, game) =>
-        publishSync(userId, { provider, status: 'SYNCING', processed, total, game }),
-      onUnlocked: (game, count) => {
-        if (!hidden.has(game.id)) announceUnlock(user, userId, game, count);
-      },
-    });
+    const result =
+      light && account.lastSyncedAt
+        ? await steamLightPass(userId)
+        : await syncer({
+            userId,
+            account,
+            yieldSlot,
+            report: (processed, total, game) =>
+              publishSync(userId, { provider, status: 'SYNCING', processed, total, game }),
+            onUnlocked: (game, count) => {
+              if (!hidden.has(game.id)) announceUnlock(user, userId, game, count);
+            },
+          });
 
     const finishedAt = new Date();
     await db.$transaction([

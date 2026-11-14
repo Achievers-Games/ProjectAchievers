@@ -63,13 +63,16 @@ services:
       BACKUP_DIR: /backups
       ADDRESS_HEADER: CF-Connecting-IP
       NODE_OPTIONS: --max-old-space-size=320
-      # Un import à la fois : il rend son créneau tous les vingt jeux, donc personne n'attend
-      # derrière une grosse bibliothèque, et la mémoire du NAS n'en porte jamais deux.
+      # Chaque import rend son créneau tous les vingt jeux : personne n'attend derrière une
+      # grosse bibliothèque. BACKGROUND_CONCURRENCY borne leur nombre de front.
       SYNC_CONCURRENCY: '1'
       SYNC_GAME_CONCURRENCY: '1'
       # Les lectures de jeux Steam sont légères : quatre de front divisent le premier import.
       STEAM_CONCURRENCY: '4'
-      BACKGROUND_CONCURRENCY: '1'
+      # Deux traitements de fond de front : avec un seul, les plateformes d'un même bouton
+      # passaient l'une après l'autre (mesuré : une à trois minutes par clic). Le bouton Steam
+      # ne relit plus toute la bibliothèque, et le site tient sous 200 Mo sur ses 512.
+      BACKGROUND_CONCURRENCY: '2'
       BLIZZARD_DETAILS_PER_RUN: '50'
       # `docker compose logs site` reste lisible : debug pour les enquêtes, info par défaut.
       LOG_LEVEL: ${LOG_LEVEL:-info}

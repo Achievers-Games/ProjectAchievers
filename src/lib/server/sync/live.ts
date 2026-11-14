@@ -30,8 +30,8 @@ import {
  *   public, et l'apparence ;
  * - toutes les 5 min, si la page est visible : le cadre, que l'avatar ne trahit pas.
  * Une fois par jour, chacun passe par la même tournée, plus la bibliothèque, pour un jeu acheté
- * sans être lancé (`steamDailyPass`). La synchronisation complète ne part qu'à la liaison et au
- * bouton.
+ * sans être lancé (`steamDailyPass`) ; le bouton lance la même. La synchronisation complète ne
+ * part qu'à la liaison, ou pour reprendre un compte en échec.
  */
 const INTERVAL = 10_000;
 const MINUTE = 60_000;

@@ -1,5 +1,6 @@
 // Tests sur un vrai PostgreSQL : `npm run dev:db` ou le service de la CI.
 import 'dotenv/config';
+import { PgBoss } from 'pg-boss';
 import { describe, expect, it, vi } from 'vitest';
 import { listGames } from './queries';
 import { resolveIdentity } from './accounts';
@@ -1416,6 +1417,58 @@ describe('rafraîchissement', () => {
     expect(account.syncStatus).toBe('IDLE');
     await db.linkedAccount.update({ where: { id: account.id }, data: { syncStatus: 'SYNCING' } });
     expect(await refreshAccounts(userId, 60_000)).toBe(0);
+  });
+
+  it('ne relit toute la bibliothèque Steam qu’au premier import ou après un échec', async () => {
+    const send = vi.spyOn(PgBoss.prototype, 'send').mockResolvedValue('tâche');
+    const sent = () => (send.mock.calls.at(-1)?.[1] ?? {}) as { light?: boolean };
+    try {
+      const userId = await steamUser();
+      const where = { userId_provider: { userId, provider: 'STEAM' as const } };
+      expect(await refreshAccounts(userId, 0)).toBe(1);
+      expect(sent().light).toBeUndefined();
+
+      await db.linkedAccount.update({
+        where,
+        data: { syncStatus: 'COMPLETED', lastSyncedAt: new Date() },
+      });
+      expect(await refreshAccounts(userId, 0)).toBe(1);
+      expect(sent().light).toBe(true);
+
+      await db.linkedAccount.update({ where, data: { syncStatus: 'FAILED' } });
+      expect(await refreshAccounts(userId, 0)).toBe(1);
+      expect(sent().light).toBeUndefined();
+    } finally {
+      send.mockRestore();
+    }
+  });
+
+  it('le bouton Steam d’un compte importé passe par la tournée légère', async () => {
+    const api = steamApi(ownedGames);
+    vi.stubGlobal('fetch', api);
+    const userId = await steamUser();
+    await runSync({ userId, provider: 'STEAM', quiet: true });
+    api.mockClear();
+
+    const events: SyncEvent[] = [];
+    const stop = onSync(userId, (event) => void events.push(event));
+    try {
+      await runSync({ userId, provider: 'STEAM', light: true });
+    } finally {
+      stop();
+    }
+
+    const urls = api.mock.calls.map(([input]) => String(input));
+    // Ni la seconde liste des jeux gratuits, ni la relecture jeu par jeu.
+    expect(urls.some((url) => url.includes('include_free_sub'))).toBe(false);
+    expect(urls.some((url) => url.includes('GetPlayerAchievements'))).toBe(false);
+    expect(urls.some((url) => url.includes('GetRecentlyPlayedGames'))).toBe(true);
+    expect(events.at(-1)).toMatchObject({ status: 'COMPLETED', processed: 1, achievements: 0 });
+    expect(
+      await db.linkedAccount.findUniqueOrThrow({
+        where: { userId_provider: { userId, provider: 'STEAM' } },
+      }),
+    ).toMatchObject({ syncStatus: 'COMPLETED' });
   });
 });
 

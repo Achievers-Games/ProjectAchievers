@@ -110,10 +110,11 @@ joueur. Terminer d'autres versions ajoute des exemplaires ×2, ×3 puis ×4 ; ch
 qu'une fois au classement des collections. La modération peut séparer les éditions non
 équivalentes : le calcul recalcule alors les deux familles.
 
-Sur le TS-233, le budget est limité à un traitement lourd à la fois : imports, suivi Steam en
-direct et maintenance partagent `BACKGROUND_CONCURRENCY=1`. Les imports passent avant la maintenance
-en attente ; le balayage Steam libère ce budget entre ses pages de 1 000 jeux. Les concurrences
-`SYNC_CONCURRENCY`, `SYNC_GAME_CONCURRENCY` et `STEAM_CONCURRENCY` valent aussi `1` sur le NAS.
+Sur le TS-233, imports et maintenance partagent `BACKGROUND_CONCURRENCY=2` : deux traitements
+lourds au plus, pour que les plateformes d'un même bouton avancent de front. Le suivi Steam en
+direct a son propre créneau. Les imports passent avant la maintenance en attente, et rendent leur
+créneau tous les vingt jeux. `SYNC_CONCURRENCY` et `SYNC_GAME_CONCURRENCY` valent `1` sur le NAS,
+`STEAM_CONCURRENCY` vaut `4`.
 `BLIZZARD_DETAILS_PER_RUN=50` borne le remplissage horaire des détails WoW.
 
 Les logs `Charge serveur` indiquent la mémoire au début et à la fin des tâches, leur durée, puis
