@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Autorise le NAS à télécharger l'image privée. Le jeton est demandé ici et ne reste que sur le NAS.
+# Autorise le NAS à télécharger une image privée de ghcr.io (inutile si le paquet est public).
+# Le jeton est demandé ici et ne reste que sur le NAS.
 set -euo pipefail
 
 HOST="${NAS_HOST:-BasicRem@192.168.1.162}"

@@ -36,7 +36,7 @@ services:
       retries: 10
 
   site:
-    image: ${SITE_IMAGE:-ghcr.io/rbasic/projectachievers:latest}
+    image: ${SITE_IMAGE:-ghcr.io/achievers-games/projectachievers:latest}
     build: .
     restart: unless-stopped
     mem_limit: 512m
@@ -128,7 +128,7 @@ services:
     entrypoint: ['/bin/sh', '-c']
     command:
       - |
-        image=ghcr.io/rbasic/projectachievers:latest
+        image=ghcr.io/achievers-games/projectachievers:latest
         state=/app/.deployed-image
         # Premier passage : on note l'image déjà en place, sans redémarrer le site pour rien.
         if [ ! -s "$$state" ]; then

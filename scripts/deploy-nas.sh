@@ -28,7 +28,7 @@ nas() {
 }
 
 # QTS n'offre pas de dossier personnel utilisable par Docker Compose en SSH.
-IMAGE="ghcr.io/rbasic/projectachievers:$(git rev-parse "$REF")"
+IMAGE="ghcr.io/achievers-games/projectachievers:$(git rev-parse "$REF")"
 [ -z "${NAS_BUILD:-}" ] || IMAGE=project-achievers-site:local
 
 compose=". /etc/profile; export HOME=/share/homes/\${USER:-BasicRem} DOCKER_CONFIG=$DIR/.docker SITE_IMAGE=$IMAGE; cd $DIR; docker compose -f docker-compose.nas.yml --profile tunnel"
