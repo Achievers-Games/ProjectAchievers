@@ -102,6 +102,47 @@ export async function fetchLibrary(steamId: string) {
 }
 
 /**
+ * Ceux de ces jeux que la bibliothèque liste, jeux de la famille compris, avec leur nom et leur
+ * temps de jeu : `appids_filter` réduit la réponse à ces jeux (221 octets pour un, contre 95 Ko
+ * pour une bibliothèque de 557 jeux).
+ */
+export async function fetchOwnedApps(steamId: string, appIds: number[]) {
+  if (!appIds.length) return [];
+  const filter = Object.fromEntries(
+    appIds.map((appId, index) => [`appids_filter[${index}]`, appId]),
+  );
+  const wanted = new Set(appIds);
+  return (await ownedGames(steamId, filter)).filter((game) => wanted.has(game.appid));
+}
+
+/** Nom et gratuité d'un jeu, selon la boutique : une seule demande par jeu tant que le site tourne. */
+const appInfos = new Map<number, { name: string; free: boolean }>();
+
+/**
+ * Un jeu gratuit lancé pour la première fois n'entre dans la bibliothèque qu'une fois son temps de
+ * jeu compté par Steam. La boutique dit tout de suite qu'il est gratuit, donc à tout le monde.
+ * Une réponse manquante ne se garde pas : elle sera redemandée.
+ */
+export async function steamAppInfo(appId: number) {
+  const known = appInfos.get(appId);
+  if (known) return known;
+  try {
+    const response = await fetchRetry(`${STORE}?appids=${appId}&filters=basic`);
+    const data = (await response.json()) as Record<
+      string,
+      { success?: boolean; data?: { name?: string; is_free?: boolean } } | undefined
+    >;
+    const app = data[appId]?.data;
+    if (!data[appId]?.success || !app?.name) return null;
+    const info = { name: app.name, free: app.is_free === true };
+    appInfos.set(appId, info);
+    return info;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Vrai dès que Steam annonce du temps de jeu pour ce joueur : un seul appel léger, sans le nom
  * des jeux, pour savoir s'il vient de rendre son temps public.
  */

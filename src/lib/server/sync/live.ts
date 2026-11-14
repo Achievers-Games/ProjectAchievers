@@ -7,32 +7,37 @@ import { availableProviders } from '../providers';
 import { fetchSteamLook, fetchSteamSummaries, type SteamSummary } from '../providers/steam';
 import { connectedUsers, visibleUsers } from './events';
 import { enqueueSync, runLiveGame } from './queue';
-import { mapLimit } from './errors';
+import { mapLimit, SyncError } from './errors';
 import {
   achievementCounts,
   addSteamGame,
   fetchLibrary,
+  fetchOwnedApps,
   fetchRecentGames,
   fetchTopAchievements,
   playtimeIsPublic,
+  steamAppInfo,
   type OwnedGame,
   type TopGame,
 } from './steam';
 
 /**
- * Steam n'envoie aucune notification : le site va voir. Trois rythmes, du plus léger au plus lourd :
+ * Steam n'envoie aucune notification : le site va voir, le moins souvent possible.
  * - toutes les 10 s, pour tout joueur qui a une page ouverte, même en arrière-plan (il joue
- *   souvent ainsi) : le jeu en cours et l'avatar ;
- * - chaque minute, si la page est visible : les jeux récents dont le nombre de succès a bougé, le cadre et l'avatar
- *   animé, ou, si le temps de jeu est privé, le retour du temps de jeu public ;
- * - à l'arrivée puis chaque heure, si la page est visible : la bibliothèque, pour un jeu acheté
- *   sans être lancé.
- * Les absents passent une fois par jour par la même tournée (`steamDailyPass`). Un jeu neuf entre
- * seul au profil ; la synchronisation complète ne part plus qu'à la liaison et au bouton.
+ *   souvent ainsi) : le jeu en cours et l'avatar, d'un seul appel pour 100 joueurs. Un avatar
+ *   changé fait relire l'avatar animé et le cadre ; un jeu inconnu entre aussitôt au profil ;
+ * - à l'arrivée sur le site : les succès tombés pendant l'absence, ou le retour du temps de jeu
+ *   public, et l'apparence ;
+ * - toutes les 5 min, si la page est visible : le cadre, que l'avatar ne trahit pas.
+ * Une fois par jour, chacun passe par la même tournée, plus la bibliothèque, pour un jeu acheté
+ * sans être lancé (`steamDailyPass`). La synchronisation complète ne part qu'à la liaison et au
+ * bouton.
  */
 const INTERVAL = 10_000;
 const MINUTE = 60_000;
-const HOUR = 60 * MINUTE;
+/** Un retour après cette absence est une arrivée : le rattrapage repart. */
+const ARRIVAL_GAP = 10 * MINUTE;
+const LOOK_EVERY = 5 * MINUTE;
 const LIVE_CONCURRENCY = 2;
 const log = logger('Succès en direct');
 // Les imports complets peuvent occuper le budget général pendant plusieurs minutes.
@@ -41,9 +46,10 @@ const liveWork = new WorkScheduler(1, 'debug');
 
 /** Le dernier jeu vu : il est relu une dernière fois après sa fermeture. */
 const lastGames = new Map<string, string>();
-/** Les passages de la minute et de l'heure, par joueur présent. */
-const lastMinute = new Map<string, number>();
-const lastHour = new Map<string, number>();
+/** Le dernier passage où chaque joueur était sur le site. */
+const lastPresent = new Map<string, number>();
+/** La dernière lecture du cadre, par joueur. */
+const lastLook = new Map<string, number>();
 /** Les jeux neufs déjà signalés : un jeu que l'import ne retient pas ne le relance pas sans fin. */
 const requested = new Map<string, Set<string>>();
 
@@ -68,14 +74,16 @@ const accountSelect = {
 
 /**
  * Des jeux que le profil n'a pas encore : un jeu acheté, ou lancé pour la première fois. Seuls
- * ceux qui ont des succès valent un import. Chacun entre seul, sans relire la bibliothèque, puis
- * le suivi en direct lit ses succès. Un jeu que la bibliothèque ne liste pas (prêté, retiré)
- * passe par la synchronisation complète.
+ * ceux qui ont des succès valent un import, et seulement s'ils sont au joueur : dans sa
+ * bibliothèque (jeux de la famille compris) ou gratuits. Un jeu prêté hors famille ou retiré
+ * n'entre pas, comme dans la synchronisation complète. Chacun entre seul, puis le suivi en
+ * direct lit ses succès. `owned` : les jeux viennent déjà de la bibliothèque.
  */
 async function importUnknown(
   userId: string,
   steamId: string,
   games: { appid: number; name?: string; playtime_forever?: number }[],
+  owned = false,
 ) {
   const seen = requested.get(userId) ?? new Set<string>();
   requested.set(userId, seen);
@@ -89,19 +97,46 @@ async function importUnknown(
   const worth = counts ? fresh.filter((game) => (counts.get(game.appid)?.total ?? 0) > 0) : fresh;
   if (!worth.length) return;
 
-  // Le jeu en cours n'a pas de nom dans le résumé du joueur : la bibliothèque le donne.
-  const library = worth.some((game) => !game.name)
-    ? new Map((await fetchLibrary(steamId).catch(() => [])).map((game) => [game.appid, game]))
-    : new Map<number, OwnedGame>();
+  const sources = owned
+    ? new Map(worth.map((game) => [game.appid, game as OwnedGame]))
+    : await ownedOrFree(steamId, worth);
   for (const game of worth) {
-    const source = game.name ? (game as OwnedGame) : library.get(game.appid);
-    if (!source) {
-      await enqueueSync(userId, 'STEAM', true);
-      return;
-    }
+    const source = sources.get(game.appid);
+    if (!source) continue;
     await addSteamGame(userId, source);
-    await runLiveGame(userId, steamId, String(game.appid), source.playtime_forever);
+    await runLiveGame(userId, steamId, String(source.appid), source.playtime_forever);
   }
+}
+
+/**
+ * Ceux de ces jeux que le joueur peut garder. La bibliothèque se lit filtrée sur eux (quelques
+ * centaines d'octets). Un jeu gratuit lancé pour la première fois n'y est pas encore : la
+ * boutique dit qu'il est gratuit, donc à tout le monde.
+ */
+async function ownedOrFree(
+  steamId: string,
+  games: { appid: number; name?: string; playtime_forever?: number }[],
+) {
+  // Un profil passé privé n'a plus de bibliothèque : rien n'entre, sans rien écrire au journal.
+  const owned = await fetchOwnedApps(
+    steamId,
+    games.map((game) => game.appid),
+  ).catch((cause: unknown) => {
+    if (!(cause instanceof SyncError)) log.error('Bibliothèque :', cause);
+    return [];
+  });
+  const sources = new Map<number, OwnedGame>(owned.map((game) => [game.appid, game]));
+  for (const game of games) {
+    if (sources.has(game.appid)) continue;
+    const app = await steamAppInfo(game.appid);
+    if (!app?.free) continue;
+    sources.set(game.appid, {
+      appid: game.appid,
+      name: game.name ?? app.name,
+      playtime_forever: game.playtime_forever,
+    });
+  }
+  return sources;
 }
 
 /**
@@ -201,11 +236,11 @@ async function checkLibrary(userId: string, steamId: string) {
   });
   const known = new Set(rows.map((row) => row.game.platformGameId));
   const unknown = library.filter((game) => !known.has(String(game.appid)));
-  if (unknown.length) await importUnknown(userId, steamId, unknown);
+  if (unknown.length) await importUnknown(userId, steamId, unknown, true);
 }
 
-/** Le passage de la minute d'un joueur : jeux récents, ou retour du temps public, et apparence. */
-async function minutePass(account: SteamAccount, checkedAppId?: string) {
+/** Au retour du joueur, et chaque jour : jeux récents, ou retour du temps public, et apparence. */
+async function catchUp(account: SteamAccount, checkedAppId?: string) {
   const { userId, providerUserId: steamId } = account;
   await (
     account.playtimeHidden
@@ -234,17 +269,22 @@ export async function checkLiveGames() {
   const summaries = accounts.length
     ? await fetchSteamSummaries(accounts.map((account) => account.providerUserId))
     : new Map<string, SteamSummary>();
+  const now = Date.now();
   for (const account of accounts) {
     const summary = summaries.get(account.providerUserId);
     if (summary?.gameId) playing.set(account.providerUserId, summary.gameId);
     if (summary?.avatarUrl && summary.avatarUrl !== account.avatarUrl) {
+      // Équiper un avatar animé change aussi l'avatar fixe : c'est le signal de relire les deux.
+      const look = await fetchSteamLook(account.providerUserId);
       const { avatarMotionUrl, frameUrl, frameMotionUrl } = account;
       await applyAccountLook(
         account,
-        { avatarMotionUrl, frameUrl, frameMotionUrl },
+        look ?? { avatarMotionUrl, frameUrl, frameMotionUrl },
         summary.avatarUrl,
       ).catch((cause) => log.error('Avatar Steam :', cause));
       account.avatarUrl = summary.avatarUrl;
+      if (look) Object.assign(account, look);
+      lastLook.set(account.userId, now);
     }
   }
 
@@ -267,33 +307,33 @@ export async function checkLiveGames() {
   lastGames.clear();
   for (const [steamId, appId] of playing) lastGames.set(steamId, appId);
 
-  const now = Date.now();
   await mapLimit(checks, LIVE_CONCURRENCY, async ({ account, appId }) => {
-    const { userId, providerUserId: steamId } = account;
-    // Un onglet en arrière-plan garde le jeu en cours, pas le reste : il rattrape à son retour.
-    if (!visible.has(userId)) return;
-    if (now - (lastMinute.get(userId) ?? 0) >= MINUTE) {
-      lastMinute.set(userId, now);
-      await minutePass(account, appId);
-    }
-    if (now - (lastHour.get(userId) ?? 0) >= HOUR) {
-      lastHour.set(userId, now);
-      await checkLibrary(userId, steamId).catch((cause) => log.error('Bibliothèque :', cause));
+    const { userId } = account;
+    const arrived = now - (lastPresent.get(userId) ?? 0) > ARRIVAL_GAP;
+    lastPresent.set(userId, now);
+    if (arrived) {
+      lastLook.set(userId, now);
+      await catchUp(account, appId);
+    } else if (visible.has(userId) && now - (lastLook.get(userId) ?? 0) >= LOOK_EVERY) {
+      // Le cadre ne change pas l'avatar : seule une lecture à part le voit.
+      lastLook.set(userId, now);
+      await refreshLook(account).catch((cause) => log.error('Apparence Steam :', cause));
     }
   });
 
-  // Un joueur parti ne laisse rien en mémoire : à son retour, tout repart comme à l'arrivée. Un
-  // onglet passé en arrière-plan refait son passage de la minute dès qu'il redevient visible.
-  const present = new Set(accounts.map((account) => account.userId));
-  for (const map of [lastMinute, lastHour]) {
-    for (const userId of map.keys()) if (!visible.has(userId)) map.delete(userId);
+  // Un joueur parti depuis longtemps ne laisse rien en mémoire : à son retour, tout repart.
+  for (const [userId, at] of lastPresent) {
+    if (now - at <= ARRIVAL_GAP) continue;
+    lastPresent.delete(userId);
+    lastLook.delete(userId);
+    requested.delete(userId);
   }
-  for (const userId of requested.keys()) if (!present.has(userId)) requested.delete(userId);
 }
 
 /**
- * La tournée quotidienne d'un joueur absent : la même que celle d'un joueur présent, une fois
- * par jour. Une fenêtre de deux semaines relue chaque jour ne laisse passer aucun jeu joué.
+ * La tournée quotidienne : celle de l'arrivée, plus la bibliothèque. Une fenêtre de deux
+ * semaines relue chaque jour ne laisse passer aucun jeu joué, et un jeu acheté sans être lancé
+ * apparaît au plus tard le lendemain.
  */
 export async function steamDailyPass(userId: string) {
   const account = await db.linkedAccount.findUnique({
@@ -301,12 +341,10 @@ export async function steamDailyPass(userId: string) {
     select: accountSelect,
   });
   if (!account) return;
-  await minutePass(account);
+  await catchUp(account);
   await checkLibrary(userId, account.providerUserId).catch((cause) =>
     log.error('Bibliothèque :', cause),
   );
-  // Absent, il n'est plus suivi en direct : sa liste de jeux signalés n'a plus lieu d'être.
-  requested.delete(userId);
 }
 
 let checking = false;

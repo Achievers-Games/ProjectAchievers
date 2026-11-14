@@ -731,10 +731,10 @@ describe('synchronisation Steam', () => {
       expect(events).toHaveLength(0);
       expect(reads(mock, 'GetRecentlyPlayedGames')).toBe(0);
 
-      // Rendu public : la synchronisation complète part au passage de la minute suivante.
+      // Rendu public : la synchronisation complète part à son retour sur le site.
       library = { response: { games: [{ appid: 999001, playtime_forever: 90 }] } };
       vi.useFakeTimers({ toFake: ['Date'] });
-      vi.setSystemTime(Date.now() + 61_000);
+      vi.setSystemTime(Date.now() + 11 * 60_000);
       markVisible(userId);
       await checkLiveGames();
       expect(events.map((event) => event.status)).toContain('QUEUED');
@@ -775,9 +775,18 @@ describe('synchronisation Steam', () => {
   it('ne suit que le jeu en cours d’un onglet resté en arrière-plan', async () => {
     const { userId, mock } = await liveUser(nobodyPlaying);
     const stop = onSync(userId, () => {});
-    // La page est ouverte, mais elle n'a pas signalé d'onglet visible.
-    await checkLiveGames();
-    stop();
+    // La page est ouverte, mais elle n'a pas signalé d'onglet visible. Le premier passage est
+    // l'arrivée ; ensuite, plus rien que le jeu en cours, même après les 5 min du cadre.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      await checkLiveGames();
+      mock.mockClear();
+      vi.setSystemTime(Date.now() + 6 * 60_000);
+      await checkLiveGames();
+    } finally {
+      vi.useRealTimers();
+      stop();
+    }
     const methods = mock.mock.calls.map(([url]) => /\/(\w+)\/v\d/.exec(String(url))?.[1]);
     expect(new Set(methods)).toEqual(new Set(['GetPlayerSummaries']));
   });
@@ -809,8 +818,85 @@ describe('synchronisation Steam', () => {
     });
     expect(added?.totalCount).toBe(2);
     expect(events.map((event) => event.status)).not.toContain('QUEUED');
-    // La bibliothèque donne le nom du jeu, puis sert au passage de l'heure : rien de plus.
-    expect(reads(mock, 'GetOwnedGames')).toBe(2);
+    // La bibliothèque, filtrée sur ce jeu, donne son nom : rien de plus.
+    expect(reads(mock, 'GetOwnedGames')).toBe(1);
+  });
+
+  it('laisse de côté un jeu lancé que la bibliothèque ne liste pas, sans synchronisation complète', async () => {
+    const steamid = { value: '' };
+    const { userId } = await liveUser((url) => {
+      if (url.includes('GetPlayerSummaries')) {
+        return json({ response: { players: [{ steamid: steamid.value, gameid: '999778' }] } });
+      }
+      if (url.includes('GetTopAchievementsForGames')) {
+        return json({ response: { games: [{ appid: 999778, total_achievements: 2 }] } });
+      }
+    });
+    steamid.value = (await db.linkedAccount.findFirstOrThrow({ where: { userId } })).providerUserId;
+    const events: SyncEvent[] = [];
+    const stop = onSync(userId, (event) => events.push(event));
+    markVisible(userId);
+    await checkLiveGames();
+    stop();
+
+    const added = await db.userGame.findFirst({
+      where: { userId, game: { platformGameId: '999778' } },
+    });
+    expect(added).toBeNull();
+    expect(events.map((event) => event.status)).not.toContain('QUEUED');
+  });
+
+  it('importe tout de suite un jeu gratuit que la bibliothèque ne liste pas encore', async () => {
+    const steamid = { value: '' };
+    const { userId, mock } = await liveUser((url) => {
+      if (url.includes('GetPlayerSummaries')) {
+        return json({ response: { players: [{ steamid: steamid.value, gameid: '999780' }] } });
+      }
+      if (url.includes('GetOwnedGames') && url.includes('appids_filter')) {
+        return json({ response: { game_count: 0 } });
+      }
+      if (url.includes('appdetails')) {
+        return json({
+          999780: { success: true, data: { name: `${PREFIX} gratuit`, is_free: true } },
+        });
+      }
+      if (url.includes('GetTopAchievementsForGames')) {
+        return json({ response: { games: [{ appid: 999780, total_achievements: 2 }] } });
+      }
+    });
+    steamid.value = (await db.linkedAccount.findFirstOrThrow({ where: { userId } })).providerUserId;
+    const stop = onSync(userId, () => {});
+    markVisible(userId);
+    await checkLiveGames();
+    stop();
+
+    const added = await db.userGame.findFirst({
+      where: { userId, game: { platformGameId: '999780' } },
+      select: { totalCount: true, game: { select: { name: true } } },
+    });
+    expect(added).toMatchObject({ totalCount: 2, game: { name: `${PREFIX} gratuit` } });
+    expect(reads(mock, 'GetOwnedGames')).toBe(1);
+  });
+
+  it('n’importe pas un jeu récent que la bibliothèque ne liste pas', async () => {
+    const prete = { appid: 999781, name: `${PREFIX} prêté`, playtime_forever: 40 };
+    const { userId } = await liveUser((url) => {
+      if (url.includes('GetPlayerSummaries')) return json({ response: { players: [] } });
+      if (url.includes('GetRecentlyPlayedGames')) return json({ response: { games: [prete] } });
+      if (url.includes('GetOwnedGames') && url.includes('appids_filter')) {
+        return json({ response: { game_count: 0 } });
+      }
+      if (url.includes('GetTopAchievementsForGames')) {
+        return json({ response: { games: [{ appid: 999781, total_achievements: 2 }] } });
+      }
+    });
+    const stop = onSync(userId, () => {});
+    markVisible(userId);
+    await checkLiveGames();
+    stop();
+    expect(
+      await db.userGame.findFirst({ where: { userId, game: { platformGameId: '999781' } } }),
+    ).toBeNull();
   });
 
   it('ne coûte qu’un appel par passage pour un jeu en cours sans nouveau succès', async () => {
@@ -911,6 +997,51 @@ describe('synchronisation Steam', () => {
     const account = await db.linkedAccount.findFirstOrThrow({ where: { userId } });
     expect(account.avatarUrl).toBe('https://a/neuf.jpg');
     expect(account.frameUrl).toContain('cadre-grand.png');
+    expect(account.avatarMotionUrl).toContain('anime.webm');
+  });
+
+  it('relit l’avatar animé dès que l’avatar change, et le cadre toutes les 5 min', async () => {
+    const steamid = { value: '' };
+    const avatar = { value: 'https://a/ancien.jpg' };
+    const { userId, mock } = await liveUser((url) => {
+      if (url.includes('GetPlayerSummaries')) {
+        return json({
+          response: { players: [{ steamid: steamid.value, avatarfull: avatar.value }] },
+        });
+      }
+      if (url.includes('GetProfileItemsEquipped')) {
+        return json({ response: { animated_avatar: { image_small: 'anime.webm' } } });
+      }
+    });
+    steamid.value = (await db.linkedAccount.findFirstOrThrow({ where: { userId } })).providerUserId;
+    const stop = onSync(userId, () => {});
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      markVisible(userId);
+      await checkLiveGames(); // arrivée
+      mock.mockClear();
+
+      vi.setSystemTime(Date.now() + 10_000);
+      markVisible(userId);
+      await checkLiveGames();
+      expect(reads(mock, 'GetProfileItemsEquipped')).toBe(0);
+
+      avatar.value = 'https://a/neuf.jpg';
+      vi.setSystemTime(Date.now() + 10_000);
+      markVisible(userId);
+      await checkLiveGames();
+      expect(reads(mock, 'GetProfileItemsEquipped')).toBe(1);
+
+      vi.setSystemTime(Date.now() + 5 * 60_000);
+      markVisible(userId);
+      await checkLiveGames();
+      expect(reads(mock, 'GetProfileItemsEquipped')).toBe(2);
+    } finally {
+      vi.useRealTimers();
+      stop();
+    }
+    const account = await db.linkedAccount.findFirstOrThrow({ where: { userId } });
+    expect(account).toMatchObject({ avatarUrl: 'https://a/neuf.jpg' });
     expect(account.avatarMotionUrl).toContain('anime.webm');
   });
 

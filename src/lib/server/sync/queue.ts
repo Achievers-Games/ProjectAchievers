@@ -184,8 +184,8 @@ export async function refreshAccounts(
 
 /**
  * Tous les délais de synchronisation complète, au même endroit. Steam n'en a pas besoin à la
- * visite : le suivi en direct (live.ts) relit toutes les 10 s le jeu en cours et chaque minute
- * les jeux dont le nombre de succès a bougé, et les absents passent chaque jour par la même
+ * visite : le suivi en direct (live.ts) relit toutes les 10 s le jeu en cours, rattrape à
+ * l'arrivée les jeux dont le nombre de succès a bougé, et chacun passe chaque jour par la même
  * tournée. Les autres plateformes n'ont pas ce suivi : une visite les relit toutes les
  * 15 minutes, et le balayage horaire les rattrape une fois par jour.
  */
@@ -359,7 +359,7 @@ function awaitingExactDates(key: string, now = Date.now()) {
  * GetTopAchievementsForGames voit un succès quelques secondes après son déblocage : il est
  * reconnu (steam-match.ts), enregistré et annoncé aussitôt, puis daté exactement dès que
  * GetPlayerAchievements le voit à son tour. Sans réponse de la première, seule la seconde sert.
- * `top` évite de redemander à Steam ce que le passage de la minute vient de lire.
+ * `top` évite de redemander à Steam ce que le rattrapage vient de lire.
  */
 export async function runLiveGame(
   userId: string,
