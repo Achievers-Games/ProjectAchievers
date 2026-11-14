@@ -282,12 +282,17 @@ export async function saveProgress(
         // Deux tableaux paramétrés évitent de construire un gros arbre de requête Prisma.
         const ids = [...pending.keys()];
         const dates = [...pending.values()].map((date) => date.toISOString());
-        const inserted = await db.$queryRaw<{ achievementId: string }[]>`
+        // Le suivi en direct date un succès à sa détection, avant que Steam ne donne l'heure
+        // exacte : une date plus ancienne remplace la précédente. `xmax = 0` distingue un
+        // succès nouveau d'une date corrigée.
+        const written = await db.$queryRaw<{ achievementId: string; inserted: boolean }[]>`
           INSERT INTO "UserAchievement" ("userId", "achievementId", "unlockedAt")
           SELECT ${userId}, row.id, row.at
           FROM unnest(${ids}::text[], ${dates}::timestamp[]) AS row(id, at)
-          ON CONFLICT ("userId", "achievementId") DO NOTHING
-          RETURNING "achievementId"`;
+          ON CONFLICT ("userId", "achievementId") DO UPDATE SET "unlockedAt" = EXCLUDED."unlockedAt"
+          WHERE EXCLUDED."unlockedAt" < "UserAchievement"."unlockedAt"
+          RETURNING "achievementId", (xmax = 0) AS inserted`;
+        const inserted = written.filter((row) => row.inserted);
         gained += inserted.length;
         for (const row of inserted.slice(0, 5 - freshIds.length)) freshIds.push(row.achievementId);
       }

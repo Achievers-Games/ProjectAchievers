@@ -126,7 +126,8 @@ export async function fetchSteamSummaries(steamIds: string[], maxAge = SUMMARY_M
     for (const [id, { at }] of summaryCache) if (now - at > 60_000) summaryCache.delete(id);
   }
   const stale = [...new Set(steamIds)].filter(
-    (steamId) => now - (summaryCache.get(steamId)?.at ?? 0) > maxAge,
+    // Un âge maximal nul force une nouvelle demande.
+    (steamId) => now - (summaryCache.get(steamId)?.at ?? -Infinity) >= maxAge,
   );
   for (let index = 0; index < stale.length; index += SUMMARY_BATCH) {
     await requestSummaries(stale.slice(index, index + SUMMARY_BATCH));

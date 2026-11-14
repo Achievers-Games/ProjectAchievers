@@ -7,8 +7,9 @@ import { logger } from '#lib/logger';
 import { fetchPlayingGames, fetchSteamIdentity } from '../providers/steam';
 
 const log = logger('Steam');
-import { fetchRetry, mapLimit, sleep, SyncError, syncGames } from './errors';
+import { fetchRetry, sleep, SyncError, syncGames } from './errors';
 import { saveAchievements, saveProgress, upsertGame, type AchievementInput } from './store';
+import { matchTopAchievements } from './steam-match';
 import type { ProviderSync } from './types';
 
 const API = 'https://api.steampowered.com';
@@ -17,8 +18,6 @@ const STORE = 'https://store.steampowered.com/api/appdetails';
 const SCHEMA_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
 const ACHIEVEMENT_RECHECK = 24 * 60 * 60 * 1000;
 const concurrency = () => env().STEAM_CONCURRENCY;
-/** Steam refuse 400 jeux d'un coup. */
-const APPS_PER_CALL = 300;
 
 export interface OwnedGame {
   appid: number;
@@ -143,42 +142,81 @@ export async function fetchRecentGames(steamId: string): Promise<OwnedGame[]> {
 
 /** Au-delà d'aucun jeu connu : la réponse porte alors tous les succès obtenus, donc leur nombre. */
 const ALL_ACHIEVEMENTS = 10_000;
+/**
+ * Moins que le plafond de Steam (300) : la réponse porte chaque succès obtenu, et une grosse
+ * bibliothèque pesait alors des dizaines de Mo d'un coup sur le petit NAS.
+ */
+const TOP_PER_CALL = 100;
 
 /**
- * Par jeu, le nombre de succès que le joueur a obtenus et le total du jeu, pour 300 jeux par
- * appel. C'est ce qui dit, sans lire chaque jeu, lesquels ont bougé : une bibliothèque de 700
- * jeux se vérifie en trois appels au lieu de 700. Avec `max` à 1, la réponse reste légère et
- * dit seulement si le joueur a quelque chose sur le jeu.
+ * Un succès obtenu, tel que GetTopAchievementsForGames le décrit. Ni identifiant technique ni
+ * date : le couple `statid`/`bit` est sa position dans les statistiques du jeu.
  */
-export async function achievementCounts(
+export interface TopAchievement {
+  statid?: number;
+  bit?: number;
+  name?: string;
+  desc?: string;
+  icon?: string;
+  hidden?: boolean;
+}
+
+export interface TopGame {
+  total: number;
+  achievements: TopAchievement[];
+}
+
+/**
+ * Par jeu, les succès que le joueur a obtenus et le total du jeu, en français comme le catalogue.
+ * C'est ce qui dit, sans lire chaque jeu, lesquels ont bougé : une bibliothèque de 700 jeux se
+ * vérifie en sept appels au lieu de 700. Mesuré : un succès y apparaît quelques secondes après son
+ * déblocage, quand GetPlayerAchievements met de 40 s à 5 min. Les lots partent l'un après l'autre,
+ * et `onGame` lit chaque jeu avant que le lot suivant n'arrive.
+ */
+export async function fetchTopAchievements(
   steamId: string,
   appIds: number[],
-  max = ALL_ACHIEVEMENTS,
-  limit = concurrency(),
+  onGame?: (appId: number, game: TopGame) => Promise<void>,
 ) {
-  const batches = Array.from({ length: Math.ceil(appIds.length / APPS_PER_CALL) }, (_, index) =>
-    appIds.slice(index * APPS_PER_CALL, (index + 1) * APPS_PER_CALL),
-  );
   const counts = new Map<number, { unlocked: number; total: number }>();
-  await mapLimit(batches, limit, async (batch) => {
-    const params: Record<string, string | number> = { steamid: steamId, max_achievements: max };
-    batch.forEach((appId, index) => (params[`appids[${index}]`] = appId));
+  for (let index = 0; index < appIds.length; index += TOP_PER_CALL) {
+    const params: Record<string, string | number> = {
+      steamid: steamId,
+      max_achievements: ALL_ACHIEVEMENTS,
+      language: 'french',
+    };
+    appIds
+      .slice(index, index + TOP_PER_CALL)
+      .forEach((appId, position) => (params[`appids[${position}]`] = appId));
     const response = await steamGet('/IPlayerService/GetTopAchievementsForGames/v1/', params);
     if (!response.ok) throw new Error(`GetTopAchievementsForGames a répondu ${response.status}`);
     const data = (await response.json()) as {
       response?: {
-        games?: { appid: number; total_achievements?: number; achievements?: unknown[] }[];
+        games?: { appid: number; total_achievements?: number; achievements?: TopAchievement[] }[];
       };
     };
     for (const game of data.response?.games ?? []) {
-      counts.set(game.appid, {
-        unlocked: game.achievements?.length ?? 0,
-        total: game.total_achievements ?? 0,
-      });
+      const achievements = game.achievements ?? [];
+      const total = game.total_achievements ?? 0;
+      counts.set(game.appid, { unlocked: achievements.length, total });
+      await onGame?.(game.appid, { total, achievements });
     }
-  });
+  }
   return counts;
 }
+
+/** Les succès obtenus sur un seul jeu ; `null` si Steam ne le décrit pas. */
+export async function fetchTopGame(steamId: string, appId: number) {
+  let found: TopGame | null = null;
+  await fetchTopAchievements(steamId, [appId], async (_, game) => {
+    found = game;
+  });
+  return found as TopGame | null;
+}
+
+/** Le nombre de succès obtenus et le total, par jeu. */
+export const achievementCounts = (steamId: string, appIds: number[]) =>
+  fetchTopAchievements(steamId, appIds);
 
 /**
  * Les jeux récents n'ont plus d'image à l'adresse classique : seule la boutique
@@ -379,14 +417,8 @@ export async function fetchUnlocks(steamId: string, appId: number) {
     }));
 }
 
-/** Lit un jeu et les succès du joueur. Sans réponse pour un jeu emprunté, le jeu est laissé. */
-async function syncSteamGame(
-  userId: string,
-  steamId: string,
-  source: OwnedGame,
-  shared: boolean,
-  refreshSchema = false,
-) {
+/** Le jeu au catalogue du site, avec ses images et la liste de ses succès. */
+async function steamCatalogGame(source: OwnedGame, refreshSchema = false) {
   const appId = String(source.appid);
   // Les images ne se cherchent qu'une fois : sinon chaque relecture coûtait un appel par jeu.
   const known = await db.game.findUnique({
@@ -405,6 +437,31 @@ async function syncSteamGame(
     const schema = await fetchSchema(source.appid);
     if (schema) await saveAchievements(game.id, schema);
   }
+  return game;
+}
+
+/**
+ * Un jeu neuf entre au profil sans relire toute la bibliothèque : son catalogue, puis une ligne
+ * vide que le suivi en direct remplit aussitôt, avec les annonces d'un succès débloqué en jouant.
+ */
+export async function addSteamGame(userId: string, source: OwnedGame) {
+  const game = await steamCatalogGame(source);
+  await saveProgress(userId, game.id, [], {
+    playtimeMinutes: source.playtime_forever ?? 0,
+    lastPlayedAt: source.rtime_last_played ? new Date(source.rtime_last_played * 1000) : null,
+  });
+  return game;
+}
+
+/** Lit un jeu et les succès du joueur. Sans réponse pour un jeu emprunté, le jeu est laissé. */
+async function syncSteamGame(
+  userId: string,
+  steamId: string,
+  source: OwnedGame,
+  shared: boolean,
+  refreshSchema = false,
+) {
+  const game = await steamCatalogGame(source, refreshSchema);
 
   const unlocks = await fetchUnlocks(steamId, source.appid).catch((error: unknown) => {
     if (shared && error instanceof SyncError) return null;
@@ -499,9 +556,18 @@ export const syncSteam: ProviderSync = async ({
   const items = owned;
 
   // Une méthode non documentée peut disparaître : sans elle, la règle des 24 heures reprend.
-  const counts = await achievementCounts(
+  // Elle décrit chaque succès obtenu : de quoi apprendre leur position, qui servira à les
+  // reconnaître en direct, et compléter les descriptions cachées.
+  const counts = await fetchTopAchievements(
     steamId,
     items.map((game) => game.appid),
+    async (appId, top) => {
+      const gameId = knownProgress.get(String(appId))?.game.id;
+      if (!gameId || !top.achievements.length) return;
+      await matchTopAchievements(gameId, top.achievements).catch((cause) =>
+        log.error('Positions des succès Steam :', cause),
+      );
+    },
   ).catch((cause) => {
     log.error('Décomptes Steam :', cause);
     return null;

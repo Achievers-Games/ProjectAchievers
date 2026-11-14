@@ -9,6 +9,13 @@ import { retroGet } from '../providers/retro';
 
 type Game = { name: string; slug: string; platform?: 'PSN' | 'RETRO' };
 const RETRO_SIGNAL_MAX_AGE = 5 * 60_000;
+/**
+ * PSN passe par un compte de service unique, qui sert aussi à toutes les synchronisations : la
+ * présence d'un joueur n'y est demandée qu'une fois par minute, quel que soit le nombre de
+ * visiteurs de son profil.
+ */
+const PSN_PRESENCE_MAX_AGE = 60_000;
+const psnCache = new Map<string, { until: number; game: Game | null }>();
 const retroCache = new WeakMap<
   object,
   { accountId: string; until: number; gameId?: string; expiresAt?: number }
@@ -73,6 +80,14 @@ async function refresh() {
       accounts.filter((account) => account.provider === 'PSN'),
       2,
       async (account) => {
+        const cached = psnCache.get(account.providerUserId);
+        if (cached && cached.until > Date.now()) {
+          if (cached.game) psnGames.set(account.user.handle, cached.game);
+          return;
+        }
+        const remember = (game: Game | null) =>
+          psnCache.set(account.providerUserId, { until: Date.now() + PSN_PRESENCE_MAX_AGE, game });
+        remember(null);
         try {
           const { basicPresence } = await getBasicPresence(
             await psnAuthorization(),
@@ -99,11 +114,9 @@ async function refresh() {
           });
           const [match] = matches;
           if (matches.length === 1 && match && !match.hidden && !match.game.adultOnly) {
-            psnGames.set(account.user.handle, {
-              name: match.game.name,
-              slug: match.game.slug,
-              platform: 'PSN',
-            });
+            const game = { name: match.game.name, slug: match.game.slug, platform: 'PSN' as const };
+            psnGames.set(account.user.handle, game);
+            remember(game);
           }
         } catch {
           // Un statut PSN indisponible n'interrompt pas la présence Steam.
@@ -210,6 +223,7 @@ export function watchSteamPresence(handle: string, send: Listener) {
     if (!watched.size) {
       clearInterval(timer);
       timer = undefined;
+      psnCache.clear();
     }
   };
 }

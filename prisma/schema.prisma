@@ -531,6 +531,9 @@ model Achievement {
   points                Int        @default(10)
   /// Peut être perdu pour la partie en cours : signalé par un guide officiel.
   missable              Boolean    @default(false)
+  /// Steam : la position du succès dans les statistiques du jeu (statid × 32 + bit), apprise en
+  /// comparant les réponses de Steam. Elle reconnaît un succès sans attendre GetPlayerAchievements.
+  steamStatBit          Int?
 
   unlocks      UserAchievement[]
   translations AchievementTranslation[]
@@ -539,6 +542,7 @@ model Achievement {
 
   @@unique([gameId, platformAchievementId])
   @@index([gameId])
+  @@index([gameId, steamStatBit])
 }
 
 model UserGame {

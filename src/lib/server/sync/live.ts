@@ -5,20 +5,30 @@ import { logger } from '#lib/logger';
 import { applyAccountLook, type AccountLook } from '../accounts';
 import { availableProviders } from '../providers';
 import { fetchSteamLook, fetchSteamSummaries, type SteamSummary } from '../providers/steam';
-import { visibleUsers } from './events';
+import { connectedUsers, visibleUsers } from './events';
 import { enqueueSync, runLiveGame } from './queue';
 import { mapLimit } from './errors';
-import { achievementCounts, fetchLibrary, fetchRecentGames, playtimeIsPublic } from './steam';
+import {
+  achievementCounts,
+  addSteamGame,
+  fetchLibrary,
+  fetchRecentGames,
+  fetchTopAchievements,
+  playtimeIsPublic,
+  type OwnedGame,
+  type TopGame,
+} from './steam';
 
 /**
- * Steam n'envoie aucune notification : le site va voir. Pour les joueurs qui ont une page
- * visible, trois rythmes, du plus léger au plus lourd :
- * - toutes les 10 s : le jeu en cours et l'avatar ;
- * - chaque minute : les jeux récents dont le nombre de succès a bougé, le cadre et l'avatar
+ * Steam n'envoie aucune notification : le site va voir. Trois rythmes, du plus léger au plus lourd :
+ * - toutes les 10 s, pour tout joueur qui a une page ouverte, même en arrière-plan (il joue
+ *   souvent ainsi) : le jeu en cours et l'avatar ;
+ * - chaque minute, si la page est visible : les jeux récents dont le nombre de succès a bougé, le cadre et l'avatar
  *   animé, ou, si le temps de jeu est privé, le retour du temps de jeu public ;
- * - à l'arrivée puis chaque heure : la bibliothèque, pour un jeu acheté sans être lancé.
- * Les absents passent une fois par jour par la même tournée (`steamDailyPass`). La
- * synchronisation complète ne part plus qu'à la liaison, au bouton, ou pour importer un jeu neuf.
+ * - à l'arrivée puis chaque heure, si la page est visible : la bibliothèque, pour un jeu acheté
+ *   sans être lancé.
+ * Les absents passent une fois par jour par la même tournée (`steamDailyPass`). Un jeu neuf entre
+ * seul au profil ; la synchronisation complète ne part plus qu'à la liaison et au bouton.
  */
 const INTERVAL = 10_000;
 const MINUTE = 60_000;
@@ -57,22 +67,45 @@ const accountSelect = {
 
 /**
  * Des jeux que le profil n'a pas encore : un jeu acheté, ou lancé pour la première fois. Seuls
- * ceux qui ont des succès valent un import, que fait la synchronisation complète.
+ * ceux qui ont des succès valent un import. Chacun entre seul, sans relire la bibliothèque, puis
+ * le suivi en direct lit ses succès. Un jeu que la bibliothèque ne liste pas (prêté, retiré)
+ * passe par la synchronisation complète.
  */
-async function importUnknown(userId: string, steamId: string, appIds: string[]) {
+async function importUnknown(
+  userId: string,
+  steamId: string,
+  games: { appid: number; name?: string; playtime_forever?: number }[],
+) {
   const seen = requested.get(userId) ?? new Set<string>();
   requested.set(userId, seen);
-  const fresh = appIds.filter((appId) => !seen.has(appId));
+  const fresh = games.filter((game) => !seen.has(String(game.appid)));
   if (!fresh.length) return;
-  for (const appId of fresh) seen.add(appId);
-  const counts = await achievementCounts(steamId, fresh.map(Number)).catch(() => null);
-  const worth = !counts || fresh.some((appId) => (counts.get(Number(appId))?.total ?? 0) > 0);
-  if (worth) await enqueueSync(userId, 'STEAM', true);
+  for (const game of fresh) seen.add(String(game.appid));
+  const counts = await achievementCounts(
+    steamId,
+    fresh.map((game) => game.appid),
+  ).catch(() => null);
+  const worth = counts ? fresh.filter((game) => (counts.get(game.appid)?.total ?? 0) > 0) : fresh;
+  if (!worth.length) return;
+
+  // Le jeu en cours n'a pas de nom dans le résumé du joueur : la bibliothèque le donne.
+  const library = worth.some((game) => !game.name)
+    ? new Map((await fetchLibrary(steamId).catch(() => [])).map((game) => [game.appid, game]))
+    : new Map<number, OwnedGame>();
+  for (const game of worth) {
+    const source = game.name ? (game as OwnedGame) : library.get(game.appid);
+    if (!source) {
+      await enqueueSync(userId, 'STEAM', true);
+      return;
+    }
+    await addSteamGame(userId, source);
+    await runLiveGame(userId, steamId, String(game.appid), source.playtime_forever);
+  }
 }
 
 /**
  * Les succès tombés pendant que la page était fermée, ou juste avant la fermeture du jeu.
- * Steam dit en un appel combien de succès le joueur a sur ses jeux des deux dernières semaines :
+ * Steam dit en un appel quels succès le joueur a sur ses jeux des deux dernières semaines :
  * seuls ceux qui en ont un de plus que la base sont relus. Un succès que Steam expose en retard
  * change ce nombre au passage suivant, sans filet à part.
  */
@@ -100,19 +133,15 @@ async function catchUpRecent(userId: string, steamId: string, checkedAppId?: str
   const stored = new Map(rows.map((row) => [row.game.platformGameId, row]));
   const known = recent.filter((game) => stored.has(String(game.appid)));
   const unknown = recent.filter((game) => !stored.has(String(game.appid)));
-  if (unknown.length) {
-    await importUnknown(
-      userId,
-      steamId,
-      unknown.map((game) => String(game.appid)),
-    );
-  }
+  if (unknown.length) await importUnknown(userId, steamId, unknown);
   if (!known.length) return;
 
   // Une méthode non documentée peut disparaître : le temps de jeu qui bouge prend alors le relais.
-  const counts = await achievementCounts(
+  const tops = new Map<number, TopGame>();
+  const counts = await fetchTopAchievements(
     steamId,
     known.map((game) => game.appid),
+    async (appId, top) => void tops.set(appId, top),
   ).catch((cause) => {
     log.error('Décomptes Steam :', cause);
     return null;
@@ -126,7 +155,8 @@ async function catchUpRecent(userId: string, steamId: string, checkedAppId?: str
     // retombe sur le temps de jeu.
     const changed = count ? count.unlocked > row.unlockedCount : minutes > row.playtimeMinutes;
     if (changed) {
-      await runLiveGame(userId, steamId, String(game.appid), game.playtime_forever);
+      const appId = String(game.appid);
+      await runLiveGame(userId, steamId, appId, game.playtime_forever, tops.get(game.appid));
     } else if (minutes > row.playtimeMinutes) {
       // Rien de neuf côté succès : le temps de jeu se met à jour sans rien demander à Steam.
       await db.userGame.updateMany({
@@ -169,7 +199,7 @@ async function checkLibrary(userId: string, steamId: string) {
     select: { game: { select: { platformGameId: true } } },
   });
   const known = new Set(rows.map((row) => row.game.platformGameId));
-  const unknown = library.map((game) => String(game.appid)).filter((appId) => !known.has(appId));
+  const unknown = library.filter((game) => !known.has(String(game.appid)));
   if (unknown.length) await importUnknown(userId, steamId, unknown);
 }
 
@@ -185,7 +215,8 @@ async function minutePass(account: SteamAccount, checkedAppId?: string) {
 }
 
 export async function checkLiveGames() {
-  const userIds = visibleUsers();
+  const userIds = connectedUsers();
+  const visible = new Set(visibleUsers());
   const accounts: SteamAccount[] = userIds.length
     ? await db.linkedAccount.findMany({
         where: {
@@ -226,7 +257,7 @@ export async function checkLiveGames() {
     const { userId, providerUserId: steamId } = account;
     try {
       const gained = await runLiveGame(userId, steamId, appId);
-      if (gained === null) await importUnknown(userId, steamId, [appId]);
+      if (gained === null) await importUnknown(userId, steamId, [{ appid: Number(appId) }]);
     } catch (cause) {
       log.error(cause);
     }
@@ -238,6 +269,8 @@ export async function checkLiveGames() {
   const now = Date.now();
   await mapLimit(checks, LIVE_CONCURRENCY, async ({ account, appId }) => {
     const { userId, providerUserId: steamId } = account;
+    // Un onglet en arrière-plan garde le jeu en cours, pas le reste : il rattrape à son retour.
+    if (!visible.has(userId)) return;
     if (now - (lastMinute.get(userId) ?? 0) >= MINUTE) {
       lastMinute.set(userId, now);
       await minutePass(account, appId);
@@ -248,11 +281,13 @@ export async function checkLiveGames() {
     }
   });
 
-  // Un joueur parti ne laisse rien en mémoire : à son retour, tout repart comme à l'arrivée.
+  // Un joueur parti ne laisse rien en mémoire : à son retour, tout repart comme à l'arrivée. Un
+  // onglet passé en arrière-plan refait son passage de la minute dès qu'il redevient visible.
   const present = new Set(accounts.map((account) => account.userId));
-  for (const map of [lastMinute, lastHour, requested]) {
-    for (const userId of map.keys()) if (!present.has(userId)) map.delete(userId);
+  for (const map of [lastMinute, lastHour]) {
+    for (const userId of map.keys()) if (!visible.has(userId)) map.delete(userId);
   }
+  for (const userId of requested.keys()) if (!present.has(userId)) requested.delete(userId);
 }
 
 /**

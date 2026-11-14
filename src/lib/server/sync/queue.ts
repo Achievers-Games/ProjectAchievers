@@ -28,8 +28,15 @@ import { grantFramesThrottled } from '../frames';
 import { checkSiteAchievements, reviewNewPlayers } from '../site-achievements';
 import { syncPsn } from './psn';
 import { syncRetro } from './retro';
-import { fetchUnlocks, fillHiddenDescriptions, syncSteam } from './steam';
-import { fillGameTiers, recentUnlocks, saveProgress } from './store';
+import {
+  fetchTopGame,
+  fetchUnlocks,
+  fillHiddenDescriptions,
+  syncSteam,
+  type TopGame,
+} from './steam';
+import { matchTopAchievements } from './steam-match';
+import { fillGameTiers, recentUnlocks, saveProgress, type UnlockInput } from './store';
 import { syncXbox } from './xbox';
 import type { ProviderSync, UnlockedGame } from './types';
 
@@ -334,14 +341,31 @@ async function announceCards(user: SyncUser, userId: string, before: Map<string,
 }
 
 /**
+ * Les jeux dont un succès est daté à sa détection, en attendant l'heure exacte que
+ * GetPlayerAchievements donne de 40 s à 5 min plus tard. Au-delà d'une demi-heure, la date
+ * provisoire reste : elle n'est fausse que de quelques secondes.
+ */
+const provisional = new Map<string, number>();
+const PROVISIONAL_FOR = 30 * 60_000;
+
+function awaitingExactDates(key: string, now = Date.now()) {
+  for (const [entry, at] of provisional) if (now - at > PROVISIONAL_FOR) provisional.delete(entry);
+  return provisional.has(key);
+}
+
+/**
  * Relit un seul jeu, celui que le joueur a ouvert : les succès arrivent sur sa page en direct.
- * Un jeu encore inconnu passe par la synchronisation complète, qui saura lire son catalogue.
+ * GetTopAchievementsForGames voit un succès quelques secondes après son déblocage : il est
+ * reconnu (steam-match.ts), enregistré et annoncé aussitôt, puis daté exactement dès que
+ * GetPlayerAchievements le voit à son tour. Sans réponse de la première, seule la seconde sert.
+ * `top` évite de redemander à Steam ce que le passage de la minute vient de lire.
  */
 export async function runLiveGame(
   userId: string,
   steamId: string,
   appId: string,
   playtimeMinutes?: number,
+  prefetched?: TopGame,
 ) {
   const owned = await db.userGame.findFirst({
     where: { userId, game: { platform: 'STEAM', platformGameId: appId } },
@@ -350,7 +374,33 @@ export async function runLiveGame(
   // `null` : le jeu n'est pas encore au profil, le suivi en direct le fait importer.
   if (!owned) return null;
 
-  const unlocks = await fetchUnlocks(steamId, Number(appId));
+  const key = `${userId}:${owned.game.id}`;
+  const pending = awaitingExactDates(key);
+  const top =
+    prefetched ??
+    (await fetchTopGame(steamId, Number(appId)).catch((cause: unknown) => {
+      log.error('Succès en direct Steam :', cause);
+      return null;
+    }));
+  // Rien de plus chez Steam que dans la base : un seul appel, et rien d'autre à faire.
+  const moved = !top || top.achievements.length > owned.unlockedCount || pending;
+  let unlocks: UnlockInput[] = moved ? await fetchUnlocks(steamId, Number(appId)) : [];
+  if (moved && top && top.achievements.length > unlocks.length) {
+    // Steam voit déjà ce que GetPlayerAchievements ne montre pas encore : daté à sa détection.
+    const exact = new Set(unlocks.map((unlock) => unlock.platformAchievementId));
+    const matched = await matchTopAchievements(owned.game.id, top.achievements);
+    const now = new Date();
+    const early = [...new Set(matched.values())]
+      .filter((id) => !exact.has(id))
+      .map((platformAchievementId) => ({ platformAchievementId, unlockedAt: now }));
+    if (early.length) provisional.set(key, Date.now());
+    unlocks = [...unlocks, ...early];
+  } else if (pending) {
+    // GetPlayerAchievements a rattrapé : ses dates exactes remplacent les dates provisoires.
+    provisional.delete(key);
+    await saveProgress(userId, owned.game.id, unlocks);
+  }
+
   if (unlocks.length <= owned.unlockedCount) {
     // Le temps de jeu a bougé sans nouveau succès : on le retient, sinon la relecture des jeux
     // récents redemanderait ce jeu à chaque passage.

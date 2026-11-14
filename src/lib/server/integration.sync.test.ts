@@ -13,6 +13,7 @@ import { isAdultOnly, rateGames, tagGames } from './sync/content';
 import { markVisible, onCard, onSync, type SyncEvent } from './sync/events';
 import { parseSteamPage, steamImages } from './sync/steam';
 import { saveAchievements, saveProgress, upsertGame } from './sync/store';
+import { matchTopAchievements } from './sync/steam-match';
 import { PREFIX, STEAM_ID, identity, setupIntegration } from './test-helpers';
 
 setupIntegration();
@@ -767,23 +768,28 @@ describe('synchronisation Steam', () => {
     expect(mock).toHaveBeenCalledTimes(2);
   });
 
-  it('laisse tranquille un onglet resté en arrière-plan', async () => {
+  it('ne suit que le jeu en cours d’un onglet resté en arrière-plan', async () => {
     const { userId, mock } = await liveUser(nobodyPlaying);
     const stop = onSync(userId, () => {});
     // La page est ouverte, mais elle n'a pas signalé d'onglet visible.
     await checkLiveGames();
     stop();
-    expect(mock).not.toHaveBeenCalled();
+    const methods = mock.mock.calls.map(([url]) => /\/(\w+)\/v\d/.exec(String(url))?.[1]);
+    expect(new Set(methods)).toEqual(new Set(['GetPlayerSummaries']));
   });
 
-  it('fait importer un jeu neuf lancé par le joueur', async () => {
+  it('importe seul un jeu neuf lancé par le joueur, sans synchronisation complète', async () => {
     const steamid = { value: '' };
-    const { userId } = await liveUser((url) => {
+    const neuf = { appid: 999777, name: `${PREFIX} neuf`, has_community_visible_stats: true };
+    const { userId, mock } = await liveUser((url) => {
       if (url.includes('GetPlayerSummaries')) {
         return json({ response: { players: [{ steamid: steamid.value, gameid: '999777' }] } });
       }
+      if (url.includes('GetOwnedGames')) {
+        return json({ response: { games: [...ownedGames.response.games, neuf] } });
+      }
       if (url.includes('GetTopAchievementsForGames')) {
-        return json({ response: { games: [{ appid: 999777, total_achievements: 12 }] } });
+        return json({ response: { games: [{ appid: 999777, total_achievements: 2 }] } });
       }
     });
     steamid.value = (await db.linkedAccount.findFirstOrThrow({ where: { userId } })).providerUserId;
@@ -792,7 +798,87 @@ describe('synchronisation Steam', () => {
     markVisible(userId);
     await checkLiveGames();
     stop();
-    expect(events.map((event) => event.status)).toContain('QUEUED');
+
+    const added = await db.userGame.findFirst({
+      where: { userId, game: { platformGameId: '999777' } },
+      select: { totalCount: true },
+    });
+    expect(added?.totalCount).toBe(2);
+    expect(events.map((event) => event.status)).not.toContain('QUEUED');
+    // La bibliothèque donne le nom du jeu, puis sert au passage de l'heure : rien de plus.
+    expect(reads(mock, 'GetOwnedGames')).toBe(2);
+  });
+
+  it('ne coûte qu’un appel par passage pour un jeu en cours sans nouveau succès', async () => {
+    const steamid = { value: '' };
+    const { userId, mock } = await liveUser((url) => {
+      if (url.includes('GetPlayerSummaries')) {
+        return json({ response: { players: [{ steamid: steamid.value, gameid: '999001' }] } });
+      }
+      if (url.includes('GetTopAchievementsForGames')) {
+        const achievements = [{ statid: 1, bit: 0, name: 'Alpha', icon: 'i' }];
+        return json({
+          response: { games: [{ appid: 999001, total_achievements: 2, achievements }] },
+        });
+      }
+    });
+    steamid.value = (await db.linkedAccount.findFirstOrThrow({ where: { userId } })).providerUserId;
+    const stop = onSync(userId, () => {});
+    // Onglet en arrière-plan : seule la boucle des 10 s tourne, trois fois de suite.
+    for (let pass = 0; pass < 3; pass++) await checkLiveGames();
+    stop();
+    expect(reads(mock, 'GetPlayerAchievements')).toBe(0);
+    expect(reads(mock, 'GetTopAchievementsForGames')).toBe(3);
+  });
+
+  it('annonce un succès dès que GetTopAchievementsForGames le voit, puis corrige sa date', async () => {
+    const steamid = { value: '' };
+    const player = [{ apiname: 'A', achieved: 1, unlocktime: 1_700_000_000 }];
+    const top: { statid: number; bit: number; name: string; icon: string }[] = [];
+    const { userId } = await liveUser((url) => {
+      if (url.includes('GetPlayerSummaries')) {
+        return json({ response: { players: [{ steamid: steamid.value, gameid: '999001' }] } });
+      }
+      if (url.includes('GetTopAchievementsForGames')) {
+        return json({
+          response: { games: [{ appid: 999001, total_achievements: 2, achievements: top }] },
+        });
+      }
+      if (url.includes('GetPlayerAchievements')) {
+        return json({ playerstats: { achievements: player } });
+      }
+    });
+    steamid.value = (await db.linkedAccount.findFirstOrThrow({ where: { userId } })).providerUserId;
+    const events: SyncEvent[] = [];
+    const stop = onSync(userId, (event) => events.push(event));
+    markVisible(userId);
+
+    // Steam voit « Bêta » ; GetPlayerAchievements, en retard, ne montre encore qu'« Alpha ».
+    top.push({ statid: 1, bit: 0, name: 'Alpha', icon: 'i' });
+    top.push({ statid: 1, bit: 1, name: 'Bêta', icon: 'i' });
+    await checkLiveGames();
+    expect(events.find((event) => event.status === 'COMPLETED')).toMatchObject({
+      achievements: 1,
+    });
+    const beta = await db.achievement.findFirstOrThrow({
+      where: { game: { platformGameId: '999001' }, platformAchievementId: 'B' },
+    });
+    // Reconnu par son nom (les deux icônes sont les mêmes), sa position est retenue.
+    expect(beta.steamStatBit).toBe(33);
+    const provisional = await db.userAchievement.findFirstOrThrow({
+      where: { userId, achievementId: beta.id },
+    });
+    expect(provisional.unlockedAt.getTime()).toBeGreaterThan(Date.now() - 60_000);
+
+    // GetPlayerAchievements rattrape : l'heure exacte remplace l'heure de détection.
+    player.push({ apiname: 'B', achieved: 1, unlocktime: 1_700_000_100 });
+    await checkLiveGames();
+    stop();
+    const exact = await db.userAchievement.findFirstOrThrow({
+      where: { userId, achievementId: beta.id },
+    });
+    expect(exact.unlockedAt.getTime()).toBe(1_700_000_100_000);
+    expect(events.filter((event) => event.status === 'COMPLETED')).toHaveLength(1);
   });
 
   it('suit l’avatar, le cadre et l’avatar animé changés sur Steam', async () => {
@@ -1195,5 +1281,83 @@ describe('rafraîchissement', () => {
     expect(account.syncStatus).toBe('IDLE');
     await db.linkedAccount.update({ where: { id: account.id }, data: { syncStatus: 'SYNCING' } });
     expect(await refreshAccounts(userId, 60_000)).toBe(0);
+  });
+});
+
+describe('succès Steam reconnus sans identifiant', () => {
+  async function catalog() {
+    const game = await upsertGame({
+      platform: 'STEAM',
+      platformGameId: `${PREFIX}-${Math.random()}`,
+      name: `${PREFIX} positions`,
+    });
+    const row = (id: string, name: string, icon: string, extra = {}) => ({
+      gameId: game.id,
+      platformAchievementId: id,
+      name,
+      iconUrl: `https://cdn/apps/1/${icon}.jpg`,
+      ...extra,
+    });
+    await db.achievement.createMany({
+      data: [
+        row('UNIQUE', 'Seul', 'a'),
+        // Même icône et même nom : seule la description les distingue.
+        row('NORMAL', 'Chapitre 1', 'c', { description: 'En normal' }),
+        row('DIFFICILE', 'Chapitre 1', 'c', { description: 'En difficile' }),
+        row('CACHE', 'Secret', 's', { hidden: true }),
+        row('JUMEAU_1', 'Pareil', 'p'),
+        row('JUMEAU_2', 'Pareil', 'p'),
+      ],
+    });
+    return game.id;
+  }
+
+  it('relie chaque entrée sûre, retient sa position et complète les descriptions cachées', async () => {
+    const gameId = await catalog();
+    const matched = await matchTopAchievements(gameId, [
+      { statid: 1, bit: 0, name: 'Seul', icon: 'a.jpg' },
+      { statid: 1, bit: 1, name: 'Chapitre 1', desc: 'En difficile', icon: 'c.jpg' },
+      { statid: 1, bit: 2, name: 'Secret', desc: 'Trouver la salle', icon: 's.jpg', hidden: true },
+      // Indiscernables : laissés à GetPlayerAchievements.
+      { statid: 1, bit: 3, name: 'Pareil', icon: 'p.jpg' },
+    ]);
+    expect([...matched.values()].sort()).toEqual(['CACHE', 'DIFFICILE', 'UNIQUE']);
+
+    const rows = await db.achievement.findMany({
+      where: { gameId },
+      select: { platformAchievementId: true, steamStatBit: true, description: true },
+    });
+    const by = new Map(rows.map((row) => [row.platformAchievementId, row]));
+    expect(by.get('DIFFICILE')?.steamStatBit).toBe(33);
+    expect(by.get('JUMEAU_1')?.steamStatBit).toBeNull();
+    expect(by.get('CACHE')?.description).toBe('Trouver la salle');
+
+    // La position apprise suffit ensuite, même si le nom et l'icône ont changé.
+    const again = await matchTopAchievements(gameId, [
+      { statid: 1, bit: 1, name: 'Autre', icon: 'z.jpg' },
+    ]);
+    expect([...again.values()]).toEqual(['DIFFICILE']);
+  });
+
+  it('remplace une date provisoire par une date plus ancienne, jamais l’inverse', async () => {
+    const gameId = await catalog();
+    const user = await resolveIdentity(identity({ provider: 'STEAM' }), null);
+    if (!user.ok) throw new Error('compte non créé');
+    const later = new Date('2026-11-14T12:00:00Z');
+    const exact = new Date('2026-11-14T11:59:50Z');
+    const first = await saveProgress(user.userId, gameId, [
+      { platformAchievementId: 'UNIQUE', unlockedAt: later },
+    ]);
+    expect(first.gained).toBe(1);
+    const corrected = await saveProgress(user.userId, gameId, [
+      { platformAchievementId: 'UNIQUE', unlockedAt: exact },
+    ]);
+    // Une date corrigée n'est pas un nouveau succès.
+    expect(corrected.gained).toBe(0);
+    await saveProgress(user.userId, gameId, [
+      { platformAchievementId: 'UNIQUE', unlockedAt: later },
+    ]);
+    const row = await db.userAchievement.findFirstOrThrow({ where: { userId: user.userId } });
+    expect(row.unlockedAt.toISOString()).toBe(exact.toISOString());
   });
 });
