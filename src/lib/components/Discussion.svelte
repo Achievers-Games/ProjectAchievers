@@ -1,10 +1,11 @@
 <script lang="ts">
   import { m } from '#lib/paraglide/messages';
-  import { deserialize, enhance } from '$app/forms';
+  import { enhance } from '$app/forms';
   import Avatar from './Avatar.svelte';
+  import TranslateButton from './TranslateButton.svelte';
   import { formatRelative } from '#lib/labels';
-  import { submitWithToast } from '#lib/forms';
-  import { toast } from '#lib/stores/toast';
+  import { postAction, reportContent, submitWithToast } from '#lib/forms';
+  import { Translations } from '#lib/translations.svelte';
   import { page } from '$app/state';
   import { COMMENTS_PARAM, COMMENTS_STEP, commentLimit } from '#lib/comments';
   import type { CommentView } from '#lib/server/comments';
@@ -38,7 +39,6 @@
     return `${next.pathname}${next.search}`;
   });
 
-  const MAX_AUTO_TRANSLATIONS = 10;
   const REACTIONS = [
     { type: 'HELPFUL', label: m.reaction_helpful(), emoji: '👍' },
     { type: 'THANKS', label: m.reaction_thanks(), emoji: '🙏' },
@@ -46,10 +46,9 @@
   ] as const;
 
   let replyTo = $state<string | null>(null);
-  let translations = $state<Record<string, { html: string; shown: boolean }>>({});
-  let translating = $state<string | null>(null);
-  // eslint-disable-next-line svelte/prefer-svelte-reactivity -- ne doit pas relancer l'effet
-  const attempted = new Set<string>();
+  const translations = new Translations<Item>((item) =>
+    postAction('translateComment', { id: item.id }),
+  );
 
   const submit = submitWithToast({
     onSuccess: (form) => {
@@ -57,82 +56,7 @@
     },
   });
 
-  const translationOf = (item: Item) =>
-    translations[item.id] ??
-    (item.translatedHtml ? { html: item.translatedHtml, shown: true } : undefined);
-
-  const shownHtml = (item: Item) => {
-    const translation = translationOf(item);
-    return translation?.shown ? translation.html : item.html;
-  };
-
-  async function postAction(action: string, fields: Record<string, string>) {
-    const body = new FormData();
-    for (const [key, value] of Object.entries(fields)) body.set(key, value);
-    const response = await fetch(`?/${action}`, {
-      method: 'POST',
-      body,
-      headers: { 'x-sveltekit-action': 'true' },
-    });
-    return deserialize(await response.text());
-  }
-
-  async function fetchTranslation(item: Item): Promise<string> {
-    translating = item.id;
-    try {
-      const result = await postAction('translateComment', { id: item.id });
-      if (result.type === 'success') {
-        translations[item.id] = { html: String(result.data?.html), shown: true };
-        return '';
-      }
-      return String((result.type === 'failure' && result.data?.error) || m.translate_failed());
-    } catch {
-      return m.translate_failed();
-    } finally {
-      translating = null;
-    }
-  }
-
-  /** La traduction reste en mémoire : revenir à l'original puis à la traduction est immédiat. */
-  async function translate(item: Item) {
-    const known = translationOf(item);
-    if (known) {
-      translations[item.id] = { html: known.html, shown: !known.shown };
-      return;
-    }
-    const failure = await fetchTranslation(item);
-    if (failure) toast(failure, 'error');
-  }
-
-  /** Une par une, et discrètement : un quota épuisé laisse simplement les textes d'origine. */
-  $effect(() => {
-    let cancelled = false;
-    const pending = comments
-      .flatMap((comment) => [comment, ...comment.replies])
-      .filter((item) => item.autoTranslate && !item.translatedHtml && !attempted.has(item.id))
-      .slice(0, MAX_AUTO_TRANSLATIONS);
-    void (async () => {
-      for (const item of pending) {
-        attempted.add(item.id);
-        if (cancelled) return;
-        if (await fetchTranslation(item)) return;
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  });
-
-  async function report(id: string) {
-    const reason = prompt(m.report_prompt());
-    if (!reason) return;
-    const result = await postAction('reportComment', { id, reason });
-    if (result.type === 'success') toast(m.report_sent());
-    else {
-      const message = result.type === 'failure' ? result.data?.error : null;
-      toast(String(message ?? m.report_failed()), 'error');
-    }
-  }
+  $effect(() => translations.auto(comments.flatMap((comment) => [comment, ...comment.replies])));
 </script>
 
 <section class="space-y-3">
@@ -149,23 +73,10 @@
           · {formatRelative(comment.createdAt)}
         </p>
         <!-- eslint-disable-next-line svelte/no-at-html-tags -- assaini par renderMarkdown -->
-        <div class="prose-user">{@html shownHtml(comment)}</div>
+        <div class="prose-user">{@html translations.html(comment)}</div>
         <div class="flex flex-wrap items-center gap-3 text-xs text-muted">
           {#if !comment.mine && canTranslate}
-            <button
-              type="button"
-              class="text-xs text-muted hover:text-ink"
-              disabled={translating === comment.id}
-              onclick={() => translate(comment)}
-            >
-              {#if translating === comment.id}
-                {m.translating()}
-              {:else if translationOf(comment)?.shown}
-                {m.translate_original()}
-              {:else}
-                {m.translate()}
-              {/if}
-            </button>
+            <TranslateButton {translations} item={comment} />
           {/if}
           {#if signedIn}
             <form method="POST" action="?/react" use:enhance={submit} class="flex gap-2">
@@ -196,7 +107,11 @@
                 <button class="hover:text-danger">{m.delete()}</button>
               </form>
             {:else}
-              <button type="button" class="hover:text-ink" onclick={() => report(comment.id)}>
+              <button
+                type="button"
+                class="hover:text-ink"
+                onclick={() => reportContent('reportComment', { id: comment.id })}
+              >
                 {m.report()}
               </button>
             {/if}

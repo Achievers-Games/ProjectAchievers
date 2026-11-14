@@ -1,28 +1,12 @@
 import { writable } from 'svelte/store';
-import type { Provider, SyncStatus } from '#prisma';
+import type { Provider } from '#prisma';
 import type { Reward } from '#lib/collection';
+import type { SyncEvent } from '#lib/server/sync/events';
 
-/** Un succès qui vient de tomber : la page le fête sans être rechargée. */
-export interface UnlockPop {
-  id: string;
-  title: string;
-  icon: string | null;
-  game: string;
-}
-
-export interface SyncProgress {
-  provider: Provider;
-  status: SyncStatus;
-  processed: number;
-  total: number;
-  game?: string;
-  error?: string | null;
-  achievements?: number;
-  unlocks?: UnlockPop[];
-  rewards?: Reward[];
-  moreRewards?: number;
-  quiet?: boolean;
-}
+// Les mêmes formes que ce que le serveur envoie dans le flux : une seule définition, effacée à la
+// compilation, donc aucun code serveur n'arrive dans le navigateur.
+export type { UnlockPop } from '#lib/server/sync/events';
+export type SyncProgress = SyncEvent;
 
 export const syncState = writable<Partial<Record<Provider, SyncProgress>>>({});
 

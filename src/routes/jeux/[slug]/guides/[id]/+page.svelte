@@ -1,6 +1,6 @@
 <script lang="ts">
   import { m } from '#lib/paraglide/messages';
-  import { deserialize, enhance } from '$app/forms';
+  import { enhance } from '$app/forms';
   import type { SubmitFunction } from '$app/forms';
   import ArrowLeft from '@lucide/svelte/icons/arrow-left';
   import BookOpen from '@lucide/svelte/icons/book-open';
@@ -11,9 +11,12 @@
   import Avatar from '#lib/components/Avatar.svelte';
   import Discussion from '#lib/components/Discussion.svelte';
   import Seo from '#lib/components/Seo.svelte';
+  import TranslateButton from '#lib/components/TranslateButton.svelte';
   import { guideChecks } from '#lib/actions/guide-checks';
   import { outlineOf } from '#lib/guide-outline';
   import { formatRelative } from '#lib/labels';
+  import { postAction, reportContent } from '#lib/forms';
+  import { Translations } from '#lib/translations.svelte';
   import { toast } from '#lib/stores/toast';
 
   let { data } = $props();
@@ -23,16 +26,11 @@
   const score = $derived(vote?.score ?? data.guide.score);
   const myVote = $derived(vote?.myVote ?? data.guide.myVote);
 
-  let translation = $state<{ html: string; shown: boolean } | null>(null);
-  let translating = $state(false);
+  const translations = new Translations(() => postAction('translate'));
   let done = $state<number | null>(null);
   let content = $state<HTMLElement>();
 
-  const known = $derived(
-    translation ??
-      (data.guide.translatedHtml ? { html: data.guide.translatedHtml, shown: true } : null),
-  );
-  const html = $derived(known?.shown ? known.html : data.guide.html);
+  const html = $derived(translations.html(data.guide));
   const outline = $derived(outlineOf(html));
   const progress = $derived(done ?? data.guide.checked.length);
 
@@ -51,52 +49,7 @@
     };
   };
 
-  async function postAction(action: string, fields: Record<string, string> = {}) {
-    const body = new FormData();
-    for (const [key, value] of Object.entries(fields)) body.set(key, value);
-    const response = await fetch(`?/${action}`, {
-      method: 'POST',
-      body,
-      headers: { 'x-sveltekit-action': 'true' },
-    });
-    return deserialize(await response.text());
-  }
-
-  /** La traduction reste en mémoire : revenir à l'original puis à la traduction est immédiat. */
-  async function translate(quiet = false) {
-    if (known) {
-      translation = { html: known.html, shown: !known.shown };
-      return;
-    }
-    translating = true;
-    try {
-      const result = await postAction('translate');
-      if (result.type === 'success') translation = { html: String(result.data?.html), shown: true };
-      else if (!quiet) toast(m.translate_failed(), 'error');
-    } catch {
-      if (!quiet) toast(m.translate_failed(), 'error');
-    } finally {
-      translating = false;
-    }
-  }
-
-  let attempted = false;
-  $effect(() => {
-    if (attempted || !data.guide.autoTranslate || data.guide.translatedHtml) return;
-    attempted = true;
-    void translate(true);
-  });
-
-  async function report() {
-    const reason = prompt(m.report_prompt());
-    if (!reason) return;
-    const result = await postAction('report', { reason });
-    if (result.type === 'success') toast(m.report_sent());
-    else {
-      const message = result.type === 'failure' ? result.data?.error : null;
-      toast(String(message ?? m.report_failed()), 'error');
-    }
-  }
+  $effect(() => translations.auto([data.guide]));
 
   const countChecked = () => {
     done = content?.querySelectorAll('input[data-check]:checked').length ?? 0;
@@ -179,18 +132,7 @@
         </p>
         <div class="flex flex-wrap gap-3 pt-1">
           {#if data.canTranslate && !data.guide.mine}
-            <button
-              type="button"
-              class="text-xs text-muted hover:text-ink"
-              disabled={translating}
-              onclick={() => translate()}
-            >
-              {translating
-                ? m.translating()
-                : known?.shown
-                  ? m.translate_original()
-                  : m.translate()}
-            </button>
+            <TranslateButton {translations} item={data.guide} />
           {/if}
           {#if data.canEditOfficial}
             <a
@@ -220,7 +162,7 @@
             <button
               type="button"
               class="flex items-center gap-1 text-xs text-muted hover:text-ink"
-              onclick={report}
+              onclick={() => reportContent('report')}
             >
               <Flag size={12} aria-hidden="true" />
               {m.report()}

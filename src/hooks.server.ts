@@ -1,4 +1,5 @@
-import type { Handle, ServerInit } from '@sveltejs/kit/hooks';
+import { randomBytes } from 'node:crypto';
+import type { Handle, HandleServerError, ServerInit } from '@sveltejs/kit/hooks';
 import { dev } from '$app/env';
 import { themeOf } from '#lib/theme';
 import { m } from '#lib/paraglide/messages';
@@ -6,6 +7,7 @@ import { extractLocaleFromUrl, getLocale } from '#lib/paraglide/runtime';
 import { paraglideMiddleware } from '#lib/paraglide/server';
 import { syncCuratedGuides } from '#lib/server/curated-guides';
 import { clientAddress } from '#lib/server/client-address';
+import { secureCookie } from '#lib/server/cookies';
 import { env } from '#lib/server/env';
 import { grantFramesThrottled } from '#lib/server/frames';
 import { withPartnerFormAction } from '#lib/server/oauth-provider';
@@ -116,8 +118,9 @@ const secured: Handle = async ({ event, resolve }) => {
       path: '/',
       maxAge: 60 * 60 * 24 * 400,
       sameSite: 'lax',
+      // Lu par le navigateur pour le sélecteur de langue, mais jamais envoyé en clair en production.
       httpOnly: false,
-      secure: false,
+      secure: secureCookie.secure,
     });
   }
 
@@ -158,6 +161,26 @@ const secured: Handle = async ({ event, resolve }) => {
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
   return response;
+};
+
+/**
+ * Une panne imprévue part au journal avec sa route et une référence courte, que la page d'erreur
+ * montre au joueur : un signalement se retrouve alors dans `docker compose logs site`. Les erreurs
+ * prévues (`error(404)`, pages introuvables) n'y vont pas.
+ */
+export const handleError: HandleServerError = ({ kind, error, event }) => {
+  if (kind !== 'unknown') return;
+  const reference = randomBytes(4).toString('hex');
+  log.error(
+    `Panne ${reference}`,
+    {
+      method: event.request.method,
+      route: event.route.id,
+      path: event.url.pathname,
+    },
+    error,
+  );
+  return { message: `${m.error_generic()} · ${reference}` };
 };
 
 // Tout le reste s'exécute dans la langue du visiteur, messages d'erreur compris.

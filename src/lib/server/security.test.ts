@@ -7,7 +7,7 @@ import { isPushEndpoint } from './push';
 import { safeReturnTo, saveFlow, takeFlow } from './providers';
 import { bioContainsCode } from './providers/psn';
 import { steamAuthorizeUrl, verifySteamResponse } from './providers/steam';
-import { rateLimit } from './rate-limit';
+import { isRateLimited, rateLimit } from './rate-limit';
 
 function fakeCookies(): Cookies {
   const store = new Map<string, string>();
@@ -237,5 +237,16 @@ describe('limitation de débit', () => {
     expect(rateLimit(key, 2, 1000, 1)).toBe(true);
     expect(rateLimit(key, 2, 1000, 2)).toBe(false);
     expect(rateLimit(key, 2, 1000, 1001)).toBe(true);
+  });
+
+  it('dit si la fenêtre est épuisée sans compter la question', () => {
+    const key = `test-${Math.random()}`;
+    expect(isRateLimited(key, 2, 0)).toBe(false);
+    rateLimit(key, 2, 1000, 0);
+    expect(isRateLimited(key, 2, 1)).toBe(false);
+    rateLimit(key, 2, 1000, 1);
+    expect(isRateLimited(key, 2, 2)).toBe(true);
+    expect(isRateLimited(key, 2, 2)).toBe(true);
+    expect(isRateLimited(key, 2, 1001)).toBe(false);
   });
 });

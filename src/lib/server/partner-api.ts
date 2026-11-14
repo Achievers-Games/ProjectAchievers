@@ -6,7 +6,7 @@ import { clientAddress } from './client-address';
 import { sha256 } from './crypto';
 import { db } from './db';
 import { env } from './env';
-import { rateLimit } from './rate-limit';
+import { isRateLimited, rateLimit } from './rate-limit';
 
 const KEY_PREFIX = 'ak_';
 const MINUTE = 60_000;
@@ -73,6 +73,11 @@ export async function authenticatePartner(
   event: RequestEvent,
   now = Date.now(),
 ): Promise<{ id: string; name: string } | Response> {
+  // Une adresse qui a déjà épuisé ses essais ratés est arrêtée avant toute lecture de la base.
+  const failures = `api-v1-echec:${clientAddress(event)}`;
+  if (isRateLimited(failures, FAILED_LIMIT, now)) {
+    return apiError(429, 'rate_limited', 'Too many invalid keys.', { 'Retry-After': '60' });
+  }
   const header = event.request.headers.get('authorization') ?? '';
   const key = header.startsWith('Bearer ') ? header.slice(7).trim() : '';
   const app = key.startsWith(KEY_PREFIX)
@@ -83,7 +88,7 @@ export async function authenticatePartner(
     : null;
 
   if (!app || app.revokedAt) {
-    if (!rateLimit(`api-v1-echec:${clientAddress(event)}`, FAILED_LIMIT, MINUTE, now)) {
+    if (!rateLimit(failures, FAILED_LIMIT, MINUTE, now)) {
       return apiError(429, 'rate_limited', 'Too many invalid keys.', { 'Retry-After': '60' });
     }
     return apiError(401, 'unauthorized', 'Missing, unknown or revoked API key.', {

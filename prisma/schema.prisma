@@ -540,8 +540,8 @@ model Achievement {
   guides       Guide[]
   comments     Comment[]
 
+  // Couvre aussi les lectures par jeu seul : un index sur `gameId` ferait doublon.
   @@unique([gameId, platformAchievementId])
-  @@index([gameId])
   @@index([gameId, steamStatBit])
 }
 

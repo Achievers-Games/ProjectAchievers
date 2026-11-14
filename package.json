@@ -19,7 +19,7 @@
     "test": "node scripts/test-db.mjs && vitest run",
     "test:coverage": "node scripts/test-db.mjs && vitest run --coverage",
     "test:e2e": "node scripts/test-db.mjs && playwright test",
-    "db:migrate": "prisma migrate dev && prisma generate",
+    "db:migrate": "prisma migrate dev --create-only && node scripts/migration-order.mjs && prisma migrate dev && prisma generate",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
     "postinstall": "prisma generate"

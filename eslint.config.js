@@ -32,7 +32,8 @@ export default [
     },
   },
   {
-    files: ['**/*.svelte'],
+    // Les modules `.svelte.ts` utilisent les runes : le même analyseur, avec TypeScript.
+    files: ['**/*.svelte', '**/*.svelte.ts'],
     languageOptions: {
       parser: svelteParser,
       parserOptions: { parser: tsParser },

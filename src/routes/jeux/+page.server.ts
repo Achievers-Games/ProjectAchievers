@@ -1,18 +1,16 @@
 import { unlinkedPlatforms } from '#lib/server/accounts';
 import { gamesFromUrl } from '#lib/server/game-list';
+import { serverTiming } from '#lib/server/server-timing';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ url, locals, depends, setHeaders }) => {
   depends('app:sync');
-  const timings: string[] = [];
-  const started = performance.now();
+  const timing = serverTiming();
   const [list, unlinked] = await Promise.all([
-    gamesFromUrl(url, locals.user, (metric, duration) => {
-      timings.push(`${metric};dur=${Math.round(duration)}`);
-    }),
+    gamesFromUrl(url, locals.user, timing.record),
     locals.user ? unlinkedPlatforms(locals.user.id) : [],
   ]);
-  timings.push(`games_load;dur=${Math.round(performance.now() - started)}`);
-  setHeaders({ 'Server-Timing': timings.join(', ') });
+  timing.mark('games_load');
+  setHeaders(timing.headers());
   return { ...list, unlinked };
 };

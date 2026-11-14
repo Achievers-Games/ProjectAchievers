@@ -65,14 +65,17 @@ export function eventStream<T>(
         unsubscribe();
         cleanup = () => {};
       };
-      signal.addEventListener('abort', () => {
+      const abort = () => {
         close();
         try {
           controller.close();
         } catch {
           // Déjà fermé par le client.
         }
-      });
+      };
+      // Un client parti avant l'ouverture du flux ne déclenchera plus jamais l'événement.
+      if (signal.aborted) abort();
+      else signal.addEventListener('abort', abort, { once: true });
     },
     cancel() {
       close();

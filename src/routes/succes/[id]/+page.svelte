@@ -1,6 +1,6 @@
 <script lang="ts">
   import { m } from '#lib/paraglide/messages';
-  import { deserialize, enhance } from '$app/forms';
+  import { enhance } from '$app/forms';
   import { invalidateAll } from '$app/navigation';
   import type { SubmitFunction } from '$app/forms';
   import BookOpen from '@lucide/svelte/icons/book-open';
@@ -14,11 +14,12 @@
   import Discussion from '#lib/components/Discussion.svelte';
   import Empty from '#lib/components/Empty.svelte';
   import Seo from '#lib/components/Seo.svelte';
+  import TranslateButton from '#lib/components/TranslateButton.svelte';
   import TrophyBadge from '#lib/components/TrophyBadge.svelte';
   import { formatDate, formatRarity, formatRelative } from '#lib/labels';
   import { guideChecks } from '#lib/actions/guide-checks';
-  import { submitWithToast } from '#lib/forms';
-  import { toast } from '#lib/stores/toast';
+  import { postAction, reportContent, submitWithToast } from '#lib/forms';
+  import { Translations } from '#lib/translations.svelte';
 
   let { data } = $props();
 
@@ -28,13 +29,11 @@
   let showBuried = $state(false);
   const shownGuides = $derived(data.guides.filter((guide) => !guide.buried));
   const buriedGuides = $derived(data.guides.filter((guide) => guide.buried));
-  let translations = $state<Record<string, { html: string; shown: boolean }>>({});
-  let translating = $state<string | null>(null);
-  // eslint-disable-next-line svelte/prefer-svelte-reactivity -- ne doit pas relancer l'effet
-  const attempted = new Set<string>();
-
-  type Target = 'GUIDE' | 'COMMENT';
-  const MAX_AUTO_TRANSLATIONS = 10;
+  // Les commentaires se traduisent dans leur composant : ici, seulement les guides.
+  const translations = new Translations<Guide>((guide) =>
+    postAction('translate', { targetType: 'GUIDE', targetId: guide.id }),
+  );
+  $effect(() => translations.auto(data.guides));
 
   /** Applique la réponse sans recharger la page et remonte le résultat en toast. */
   const submit = submitWithToast({
@@ -62,92 +61,6 @@
       else await invalidateAll();
     };
   };
-
-  interface Translatable {
-    id: string;
-    html: string;
-    translatedHtml: string | null;
-    autoTranslate: boolean;
-  }
-
-  const translationOf = (item: Translatable) =>
-    translations[item.id] ??
-    (item.translatedHtml ? { html: item.translatedHtml, shown: true } : undefined);
-
-  const shownHtml = (item: Translatable) => {
-    const translation = translationOf(item);
-    return translation?.shown ? translation.html : item.html;
-  };
-
-  async function postAction(action: string, fields: Record<string, string>) {
-    const body = new FormData();
-    for (const [key, value] of Object.entries(fields)) body.set(key, value);
-    const response = await fetch(`?/${action}`, {
-      method: 'POST',
-      body,
-      headers: { 'x-sveltekit-action': 'true' },
-    });
-    return deserialize(await response.text());
-  }
-
-  async function fetchTranslation(targetType: Target, item: Translatable): Promise<string> {
-    translating = item.id;
-    try {
-      const result = await postAction('translate', { targetType, targetId: item.id });
-      if (result.type === 'success') {
-        translations[item.id] = { html: String(result.data?.html), shown: true };
-        return '';
-      }
-      return String((result.type === 'failure' && result.data?.error) || m.translate_failed());
-    } catch {
-      return m.translate_failed();
-    } finally {
-      translating = null;
-    }
-  }
-
-  /** La traduction reste en mémoire : revenir à l'original puis à la traduction est immédiat. */
-  async function translate(targetType: Target, item: Translatable) {
-    const known = translationOf(item);
-    if (known) {
-      translations[item.id] = { html: known.html, shown: !known.shown };
-      return;
-    }
-    const failure = await fetchTranslation(targetType, item);
-    if (failure) toast(failure, 'error');
-  }
-
-  /** Une par une, et discrètement : un quota épuisé laisse simplement les textes d'origine. */
-  async function translatePage(pending: [Target, Translatable][], cancelled: () => boolean) {
-    for (const [type, item] of pending.slice(0, MAX_AUTO_TRANSLATIONS)) {
-      attempted.add(item.id);
-      if (cancelled()) return;
-      if (await fetchTranslation(type, item)) return;
-    }
-  }
-
-  $effect(() => {
-    let cancelled = false;
-    // Les commentaires se traduisent dans leur composant : ici, seulement les guides.
-    const pending = data.guides
-      .map((guide): [Target, Translatable] => ['GUIDE', guide])
-      .filter(([, item]) => item.autoTranslate && !item.translatedHtml && !attempted.has(item.id));
-    void translatePage(pending, () => cancelled);
-    return () => {
-      cancelled = true;
-    };
-  });
-
-  async function report(type: 'GUIDE' | 'COMMENT', id: string) {
-    const reason = prompt(m.report_prompt());
-    if (!reason) return;
-    const result = await postAction('report', { targetType: type, targetId: id, reason });
-    if (result.type === 'success') toast(m.report_sent());
-    else {
-      const message = result.type === 'failure' ? result.data?.error : null;
-      toast(String(message ?? m.report_failed()), 'error');
-    }
-  }
 </script>
 
 <Seo
@@ -178,25 +91,6 @@
         about: { '@type': 'VideoGame', name: data.achievement.game.name },
       }}
 />
-
-{#snippet translateButton(type: Target, item: Translatable)}
-  {#if data.canTranslate}
-    <button
-      type="button"
-      class="text-xs text-muted hover:text-ink"
-      disabled={translating === item.id}
-      onclick={() => translate(type, item)}
-    >
-      {#if translating === item.id}
-        {m.translating()}
-      {:else if translationOf(item)?.shown}
-        {m.translate_original()}
-      {:else}
-        {m.translate()}
-      {/if}
-    </button>
-  {/if}
-{/snippet}
 
 <div class="mx-auto max-w-3xl space-y-8">
   <header class="flex gap-4">
@@ -324,11 +218,11 @@
               guideId: guide.id,
               checked: guide.checked,
               enabled: Boolean(data.user),
-              html: shownHtml(guide),
+              html: translations.html(guide),
             }}
           >
             <!-- eslint-disable-next-line svelte/no-at-html-tags -- assaini par renderGuide -->
-            {@html shownHtml(guide)}
+            {@html translations.html(guide)}
           </div>
           {#if guide.source !== null}
             <details class="text-sm">
@@ -348,7 +242,10 @@
             </details>
           {/if}
           <div class="flex gap-3">
-            {#if !guide.mine}{@render translateButton('GUIDE', guide)}{/if}
+            {#if !guide.mine && data.canTranslate}<TranslateButton
+                {translations}
+                item={guide}
+              />{/if}
             {#if guide.mine}
               <form method="POST" action="?/deleteGuide" use:enhance={submit}>
                 <input type="hidden" name="id" value={guide.id} />
@@ -358,7 +255,7 @@
               <button
                 type="button"
                 class="flex items-center gap-1 text-xs text-muted hover:text-ink"
-                onclick={() => report('GUIDE', guide.id)}
+                onclick={() => reportContent('report', { targetType: 'GUIDE', targetId: guide.id })}
               >
                 <Flag size={12} aria-hidden="true" />
                 {m.report()}

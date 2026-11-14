@@ -1,6 +1,7 @@
 import { error, fail } from '@sveltejs/kit';
 import { copiesFor, copyKey, nextCopy } from '#lib/collection';
 import { db } from '#lib/server/db';
+import { serverTiming } from '#lib/server/server-timing';
 import { ensureGameTexts } from '#lib/server/achievement-texts';
 import { compareGame, seasonStartedGames, visibleGames } from '#lib/server/queries';
 import { gamePlayer } from '#lib/server/queries/compare';
@@ -35,13 +36,8 @@ function missablesOf(
 }
 
 export const load: PageServerLoad = async ({ params, locals, url, depends, setHeaders }) => {
-  const timings: string[] = [];
-  let startedAt = performance.now();
-  const mark = (metric: string) => {
-    const now = performance.now();
-    timings.push(`${metric};dur=${Math.round(now - startedAt)}`);
-    startedAt = now;
-  };
+  const timing = serverTiming();
+  const { mark } = timing;
   depends('app:sync');
   const revealed = url.searchParams.has('caches');
   const game = await db.game.findUnique({
@@ -59,29 +55,26 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
   const viewerId = locals.user?.id;
   const locale = getLocale();
   const achievementQuery = async () => {
-    const startedAt = performance.now();
-    await ensureGameTexts(game, locale);
-    timings.push(`game_texts;dur=${Math.round(performance.now() - startedAt)}`);
-    const queryStartedAt = performance.now();
-    const achievements = await db.achievement.findMany({
-      where: { gameId: game.id },
-      orderBy: [{ globalRarity: { sort: 'desc', nulls: 'last' } }, { name: 'asc' }],
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        hidden: true,
-        trophyType: true,
-        globalRarity: true,
-        iconUrl: true,
-        iconLockedUrl: true,
-        missable: true,
-        translations: { where: { locale }, select: { name: true, description: true } },
-        guides: { where: OFFICIAL_GUIDE, select: { id: true }, take: 1 },
-      },
-    });
-    timings.push(`game_achievements;dur=${Math.round(performance.now() - queryStartedAt)}`);
-    return achievements;
+    await timing.time('game_texts', () => ensureGameTexts(game, locale));
+    return timing.time('game_achievements', () =>
+      db.achievement.findMany({
+        where: { gameId: game.id },
+        orderBy: [{ globalRarity: { sort: 'desc', nulls: 'last' } }, { name: 'asc' }],
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          hidden: true,
+          trophyType: true,
+          globalRarity: true,
+          iconUrl: true,
+          iconLockedUrl: true,
+          missable: true,
+          translations: { where: { locale }, select: { name: true, description: true } },
+          guides: { where: OFFICIAL_GUIDE, select: { id: true }, take: 1 },
+        },
+      }),
+    );
   };
   const [
     progress,
@@ -265,7 +258,7 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
   const displayedIds = new Set(displayed.map((row) => row.id));
   const comparison = rival?.progress && progress ? compareAchievements(rows, theirUnlocks) : null;
   mark('game_list');
-  setHeaders({ 'Server-Timing': timings.join(', ') });
+  setHeaders(timing.headers());
   return {
     game,
     // Les guides complets du jeu : on les lit sur leur propre page, ici seulement la liste.

@@ -590,35 +590,42 @@ async function purgeExpired(now: Date) {
   await db.message.deleteMany({ where: { createdAt: before(MESSAGE_RETENTION) } });
 }
 
+/**
+ * Les comptes que personne n'a synchronisés depuis un jour, les plus en retard d'abord.
+ * Un échec ne touche pas `lastSyncedAt` : sans ce garde-fou, un profil privé repartait à chaque
+ * heure, sans fin. Un compte en échec n'est relancé d'ici qu'une fois par jour. Le filtre est
+ * fait par la base : écartés après coup, les échecs occupaient des places du lot, et un compte
+ * au-delà des 500 premiers pouvait n'être jamais relu.
+ */
+export function staleAccounts(now: Date, limit = 500) {
+  const stale = new Date(now.getTime() - STALE_AFTER);
+  const providers = Object.keys(SYNCERS);
+  return db.$queryRaw<
+    {
+      userId: string;
+      provider: Provider;
+      syncStatus: SyncStatus;
+      lastSyncedAt: Date | null;
+    }[]
+  >`
+    SELECT la."userId", la.provider, la."syncStatus", la."lastSyncedAt"
+    FROM "LinkedAccount" la
+    WHERE la.provider::text = ANY(${providers}::text[])
+      AND la."syncStatus" IN ('IDLE', 'COMPLETED', 'FAILED')
+      AND (la."lastSyncedAt" IS NULL OR la."lastSyncedAt" < ${stale})
+      AND NOT (
+        la."syncStatus" = 'FAILED' AND EXISTS (
+          SELECT 1 FROM "SyncRun" r
+          WHERE r."userId" = la."userId" AND r.provider = la.provider AND r."startedAt" >= ${stale}
+        )
+      )
+    ORDER BY la."lastSyncedAt" ASC NULLS FIRST
+    LIMIT ${limit}`;
+}
+
 /** Relit les comptes que personne n'a synchronisés depuis un jour. */
 async function requeueStaleAccounts(now: Date) {
-  const stale = new Date(now.getTime() - STALE_AFTER);
-  const accounts = await db.linkedAccount.findMany({
-    where: {
-      provider: { in: Object.keys(SYNCERS) as Provider[] },
-      syncStatus: { in: ['IDLE', 'COMPLETED', 'FAILED'] },
-      OR: [{ lastSyncedAt: null }, { lastSyncedAt: { lt: stale } }],
-    },
-    select: { userId: true, provider: true, syncStatus: true, lastSyncedAt: true },
-    take: 500,
-  });
-  // Un échec ne touche pas `lastSyncedAt` : sans ce garde-fou, un profil privé repartait à chaque
-  // heure, sans fin. Un compte en échec n'est relancé d'ici qu'une fois par jour.
-  const failed = accounts.filter((account) => account.syncStatus === 'FAILED');
-  const retried = failed.length
-    ? await db.syncRun.groupBy({
-        by: ['userId', 'provider'],
-        where: {
-          userId: { in: failed.map((account) => account.userId) },
-          startedAt: { gte: stale },
-        },
-      })
-    : [];
-  const recent = new Set(retried.map((run) => `${run.userId}:${run.provider}`));
-  for (const account of accounts) {
-    if (account.syncStatus === 'FAILED' && recent.has(`${account.userId}:${account.provider}`)) {
-      continue;
-    }
+  for (const account of await staleAccounts(now)) {
     // Steam a sa tournée légère, la même que pour un joueur présent : la synchronisation
     // complète ne sert qu'au premier import, et à reprendre un compte en échec.
     if (account.provider === 'STEAM' && account.lastSyncedAt && account.syncStatus !== 'FAILED') {

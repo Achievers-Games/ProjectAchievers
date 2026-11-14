@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { requireLogin } from '#lib/server/auth';
 import { commentLimit } from '#lib/comments';
 import { db } from '#lib/server/db';
+import { serverTiming } from '#lib/server/server-timing';
 import { censor } from '#lib/profanity';
 import { renderGuide, renderMarkdown } from '#lib/server/markdown';
 import { publicUser } from '#lib/server/queries';
@@ -32,13 +33,7 @@ const forViewer = (user: App.Locals['user']) => (text: string, locale: string | 
   user?.allowProfanity ? text : censor(text, locale);
 
 export const load: PageServerLoad = async ({ params, locals, url, depends, setHeaders }) => {
-  const timings: string[] = [];
-  let startedAt = performance.now();
-  const mark = (metric: string) => {
-    const now = performance.now();
-    timings.push(`${metric};dur=${Math.round(now - startedAt)}`);
-    startedAt = now;
-  };
+  const { mark, headers } = serverTiming();
   depends('app:sync');
   const viewerId = locals.user?.id;
   const clean = forViewer(locals.user);
@@ -110,7 +105,7 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
   const secret = achievement.hidden && !unlock;
   const masked = secret && !revealed;
 
-  setHeaders({ 'Server-Timing': timings.join(', ') });
+  setHeaders(headers());
   return {
     secret,
     revealed,

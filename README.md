@@ -214,6 +214,15 @@ conservés et peuvent être restaurés avec la commande `pg_restore` indiquée c
 docker exec -i project-achievers-db-1 pg_restore -U achievers -d achievers --clean --if-exists < backups/achievers-AAAA-MM-JJ.dump
 ```
 
+## Migrations
+
+Prisma applique les migrations dans l'ordre de leur nom. Celles du dépôt portent des dates en
+avance sur le calendrier, une par jour (`20261203000000_…`) : une migration nommée à l'heure réelle
+se classerait avant elles. Crée-les toujours avec `npm run db:migrate`, jamais avec
+`prisma migrate dev` seul : le script `scripts/migration-order.mjs` renomme la nouvelle migration
+au jour qui suit la dernière, avant de l'appliquer. Ne renomme jamais une migration déjà publiée :
+la production retient les noms de celles qu'elle a appliquées.
+
 ## Structure
 
 ```

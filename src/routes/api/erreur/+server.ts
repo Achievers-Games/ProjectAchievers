@@ -32,6 +32,9 @@ export const POST: RequestHandler = async ({ request }) => {
   const { message, stack, context } = parsed.data;
   // Un saut de ligne dans le message permettrait de forger de fausses lignes de journal.
   const line = (text: string) => text.replace(/[\r\n]+/g, ' ');
-  log.error(`${line(context ?? 'page')} : ${line(message)}`, stack ? `\n${stack}` : '');
+  // La pile garde ses lignes, mais chacune est indentée : aucune ne peut se faire passer pour une
+  // ligne du journal (`[error] Synchronisation : …`).
+  const indented = stack?.replace(/\r\n?/g, '\n').replace(/^/gm, '    ');
+  log.error(`${line(context ?? 'page')} : ${line(message)}`, indented ? `\n${indented}` : '');
   return new Response(null, { status: 204 });
 };

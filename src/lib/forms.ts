@@ -1,6 +1,30 @@
-import type { SubmitFunction } from '$app/forms';
+import { deserialize, type SubmitFunction } from '$app/forms';
 import { m } from '#lib/paraglide/messages';
 import { toast } from '#lib/stores/toast';
+
+/** Appelle une action de la page courante hors formulaire, et rend son résultat. */
+export async function postAction(action: string, fields: Record<string, string> = {}) {
+  const body = new FormData();
+  for (const [key, value] of Object.entries(fields)) body.set(key, value);
+  const response = await fetch(`?/${action}`, {
+    method: 'POST',
+    body,
+    headers: { 'x-sveltekit-action': 'true' },
+  });
+  return deserialize(await response.text());
+}
+
+/** Demande un motif puis signale le contenu par l'action `action` de la page. */
+export async function reportContent(action: string, fields: Record<string, string> = {}) {
+  const reason = prompt(m.report_prompt());
+  if (!reason) return;
+  const result = await postAction(action, { ...fields, reason });
+  if (result.type === 'success') toast(m.report_sent());
+  else {
+    const message = result.type === 'failure' ? result.data?.error : null;
+    toast(String(message ?? m.report_failed()), 'error');
+  }
+}
 
 /** Retour commun des formulaires : la page se recharge et le résultat arrive en toast. */
 export const submitWithToast =

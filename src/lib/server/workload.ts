@@ -18,7 +18,14 @@ export class WorkScheduler {
   readonly active = new Set<string>();
   private sequence = 0;
 
-  constructor(private readonly concurrency: number) {}
+  /**
+   * `level` : le niveau des lignes « Début » et « Fin ». Une tâche qui revient toutes les
+   * dix secondes les écrit en `debug`, sinon elle remplirait à elle seule le journal du NAS.
+   */
+  constructor(
+    private readonly concurrency: number,
+    private readonly level: 'info' | 'debug' = 'info',
+  ) {}
 
   get pending() {
     return this.waiting.length;
@@ -40,7 +47,7 @@ export class WorkScheduler {
     // Un identifiant interne distingue deux imports du même fournisseur.
     const label = `${name} #${++this.sequence}`;
     this.active.add(label);
-    log.info('Début', { task: name, ...memory(), waiting: this.pending });
+    log[this.level]('Début', { task: name, ...memory(), waiting: this.pending });
     try {
       return await task(async () => {
         if (!this.pending) return;
@@ -50,7 +57,7 @@ export class WorkScheduler {
         this.active.add(label);
       });
     } finally {
-      log.info('Fin', {
+      log[this.level]('Fin', {
         task: name,
         durationMs: Math.round(performance.now() - started),
         ...memory(),

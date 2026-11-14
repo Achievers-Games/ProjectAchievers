@@ -36,7 +36,8 @@ const HOUR = 60 * MINUTE;
 const LIVE_CONCURRENCY = 2;
 const log = logger('Succès en direct');
 // Les imports complets peuvent occuper le budget général pendant plusieurs minutes.
-const liveWork = new WorkScheduler(1);
+// Elle tourne toutes les 10 s : son journal ne s'écrit qu'avec LOG_LEVEL=debug.
+const liveWork = new WorkScheduler(1, 'debug');
 
 /** Le dernier jeu vu : il est relu une dernière fois après sa fermeture. */
 const lastGames = new Map<string, string>();
