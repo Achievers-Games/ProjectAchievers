@@ -10,6 +10,15 @@ export type SyncProgress = SyncEvent;
 
 export const syncState = writable<Partial<Record<Provider, SyncProgress>>>({});
 
+/**
+ * Le dernier échec d'un compte. Un événement du direct est plus récent que la page : une
+ * synchronisation relancée efface donc l'échec affiché, même s'il est encore enregistré.
+ */
+export const latestSyncError = (
+  live: SyncProgress | undefined,
+  stored: string | null | undefined,
+) => (live ? (live.error ?? null) : (stored ?? null));
+
 interface PendingRewards {
   cards: Reward[];
   /** Cartes obtenues en plus de celles envoyées par le serveur. */

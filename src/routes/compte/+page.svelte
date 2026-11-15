@@ -12,7 +12,7 @@
   import SessionList from '#lib/components/compte/SessionList.svelte';
   import { isClosedError, PRIVACY } from '#lib/components/compte/providers';
   import { PROVIDER_LABELS } from '#lib/labels';
-  import { syncState } from '#lib/stores/sync';
+  import { latestSyncError, syncState } from '#lib/stores/sync';
   import { submitWithToast } from '#lib/forms';
 
   let { data } = $props();
@@ -33,7 +33,7 @@
   const toOpen = $derived(
     data.accounts.flatMap((account) => {
       const privacy = PRIVACY[account.provider];
-      const error = $syncState[account.provider]?.error ?? account.syncError;
+      const error = latestSyncError($syncState[account.provider], account.syncError);
       return privacy && isClosedError(error) ? [{ ...privacy, provider: account.provider }] : [];
     }),
   );

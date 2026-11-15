@@ -5,7 +5,7 @@
   import ProviderIcon from '#lib/components/ProviderIcon.svelte';
   import Progress from '#lib/components/Progress.svelte';
   import { formatRelative, PROVIDER_LABELS, syncErrorText } from '#lib/labels';
-  import { syncState } from '#lib/stores/sync';
+  import { latestSyncError, syncState } from '#lib/stores/sync';
   import { submitWithToast } from '#lib/forms';
   import {
     DESCRIPTIONS,
@@ -48,9 +48,8 @@
   const hasPsnSlot = $derived(!accounts.has('PSN') && providers.PSN);
   const hasRetroSlot = $derived(!accounts.has('RETRO') && providers.RETRO);
 
-  /** Le dernier échec du compte : celui du direct, sinon celui de la dernière synchronisation. */
   const errorOf = (provider: Provider) =>
-    $syncState[provider]?.error ?? accounts.get(provider)?.syncError ?? null;
+    latestSyncError($syncState[provider], accounts.get(provider)?.syncError);
 </script>
 
 <section class="space-y-3">
@@ -60,7 +59,7 @@
       {@const account = accounts.get(provider)}
       {@const live = $syncState[provider]}
       {@const status = live?.status ?? account?.syncStatus}
-      {@const error = syncErrorText(live?.error ?? account?.syncError)}
+      {@const error = syncErrorText(errorOf(provider))}
       {@const available = providers[provider]}
       <li
         id={provider.toLowerCase()}
@@ -136,7 +135,8 @@
           <p class="text-xs text-danger">{error}</p>
         {/if}
 
-        {#if provider === 'STEAM' && account?.playtimeHidden}
+        <!-- Recalculé à la fin de chaque synchronisation : pendant qu'elle tourne, on ne sait plus. -->
+        {#if provider === 'STEAM' && account?.playtimeHidden && status !== 'QUEUED' && status !== 'SYNCING'}
           <p class="text-xs text-muted" data-testid="steam-playtime-private">
             {m.steam_playtime_private()}
             <a
