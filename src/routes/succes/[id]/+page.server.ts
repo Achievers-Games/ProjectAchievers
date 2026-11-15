@@ -6,7 +6,7 @@ import { db } from '#lib/server/db';
 import { serverTiming } from '#lib/server/server-timing';
 import { censor } from '#lib/profanity';
 import { renderGuide, renderMarkdown } from '#lib/server/markdown';
-import { publicUser } from '#lib/server/queries';
+import { publicUser, visibleGames } from '#lib/server/queries';
 import { ensureGameTexts, localizeAchievements } from '#lib/server/achievement-texts';
 import { logger } from '#lib/logger';
 import { rateLimit } from '#lib/server/rate-limit';
@@ -253,7 +253,13 @@ export const actions: Actions = {
     if (!parsed.success || !canTranslate()) return fail(400, { error: m.translate_failed() });
 
     const { targetType, targetId } = parsed.data;
-    const where = { id: targetId, achievementId: params.id, status: 'PUBLISHED' as const };
+    // Comme la page : un jeu réservé aux adultes reste introuvable pour qui ne les affiche pas.
+    const where = {
+      id: targetId,
+      achievementId: params.id,
+      status: 'PUBLISHED' as const,
+      achievement: { game: visibleGames(locals.user?.showAdult) },
+    };
     const select = { contentMd: true };
     const source =
       targetType === 'GUIDE'
