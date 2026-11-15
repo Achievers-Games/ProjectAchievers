@@ -481,7 +481,14 @@ async function steamLightPass(userId: string) {
 export function runSync(job: SyncJob) {
   return backgroundWork(
     `Synchronisation ${job.provider}`,
-    (yieldSlot) => runAccountSync(job, yieldSlot).finally(invalidatePublicCache),
+    (yieldSlot) =>
+      runAccountSync(job, yieldSlot)
+        .finally(invalidatePublicCache)
+        .finally(async () => {
+          if (job.provider !== 'STEAM') return;
+          const { afterSteamSync } = await import('./live');
+          await afterSteamSync(job.userId).catch((cause) => log.error(cause));
+        }),
     // Même ordre dans le budget de fond : présent, puis absent, puis entretien.
     job.background ? 0 : 1,
   );

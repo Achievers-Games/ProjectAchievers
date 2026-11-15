@@ -7,7 +7,7 @@ import { resolveIdentity } from './accounts';
 import { type CardDrop } from '#lib/collection';
 import { db } from './db';
 import { globals } from './globals';
-import { checkLiveGames, checkPlaytimePrivacy, steamDailyPass } from './sync/live';
+import { afterSteamSync, checkLiveGames, checkPlaytimePrivacy, steamDailyPass } from './sync/live';
 import { fetchPlayingGames, fetchSteamSummaries } from './providers/steam';
 import { enqueueSync, refreshAccounts, runSync, startWorkers } from './sync/queue';
 import { isAdultOnly, rateGames, tagGames } from './sync/content';
@@ -783,6 +783,39 @@ describe('synchronisation Steam', () => {
       expect(events.map((event) => event.status)).toContain('QUEUED');
     } finally {
       vi.useRealTimers();
+      stop();
+    }
+  });
+
+  it('rendu public pendant une synchronisation : une autre part dès sa fin', async () => {
+    const api = steamApi(ownedGames);
+    const mock = vi.fn(async (input: string | URL) => {
+      const url = String(input);
+      if (url.includes('GetOwnedGames') && !url.includes('include_appinfo')) {
+        const games = [{ appid: 999001, playtime_forever: 90 }];
+        return new Response(JSON.stringify({ response: { games } }));
+      }
+      return api(input);
+    });
+    vi.stubGlobal('fetch', mock);
+    const userId = await steamUser();
+    await runSync({ userId, provider: 'STEAM' });
+    // La synchronisation de la reliaison tourne encore, et a déjà vu le temps privé.
+    await db.linkedAccount.updateMany({
+      where: { userId },
+      data: { playtimeHidden: true, syncStatus: 'SYNCING' },
+    });
+    const events: SyncEvent[] = [];
+    const stop = onSync(userId, (event) => events.push(event));
+
+    try {
+      expect(await checkPlaytimePrivacy(userId)).toBe(true);
+      expect(events).toHaveLength(0);
+
+      await db.linkedAccount.updateMany({ where: { userId }, data: { syncStatus: 'COMPLETED' } });
+      await afterSteamSync(userId);
+      expect(events.map((event) => event.status)).toContain('QUEUED');
+    } finally {
       stop();
     }
   });

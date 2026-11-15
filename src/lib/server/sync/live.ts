@@ -56,6 +56,8 @@ const lastPresent = new Map<string, number>();
 const lastLook = new Map<string, number>();
 /** La dernière réponse de Steam sur le temps de jeu privé, par joueur. */
 const lastPrivacy = new Map<string, { at: number; public: boolean }>();
+/** Rendus publics pendant une synchronisation Steam : elle a pu lire la bibliothèque avant. */
+const unhideAfterSync = new Set<string>();
 /** Les jeux neufs déjà signalés : un jeu que l'import ne retient pas ne le relance pas sans fin. */
 const requested = new Map<string, Set<string>>();
 
@@ -253,8 +255,24 @@ export async function checkPlaytimePrivacy(userId: string) {
     probe.map((row) => Number(row.game.platformGameId)),
   ).catch(() => false);
   lastPrivacy.set(userId, { at: now, public: visible });
-  if (visible && !last?.public) await enqueueSync(userId, 'STEAM');
+  // Une synchronisation déjà en cours refuse la nouvelle : celle-ci partira dès sa fin.
+  if (visible && !last?.public && !(await enqueueSync(userId, 'STEAM'))) {
+    unhideAfterSync.add(userId);
+  }
   return visible;
+}
+
+/**
+ * Fin d'une synchronisation Steam. Si le joueur a rendu son temps public pendant qu'elle tournait
+ * et qu'elle l'a encore vu privé, une autre repart aussitôt avec la bibliothèque complète.
+ */
+export async function afterSteamSync(userId: string) {
+  if (!unhideAfterSync.delete(userId)) return;
+  const account = await db.linkedAccount.findUnique({
+    where: { userId_provider: { userId, provider: 'STEAM' } },
+    select: { playtimeHidden: true },
+  });
+  if (account?.playtimeHidden) await enqueueSync(userId, 'STEAM');
 }
 
 const sameLook = (account: AccountLook, look: AccountLook) =>
