@@ -59,6 +59,15 @@ test.describe('temps de jeu Steam privé', () => {
     await expect(prompt).toHaveCount(0, { timeout: 8_000 });
   });
 
+  test('profil ou détails des jeux privés : tous les réglages d’un coup', async ({ page }) => {
+    await page.goto('/auth/dev?compte=sam');
+    await ready(page);
+    const prompt = page.getByTestId('steam-privacy-prompt');
+    await expect(prompt).toBeVisible();
+    await expect(prompt).toContainText('Détails des jeux');
+    await expect(prompt).toContainText('Toujours garder mon temps de jeu total privé');
+  });
+
   test('ne dérange pas un joueur dont le temps de jeu est public', async ({ page }) => {
     await page.goto('/auth/dev');
     await ready(page);

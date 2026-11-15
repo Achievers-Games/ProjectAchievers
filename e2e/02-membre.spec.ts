@@ -784,7 +784,7 @@ test.describe('membre', () => {
     await ready(page);
     await expect(page.locator(settings)).toHaveCount(0);
 
-    await page.goto('/auth/dev?compte=marco');
+    await page.goto('/auth/dev?compte=sam');
     await page.goto('/compte?bienvenue=1');
     await expect(page.getByRole('link', { name: 'Steam', exact: true })).toHaveAttribute(
       'href',

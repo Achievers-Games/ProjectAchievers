@@ -113,7 +113,27 @@ async function main() {
   // Deux cartes terminées, dont une rare sur plusieurs plateformes.
   const demo = users[0] as (typeof users)[number];
   const marco = await db.user.findUniqueOrThrow({ where: { handle: 'marco' } });
-  // Un profil Steam privé : le compte doit montrer comment l'ouvrir.
+  // Marco, présent dans beaucoup de parcours, a un compte Steam sans histoire.
+  const open = { syncStatus: 'COMPLETED' as const, syncError: null, lastSyncedAt: new Date() };
+  await db.syncRun.deleteMany({ where: { userId: marco.id, provider: 'STEAM' } });
+  await db.linkedAccount.upsert({
+    where: { provider_providerUserId: { provider: 'STEAM', providerUserId: 'marco-steam' } },
+    update: open,
+    create: {
+      userId: marco.id,
+      provider: 'STEAM',
+      providerUserId: 'marco-steam',
+      displayName: 'Marco',
+      ...open,
+    },
+  });
+
+  // Un profil Steam privé : le compte doit montrer comment l'ouvrir, et la fenêtre tout demander.
+  const sam = await db.user.upsert({
+    where: { handle: 'sam' },
+    update: {},
+    create: { handle: 'sam', displayName: 'Sam' },
+  });
   const closed = {
     syncStatus: 'FAILED' as const,
     syncError: 'sync_steam_private',
@@ -121,10 +141,10 @@ async function main() {
   };
   // Un essai daté d'avance : le site ne le relance jamais, même longtemps après le seed.
   const later = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
-  await db.syncRun.deleteMany({ where: { userId: marco.id, provider: 'STEAM' } });
+  await db.syncRun.deleteMany({ where: { userId: sam.id, provider: 'STEAM' } });
   await db.syncRun.create({
     data: {
-      userId: marco.id,
+      userId: sam.id,
       provider: 'STEAM',
       startedAt: later,
       status: 'FAILED',
@@ -133,13 +153,13 @@ async function main() {
     },
   });
   await db.linkedAccount.upsert({
-    where: { provider_providerUserId: { provider: 'STEAM', providerUserId: 'marco-steam' } },
+    where: { provider_providerUserId: { provider: 'STEAM', providerUserId: 'sam-steam' } },
     update: closed,
     create: {
-      userId: marco.id,
+      userId: sam.id,
       provider: 'STEAM',
-      providerUserId: 'marco-steam',
-      displayName: 'Marco',
+      providerUserId: 'sam-steam',
+      displayName: 'Sam',
       ...closed,
     },
   });
