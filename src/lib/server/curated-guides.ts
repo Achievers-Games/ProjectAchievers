@@ -95,36 +95,42 @@ export function parseGuideFile(text: string): GuideFile {
  * journal le signale, pour reporter la modification dans le fichier si elle doit rester.
  */
 async function importCurated(
+  known: KnownSources,
   curatedKey: string,
   source: string,
   text: { contentMd: string; title?: string },
   create: Omit<Prisma.GuideUncheckedCreateInput, 'curatedKey' | 'curatedSource'>,
 ) {
-  const known = await db.guide.findUnique({
+  // Le cas courant, texte du dépôt inchangé, se décide sans relire le guide.
+  if (known.has(curatedKey) && known.get(curatedKey) === source) return;
+  const guide = await db.guide.findUnique({
     where: { curatedKey },
     select: { id: true, title: true, contentMd: true, curatedSource: true },
   });
-  if (!known) {
+  if (!guide) {
     await db.guide.create({ data: { ...create, curatedKey, curatedSource: source } });
     return;
   }
-  if (known.curatedSource === source) return;
+  if (guide.curatedSource === source) return;
   const same =
-    known.contentMd === text.contentMd && (text.title === undefined || known.title === text.title);
+    guide.contentMd === text.contentMd && (text.title === undefined || guide.title === text.title);
   // Guide importé avant ce suivi : rien n'a pu le modifier sur le site, il suffit de noter le texte.
   if (same) {
-    await db.guide.update({ where: { id: known.id }, data: { curatedSource: source } });
+    await db.guide.update({ where: { id: guide.id }, data: { curatedSource: source } });
     return;
   }
-  if (known.curatedSource !== null) {
-    const edited = known.contentMd !== importedText(known.curatedSource, text.title !== undefined);
+  if (guide.curatedSource !== null) {
+    const edited = guide.contentMd !== importedText(guide.curatedSource, text.title !== undefined);
     if (edited)
       log.warn(`Guide officiel ${curatedKey} : le dépôt remplace une modification du site`);
   }
   // Une traduction de l'ancien texte ne vaut plus pour le nouveau.
-  await db.contentTranslation.deleteMany({ where: { guideId: known.id } });
-  await db.guide.update({ where: { id: known.id }, data: { ...text, curatedSource: source } });
+  await db.contentTranslation.deleteMany({ where: { guideId: guide.id } });
+  await db.guide.update({ where: { id: guide.id }, data: { ...text, curatedSource: source } });
 }
+
+/** Le texte du dépôt dont chaque guide officiel vient, par clé : lu une fois par passage. */
+type KnownSources = Map<string, string | null>;
 
 /** Le texte d'un guide tel que le dépôt l'avait donné : sans le titre, pour un guide de jeu. */
 const importedText = (source: string, withTitle: boolean) =>
@@ -149,7 +155,12 @@ interface GuideEntry {
 const sameName = (name: string) => name.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
 
 /** Publie les guides des succès d'un jeu et son relevé des manquables ; rend leurs clés. */
-async function publishGuides(game: GuideGame, partial: boolean, entries: GuideEntry[]) {
+async function publishGuides(
+  known: KnownSources,
+  game: GuideGame,
+  partial: boolean,
+  entries: GuideEntry[],
+) {
   if (partial === Boolean(game.guideReviewedAt)) {
     await db.game.update({
       where: { id: game.id },
@@ -171,6 +182,7 @@ async function publishGuides(game: GuideGame, partial: boolean, entries: GuideEn
     const curatedKey = `${game.platform}:${game.platformGameId}:${achievement.platformAchievementId}`;
     keys.push(curatedKey);
     await importCurated(
+      known,
       curatedKey,
       content,
       { contentMd: content },
@@ -185,27 +197,45 @@ async function publishGuides(game: GuideGame, partial: boolean, entries: GuideEn
   return keys;
 }
 
+let running: Promise<unknown> = Promise.resolve();
+
 /**
  * Le dépôt fait foi : les guides officiels y sont ajoutés, modifiés ou retirés. Une version du
  * jeu sans fichier à elle (PSN, réédition) reprend les guides de sa famille, succès par succès.
+ * Les passages se suivent : celui du démarrage et celui de l'entretien horaire créeraient sinon
+ * le même guide deux fois.
  */
-export async function syncCuratedGuides(
+export function syncCuratedGuides(
   files: string[] = Object.values(FILES),
   gameFiles: string[] = Object.values(GAME_FILES),
 ) {
+  const run = running.then(() => importGuides(files, gameFiles));
+  running = run.catch(() => undefined);
+  return run;
+}
+
+async function importGuides(files: string[], gameFiles: string[]) {
   await db.user.upsert({
     where: { id: OFFICIAL_AUTHOR.id },
     update: {},
     create: OFFICIAL_AUTHOR,
   });
 
+  const known: KnownSources = new Map(
+    (
+      await db.guide.findMany({
+        where: { curatedKey: { not: null } },
+        select: { curatedKey: true, curatedSource: true },
+      })
+    ).map((guide) => [guide.curatedKey!, guide.curatedSource]),
+  );
   const keys: string[] = [];
   const covered: string[] = [];
   const reviewed: string[] = [];
   const publish = async (game: GuideGame, partial: boolean, entries: GuideEntry[]) => {
     covered.push(game.id);
     if (!partial) reviewed.push(game.id);
-    keys.push(...(await publishGuides(game, partial, entries)));
+    keys.push(...(await publishGuides(known, game, partial, entries)));
   };
 
   const sources: { file: GuideFile; game: GuideGame & { familyKey: string | null } }[] = [];
@@ -269,6 +299,7 @@ export async function syncCuratedGuides(
     keys.push(curatedKey);
 
     await importCurated(
+      known,
       curatedKey,
       `${file.title}\n\n${file.content}`,
       { title: file.title, contentMd: file.content },

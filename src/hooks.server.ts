@@ -33,7 +33,8 @@ export const init: ServerInit = async () => {
   startLiveGames();
   startDigests();
   await grantFramesThrottled().catch((cause) => log.error('Cadres :', cause));
-  await syncCuratedGuides().catch((cause) => log.error('Guides officiels :', cause));
+  // Sans l'attendre : le site répond pendant l'import, et l'entretien horaire rattrape un échec.
+  void syncCuratedGuides().catch((cause) => log.error('Guides officiels :', cause));
   // `adapter-node` l'émet sur SIGTERM, une fois les requêtes terminées : la file et la base se
   // ferment proprement au lieu d'attendre que Docker tue le processus.
   process.once('sveltekit:shutdown', () => {

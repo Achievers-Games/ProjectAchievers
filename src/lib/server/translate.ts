@@ -2,7 +2,7 @@ import type { RequestEvent } from '@sveltejs/kit';
 import { clientAddress } from './client-address';
 import { db } from './db';
 import { env } from './env';
-import { rateLimit } from './rate-limit';
+import { isRateLimited, rateLimit } from './rate-limit';
 import type { Locale } from '#lib/paraglide/runtime';
 
 const MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
@@ -118,17 +118,36 @@ export async function translateContent(
 ): Promise<string | null> {
   const cached = await db.contentTranslation.findFirst({ where: { ...target, locale } });
   if (cached) return cached.contentMd;
+  // Le même texte déjà en cours de traduction : attendre ce résultat plutôt que payer deux fois.
+  const key = `${'guideId' in target ? `guide:${target.guideId}` : `commentaire:${target.commentId}`}:${locale}`;
+  const ongoing = inFlight.get(key);
+  if (ongoing) return ongoing;
+
   // Ce qui est déjà traduit reste servi à tous : seules les nouvelles demandes sont comptées.
-  if (!rateLimit(`traduction:${quota.key}`, quota.perHour, 3_600_000)) return null;
-  if (!rateLimit('traduction', TRANSLATIONS_PER_HOUR, 3_600_000)) return null;
+  // Les deux quotas sont vérifiés avant d'en entamer un : un refus ne coûte rien au joueur.
+  const mine = `traduction:${quota.key}`;
+  if (isRateLimited(mine, quota.perHour) || isRateLimited('traduction', TRANSLATIONS_PER_HOUR)) {
+    return null;
+  }
+  rateLimit(mine, quota.perHour, HOUR);
+  rateLimit('traduction', TRANSLATIONS_PER_HOUR, HOUR);
 
-  const parts: string[] = [];
-  for (const chunk of splitText(source)) parts.push(await askModel(chunk, locale));
-  const contentMd = parts.join('\n\n');
+  const work = (async () => {
+    const parts: string[] = [];
+    for (const chunk of splitText(source)) parts.push(await askModel(chunk, locale));
+    const contentMd = parts.join('\n\n');
 
-  await db.contentTranslation.createMany({
-    data: [{ ...target, locale, contentMd }],
-    skipDuplicates: true,
-  });
-  return contentMd;
+    await db.contentTranslation.createMany({
+      data: [{ ...target, locale, contentMd }],
+      skipDuplicates: true,
+    });
+    return contentMd;
+  })().finally(() => inFlight.delete(key));
+  inFlight.set(key, work);
+  return work;
 }
+
+const HOUR = 3_600_000;
+
+/** Les traductions en cours, par texte et par langue : un seul processus Node sert le site. */
+const inFlight = new Map<string, Promise<string>>();

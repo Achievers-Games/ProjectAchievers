@@ -18,6 +18,7 @@ import { parseSteamPage } from './sync/steam';
 import { parseGameGuideFile, parseGuideFile, syncCuratedGuides } from './curated-guides';
 import { editGuide } from './guides';
 import { splitText, translateContent } from './translate';
+import { isRateLimited, rateLimit } from './rate-limit';
 import { ensureGameTexts, localizeAchievements } from './achievement-texts';
 import { refreshDiscordAccounts } from './sync/discord';
 import { UNKNOWN_ICON } from './site-icons';
@@ -64,6 +65,37 @@ describe('traduction des guides et commentaires', () => {
     expect(await translateContent({ guideId: id }, 'Reste derrière.', 'en')).toBe('Stay behind.');
     expect(await translateContent({ guideId: id }, 'Reste derrière.', 'en')).toBe('Stay behind.');
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('ne paie qu’une traduction pour deux demandes simultanées', async () => {
+    const { id } = await guide();
+    const fetchMock = vi.fn(async () => answer('Stay behind.'));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const both = await Promise.all([
+      translateContent({ guideId: id }, 'Reste derrière.', 'es'),
+      translateContent({ guideId: id }, 'Reste derrière.', 'es'),
+    ]);
+    expect(both).toEqual(['Stay behind.', 'Stay behind.']);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('ne compte pas au joueur une demande refusée par le quota du site', async () => {
+    const { id } = await guide();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => answer('Stay behind.')),
+    );
+    const player = { key: `${PREFIX}-${Math.random()}`, perHour: 1 };
+    // Une heure passée depuis longtemps : le quota épuisé ici ne gêne pas les tests suivants.
+    vi.useFakeTimers({ now: new Date('2000-01-01'), toFake: ['Date'] });
+    try {
+      while (rateLimit('traduction', 300, 3_600_000));
+      expect(await translateContent({ guideId: id }, 'Reste derrière.', 'ja', player)).toBeNull();
+      expect(isRateLimited(`traduction:${player.key}`, player.perHour)).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('ne garde pas une traduction coupée', async () => {
