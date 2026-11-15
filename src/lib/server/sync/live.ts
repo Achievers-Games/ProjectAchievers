@@ -339,6 +339,16 @@ export async function checkLiveGames() {
     ? await fetchSteamSummaries(accounts.map((account) => account.providerUserId))
     : new Map<string, SteamSummary>();
   const now = Date.now();
+  // Ce que le joueur voit dans `/compte` : au plus une écriture par minute et par compte.
+  if (summaries.size) {
+    await db.linkedAccount.updateMany({
+      where: {
+        id: { in: accounts.map((account) => account.id) },
+        OR: [{ liveCheckedAt: null }, { liveCheckedAt: { lt: new Date(now - MINUTE) } }],
+      },
+      data: { liveCheckedAt: new Date(now) },
+    });
+  }
   for (const account of accounts) {
     const summary = summaries.get(account.providerUserId);
     if (summary?.gameId) playing.set(account.providerUserId, summary.gameId);

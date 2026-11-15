@@ -407,6 +407,8 @@ model LinkedAccount {
   syncStatus      SyncStatus @default(IDLE)
   syncError       String?
   lastSyncedAt    DateTime?
+  /// Steam : le dernier passage du suivi en direct, plus récent que la tournée quotidienne.
+  liveCheckedAt   DateTime?
   /// Steam : le joueur garde son temps de jeu privé ; le site affiche « privé » plutôt que rien.
   playtimeHidden  Boolean    @default(false)
   linkedAt        DateTime   @default(now())

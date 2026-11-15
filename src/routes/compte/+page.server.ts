@@ -90,6 +90,7 @@ export const load: PageServerLoad = async ({ locals, url, cookies, depends }) =>
           syncStatus: true,
           syncError: true,
           lastSyncedAt: true,
+          liveCheckedAt: true,
           playtimeHidden: true,
         },
       }),

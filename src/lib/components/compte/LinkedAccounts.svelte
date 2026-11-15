@@ -23,6 +23,7 @@
     syncStatus: SyncStatus;
     syncError: string | null;
     lastSyncedAt: Date | string | null;
+    liveCheckedAt?: Date | string | null;
     frameUrl: string | null;
     frameMotionUrl: string | null;
     playtimeHidden: boolean;
@@ -50,6 +51,17 @@
 
   const errorOf = (provider: Provider) =>
     latestSyncError($syncState[provider], accounts.get(provider)?.syncError);
+
+  /** Steam se suit en direct : son dernier passage compte autant que la tournée quotidienne. */
+  const lastChecked = (account: {
+    lastSyncedAt: Date | string | null;
+    liveCheckedAt?: Date | string | null;
+  }) => {
+    const dates = [account.lastSyncedAt, account.liveCheckedAt].filter((date) => date != null);
+    return dates.length
+      ? new Date(Math.max(...dates.map((date) => new Date(date).getTime())))
+      : null;
+  };
 </script>
 
 <section class="space-y-3">
@@ -74,8 +86,8 @@
               {#if account}
                 {account.displayName}
                 {#if !LOGIN_ONLY.includes(provider) && status}· {STATUS[status]}{/if}
-                {#if account.lastSyncedAt && status === 'COMPLETED'}
-                  · {formatRelative(account.lastSyncedAt)}
+                {#if lastChecked(account) && status === 'COMPLETED'}
+                  · {formatRelative(lastChecked(account)!)}
                 {/if}
               {:else if provider === 'EPIC'}
                 {m.provider_wip_text()}
