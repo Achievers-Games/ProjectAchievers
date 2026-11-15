@@ -9,7 +9,7 @@ import {
 import type { TrophyType } from '#prisma';
 import { psnConsole } from '#lib/collection';
 import { logger } from '#lib/logger';
-import type { Locale } from '#lib/paraglide/runtime';
+import { baseLocale, type Locale } from '#lib/paraglide/runtime';
 import { db } from '../db';
 import { env } from '../env';
 import { psnAuthorization } from '../providers/psn';
@@ -221,12 +221,12 @@ export const syncPsn: ProviderSync = async ({ userId, account, report, onUnlocke
         console: psnConsole(title.trophyTitlePlatform),
       });
 
-      const catalog = await getTitleTrophies(
-        authorization,
-        title.npCommunicationId,
-        'all',
-        options,
-      );
+      // Dans la langue de base du site, comme Steam : sans elle, Sony répond dans celle du compte
+      // de service, et les noms ne se comparent plus d'une plateforme à l'autre (familles, guides).
+      const catalog = await getTitleTrophies(authorization, title.npCommunicationId, 'all', {
+        ...options,
+        headerOverrides: { 'Accept-Language': PSN_LANGUAGES[baseLocale] },
+      });
       const progress = await getUserTrophiesEarnedForTitle(
         authorization,
         accountId,
