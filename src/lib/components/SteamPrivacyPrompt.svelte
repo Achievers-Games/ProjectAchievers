@@ -41,12 +41,19 @@
     answered = stored === 'jamais' || Date.now() - Number(stored ?? 0) < SNOOZE;
   });
 
-  // Le temps de jeu est redevenu public : la prochaine alerte, s'il y en a une, repartira de zéro.
+  // Le temps de jeu est public : la prochaine alerte, s'il y en a une, repartira de zéro. Un
+  // « Plus tard » ne vaut que pour cette fois ; seul « Ne plus afficher » se garde.
   $effect(() => {
-    if (!hidden) {
-      waiting = false;
-      unhidden = false;
+    if (hidden) return;
+    waiting = false;
+    unhidden = false;
+    if (read() === 'jamais') return;
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      // Stockage indisponible : rien n'y a été gardé.
     }
+    answered = false;
   });
 
   const shown = $derived(hidden && !answered && !unhidden);
