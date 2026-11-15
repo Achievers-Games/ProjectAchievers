@@ -17,21 +17,28 @@ describe('SteamPrivacyPrompt', () => {
 
   it('oublie « Plus tard » quand le temps de jeu redevient public', async () => {
     localStorage.setItem(key, String(Date.now()));
-    const view = render(SteamPrivacyPrompt, { userId: 'u1', hidden: true });
+    const view = render(SteamPrivacyPrompt, { userId: 'u1', issue: 'playtime' });
     expect(prompt()).toBeNull();
 
     // Rendu public, puis de nouveau privé : la fenêtre revient sans attendre le lendemain.
-    await view.rerender({ userId: 'u1', hidden: false });
+    await view.rerender({ userId: 'u1', issue: null });
     expect(localStorage.getItem(key)).toBeNull();
-    await view.rerender({ userId: 'u1', hidden: true });
+    await view.rerender({ userId: 'u1', issue: 'playtime' });
     flushSync();
     expect(prompt()).not.toBeNull();
   });
 
+  it('demande tous les réglages d’un coup quand Steam cache toute la bibliothèque', () => {
+    render(SteamPrivacyPrompt, { userId: 'u1', issue: 'library' });
+    flushSync();
+    expect(prompt()?.textContent).toContain('Game details');
+    expect(prompt()?.textContent).toContain('Always keep my total playtime private');
+  });
+
   it('garde « Ne plus afficher » pour de bon', async () => {
     localStorage.setItem(key, 'jamais');
-    const view = render(SteamPrivacyPrompt, { userId: 'u1', hidden: false });
-    await view.rerender({ userId: 'u1', hidden: true });
+    const view = render(SteamPrivacyPrompt, { userId: 'u1', issue: null });
+    await view.rerender({ userId: 'u1', issue: 'playtime' });
     flushSync();
     expect(localStorage.getItem(key)).toBe('jamais');
     expect(prompt()).toBeNull();

@@ -7,7 +7,7 @@ import { resolveIdentity } from './accounts';
 import { type CardDrop } from '#lib/collection';
 import { db } from './db';
 import { globals } from './globals';
-import { afterSteamSync, checkLiveGames, checkPlaytimePrivacy, steamDailyPass } from './sync/live';
+import { afterSteamSync, checkLiveGames, checkSteamPrivacy, steamDailyPass } from './sync/live';
 import { fetchPlayingGames, fetchSteamSummaries } from './providers/steam';
 import { enqueueSync, refreshAccounts, runSync, startWorkers } from './sync/queue';
 import { isAdultOnly, rateGames, tagGames } from './sync/content';
@@ -768,18 +768,55 @@ describe('synchronisation Steam', () => {
         .filter((url) => url.includes('GetOwnedGames') && !url.includes('include_appinfo'));
 
     try {
-      expect(await checkPlaytimePrivacy(userId)).toBe(false);
+      expect(await checkSteamPrivacy(userId)).toBe(false);
       // Seuls les jeux où le joueur a des succès sont demandés.
       expect(probes()[0]).toContain('appids_filter');
       // Une seconde fenêtre ouverte dans la foulée ne réinterroge pas Steam.
-      await checkPlaytimePrivacy(userId);
+      await checkSteamPrivacy(userId);
       expect(probes()).toHaveLength(1);
       expect(events).toHaveLength(0);
 
       playtime = 90;
       vi.useFakeTimers({ toFake: ['Date'] });
       vi.setSystemTime(Date.now() + 5_000);
-      expect(await checkPlaytimePrivacy(userId)).toBe(true);
+      expect(await checkSteamPrivacy(userId)).toBe(true);
+      expect(events.map((event) => event.status)).toContain('QUEUED');
+    } finally {
+      vi.useRealTimers();
+      stop();
+    }
+  });
+
+  it('profil ou détails des jeux privés : la synchronisation repart dès que Steam les montre', async () => {
+    let library: unknown = { response: {} };
+    const api = steamApi(ownedGames);
+    const mock = vi.fn(async (input: string | URL) => {
+      const url = String(input);
+      if (url.includes('GetOwnedGames') && !url.includes('include_appinfo')) {
+        return new Response(JSON.stringify(library));
+      }
+      return api(input);
+    });
+    vi.stubGlobal('fetch', mock);
+    const userId = await steamUser();
+    await runSync({ userId, provider: 'STEAM' });
+    // La dernière synchronisation a trouvé la bibliothèque cachée.
+    await db.linkedAccount.updateMany({
+      where: { userId },
+      data: { syncStatus: 'FAILED', syncError: 'sync_steam_private' },
+    });
+    const events: SyncEvent[] = [];
+    const stop = onSync(userId, (event) => events.push(event));
+
+    try {
+      expect(await checkSteamPrivacy(userId)).toBe(false);
+      expect(events).toHaveLength(0);
+
+      // Bibliothèque visible, même sans temps de jeu : ce qui manquait est réglé.
+      library = { response: { games: [{ appid: 999001, playtime_forever: 0 }] } };
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(Date.now() + 5_000);
+      expect(await checkSteamPrivacy(userId)).toBe(true);
       expect(events.map((event) => event.status)).toContain('QUEUED');
     } finally {
       vi.useRealTimers();
@@ -809,7 +846,7 @@ describe('synchronisation Steam', () => {
     const stop = onSync(userId, (event) => events.push(event));
 
     try {
-      expect(await checkPlaytimePrivacy(userId)).toBe(true);
+      expect(await checkSteamPrivacy(userId)).toBe(true);
       expect(events).toHaveLength(0);
 
       await db.linkedAccount.updateMany({ where: { userId }, data: { syncStatus: 'COMPLETED' } });

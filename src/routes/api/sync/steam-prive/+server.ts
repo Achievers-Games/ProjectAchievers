@@ -1,10 +1,10 @@
 import { error, json } from '@sveltejs/kit';
-import { checkPlaytimePrivacy } from '#lib/server/sync/live';
+import { checkSteamPrivacy } from '#lib/server/sync/live';
 import type { RequestHandler } from './$types';
 import { m } from '#lib/paraglide/messages';
 
-/** La fenêtre « temps de jeu privé » demande si le joueur l'a rendu public dans Steam. */
+/** La fenêtre des jeux cachés demande si le joueur a réglé Steam. */
 export const POST: RequestHandler = async ({ locals }) => {
   if (!locals.user) error(401, m.login_required());
-  return json({ public: await checkPlaytimePrivacy(locals.user.id) });
+  return json({ fixed: await checkSteamPrivacy(locals.user.id) });
 };

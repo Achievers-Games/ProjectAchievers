@@ -334,7 +334,7 @@
 {#if data.user && !inSocial}<ChatDock me={data.user.id} />{/if}
 {#if data.user}<PushPrompt publicKey={data.pushKey} />{/if}
 {#if data.user}
-  <SteamPrivacyPrompt userId={data.user.id} hidden={data.steamPlaytimePrivate} />
+  <SteamPrivacyPrompt userId={data.user.id} issue={data.steamPrivacy} />
 {/if}
 <CommandPalette bind:open={paletteOpen} />
 <RewardReveal />

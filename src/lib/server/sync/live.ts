@@ -15,7 +15,9 @@ import {
   fetchOwnedApps,
   fetchRecentGames,
   fetchTopAchievements,
-  playtimeIsPublic,
+  steamPrivacy,
+  steamVisibility,
+  type SteamPrivacy,
   steamAppInfo,
   type OwnedGame,
   type TopGame,
@@ -38,7 +40,7 @@ const MINUTE = 60_000;
 /** Un retour après cette absence est une arrivée : le rattrapage repart. */
 const ARRIVAL_GAP = 10 * MINUTE;
 const LOOK_EVERY = 5 * MINUTE;
-/** La fenêtre « temps de jeu privé » demande toutes les 5 s : jamais plus d'un appel Steam par 4 s. */
+/** La fenêtre des jeux cachés demande toutes les 5 s : jamais plus d'un appel Steam par 4 s. */
 const PRIVACY_EVERY = 4_000;
 /** Les jeux qui servent à sonder Steam : assez pour en trouver un où le temps n'est pas nul. */
 const PRIVACY_PROBE = 10;
@@ -54,9 +56,9 @@ const lastGames = new Map<string, string>();
 const lastPresent = new Map<string, number>();
 /** La dernière lecture du cadre, par joueur. */
 const lastLook = new Map<string, number>();
-/** La dernière réponse de Steam sur le temps de jeu privé, par joueur. */
-const lastPrivacy = new Map<string, { at: number; public: boolean }>();
-/** Rendus publics pendant une synchronisation Steam : elle a pu lire la bibliothèque avant. */
+/** La dernière réponse de Steam sur les jeux cachés, par joueur. */
+const lastPrivacy = new Map<string, { at: number; fixed: boolean }>();
+/** Steam réglé pendant une synchronisation : elle a pu lire la bibliothèque avant. */
 const unhideAfterSync = new Set<string>();
 /** Les jeux neufs déjà signalés : un jeu que l'import ne retient pas ne le relance pas sans fin. */
 const requested = new Map<string, Set<string>>();
@@ -66,6 +68,7 @@ type SteamAccount = {
   userId: string;
   providerUserId: string;
   playtimeHidden: boolean;
+  syncError: string | null;
   avatarUrl: string | null;
 } & AccountLook;
 
@@ -74,6 +77,7 @@ const accountSelect = {
   userId: true,
   providerUserId: true,
   playtimeHidden: true,
+  syncError: true,
   avatarUrl: true,
   avatarMotionUrl: true,
   frameUrl: true,
@@ -212,67 +216,73 @@ async function catchUpRecent(userId: string, steamId: string, checkedAppId?: str
 }
 
 /**
- * Un joueur à qui le site vient de dire que son temps de jeu est privé part le régler dans
- * Steam, puis revient. Ses jeux récents ne disent rien tant que le temps est privé : à leur
- * place, on regarde si Steam annonce de nouveau du temps de jeu, et la synchronisation complète
- * repart aussitôt, avec les jeux qui manquaient.
+ * Steam montre-t-il de nouveau ce que la dernière synchronisation n'a pas pu lire ? Seuls quelques
+ * jeux où le joueur a des succès sont demandés.
  */
-async function resyncUnhidden(userId: string, steamId: string) {
-  if (await playtimeIsPublic(steamId).catch(() => false)) {
-    await enqueueSync(userId, 'STEAM', true);
-  }
-}
-
-/**
- * La fenêtre « temps de jeu privé » demande, tant qu'elle est ouverte, si le joueur l'a rendu
- * public. Seul ce réglage est lu, sur quelques jeux où il a des succès : dès que Steam y montre du
- * temps, la synchronisation complète part et ramène les jeux qui manquaient.
- */
-export async function checkPlaytimePrivacy(userId: string) {
-  const account = await db.linkedAccount.findUnique({
-    where: { userId_provider: { userId, provider: 'STEAM' } },
-    select: { providerUserId: true, playtimeHidden: true },
-  });
-  // Plus rien de caché : une synchronisation l'a déjà constaté. Un retour au privé repartira de zéro.
-  if (!account?.playtimeHidden) {
-    lastPrivacy.delete(userId);
-    return true;
-  }
-
-  const now = Date.now();
-  const last = lastPrivacy.get(userId);
-  if (last && now - last.at < PRIVACY_EVERY) return last.public;
-  lastPrivacy.set(userId, { at: now, public: last?.public ?? false });
-
+async function privacyFixed(userId: string, steamId: string, issue: SteamPrivacy) {
   const probe = await db.userGame.findMany({
     where: { userId, unlockedCount: { gt: 0 }, game: { platform: 'STEAM' } },
     orderBy: { unlockedCount: 'desc' },
     take: PRIVACY_PROBE,
     select: { game: { select: { platformGameId: true } } },
   });
-  const visible = await playtimeIsPublic(
-    account.providerUserId,
+  const seen = await steamVisibility(
+    steamId,
     probe.map((row) => Number(row.game.platformGameId)),
-  ).catch(() => false);
-  lastPrivacy.set(userId, { at: now, public: visible });
-  // Une synchronisation déjà en cours refuse la nouvelle : celle-ci partira dès sa fin.
-  if (visible && !last?.public && !(await enqueueSync(userId, 'STEAM'))) {
-    unhideAfterSync.add(userId);
-  }
-  return visible;
+  ).catch(() => null);
+  return !!seen && (issue === 'library' ? seen.library : seen.playtime);
 }
 
 /**
- * Fin d'une synchronisation Steam. Si le joueur a rendu son temps public pendant qu'elle tournait
- * et qu'elle l'a encore vu privé, une autre repart aussitôt avec la bibliothèque complète.
+ * Un joueur à qui le site a dit que Steam lui cachait ses jeux part le régler, puis revient. Ses
+ * jeux récents ne disent rien tant que c'est caché : à leur place, on regarde si Steam les montre
+ * de nouveau, et la synchronisation complète repart aussitôt, avec les jeux qui manquaient.
+ */
+async function resyncUnhidden(userId: string, steamId: string, issue: SteamPrivacy) {
+  if (await privacyFixed(userId, steamId, issue)) await enqueueSync(userId, 'STEAM', true);
+}
+
+/**
+ * La fenêtre « Il manque des jeux à ton profil » demande, tant qu'elle est ouverte, si le joueur a
+ * réglé Steam : dès que Steam montre ce qui manquait, la synchronisation complète part.
+ */
+export async function checkSteamPrivacy(userId: string) {
+  const account = await db.linkedAccount.findUnique({
+    where: { userId_provider: { userId, provider: 'STEAM' } },
+    select: { providerUserId: true, playtimeHidden: true, syncError: true },
+  });
+  const issue = account && steamPrivacy(account);
+  // Plus rien de caché : une synchronisation l'a déjà constaté. Un retour au privé repartira de zéro.
+  if (!issue) {
+    lastPrivacy.delete(userId);
+    return true;
+  }
+
+  const now = Date.now();
+  const last = lastPrivacy.get(userId);
+  if (last && now - last.at < PRIVACY_EVERY) return last.fixed;
+  lastPrivacy.set(userId, { at: now, fixed: last?.fixed ?? false });
+
+  const fixed = await privacyFixed(userId, account.providerUserId, issue);
+  lastPrivacy.set(userId, { at: now, fixed });
+  // Une synchronisation déjà en cours refuse la nouvelle : celle-ci partira dès sa fin.
+  if (fixed && !last?.fixed && !(await enqueueSync(userId, 'STEAM'))) {
+    unhideAfterSync.add(userId);
+  }
+  return fixed;
+}
+
+/**
+ * Fin d'une synchronisation Steam. Si le joueur a réglé Steam pendant qu'elle tournait et qu'elle
+ * a encore trouvé ses jeux cachés, une autre repart aussitôt.
  */
 export async function afterSteamSync(userId: string) {
   if (!unhideAfterSync.delete(userId)) return;
   const account = await db.linkedAccount.findUnique({
     where: { userId_provider: { userId, provider: 'STEAM' } },
-    select: { playtimeHidden: true },
+    select: { playtimeHidden: true, syncError: true },
   });
-  if (account?.playtimeHidden) await enqueueSync(userId, 'STEAM');
+  if (account && steamPrivacy(account)) await enqueueSync(userId, 'STEAM');
 }
 
 const sameLook = (account: AccountLook, look: AccountLook) =>
@@ -299,13 +309,12 @@ async function checkLibrary(userId: string, steamId: string) {
   if (unknown.length) await importUnknown(userId, steamId, unknown, true);
 }
 
-/** Au retour du joueur, et chaque jour : jeux récents, ou retour du temps public, et apparence. */
+/** Au retour du joueur, et chaque jour : jeux récents, ou retour des jeux cachés, et apparence. */
 async function catchUp(account: SteamAccount, checkedAppId?: string) {
   const { userId, providerUserId: steamId } = account;
+  const issue = steamPrivacy(account);
   await (
-    account.playtimeHidden
-      ? resyncUnhidden(userId, steamId)
-      : catchUpRecent(userId, steamId, checkedAppId)
+    issue ? resyncUnhidden(userId, steamId, issue) : catchUpRecent(userId, steamId, checkedAppId)
   ).catch((cause) => log.error(cause));
   await refreshLook(account).catch((cause) => log.error('Apparence Steam :', cause));
 }

@@ -143,19 +143,40 @@ export async function steamAppInfo(appId: number) {
 }
 
 /**
- * Vrai dès que Steam annonce du temps de jeu pour ce joueur : un seul appel léger, sans le nom
- * des jeux, pour savoir s'il vient de rendre son temps public. Steam n'expose pas ce réglage
- * seul : `probe`, des jeux où le joueur a des succès donc du temps, réduit la réponse à eux.
+ * Ce que Steam cache encore, d'après la dernière synchronisation : la bibliothèque entière (profil
+ * ou détails des jeux privés), ou seulement le temps de jeu.
  */
-export async function playtimeIsPublic(steamId: string, probe: number[] = []) {
+export type SteamPrivacy = 'library' | 'playtime';
+
+export function steamPrivacy(account: {
+  syncError: string | null;
+  playtimeHidden: boolean;
+}): SteamPrivacy | null {
+  if (account.syncError === 'sync_steam_private') return 'library';
+  return account.playtimeHidden ? 'playtime' : null;
+}
+
+/**
+ * Ce que Steam montre en ce moment, en un appel léger, sans le nom des jeux : la bibliothèque, et
+ * du temps de jeu. Steam n'expose pas ces réglages seuls : `probe`, des jeux où le joueur a des
+ * succès donc du temps, réduit la réponse à eux.
+ */
+export async function steamVisibility(steamId: string, probe: number[] = []) {
   const response = await steamGet('/IPlayerService/GetOwnedGames/v1/', {
     steamid: steamId,
     include_played_free_games: 1,
     ...Object.fromEntries(probe.map((appId, index) => [`appids_filter[${index}]`, appId])),
   });
-  if (!response.ok) return false;
-  const data = (await response.json()) as { response?: { games?: OwnedGame[] } };
-  return (data.response?.games ?? []).some((game) => (game.playtime_forever ?? 0) > 0);
+  if (!response.ok) throw new Error(`GetOwnedGames a répondu ${response.status}`);
+  const data = (await response.json()) as {
+    response?: { games?: OwnedGame[]; game_count?: number };
+  };
+  // Même lecture que la synchronisation : un objet vide, c'est une bibliothèque cachée.
+  const games = data.response?.games;
+  return {
+    library: !!games || typeof data.response?.game_count === 'number',
+    playtime: (games ?? []).some((game) => (game.playtime_forever ?? 0) > 0),
+  };
 }
 
 /**

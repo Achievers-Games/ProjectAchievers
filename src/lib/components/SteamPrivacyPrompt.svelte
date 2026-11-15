@@ -6,18 +6,25 @@
   const STEAM_PRIVACY_URL = 'https://steamcommunity.com/my/edit/settings';
   /** « Plus tard » : la fenêtre revient le lendemain. */
   const SNOOZE = 24 * 60 * 60 * 1000;
-  /** Tant que la fenêtre est ouverte, le site demande à Steam si le temps de jeu est public. */
+  /** Tant que la fenêtre est ouverte, le site demande à Steam si le joueur l'a réglé. */
   const POLL = 5_000;
 
-  let { userId, hidden }: { userId: string; hidden: boolean } = $props();
+  /**
+   * Ce que Steam cache : toute la bibliothèque (profil ou détails des jeux privés), ou seulement le
+   * temps de jeu. Les deux se règlent sur la même page : le premier cas demande tout d'un coup.
+   */
+  let { userId, issue }: { userId: string; issue: 'library' | 'playtime' | null } = $props();
 
   /** Par joueur : un autre compte sur le même navigateur garde sa propre réponse. */
   const key = $derived(`pa_steam_prive:${userId}`);
   let answered = $state(true);
-  /** Le joueur est parti régler Steam : la fenêtre lui dit que la suite se fait toute seule. */
-  let waiting = $state(false);
-  /** Steam montre de nouveau le temps de jeu : la synchronisation est partie, la fenêtre s'efface. */
-  let unhidden = $state(false);
+  /** Le joueur est parti régler Steam pour ce problème : la suite se fait toute seule. */
+  let waitingFor = $state<typeof issue>(null);
+  /**
+   * Steam montre de nouveau ce qui manquait : la synchronisation est partie, la fenêtre s'efface.
+   * Si elle trouve encore le temps de jeu caché, la fenêtre revient pour lui seul.
+   */
+  let fixedIssue = $state<typeof issue>(null);
 
   function read(): string | null {
     try {
@@ -41,12 +48,12 @@
     answered = stored === 'jamais' || Date.now() - Number(stored ?? 0) < SNOOZE;
   });
 
-  // Le temps de jeu est public : la prochaine alerte, s'il y en a une, repartira de zéro. Un
-  // « Plus tard » ne vaut que pour cette fois ; seul « Ne plus afficher » se garde.
+  // Plus rien de caché : la prochaine alerte, s'il y en a une, repartira de zéro. Un « Plus tard »
+  // ne vaut que pour cette fois ; seul « Ne plus afficher » se garde.
   $effect(() => {
-    if (hidden) return;
-    waiting = false;
-    unhidden = false;
+    if (issue) return;
+    waitingFor = null;
+    fixedIssue = null;
     if (read() === 'jamais') return;
     try {
       localStorage.removeItem(key);
@@ -56,13 +63,14 @@
     answered = false;
   });
 
-  const shown = $derived(hidden && !answered && !unhidden);
+  const shown = $derived(!!issue && !answered && fixedIssue !== issue);
 
   async function check() {
+    const asked = issue;
     const response = await fetch('/api/sync/steam-prive', { method: 'POST' }).catch(() => null);
     if (!response?.ok) return;
-    const result = (await response.json()) as { public: boolean };
-    if (result.public) unhidden = true;
+    const result = (await response.json()) as { fixed: boolean };
+    if (result.fixed) fixedIssue = asked;
   }
 
   // Fenêtre ouverte : une question toutes les 5 s, et une tout de suite au retour sur l'onglet,
@@ -102,9 +110,17 @@
       transition:scale={{ start: 0.96, duration: 150 }}
     >
       <h2 id="steam-privacy-title" class="text-lg">{m.steam_privacy_title()}</h2>
-      <p class="text-sm text-muted">{m.steam_playtime_private()}</p>
       <p class="text-sm text-muted">
-        {waiting ? m.steam_privacy_waiting() : m.steam_privacy_how()}
+        {issue === 'library' ? m.steam_library_private() : m.steam_playtime_private()}
+      </p>
+      <p class="text-sm text-muted">
+        {#if waitingFor === issue}
+          {m.steam_privacy_waiting()}
+        {:else if issue === 'library'}
+          {m.steam_privacy_how_all()}
+        {:else}
+          {m.steam_privacy_how()}
+        {/if}
       </p>
       <div class="flex flex-col gap-2">
         <a
@@ -112,7 +128,7 @@
           href={STEAM_PRIVACY_URL}
           target="_blank"
           rel="noopener noreferrer"
-          onclick={() => (waiting = true)}
+          onclick={() => (waitingFor = issue)}
         >
           {m.steam_playtime_private_link()}
         </a>

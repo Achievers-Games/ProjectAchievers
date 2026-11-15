@@ -41,7 +41,7 @@ test.describe('temps de jeu Steam privé', () => {
   test('s’efface d’elle-même dès que Steam montre le temps de jeu', async ({ page }) => {
     let answer = false;
     await page.route('**/api/sync/steam-prive', (route) =>
-      route.fulfill({ json: { public: answer } }),
+      route.fulfill({ json: { fixed: answer } }),
     );
     await page.goto('/auth/dev?compte=nora');
     await ready(page);
