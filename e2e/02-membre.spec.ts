@@ -480,7 +480,10 @@ test.describe('membre', () => {
     const mine = page.getByRole('article').filter({ hasText: marker });
     await expect(mine).toBeVisible();
 
-    const reader = await browser.newPage({ locale: 'en-US' });
+    // La traduction d'office est réservée aux membres : un robot anonyme épuisait le quota.
+    const readerContext = await browser.newContext({ locale: 'en-US' });
+    const reader = await readerContext.newPage();
+    await reader.goto('/auth/dev?compte=marco');
     await reader.route('**/*translateComment', (route) =>
       route.fulfill({
         json: { type: 'success', status: 200, data: '[{"html":1},"<p>Automatic tip</p>"]' },
@@ -489,7 +492,7 @@ test.describe('membre', () => {
     await reader.goto(page.url());
     await expect(reader.getByText('Automatic tip').first()).toBeVisible();
     await expect(reader.getByRole('button', { name: /See original/ }).first()).toBeVisible();
-    await reader.close();
+    await readerContext.close();
 
     await mine.getByRole('button', { name: 'Supprimer' }).click();
     await expect(page.getByRole('article').filter({ hasText: marker })).toHaveCount(0);
