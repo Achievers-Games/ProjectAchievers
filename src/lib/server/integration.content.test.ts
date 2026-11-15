@@ -80,24 +80,6 @@ describe('traduction des guides et commentaires', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it('ne compte pas au joueur une demande refusée par le quota du site', async () => {
-    const { id } = await guide();
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => answer('Stay behind.')),
-    );
-    const player = { key: `${PREFIX}-${Math.random()}`, perHour: 1 };
-    // Une heure passée depuis longtemps : le quota épuisé ici ne gêne pas les tests suivants.
-    vi.useFakeTimers({ now: new Date('2000-01-01'), toFake: ['Date'] });
-    try {
-      while (rateLimit('traduction', 300, 3_600_000));
-      expect(await translateContent({ guideId: id }, 'Reste derrière.', 'ja', player)).toBeNull();
-      expect(isRateLimited(`traduction:${player.key}`, player.perHour)).toBe(false);
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
   it('ne garde pas une traduction coupée', async () => {
     const { id } = await guide();
     vi.stubGlobal('fetch', async () => answer('Stay', 'length'));
@@ -109,6 +91,20 @@ describe('traduction des guides et commentaires', () => {
   it('découpe un long texte aux paragraphes', () => {
     expect(splitText('aaaa\n\nbbbb\n\ncc', 10)).toEqual(['aaaa\n\nbbbb', 'cc']);
     expect(splitText('un seul bloc', 5)).toEqual(['un', 'seul', 'bloc']);
+  });
+
+  // En dernier : le quota du site, partagé par tout le fichier, reste épuisé jusqu'à la fin.
+  it('ne compte pas au joueur une demande refusée par le quota du site', async () => {
+    const { id } = await guide();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => answer('Stay behind.')),
+    );
+    const player = { key: `${PREFIX}-${Math.random()}`, perHour: 1 };
+    while (rateLimit('traduction', 300, 3_600_000));
+
+    expect(await translateContent({ guideId: id }, 'Reste derrière.', 'ja', player)).toBeNull();
+    expect(isRateLimited(`traduction:${player.key}`, player.perHour)).toBe(false);
   });
 });
 
