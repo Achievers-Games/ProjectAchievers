@@ -1,8 +1,12 @@
 // @vitest-environment happy-dom
 import { cleanup, render, screen } from '@testing-library/svelte';
 import { flushSync } from 'svelte';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import SteamPrivacyPrompt from './SteamPrivacyPrompt.svelte';
+
+// happy-dom annule les animations au démontage, ce qui lève une erreur hors du test : sans durée,
+// la fenêtre apparaît et disparaît d'un coup.
+vi.mock('svelte/transition', () => ({ fade: () => ({}), scale: () => ({}) }));
 
 const key = 'pa_steam_prive:u1';
 const prompt = () => screen.queryByTestId('steam-privacy-prompt');
