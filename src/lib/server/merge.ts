@@ -221,9 +221,25 @@ export async function mergeUsers(
         DELETE FROM "PartnerLink" s USING "PartnerLink" t
         WHERE s."userId" = ${sourceId} AND t."userId" = ${targetId} AND s."partner" = t."partner"`;
 
+        // Un accès OAuth par partenaire : celui du profil conservé fait foi, sauf s'il est révoqué
+        // et que l'autre sert encore. Sinon le partenaire perdrait ses jetons sans être prévenu.
+        await tx.$executeRaw`
+        DELETE FROM "OAuthGrant" t USING "OAuthGrant" s
+        WHERE t."userId" = ${targetId} AND s."userId" = ${sourceId} AND s."appId" = t."appId"
+          AND t."revokedAt" IS NOT NULL AND s."revokedAt" IS NULL`;
+        await tx.$executeRaw`
+        DELETE FROM "OAuthGrant" s USING "OAuthGrant" t
+        WHERE s."userId" = ${sourceId} AND t."userId" = ${targetId} AND s."appId" = t."appId"`;
+
         const owner = { where: { userId: sourceId }, data: { userId: targetId } };
         await tx.linkedAccount.updateMany(owner);
         await tx.partnerLink.updateMany(owner);
+        await tx.oAuthGrant.updateMany(owner);
+        // Les événements pas encore envoyés suivent le joueur : sinon ils partiraient sans lui.
+        await tx.partnerEvent.updateMany({
+          where: { userId: sourceId, deliveredAt: null },
+          data: { userId: targetId },
+        });
         await tx.userGame.updateMany(owner);
         await tx.userAchievement.updateMany(owner);
         await tx.guideVote.updateMany(owner);

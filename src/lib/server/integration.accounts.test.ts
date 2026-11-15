@@ -255,6 +255,46 @@ describe('fusion de profils', () => {
     expect(rows.map((row) => row.code).toSorted()).toEqual(['deserter', 'stage_name']);
   });
 
+  it('garde les accès OAuth et les événements partenaires du profil absorbé', async () => {
+    const { sourceId, targetId, merge } = await twoProfiles();
+    const apps = await Promise.all(
+      ['seul', 'double', 'revoque'].map((name) =>
+        db.partnerApp.create({
+          data: {
+            name: `${PREFIX}-${name}-${Math.random()}`,
+            keyHash: `${PREFIX}-${name}-${Math.random()}`,
+            keyPrefix: 'pa',
+          },
+        }),
+      ),
+    );
+    const [only, both, revoked] = apps.map((app) => app.id) as [string, string, string];
+    const grant = (userId: string, appId: string, revokedAt: Date | null = null) =>
+      db.oAuthGrant.create({ data: { userId, appId, scopes: ['profile'], revokedAt } });
+    const kept = await grant(sourceId, only);
+    await grant(sourceId, both);
+    const targetGrant = await grant(targetId, both);
+    const active = await grant(sourceId, revoked);
+    await grant(targetId, revoked, new Date());
+    const event = await db.partnerEvent.create({
+      data: { appId: only, userId: sourceId, type: 'user.updated' },
+    });
+
+    expect(await mergeUsers(merge)).toBeNull();
+
+    const byId = (a: { id: string }, b: { id: string }) => (a.id < b.id ? -1 : 1);
+    const grants = await db.oAuthGrant.findMany({
+      where: { appId: { in: [only, both, revoked] } },
+      select: { id: true, userId: true },
+    });
+    expect(grants.toSorted(byId)).toEqual(
+      [kept, targetGrant, active].map((g) => ({ id: g.id, userId: targetId })).toSorted(byId),
+    );
+    expect((await db.partnerEvent.findUniqueOrThrow({ where: { id: event.id } })).userId).toBe(
+      targetId,
+    );
+  });
+
   async function guideFor(authorId: string) {
     const game = await upsertGame({
       platform: 'STEAM',
