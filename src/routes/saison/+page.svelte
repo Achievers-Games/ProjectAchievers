@@ -206,6 +206,6 @@
       </div>
     </section>
   {:else if !data.user}
-    <a href="/connexion?retour=/saison" class="btn btn-primary">{m.hero_start()}</a>
+    <a href="/connexion?retour=/saison" class="btn btn-primary" rel="nofollow">{m.hero_start()}</a>
   {/if}
 </div>

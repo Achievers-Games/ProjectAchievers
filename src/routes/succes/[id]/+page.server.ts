@@ -74,12 +74,15 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
     },
     render = renderMarkdown,
   ) => {
-    const autoTranslate =
+    const foreign =
       canTranslate() &&
       Boolean(item.locale) &&
       item.locale !== locale &&
       item.authorId !== viewerId;
-    const cached = autoTranslate ? item.translations[0]?.contentMd : undefined;
+    const cached = foreign ? item.translations[0]?.contentMd : undefined;
+    // La traduction déjà faite est servie à tous ; seul un membre en demande une d'office : les
+    // robots qui exécutent le JS épuisaient le quota de traduction.
+    const autoTranslate = foreign && Boolean(viewerId);
     return { autoTranslate, translatedHtml: cached ? render(clean(cached, locale)) : null };
   };
 

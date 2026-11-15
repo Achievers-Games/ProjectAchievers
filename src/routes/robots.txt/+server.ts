@@ -1,15 +1,32 @@
 import { env } from '#lib/server/env';
 import type { RequestHandler } from './$types';
 
+const UNWANTED = [
+  'Amazonbot',
+  'SemrushBot',
+  'MJ12bot',
+  'SERankingBacklinksBot',
+  'Reflectionbot',
+  'AhrefsBot',
+  'DotBot',
+  'PetalBot',
+];
+
 /** Servi par le site pour pointer le plan du site sur l'adresse publique, quelle qu'elle soit. */
 export const GET: RequestHandler = () =>
   new Response(
     [
+      // Robots SEO et de collecte pour l'IA : les deux tiers du trafic, sans visiteur en retour.
+      ...UNWANTED.flatMap((bot) => [`User-agent: ${bot}`, 'Disallow: /', '']),
       'User-agent: *',
       'Disallow: /compte',
       'Disallow: /moderation',
       'Disallow: /auth/',
       'Disallow: /api/',
+      // Chaque page de succès y renvoie avec son adresse : une page de connexion par succès et
+      // par langue, que les robots suivaient par milliers.
+      'Disallow: /connexion',
+      'Disallow: /*/connexion',
       '',
       `Sitemap: ${env().ORIGIN}/sitemap.xml`,
       '',

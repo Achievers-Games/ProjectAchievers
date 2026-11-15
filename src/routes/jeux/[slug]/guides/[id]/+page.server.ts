@@ -62,12 +62,15 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
   if (!guide) error(404, m.gone());
 
   // Traduit d'office ce qui vient d'une autre langue, sauf pour son auteur.
-  const autoTranslate =
+  const foreign =
     canTranslate() &&
     Boolean(guide.locale) &&
     guide.locale !== locale &&
     guide.authorId !== viewerId;
-  const cached = autoTranslate ? guide.translations[0]?.contentMd : undefined;
+  const cached = foreign ? guide.translations[0]?.contentMd : undefined;
+  // La traduction déjà faite est servie à tous ; seul un membre en demande une d'office : les
+  // robots qui exécutent le JS épuisaient le quota de traduction.
+  const autoTranslate = foreign && Boolean(viewerId);
 
   const comments = await loadComments({ guideId: guide.id }, locals.user, commentLimit(url));
 

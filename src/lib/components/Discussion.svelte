@@ -168,6 +168,6 @@
   {#if signedIn}
     {@render commentForm(null)}
   {:else}
-    <a href={signInHref} class="btn">{m.sign_in_to_join()}</a>
+    <a href={signInHref} class="btn" rel="nofollow">{m.sign_in_to_join()}</a>
   {/if}
 </section>

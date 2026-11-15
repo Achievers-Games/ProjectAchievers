@@ -66,17 +66,19 @@ export async function loadComments(
       counts[reaction.type] = (counts[reaction.type] ?? 0) + 1;
     }
     // Traduit d'office ce qui vient d'une autre langue : les textes anciens gardent le bouton seul.
-    const autoTranslate =
+    const foreign =
       canTranslate() &&
       Boolean(comment.locale) &&
       comment.locale !== locale &&
       comment.authorId !== viewerId;
-    const cached = autoTranslate ? comment.translations[0]?.contentMd : undefined;
+    const cached = foreign ? comment.translations[0]?.contentMd : undefined;
     return {
       id: comment.id,
       createdAt: comment.createdAt,
       html: renderMarkdown(clean(comment.contentMd, comment.locale)),
-      autoTranslate,
+      // La traduction déjà faite est servie à tous ; seul un membre en demande une d'office : les
+      // robots qui exécutent le JS épuisaient le quota de traduction.
+      autoTranslate: foreign && Boolean(viewerId),
       translatedHtml: cached ? renderMarkdown(clean(cached, locale)) : null,
       author: comment.author,
       mine: comment.authorId === viewerId,
