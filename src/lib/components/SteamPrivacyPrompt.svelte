@@ -6,6 +6,8 @@
   const STEAM_PRIVACY_URL = 'https://steamcommunity.com/my/edit/settings';
   /** « Plus tard » : la fenêtre revient le lendemain. */
   const SNOOZE = 24 * 60 * 60 * 1000;
+  /** Tant que la fenêtre est ouverte, le site demande à Steam si le temps de jeu est public. */
+  const POLL = 5_000;
 
   let { userId, hidden }: { userId: string; hidden: boolean } = $props();
 
@@ -14,6 +16,8 @@
   let answered = $state(true);
   /** Le joueur est parti régler Steam : la fenêtre lui dit que la suite se fait toute seule. */
   let waiting = $state(false);
+  /** Steam montre de nouveau le temps de jeu : la synchronisation est partie, la fenêtre s'efface. */
+  let unhidden = $state(false);
 
   function read(): string | null {
     try {
@@ -39,10 +43,35 @@
 
   // Le temps de jeu est redevenu public : la prochaine alerte, s'il y en a une, repartira de zéro.
   $effect(() => {
-    if (!hidden) waiting = false;
+    if (!hidden) {
+      waiting = false;
+      unhidden = false;
+    }
   });
 
-  const shown = $derived(hidden && !answered);
+  const shown = $derived(hidden && !answered && !unhidden);
+
+  async function check() {
+    const response = await fetch('/api/sync/steam-prive', { method: 'POST' }).catch(() => null);
+    if (!response?.ok) return;
+    const result = (await response.json()) as { public: boolean };
+    if (result.public) unhidden = true;
+  }
+
+  // Fenêtre ouverte : une question toutes les 5 s, et une tout de suite au retour sur l'onglet,
+  // le joueur revenant de Steam. Elle se ferme, d'elle-même ou par « Plus tard » : plus rien.
+  $effect(() => {
+    if (!shown) return;
+    const timer = setInterval(check, POLL);
+    const back = () => {
+      if (document.visibilityState === 'visible') void check();
+    };
+    document.addEventListener('visibilitychange', back);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', back);
+    };
+  });
 
   function later() {
     write(String(Date.now()));

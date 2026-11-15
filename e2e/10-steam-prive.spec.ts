@@ -38,6 +38,27 @@ test.describe('temps de jeu Steam privé', () => {
     await expect(prompt).toHaveCount(0);
   });
 
+  test('s’efface d’elle-même dès que Steam montre le temps de jeu', async ({ page }) => {
+    let answer = false;
+    await page.route('**/api/sync/steam-prive', (route) =>
+      route.fulfill({ json: { public: answer } }),
+    );
+    await page.goto('/auth/dev?compte=nora');
+    await ready(page);
+    const prompt = page.getByTestId('steam-privacy-prompt');
+    await expect(prompt).toBeVisible();
+
+    // Parti régler Steam : la fenêtre reste, et attend.
+    await page.context().route('https://steamcommunity.com/**', (route) => route.abort());
+    const steam = page.waitForEvent('popup');
+    await prompt.getByRole('link', { name: 'Le rendre public dans Steam' }).click();
+    await (await steam).close();
+    await expect(prompt).toBeVisible();
+
+    answer = true;
+    await expect(prompt).toHaveCount(0, { timeout: 8_000 });
+  });
+
   test('ne dérange pas un joueur dont le temps de jeu est public', async ({ page }) => {
     await page.goto('/auth/dev');
     await ready(page);

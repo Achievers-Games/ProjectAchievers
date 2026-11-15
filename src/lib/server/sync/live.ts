@@ -38,6 +38,10 @@ const MINUTE = 60_000;
 /** Un retour après cette absence est une arrivée : le rattrapage repart. */
 const ARRIVAL_GAP = 10 * MINUTE;
 const LOOK_EVERY = 5 * MINUTE;
+/** La fenêtre « temps de jeu privé » demande toutes les 5 s : jamais plus d'un appel Steam par 4 s. */
+const PRIVACY_EVERY = 4_000;
+/** Les jeux qui servent à sonder Steam : assez pour en trouver un où le temps n'est pas nul. */
+const PRIVACY_PROBE = 10;
 const LIVE_CONCURRENCY = 2;
 const log = logger('Succès en direct');
 // Les imports complets peuvent occuper le budget général pendant plusieurs minutes.
@@ -50,6 +54,8 @@ const lastGames = new Map<string, string>();
 const lastPresent = new Map<string, number>();
 /** La dernière lecture du cadre, par joueur. */
 const lastLook = new Map<string, number>();
+/** La dernière réponse de Steam sur le temps de jeu privé, par joueur. */
+const lastPrivacy = new Map<string, { at: number; public: boolean }>();
 /** Les jeux neufs déjà signalés : un jeu que l'import ne retient pas ne le relance pas sans fin. */
 const requested = new Map<string, Set<string>>();
 
@@ -213,6 +219,42 @@ async function resyncUnhidden(userId: string, steamId: string) {
   if (await playtimeIsPublic(steamId).catch(() => false)) {
     await enqueueSync(userId, 'STEAM', true);
   }
+}
+
+/**
+ * La fenêtre « temps de jeu privé » demande, tant qu'elle est ouverte, si le joueur l'a rendu
+ * public. Seul ce réglage est lu, sur quelques jeux où il a des succès : dès que Steam y montre du
+ * temps, la synchronisation complète part et ramène les jeux qui manquaient.
+ */
+export async function checkPlaytimePrivacy(userId: string) {
+  const account = await db.linkedAccount.findUnique({
+    where: { userId_provider: { userId, provider: 'STEAM' } },
+    select: { providerUserId: true, playtimeHidden: true },
+  });
+  // Plus rien de caché : une synchronisation l'a déjà constaté. Un retour au privé repartira de zéro.
+  if (!account?.playtimeHidden) {
+    lastPrivacy.delete(userId);
+    return true;
+  }
+
+  const now = Date.now();
+  const last = lastPrivacy.get(userId);
+  if (last && now - last.at < PRIVACY_EVERY) return last.public;
+  lastPrivacy.set(userId, { at: now, public: last?.public ?? false });
+
+  const probe = await db.userGame.findMany({
+    where: { userId, unlockedCount: { gt: 0 }, game: { platform: 'STEAM' } },
+    orderBy: { unlockedCount: 'desc' },
+    take: PRIVACY_PROBE,
+    select: { game: { select: { platformGameId: true } } },
+  });
+  const visible = await playtimeIsPublic(
+    account.providerUserId,
+    probe.map((row) => Number(row.game.platformGameId)),
+  ).catch(() => false);
+  lastPrivacy.set(userId, { at: now, public: visible });
+  if (visible && !last?.public) await enqueueSync(userId, 'STEAM');
+  return visible;
 }
 
 const sameLook = (account: AccountLook, look: AccountLook) =>

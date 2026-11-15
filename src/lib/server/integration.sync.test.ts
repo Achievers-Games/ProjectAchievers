@@ -7,7 +7,7 @@ import { resolveIdentity } from './accounts';
 import { type CardDrop } from '#lib/collection';
 import { db } from './db';
 import { globals } from './globals';
-import { checkLiveGames, steamDailyPass } from './sync/live';
+import { checkLiveGames, checkPlaytimePrivacy, steamDailyPass } from './sync/live';
 import { fetchPlayingGames, fetchSteamSummaries } from './providers/steam';
 import { enqueueSync, refreshAccounts, runSync, startWorkers } from './sync/queue';
 import { isAdultOnly, rateGames, tagGames } from './sync/content';
@@ -738,6 +738,48 @@ describe('synchronisation Steam', () => {
       vi.setSystemTime(Date.now() + 11 * 60_000);
       markVisible(userId);
       await checkLiveGames();
+      expect(events.map((event) => event.status)).toContain('QUEUED');
+    } finally {
+      vi.useRealTimers();
+      stop();
+    }
+  });
+
+  it('la fenêtre « temps privé » voit le changement sans attendre, et ne lit que quelques jeux', async () => {
+    let playtime = 0;
+    const api = steamApi(ownedGames);
+    const mock = vi.fn(async (input: string | URL) => {
+      const url = String(input);
+      if (url.includes('GetOwnedGames') && !url.includes('include_appinfo')) {
+        const games = [{ appid: 999001, playtime_forever: playtime }];
+        return new Response(JSON.stringify({ response: { games } }));
+      }
+      return api(input);
+    });
+    vi.stubGlobal('fetch', mock);
+    const userId = await steamUser();
+    await runSync({ userId, provider: 'STEAM' });
+    await db.linkedAccount.updateMany({ where: { userId }, data: { playtimeHidden: true } });
+    const events: SyncEvent[] = [];
+    const stop = onSync(userId, (event) => events.push(event));
+    const probes = () =>
+      mock.mock.calls
+        .map(([input]) => String(input))
+        .filter((url) => url.includes('GetOwnedGames') && !url.includes('include_appinfo'));
+
+    try {
+      expect(await checkPlaytimePrivacy(userId)).toBe(false);
+      // Seuls les jeux où le joueur a des succès sont demandés.
+      expect(probes()[0]).toContain('appids_filter');
+      // Une seconde fenêtre ouverte dans la foulée ne réinterroge pas Steam.
+      await checkPlaytimePrivacy(userId);
+      expect(probes()).toHaveLength(1);
+      expect(events).toHaveLength(0);
+
+      playtime = 90;
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(Date.now() + 5_000);
+      expect(await checkPlaytimePrivacy(userId)).toBe(true);
       expect(events.map((event) => event.status)).toContain('QUEUED');
     } finally {
       vi.useRealTimers();
