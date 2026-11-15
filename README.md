@@ -79,7 +79,12 @@ pseudo identique ne rattache jamais rien automatiquement.
 **PlayStation** : Sony n'a pas d'API publique. Le site passe par l'API non officielle via `psn-api`
 et un compte de service dédié, jamais par le NPSSO d'un joueur. Le joueur prouve qu'il possède le
 profil avec un code temporaire dans sa bio. Ses trophées doivent être publics. Le NPSSO du compte de
-service expire et doit être renouvelé à la main.
+service expire et doit être renouvelé à la main : Sony annonce 60 jours, mais il peut mourir avant.
+Les administrateurs reçoivent une notification trois semaines avant l'échéance estimée, puis dès
+que Sony le refuse. Pour le renouveler, se connecter au compte de service sur
+`https://ca.account.sony.com/api/v1/ssocookie`, copier la valeur `npsso` et la coller dans
+« Jeton PSN du site » sur `/moderation`. Sony la vérifie avant qu'elle remplace l'ancienne, sans
+redémarrage.
 
 **Xbox** : l'application Entra doit accepter les comptes Microsoft personnels. Microsoft peut exiger
 une approbation pour l'accès à Xbox Live.

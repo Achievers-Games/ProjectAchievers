@@ -437,6 +437,78 @@ describe('guides officiels', () => {
     await syncCuratedGuides([], []);
   });
 
+  it('donne les guides aux autres versions du jeu, succès de même nom par succès', async () => {
+    const familyKey = `${PREFIX}-famille-guides`;
+    const steam = await db.game.create({
+      data: {
+        platform: 'STEAM',
+        platformGameId: `${PREFIX}-famille-steam`,
+        name: `${PREFIX} famille`,
+        slug: `${PREFIX}-famille-steam`,
+        familyKey,
+      },
+    });
+    const psn = await db.game.create({
+      data: {
+        platform: 'PSN',
+        platformGameId: `${PREFIX}-famille-psn`,
+        name: `${PREFIX} famille`,
+        slug: `${PREFIX}-famille-psn`,
+        familyKey,
+      },
+    });
+    for (const [id, name] of [
+      ['1', 'Mom’s Knife'],
+      ['2', 'Dead God'],
+    ]) {
+      await db.achievement.create({ data: { gameId: steam.id, platformAchievementId: id, name } });
+    }
+    for (const [id, name, trophyType] of [
+      ['0', 'Platinum', 'PLATINUM'],
+      ['7', "MOM'S KNIFE", 'BRONZE'],
+      ['8', 'Dead God', 'GOLD'],
+    ] as const) {
+      await db.achievement.create({
+        data: { gameId: psn.id, platformAchievementId: id, name, trophyType },
+      });
+    }
+    const head = `STEAM ${PREFIX}-famille-steam\n\n`;
+    const state = async () => ({
+      reviewed:
+        (await db.game.findUniqueOrThrow({ where: { id: psn.id } })).guideReviewedAt !== null,
+      guides: (
+        await db.guide.findMany({
+          where: { achievement: { gameId: psn.id } },
+          select: {
+            curatedKey: true,
+            contentMd: true,
+            achievement: { select: { missable: true } },
+          },
+          orderBy: { curatedKey: 'asc' },
+        })
+      ).map((g) => [g.curatedKey, g.contentMd, g.achievement?.missable]),
+    });
+
+    await syncCuratedGuides([`${head}@@ 1 manquable\nLe couteau.\n@@ 2\nTout finir.\n`]);
+    expect(await state()).toEqual({
+      reviewed: true,
+      guides: [
+        [`PSN:${PREFIX}-famille-psn:7`, 'Le couteau.', true],
+        [`PSN:${PREFIX}-famille-psn:8`, 'Tout finir.', false],
+      ],
+    });
+
+    // Un trophée sans guide de même nom : la version PSN ne vaut plus relevé complet.
+    await syncCuratedGuides([`${head}@@ 1\nLe couteau.\n`]);
+    expect(await state()).toEqual({
+      reviewed: false,
+      guides: [[`PSN:${PREFIX}-famille-psn:7`, 'Le couteau.', false]],
+    });
+
+    await syncCuratedGuides([]);
+    expect(await state()).toEqual({ reviewed: false, guides: [] });
+  });
+
   it('refuse un guide complet sans titre', () => {
     expect(() => parseGameGuideFile('STEAM 42\n\n## Pas de titre\n')).toThrow();
   });

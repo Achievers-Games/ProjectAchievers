@@ -130,7 +130,65 @@ async function importCurated(
 const importedText = (source: string, withTitle: boolean) =>
   withTitle ? source.slice(source.indexOf('\n\n') + 2) : source;
 
-/** Le dépôt fait foi : les guides officiels y sont ajoutés, modifiés ou retirés. */
+const GUIDE_GAME = {
+  id: true,
+  platform: true,
+  platformGameId: true,
+  guideReviewedAt: true,
+} satisfies Prisma.GameSelect;
+
+type GuideGame = Prisma.GameGetPayload<{ select: typeof GUIDE_GAME }>;
+
+interface GuideEntry {
+  achievement: { id: string; platformAchievementId: string; name: string };
+  content: string;
+  missable: boolean;
+}
+
+/** Le nom d'un succès sans casse ni ponctuation, comme pour reconnaître les familles. */
+const sameName = (name: string) => name.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
+
+/** Publie les guides des succès d'un jeu et son relevé des manquables ; rend leurs clés. */
+async function publishGuides(game: GuideGame, partial: boolean, entries: GuideEntry[]) {
+  if (partial === Boolean(game.guideReviewedAt)) {
+    await db.game.update({
+      where: { id: game.id },
+      data: { guideReviewedAt: partial ? null : new Date() },
+    });
+  }
+  const missable = entries.filter((entry) => entry.missable).map((entry) => entry.achievement.id);
+  await db.achievement.updateMany({
+    where: { gameId: game.id, missable: true, id: { notIn: missable } },
+    data: { missable: false },
+  });
+  await db.achievement.updateMany({
+    where: { id: { in: missable }, missable: false },
+    data: { missable: true },
+  });
+
+  const keys: string[] = [];
+  for (const { achievement, content } of entries) {
+    const curatedKey = `${game.platform}:${game.platformGameId}:${achievement.platformAchievementId}`;
+    keys.push(curatedKey);
+    await importCurated(
+      curatedKey,
+      content,
+      { contentMd: content },
+      {
+        achievementId: achievement.id,
+        authorId: OFFICIAL_AUTHOR.id,
+        contentMd: content,
+        locale: 'fr',
+      },
+    );
+  }
+  return keys;
+}
+
+/**
+ * Le dépôt fait foi : les guides officiels y sont ajoutés, modifiés ou retirés. Une version du
+ * jeu sans fichier à elle (PSN, réédition) reprend les guides de sa famille, succès par succès.
+ */
 export async function syncCuratedGuides(
   files: string[] = Object.values(FILES),
   gameFiles: string[] = Object.values(GAME_FILES),
@@ -144,54 +202,61 @@ export async function syncCuratedGuides(
   const keys: string[] = [];
   const covered: string[] = [];
   const reviewed: string[] = [];
+  const publish = async (game: GuideGame, partial: boolean, entries: GuideEntry[]) => {
+    covered.push(game.id);
+    if (!partial) reviewed.push(game.id);
+    keys.push(...(await publishGuides(game, partial, entries)));
+  };
+
+  const sources: { file: GuideFile; game: GuideGame & { familyKey: string | null } }[] = [];
   for (const file of files.map(parseGuideFile)) {
     const game = await db.game.findUnique({
       where: { platform_platformGameId: { platform: file.platform, platformGameId: file.gameId } },
-      select: { id: true, guideReviewedAt: true },
+      select: { ...GUIDE_GAME, familyKey: true },
     });
-    if (!game) continue;
-    covered.push(game.id);
-    if (!file.partial) reviewed.push(game.id);
-    if (file.partial === Boolean(game.guideReviewedAt)) {
-      await db.game.update({
-        where: { id: game.id },
-        data: { guideReviewedAt: file.partial ? null : new Date() },
-      });
-    }
+    if (game) sources.push({ file, game });
+  }
+  const done = new Set(sources.map(({ game }) => game.id));
+
+  for (const { file, game } of sources) {
     const achievements = await db.achievement.findMany({
       where: { gameId: game.id },
-      select: { id: true, platformAchievementId: true },
+      select: { id: true, platformAchievementId: true, name: true },
     });
-    const ids = new Map(achievements.map((a) => [a.platformAchievementId, a.id]));
-    const missable = file.guides
-      .filter((guide) => guide.missable)
-      .flatMap((guide) => ids.get(guide.achievementId) ?? []);
-    await db.achievement.updateMany({
-      where: { gameId: game.id, missable: true, id: { notIn: missable } },
-      data: { missable: false },
+    const byId = new Map(achievements.map((a) => [a.platformAchievementId, a]));
+    const entries = file.guides.flatMap(({ achievementId, ...guide }) => {
+      const achievement = byId.get(achievementId);
+      return achievement ? [{ ...guide, achievement }] : [];
     });
-    await db.achievement.updateMany({
-      where: { id: { in: missable }, missable: false },
-      data: { missable: true },
-    });
+    await publish(game, file.partial, entries);
+    if (!game.familyKey) continue;
 
-    for (const { achievementId: platformId, content } of file.guides) {
-      const achievementId = ids.get(platformId);
-      if (!achievementId) continue;
-      const curatedKey = `${file.platform}:${file.gameId}:${platformId}`;
-      keys.push(curatedKey);
-
-      await importCurated(
-        curatedKey,
-        content,
-        { contentMd: content },
-        {
-          achievementId,
-          authorId: OFFICIAL_AUTHOR.id,
-          contentMd: content,
-          locale: 'fr',
+    // Les autres versions du jeu (PSN, réédition) reprennent le guide du succès de même nom.
+    const byName = new Map<string, GuideEntry>();
+    for (const entry of entries) {
+      const name = sameName(entry.achievement.name);
+      if (name && !byName.has(name)) byName.set(name, entry);
+    }
+    const siblings = await db.game.findMany({
+      where: { familyKey: game.familyKey, id: { notIn: [...done] } },
+      select: {
+        ...GUIDE_GAME,
+        achievements: {
+          where: { trophyType: { not: 'PLATINUM' } },
+          select: { id: true, platformAchievementId: true, name: true },
         },
-      );
+      },
+      orderBy: { id: 'asc' },
+    });
+    for (const { achievements: own, ...sibling } of siblings) {
+      done.add(sibling.id);
+      const matched = own.flatMap((achievement) => {
+        const entry = byName.get(sameName(achievement.name));
+        return entry ? [{ ...entry, achievement }] : [];
+      });
+      if (!matched.length) continue;
+      // Un succès sans équivalent n'a pas été relu : la version ne vaut pas relevé complet.
+      await publish(sibling, file.partial || matched.length < own.length, matched);
     }
   }
   for (const file of gameFiles.map(parseGameGuideFile)) {
