@@ -1404,7 +1404,16 @@ describe('synchronisation Steam', () => {
             ],
           },
         },
-        { appid: Number(cuteId), tags: [{ tagid: 4726, weight: 300 }] },
+        {
+          appid: Number(cuteId),
+          tags: [{ tagid: 4726, weight: 300 }],
+          // Le fond de la page boutique, composé pour passer derrière du texte, passe avant les captures.
+          screenshots: { all_ages_screenshots: [{ filename: `steam/apps/${cuteId}/ss.jpg` }] },
+          assets: {
+            asset_url_format: `steam/apps/${cuteId}/${'${FILENAME}'}?t=2`,
+            raw_page_background: 'abc/page_bg_raw.jpg',
+          },
+        },
       ];
       return new Response(JSON.stringify({ response: { store_items: items } }));
     });
@@ -1428,7 +1437,9 @@ describe('synchronisation Steam', () => {
     const screenshot = `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appId}/ss_une.1920x1080.jpg?t=1`;
     expect(await art(steam.id)).toBe(screenshot);
     expect(await art(sibling.id)).toBe(screenshot);
-    expect(await art(found.id)).toBeNull();
+    expect(await art(found.id)).toBe(
+      `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${cuteId}/abc/page_bg_raw.jpg?t=2`,
+    );
 
     // Les jeux classés avant l'arrivée des captures les reçoivent une fois, sans perdre leurs genres.
     await db.game.updateMany({

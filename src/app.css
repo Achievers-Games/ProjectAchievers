@@ -2006,6 +2006,16 @@
   background-position: center;
   background-size: cover;
 }
+.background-tile-img {
+  @apply absolute inset-0 h-full w-full object-cover;
+}
+/* Le dégradé qui rend le nom lisible passe au-dessus de l'image. */
+.background-tile:has(.background-tile-img)::after {
+  content: '';
+  @apply absolute inset-0;
+  z-index: 1;
+  background: linear-gradient(0deg, rgb(8 6 18 / 0.85), transparent 60%);
+}
 .background-tile[aria-pressed='true'] {
   @apply border-accent;
   box-shadow: 0 0 0 3px rgb(var(--accent) / 0.35);
@@ -2033,8 +2043,9 @@
 .background-tile-video {
   @apply pointer-events-none;
 }
-.background-tile > :not(video) {
-  z-index: 1;
+/* De bas en haut : l'image (ou la vidéo), le dégradé, puis le nom et la coche. */
+.background-tile > :not(video, .background-tile-img) {
+  z-index: 2;
   text-shadow: 0 1px 6px rgb(0 0 0 / 0.8);
 }
 @media (prefers-reduced-motion: reduce) {

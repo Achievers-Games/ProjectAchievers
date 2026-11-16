@@ -110,12 +110,20 @@
               <input type="hidden" name="cible" value={data.target} />
               <button
                 class="background-tile"
-                style:--art={art(game.thumb ? [game.thumb, ...game.images.slice(1)] : game.images)}
                 aria-pressed={current}
                 aria-label={data.target === 'banniere'
                   ? m.banner_choose({ game: game.name })
                   : m.background_choose({ game: game.name })}
               >
+                <!-- Une image par jeu, chargée en arrivant à l'écran : les fonds de boutique n'ont
+                     pas de vignette, et la page en propose des dizaines. -->
+                <img
+                  src={game.thumb ?? game.images[0]}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  class="background-tile-img"
+                />
                 <span class="background-tile-name">{game.name}</span>
                 {#if current}
                   <span class="background-tile-check" aria-hidden="true"><Check size={14} /></span>

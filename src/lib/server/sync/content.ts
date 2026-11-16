@@ -55,15 +55,20 @@ interface StoreItem {
   appid?: number;
   tags?: { tagid: number; weight: number }[];
   screenshots?: { all_ages_screenshots?: { filename: string; ordinal?: number }[] };
+  assets?: { asset_url_format?: string; raw_page_background?: string };
 }
 
 const STORE_ASSETS = 'https://shared.akamai.steamstatic.com/store_item_assets/';
 
 /**
- * La première capture du jeu, dans l'ordre choisi par l'éditeur, en 1920 × 1080 : faite pour un
- * écran entier, contrairement à l'en-tête (460 × 215) ou au bandeau de bibliothèque.
+ * L'image de fond d'un jeu, plein écran. D'abord le fond de sa page sur la boutique
+ * (\`page_bg_raw\`, 1438 × 810) : une illustration composée pour passer derrière du texte. Sinon
+ * la première capture, dans l'ordre choisi par l'éditeur, en 1920 × 1080 : nette, mais souvent
+ * chargée de l'interface du jeu.
  */
-export function screenshotArt(item: StoreItem) {
+export function storeArt(item: StoreItem) {
+  const { asset_url_format: format, raw_page_background: raw } = item.assets ?? {};
+  if (format && raw) return STORE_ASSETS + format.replace('${FILENAME}', raw);
   const [first] = (item.screenshots?.all_ages_screenshots ?? []).toSorted(
     (a, b) => (a.ordinal ?? 0) - (b.ordinal ?? 0),
   );
@@ -76,7 +81,7 @@ async function storeItems(appIds: number[]) {
   const input = {
     ids: appIds.map((appid) => ({ appid })),
     context: { language: 'english', country_code: 'US' },
-    data_request: { include_tag_count: KEPT_TAGS, include_screenshots: true },
+    data_request: { include_tag_count: KEPT_TAGS, include_screenshots: true, include_assets: true },
   };
   const response = await fetchRetry(
     `${ITEMS}?input_json=${encodeURIComponent(JSON.stringify(input))}`,
@@ -91,7 +96,7 @@ async function storeItems(appIds: number[]) {
           .toSorted((a, b) => b.weight - a.weight)
           .slice(0, KEPT_TAGS)
           .map((tag) => tag.tagid),
-        art: screenshotArt(item),
+        art: storeArt(item),
       },
     ]),
   );
