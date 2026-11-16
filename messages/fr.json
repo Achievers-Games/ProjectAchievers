@@ -1863,6 +1863,8 @@
   "game_player_progress": "Progression de {name}",
   "game_player_compare": "Comparer avec moi",
   "game_player_close": "Revenir à ma fiche",
+  "game_no_achievements": "Aucun succès dans ce jeu",
+  "game_no_achievements_text": "Ce jeu n’a pas de succès : seul le temps de jeu y est suivi.",
   "game_seo_guides": "Guides complets : {count}.",
   "achievement_seo_title": "Comment obtenir « {achievement} » dans {game}",
   "achievement_seo_rarity": "Obtenu par {rarity} % des joueurs.",

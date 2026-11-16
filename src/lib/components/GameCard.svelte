@@ -52,7 +52,9 @@
   const complete = $derived(isComplete(progress));
   const level = $derived(tier || 1);
   const step = $derived(progress ? stepOf(progress.completion) : 0);
-  const goal = $derived(progress && !complete ? target || tier : 0);
+  /** Un jeu sans succès (Honkai Impact 3rd sur Steam) : ni niveau à viser, ni progression. */
+  const statless = $derived(game.totalAchievements === 0);
+  const goal = $derived(progress && !complete && !statless ? target || tier : 0);
   let imageFailed = $state(false);
 
   /** L'image peut avoir déjà échoué avant que Svelte ne prenne la main sur la page. */
@@ -138,7 +140,9 @@
       {#if complete && list}<CompleteBadge tier={level} {copies} />{/if}
       {#if goal && list}<CompleteBadge tier={goal} goal />{/if}
     </div>
-    {#if progress}
+    {#if progress && statless}
+      <p class="truncate text-xs text-muted">{m.game_no_achievements()}</p>
+    {:else if progress}
       {#if next}
         <Progress
           value={next.completion}

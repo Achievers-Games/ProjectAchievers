@@ -94,11 +94,12 @@ async function ownedGames(steamId: string, extra: Record<string, number> = {}) {
 }
 
 /**
- * Les jeux de la bibliothèque qui ont des statistiques, en un appel : de quoi repérer un jeu
- * acheté sans relire tous les succès. Les jeux gratuits jamais lancés n'y sont pas.
+ * Les jeux de la bibliothèque, en un appel : de quoi repérer un jeu acheté sans relire tous les
+ * succès. Les jeux sans succès en font partie, pour leur temps de jeu. Les jeux gratuits jamais
+ * lancés n'y sont pas.
  */
 export async function fetchLibrary(steamId: string) {
-  return (await ownedGames(steamId)).filter((game) => game.has_community_visible_stats);
+  return ownedGames(steamId);
 }
 
 /**
@@ -514,8 +515,12 @@ export async function refreshStaleSchemas(limit = 10) {
   return games.length;
 }
 
-/** Le jeu au catalogue du site, avec ses images et la liste de ses succès. */
-async function steamCatalogGame(source: OwnedGame, refreshSchema = false) {
+/**
+ * Le jeu au catalogue du site, avec ses images et la liste de ses succès. `statless` : Steam dit
+ * déjà que le jeu n'a pas de succès (Honkai Impact 3rd) ; il entre sans succès, sans demander
+ * leur liste. La relecture hebdomadaire (`refreshStaleSchemas`) verra s'il en gagne un jour.
+ */
+async function steamCatalogGame(source: OwnedGame, refreshSchema = false, statless = false) {
   const appId = String(source.appid);
   // Les images ne se cherchent qu'une fois : sinon chaque relecture coûtait un appel par jeu.
   const known = await db.game.findUnique({
@@ -530,7 +535,9 @@ async function steamCatalogGame(source: OwnedGame, refreshSchema = false) {
   });
 
   const stale = !game.schemaSyncedAt || Date.now() - game.schemaSyncedAt.getTime() > SCHEMA_MAX_AGE;
-  if (stale || refreshSchema) {
+  if (statless) {
+    if (!game.schemaSyncedAt) await saveAchievements(game.id, []);
+  } else if (stale || refreshSchema) {
     const schema = await fetchSchema(source.appid);
     if (schema) await saveAchievements(game.id, schema);
   }
@@ -540,12 +547,14 @@ async function steamCatalogGame(source: OwnedGame, refreshSchema = false) {
 /**
  * Un jeu neuf entre au profil sans relire toute la bibliothèque : son catalogue, puis une ligne
  * vide que le suivi en direct remplit aussitôt, avec les annonces d'un succès débloqué en jouant.
+ * Un jeu sans succès (`statless`) n'y apporte que son temps de jeu.
  */
-export async function addSteamGame(userId: string, source: OwnedGame) {
-  const game = await steamCatalogGame(source);
+export async function addSteamGame(userId: string, source: OwnedGame, statless = false) {
+  const game = await steamCatalogGame(source, false, statless);
   await saveProgress(userId, game.id, [], {
     playtimeMinutes: source.playtime_forever ?? 0,
     lastPlayedAt: source.rtime_last_played ? new Date(source.rtime_last_played * 1000) : null,
+    ...(statless && { achievementsCheckedAt: new Date() }),
   });
   return game;
 }
@@ -626,8 +635,10 @@ export const syncSteam: ProviderSync = async ({
 }) => {
   const steamId = account.providerUserId;
   const everything = await fetchOwnedGames(steamId);
+  // Seuls les jeux qui ont des statistiques ont des succès à lire. Les autres entrent quand
+  // même au profil, pour leur seul temps de jeu (Honkai Impact 3rd).
   const owned = everything.filter((g) => g.has_community_visible_stats);
-  const library = new Set(owned.map((game) => game.appid));
+  const library = new Set(everything.map((game) => game.appid));
   const activeAppId = (await fetchPlayingGames([steamId]).catch(() => null))?.get(steamId);
   const previous = await db.userGame.findMany({
     where: { userId, game: { platform: 'STEAM' } },
@@ -652,14 +663,14 @@ export const syncSteam: ProviderSync = async ({
   // La bibliothèque fait foi : jeux possédés, partagés en famille, gratuits lancés. Steam ne
   // cache des jeux qu'à un joueur dont le temps de jeu est privé (ses jeux gratuits) : le site le
   // lui dit sur sa page de compte, et ne suit plus ce que Steam ne liste pas.
-  const items = owned;
+  const items = everything;
 
   // Une méthode non documentée peut disparaître : sans elle, la règle des 24 heures reprend.
   // Elle décrit chaque succès obtenu : de quoi apprendre leur position, qui servira à les
   // reconnaître en direct, et compléter les descriptions cachées.
   const counts = await fetchTopAchievements(
     steamId,
-    items.map((game) => game.appid),
+    owned.map((game) => game.appid),
     async (appId, top) => {
       const gameId = knownProgress.get(String(appId))?.game.id;
       if (!gameId || !top.achievements.length) return;
@@ -703,6 +714,19 @@ export const syncSteam: ProviderSync = async ({
       const known = knownProgress.get(appId);
       const count = counts?.get(ownedGame.appid);
       const playing = appId === activeAppId;
+
+      if (!ownedGame.has_community_visible_stats) {
+        // Aucun succès à lire : seul le temps de jeu entre, ou bouge.
+        if (!known) {
+          await addSteamGame(userId, ownedGame, true);
+        } else if (!unchangedSince(known, playedAt ?? known.lastPlayedAt, minutes)) {
+          await db.userGame.update({
+            where: { userId_gameId: { userId, gameId: known.game.id } },
+            data: { playtimeMinutes: minutes, ...(playedAt && { lastPlayedAt: playedAt }) },
+          });
+        }
+        return;
+      }
 
       let refreshSchema = false;
       if (!playing && known && count) {

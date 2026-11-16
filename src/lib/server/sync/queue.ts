@@ -400,6 +400,15 @@ export async function runLiveGame(
       log.error('Succès en direct Steam :', cause);
       return null;
     }));
+  // Un jeu sans succès (Honkai Impact 3rd) : GetPlayerAchievements n'aurait rien à dire.
+  if (!owned.game.totalAchievements && !top?.total) {
+    if (playtimeMinutes !== undefined)
+      await db.userGame.updateMany({
+        where: { userId, gameId: owned.game.id },
+        data: { playtimeMinutes },
+      });
+    return 0;
+  }
   // Rien de plus chez Steam que dans la base : un seul appel, et rien d'autre à faire.
   const moved = !top || top.achievements.length > owned.unlockedCount || pending;
   let unlocks: UnlockInput[] = moved ? await fetchUnlocks(steamId, Number(appId)) : [];

@@ -1863,6 +1863,8 @@
   "game_player_progress": "{name}'s progress",
   "game_player_compare": "Compare with me",
   "game_player_close": "Back to my view",
+  "game_no_achievements": "No achievements in this game",
+  "game_no_achievements_text": "This game has no achievements: only playtime is tracked.",
   "game_seo_guides": "Full guides: {count}.",
   "achievement_seo_title": "How to get “{achievement}” in {game}",
   "achievement_seo_rarity": "Earned by {rarity}% of players.",

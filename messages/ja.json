@@ -1826,6 +1826,8 @@
   "game_player_progress": "{name} の進捗",
   "game_player_compare": "自分と比較",
   "game_player_close": "自分の表示に戻る",
+  "game_no_achievements": "このゲームには実績がありません",
+  "game_no_achievements_text": "このゲームには実績がないため、プレイ時間のみを記録します。",
   "game_seo_guides": "完全ガイド：{count}。",
   "achievement_seo_title": "{game} で「{achievement}」を獲得する方法",
   "achievement_seo_rarity": "プレイヤーの {rarity}% が獲得。",

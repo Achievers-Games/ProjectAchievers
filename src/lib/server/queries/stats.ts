@@ -13,7 +13,8 @@ export async function barelyPlayedGame(userId: string, showAdult = false) {
       hidden: false,
       completion: { lt: 100 },
       playtimeMinutes: { gt: 0, lt: BARELY_PLAYED_MINUTES },
-      game: { ...visibleGames(showAdult), headerUrl: { not: null } },
+      // Un jeu sans succès n'a rien à terminer.
+      game: { ...visibleGames(showAdult), headerUrl: { not: null }, totalAchievements: { gt: 0 } },
     },
     select: {
       playtimeMinutes: true,

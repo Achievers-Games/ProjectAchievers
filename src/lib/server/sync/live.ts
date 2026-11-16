@@ -85,8 +85,8 @@ const accountSelect = {
 } as const;
 
 /**
- * Des jeux que le profil n'a pas encore : un jeu acheté, ou lancé pour la première fois. Seuls
- * ceux qui ont des succès valent un import, et seulement s'ils sont au joueur : dans sa
+ * Des jeux que le profil n'a pas encore : un jeu acheté, ou lancé pour la première fois. Ceux
+ * sans succès entrent pour leur seul temps de jeu. Seulement s'ils sont au joueur : dans sa
  * bibliothèque (jeux de la famille compris) ou gratuits. Un jeu prêté hors famille ou retiré
  * n'entre pas, comme dans la synchronisation complète. Chacun entre seul, puis le suivi en
  * direct lit ses succès. `owned` : les jeux viennent déjà de la bibliothèque.
@@ -106,17 +106,18 @@ async function importUnknown(
     steamId,
     fresh.map((game) => game.appid),
   ).catch(() => null);
-  const worth = counts ? fresh.filter((game) => (counts.get(game.appid)?.total ?? 0) > 0) : fresh;
-  if (!worth.length) return;
+  // Un jeu sans succès entre aussi, pour son temps de jeu, sans rien de plus à lire chez Steam.
+  const statless = (game: { appid: number }) => Boolean(counts && !counts.get(game.appid)?.total);
 
   const sources = owned
-    ? new Map(worth.map((game) => [game.appid, game as OwnedGame]))
-    : await ownedOrFree(steamId, worth);
-  for (const game of worth) {
+    ? new Map(fresh.map((game) => [game.appid, game as OwnedGame]))
+    : await ownedOrFree(steamId, fresh);
+  for (const game of fresh) {
     const source = sources.get(game.appid);
     if (!source) continue;
-    await addSteamGame(userId, source);
-    await runLiveGame(userId, steamId, String(source.appid), source.playtime_forever);
+    await addSteamGame(userId, source, statless(game));
+    if (!statless(game))
+      await runLiveGame(userId, steamId, String(source.appid), source.playtime_forever);
   }
 }
 

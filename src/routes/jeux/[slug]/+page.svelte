@@ -32,6 +32,8 @@
 
   type Filter = 'tous' | 'obtenus' | 'restants' | 'manquables' | 'commun' | 'moi' | 'lui';
   const complete = $derived(isComplete(data.progress));
+  /** Un jeu sans succès (Honkai Impact 3rd sur Steam) : seul le temps de jeu y est suivi. */
+  const noAchievements = $derived(data.achievementTotal === 0);
   const toggleHidden = submitWithToast({ reset: false });
 
   /** La comparaison ne se déroule que si les deux possèdent cette version précise. */
@@ -237,7 +239,7 @@
           {/if}
         </a>
       {/if}
-      {#if data.user && !data.compare}
+      {#if data.user && !data.compare && !noAchievements}
         <details class="text-sm">
           <summary class="btn h-8 cursor-pointer list-none">
             <Users size={14} aria-hidden="true" />
@@ -295,15 +297,23 @@
               })}
             </p>
           {/if}
-          <Progress value={data.progress.completion} tier={complete ? data.tier : 0} />
-          <p class="tabular text-sm text-muted">
-            {data.progress.unlockedCount} / {data.progress.totalCount} · {formatPercent(
-              data.progress.completion,
-            )}
+          {#if noAchievements}
             {#if data.progress.playtimeMinutes > 0}
-              · {m.playtime_hours({ hours: hours(data.progress.playtimeMinutes) })}
+              <p class="tabular text-sm text-muted">
+                {m.playtime_hours({ hours: hours(data.progress.playtimeMinutes) })}
+              </p>
             {/if}
-          </p>
+          {:else}
+            <Progress value={data.progress.completion} tier={complete ? data.tier : 0} />
+            <p class="tabular text-sm text-muted">
+              {data.progress.unlockedCount} / {data.progress.totalCount} · {formatPercent(
+                data.progress.completion,
+              )}
+              {#if data.progress.playtimeMinutes > 0}
+                · {m.playtime_hours({ hours: hours(data.progress.playtimeMinutes) })}
+              {/if}
+            </p>
+          {/if}
         </div>
       {/if}
     </div>
@@ -341,15 +351,21 @@
         </div>
       </div>
       <div class="max-w-sm space-y-1">
-        <Progress value={data.player.progress.completion} tier={0} />
+        {#if !noAchievements}
+          <Progress value={data.player.progress.completion} tier={0} />
+        {/if}
         <p class="tabular text-sm text-muted">
-          {data.player.progress.unlockedCount} / {data.player.progress.totalCount} · {formatPercent(
-            data.player.progress.completion,
-          )}
+          {#if !noAchievements}
+            {data.player.progress.unlockedCount} / {data.player.progress.totalCount} · {formatPercent(
+              data.player.progress.completion,
+            )}
+          {/if}
           {#if data.player.playtimePrivate}
-            · <span data-testid="game-player-time">{m.playtime_private()}</span>
+            {#if !noAchievements}·{/if}
+            <span data-testid="game-player-time">{m.playtime_private()}</span>
           {:else if data.player.progress.playtimeMinutes > 0}
-            · <span data-testid="game-player-time"
+            {#if !noAchievements}·{/if}
+            <span data-testid="game-player-time"
               >{m.playtime_hours({ hours: hours(data.player.progress.playtimeMinutes) })}</span
             >
           {/if}
@@ -413,7 +429,7 @@
     </section>
   {/if}
 
-  {#if data.missables}
+  {#if data.missables && !noAchievements}
     <div
       class="card flex items-start gap-3 p-3 text-sm"
       class:missables-alert={data.missables.count > 0}
@@ -447,154 +463,174 @@
     </div>
   {/if}
 
-  <GameGuides slug={data.game.slug} guides={data.guides} />
+  {#if !noAchievements || data.guides.length}
+    <GameGuides slug={data.game.slug} guides={data.guides} />
+  {/if}
 
-  <div class="flex flex-wrap items-center gap-2">
-    <div class="flex rounded border border-line" role="group" aria-label={m.filter_achievements()}>
-      {#each filters as item (item.value)}
-        <button
-          type="button"
-          onclick={() => changeAchievements({ succes: item.value === 'tous' ? null : item.value })}
-          aria-pressed={filter === item.value}
-          class="px-3 py-1.5 text-sm transition-colors"
-          class:bg-raised={filter === item.value}
-          class:text-muted={filter !== item.value}
-        >
-          {item.label}
-        </button>
-      {/each}
+  {#if noAchievements}
+    <div class="card space-y-1 p-3 text-sm" data-testid="no-achievements">
+      <p class="font-medium">{m.game_no_achievements()}</p>
+      <p class="text-muted">{m.game_no_achievements_text()}</p>
     </div>
-    {#if secrets}
-      <a
-        href={gameHref(data.game.slug, { avec: withHandle, caches: !data.revealed })}
-        rel="nofollow"
-        data-sveltekit-reset="false"
-        class="btn h-9"
+  {:else}
+    <div class="flex flex-wrap items-center gap-2">
+      <div
+        class="flex rounded border border-line"
+        role="group"
+        aria-label={m.filter_achievements()}
       >
-        {#if data.revealed}
-          <EyeOff size={14} aria-hidden="true" /> {m.achievements_conceal()}
-        {:else}
-          <Eye size={14} aria-hidden="true" />
-          {m.achievements_reveal({ count: secrets })}
-        {/if}
-      </a>
-    {/if}
-    <select
-      class="input ml-auto w-auto"
-      aria-label={m.sort_achievements_label()}
-      value={sort}
-      onchange={(event) =>
-        changeAchievements({ tri: event.currentTarget.value === 'nom' ? 'nom' : null })}
-    >
-      <option value="rarete">{m.sort_rarest()}</option>
-      <option value="nom">{m.sort_name()}</option>
-    </select>
-  </div>
-
-  <ul class="card divide-y divide-line">
-    {#each data.achievements as achievement (achievement.id)}
-      <li>
+        {#each filters as item (item.value)}
+          <button
+            type="button"
+            onclick={() =>
+              changeAchievements({ succes: item.value === 'tous' ? null : item.value })}
+            aria-pressed={filter === item.value}
+            class="px-3 py-1.5 text-sm transition-colors"
+            class:bg-raised={filter === item.value}
+            class:text-muted={filter !== item.value}
+          >
+            {item.label}
+          </button>
+        {/each}
+      </div>
+      {#if secrets}
         <a
-          href="/succes/{achievement.id}{data.revealed && achievement.secret ? '?caches=1' : ''}"
-          data-unlocked={achievement.unlockedAt ? '' : undefined}
-          class="achievement-row flex items-center gap-3 p-3 transition-colors hover:bg-raised"
+          href={gameHref(data.game.slug, { avec: withHandle, caches: !data.revealed })}
+          rel="nofollow"
+          data-sveltekit-reset="false"
+          class="btn h-9"
         >
-          <span class="relative shrink-0">
-            {#if achievement.iconUrl}
-              <AchievementIcon src={achievement.iconUrl} size={40} dim={!achievement.unlockedAt} />
-            {:else}
-              <span class="grid h-10 w-10 place-items-center rounded bg-raised text-muted">
-                <Lock size={14} aria-hidden="true" />
-              </span>
-            {/if}
-            {#if achievement.unlockedAt}
-              <span class="achievement-check"><Check size={11} strokeWidth={3} /></span>
-            {/if}
-          </span>
-          <div class="min-w-0 flex-1">
-            <p class="flex items-center gap-1.5 text-sm font-medium">
-              <span class="truncate" class:text-muted={data.user && !achievement.unlockedAt}>
-                {achievement.name}
-              </span>
-              {#if achievement.secret && data.revealed}
-                <EyeOff
-                  size={12}
-                  role="img"
-                  class="shrink-0 text-muted"
-                  aria-label={m.achievement_hidden()}
+          {#if data.revealed}
+            <EyeOff size={14} aria-hidden="true" /> {m.achievements_conceal()}
+          {:else}
+            <Eye size={14} aria-hidden="true" />
+            {m.achievements_reveal({ count: secrets })}
+          {/if}
+        </a>
+      {/if}
+      <select
+        class="input ml-auto w-auto"
+        aria-label={m.sort_achievements_label()}
+        value={sort}
+        onchange={(event) =>
+          changeAchievements({ tri: event.currentTarget.value === 'nom' ? 'nom' : null })}
+      >
+        <option value="rarete">{m.sort_rarest()}</option>
+        <option value="nom">{m.sort_name()}</option>
+      </select>
+    </div>
+
+    <ul class="card divide-y divide-line">
+      {#each data.achievements as achievement (achievement.id)}
+        <li>
+          <a
+            href="/succes/{achievement.id}{data.revealed && achievement.secret ? '?caches=1' : ''}"
+            data-unlocked={achievement.unlockedAt ? '' : undefined}
+            class="achievement-row flex items-center gap-3 p-3 transition-colors hover:bg-raised"
+          >
+            <span class="relative shrink-0">
+              {#if achievement.iconUrl}
+                <AchievementIcon
+                  src={achievement.iconUrl}
+                  size={40}
+                  dim={!achievement.unlockedAt}
                 />
-              {/if}
-              {#if achievement.missable}
-                <span class="missable-badge" title={m.missable_hint()}>
-                  <TriangleAlert size={11} aria-hidden="true" />
-                  {m.missable_badge()}
+              {:else}
+                <span class="grid h-10 w-10 place-items-center rounded bg-raised text-muted">
+                  <Lock size={14} aria-hidden="true" />
                 </span>
               {/if}
-              {#if achievement.guided}
-                <BookOpen
-                  size={12}
-                  role="img"
-                  class="shrink-0 text-accent"
-                  aria-label={m.guide_badge()}
-                />
-              {/if}
-            </p>
-            <p class="truncate text-xs text-muted">{achievement.description}</p>
-          </div>
-          {#if comparing}
-            <span class="flex shrink-0 items-center gap-1" aria-hidden="true">
-              <span
-                class="compare-mark"
-                data-state={achievement.unlockedAt ? 'yes' : 'no'}
-                title={m.compare_column_mine()}
-              >
-                {#if achievement.unlockedAt}
-                  <Check size={11} strokeWidth={3} />
-                {:else}
-                  <Minus size={11} strokeWidth={3} />
-                {/if}
-              </span>
-              <span
-                class="compare-mark"
-                data-state={theirState(achievement)}
-                title={data.compare?.user.displayName}
-              >
-                {#if theirState(achievement) === 'yes'}
-                  <Check size={11} strokeWidth={3} />
-                {:else}
-                  <Minus size={11} strokeWidth={3} />
-                {/if}
-              </span>
-            </span>
-            <span class="sr-only">
-              {#if !achievement.masked}
-                {theirState(achievement) === 'yes'
-                  ? m.compare_check_theirs({ name: data.compare?.user.displayName ?? '' })
-                  : m.compare_missing_theirs({ name: data.compare?.user.displayName ?? '' })}
-              {/if}
-            </span>
-          {/if}
-          <div class="shrink-0 text-right">
-            <TrophyBadge type={achievement.trophyType} />
-            <p class="tabular text-xs text-muted">
               {#if achievement.unlockedAt}
-                <span class="font-semibold text-success">{formatDate(achievement.unlockedAt)}</span>
-              {:else if achievement.globalRarity !== null}
-                {m.percent({ value: formatRarity(achievement.globalRarity) })}
+                <span class="achievement-check"><Check size={11} strokeWidth={3} /></span>
               {/if}
-            </p>
-          </div>
-        </a>
-      </li>
-    {/each}
-  </ul>
-  {#if data.nextAchievements}
-    <a
-      class="btn mx-auto block"
-      data-sveltekit-reset="false"
-      href={achievementHref({ affiches: String(data.nextAchievements) })}
-    >
-      {m.show_more()}
-    </a>
+            </span>
+            <div class="min-w-0 flex-1">
+              <p class="flex items-center gap-1.5 text-sm font-medium">
+                <span class="truncate" class:text-muted={data.user && !achievement.unlockedAt}>
+                  {achievement.name}
+                </span>
+                {#if achievement.secret && data.revealed}
+                  <EyeOff
+                    size={12}
+                    role="img"
+                    class="shrink-0 text-muted"
+                    aria-label={m.achievement_hidden()}
+                  />
+                {/if}
+                {#if achievement.missable}
+                  <span class="missable-badge" title={m.missable_hint()}>
+                    <TriangleAlert size={11} aria-hidden="true" />
+                    {m.missable_badge()}
+                  </span>
+                {/if}
+                {#if achievement.guided}
+                  <BookOpen
+                    size={12}
+                    role="img"
+                    class="shrink-0 text-accent"
+                    aria-label={m.guide_badge()}
+                  />
+                {/if}
+              </p>
+              <p class="truncate text-xs text-muted">{achievement.description}</p>
+            </div>
+            {#if comparing}
+              <span class="flex shrink-0 items-center gap-1" aria-hidden="true">
+                <span
+                  class="compare-mark"
+                  data-state={achievement.unlockedAt ? 'yes' : 'no'}
+                  title={m.compare_column_mine()}
+                >
+                  {#if achievement.unlockedAt}
+                    <Check size={11} strokeWidth={3} />
+                  {:else}
+                    <Minus size={11} strokeWidth={3} />
+                  {/if}
+                </span>
+                <span
+                  class="compare-mark"
+                  data-state={theirState(achievement)}
+                  title={data.compare?.user.displayName}
+                >
+                  {#if theirState(achievement) === 'yes'}
+                    <Check size={11} strokeWidth={3} />
+                  {:else}
+                    <Minus size={11} strokeWidth={3} />
+                  {/if}
+                </span>
+              </span>
+              <span class="sr-only">
+                {#if !achievement.masked}
+                  {theirState(achievement) === 'yes'
+                    ? m.compare_check_theirs({ name: data.compare?.user.displayName ?? '' })
+                    : m.compare_missing_theirs({ name: data.compare?.user.displayName ?? '' })}
+                {/if}
+              </span>
+            {/if}
+            <div class="shrink-0 text-right">
+              <TrophyBadge type={achievement.trophyType} />
+              <p class="tabular text-xs text-muted">
+                {#if achievement.unlockedAt}
+                  <span class="font-semibold text-success"
+                    >{formatDate(achievement.unlockedAt)}</span
+                  >
+                {:else if achievement.globalRarity !== null}
+                  {m.percent({ value: formatRarity(achievement.globalRarity) })}
+                {/if}
+              </p>
+            </div>
+          </a>
+        </li>
+      {/each}
+    </ul>
+    {#if data.nextAchievements}
+      <a
+        class="btn mx-auto block"
+        data-sveltekit-reset="false"
+        href={achievementHref({ affiches: String(data.nextAchievements) })}
+      >
+        {m.show_more()}
+      </a>
+    {/if}
   {/if}
 </div>

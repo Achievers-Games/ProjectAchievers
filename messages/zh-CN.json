@@ -1826,6 +1826,8 @@
   "game_player_progress": "{name} 的进度",
   "game_player_compare": "与我比较",
   "game_player_close": "返回我的页面",
+  "game_no_achievements": "此游戏没有成就",
+  "game_no_achievements_text": "此游戏没有成就：仅记录游戏时长。",
   "game_seo_guides": "完整攻略：{count}。",
   "achievement_seo_title": "如何在 {game} 中获得“{achievement}”",
   "achievement_seo_rarity": "{rarity}% 的玩家已获得。",

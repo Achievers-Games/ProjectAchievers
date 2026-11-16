@@ -504,6 +504,55 @@ describe('synchronisation Steam', () => {
     expect(ids.toSorted()).toEqual(['999001', '999005']);
   });
 
+  it('garde un jeu sans succès Steam pour son seul temps de jeu', async () => {
+    const [game] = ownedGames.response.games;
+    // Honkai Impact 3rd : pas de statistiques, donc aucun succès à lire.
+    const statless = {
+      appid: 999007,
+      name: `${PREFIX} sans succès`,
+      playtime_forever: 600,
+      rtime_last_played: 1_700_000_200,
+    };
+    const library = { response: { games: [game, statless] } };
+    const api = steamApi(library);
+    vi.stubGlobal('fetch', api);
+    const userId = await steamUser();
+
+    await runSync({ userId, provider: 'STEAM' });
+
+    const row = await db.userGame.findFirstOrThrow({
+      where: { userId, game: { platformGameId: '999007' } },
+      include: { game: true },
+    });
+    expect(row).toMatchObject({
+      unlockedCount: 0,
+      totalCount: 0,
+      completion: 0,
+      playtimeMinutes: 600,
+    });
+    expect(row.game.totalAchievements).toBe(0);
+    expect(row.game.schemaSyncedAt).not.toBeNull();
+    const achievementReads = (mock: typeof api) =>
+      mock.mock.calls
+        .map(([input]) => String(input))
+        .filter((url) => url.includes('api.steampowered.com') && url.includes('999007'));
+    expect(achievementReads(api)).toEqual([]);
+
+    // Le temps de jeu suit, toujours sans rien demander de ses succès.
+    statless.playtime_forever = 660;
+    const again = steamApi(library);
+    vi.stubGlobal('fetch', again);
+    await runSync({ userId, provider: 'STEAM', quiet: true });
+    expect(achievementReads(again)).toEqual([]);
+    expect(
+      (
+        await db.userGame.findFirstOrThrow({
+          where: { userId, game: { platformGameId: '999007' } },
+        })
+      ).playtimeMinutes,
+    ).toBe(660);
+  });
+
   it('garde la synchronisation si les décomptes de Steam échouent', async () => {
     const api = steamApi(ownedGames);
     vi.stubGlobal('fetch', async (input: string | URL) =>

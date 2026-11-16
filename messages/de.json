@@ -1863,6 +1863,8 @@
   "game_player_progress": "Fortschritt von {name}",
   "game_player_compare": "Mit mir vergleichen",
   "game_player_close": "Zurück zu meiner Ansicht",
+  "game_no_achievements": "Keine Erfolge in diesem Spiel",
+  "game_no_achievements_text": "Dieses Spiel hat keine Erfolge: Nur die Spielzeit wird erfasst.",
   "game_seo_guides": "Komplettlösungen: {count}.",
   "achievement_seo_title": "So bekommst du „{achievement}“ in {game}",
   "achievement_seo_rarity": "Von {rarity} % der Spieler freigeschaltet.",

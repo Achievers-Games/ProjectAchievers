@@ -1913,6 +1913,8 @@
   "game_player_progress": "Прогресс игрока {name}",
   "game_player_compare": "Сравнить со мной",
   "game_player_close": "Вернуться к моей странице",
+  "game_no_achievements": "В этой игре нет достижений",
+  "game_no_achievements_text": "В этой игре нет достижений: учитывается только время в игре.",
   "game_seo_guides": "Полные гайды: {count}.",
   "achievement_seo_title": "Как получить «{achievement}» в {game}",
   "achievement_seo_rarity": "Есть у {rarity} % игроков.",

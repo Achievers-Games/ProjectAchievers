@@ -1863,6 +1863,8 @@
   "game_player_progress": "Progreso de {name}",
   "game_player_compare": "Comparar conmigo",
   "game_player_close": "Volver a mi ficha",
+  "game_no_achievements": "Este juego no tiene logros",
+  "game_no_achievements_text": "Este juego no tiene logros: solo se registra el tiempo de juego.",
   "game_seo_guides": "Guías completas: {count}.",
   "achievement_seo_title": "Cómo conseguir «{achievement}» en {game}",
   "achievement_seo_rarity": "Lo tiene el {rarity} % de los jugadores.",
