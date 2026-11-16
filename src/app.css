@@ -1887,6 +1887,10 @@
     linear-gradient(0deg, rgb(8 6 18 / 0.85), rgb(8 6 18 / 0.2) 70%),
     linear-gradient(90deg, rgb(8 6 18 / 0.9) 10%, rgb(8 6 18 / 0.45) 60%, rgb(8 6 18 / 0.25)),
     var(--art, none), linear-gradient(115deg, #2a0f3f, #0d0a1c);
+  /* Les couches se calent sur le bord extérieur, sans se répéter : sinon le bord opposé de
+     chaque dégradé, plus clair, réapparaît sous la bordure en fine ligne. */
+  background-origin: border-box;
+  background-repeat: no-repeat;
   background-position: center;
   background-size: cover;
   box-shadow: 0 12px 40px rgb(0 0 0 / 0.35);
@@ -1997,6 +2001,8 @@
   @apply relative block aspect-[16/6] w-full overflow-hidden rounded-md border-2 border-line text-left transition-[transform,border-color] hover:-translate-y-0.5 hover:border-accent;
   background-color: rgb(12 11 22);
   background-image: linear-gradient(0deg, rgb(8 6 18 / 0.85), transparent 60%), var(--art, none);
+  background-origin: border-box;
+  background-repeat: no-repeat;
   background-position: center;
   background-size: cover;
 }
