@@ -4,10 +4,15 @@ import { z } from 'zod';
 import { feedbackAreaLabel } from '#lib/feedback';
 import { requireLogin } from '#lib/server/auth';
 import { db } from '#lib/server/db';
+import { escapeHtml, inbox, inboxReady, sendMail } from '#lib/server/email';
+import { env } from '#lib/server/env';
+import { logger } from '#lib/logger';
 import { notify } from '#lib/server/push';
 import { rateLimit } from '#lib/server/rate-limit';
 import { m } from '#lib/paraglide/messages';
 import type { Actions, PageServerLoad } from './$types';
+
+const log = logger('Retours');
 
 const PER_HOUR = 5;
 
@@ -58,6 +63,19 @@ export const actions: Actions = {
         body: `${feedbackAreaLabel(parsed.data.area)} · ${user.displayName} : ${parsed.data.content.slice(0, 100)}`,
         url: '/moderation',
       }));
+    }
+    if (inboxReady()) {
+      // Le retour est déjà enregistré : un mail en échec ne doit pas le faire paraître perdu.
+      const label = parsed.data.kind === 'BUG' ? 'Bug' : 'Idée';
+      const area = feedbackAreaLabel(parsed.data.area);
+      const name = user.displayName.replace(/[\r\n]+/g, ' ');
+      const link = `${env().ORIGIN}/moderation`;
+      void sendMail({
+        to: inbox()!,
+        subject: `[Retour] ${label} · ${area} — ${name}`,
+        text: `${parsed.data.content}\n\n— ${name}\n${link}`,
+        html: `<p>${escapeHtml(parsed.data.content).replace(/\n/g, '<br>')}</p><p>— ${escapeHtml(name)}</p><p><a href="${link}">Voir dans la modération</a></p>`,
+      }).catch((cause) => log.error('Mail du retour :', cause));
     }
     return { success: m.feedback_sent() };
   },

@@ -26,6 +26,20 @@ function getTransporter(): Transporter {
   return transporter;
 }
 
+/** Adresse qui reçoit les messages du site : CONTACT_INBOX, sinon l'expéditeur configuré. */
+export function inbox(): string | undefined {
+  return getEnv().CONTACT_INBOX ?? getEnv().SMTP_FROM;
+}
+
+/** Le site peut envoyer un mail à sa propre boîte. */
+export function inboxReady() {
+  const env = getEnv();
+  return Boolean(env.SMTP_HOST && env.SMTP_PORT && env.SMTP_USER && env.SMTP_PASS && inbox());
+}
+
+export const escapeHtml = (text: string) =>
+  text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+
 interface SendMailOptions {
   to: string;
   subject: string;

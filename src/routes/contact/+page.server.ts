@@ -2,8 +2,7 @@ import { fail } from '@sveltejs/kit';
 import { z } from 'zod';
 import { m } from '#lib/paraglide/messages';
 import { clientAddress } from '#lib/server/client-address';
-import { sendMail } from '#lib/server/email';
-import { env } from '#lib/server/env';
+import { escapeHtml, inbox, inboxReady, sendMail } from '#lib/server/email';
 import { rateLimit } from '#lib/server/rate-limit';
 import { logger } from '#lib/logger';
 import type { Actions, PageServerLoad } from './$types';
@@ -29,20 +28,7 @@ const contact = z.object({
   website: z.string().optional(),
 });
 
-/** Adresse qui reçoit les messages : CONTACT_INBOX, sinon l'expéditeur configuré. */
-function inbox(): string | undefined {
-  return env().CONTACT_INBOX ?? env().SMTP_FROM;
-}
-
-const escapeHtml = (text: string) => text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
-
-export const load: PageServerLoad = async () => {
-  const config = env();
-  const smtpReady = Boolean(
-    config.SMTP_HOST && config.SMTP_PORT && config.SMTP_USER && config.SMTP_PASS && inbox(),
-  );
-  return { available: smtpReady };
-};
+export const load: PageServerLoad = async () => ({ available: inboxReady() });
 
 export const actions: Actions = {
   send: async ({ request, getClientAddress }) => {
