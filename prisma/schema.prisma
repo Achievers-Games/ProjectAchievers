@@ -492,6 +492,10 @@ model Game {
   /// Étiquettes Steam les plus votées, par ordre de poids : les genres des succès du site.
   tags              Int[]             @default([])
   tagsCheckedAt     DateTime?
+  /// Une capture Steam en 1920 × 1080, faite pour un fond plein écran ; un jeu hors Steam prend
+  /// celle de sa version Steam.
+  artUrl            String?
+  artCheckedAt      DateTime?
   /// Les succès manquables du jeu ont été relevés par un guide officiel.
   guideReviewedAt   DateTime?
   /// Clé commune aux versions d'un même jeu sur plusieurs plateformes.

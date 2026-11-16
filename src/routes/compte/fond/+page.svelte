@@ -110,7 +110,7 @@
               <input type="hidden" name="cible" value={data.target} />
               <button
                 class="background-tile"
-                style:--art={art(game.images)}
+                style:--art={art(game.thumb ? [game.thumb, ...game.images.slice(1)] : game.images)}
                 aria-pressed={current}
                 aria-label={data.target === 'banniere'
                   ? m.banner_choose({ game: game.name })

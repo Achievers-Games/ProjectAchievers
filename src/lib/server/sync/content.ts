@@ -1,3 +1,4 @@
+import type { Prisma } from '#prisma';
 import { db } from '../db';
 import { familyKey } from '../family';
 import { fetchRetry, sleep } from './errors';
@@ -53,14 +54,29 @@ const KEPT_TAGS = 10;
 interface StoreItem {
   appid?: number;
   tags?: { tagid: number; weight: number }[];
+  screenshots?: { all_ages_screenshots?: { filename: string; ordinal?: number }[] };
 }
 
-/** Les étiquettes les plus votées de chaque jeu Steam, par numéro d'application. */
-async function storeTags(appIds: number[]) {
+const STORE_ASSETS = 'https://shared.akamai.steamstatic.com/store_item_assets/';
+
+/**
+ * La première capture du jeu, dans l'ordre choisi par l'éditeur, en 1920 × 1080 : faite pour un
+ * écran entier, contrairement à l'en-tête (460 × 215) ou au bandeau de bibliothèque.
+ */
+export function screenshotArt(item: StoreItem) {
+  const [first] = (item.screenshots?.all_ages_screenshots ?? []).toSorted(
+    (a, b) => (a.ordinal ?? 0) - (b.ordinal ?? 0),
+  );
+  if (!first) return null;
+  return STORE_ASSETS + first.filename.replace(/\.jpg(?=\?|$)/, '.1920x1080.jpg');
+}
+
+/** Les étiquettes et la capture de chaque jeu Steam, par numéro d'application. */
+async function storeItems(appIds: number[]) {
   const input = {
     ids: appIds.map((appid) => ({ appid })),
     context: { language: 'english', country_code: 'US' },
-    data_request: { include_tag_count: KEPT_TAGS },
+    data_request: { include_tag_count: KEPT_TAGS, include_screenshots: true },
   };
   const response = await fetchRetry(
     `${ITEMS}?input_json=${encodeURIComponent(JSON.stringify(input))}`,
@@ -70,10 +86,13 @@ async function storeTags(appIds: number[]) {
   return new Map(
     (data.response?.store_items ?? []).map((item) => [
       item.appid,
-      (item.tags ?? [])
-        .toSorted((a, b) => b.weight - a.weight)
-        .slice(0, KEPT_TAGS)
-        .map((tag) => tag.tagid),
+      {
+        tags: (item.tags ?? [])
+          .toSorted((a, b) => b.weight - a.weight)
+          .slice(0, KEPT_TAGS)
+          .map((tag) => tag.tagid),
+        art: screenshotArt(item),
+      },
     ]),
   );
 }
@@ -106,17 +125,23 @@ async function steamTwin(name: string, key: string | null) {
   return data.items?.find((item) => episodeKey(familyKey(item.name)) === wanted)?.id ?? null;
 }
 
+type StoreGame = {
+  id: string;
+  platform: string;
+  platformGameId: string;
+  name: string;
+  familyKey: string | null;
+};
+
 /**
- * Lit les genres des jeux qui n'en ont pas encore. Un jeu hors Steam prend ceux de sa version
- * Steam, connue ou retrouvée par son nom. Renvoie le nombre de jeux lus.
+ * Lit sur la boutique Steam ce qui manque aux jeux donnés. Un jeu hors Steam passe par sa
+ * version Steam, connue ou retrouvée par son nom. Renvoie le nombre de jeux lus.
  */
-export async function tagGames(limit = BATCH * 2, pause = PAUSE) {
-  const games = await db.game.findMany({
-    where: { tagsCheckedAt: null },
-    select: { id: true, platform: true, platformGameId: true, name: true, familyKey: true },
-    orderBy: { platform: 'asc' },
-    take: limit,
-  });
+async function readStore(
+  games: StoreGame[],
+  pause: number,
+  write: (item: { tags: number[]; art: string | null } | undefined) => Prisma.GameUpdateInput,
+) {
   const steamIds = new Map<string, number>();
   const unanswered = new Set<string>();
   for (const game of games) {
@@ -139,22 +164,56 @@ export async function tagGames(limit = BATCH * 2, pause = PAUSE) {
     else if (appId && Number.isInteger(appId)) steamIds.set(game.id, appId);
   }
 
-  let tagged = 0;
+  let read = 0;
   for (let start = 0; start < games.length; start += TAG_BATCH) {
     const batch = games.slice(start, start + TAG_BATCH).filter((g) => !unanswered.has(g.id));
-    const tags = await storeTags([...new Set(batch.flatMap((g) => steamIds.get(g.id) ?? []))]);
+    const items = await storeItems([...new Set(batch.flatMap((g) => steamIds.get(g.id) ?? []))]);
     // Limite atteinte : le lot suivant reprendra les jeux restants.
-    if (!tags) break;
+    if (!items) break;
     await db.$transaction(
       batch.map((game) =>
-        db.game.update({
-          where: { id: game.id },
-          data: { tags: tags.get(steamIds.get(game.id)) ?? [], tagsCheckedAt: new Date() },
-        }),
+        db.game.update({ where: { id: game.id }, data: write(items.get(steamIds.get(game.id))) }),
       ),
     );
-    tagged += batch.length;
+    read += batch.length;
     await sleep(pause);
   }
-  return tagged;
+  return read;
+}
+
+const storeGame = {
+  id: true,
+  platform: true,
+  platformGameId: true,
+  name: true,
+  familyKey: true,
+} as const;
+
+/** Lit les genres (et la capture) des jeux qui n'en ont pas encore. */
+export async function tagGames(limit = BATCH * 2, pause = PAUSE) {
+  const games = await db.game.findMany({
+    where: { tagsCheckedAt: null },
+    select: storeGame,
+    orderBy: { platform: 'asc' },
+    take: limit,
+  });
+  const now = new Date();
+  return readStore(games, pause, (item) => ({
+    tags: item?.tags ?? [],
+    tagsCheckedAt: now,
+    artUrl: item?.art ?? null,
+    artCheckedAt: now,
+  }));
+}
+
+/** La capture des jeux déjà classés avant qu'on la lise : une seule fois par jeu. */
+export async function artGames(limit = BATCH * 2, pause = PAUSE) {
+  const games = await db.game.findMany({
+    where: { artCheckedAt: null },
+    select: storeGame,
+    orderBy: { platform: 'asc' },
+    take: limit,
+  });
+  const now = new Date();
+  return readStore(games, pause, (item) => ({ artUrl: item?.art ?? null, artCheckedAt: now }));
 }

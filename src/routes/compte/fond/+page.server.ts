@@ -4,6 +4,7 @@ import { requireLogin } from '#lib/server/auth';
 import { db } from '#lib/server/db';
 import { fetchSteamLook } from '#lib/server/providers/steam';
 import { onePerFamily, toBanner } from '#lib/server/queries';
+import { thumbArt } from '#lib/art';
 import type { Actions, PageServerLoad } from './$types';
 
 /** Assez pour choisir sans charger toute une bibliothèque Steam : la recherche fait le reste. */
@@ -71,6 +72,9 @@ export const load: PageServerLoad = async ({ locals, url }) => {
         hidden: false,
         game: {
           headerUrl: { not: null },
+          // Une icône de trophée PlayStation ou Xbox étirée en fond est laide : seuls les jeux qui
+          // ont une grande image se proposent (capture Steam, ou bandeau d'un jeu Steam).
+          OR: [{ artUrl: { not: null } }, { platform: 'STEAM' }],
           ...(q && { name: { contains: q, mode: 'insensitive' } }),
         },
       },
@@ -85,6 +89,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
             name: true,
             slug: true,
             headerUrl: true,
+            artUrl: true,
             platform: true,
             familyKey: true,
           },
@@ -115,6 +120,8 @@ export const load: PageServerLoad = async ({ locals, url }) => {
       .map((game) => ({
         id: game.id,
         ...toBanner({ ...game, headerUrl: game.headerUrl as string }),
+        // La vignette de la capture : la page en montre des dizaines.
+        thumb: game.artUrl ? thumbArt(game.artUrl) : null,
       })),
   };
 };

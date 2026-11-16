@@ -122,7 +122,7 @@
   <PageBackdrop
     images={profile.background.images}
     motion={profile.background.kind === 'steam' ? profile.background.motion : null}
-    fit={profile.background.kind === 'steam' ? 'cover' : 'band'}
+    fit={profile.background.kind === 'steam' || profile.background.cover ? 'cover' : 'band'}
   />
 {/if}
 

@@ -164,7 +164,13 @@
 
 {#if data.game.headerUrl}
   <!-- La grande image du jeu en ambiance, atténuée : la page se lit comme d'habitude. -->
-  <PageBackdrop images={gameArt(data.game.headerUrl)} soft />
+  <PageBackdrop
+    images={data.game.artUrl
+      ? [data.game.artUrl, ...gameArt(data.game.headerUrl)]
+      : gameArt(data.game.headerUrl)}
+    fit={data.game.artUrl ? 'cover' : 'band'}
+    soft
+  />
 {/if}
 
 <div class="space-y-6">

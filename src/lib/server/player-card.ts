@@ -1,6 +1,6 @@
 import { db } from './db';
 import { userStats } from './queries/stats';
-import { showcaseHead } from './queries/banners';
+import { artBySlug, showcaseHead } from './queries/banners';
 import { chosenGameSelect, profileArt } from './queries/profile';
 import { m } from '#lib/paraglide/messages';
 import { formatNumber } from '#lib/labels';
@@ -237,11 +237,14 @@ async function cardBanner(user: {
 
 async function featuredGame(userId: string, handle: string) {
   const head = await showcaseHead(handle);
-  if (head?.headerUrl) return head;
+  if (head?.headerUrl) {
+    const art = await artBySlug([head.slug]);
+    return { ...head, artUrl: art.get(head.slug) ?? null };
+  }
   const best = await db.userGame.findFirst({
     where: { userId, hidden: false, game: { adultOnly: false, headerUrl: { not: null } } },
     orderBy: [{ completion: 'desc' }, { unlockedCount: 'desc' }],
-    select: { game: { select: { name: true, slug: true, headerUrl: true } } },
+    select: { game: { select: { name: true, slug: true, headerUrl: true, artUrl: true } } },
   });
   return best?.game ?? null;
 }

@@ -1,7 +1,7 @@
 import { db } from '../db';
 import { bestCards, chosenCards, profileCards } from './library';
 import { userStats } from './stats';
-import { toBanner } from './banners';
+import { artBySlug, toBanner } from './banners';
 import { MAX_SHOWCASE, cardSelect, publicUser, visibleGames } from './shared';
 import { friendIds } from '../social/friends';
 
@@ -41,6 +41,8 @@ interface ChosenGame {
   name: string;
   slug: string;
   headerUrl: string | null;
+  artUrl: string | null;
+  platform: string;
   adultOnly: boolean;
   players: unknown[];
 }
@@ -52,6 +54,8 @@ export const chosenGameSelect = (handle: string) =>
       name: true,
       slug: true,
       headerUrl: true,
+      artUrl: true,
+      platform: true,
       adultOnly: true,
       // Un jeu masqué ou perdu depuis ne s'affiche plus.
       players: { where: { user: { handle }, hidden: false }, select: { gameId: true } },
@@ -79,7 +83,7 @@ export type SteamArt = { backgroundUrl: string | null; backgroundMotionUrl: stri
 export function profileArt(
   choice: ArtChoice,
   steam: SteamArt,
-  showcase: { name: string; slug: string; headerUrl: string | null }[],
+  showcase: { name: string; slug: string; headerUrl: string | null; artUrl?: string | null }[],
   showAdult: boolean,
 ): ProfileBackground | null {
   if (choice.off) return null;
@@ -87,8 +91,10 @@ export function profileArt(
     return { kind: 'steam', images: [steam.backgroundUrl], motion: steam.backgroundMotionUrl };
   }
   const chosen = choice.game;
+  // Sans capture ni bandeau Steam, le jeu choisi n'aurait qu'une icône de trophée à étirer.
+  const large = chosen ? Boolean(chosen.artUrl) || chosen.platform === 'STEAM' : false;
   const usable =
-    chosen?.headerUrl && chosen.players.length > 0 && (showAdult || !chosen.adultOnly)
+    chosen?.headerUrl && large && chosen.players.length > 0 && (showAdult || !chosen.adultOnly)
       ? chosen
       : showcase.find((card) => card.headerUrl);
   return usable?.headerUrl
@@ -189,6 +195,10 @@ export async function userProfile(handle: string, viewerId: string | null, showA
   );
   // Une sélection vide ou masquée au visiteur ne laisse pas une vitrine vide.
   const showcase = (user.showcaseCustom && chosen.length ? chosen : cards).slice(0, MAX_SHOWCASE);
+  // La carte numéro 1 habille le profil par défaut : sa capture plein écran, si Steam en a une.
+  const featured = showcase.find((card) => card.headerUrl);
+  const art = await artBySlug(featured ? [featured.slug] : []);
+  const dressed = featured ? [{ ...featured, artUrl: art.get(featured.slug) ?? null }] : [];
   // Le choix brut du fond reste au serveur : un jeu adulte choisi ne doit pas fuiter au visiteur.
   const {
     backgroundGame,
@@ -218,13 +228,13 @@ export async function userProfile(handle: string, viewerId: string | null, showA
     banner: profileArt(
       { off: bannerOff, steam: bannerSteam, game: bannerGame },
       steam,
-      showcase,
+      dressed,
       showAdult,
     ),
     background: profileArt(
       { off: backgroundOff, steam: backgroundSteam, game: backgroundGame },
       steam,
-      showcase,
+      dressed,
       showAdult,
     ),
     games: library.slice(0, 24),

@@ -12,19 +12,33 @@ export interface BannerGame {
   slug: string;
   images: string[];
   completion: number | null;
+  /** La première image est une capture plein écran : elle peut couvrir toute la page. */
+  cover: boolean;
 }
 
 export const toBanner = (game: {
   name: string;
   slug: string;
   headerUrl: string;
+  artUrl?: string | null;
   completion?: number | null;
 }): BannerGame => ({
   name: game.name,
   slug: game.slug,
-  images: gameArt(game.headerUrl),
+  images: game.artUrl ? [game.artUrl, ...gameArt(game.headerUrl)] : gameArt(game.headerUrl),
   completion: game.completion ?? null,
+  cover: Boolean(game.artUrl),
 });
+
+/** La capture plein écran de quelques jeux, par adresse : les cartes de vitrine ne l'ont pas. */
+export async function artBySlug(slugs: string[]) {
+  if (!slugs.length) return new Map<string, string>();
+  const rows = await db.game.findMany({
+    where: { slug: { in: slugs }, artUrl: { not: null } },
+    select: { slug: true, artUrl: true },
+  });
+  return new Map(rows.map((row) => [row.slug, row.artUrl as string]));
+}
 
 /** Le jeu le plus avancé du joueur ; à défaut, ou pour un invité, un jeu au hasard. */
 async function seasonBanner(userId?: string) {
@@ -184,10 +198,11 @@ const backdropPool = () =>
     'home:backdrops',
     () =>
       db.game.findMany({
-        where: { ...publicGames, headerUrl: { not: null } },
+        // Seuls les jeux qui ont une capture plein écran : un bandeau ne remplit pas l'accueil.
+        where: { ...publicGames, headerUrl: { not: null }, artUrl: { not: null } },
         orderBy: [{ players: { _count: 'desc' } }, { id: 'asc' }],
         take: 120,
-        select: { name: true, slug: true, headerUrl: true },
+        select: { name: true, slug: true, headerUrl: true, artUrl: true },
       }),
     3_600_000,
   );

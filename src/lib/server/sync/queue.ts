@@ -20,7 +20,7 @@ import { rateLimit } from '../rate-limit';
 import { hasRecentFeat, isPublicGame, publicUser, RARE_CARD } from '../queries';
 import { copiesFor, copyKey, type Reward } from '#lib/collection';
 import { fillWowCatalog, syncBlizzard } from './blizzard';
-import { rateGames, tagGames } from './content';
+import { artGames, rateGames, tagGames } from './content';
 import { refreshDiscordAccounts } from './discord';
 import { SyncError } from './errors';
 import { publishCard, publishChat, publishHighlight, publishSync, publishUnlock } from './events';
@@ -786,6 +786,7 @@ export async function startWorkers() {
   await instance.work(CONTENT_QUEUE, async () => {
     await inSlices('Classification des jeux', 15, 10, (limit) => rateGames(limit));
     await inSlices('Genres des jeux', 10, 30, (limit) => tagGames(limit));
+    await inSlices('Images des jeux', 10, 30, (limit) => artGames(limit));
   });
   await instance.schedule(CONTENT_QUEUE, '*/5 * * * *');
   // File indépendante, mais le même budget de fond protège la mémoire du NAS.

@@ -10,7 +10,7 @@ import { globals } from './globals';
 import { afterSteamSync, checkLiveGames, checkSteamPrivacy, steamDailyPass } from './sync/live';
 import { fetchPlayingGames, fetchSteamSummaries } from './providers/steam';
 import { enqueueSync, refreshAccounts, runSync, startWorkers } from './sync/queue';
-import { isAdultOnly, rateGames, tagGames } from './sync/content';
+import { artGames, isAdultOnly, rateGames, tagGames } from './sync/content';
 import { markVisible, onCard, onSync, type SyncEvent } from './sync/events';
 import { parseSteamPage, steamImages } from './sync/steam';
 import { saveAchievements, saveProgress, upsertGame } from './sync/store';
@@ -1396,6 +1396,13 @@ describe('synchronisation Steam', () => {
             { tagid: 492, weight: 50 },
             { tagid: 1667, weight: 900 },
           ],
+          // L'éditeur range ses captures : la première, pas la première reçue.
+          screenshots: {
+            all_ages_screenshots: [
+              { filename: `steam/apps/${appId}/ss_deux.jpg?t=1`, ordinal: 2 },
+              { filename: `steam/apps/${appId}/ss_une.jpg?t=1`, ordinal: 1 },
+            ],
+          },
         },
         { appid: Number(cuteId), tags: [{ tagid: 4726, weight: 300 }] },
       ];
@@ -1415,6 +1422,27 @@ describe('synchronisation Steam', () => {
     expect(await tags(found.id)).toEqual([4726]);
     expect(await tags(lost.id)).toEqual([]);
     expect(await tagGames(10, 0)).toBe(0);
+
+    const art = async (id: string) =>
+      (await db.game.findUniqueOrThrow({ where: { id }, select: { artUrl: true } })).artUrl;
+    const screenshot = `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appId}/ss_une.1920x1080.jpg?t=1`;
+    expect(await art(steam.id)).toBe(screenshot);
+    expect(await art(sibling.id)).toBe(screenshot);
+    expect(await art(found.id)).toBeNull();
+
+    // Les jeux classés avant l'arrivée des captures les reçoivent une fois, sans perdre leurs genres.
+    await db.game.updateMany({
+      where: { id: { in: [steam.id, sibling.id] } },
+      data: { artUrl: null, artCheckedAt: null },
+    });
+    await db.game.updateMany({
+      where: { artCheckedAt: null, id: { notIn: [steam.id, sibling.id] } },
+      data: { artCheckedAt: new Date() },
+    });
+    expect(await artGames(10, 0)).toBe(2);
+    expect(await art(sibling.id)).toBe(screenshot);
+    expect(await tags(sibling.id)).toEqual([1667, 492]);
+    expect(await artGames(10, 0)).toBe(0);
   });
 
   it('accepte un texte hors de l’alphabet latin', async () => {

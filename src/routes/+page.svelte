@@ -35,7 +35,7 @@
 />
 
 {#if backdrop}
-  <PageBackdrop images={backdrop.images} soft />
+  <PageBackdrop images={backdrop.images} fit={backdrop.cover ? 'cover' : 'band'} soft />
 {/if}
 
 {#if data.home && data.user}

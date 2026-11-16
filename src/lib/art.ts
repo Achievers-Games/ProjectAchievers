@@ -23,5 +23,8 @@ export const gameArt = (headerUrl: string) => {
 export const cssArt = (images: string[]) =>
   images.map((image) => `url("${encodeURI(image)}")`).join(', ');
 
+/** La même capture Steam en vignette (600 × 338), pour choisir sans tout télécharger. */
+export const thumbArt = (artUrl: string) => artUrl.replace('.1920x1080.jpg', '.600x338.jpg');
+
 /** En dessous, l'image ne couvre plus un écran sans se pixeliser : on la floute en ambiance. */
 export const SHARP_WIDTH = 1200;
