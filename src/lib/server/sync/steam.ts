@@ -57,6 +57,21 @@ export const unchangedSince = (
   (known.lastPlayedAt?.getTime() ?? null) === (playedAt?.getTime() ?? null) &&
   known.playtimeMinutes === minutes;
 
+/**
+ * La date de dernier lancement à enregistrer. `GetOwnedGames` ne la donne plus : un temps de jeu
+ * qui a grandi depuis la dernière lecture prouve que le joueur y a joué entre-temps, daté à la
+ * lecture. `undefined` garde la date connue : un jeu sans signal ne perd jamais la sienne.
+ */
+export const steamPlayedAt = (
+  game: Pick<OwnedGame, 'rtime_last_played' | 'playtime_forever'>,
+  knownMinutes?: number,
+  now = new Date(),
+): Date | undefined => {
+  if (game.rtime_last_played) return new Date(game.rtime_last_played * 1000);
+  if (knownMinutes !== undefined && (game.playtime_forever ?? 0) > knownMinutes) return now;
+  return undefined;
+};
+
 async function steamGet(path: string, params: Record<string, string | number>) {
   const url = new URL(`${API}${path}`);
   url.searchParams.set('key', env().STEAM_API_KEY ?? '');
@@ -566,6 +581,7 @@ async function syncSteamGame(
   source: OwnedGame,
   shared: boolean,
   refreshSchema = false,
+  lastPlayedAt?: Date,
 ) {
   const game = await steamCatalogGame(source, refreshSchema);
 
@@ -584,12 +600,7 @@ async function syncSteamGame(
       achievementsCheckedAt: new Date(),
       ...(shared
         ? { playtimeMinutes: source.playtime_forever }
-        : {
-            playtimeMinutes: source.playtime_forever ?? 0,
-            lastPlayedAt: source.rtime_last_played
-              ? new Date(source.rtime_last_played * 1000)
-              : null,
-          }),
+        : { playtimeMinutes: source.playtime_forever ?? 0, lastPlayedAt }),
     },
     // GetPlayerAchievements rend tous les succès du joueur sur ce jeu.
     { complete: true },
@@ -714,6 +725,12 @@ export const syncSteam: ProviderSync = async ({
       const known = knownProgress.get(appId);
       const count = counts?.get(ownedGame.appid);
       const playing = appId === activeAppId;
+      // Ce que la ligne retient du dernier lancement : maintenant si le jeu tourne.
+      const lastPlayed = borrowed
+        ? undefined
+        : playing
+          ? new Date()
+          : steamPlayedAt(ownedGame, known?.playtimeMinutes);
 
       if (!ownedGame.has_community_visible_stats) {
         // Aucun succès à lire : seul le temps de jeu entre, ou bouge.
@@ -722,7 +739,7 @@ export const syncSteam: ProviderSync = async ({
         } else if (!unchangedSince(known, playedAt ?? known.lastPlayedAt, minutes)) {
           await db.userGame.update({
             where: { userId_gameId: { userId, gameId: known.game.id } },
-            data: { playtimeMinutes: minutes, ...(playedAt && { lastPlayedAt: playedAt }) },
+            data: { playtimeMinutes: minutes, lastPlayedAt: lastPlayed },
           });
         }
         return;
@@ -740,7 +757,7 @@ export const syncSteam: ProviderSync = async ({
           if (played !== undefined && played !== known.playtimeMinutes) {
             await db.userGame.update({
               where: { userId_gameId: { userId, gameId: known.game.id } },
-              data: { playtimeMinutes: played, ...(playedAt && { lastPlayedAt: playedAt }) },
+              data: { playtimeMinutes: played, lastPlayedAt: lastPlayed },
             });
           }
           return;
@@ -764,7 +781,7 @@ export const syncSteam: ProviderSync = async ({
         // Un jeu de la bibliothèque sans succès, déjà connu du site : il entre tel quel.
         await saveProgress(userId, inCatalog.get(appId)!, [], {
           achievementsCheckedAt: new Date(),
-          ...(!borrowed && { playtimeMinutes: minutes, lastPlayedAt: playedAt }),
+          ...(!borrowed && { playtimeMinutes: minutes, lastPlayedAt: lastPlayed }),
         });
         return;
       }
@@ -775,6 +792,7 @@ export const syncSteam: ProviderSync = async ({
         ownedGame,
         borrowed,
         refreshSchema,
+        lastPlayed,
       );
       achievements += gained;
       if (gained > 0) onUnlocked(game, gained);

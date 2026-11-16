@@ -10,7 +10,7 @@ import { mapRetroAchievement, retroUnlocks } from './retro';
 import { isComplete } from '#lib/collection';
 import { fetchRetry, mapLimit, SyncError } from './errors';
 import { assertPsnResponse, mapTrophy } from './psn';
-import { mapSchema, unchangedSince } from './steam';
+import { mapSchema, steamPlayedAt, unchangedSince } from './steam';
 import {
   hasAchievements,
   mapXbox360Achievement,
@@ -82,6 +82,19 @@ describe('Steam', () => {
   it('relit toujours un jeu joué ces deux dernières semaines', () => {
     // La relecture en direct a pu enregistrer le temps de jeu avant que Steam publie le succès.
     expect(unchangedSince({ lastPlayedAt: null, playtimeMinutes: 120 }, null, 120, 30)).toBe(false);
+  });
+
+  it('date le dernier lancement au temps de jeu qui grandit, sans jamais effacer la date connue', () => {
+    const now = new Date('2026-11-16T20:00:00Z');
+    // Steam la donne encore : elle fait foi.
+    expect(
+      steamPlayedAt({ rtime_last_played: 1_763_000_000, playtime_forever: 10 }, 10, now),
+    ).toEqual(new Date(1_763_000_000_000));
+    // Sans elle, du temps en plus prouve un lancement depuis la dernière lecture.
+    expect(steamPlayedAt({ playtime_forever: 130 }, 120, now)).toEqual(now);
+    // Rien de neuf, ou un jeu jamais vu : la date en base ne bouge pas.
+    expect(steamPlayedAt({ playtime_forever: 120 }, 120, now)).toBeUndefined();
+    expect(steamPlayedAt({ playtime_forever: 120 }, undefined, now)).toBeUndefined();
   });
 });
 

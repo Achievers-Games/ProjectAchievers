@@ -19,6 +19,7 @@ import {
   steamVisibility,
   type SteamPrivacy,
   steamAppInfo,
+  steamPlayedAt,
   type OwnedGame,
   type TopGame,
 } from './steam';
@@ -205,14 +206,17 @@ async function catchUpRecent(userId: string, steamId: string, checkedAppId?: str
     // Seul un succès en plus compte : la relecture ne retire rien. Un jeu absent de la réponse
     // retombe sur le temps de jeu.
     const changed = count ? count.unlocked > row.unlockedCount : minutes > row.playtimeMinutes;
+    // Du temps en plus depuis la dernière lecture : le jeu a été lancé entre-temps.
+    const lastPlayedAt = steamPlayedAt(game, row.playtimeMinutes);
     if (changed) {
       const appId = String(game.appid);
       await runLiveGame(userId, steamId, appId, game.playtime_forever, tops.get(game.appid));
-    } else if (minutes > row.playtimeMinutes) {
-      // Rien de neuf côté succès : le temps de jeu se met à jour sans rien demander à Steam.
+    }
+    if (lastPlayedAt) {
+      // Le temps de jeu se met à jour sans rien demander à Steam ; la relecture l'a déjà fait.
       await db.userGame.updateMany({
         where: { userId, gameId: row.gameId },
-        data: { playtimeMinutes: minutes },
+        data: { ...(!changed && { playtimeMinutes: minutes }), lastPlayedAt },
       });
     }
   }
@@ -324,6 +328,21 @@ async function catchUp(account: SteamAccount, checkedAppId?: string) {
   await refreshLook(account).catch((cause) => log.error('Apparence Steam :', cause));
 }
 
+/**
+ * Le jeu tourne en ce moment : c'est son dernier lancement. Au plus une écriture par minute et
+ * par jeu, comme `liveCheckedAt`.
+ */
+async function notePlaying(userId: string, appId: string, now: number) {
+  await db.userGame.updateMany({
+    where: {
+      userId,
+      game: { platform: 'STEAM', platformGameId: appId },
+      OR: [{ lastPlayedAt: null }, { lastPlayedAt: { lt: new Date(now - MINUTE) } }],
+    },
+    data: { lastPlayedAt: new Date(now) },
+  });
+}
+
 export async function checkLiveGames() {
   const userIds = connectedUsers();
   const visible = new Set(visibleUsers());
@@ -383,6 +402,7 @@ export async function checkLiveGames() {
     try {
       const gained = await runLiveGame(userId, steamId, appId);
       if (gained === null) await importUnknown(userId, steamId, [{ appid: Number(appId) }]);
+      if (playing.has(steamId)) await notePlaying(userId, appId, now);
     } catch (cause) {
       log.error(cause);
     }

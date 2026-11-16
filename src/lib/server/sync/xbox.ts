@@ -219,9 +219,13 @@ export const syncXbox: ProviderSync = async ({
 
   const previous = await db.userGame.findMany({
     where: { userId, game: { platform: 'XBOX' } },
-    select: { unlockedCount: true, game: { select: { platformGameId: true } } },
+    select: {
+      unlockedCount: true,
+      lastPlayedAt: true,
+      game: { select: { id: true, platformGameId: true } },
+    },
   });
-  const known = new Map(previous.map((p) => [p.game.platformGameId, p.unlockedCount]));
+  const known = new Map(previous.map((p) => [p.game.platformGameId, p]));
   await fillConsoles('XBOX', new Map(titles.map((t) => [t.titleId, xboxConsole(t.devices)])));
 
   let achievements = 0;
@@ -237,7 +241,18 @@ export const syncXbox: ProviderSync = async ({
       yieldSlot,
     },
     async (title) => {
-      if (known.get(title.titleId) === title.achievement?.currentAchievements) return;
+      const played = title.titleHistory?.lastTimePlayed;
+      const lastPlayed = played ? new Date(played) : null;
+      const row = known.get(title.titleId);
+      if (row?.unlockedCount === title.achievement?.currentAchievements) {
+        // Joué sans nouveau succès : seule la date du dernier lancement avance.
+        if (row && lastPlayed && lastPlayed.getTime() !== row.lastPlayedAt?.getTime())
+          await db.userGame.updateMany({
+            where: { userId, gameId: row.game.id },
+            data: { lastPlayedAt: lastPlayed },
+          });
+        return;
+      }
 
       const game = await upsertGame({
         platform: 'XBOX',
@@ -248,8 +263,6 @@ export const syncXbox: ProviderSync = async ({
         console: xboxConsole(title.devices),
       });
 
-      const played = title.titleHistory?.lastTimePlayed;
-      const lastPlayed = played ? new Date(played) : null;
       const read = await readTitle(session, title.titleId, lastPlayed ?? new Date());
       await saveAchievements(game.id, read.achievements);
       for (const state of read.states) states.set(state, (states.get(state) ?? 0) + 1);
