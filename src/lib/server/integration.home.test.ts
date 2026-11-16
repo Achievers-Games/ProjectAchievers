@@ -93,4 +93,43 @@ describe('lectures de l’accueil', () => {
     invalidatePublicCache();
     expect(await homePopularGames()).not.toBe(popular);
   });
+
+  it('habille la bannière du classement avec le jeu de bannière du numéro 1', async () => {
+    const userId = await player();
+    const { handle } = await db.user.findUniqueOrThrow({ where: { id: userId } });
+    const key = `${PREFIX}-${Math.random()}`;
+    const add = async (suffix: string, completion: number, adultOnly = false) => {
+      const game = await db.game.create({
+        data: {
+          platform: 'STEAM',
+          platformGameId: `${key}-${suffix}`,
+          slug: `${key}-${suffix}`,
+          name: `${PREFIX} ${suffix}`,
+          familyKey: `${key}-${suffix}`,
+          totalAchievements: 10,
+          adultOnly,
+          headerUrl: `https://example.test/${suffix}/header.jpg`,
+        },
+      });
+      await db.userGame.create({ data: { userId, gameId: game.id, completion } });
+      return game;
+    };
+    const showcased = await add('vitrine', 100);
+    const chosen = await add('banniere', 40);
+    const adult = await add('adulte', 40, true);
+    const leader = { handle } as Parameters<typeof homeBanners>[0];
+
+    // Sans choix, le premier jeu de la vitrine, avec son pourcentage.
+    expect((await homeBanners(leader)).ranking).toMatchObject({ slug: showcased.slug });
+
+    await db.user.update({ where: { id: userId }, data: { bannerGameId: chosen.id } });
+    expect((await homeBanners(leader)).ranking).toMatchObject({
+      slug: chosen.slug,
+      completion: null,
+    });
+
+    // L'accueil est public : un jeu pour adultes choisi laisse la place à la vitrine.
+    await db.user.update({ where: { id: userId }, data: { bannerGameId: adult.id } });
+    expect((await homeBanners(leader)).ranking).toMatchObject({ slug: showcased.slug });
+  });
 });

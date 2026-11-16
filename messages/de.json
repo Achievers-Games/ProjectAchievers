@@ -1666,7 +1666,7 @@
       }
     }
   ],
-  "ranking_collectors": "Top-Sammler",
+  "ranking_collectors": "Top-Achievers",
   "ranking_full": "Vollständige Rangliste",
   "ranking_collectors_empty": "Noch keine Karten.",
   "ranking_place": "Platz {place}",

@@ -6,6 +6,7 @@ import { bestCards, chosenCards } from './library';
 import { publicCache } from '../public-cache';
 import { MAX_SHOWCASE, publicGames } from './shared';
 import type { Collector } from './leaderboard';
+import { chosenGameSelect, profileArt } from './profile';
 
 export interface BannerGame {
   name: string;
@@ -199,16 +200,33 @@ export async function showcaseHead(handle: string) {
   return showcase.find((card) => card.headerUrl) ?? null;
 }
 
-/** Le numéro 1 du classement et le premier jeu de sa vitrine, comme sur son profil. */
+/**
+ * Le numéro 1 du classement et le jeu de sa bannière, comme sur son profil. Un fond Steam ou une
+ * bannière retirée ne nomment aucun jeu : le premier de sa vitrine prend alors le relais.
+ */
 async function rankingBanner(leader: Collector | undefined) {
   if (!leader) return { leader: null, game: null };
-  const best = await showcaseHead(leader.handle);
-  if (!best?.headerUrl) return { leader, game: null };
-  const art = await artBySlug([best.slug]);
-  return {
-    leader,
-    game: toBanner({ ...best, ...art.get(best.slug), headerUrl: best.headerUrl }),
-  };
+  const [user, best] = await Promise.all([
+    db.user.findUnique({
+      where: { handle: leader.handle },
+      select: { bannerGame: chosenGameSelect(leader.handle) },
+    }),
+    showcaseHead(leader.handle),
+  ]);
+  const art = best ? await artBySlug([best.slug]) : new Map<string, GameArt>();
+  const showcase = best?.headerUrl
+    ? [{ ...best, ...art.get(best.slug), headerUrl: best.headerUrl }]
+    : [];
+  // L'accueil est public : un jeu réservé aux adultes n'y passe jamais.
+  const chosen = profileArt(
+    { off: false, steam: false, game: user?.bannerGame ?? null },
+    null,
+    showcase,
+    false,
+    'banner',
+  );
+  // Seul le jeu de la vitrine apporte un pourcentage : le jeu choisi n'en a pas.
+  return { leader, game: chosen?.kind === 'game' ? chosen : null };
 }
 
 export async function homeBanners(firstCollector: Collector | undefined, userId?: string) {
