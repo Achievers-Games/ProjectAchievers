@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
+  import PageBackdrop from '#lib/components/PageBackdrop.svelte';
   import { m } from '#lib/paraglide/messages';
   import Seo from '#lib/components/Seo.svelte';
   import { page } from '$app/state';
@@ -15,6 +17,11 @@
   import StatGrid from '#lib/components/StatGrid.svelte';
 
   let { data } = $props();
+  /**
+   * Tiré une fois par visite : une synchronisation recharge les données de la page, et le fond
+   * ne doit pas changer sous les yeux du joueur.
+   */
+  const backdrop = untrack(() => data.backdrop);
 </script>
 
 <Seo
@@ -26,6 +33,10 @@
     url: page.url.origin,
   }}
 />
+
+{#if backdrop}
+  <PageBackdrop images={backdrop.images} soft />
+{/if}
 
 {#if data.home && data.user}
   <div class="space-y-8">

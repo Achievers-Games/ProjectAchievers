@@ -3,6 +3,8 @@
   import { enhance } from '$app/forms';
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
+  import PageBackdrop from '#lib/components/PageBackdrop.svelte';
+  import { gameArt } from '#lib/art';
   import Check from '@lucide/svelte/icons/check';
   import Eye from '@lucide/svelte/icons/eye';
   import EyeOff from '@lucide/svelte/icons/eye-off';
@@ -159,6 +161,11 @@
     ...(data.game.headerUrl ? { image: data.game.headerUrl } : {}),
   }}
 />
+
+{#if data.game.headerUrl}
+  <!-- La grande image du jeu en ambiance, atténuée : la page se lit comme d'habitude. -->
+  <PageBackdrop images={gameArt(data.game.headerUrl)} soft />
+{/if}
 
 <div class="space-y-6">
   <header class="flex flex-col gap-4 sm:flex-row">

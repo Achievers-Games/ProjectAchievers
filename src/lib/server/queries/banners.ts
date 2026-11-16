@@ -1,9 +1,10 @@
 import type { Platform } from '#prisma';
+import { gameArt } from '#lib/art';
 import { db } from '../db';
 import { groupLibrary } from '../library';
 import { bestCards, chosenCards } from './library';
 import { publicCache } from '../public-cache';
-import { MAX_SHOWCASE } from './shared';
+import { MAX_SHOWCASE, publicGames } from './shared';
 import type { Collector } from './leaderboard';
 
 export interface BannerGame {
@@ -13,12 +14,6 @@ export interface BannerGame {
   completion: number | null;
 }
 
-/** Steam a une grande image pour la plupart des jeux ; l'en-tête prend le relais sinon. */
-const bannerImages = (headerUrl: string) =>
-  headerUrl.endsWith('/header.jpg')
-    ? [headerUrl.replace('/header.jpg', '/library_hero.jpg'), headerUrl]
-    : [headerUrl];
-
 export const toBanner = (game: {
   name: string;
   slug: string;
@@ -27,7 +22,7 @@ export const toBanner = (game: {
 }): BannerGame => ({
   name: game.name,
   slug: game.slug,
-  images: bannerImages(game.headerUrl),
+  images: gameArt(game.headerUrl),
   completion: game.completion ?? null,
 });
 
@@ -181,4 +176,25 @@ export async function homeBanners(firstCollector: Collector | undefined, userId?
     rankingBanner(firstCollector),
   ]);
   return { season, ranking: game, leader };
+}
+
+/** Les jeux qui peuvent habiller l'accueil : les plus joués du site, relus toutes les heures. */
+const backdropPool = () =>
+  publicCache.read(
+    'home:backdrops',
+    () =>
+      db.game.findMany({
+        where: { ...publicGames, headerUrl: { not: null } },
+        orderBy: [{ players: { _count: 'desc' } }, { id: 'asc' }],
+        take: 120,
+        select: { name: true, slug: true, headerUrl: true },
+      }),
+    3_600_000,
+  );
+
+/** Un jeu au hasard pour le fond de l'accueil : un autre à chaque visite. */
+export async function homeBackdrop(random = Math.random) {
+  const pool = await backdropPool();
+  const game = pool[Math.floor(random() * pool.length)];
+  return game?.headerUrl ? toBanner({ ...game, headerUrl: game.headerUrl }) : null;
 }

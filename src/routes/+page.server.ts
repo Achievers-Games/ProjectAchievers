@@ -5,6 +5,7 @@ import {
   homePopularGames,
   dashboard,
   friendsPlaying,
+  homeBackdrop,
   homeBanners,
   toBanner,
 } from '#lib/server/queries';
@@ -16,6 +17,8 @@ import type { PageServerLoad } from './$types';
 export const load: PageServerLoad = async ({ locals, depends }) => {
   depends('app:sync');
   const podiumTask = homePodium();
+  // Un jeu au hasard derrière l'accueil, tiré à chaque visite parmi les plus joués.
+  const backdropTask = homeBackdrop();
   if (locals.user) {
     const [podium, home, accounts, cards, banners, barelyPlayed, unlinked, friends] =
       await Promise.all([
@@ -37,7 +40,18 @@ export const load: PageServerLoad = async ({ locals, depends }) => {
       barelyPlayed,
     });
     if (aboutBarelyPlayed && barelyPlayed) banners.season = toBanner(barelyPlayed);
-    return { home, accounts, unlinked, cards, podium, banners, friends, popular: null, tagline };
+    return {
+      home,
+      accounts,
+      unlinked,
+      cards,
+      podium,
+      banners,
+      friends,
+      popular: null,
+      tagline,
+      backdrop: await backdropTask,
+    };
   }
   const [podium, games, cards, banners] = await Promise.all([
     podiumTask,
@@ -55,5 +69,6 @@ export const load: PageServerLoad = async ({ locals, depends }) => {
     banners,
     popular: games,
     tagline: randomTagline().text,
+    backdrop: await backdropTask,
   };
 };

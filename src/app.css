@@ -1887,7 +1887,7 @@
     linear-gradient(0deg, rgb(8 6 18 / 0.85), rgb(8 6 18 / 0.2) 70%),
     linear-gradient(90deg, rgb(8 6 18 / 0.9) 10%, rgb(8 6 18 / 0.45) 60%, rgb(8 6 18 / 0.25)),
     var(--art, none), linear-gradient(115deg, #2a0f3f, #0d0a1c);
-  background-position: center 30%;
+  background-position: center;
   background-size: cover;
   box-shadow: 0 12px 40px rgb(0 0 0 / 0.35);
 }
@@ -1901,22 +1901,71 @@
 
 /* Avec un fond, la grande image du jeu couvre toute la page, nette ; seuls les blocs de texte
    posent un verre dépoli dessus, comme une page de joueur Steam. */
-.profile-backdrop {
+.page-backdrop {
   @apply pointer-events-none fixed inset-0 -z-10;
+  /* La couleur du voile : la nuit du site sur un profil, celle du thème ailleurs. */
+  --veil: 8 6 18;
   background-color: rgb(12 11 22);
   background-image: var(--art, none);
-  background-position: center top;
+  background-repeat: no-repeat;
+}
+.page-backdrop[data-soft] {
+  --veil: var(--bg);
+  background-color: rgb(var(--bg));
+}
+/* Un fond de profil Steam est fait pour tout l'écran. */
+.page-backdrop[data-fit='cover'] {
+  background-position: center;
   background-size: cover;
 }
+/* Une image de jeu (1920 × 620) étirée sur tout l'écran se pixelise et perd ses côtés : elle
+   reste en bandeau en haut, à sa vraie proportion, et se fond dans le fond de la page. */
+.page-backdrop[data-fit='band'] {
+  background-position: center top;
+  background-size: 100% auto;
+}
+/* Seul l'en-tête du jeu existe : flouté, il donne une ambiance au lieu de pixels. */
+.page-backdrop[data-fit='blur'] {
+  background-position: center;
+  background-size: cover;
+  filter: blur(32px) saturate(1.2);
+  transform: scale(1.15);
+}
 /* L'assombrissement passe au-dessus de l'image comme de la vidéo d'un fond animé. */
-.profile-backdrop::after {
+.page-backdrop::after {
   content: '';
   @apply absolute inset-0;
   background: linear-gradient(
     180deg,
-    rgb(8 6 18 / 0.15) 0%,
-    rgb(8 6 18 / 0.55) 55%,
-    rgb(8 6 18 / 0.9) 100%
+    rgb(var(--veil) / 0.15) 0%,
+    rgb(var(--veil) / 0.55) 55%,
+    rgb(var(--veil) / 0.9) 100%
+  );
+}
+/* Le bandeau se referme là où l'image s'arrête : 620 / 1920 de la largeur. */
+.page-backdrop[data-fit='band']::after {
+  background: linear-gradient(
+    180deg,
+    rgb(var(--veil) / 0.1) 0,
+    rgb(var(--veil) / 0.5) 20vw,
+    rgb(var(--veil)) 32vw
+  );
+}
+/* Pages de jeu et accueil : l'image reste une ambiance, la page se lit comme d'habitude. */
+.page-backdrop[data-soft]::after {
+  background: linear-gradient(
+    180deg,
+    rgb(var(--veil) / 0.72) 0%,
+    rgb(var(--veil) / 0.88) 40%,
+    rgb(var(--veil)) 80%
+  );
+}
+.page-backdrop[data-soft][data-fit='band']::after {
+  background: linear-gradient(
+    180deg,
+    rgb(var(--veil) / 0.6) 0,
+    rgb(var(--veil) / 0.85) 20vw,
+    rgb(var(--veil)) 32vw
   );
 }
 /* Sans jeu en vitrine, l'en-tête s'efface et laisse voir le fond ; avec un jeu, sa bannière
@@ -1968,11 +2017,11 @@
 }
 
 /* Un fond Steam animé joue par-dessus son image fixe, qui reste là pendant le chargement. */
-.profile-backdrop-video,
+.page-backdrop-video,
 .background-tile-video {
   @apply absolute inset-0 h-full w-full object-cover;
 }
-.profile-backdrop-video {
+.page-backdrop-video {
   z-index: -1;
 }
 .background-tile-video {
@@ -1983,7 +2032,7 @@
   text-shadow: 0 1px 6px rgb(0 0 0 / 0.8);
 }
 @media (prefers-reduced-motion: reduce) {
-  .profile-backdrop-video,
+  .page-backdrop-video,
   .background-tile-video {
     display: none;
   }

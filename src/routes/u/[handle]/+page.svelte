@@ -8,6 +8,8 @@
   import IdCard from '@lucide/svelte/icons/id-card';
   import Link from '@lucide/svelte/icons/link';
   import Avatar from '#lib/components/Avatar.svelte';
+  import PageBackdrop from '#lib/components/PageBackdrop.svelte';
+  import { cssArt } from '#lib/art';
   import Empty from '#lib/components/Empty.svelte';
   import Seo from '#lib/components/Seo.svelte';
   import GameCard from '#lib/components/GameCard.svelte';
@@ -47,12 +49,7 @@
     };
   });
   /** La grande image d'abord, l'en-tête du jeu derrière si elle n'existe pas. */
-  const art = $derived(
-    profile.background?.images.map((image) => `url("${encodeURI(image)}")`).join(', '),
-  );
-  const bannerArt = $derived(
-    profile.banner?.images.map((image) => `url("${encodeURI(image)}")`).join(', '),
-  );
+  const bannerArt = $derived(profile.banner ? cssArt(profile.banner.images) : undefined);
   const isMe = $derived(data.user?.id === profile.user.id);
   /** L'image de partage n'existe que pour un profil public : sinon, l'avatar seul. */
   const shareImage = $derived(
@@ -122,21 +119,11 @@
 />
 
 {#if profile.background}
-  <div class="profile-backdrop" style:--art={art} aria-hidden="true">
-    {#if profile.background.kind === 'steam' && profile.background.motion}
-      <!-- Un fond Steam animé : la vidéo couvre l'image fixe, coupée si l'on préfère moins
-           d'animations. -->
-      <video
-        class="profile-backdrop-video"
-        src={profile.background.motion}
-        poster={profile.background.images[0]}
-        autoplay
-        muted
-        loop
-        playsinline
-      ></video>
-    {/if}
-  </div>
+  <PageBackdrop
+    images={profile.background.images}
+    motion={profile.background.kind === 'steam' ? profile.background.motion : null}
+    fit={profile.background.kind === 'steam' ? 'cover' : 'band'}
+  />
 {/if}
 
 <div class="profile-page space-y-8" data-backdrop={profile.background ? '' : undefined}>
