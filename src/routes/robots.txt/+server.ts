@@ -22,6 +22,9 @@ export const GET: RequestHandler = () =>
       'Disallow: /compte',
       'Disallow: /moderation',
       'Disallow: /auth/',
+      // D'anciens liens y menaient : Google les a indexées sans pouvoir les lire. Ouvertes, il y voit
+      // le `noindex` posé par `hooks.server.ts` et les retire. La règle la plus longue l'emporte.
+      'Allow: /auth/*/start',
       'Disallow: /api/',
       // Chaque page de succès y renvoie avec son adresse : une page de connexion par succès et
       // par langue, que les robots suivaient par milliers.

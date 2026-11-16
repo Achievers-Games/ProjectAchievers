@@ -47,6 +47,9 @@ export const init: ServerInit = async () => {
 
 const WINDOW = 60_000;
 
+/** `/connexion`, `/en/connexion`, `/auth/xbox/start`… */
+const NOINDEX = /^(?:\/[a-z]{2}(?:-[A-Z]{2})?)?\/(?:connexion(?:\/|$)|auth\/)/;
+
 function limitFor(request: Request, path: string): number | null {
   if (path === '/auth/dev') return null;
   if (path.startsWith('/auth/')) return 20;
@@ -164,6 +167,9 @@ const secured: Handle = async ({ event, resolve }) => {
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  // Connexion et redirections OAuth : rien à montrer dans un moteur de recherche, quelle que soit
+  // la langue de l'adresse.
+  if (NOINDEX.test(path)) response.headers.set('X-Robots-Tag', 'noindex');
   return response;
 };
 
