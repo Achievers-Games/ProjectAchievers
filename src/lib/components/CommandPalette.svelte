@@ -32,6 +32,8 @@
   let active = $state(0);
   let loading = $state(false);
   let controller: AbortController | undefined;
+  /** Un texte sélectionné dans le champ puis relâché sur le fond ne ferme pas la recherche. */
+  let pressedOutside = false;
 
   const players = $derived(results.filter((result) => result.kind === 'player'));
   const games = $derived(results.filter((result) => result.kind === 'game'));
@@ -145,10 +147,16 @@
   </li>
 {/snippet}
 
-<!-- Le préréglage CSS remet les marges à zéro : sans `mx-auto`, la fenêtre se colle à gauche. -->
+<!-- Le préréglage CSS remet les marges à zéro : sans `mx-auto`, la fenêtre se colle à gauche.
+     Un clic sur le fond assombri touche la fenêtre elle-même : il la ferme, comme Échap. -->
 <dialog
   bind:this={dialog}
   onclose={close}
+  onpointerdown={(event) => (pressedOutside = event.target === dialog)}
+  onclick={(event) => {
+    if (pressedOutside && event.target === dialog) dialog?.close();
+    pressedOutside = false;
+  }}
   aria-label={m.search_dialog()}
   class="mx-auto mt-[12vh] w-[36rem] max-w-[calc(100vw-2rem)] rounded-md border border-line bg-surface p-0 text-ink backdrop:bg-black/50"
 >
