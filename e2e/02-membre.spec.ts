@@ -86,7 +86,7 @@ test.describe('membre', () => {
       }),
     );
     await page.goto('/');
-    const rail = page.locator('.live-rail');
+    const rail = page.locator('section[aria-labelledby="direct"] .live-rail');
     await expect(rail.locator('a.drop-tile')).toHaveCount(12);
 
     // Les succès récents du compte de test se fêtent en arrivant et recouvrent le fil :
