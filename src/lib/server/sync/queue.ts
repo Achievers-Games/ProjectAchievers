@@ -786,7 +786,10 @@ export async function startWorkers() {
   await instance.work(CONTENT_QUEUE, async () => {
     await inSlices('Classification des jeux', 15, 10, (limit) => rateGames(limit));
     await inSlices('Genres des jeux', 10, 30, (limit) => tagGames(limit));
-    await inSlices('Images des jeux', 10, 30, (limit) => artGames(limit));
+    await inSlices('Images des jeux Steam', 20, 50, (limit) => artGames(limit, undefined, 'steam'));
+    await inSlices('Images des jeux de console', 5, 20, (limit) =>
+      artGames(limit, undefined, 'consoles'),
+    );
   });
   await instance.schedule(CONTENT_QUEUE, '*/5 * * * *');
   // File indépendante, mais le même budget de fond protège la mémoire du NAS.

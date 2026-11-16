@@ -206,14 +206,37 @@ export async function tagGames(limit = BATCH * 2, pause = PAUSE) {
   }));
 }
 
-/** La capture des jeux déjà classés avant qu'on la lise : une seule fois par jeu. */
-export async function artGames(limit = BATCH * 2, pause = PAUSE) {
+const writeArt = (now: Date) => (item: { art: string | null } | undefined) => ({
+  artUrl: item?.art ?? null,
+  artCheckedAt: now,
+});
+
+/**
+ * La capture des jeux déjà classés avant qu'on la lise : une seule fois par jeu. Les jeux Steam
+ * passent à part (`steam`) : cinquante par appel, sans recherche, ils ne doivent pas attendre
+ * derrière les jeux de console, qu'il faut d'abord retrouver sur Steam un par un.
+ */
+export async function artGames(limit = BATCH * 2, pause = PAUSE, only?: 'steam' | 'consoles') {
+  const platform =
+    only === 'steam' ? 'STEAM' : only === 'consoles' ? { not: 'STEAM' as const } : undefined;
   const games = await db.game.findMany({
-    where: { artCheckedAt: null },
+    where: { artCheckedAt: null, ...(platform && { platform }) },
     select: storeGame,
     orderBy: { platform: 'asc' },
     take: limit,
   });
-  const now = new Date();
-  return readStore(games, pause, (item) => ({ artUrl: item?.art ?? null, artCheckedAt: now }));
+  return readStore(games, pause, writeArt(new Date()));
+}
+
+/**
+ * La capture d'un jeu, tout de suite : choisi en fond, ou ouvert avant que la tâche de fond ne
+ * l'atteigne. Rien si elle a déjà été lue.
+ */
+export async function artNow(gameIds: string[], slugs: string[] = []) {
+  const games = await db.game.findMany({
+    where: { artCheckedAt: null, OR: [{ id: { in: gameIds } }, { slug: { in: slugs } }] },
+    select: storeGame,
+  });
+  if (!games.length) return 0;
+  return readStore(games, 0, writeArt(new Date()));
 }

@@ -14,6 +14,7 @@ import { SEASON, seasonState } from '#lib/season';
 import { getLocale } from '#lib/paraglide/runtime';
 import { lureGameFor } from '#lib/server/lure-games';
 import { completionTimes } from '#lib/server/completion-time';
+import { artNow } from '#lib/server/sync/content';
 import type { Actions, PageServerLoad } from './$types';
 import { m } from '#lib/paraglide/messages';
 
@@ -48,6 +49,9 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
   }
 
   mark('game_query');
+  // Une fiche ouverte avant que la tâche de fond n'ait lu sa capture la demande en passant : la
+  // page s'affiche sans l'attendre, la prochaine visite l'aura.
+  if (!game.artCheckedAt) void artNow([game.id]).catch(() => 0);
   // `?joueur=` : la fiche du jeu telle que ce joueur l'a vécue. Elle passe avant `?avec=`.
   const ofHandle = url.searchParams.get('joueur')?.trim() || null;
   const withHandle = ofHandle ? null : url.searchParams.get('avec')?.trim() || null;

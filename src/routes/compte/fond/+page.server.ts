@@ -3,6 +3,7 @@ import { m } from '#lib/paraglide/messages';
 import { requireLogin } from '#lib/server/auth';
 import { db } from '#lib/server/db';
 import { fetchSteamLook } from '#lib/server/providers/steam';
+import { artNow } from '#lib/server/sync/content';
 import { onePerFamily, toBanner } from '#lib/server/queries';
 import { thumbArt } from '#lib/art';
 import type { Actions, PageServerLoad } from './$types';
@@ -162,6 +163,8 @@ export const actions: Actions = {
       where: { id: user.id },
       data: { [fields.off]: false, [fields.steam]: false, [fields.game]: gameId },
     });
+    // La capture plein écran tout de suite, sans attendre la tâche de fond : Steam répond vite.
+    await artNow([gameId]).catch(() => 0);
     return { success: m.background_saved() };
   },
 };
