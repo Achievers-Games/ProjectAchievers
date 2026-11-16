@@ -320,6 +320,9 @@
           copies={game.copies}
           next={game.next}
           seasonEligible={game.seasonEligible}
+          href={data.player
+            ? `/jeux/${game.slug}?joueur=${encodeURIComponent(data.player.handle)}`
+            : undefined}
         />
       {/each}
     </div>
