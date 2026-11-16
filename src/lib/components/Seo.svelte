@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from '$app/state';
-  import { deLocalizeUrl, getLocale, locales, localizeUrl } from '#lib/paraglide/runtime';
+  import { deLocalizeUrl, getLocale, locales } from '#lib/paraglide/runtime';
+  import { localizedPath } from '#lib/localized-path';
 
   interface Props {
     /** Titre complet de l'onglet, déjà suivi du nom du site si besoin. */
@@ -38,12 +39,12 @@
   const absolute = (url: string) => new URL(url, page.url.origin).href;
   // La page sans préfixe de langue : la même pour toutes les versions.
   const base = $derived(new URL(path ?? deLocalizeUrl(page.url).pathname, page.url.origin));
-  // Chaque langue a son adresse (/fr/…, /en/…) : c'est elle que les moteurs gardent, même pour
-  // une visite arrivée par l'adresse sans préfixe, qui suit la langue du visiteur.
-  const canonical = $derived(localizeUrl(base, { locale: getLocale() }).href);
-  const alternates = $derived(
-    locales.map((locale) => ({ locale, href: localizeUrl(base, { locale }).href })),
-  );
+  // Chaque langue a son adresse (/en/…, /de/…, sans préfixe pour le français) : c'est elle que les
+  // moteurs gardent, même pour une visite arrivée par une autre adresse de la même page.
+  const inLocale = (locale: string) =>
+    new URL(localizedPath(base.pathname, locale), page.url.origin).href;
+  const canonical = $derived(inLocale(getLocale()));
+  const alternates = $derived(locales.map((locale) => ({ locale, href: inLocale(locale) })));
   const picture = $derived(image ? absolute(image) : null);
   const summary = $derived(shareDescription ?? description);
 

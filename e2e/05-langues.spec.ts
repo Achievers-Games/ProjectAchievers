@@ -37,9 +37,15 @@ test.describe('langues', () => {
       'href',
       `${origin}/jeux`,
     );
+    // Le français garde l'adresse sans préfixe, celle de tous les liens du site.
+    await expect(page.locator('link[hreflang="fr"]')).toHaveAttribute('href', `${origin}/jeux`);
 
     // Les liens sans préfixe gardent ensuite la langue de l'adresse par laquelle on est arrivé.
     await page.goto('/communaute');
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+
+    // /fr/… reste servie, mais renvoie les moteurs vers l'adresse sans préfixe.
+    await page.goto('/fr/jeux');
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', `${origin}/jeux`);
   });
 });

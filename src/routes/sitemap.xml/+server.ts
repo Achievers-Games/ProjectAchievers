@@ -60,7 +60,7 @@ async function entries(): Promise<Entry[]> {
 }
 
 /**
- * Chaque page une fois, à son adresse française, avec ses versions dans toutes les langues
+ * Chaque page une fois, à son adresse française (sans préfixe), avec ses versions dans toutes les langues
  * (hreflang) : les moteurs découvrent ainsi les huit langues sans un plan huit fois plus long.
  */
 const urlset = (origin: string, list: Entry[]) =>
