@@ -1880,5 +1880,13 @@
   "chat_new_no_friends": "Add a friend first to write to them:",
   "chat_new_filter": "Find a friend",
   "chat_new_none": "No friend matches.",
-  "profile_banner_game": "Showcased game: {game}"
+  "profile_banner_game": "Showcased game: {game}",
+  "background_title": "Profile background",
+  "background_help": "A big image from one of your games covers your profile. If you don’t pick one, it’s the first game in your showcase.",
+  "background_auto": "First showcase game",
+  "background_off": "No background",
+  "background_see_profile": "View my profile",
+  "background_pick": "Pick a game",
+  "background_choose": "Use {game} as background",
+  "background_saved": "Profile background saved."
 }

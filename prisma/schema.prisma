@@ -117,6 +117,11 @@ model User {
   isPublic            Boolean   @default(true)
   /// Vitrine choisie à la main ; sinon, les meilleures cartes.
   showcaseCustom      Boolean   @default(false)
+  /// Jeu dont la grande image habille le profil ; sans choix, la première carte de la vitrine.
+  backgroundGameId    String?
+  backgroundGame      Game?     @relation("ProfileBackground", fields: [backgroundGameId], references: [id], onDelete: SetNull)
+  /// Le joueur a retiré le fond : son profil reste sobre.
+  backgroundOff       Boolean   @default(false)
   /// Affiche les jeux centrés sur le contenu sexuel, masqués par défaut.
   showAdult           Boolean   @default(false)
   /// Montre les messages tels qu'ils ont été écrits ; sinon, les grossièretés sont masquées.
@@ -461,6 +466,7 @@ model Game {
   /// Les consoles d'une liste PSN (« PS4/PS5 ») : chacune compte pour un exemplaire à part.
   console           String?
   pinnedBy          PinnedGame[]
+  backgroundOf      User[]            @relation("ProfileBackground")
   translations      GameTranslation[]
   name              String
   slug              String            @unique

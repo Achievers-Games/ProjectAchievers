@@ -1,7 +1,14 @@
 // Tests sur un vrai PostgreSQL : `npm run dev:db` ou le service de la CI.
 import 'dotenv/config';
 import { describe, expect, it, vi } from 'vitest';
-import { activityFeed, friendsPlaying, hasRecentFeat, highlights, leaderboard } from './queries';
+import {
+  activityFeed,
+  friendsPlaying,
+  hasRecentFeat,
+  highlights,
+  leaderboard,
+  userProfile,
+} from './queries';
 import { resolveIdentity } from './accounts';
 import { db } from './db';
 import { mergeUsers } from './merge';
@@ -261,6 +268,63 @@ describe('amis, clans et discussions', () => {
     const rows = await friendsPlaying(a.id);
     expect(rows.map((row) => row.game.id)).toEqual([fresh.id, old.id]);
     expect(rows[0].user.handle).toBe(b.handle);
+  });
+
+  it('habille le profil du jeu choisi, tant que le joueur le garde', async () => {
+    const [player] = await players();
+    const make = (name: string, adultOnly = false) =>
+      db.game.create({
+        data: {
+          platform: 'STEAM',
+          platformGameId: `${PREFIX}-${Math.random()}`,
+          name: `${PREFIX} ${name}`,
+          slug: `${PREFIX}-${Math.random().toString(36).slice(2)}`,
+          headerUrl: `https://cdn.example/${name}/header.jpg`,
+          adultOnly,
+        },
+      });
+    const [chosen, adult] = [await make('choisi'), await make('adulte', true)];
+    await db.userGame.createMany({
+      data: [
+        { userId: player.id, gameId: chosen.id },
+        { userId: player.id, gameId: adult.id },
+      ],
+    });
+    const background = async (showAdult = false) =>
+      (await userProfile(player.handle, null, showAdult))?.background ?? null;
+
+    // Sans vitrine ni choix, pas de fond.
+    expect(await background()).toBeNull();
+
+    await db.user.update({ where: { id: player.id }, data: { backgroundGameId: chosen.id } });
+    expect(await background()).toMatchObject({
+      slug: chosen.slug,
+      images: [
+        'https://cdn.example/choisi/library_hero.jpg',
+        'https://cdn.example/choisi/header.jpg',
+      ],
+    });
+    expect((await userProfile(player.handle, null))?.user).not.toHaveProperty('backgroundGame');
+
+    // Un jeu adulte choisi ne se montre qu'à qui a demandé à les voir.
+    await db.user.update({ where: { id: player.id }, data: { backgroundGameId: adult.id } });
+    expect(await background()).toBeNull();
+    expect((await background(true))?.slug).toBe(adult.slug);
+
+    // Masqué de la bibliothèque, le jeu choisi n'habille plus rien.
+    await db.user.update({ where: { id: player.id }, data: { backgroundGameId: chosen.id } });
+    await db.userGame.update({
+      where: { userId_gameId: { userId: player.id, gameId: chosen.id } },
+      data: { hidden: true },
+    });
+    expect(await background()).toBeNull();
+
+    await db.userGame.update({
+      where: { userId_gameId: { userId: player.id, gameId: chosen.id } },
+      data: { hidden: false },
+    });
+    await db.user.update({ where: { id: player.id }, data: { backgroundOff: true } });
+    expect(await background()).toBeNull();
   });
 
   it('garde le blocage subi par le profil absorbé', async () => {

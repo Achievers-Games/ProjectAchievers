@@ -1,6 +1,7 @@
 import { db } from '../db';
 import { bestCards, chosenCards, profileCards } from './library';
 import { userStats } from './stats';
+import { toBanner } from './banners';
 import { MAX_SHOWCASE, cardSelect, publicUser, visibleGames } from './shared';
 import { friendIds } from '../social/friends';
 
@@ -36,6 +37,53 @@ export async function dashboard(userId: string, showAdult = false) {
   return { recent, almost, stats };
 }
 
+interface BackgroundGame {
+  name: string;
+  slug: string;
+  headerUrl: string | null;
+  adultOnly: boolean;
+  players: unknown[];
+}
+
+/**
+ * Le jeu qui habille le profil : celui que le joueur a choisi, s'il l'a toujours et que le
+ * visiteur peut le voir ; sinon la première carte de la vitrine. Rien si le joueur l'a retiré.
+ */
+export function profileBackground(
+  user: { backgroundOff: boolean; backgroundGame: BackgroundGame | null },
+  showcase: { name: string; slug: string; headerUrl: string | null }[],
+  showAdult: boolean,
+) {
+  if (user.backgroundOff) return null;
+  const chosen = user.backgroundGame;
+  const usable =
+    chosen?.headerUrl && chosen.players.length > 0 && (showAdult || !chosen.adultOnly)
+      ? chosen
+      : showcase.find((card) => card.headerUrl);
+  return usable?.headerUrl ? toBanner({ ...usable, headerUrl: usable.headerUrl }) : null;
+}
+
+/**
+ * Une tuile par jeu : la version déjà choisie si elle en fait partie, sinon celle de Steam, qui a
+ * une grande image ; à défaut, la première lue.
+ */
+export function onePerFamily<T extends { id: string; platform: string; familyKey: string | null }>(
+  games: T[],
+  chosenId: string | null,
+) {
+  const kept = new Map<string, T>();
+  for (const game of games) {
+    const family = game.familyKey ?? game.id;
+    const current = kept.get(family);
+    const better =
+      !current ||
+      game.id === chosenId ||
+      (current.id !== chosenId && current.platform !== 'STEAM' && game.platform === 'STEAM');
+    if (better) kept.set(family, game);
+  }
+  return [...kept.values()];
+}
+
 export async function userProfile(handle: string, viewerId: string | null, showAdult = false) {
   const user = await db.user.findUnique({
     where: { handle },
@@ -43,6 +91,17 @@ export async function userProfile(handle: string, viewerId: string | null, showA
       id: true,
       ...publicUser,
       showcaseCustom: true,
+      backgroundOff: true,
+      backgroundGame: {
+        select: {
+          name: true,
+          slug: true,
+          headerUrl: true,
+          adultOnly: true,
+          // Le fond choisi doit rester dans la bibliothèque : un jeu masqué ou perdu ne s'affiche plus.
+          players: { where: { user: { handle }, hidden: false }, select: { gameId: true } },
+        },
+      },
       isPublic: true,
       createdAt: true,
       clanMember: { select: { clan: { select: { name: true, slug: true } } } },
@@ -95,7 +154,16 @@ export async function userProfile(handle: string, viewerId: string | null, showA
   );
   // Une sélection vide ou masquée au visiteur ne laisse pas une vitrine vide.
   const showcase = (user.showcaseCustom && chosen.length ? chosen : cards).slice(0, MAX_SHOWCASE);
-  return { user, stats, showcase, games: library.slice(0, 24), recent };
+  // Le choix brut du fond reste au serveur : un jeu adulte choisi ne doit pas fuiter au visiteur.
+  const { backgroundGame, backgroundOff, ...shown } = user;
+  return {
+    user: shown,
+    stats,
+    showcase,
+    background: profileBackground({ backgroundGame, backgroundOff }, showcase, showAdult),
+    games: library.slice(0, 24),
+    recent,
+  };
 }
 
 /**

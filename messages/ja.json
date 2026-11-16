@@ -1843,5 +1843,13 @@
   "chat_new_no_friends": "まずフレンドを追加してください：",
   "chat_new_filter": "フレンドを探す",
   "chat_new_none": "該当するフレンドはいません。",
-  "profile_banner_game": "ショーケースのゲーム：{game}"
+  "profile_banner_game": "ショーケースのゲーム：{game}",
+  "background_title": "プロフィール背景",
+  "background_help": "自分のゲームの大きな画像でプロフィールを飾ります。選ばない場合はショーケースの最初のゲームになります。",
+  "background_auto": "ショーケースの最初のゲーム",
+  "background_off": "背景なし",
+  "background_see_profile": "プロフィールを見る",
+  "background_pick": "ゲームを選ぶ",
+  "background_choose": "{game}を背景にする",
+  "background_saved": "プロフィール背景を保存しました。"
 }

@@ -46,6 +46,10 @@
       document.removeEventListener('visibilitychange', updateSubscription);
     };
   });
+  /** La grande image d'abord, l'en-tête du jeu derrière si elle n'existe pas. */
+  const art = $derived(
+    profile.background?.images.map((image) => `url("${encodeURI(image)}")`).join(', '),
+  );
   const isMe = $derived(data.user?.id === profile.user.id);
   /** L'image de partage n'existe que pour un profil public : sinon, l'avatar seul. */
   const shareImage = $derived(
@@ -114,18 +118,19 @@
   }}
 />
 
-<div class="space-y-8">
-  <header
-    class="profile-banner"
-    style:--art={data.banner?.images.map((image) => `url("${encodeURI(image)}")`).join(', ')}
-  >
-    {#if data.banner}
+{#if profile.background}
+  <div class="profile-backdrop" style:--art={art} aria-hidden="true"></div>
+{/if}
+
+<div class="profile-page space-y-8" data-backdrop={profile.background ? '' : undefined}>
+  <header class="profile-banner">
+    {#if profile.background}
       <a
-        href={gameHref(data.banner) ?? `/jeux/${data.banner.slug}`}
+        href={gameHref(profile.background) ?? `/jeux/${profile.background.slug}`}
         class="profile-banner-game"
-        title={m.profile_banner_game({ game: data.banner.name })}
+        title={m.profile_banner_game({ game: profile.background.name })}
       >
-        {data.banner.name}
+        {profile.background.name}
       </a>
     {/if}
     <Avatar person={profile.user} play="always" size={112} />
@@ -210,6 +215,7 @@
         </button>
       {/if}
       {#if isMe}
+        <a class="btn" href="/compte/fond">{m.background_title()}</a>
         <a class="btn btn-primary" href="/compte">{m.profile_edit()}</a>
       {/if}
       {#if data.relation === 'none'}
@@ -241,7 +247,7 @@
   />
 
   {#if profile.showcase.length}
-    <section class="space-y-3" aria-labelledby="vitrine">
+    <section class="profile-panel space-y-3" aria-labelledby="vitrine">
       <div class="flex items-baseline justify-between gap-4">
         <h2 id="vitrine">{m.showcase_title()}</h2>
         {#if isMe}
@@ -276,7 +282,7 @@
     </Empty>
   {:else}
     <div class="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
-      <section class="space-y-3">
+      <section class="profile-panel space-y-3">
         <div class="flex items-baseline justify-between gap-4">
           <h2>{m.stat_games()}</h2>
           <a
@@ -302,7 +308,7 @@
         </div>
       </section>
 
-      <section class="space-y-3">
+      <section class="profile-panel space-y-3">
         <h2>{m.recent_achievements()}</h2>
         <ul class="card divide-y divide-line">
           {#each profile.recent as item (item.achievement.id)}

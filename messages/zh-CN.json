@@ -1843,5 +1843,13 @@
   "chat_new_no_friends": "先添加好友才能发消息：",
   "chat_new_filter": "查找好友",
   "chat_new_none": "没有匹配的好友。",
-  "profile_banner_game": "展示的游戏：{game}"
+  "profile_banner_game": "展示的游戏：{game}",
+  "background_title": "资料背景",
+  "background_help": "用你某款游戏的大图装饰资料页。未选择时，使用展示柜中的第一款游戏。",
+  "background_auto": "展示柜第一款游戏",
+  "background_off": "不使用背景",
+  "background_see_profile": "查看我的资料",
+  "background_pick": "选择游戏",
+  "background_choose": "将{game}设为背景",
+  "background_saved": "资料背景已保存。"
 }

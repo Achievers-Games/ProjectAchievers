@@ -1930,5 +1930,13 @@
   "chat_new_no_friends": "Сначала добавь друга, чтобы написать ему:",
   "chat_new_filter": "Найти друга",
   "chat_new_none": "Совпадений нет.",
-  "profile_banner_game": "Игра на витрине: {game}"
+  "profile_banner_game": "Игра на витрине: {game}",
+  "background_title": "Фон профиля",
+  "background_help": "Большое изображение одной из твоих игр украшает профиль. Если не выбрать, берётся первая игра витрины.",
+  "background_auto": "Первая игра витрины",
+  "background_off": "Без фона",
+  "background_see_profile": "Открыть профиль",
+  "background_pick": "Выбрать игру",
+  "background_choose": "Сделать {game} фоном",
+  "background_saved": "Фон профиля сохранён."
 }

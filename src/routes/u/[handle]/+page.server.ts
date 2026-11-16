@@ -1,6 +1,6 @@
 import { error } from '@sveltejs/kit';
 import { env } from '#lib/server/env';
-import { toBanner, userProfile } from '#lib/server/queries';
+import { userProfile } from '#lib/server/queries';
 import { siteAchievementCount } from '#lib/server/site-achievements';
 import { relationWith } from '#lib/server/social';
 import type { PageServerLoad } from './$types';
@@ -15,8 +15,5 @@ export const load: PageServerLoad = async ({ params, locals, depends }) => {
     locals.user ? relationWith(locals.user.id, profile.user.id) : null,
     siteAchievementCount(profile.user.id),
   ]);
-  // La première carte de la vitrine habille la bannière : c'est le jeu que le joueur met en avant.
-  const first = profile.showcase[0];
-  const banner = first?.headerUrl ? toBanner({ ...first, headerUrl: first.headerUrl }) : null;
-  return { profile, relation, siteAchievements, banner, origin: env().ORIGIN };
+  return { profile, relation, siteAchievements, origin: env().ORIGIN };
 };

@@ -1880,5 +1880,13 @@
   "chat_new_no_friends": "Ajoute d’abord un ami pour lui écrire :",
   "chat_new_filter": "Chercher un ami",
   "chat_new_none": "Aucun ami ne correspond.",
-  "profile_banner_game": "Jeu en vitrine : {game}"
+  "profile_banner_game": "Jeu en vitrine : {game}",
+  "background_title": "Fond du profil",
+  "background_help": "La grande image d’un de tes jeux couvre ton profil. Sans choix, c’est le premier jeu de ta vitrine.",
+  "background_auto": "1er jeu de la vitrine",
+  "background_off": "Aucun fond",
+  "background_see_profile": "Voir mon profil",
+  "background_pick": "Choisir un jeu",
+  "background_choose": "Mettre {game} en fond",
+  "background_saved": "Fond du profil enregistré."
 }
