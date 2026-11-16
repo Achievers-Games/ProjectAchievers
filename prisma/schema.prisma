@@ -492,9 +492,12 @@ model Game {
   /// Étiquettes Steam les plus votées, par ordre de poids : les genres des succès du site.
   tags              Int[]             @default([])
   tagsCheckedAt     DateTime?
-  /// Une capture Steam en 1920 × 1080, faite pour un fond plein écran ; un jeu hors Steam prend
-  /// celle de sa version Steam.
+  /// Le fond de la page boutique Steam (ou, à défaut, une capture), pour un fond plein écran ; un
+  /// jeu hors Steam prend celui de sa version Steam.
   artUrl            String?
+  /// La grande image de bibliothèque Steam (1920 × 620), un bandeau sans logo fait pour une
+  /// bannière, à sa vraie adresse : les jeux récents n'ont plus l'adresse classique.
+  heroUrl           String?
   artCheckedAt      DateTime?
   /// Les succès manquables du jeu ont été relevés par un guide officiel.
   guideReviewedAt   DateTime?

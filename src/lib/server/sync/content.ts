@@ -55,14 +55,14 @@ interface StoreItem {
   appid?: number;
   tags?: { tagid: number; weight: number }[];
   screenshots?: { all_ages_screenshots?: { filename: string; ordinal?: number }[] };
-  assets?: { asset_url_format?: string; raw_page_background?: string };
+  assets?: { asset_url_format?: string; raw_page_background?: string; library_hero?: string };
 }
 
 const STORE_ASSETS = 'https://shared.akamai.steamstatic.com/store_item_assets/';
 
 /**
  * L'image de fond d'un jeu, plein écran. D'abord le fond de sa page sur la boutique
- * (\`page_bg_raw\`, 1438 × 810) : une illustration composée pour passer derrière du texte. Sinon
+ * (`page_bg_raw`, 1438 × 810) : une illustration composée pour passer derrière du texte. Sinon
  * la première capture, dans l'ordre choisi par l'éditeur, en 1920 × 1080 : nette, mais souvent
  * chargée de l'interface du jeu.
  */
@@ -76,7 +76,17 @@ export function storeArt(item: StoreItem) {
   return STORE_ASSETS + first.filename.replace(/\.jpg(?=\?|$)/, '.1920x1080.jpg');
 }
 
-/** Les étiquettes et la capture de chaque jeu Steam, par numéro d'application. */
+/**
+ * La grande image de bibliothèque (1920 × 620) : un bandeau sans logo, composé pour le haut d'une
+ * page, donc pour une bannière. Son adresse vient de la boutique : celle des jeux récents porte
+ * une empreinte que l'adresse classique n'a pas.
+ */
+export function storeHero(item: StoreItem) {
+  const { asset_url_format: format, library_hero: hero } = item.assets ?? {};
+  return format && hero ? STORE_ASSETS + format.replace('${FILENAME}', hero) : null;
+}
+
+/** Les étiquettes, le fond et la bannière de chaque jeu Steam, par numéro d'application. */
 async function storeItems(appIds: number[]) {
   const input = {
     ids: appIds.map((appid) => ({ appid })),
@@ -97,6 +107,7 @@ async function storeItems(appIds: number[]) {
           .slice(0, KEPT_TAGS)
           .map((tag) => tag.tagid),
         art: storeArt(item),
+        hero: storeHero(item),
       },
     ]),
   );
@@ -130,6 +141,8 @@ async function steamTwin(name: string, key: string | null) {
   return data.items?.find((item) => episodeKey(familyKey(item.name)) === wanted)?.id ?? null;
 }
 
+type StoreArt = { tags: number[]; art: string | null; hero: string | null };
+
 type StoreGame = {
   id: string;
   platform: string;
@@ -145,7 +158,7 @@ type StoreGame = {
 async function readStore(
   games: StoreGame[],
   pause: number,
-  write: (item: { tags: number[]; art: string | null } | undefined) => Prisma.GameUpdateInput,
+  write: (item: StoreArt | undefined) => Prisma.GameUpdateInput,
 ) {
   const steamIds = new Map<string, number>();
   const unanswered = new Set<string>();
@@ -207,12 +220,14 @@ export async function tagGames(limit = BATCH * 2, pause = PAUSE) {
     tags: item?.tags ?? [],
     tagsCheckedAt: now,
     artUrl: item?.art ?? null,
+    heroUrl: item?.hero ?? null,
     artCheckedAt: now,
   }));
 }
 
-const writeArt = (now: Date) => (item: { art: string | null } | undefined) => ({
+const writeArt = (now: Date) => (item: StoreArt | undefined) => ({
   artUrl: item?.art ?? null,
+  heroUrl: item?.hero ?? null,
   artCheckedAt: now,
 });
 

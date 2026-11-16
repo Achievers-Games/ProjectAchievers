@@ -226,12 +226,17 @@ async function cardBanner(user: {
 }): Promise<string[]> {
   const choice = { off: user.bannerOff, steam: user.bannerSteam, game: user.bannerGame };
   if (choice.off) return [];
-  const chosen = profileArt(choice, user.accounts[0] ?? null, [], false);
+  const chosen = profileArt(choice, user.accounts[0] ?? null, [], false, 'banner');
   if (chosen) return chosen.images;
   const featured = await featuredGame(user.id, user.handle);
   return (
-    profileArt({ off: false, steam: false, game: null }, null, featured ? [featured] : [], false)
-      ?.images ?? []
+    profileArt(
+      { off: false, steam: false, game: null },
+      null,
+      featured ? [featured] : [],
+      false,
+      'banner',
+    )?.images ?? []
   );
 }
 
@@ -239,12 +244,14 @@ async function featuredGame(userId: string, handle: string) {
   const head = await showcaseHead(handle);
   if (head?.headerUrl) {
     const art = await artBySlug([head.slug]);
-    return { ...head, artUrl: art.get(head.slug) ?? null };
+    return { ...head, ...art.get(head.slug) };
   }
   const best = await db.userGame.findFirst({
     where: { userId, hidden: false, game: { adultOnly: false, headerUrl: { not: null } } },
     orderBy: [{ completion: 'desc' }, { unlockedCount: 'desc' }],
-    select: { game: { select: { name: true, slug: true, headerUrl: true, artUrl: true } } },
+    select: {
+      game: { select: { name: true, slug: true, headerUrl: true, artUrl: true, heroUrl: true } },
+    },
   });
   return best?.game ?? null;
 }

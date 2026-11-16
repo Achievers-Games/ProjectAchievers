@@ -1412,6 +1412,7 @@ describe('synchronisation Steam', () => {
           assets: {
             asset_url_format: `steam/apps/${cuteId}/${'${FILENAME}'}?t=2`,
             raw_page_background: 'abc/page_bg_raw.jpg',
+            library_hero: 'def/library_hero.jpg',
           },
         },
       ];
@@ -1439,6 +1440,14 @@ describe('synchronisation Steam', () => {
     expect(await art(sibling.id)).toBe(screenshot);
     expect(await art(found.id)).toBe(
       `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${cuteId}/abc/page_bg_raw.jpg?t=2`,
+    );
+    // Le bandeau de bibliothèque, pour les bannières, à son adresse à empreinte.
+    const { heroUrl } = await db.game.findUniqueOrThrow({
+      where: { id: found.id },
+      select: { heroUrl: true },
+    });
+    expect(heroUrl).toBe(
+      `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${cuteId}/def/library_hero.jpg?t=2`,
     );
 
     // Les jeux classés avant l'arrivée des captures les reçoivent une fois, sans perdre leurs genres.

@@ -74,8 +74,8 @@ export const load: PageServerLoad = async ({ locals, url }) => {
         game: {
           headerUrl: { not: null },
           // Une icône de trophée PlayStation ou Xbox étirée en fond est laide : seuls les jeux qui
-          // ont une grande image se proposent (capture Steam, ou bandeau d'un jeu Steam).
-          OR: [{ artUrl: { not: null } }, { platform: 'STEAM' }],
+          // ont une grande image se proposent (images de la boutique Steam, ou d'un jeu Steam).
+          OR: [{ artUrl: { not: null } }, { heroUrl: { not: null } }, { platform: 'STEAM' }],
           ...(q && { name: { contains: q, mode: 'insensitive' } }),
         },
       },
@@ -91,6 +91,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
             slug: true,
             headerUrl: true,
             artUrl: true,
+            heroUrl: true,
             platform: true,
             familyKey: true,
           },
@@ -120,9 +121,13 @@ export const load: PageServerLoad = async ({ locals, url }) => {
       .slice(0, SHOWN)
       .map((game) => ({
         id: game.id,
-        ...toBanner({ ...game, headerUrl: game.headerUrl as string }),
-        // La vignette de la capture : la page en montre des dizaines.
-        thumb: game.artUrl ? thumbArt(game.artUrl) : null,
+        // Chaque onglet montre l'image qu'il posera : le bandeau pour la bannière, le fond de la
+        // page boutique pour le fond.
+        ...toBanner(
+          { ...game, headerUrl: game.headerUrl as string },
+          target === 'banniere' ? 'banner' : 'background',
+        ),
+        thumb: target === 'banniere' ? null : game.artUrl ? thumbArt(game.artUrl) : null,
       })),
   };
 };

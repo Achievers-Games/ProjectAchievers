@@ -12,41 +12,64 @@ export interface BannerGame {
   slug: string;
   images: string[];
   completion: number | null;
-  /** La première image est une capture plein écran : elle peut couvrir toute la page. */
+  /** La première image est faite pour un écran entier : elle peut couvrir toute la page. */
   cover: boolean;
 }
 
-export const toBanner = (game: {
-  name: string;
-  slug: string;
-  headerUrl: string;
+/** Les grandes images d'un jeu, lues sur la boutique Steam. */
+export interface GameArt {
+  /** Le fond de sa page boutique, ou une capture : pour un fond plein écran. */
   artUrl?: string | null;
-  completion?: number | null;
-}): BannerGame => ({
-  name: game.name,
-  slug: game.slug,
-  images: game.artUrl ? [game.artUrl, ...gameArt(game.headerUrl)] : gameArt(game.headerUrl),
-  completion: game.completion ?? null,
-  cover: Boolean(game.artUrl),
-});
+  /** Sa grande image de bibliothèque, un bandeau sans logo : pour une bannière. */
+  heroUrl?: string | null;
+}
 
-/** La capture plein écran de quelques jeux, par adresse : les cartes de vitrine ne l'ont pas. */
+/**
+ * Les images d'un jeu, la meilleure devant, les autres en secours si elle manque. Une bannière
+ * (en-tête du profil, carte de joueur, carrousel) prend le bandeau de bibliothèque ; un fond de
+ * page prend le fond de la page boutique, composé pour passer derrière du texte.
+ */
+export const toBanner = (
+  game: { name: string; slug: string; headerUrl: string; completion?: number | null } & GameArt,
+  use: 'banner' | 'background' = 'banner',
+): BannerGame => {
+  const fallback = gameArt(game.headerUrl);
+  const best = use === 'banner' ? [game.heroUrl, game.artUrl] : [game.artUrl, game.heroUrl];
+  const images = [...new Set([...best.filter((url): url is string => Boolean(url)), ...fallback])];
+  return {
+    name: game.name,
+    slug: game.slug,
+    images,
+    completion: game.completion ?? null,
+    cover: use === 'background' && Boolean(game.artUrl),
+  };
+};
+
+/** Les grandes images de quelques jeux, par adresse : les cartes de vitrine ne les ont pas. */
 export async function artBySlug(slugs: string[]) {
-  if (!slugs.length) return new Map<string, string>();
+  if (!slugs.length) return new Map<string, GameArt>();
   const rows = await db.game.findMany({
-    where: { slug: { in: slugs }, artUrl: { not: null } },
-    select: { slug: true, artUrl: true },
+    where: { slug: { in: slugs } },
+    select: { slug: true, artUrl: true, heroUrl: true },
   });
-  return new Map(rows.map((row) => [row.slug, row.artUrl as string]));
+  return new Map(rows.map(({ slug, ...art }) => [slug, art as GameArt]));
 }
 
 /** Le jeu le plus avancé du joueur ; à défaut, ou pour un invité, un jeu au hasard. */
 async function seasonBanner(userId?: string) {
   // Une seule ligne revient de Postgres, en conservant le regroupement et l'exemplaire suivant.
   const [closest] = userId
-    ? await db.$queryRaw<{ name: string; slug: string; headerUrl: string; completion: number }[]>`
+    ? await db.$queryRaw<
+        {
+          name: string;
+          slug: string;
+          headerUrl: string;
+          heroUrl: string | null;
+          completion: number;
+        }[]
+      >`
     WITH versions AS (
-      SELECT g.name, g.slug, g."headerUrl", g."totalAchievements", ug.completion,
+      SELECT g.name, g.slug, g."headerUrl", g."heroUrl", g."totalAchievements", ug.completion,
         COALESCE(g."familyKey", g.id) AS family, COALESCE(g.console, g.platform::text) AS edition,
         row_number() OVER (PARTITION BY COALESCE(g."familyKey", g.id) ORDER BY ug.completion DESC, g.slug) AS position
       FROM "UserGame" ug JOIN "Game" g ON g.id = ug."gameId"
@@ -59,12 +82,12 @@ async function seasonBanner(userId?: string) {
       WHERE done.family IS NULL AND v.completion > 0 AND v.completion < 100
       GROUP BY v.family
     ), cards AS (
-      SELECT best.name, best.slug, best."headerUrl", best."totalAchievements", best.completion,
+      SELECT best.name, best.slug, best."headerUrl", best."heroUrl", best."totalAchievements", best.completion,
         next_versions.completion AS next
       FROM versions best LEFT JOIN next_versions ON next_versions.family = best.family
       WHERE position = 1
     )
-    SELECT name, slug, "headerUrl", COALESCE(next, completion) AS completion FROM cards
+    SELECT name, slug, "headerUrl", "heroUrl", COALESCE(next, completion) AS completion FROM cards
     WHERE "headerUrl" IS NOT NULL AND (next IS NOT NULL OR (completion < 100 AND "totalAchievements" > 0))
     ORDER BY COALESCE(next, completion) DESC, name, slug LIMIT 1`
     : [];
@@ -78,8 +101,10 @@ async function seasonBanner(userId?: string) {
 
   // Un jeu pas encore classé pourrait être un jeu adulte : il ne s'affiche pas à l'accueil.
   const random = await publicCache.read('home:random-banner', async () => {
-    const [game] = await db.$queryRaw<{ name: string; slug: string; headerUrl: string }[]>`
-    SELECT name, slug, "headerUrl"
+    const [game] = await db.$queryRaw<
+      { name: string; slug: string; headerUrl: string; heroUrl: string | null }[]
+    >`
+    SELECT name, slug, "headerUrl", "heroUrl"
     FROM "Game"
     WHERE NOT "adultOnly" AND "headerUrl" IS NOT NULL AND "totalAchievements" > 0
       AND (platform <> 'STEAM' OR "contentCheckedAt" IS NOT NULL)
@@ -178,9 +203,11 @@ export async function showcaseHead(handle: string) {
 async function rankingBanner(leader: Collector | undefined) {
   if (!leader) return { leader: null, game: null };
   const best = await showcaseHead(leader.handle);
+  if (!best?.headerUrl) return { leader, game: null };
+  const art = await artBySlug([best.slug]);
   return {
     leader,
-    game: best?.headerUrl ? toBanner({ ...best, headerUrl: best.headerUrl }) : null,
+    game: toBanner({ ...best, ...art.get(best.slug), headerUrl: best.headerUrl }),
   };
 }
 
@@ -211,5 +238,5 @@ const backdropPool = () =>
 export async function homeBackdrop(random = Math.random) {
   const pool = await backdropPool();
   const game = pool[Math.floor(random() * pool.length)];
-  return game?.headerUrl ? toBanner({ ...game, headerUrl: game.headerUrl }) : null;
+  return game?.headerUrl ? toBanner({ ...game, headerUrl: game.headerUrl }, 'background') : null;
 }
