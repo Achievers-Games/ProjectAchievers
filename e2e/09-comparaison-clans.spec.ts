@@ -1,4 +1,4 @@
-import { expect } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
 import { test, login, ready } from './helpers';
 
 test.describe('comparaison par jeu', () => {
@@ -92,20 +92,27 @@ test.describe('comparaison par jeu', () => {
   });
 });
 
+/** Fait quitter son clan au joueur s'il en a un : le test repart toujours de joueurs sans clan. */
+async function leaveAnyClan(page: Page) {
+  await page.goto('/clan');
+  await ready(page);
+  const previous = page.getByRole('button', { name: 'Quitter le clan' });
+  if (await previous.isVisible()) {
+    await previous.click();
+    await expect(page.getByLabel('Nom du clan')).toBeVisible();
+  }
+}
+
 test.describe('clans', () => {
   test('liste les clans aux points et accepte une demande d’adhésion', async ({
     page,
     browser,
   }) => {
+    // Trois joueurs, une douzaine de pages : 30 s ne suffisent pas toujours sur un runner lent.
+    test.slow();
     await login(page);
-    await page.goto('/clan');
-    await ready(page);
     // Le joueur de test peut déjà avoir un clan : on en repart pour repasser par la création.
-    const previous = page.getByRole('button', { name: 'Quitter le clan' });
-    if (await previous.isVisible()) {
-      await previous.click();
-      await expect(page.getByLabel('Nom du clan')).toBeVisible();
-    }
+    await leaveAnyClan(page);
 
     const name = `Clan rôles ${Date.now()}`;
     await page.getByLabel('Nom du clan').fill(name);
@@ -116,6 +123,8 @@ test.describe('clans', () => {
     const marcoContext = await browser.newContext();
     const marco = await marcoContext.newPage();
     await marco.goto('/auth/dev?compte=marco');
+    // Une tentative précédente a pu le laisser membre : la liste ne lui proposerait plus de rejoindre.
+    await leaveAnyClan(marco);
     await marco.goto('/clans');
     await ready(marco);
     const clanRow = () => marco.getByRole('listitem').filter({ hasText: name });
@@ -152,6 +161,7 @@ test.describe('clans', () => {
     const leaContext = await browser.newContext();
     const lea = await leaContext.newPage();
     await lea.goto('/auth/dev?compte=lea');
+    await leaveAnyClan(lea);
     await lea.goto('/clans');
     await ready(lea);
     await lea
