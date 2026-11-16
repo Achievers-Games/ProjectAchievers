@@ -5,7 +5,13 @@ import { describe, expect, it } from 'vitest';
 import { profileSchema, resolveIdentity, updateProfile, type Identity } from './accounts';
 import { db } from './db';
 import { mergeUsers } from './merge';
-import { recentUnlocks, saveAchievements, saveProgress, upsertGame } from './sync/store';
+import {
+  markCelebrated,
+  recentUnlocks,
+  saveAchievements,
+  saveProgress,
+  upsertGame,
+} from './sync/store';
 import { PREFIX, identity, setupIntegration } from './test-helpers';
 
 setupIntegration();
@@ -203,6 +209,19 @@ describe('calcul de la progression', () => {
     ]);
     const recent = await recentUnlocks(userId);
     expect(recent).toMatchObject([{ title: 'T1', icon: null, game: `${PREFIX} jeu` }]);
+  });
+
+  it('ne rejoue pas sur un autre appareil un succès déjà fêté', async () => {
+    const { userId, gameId } = await fixture(['GOLD', 'GOLD']);
+    const hour = 60 * 60 * 1000;
+    await saveProgress(userId, gameId, [
+      { platformAchievementId: '0', unlockedAt: new Date(Date.now() - hour) },
+      { platformAchievementId: '1', unlockedAt: new Date(Date.now() - 2 * hour) },
+    ]);
+    const [first] = await recentUnlocks(userId);
+    await markCelebrated(userId, [first!.id]);
+    const recent = await recentUnlocks(userId);
+    expect(recent.map((unlock) => unlock.title)).toEqual(['T1']);
   });
 
   it('ne garde que les trois derniers succès récents', async () => {

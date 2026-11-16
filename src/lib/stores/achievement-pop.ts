@@ -39,8 +39,9 @@ function readSeen(): Record<string, number> {
 }
 
 /**
- * Fête des succès de plateforme une seule fois par navigateur. Le flux les renvoie à chaque
- * visite tant qu'ils sont récents : sans cette mémoire, un rechargement les rejouerait.
+ * Fête des succès de plateforme une seule fois par navigateur. Le serveur retient déjà ceux
+ * qu'il a envoyés ; cette mémoire couvre deux onglets ouverts ensemble, qui reçoivent chacun
+ * le même succès.
  */
 export function celebrateOnce(unlocks: UnlockPop[]) {
   if (!unlocks.length) return;

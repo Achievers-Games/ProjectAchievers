@@ -585,6 +585,8 @@ model UserAchievement {
   /// Arrivée sur le site : la synchronisation lit un succès des heures après son déblocage, et
   /// c'est elle qui dit s'il est nouveau pour les notifications.
   createdAt     DateTime    @default(now())
+  /// Déjà fêté sur une page du joueur : un autre appareil ne le rejoue pas à la connexion.
+  celebratedAt  DateTime?
 
   @@id([userId, achievementId])
   @@index([unlockedAt])

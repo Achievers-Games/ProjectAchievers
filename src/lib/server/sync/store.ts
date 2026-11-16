@@ -410,12 +410,13 @@ const CATCH_UP_DAYS = 7;
 
 /**
  * Les derniers succès du joueur, pour les fêter quand il revient sur le site : ceux
- * débloqués pendant qu'il n'avait pas la page ouverte n'ont encore rien montré.
+ * débloqués pendant qu'il n'avait pas la page ouverte n'ont encore rien montré. Ceux déjà
+ * fêtés sur une de ses pages restent tus, quel que soit l'appareil.
  */
 export async function recentUnlocks(userId: string, limit = 3) {
   const since = new Date(Date.now() - CATCH_UP_DAYS * 24 * 60 * 60 * 1000);
   const rows = await db.userAchievement.findMany({
-    where: { userId, unlockedAt: { gte: since } },
+    where: { userId, unlockedAt: { gte: since }, celebratedAt: null },
     orderBy: { unlockedAt: 'desc' },
     take: limit,
     select: {
@@ -430,4 +431,13 @@ export async function recentUnlocks(userId: string, limit = 3) {
     icon: achievement.iconUrl,
     game: achievement.game.name,
   }));
+}
+
+/** Ces succès viennent d'être envoyés à une page du joueur : plus aucun appareil ne les rejoue. */
+export async function markCelebrated(userId: string, achievementIds: string[]) {
+  if (!achievementIds.length) return;
+  await db.userAchievement.updateMany({
+    where: { userId, achievementId: { in: achievementIds }, celebratedAt: null },
+    data: { celebratedAt: new Date() },
+  });
 }
