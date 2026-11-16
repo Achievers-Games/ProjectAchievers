@@ -1941,5 +1941,7 @@
   "background_saved": "Фон профиля сохранён.",
   "background_steam_title": "Мой фон Steam",
   "background_steam_use": "Взять фон из профиля Steam",
-  "background_steam_none": "В профиле Steam пока не выбран фон."
+  "background_steam_none": "В профиле Steam пока не выбран фон.",
+  "games_not_owned": "Нет в коллекции",
+  "games_buy": "Купить в {platform}"
 }

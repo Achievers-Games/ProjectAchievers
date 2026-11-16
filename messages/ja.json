@@ -1854,5 +1854,7 @@
   "background_saved": "プロフィール背景を保存しました。",
   "background_steam_title": "Steamの背景",
   "background_steam_use": "Steamプロフィールの背景を使う",
-  "background_steam_none": "Steamプロフィールにはまだ背景が設定されていません。"
+  "background_steam_none": "Steamプロフィールにはまだ背景が設定されていません。",
+  "games_not_owned": "未所持",
+  "games_buy": "{platform}で購入"
 }

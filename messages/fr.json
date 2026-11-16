@@ -1891,5 +1891,7 @@
   "background_saved": "Fond du profil enregistré.",
   "background_steam_title": "Mon fond Steam",
   "background_steam_use": "Utiliser le fond de mon profil Steam",
-  "background_steam_none": "Aucun fond n’est équipé sur ton profil Steam pour l’instant."
+  "background_steam_none": "Aucun fond n’est équipé sur ton profil Steam pour l’instant.",
+  "games_not_owned": "Non possédés",
+  "games_buy": "Acheter sur {platform}"
 }

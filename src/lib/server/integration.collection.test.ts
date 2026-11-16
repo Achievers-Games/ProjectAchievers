@@ -704,3 +704,45 @@ describe('pagination de la bibliothèque', () => {
     expect(first.games[0]?.versions).toHaveLength(2);
   });
 });
+
+describe('jeux à acheter', () => {
+  it('ne montre que les jeux qu’on n’a sous aucune version, avec leur boutique', async () => {
+    const result = await resolveIdentity(identity(), null);
+    if (!result.ok) throw new Error('compte non créé');
+    const ownerId = result.userId;
+    // Une étiquette propre au test : le catalogue contient aussi les jeux des autres tests.
+    const tag = `${PREFIX} achat ${Math.random().toString(36).slice(2, 8)}`;
+    const make = (
+      name: string,
+      platform: 'STEAM' | 'PSN' | 'XBOX',
+      options: { family?: string; achievements?: number; tier?: number } = {},
+    ) =>
+      db.game.create({
+        data: {
+          platform,
+          platformGameId: `${Math.floor(Math.random() * 1e6)}`,
+          name: `${tag} ${name}`,
+          slug: `${PREFIX}-${Math.random().toString(36).slice(2)}`,
+          familyKey: options.family ?? null,
+          totalAchievements: options.achievements ?? 10,
+          tier: options.tier ?? null,
+        },
+      });
+    const family = `${PREFIX}-famille-${Math.random()}`;
+    const owned = await make('possédé', 'STEAM', { family });
+    await make('autre version', 'PSN', { family });
+    const rare = await make('rare', 'STEAM', { tier: 4 });
+    const xbox = await make('xbox', 'XBOX', { tier: 2 });
+    await make('sans succès', 'STEAM', { achievements: 0 });
+    await db.userGame.create({ data: { userId: ownerId, gameId: owned.id } });
+
+    const { games } = await listGames(
+      { q: tag, sort: 'rarete', page: 1, ownerId, status: 'non-possedes' },
+      ownerId,
+    );
+    expect(games.map((game) => [game.name, game.tier, game.store])).toEqual([
+      [rare.name, 4, `https://store.steampowered.com/app/${rare.platformGameId}`],
+      [xbox.name, 2, `https://www.xbox.com/search?q=${encodeURIComponent(xbox.name)}`],
+    ]);
+  });
+});

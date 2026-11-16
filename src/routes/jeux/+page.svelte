@@ -5,6 +5,7 @@
   import { page } from '$app/state';
   import LayoutGrid from '@lucide/svelte/icons/layout-grid';
   import List from '@lucide/svelte/icons/list';
+  import ShoppingCart from '@lucide/svelte/icons/shopping-cart';
   import Empty from '#lib/components/Empty.svelte';
   import GameCard from '#lib/components/GameCard.svelte';
   import TierLegend from '#lib/components/TierLegend.svelte';
@@ -120,6 +121,7 @@
     { value: 'restants', label: m.games_unfinished() },
     { value: 'saison', label: m.nav_season() },
     { value: 'caches', label: m.games_hidden() },
+    { value: 'non-possedes', label: m.games_not_owned() },
   ];
 
   const tiers = TIERS.map((tier) => ({
@@ -221,7 +223,7 @@
         role="group"
         aria-label={m.games_collection()}
       >
-        {#each collections.filter((item) => !data.player || (item.value !== 'caches' && item.value !== 'saison')) as item (item.label)}
+        {#each collections.filter((item) => !data.player || !['caches', 'saison', 'non-possedes'].includes(item.value ?? '')) as item (item.label)}
           <a
             href={hrefWith({ filtre: item.value })}
             data-sveltekit-reset="false"
@@ -310,20 +312,43 @@
         : 'grid gap-3 sm:grid-cols-2 lg:grid-cols-4'}
     >
       {#each games as game (game.id)}
-        <GameCard
-          {game}
-          progress={game.progress}
-          layout={data.params.vue}
-          versions={game.versions}
-          tier={game.tier}
-          target={game.target}
-          copies={game.copies}
-          next={game.next}
-          seasonEligible={game.seasonEligible}
-          href={data.player
+        {@const card = {
+          game,
+          progress: game.progress,
+          layout: data.params.vue,
+          versions: game.versions,
+          tier: game.tier,
+          target: game.target,
+          copies: game.copies,
+          next: game.next,
+          seasonEligible: game.seasonEligible,
+          href: data.player
             ? `/jeux/${game.slug}?joueur=${encodeURIComponent(data.player.handle)}`
-            : undefined}
-        />
+            : undefined,
+        }}
+        {#if data.params.filtre === 'non-possedes'}
+          <!-- Un jeu à acheter : la carte qu'il donnera, et la boutique juste dessous. -->
+          <div
+            class="flex flex-col gap-1.5 {data.params.vue === 'liste'
+              ? 'sm:flex-row sm:items-center'
+              : ''}"
+          >
+            <div class="min-w-0 flex-1"><GameCard {...card} rarity={game.tier} /></div>
+            {#if game.store}
+              <a
+                href={game.store}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="btn h-8 shrink-0 text-xs"
+              >
+                <ShoppingCart size={14} aria-hidden="true" />
+                {m.games_buy({ platform: PLATFORM_LABELS[game.platform] })}
+              </a>
+            {/if}
+          </div>
+        {:else}
+          <GameCard {...card} />
+        {/if}
       {/each}
     </div>
   {/if}

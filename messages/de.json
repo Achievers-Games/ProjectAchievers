@@ -1891,5 +1891,7 @@
   "background_saved": "Profilhintergrund gespeichert.",
   "background_steam_title": "Mein Steam-Hintergrund",
   "background_steam_use": "Hintergrund meines Steam-Profils nutzen",
-  "background_steam_none": "Auf deinem Steam-Profil ist noch kein Hintergrund ausgerüstet."
+  "background_steam_none": "Auf deinem Steam-Profil ist noch kein Hintergrund ausgerüstet.",
+  "games_not_owned": "Nicht im Besitz",
+  "games_buy": "Auf {platform} kaufen"
 }

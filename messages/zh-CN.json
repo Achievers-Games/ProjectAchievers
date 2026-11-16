@@ -1854,5 +1854,7 @@
   "background_saved": "资料背景已保存。",
   "background_steam_title": "我的 Steam 背景",
   "background_steam_use": "使用我的 Steam 资料背景",
-  "background_steam_none": "你的 Steam 资料暂未装备背景。"
+  "background_steam_none": "你的 Steam 资料暂未装备背景。",
+  "games_not_owned": "未拥有",
+  "games_buy": "在 {platform} 购买"
 }

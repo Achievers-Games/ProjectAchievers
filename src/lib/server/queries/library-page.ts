@@ -9,7 +9,8 @@ interface LibraryFilters {
   consoles?: string[];
   sort: 'nom' | 'recent' | 'progression' | 'succes' | 'rarete';
   page: number;
-  status?: 'termines' | 'restants' | 'saison' | 'caches';
+  // « non-possedes » ne passe jamais par ici : ces jeux ne sont pas dans la bibliothèque.
+  status?: 'termines' | 'restants' | 'saison' | 'caches' | 'non-possedes';
   tier?: number;
   showAdult?: boolean;
 }

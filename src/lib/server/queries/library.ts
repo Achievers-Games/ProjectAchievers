@@ -9,9 +9,40 @@ import { PAGE_SIZE, cardSelect, tierProgress, visibleGames } from './shared';
  * - `termines` : au moins une version à 100 %, la carte est obtenue ;
  * - `restants` : il reste une version commencée à finir ;
  * - `saison` : les jeux qui rapportent des points cette saison ;
- * - `caches` : les jeux cachés par le joueur, et seulement eux.
+ * - `caches` : les jeux cachés par le joueur, et seulement eux ;
+ * - `non-possedes` : les jeux du site dont le joueur n'a aucune version, à acheter.
  */
-export type GameStatus = 'termines' | 'restants' | 'saison' | 'caches';
+export type GameStatus = 'termines' | 'restants' | 'saison' | 'caches' | 'non-possedes';
+
+/**
+ * Où acheter le jeu : sa page Steam, sinon une recherche dans la boutique de la console.
+ * Les autres plateformes (RetroAchievements, Battle.net) n'ont pas de boutique à pointer.
+ */
+export function storeUrl(game: { platform: Platform; platformGameId: string; name: string }) {
+  const name = encodeURIComponent(game.name);
+  if (game.platform === 'STEAM') return `https://store.steampowered.com/app/${game.platformGameId}`;
+  if (game.platform === 'PSN') return `https://store.playstation.com/search/${name}`;
+  if (game.platform === 'XBOX') return `https://www.xbox.com/search?q=${name}`;
+  return null;
+}
+
+/**
+ * Les jeux qu'un joueur n'a sous aucune forme : ni cette version, ni une autre de la même
+ * famille. Un jeu sans succès ne donne pas de carte : il n'a rien à faire ici.
+ */
+async function notOwned(ownerId: string): Promise<Prisma.GameWhereInput[]> {
+  const owned = await db.userGame.findMany({
+    where: { userId: ownerId, game: { familyKey: { not: null } } },
+    distinct: ['gameId'],
+    select: { game: { select: { familyKey: true } } },
+  });
+  const families = [...new Set(owned.map((row) => row.game.familyKey as string))];
+  return [
+    { players: { none: { userId: ownerId } } },
+    { totalAchievements: { gt: 0 } },
+    ...(families.length ? [{ OR: [{ familyKey: null }, { familyKey: { notIn: families } }] }] : []),
+  ];
+}
 
 interface GameFilters {
   q?: string;
@@ -63,7 +94,7 @@ async function listLibrary(
   return {
     games: page.entries.flatMap((entry) => {
       const card = grouped.get(entry.family);
-      return card ? [{ ...card, seasonEligible: entry.seasonEligible }] : [];
+      return card ? [{ ...card, seasonEligible: entry.seasonEligible, store: null }] : [];
     }),
     total: page.total,
   };
@@ -75,10 +106,13 @@ export async function listGames(
   recordTiming?: (metric: string, duration: number) => void,
 ) {
   const where: Prisma.GameWhereInput = visibleGames(filters.showAdult);
-  if (filters.ownerId) return listLibrary(filters, filters.ownerId, where, viewerId, recordTiming);
+  const shopping = filters.status === 'non-possedes' && filters.ownerId;
+  if (filters.ownerId && !shopping) {
+    return listLibrary(filters, filters.ownerId, where, viewerId, recordTiming);
+  }
   if (filters.q) where.name = { contains: filters.q, mode: 'insensitive' };
   if (filters.platform) where.platform = filters.platform;
-  const and: Prisma.GameWhereInput[] = [];
+  const and: Prisma.GameWhereInput[] = shopping ? await notOwned(filters.ownerId as string) : [];
   // Un jeu pas encore classé compte comme Bronze, comme sur sa carte.
   if (filters.tier)
     and.push(filters.tier === 1 ? { OR: [{ tier: 1 }, { tier: null }] } : { tier: filters.tier });
@@ -115,14 +149,16 @@ export async function listGames(
         headerUrl: true,
         totalAchievements: true,
         tier: true,
+        platformGameId: true,
       },
     }),
     db.game.count({ where }),
   ]);
   const items = await withProgress(games, viewerId);
   return {
-    games: items.map((game) => ({
+    games: items.map(({ platformGameId, ...game }) => ({
       ...game,
+      store: shopping ? storeUrl({ ...game, platformGameId }) : null,
       versions: [],
       tier: game.tier ?? 1,
       target: game.tier ?? 1,

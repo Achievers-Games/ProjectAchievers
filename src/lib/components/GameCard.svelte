@@ -33,6 +33,8 @@
     live?: boolean;
     /** Lien vers la fiche, quand il faut y ajouter la comparaison (`?avec=`). */
     href?: string;
+    /** Un jeu pas encore possédé : la carte qu'il donnera, montrée comme un objectif. */
+    rarity?: number;
   }
 
   let {
@@ -47,6 +49,7 @@
     seasonEligible = false,
     live = false,
     href,
+    rarity = 0,
   }: Props = $props();
   const list = $derived(layout === 'liste');
   const complete = $derived(isComplete(progress));
@@ -54,7 +57,9 @@
   const step = $derived(progress ? stepOf(progress.completion) : 0);
   /** Un jeu sans succès (Honkai Impact 3rd sur Steam) : ni niveau à viser, ni progression. */
   const statless = $derived(game.totalAchievements === 0);
-  const goal = $derived(progress && !complete && !statless ? target || tier : 0);
+  const goal = $derived(
+    progress ? (!complete && !statless ? target || tier : 0) : statless ? 0 : rarity,
+  );
   let imageFailed = $state(false);
 
   /** L'image peut avoir déjà échoué avant que Svelte ne prenne la main sur la page. */

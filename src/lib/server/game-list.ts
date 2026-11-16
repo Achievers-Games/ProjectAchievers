@@ -49,6 +49,7 @@ const query = z.object({
         'restants',
         'saison',
         'caches',
+        'non-possedes',
         'bronze',
         'argent',
         'or',
@@ -95,17 +96,20 @@ export async function gamesFromUrl(
   const ownerId = player?.id ?? user?.id;
   const own = ownerId === user?.id;
   const mine = Boolean(ownerId);
-  // La saison et les jeux cachés ne regardent que leur propriétaire.
+  // La saison, les jeux cachés et les jeux à acheter ne regardent que leur propriétaire.
+  const private_ = ['saison', 'caches', 'non-possedes'].includes(params.filtre ?? '');
   const status: GameStatus | undefined =
-    !mine || ((params.filtre === 'saison' || params.filtre === 'caches') && !own)
-      ? undefined
-      : (params.filtre as GameStatus | undefined);
+    !mine || (private_ && !own) ? undefined : (params.filtre as GameStatus | undefined);
   const ongoing = status === 'restants' || status === 'saison';
   // La progression n'existe que pour les jeux du joueur.
+  // Un jeu à acheter n'a pas de progression : il se range d'abord par la carte qu'il donne.
+  const shopping = status === 'non-possedes';
   const tri =
-    params.tri === 'progression' && !mine
-      ? 'nom'
-      : (params.tri ?? (ongoing ? 'progression' : 'nom'));
+    params.tri === 'progression' && (!mine || shopping)
+      ? shopping
+        ? 'rarete'
+        : 'nom'
+      : (params.tri ?? (ongoing ? 'progression' : shopping ? 'rarete' : 'nom'));
   const chosen = params.plateforme ? CONSOLES[params.plateforme] : undefined;
   const platform = chosen?.platform ?? (params.plateforme as Platform | undefined);
 

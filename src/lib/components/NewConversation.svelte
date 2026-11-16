@@ -27,11 +27,20 @@
   let filter = $state('');
   let busy = $state(false);
 
+  const term = $derived(filter.trim().toLowerCase());
+  /** Rien ne s'affiche avant la première lettre : on cherche quelqu'un, on ne parcourt pas. */
   const shown = $derived(
-    (friends ?? []).filter((friend) =>
-      `${friend.displayName} ${friend.handle}`.toLowerCase().includes(filter.trim().toLowerCase()),
-    ),
+    term
+      ? (friends ?? []).filter((friend) =>
+          `${friend.displayName} ${friend.handle}`.toLowerCase().includes(term),
+        )
+      : [],
   );
+
+  /** Le champ s'ouvre sous le bouton cliqué : sans cela, la frappe partirait sur le bouton. */
+  const focusNow = (input: HTMLInputElement) => {
+    requestAnimationFrame(() => input.focus());
+  };
 
   async function toggle() {
     open = !open;
@@ -75,41 +84,45 @@
 
   {#if open}
     <div class="space-y-2 p-2" class:card={!compact} class:mt-2={!compact}>
-      {#if friends === null}
-        <p class="p-2 text-sm text-muted">{m.chat_new_loading()}</p>
-      {:else if friends.length === 0}
+      {#if friends?.length === 0}
         <p class="p-2 text-sm text-muted">
           {m.chat_new_no_friends()}
           <a href="/amis" class="text-accent underline">{m.nav_friends()}</a>
         </p>
       {:else}
+        <!-- Le champ est là tout de suite : ce qu'on tape pendant le chargement n'est pas perdu. -->
         <input
           bind:value={filter}
+          use:focusNow
           type="search"
           class="input"
           placeholder={m.chat_new_filter()}
           aria-label={m.chat_new_filter()}
         />
-        <ul class="max-h-60 overflow-y-auto">
-          {#each shown as friend (friend.id)}
-            <li>
-              <button
-                type="button"
-                class="flex w-full items-center gap-2 rounded p-2 text-left text-sm hover:bg-raised disabled:opacity-50"
-                disabled={busy}
-                onclick={() => start(friend)}
-              >
-                <Avatar person={friend} size={28} />
-                <span class="min-w-0 flex-1">
-                  <span class="block truncate font-medium">{friend.displayName}</span>
-                  <span class="block truncate text-xs text-muted">@{friend.handle}</span>
-                </span>
-              </button>
-            </li>
-          {:else}
-            <li class="p-2 text-sm text-muted">{m.chat_new_none()}</li>
-          {/each}
-        </ul>
+        {#if term && friends === null}
+          <p class="p-2 text-sm text-muted">{m.chat_new_loading()}</p>
+        {:else if term}
+          <ul class="max-h-60 overflow-y-auto">
+            {#each shown as friend (friend.id)}
+              <li>
+                <button
+                  type="button"
+                  class="flex w-full items-center gap-2 rounded p-2 text-left text-sm hover:bg-raised disabled:opacity-50"
+                  disabled={busy}
+                  onclick={() => start(friend)}
+                >
+                  <Avatar person={friend} size={28} />
+                  <span class="min-w-0 flex-1">
+                    <span class="block truncate font-medium">{friend.displayName}</span>
+                    <span class="block truncate text-xs text-muted">@{friend.handle}</span>
+                  </span>
+                </button>
+              </li>
+            {:else}
+              <li class="p-2 text-sm text-muted">{m.chat_new_none()}</li>
+            {/each}
+          </ul>
+        {/if}
       {/if}
     </div>
   {/if}
