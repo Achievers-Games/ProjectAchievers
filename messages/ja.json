@@ -1844,7 +1844,6 @@
   "chat_new_filter": "フレンドを探す",
   "chat_new_none": "該当するフレンドはいません。",
   "profile_banner_game": "ショーケースのゲーム：{game}",
-  "background_title": "プロフィール背景",
   "background_help": "自分のゲームの大きな画像でプロフィールを飾ります。選ばない場合はショーケースの最初のゲームになります。",
   "background_auto": "ショーケースの最初のゲーム",
   "background_off": "背景なし",
@@ -1856,5 +1855,11 @@
   "background_steam_use": "Steamプロフィールの背景を使う",
   "background_steam_none": "Steamプロフィールにはまだ背景が設定されていません。",
   "games_not_owned": "未所持",
-  "games_buy": "{platform}で購入"
+  "games_buy": "{platform}で購入",
+  "appearance_title": "プロフィールの見た目",
+  "banner_title": "バナー",
+  "background_page": "ページの背景",
+  "banner_help": "プロフィール上部とプレイヤーカードで名前の後ろに表示される画像です。選ばない場合はショーケースの最初のゲームになります。",
+  "banner_off": "バナーなし",
+  "banner_choose": "{game}をバナーにする"
 }

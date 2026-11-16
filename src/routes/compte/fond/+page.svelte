@@ -12,20 +12,37 @@
   const art = (images: string[]) => images.map((image) => `url("${encodeURI(image)}")`).join(', ');
 </script>
 
-<svelte:head><title>{m.background_title()} — Project Achievers</title></svelte:head>
+<svelte:head><title>{m.appearance_title()} — Project Achievers</title></svelte:head>
 
 <div class="mx-auto max-w-4xl space-y-6">
   <div class="space-y-1">
-    <h1>{m.background_title()}</h1>
-    <p class="text-sm text-muted">{m.background_help()}</p>
+    <h1>{m.appearance_title()}</h1>
+    <p class="text-sm text-muted">
+      {data.target === 'banniere' ? m.banner_help() : m.background_help()}
+    </p>
   </div>
 
+  <nav class="flex gap-1" aria-label={m.appearance_title()}>
+    {#each [{ value: 'banniere', label: m.banner_title() }, { value: 'fond', label: m.background_page() }] as tab (tab.value)}
+      <a
+        href="?cible={tab.value}"
+        aria-current={data.target === tab.value ? 'page' : undefined}
+        class="rounded px-3 py-1.5 text-sm transition-colors hover:text-ink"
+        class:bg-raised={data.target === tab.value}
+        class:text-muted={data.target !== tab.value}
+      >
+        {tab.label}
+      </a>
+    {/each}
+  </nav>
+
   <form method="POST" action="?/mode" use:enhance={submit} class="flex flex-wrap gap-2">
+    <input type="hidden" name="cible" value={data.target} />
     <button name="mode" value="auto" class="btn" aria-pressed={data.mode === 'auto'}>
       {m.background_auto()}
     </button>
     <button name="mode" value="off" class="btn" aria-pressed={data.mode === 'off'}>
-      {m.background_off()}
+      {data.target === 'banniere' ? m.banner_off() : m.background_off()}
     </button>
     <a href="/u/{data.handle}" class="btn btn-ghost ml-auto">{m.background_see_profile()}</a>
   </form>
@@ -35,6 +52,7 @@
       <h2>{m.background_steam_title()}</h2>
       {#if data.steam.url}
         <form method="POST" action="?/mode" use:enhance={submit} class="max-w-md">
+          <input type="hidden" name="cible" value={data.target} />
           <button
             name="mode"
             value="steam"
@@ -70,6 +88,7 @@
   <section class="space-y-3">
     <h2>{m.background_pick()}</h2>
     <form method="GET" class="flex gap-2">
+      <input type="hidden" name="cible" value={data.target} />
       <input
         type="search"
         name="q"
@@ -88,11 +107,14 @@
           <li>
             <form method="POST" action="?/choose" use:enhance={submit}>
               <input type="hidden" name="game" value={game.id} />
+              <input type="hidden" name="cible" value={data.target} />
               <button
                 class="background-tile"
                 style:--art={art(game.images)}
                 aria-pressed={current}
-                aria-label={m.background_choose({ game: game.name })}
+                aria-label={data.target === 'banniere'
+                  ? m.banner_choose({ game: game.name })
+                  : m.background_choose({ game: game.name })}
               >
                 <span class="background-tile-name">{game.name}</span>
                 {#if current}

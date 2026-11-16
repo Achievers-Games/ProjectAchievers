@@ -12,6 +12,18 @@ const SHOWN = 48;
 const requireUser = (locals: App.Locals) => requireLogin(locals, '/compte/fond');
 
 /**
+ * La bannière (en-tête du profil et carte de joueur) et le fond de la page se règlent pareil,
+ * chacun dans ses colonnes.
+ */
+const TARGETS = {
+  banniere: { game: 'bannerGameId', steam: 'bannerSteam', off: 'bannerOff' },
+  fond: { game: 'backgroundGameId', steam: 'backgroundSteam', off: 'backgroundOff' },
+} as const;
+type Target = keyof typeof TARGETS;
+
+const targetOf = (value: unknown): Target => (value === 'fond' ? 'fond' : 'banniere');
+
+/**
  * Le fond équipé sur Steam, relu à l'ouverture de la page : le joueur vient peut-être d'en
  * changer. Si Steam ne répond pas, le dernier connu reste valable.
  */
@@ -36,11 +48,21 @@ async function steamBackground(userId: string) {
 export const load: PageServerLoad = async ({ locals, url }) => {
   const user = requireUser(locals);
   const q = url.searchParams.get('q')?.trim().slice(0, 80) || '';
+  const target = targetOf(url.searchParams.get('cible'));
+  const fields = TARGETS[target];
 
   const [profile, steam, rows] = await Promise.all([
     db.user.findUniqueOrThrow({
       where: { id: user.id },
-      select: { handle: true, backgroundOff: true, backgroundSteam: true, backgroundGameId: true },
+      select: {
+        handle: true,
+        backgroundOff: true,
+        backgroundSteam: true,
+        backgroundGameId: true,
+        bannerOff: true,
+        bannerSteam: true,
+        bannerGameId: true,
+      },
     }),
     steamBackground(user.id),
     db.userGame.findMany({
@@ -70,22 +92,24 @@ export const load: PageServerLoad = async ({ locals, url }) => {
       },
     }),
   ]);
-  const mode = profile.backgroundOff
+  const chosen = profile[fields.game];
+  const mode = profile[fields.off]
     ? 'off'
-    : profile.backgroundSteam
+    : profile[fields.steam]
       ? 'steam'
-      : profile.backgroundGameId
+      : chosen
         ? 'game'
         : 'auto';
   return {
     q,
+    target,
     handle: profile.handle,
     mode,
-    chosen: profile.backgroundGameId,
+    chosen,
     steam,
     games: onePerFamily(
       rows.map((row) => row.game),
-      profile.backgroundGameId,
+      chosen,
     )
       .slice(0, SHOWN)
       .map((game) => ({
@@ -96,20 +120,22 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 };
 
 export const actions: Actions = {
-  /** Le fond du profil Steam, le premier jeu de la vitrine, ou aucun fond. */
+  /** Le fond du profil Steam, le premier jeu de la vitrine, ou rien. */
   mode: async ({ request, locals }) => {
     const user = requireUser(locals);
-    const mode = (await request.formData()).get('mode');
+    const form = await request.formData();
+    const mode = form.get('mode');
+    const fields = TARGETS[targetOf(form.get('cible'))];
     if (mode === 'steam') {
       // Le jeu choisi reste en réserve : il revient si le joueur retire son fond sur Steam.
       await db.user.update({
         where: { id: user.id },
-        data: { backgroundSteam: true, backgroundOff: false },
+        data: { [fields.steam]: true, [fields.off]: false },
       });
     } else {
       await db.user.update({
         where: { id: user.id },
-        data: { backgroundOff: mode === 'off', backgroundSteam: false, backgroundGameId: null },
+        data: { [fields.off]: mode === 'off', [fields.steam]: false, [fields.game]: null },
       });
     }
     return { success: m.background_saved() };
@@ -117,7 +143,9 @@ export const actions: Actions = {
 
   choose: async ({ request, locals }) => {
     const user = requireUser(locals);
-    const gameId = String((await request.formData()).get('game') ?? '');
+    const form = await request.formData();
+    const gameId = String(form.get('game') ?? '');
+    const fields = TARGETS[targetOf(form.get('cible'))];
     const owned = await db.userGame.findFirst({
       where: { userId: user.id, gameId, hidden: false, game: { headerUrl: { not: null } } },
       select: { gameId: true },
@@ -125,7 +153,7 @@ export const actions: Actions = {
     if (!owned) return fail(403, { error: m.showcase_not_owned() });
     await db.user.update({
       where: { id: user.id },
-      data: { backgroundOff: false, backgroundSteam: false, backgroundGameId: gameId },
+      data: { [fields.off]: false, [fields.steam]: false, [fields.game]: gameId },
     });
     return { success: m.background_saved() };
   },

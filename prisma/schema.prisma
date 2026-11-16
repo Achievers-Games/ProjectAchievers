@@ -124,6 +124,12 @@ model User {
   backgroundSteam     Boolean   @default(false)
   /// Le joueur a retiré le fond : son profil reste sobre.
   backgroundOff       Boolean   @default(false)
+  /// Bannière du profil et de la carte de joueur, choisie comme le fond : un jeu, le fond Steam ou
+  /// rien ; sans choix, la première carte de la vitrine.
+  bannerGameId        String?
+  bannerGame          Game?     @relation("ProfileBanner", fields: [bannerGameId], references: [id], onDelete: SetNull)
+  bannerSteam         Boolean   @default(false)
+  bannerOff           Boolean   @default(false)
   /// Affiche les jeux centrés sur le contenu sexuel, masqués par défaut.
   showAdult           Boolean   @default(false)
   /// Montre les messages tels qu'ils ont été écrits ; sinon, les grossièretés sont masquées.
@@ -472,6 +478,7 @@ model Game {
   console           String?
   pinnedBy          PinnedGame[]
   backgroundOf      User[]            @relation("ProfileBackground")
+  bannerOf          User[]            @relation("ProfileBanner")
   translations      GameTranslation[]
   name              String
   slug              String            @unique

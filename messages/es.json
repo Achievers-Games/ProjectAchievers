@@ -1881,7 +1881,6 @@
   "chat_new_filter": "Buscar un amigo",
   "chat_new_none": "Ningún amigo coincide.",
   "profile_banner_game": "Juego destacado: {game}",
-  "background_title": "Fondo del perfil",
   "background_help": "Una gran imagen de uno de tus juegos cubre tu perfil. Si no eliges, es el primer juego de tu vitrina.",
   "background_auto": "Primer juego de la vitrina",
   "background_off": "Sin fondo",
@@ -1893,5 +1892,11 @@
   "background_steam_use": "Usar el fondo de mi perfil de Steam",
   "background_steam_none": "Todavía no tienes ningún fondo equipado en tu perfil de Steam.",
   "games_not_owned": "No poseídos",
-  "games_buy": "Comprar en {platform}"
+  "games_buy": "Comprar en {platform}",
+  "appearance_title": "Aspecto del perfil",
+  "banner_title": "Banner",
+  "background_page": "Fondo de la página",
+  "banner_help": "La imagen detrás de tu nombre, arriba en tu perfil y en tu tarjeta de jugador. Si no eliges, es el primer juego de tu vitrina.",
+  "banner_off": "Sin banner",
+  "banner_choose": "Usar {game} como banner"
 }

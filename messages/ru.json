@@ -1931,7 +1931,6 @@
   "chat_new_filter": "Найти друга",
   "chat_new_none": "Совпадений нет.",
   "profile_banner_game": "Игра на витрине: {game}",
-  "background_title": "Фон профиля",
   "background_help": "Большое изображение одной из твоих игр украшает профиль. Если не выбрать, берётся первая игра витрины.",
   "background_auto": "Первая игра витрины",
   "background_off": "Без фона",
@@ -1943,5 +1942,11 @@
   "background_steam_use": "Взять фон из профиля Steam",
   "background_steam_none": "В профиле Steam пока не выбран фон.",
   "games_not_owned": "Нет в коллекции",
-  "games_buy": "Купить в {platform}"
+  "games_buy": "Купить в {platform}",
+  "appearance_title": "Оформление профиля",
+  "banner_title": "Баннер",
+  "background_page": "Фон страницы",
+  "banner_help": "Изображение за твоим именем — вверху профиля и на карточке игрока. Если не выбрать, берётся первая игра витрины.",
+  "banner_off": "Без баннера",
+  "banner_choose": "Сделать {game} баннером"
 }

@@ -20,7 +20,7 @@
     <h2>{m.profile()}</h2>
     <div class="flex gap-2">
       <a href="/compte/vitrine" class="btn h-8">{m.showcase_edit()}</a>
-      <a href="/compte/fond" class="btn h-8">{m.background_title()}</a>
+      <a href="/compte/fond" class="btn h-8">{m.appearance_title()}</a>
     </div>
   </div>
   <form method="POST" action="?/profile" use:enhance={submit} class="card space-y-4 p-4">

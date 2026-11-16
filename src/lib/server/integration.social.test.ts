@@ -46,6 +46,7 @@ import {
 } from './social';
 import { MAX_CLAN_MEMBERS, MAX_FRIENDS } from './social/shared';
 import { PREFIX, identity, setupIntegration } from './test-helpers';
+import { playerCardData } from './player-card';
 import { PUT as acknowledgeMessage } from '../../routes/api/messages/[id]/+server';
 
 setupIntegration();
@@ -348,6 +349,53 @@ describe('amis, clans et discussions', () => {
 
     await db.user.update({ where: { id: player.id }, data: { backgroundOff: true } });
     expect(await background()).toBeNull();
+  });
+
+  it('règle la bannière à part du fond, et la carte de joueur la reprend', async () => {
+    const [player] = await players();
+    const game = await db.game.create({
+      data: {
+        platform: 'STEAM',
+        platformGameId: `${PREFIX}-${Math.random()}`,
+        name: `${PREFIX} bannière`,
+        slug: `${PREFIX}-${Math.random().toString(36).slice(2)}`,
+        headerUrl: 'https://cdn.example/banniere/header.jpg',
+      },
+    });
+    await db.userGame.create({ data: { userId: player.id, gameId: game.id } });
+    await db.linkedAccount.updateMany({
+      where: { userId: player.id, provider: 'STEAM' },
+      data: { backgroundUrl: 'https://cdn.example/steam.jpg' },
+    });
+    // Les images se téléchargent pour être intégrées à la carte : on garde trace des adresses.
+    const asked: string[] = [];
+    vi.stubGlobal('fetch', async (url: string) => {
+      asked.push(String(url));
+      return new Response(new Uint8Array([1, 2, 3]), { headers: { 'content-type': 'image/jpeg' } });
+    });
+    const profile = () => userProfile(player.handle, null);
+
+    await db.user.update({
+      where: { id: player.id },
+      data: { bannerGameId: game.id, backgroundSteam: true },
+    });
+    expect((await profile())?.banner).toMatchObject({ kind: 'game', slug: game.slug });
+    expect((await profile())?.background).toMatchObject({ kind: 'steam' });
+    expect((await playerCardData(player.handle))?.backdrop).toContain('data:image/jpeg;base64,');
+    expect(asked).toContain('https://cdn.example/banniere/library_hero.jpg');
+
+    await db.user.update({
+      where: { id: player.id },
+      data: { bannerGameId: null, bannerSteam: true },
+    });
+    expect((await profile())?.banner).toMatchObject({ kind: 'steam' });
+    asked.length = 0;
+    await playerCardData(player.handle);
+    expect(asked).toContain('https://cdn.example/steam.jpg');
+
+    await db.user.update({ where: { id: player.id }, data: { bannerOff: true } });
+    expect((await profile())?.banner).toBeNull();
+    expect((await playerCardData(player.handle))?.backdrop).toBeNull();
   });
 
   it('garde le blocage subi par le profil absorbé', async () => {

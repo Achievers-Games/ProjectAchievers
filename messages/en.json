@@ -1881,7 +1881,6 @@
   "chat_new_filter": "Find a friend",
   "chat_new_none": "No friend matches.",
   "profile_banner_game": "Showcased game: {game}",
-  "background_title": "Profile background",
   "background_help": "A big image from one of your games covers your profile. If you don’t pick one, it’s the first game in your showcase.",
   "background_auto": "First showcase game",
   "background_off": "No background",
@@ -1893,5 +1892,11 @@
   "background_steam_use": "Use my Steam profile background",
   "background_steam_none": "No background is equipped on your Steam profile yet.",
   "games_not_owned": "Not owned",
-  "games_buy": "Buy on {platform}"
+  "games_buy": "Buy on {platform}",
+  "appearance_title": "Profile look",
+  "banner_title": "Banner",
+  "background_page": "Page background",
+  "banner_help": "The image behind your name, at the top of your profile and on your player card. If you don’t pick one, it’s the first game in your showcase.",
+  "banner_off": "No banner",
+  "banner_choose": "Use {game} as banner"
 }

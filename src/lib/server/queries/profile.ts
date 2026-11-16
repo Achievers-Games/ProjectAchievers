@@ -37,7 +37,7 @@ export async function dashboard(userId: string, showAdult = false) {
   return { recent, almost, stats };
 }
 
-interface BackgroundGame {
+interface ChosenGame {
   name: string;
   slug: string;
   headerUrl: string | null;
@@ -45,34 +45,48 @@ interface BackgroundGame {
   players: unknown[];
 }
 
+/** Un jeu choisi pour habiller le profil, avec de quoi vérifier que le joueur l'a toujours. */
+export const chosenGameSelect = (handle: string) =>
+  ({
+    select: {
+      name: true,
+      slug: true,
+      headerUrl: true,
+      adultOnly: true,
+      // Un jeu masqué ou perdu depuis ne s'affiche plus.
+      players: { where: { user: { handle }, hidden: false }, select: { gameId: true } },
+    },
+  }) as const;
+
 export type ProfileBackground =
   | ({ kind: 'game' } & ReturnType<typeof toBanner>)
   | { kind: 'steam'; images: string[]; motion: string | null };
 
+/** Ce que le joueur a choisi pour une image de son profil : le fond, ou la bannière. */
+export interface ArtChoice {
+  off: boolean;
+  steam: boolean;
+  game: ChosenGame | null;
+}
+
+export type SteamArt = { backgroundUrl: string | null; backgroundMotionUrl: string | null } | null;
+
 /**
- * Ce qui habille le profil, dans l'ordre : le fond équipé sur Steam si le joueur l'a voulu et
- * que Steam en donne un ; le jeu choisi, s'il l'a toujours et que le visiteur peut le voir ;
- * sinon la première carte de la vitrine. Rien si le joueur a retiré le fond.
+ * Une image du profil, dans l'ordre : le fond équipé sur Steam si le joueur l'a voulu et que
+ * Steam en donne un ; le jeu choisi, s'il l'a toujours et que le visiteur peut le voir ; sinon
+ * la première carte de la vitrine. Rien si le joueur l'a retirée.
  */
-export function profileBackground(
-  user: {
-    backgroundOff: boolean;
-    backgroundSteam: boolean;
-    backgroundGame: BackgroundGame | null;
-    steam: { backgroundUrl: string | null; backgroundMotionUrl: string | null } | null;
-  },
+export function profileArt(
+  choice: ArtChoice,
+  steam: SteamArt,
   showcase: { name: string; slug: string; headerUrl: string | null }[],
   showAdult: boolean,
 ): ProfileBackground | null {
-  if (user.backgroundOff) return null;
-  if (user.backgroundSteam && user.steam?.backgroundUrl) {
-    return {
-      kind: 'steam',
-      images: [user.steam.backgroundUrl],
-      motion: user.steam.backgroundMotionUrl,
-    };
+  if (choice.off) return null;
+  if (choice.steam && steam?.backgroundUrl) {
+    return { kind: 'steam', images: [steam.backgroundUrl], motion: steam.backgroundMotionUrl };
   }
-  const chosen = user.backgroundGame;
+  const chosen = choice.game;
   const usable =
     chosen?.headerUrl && chosen.players.length > 0 && (showAdult || !chosen.adultOnly)
       ? chosen
@@ -80,14 +94,6 @@ export function profileBackground(
   return usable?.headerUrl
     ? { kind: 'game', ...toBanner({ ...usable, headerUrl: usable.headerUrl }) }
     : null;
-}
-
-/** La bannière de l'en-tête : la première carte de la vitrine qui a une image. */
-export function profileBanner(
-  showcase: { name: string; slug: string; headerUrl: string | null }[],
-) {
-  const first = showcase.find((card) => card.headerUrl);
-  return first?.headerUrl ? toBanner({ ...first, headerUrl: first.headerUrl }) : null;
 }
 
 /**
@@ -120,16 +126,10 @@ export async function userProfile(handle: string, viewerId: string | null, showA
       showcaseCustom: true,
       backgroundOff: true,
       backgroundSteam: true,
-      backgroundGame: {
-        select: {
-          name: true,
-          slug: true,
-          headerUrl: true,
-          adultOnly: true,
-          // Le fond choisi doit rester dans la bibliothèque : un jeu masqué ou perdu ne s'affiche plus.
-          players: { where: { user: { handle }, hidden: false }, select: { gameId: true } },
-        },
-      },
+      backgroundGame: chosenGameSelect(handle),
+      bannerOff: true,
+      bannerSteam: true,
+      bannerGame: chosenGameSelect(handle),
       isPublic: true,
       createdAt: true,
       clanMember: { select: { clan: { select: { name: true, slug: true } } } },
@@ -190,7 +190,16 @@ export async function userProfile(handle: string, viewerId: string | null, showA
   // Une sélection vide ou masquée au visiteur ne laisse pas une vitrine vide.
   const showcase = (user.showcaseCustom && chosen.length ? chosen : cards).slice(0, MAX_SHOWCASE);
   // Le choix brut du fond reste au serveur : un jeu adulte choisi ne doit pas fuiter au visiteur.
-  const { backgroundGame, backgroundOff, backgroundSteam, accounts, ...shown } = user;
+  const {
+    backgroundGame,
+    backgroundOff,
+    backgroundSteam,
+    bannerGame,
+    bannerOff,
+    bannerSteam,
+    accounts,
+    ...shown
+  } = user;
   const steam = accounts.find((account) => account.provider === 'STEAM') ?? null;
   return {
     user: {
@@ -205,10 +214,16 @@ export async function userProfile(handle: string, viewerId: string | null, showA
     },
     stats,
     showcase,
-    // La bannière garde le jeu que le joueur met en avant, quel que soit le fond de la page.
-    banner: profileBanner(showcase),
-    background: profileBackground(
-      { backgroundGame, backgroundOff, backgroundSteam, steam },
+    // La bannière et le fond se choisissent chacun de leur côté.
+    banner: profileArt(
+      { off: bannerOff, steam: bannerSteam, game: bannerGame },
+      steam,
+      showcase,
+      showAdult,
+    ),
+    background: profileArt(
+      { off: backgroundOff, steam: backgroundSteam, game: backgroundGame },
+      steam,
       showcase,
       showAdult,
     ),

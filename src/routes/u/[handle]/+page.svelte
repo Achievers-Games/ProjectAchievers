@@ -141,7 +141,7 @@
 
 <div class="profile-page space-y-8" data-backdrop={profile.background ? '' : undefined}>
   <header class="profile-banner" style:--art={bannerArt} data-art={profile.banner ? '' : undefined}>
-    {#if profile.banner}
+    {#if profile.banner?.kind === 'game'}
       <a
         href={gameHref(profile.banner) ?? `/jeux/${profile.banner.slug}`}
         class="profile-banner-game"
@@ -232,7 +232,7 @@
         </button>
       {/if}
       {#if isMe}
-        <a class="btn" href="/compte/fond">{m.background_title()}</a>
+        <a class="btn" href="/compte/fond">{m.appearance_title()}</a>
         <a class="btn btn-primary" href="/compte">{m.profile_edit()}</a>
       {/if}
       {#if data.relation === 'none'}

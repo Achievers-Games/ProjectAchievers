@@ -1,6 +1,7 @@
 import { db } from './db';
 import { userStats } from './queries/stats';
 import { showcaseHead } from './queries/banners';
+import { chosenGameSelect, profileArt } from './queries/profile';
 import { m } from '#lib/paraglide/messages';
 import { formatNumber } from '#lib/labels';
 import { logger } from '#lib/logger';
@@ -14,8 +15,8 @@ const NAME_MAX = 24;
 
 /** Au-delà, ce n'est plus un avatar : la carte s'en passe plutôt que de grossir. */
 const AVATAR_MAX_BYTES = 400_000;
-/** Une image d'en-tête de jeu pèse plus qu'un avatar, mais reste bornée. */
-const BACKDROP_MAX_BYTES = 1_000_000;
+/** Une grande image de jeu ou un fond Steam pèse plus qu'un avatar, mais reste bornée. */
+const BACKDROP_MAX_BYTES = 1_500_000;
 const AVATAR_TIMEOUT = 3_000;
 const AVATAR_CACHE_MAX = 500;
 const AVATAR_TTL = 6 * 60 * 60 * 1000;
@@ -30,7 +31,7 @@ export interface PlayerCardData {
   points: number;
   /** L'image déjà intégrée : un SVG affiché par `<img>` ne charge aucune ressource externe. */
   avatar: string | null;
-  /** Le jeu numéro 1 de la vitrine, en fond fondu ; intégré comme l'avatar. */
+  /** La bannière du profil, en fond fondu ; intégrée comme l'avatar. */
   backdrop?: string | null;
 }
 
@@ -180,6 +181,13 @@ export async function playerCardData(handle: string): Promise<PlayerCardData | n
       avatarUrl: true,
       isPublic: true,
       clanMember: { select: { clan: { select: { name: true } } } },
+      bannerOff: true,
+      bannerSteam: true,
+      bannerGame: chosenGameSelect(handle),
+      accounts: {
+        where: { provider: 'STEAM' },
+        select: { backgroundUrl: true, backgroundMotionUrl: true },
+      },
     },
   });
   // Un profil privé ne se montre pas plus ailleurs que sur le site.
@@ -188,9 +196,7 @@ export async function playerCardData(handle: string): Promise<PlayerCardData | n
   const [stats, avatar, backdrop] = await Promise.all([
     userStats(user.id),
     inlineAvatar(user.avatarUrl),
-    featuredHeader(user.id, user.handle).then((url) =>
-      inlineAvatar(url, Date.now(), BACKDROP_MAX_BYTES),
-    ),
+    cardBanner(user).then(inlineFirst),
   ]);
   return {
     displayName: user.displayName,
@@ -206,18 +212,47 @@ export async function playerCardData(handle: string): Promise<PlayerCardData | n
 }
 
 /**
- * Le jeu numéro 1 de la vitrine, comme sur le profil ; sans carte terminée, le jeu le plus
- * avancé. Seuls les jeux visibles de tous comptent : ni masqués, ni réservés aux adultes.
+ * La même image que la bannière du profil : le fond Steam, le jeu choisi, ou rien si le joueur
+ * l'a retirée. Sans choix, le jeu numéro 1 de la vitrine ; sans carte terminée, le jeu le plus
+ * avancé. La carte circule hors du site : un jeu réservé aux adultes n'y figure jamais.
  */
-async function featuredHeader(userId: string, handle: string): Promise<string | null> {
+async function cardBanner(user: {
+  id: string;
+  handle: string;
+  bannerOff: boolean;
+  bannerSteam: boolean;
+  bannerGame: Parameters<typeof profileArt>[0]['game'];
+  accounts: { backgroundUrl: string | null; backgroundMotionUrl: string | null }[];
+}): Promise<string[]> {
+  const choice = { off: user.bannerOff, steam: user.bannerSteam, game: user.bannerGame };
+  if (choice.off) return [];
+  const chosen = profileArt(choice, user.accounts[0] ?? null, [], false);
+  if (chosen) return chosen.images;
+  const featured = await featuredGame(user.id, user.handle);
+  return (
+    profileArt({ off: false, steam: false, game: null }, null, featured ? [featured] : [], false)
+      ?.images ?? []
+  );
+}
+
+async function featuredGame(userId: string, handle: string) {
   const head = await showcaseHead(handle);
-  if (head?.headerUrl) return head.headerUrl;
+  if (head?.headerUrl) return head;
   const best = await db.userGame.findFirst({
     where: { userId, hidden: false, game: { adultOnly: false, headerUrl: { not: null } } },
     orderBy: [{ completion: 'desc' }, { unlockedCount: 'desc' }],
-    select: { game: { select: { headerUrl: true } } },
+    select: { game: { select: { name: true, slug: true, headerUrl: true } } },
   });
-  return best?.game.headerUrl ?? null;
+  return best?.game ?? null;
+}
+
+/** La grande image d'abord ; si elle manque ou pèse trop, l'en-tête du jeu prend le relais. */
+async function inlineFirst(images: string[]) {
+  for (const image of images) {
+    const data = await inlineAvatar(image, Date.now(), BACKDROP_MAX_BYTES);
+    if (data) return data;
+  }
+  return null;
 }
 
 /** La carte d'un profil public, prête à servir ; `null` pour un profil inconnu ou privé. */

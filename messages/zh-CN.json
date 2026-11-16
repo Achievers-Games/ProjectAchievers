@@ -1844,7 +1844,6 @@
   "chat_new_filter": "查找好友",
   "chat_new_none": "没有匹配的好友。",
   "profile_banner_game": "展示的游戏：{game}",
-  "background_title": "资料背景",
   "background_help": "用你某款游戏的大图装饰资料页。未选择时，使用展示柜中的第一款游戏。",
   "background_auto": "展示柜第一款游戏",
   "background_off": "不使用背景",
@@ -1856,5 +1855,11 @@
   "background_steam_use": "使用我的 Steam 资料背景",
   "background_steam_none": "你的 Steam 资料暂未装备背景。",
   "games_not_owned": "未拥有",
-  "games_buy": "在 {platform} 购买"
+  "games_buy": "在 {platform} 购买",
+  "appearance_title": "资料外观",
+  "banner_title": "横幅",
+  "background_page": "页面背景",
+  "banner_help": "显示在资料顶部和玩家卡片上、你名字后面的图片。未选择时，使用展示柜中的第一款游戏。",
+  "banner_off": "不使用横幅",
+  "banner_choose": "将{game}设为横幅"
 }
