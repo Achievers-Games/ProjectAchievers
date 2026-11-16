@@ -4,6 +4,7 @@ import {
   homePodium,
   homePopularGames,
   dashboard,
+  friendsPlaying,
   homeBanners,
   toBanner,
 } from '#lib/server/queries';
@@ -16,15 +17,17 @@ export const load: PageServerLoad = async ({ locals, depends }) => {
   depends('app:sync');
   const podiumTask = homePodium();
   if (locals.user) {
-    const [podium, home, accounts, cards, banners, barelyPlayed, unlinked] = await Promise.all([
-      podiumTask,
-      dashboard(locals.user.id, locals.user.showAdult),
-      db.linkedAccount.count({ where: { userId: locals.user.id } }),
-      cardFeed(locals.user.showAdult),
-      podiumTask.then((podium) => homeBanners(podium[0], locals.user!.id)),
-      barelyPlayedGame(locals.user.id, locals.user.showAdult),
-      unlinkedPlatforms(locals.user.id),
-    ]);
+    const [podium, home, accounts, cards, banners, barelyPlayed, unlinked, friends] =
+      await Promise.all([
+        podiumTask,
+        dashboard(locals.user.id, locals.user.showAdult),
+        db.linkedAccount.count({ where: { userId: locals.user.id } }),
+        cardFeed(locals.user.showAdult),
+        podiumTask.then((podium) => homeBanners(podium[0], locals.user!.id)),
+        barelyPlayedGame(locals.user.id, locals.user.showAdult),
+        unlinkedPlatforms(locals.user.id),
+        friendsPlaying(locals.user.id, locals.user.showAdult),
+      ]);
     const { games, tiers } = home.stats;
     const { text: tagline, barelyPlayed: aboutBarelyPlayed } = randomTagline({
       games,
@@ -34,7 +37,7 @@ export const load: PageServerLoad = async ({ locals, depends }) => {
       barelyPlayed,
     });
     if (aboutBarelyPlayed && barelyPlayed) banners.season = toBanner(barelyPlayed);
-    return { home, accounts, unlinked, cards, podium, banners, popular: null, tagline };
+    return { home, accounts, unlinked, cards, podium, banners, friends, popular: null, tagline };
   }
   const [podium, games, cards, banners] = await Promise.all([
     podiumTask,
@@ -46,6 +49,7 @@ export const load: PageServerLoad = async ({ locals, depends }) => {
     home: null,
     accounts: 0,
     unlinked: [],
+    friends: [],
     cards,
     podium,
     banners,

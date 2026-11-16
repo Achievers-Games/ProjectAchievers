@@ -8,6 +8,7 @@
   import Avatar from './Avatar.svelte';
   import Conversation from './Conversation.svelte';
   import ChatPlaying from './ChatPlaying.svelte';
+  import NewConversation from './NewConversation.svelte';
   import {
     closeChat,
     dockChats,
@@ -116,6 +117,16 @@
         <ul
           class="chat-enter card max-h-96 divide-y divide-line overflow-y-auto rounded-b-none shadow-lg"
         >
+          <li>
+            <NewConversation
+              compact
+              onOpen={({ id, title, handle }) => {
+                listOpen = false;
+                openChat(id, title);
+                partners[id] = handle;
+              }}
+            />
+          </li>
           {#each rows as row (row.id)}
             <li>
               <button

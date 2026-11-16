@@ -3,7 +3,10 @@
   import Seo from '#lib/components/Seo.svelte';
   import { page } from '$app/state';
   import Empty from '#lib/components/Empty.svelte';
+  import Avatar from '#lib/components/Avatar.svelte';
   import GameCard from '#lib/components/GameCard.svelte';
+  import GameRail from '#lib/components/GameRail.svelte';
+  import { formatRelative } from '#lib/labels';
   import HomeCarousel from '#lib/components/HomeCarousel.svelte';
   import LiveCards from '#lib/components/LiveCards.svelte';
   import MissingPlatforms from '#lib/components/MissingPlatforms.svelte';
@@ -46,9 +49,65 @@
       <MissingPlatforms platforms={data.unlinked} />
     {/if}
 
-    <LiveCards initial={data.cards} />
+    <div class="home-panel"><LiveCards initial={data.cards} /></div>
 
-    <Podium collectors={data.podium} />
+    <section class="home-panel" aria-labelledby="amis-jouent">
+      <div class="flex items-baseline justify-between gap-4">
+        <h2 id="amis-jouent">{m.home_friends_playing()}</h2>
+        <a href="/amis" class="text-sm text-muted hover:text-ink">{m.nav_friends()}</a>
+      </div>
+      {#if data.friends.length}
+        <GameRail items={data.friends} key={(row) => `${row.user.handle}-${row.game.id}`}>
+          {#snippet item(row)}
+            <div class="space-y-1.5">
+              <a
+                href="/u/{row.user.handle}"
+                class="flex min-w-0 items-center gap-1.5 text-xs hover:text-ink"
+              >
+                <Avatar person={row.user} size={20} />
+                <span class="truncate font-semibold">{row.user.displayName}</span>
+                {#if row.lastPlayedAt}
+                  <span class="ml-auto shrink-0 text-muted">{formatRelative(row.lastPlayedAt)}</span
+                  >
+                {/if}
+              </a>
+              <GameCard
+                game={row.game}
+                progress={row}
+                target={row.game.tier ?? 1}
+                href="/jeux/{row.game.slug}?joueur={encodeURIComponent(row.user.handle)}"
+              />
+            </div>
+          {/snippet}
+        </GameRail>
+      {:else}
+        <p class="text-sm text-muted">{m.home_friends_playing_empty()}</p>
+      {/if}
+    </section>
+
+    {#if data.home.almost.length}
+      <section class="home-panel" aria-labelledby="presque">
+        <h2 id="presque">{m.home_almost()}</h2>
+        <GameRail items={data.home.almost} key={(row) => row.game.id}>
+          {#snippet item(row)}
+            <GameCard game={row.game} progress={row} target={row.game.tier ?? 1} />
+          {/snippet}
+        </GameRail>
+      </section>
+    {/if}
+
+    {#if data.home.recent.length}
+      <section class="home-panel" aria-labelledby="derniers">
+        <h2 id="derniers">{m.home_recent()}</h2>
+        <GameRail items={data.home.recent} key={(row) => row.game.id}>
+          {#snippet item(row)}
+            <GameCard game={row.game} progress={row} target={row.game.tier ?? 1} />
+          {/snippet}
+        </GameRail>
+      </section>
+    {/if}
+
+    <div class="home-panel"><Podium collectors={data.podium} /></div>
 
     <StatGrid
       games={data.home.stats.games}
@@ -56,28 +115,6 @@
       tiers={data.home.stats.tiers}
       points={data.home.stats.points}
     />
-
-    {#if data.home.almost.length}
-      <section class="space-y-3">
-        <h2>{m.home_almost()}</h2>
-        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {#each data.home.almost as row (row.game.id)}
-            <GameCard game={row.game} progress={row} target={row.game.tier ?? 1} />
-          {/each}
-        </div>
-      </section>
-    {/if}
-
-    {#if data.home.recent.length}
-      <section class="space-y-3">
-        <h2>{m.home_recent()}</h2>
-        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {#each data.home.recent as row (row.game.id)}
-            <GameCard game={row.game} progress={row} target={row.game.tier ?? 1} />
-          {/each}
-        </div>
-      </section>
-    {/if}
   </div>
 {:else}
   <div class="space-y-10">
@@ -100,12 +137,12 @@
       </div>
     </section>
 
-    <LiveCards initial={data.cards} />
+    <div class="home-panel"><LiveCards initial={data.cards} /></div>
 
-    <Podium collectors={data.podium} />
+    <div class="home-panel"><Podium collectors={data.podium} /></div>
 
     {#if data.popular?.length}
-      <section class="space-y-3">
+      <section class="home-panel">
         <h2>{m.home_explore()}</h2>
         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {#each data.popular as game (game.id)}

@@ -1,7 +1,7 @@
 // Tests sur un vrai PostgreSQL : `npm run dev:db` ou le service de la CI.
 import 'dotenv/config';
 import { describe, expect, it, vi } from 'vitest';
-import { activityFeed, hasRecentFeat, highlights, leaderboard } from './queries';
+import { activityFeed, friendsPlaying, hasRecentFeat, highlights, leaderboard } from './queries';
 import { resolveIdentity } from './accounts';
 import { db } from './db';
 import { mergeUsers } from './merge';
@@ -230,6 +230,37 @@ describe('amis, clans et discussions', () => {
     const page = await clanPage(slug);
     expect(page?.achievements).toBe(1);
     expect(page?.members).toHaveLength(1);
+  });
+
+  it('montre les derniers jeux lancés par les amis, sans ceux qu’ils ont masqués', async () => {
+    const [a, b] = await players();
+    const [stranger] = await players();
+    const game = async (name: string) =>
+      db.game.create({
+        data: {
+          platform: 'STEAM',
+          platformGameId: `${PREFIX}-${Math.random()}`,
+          name: `${PREFIX} ${name}`,
+          slug: `${PREFIX}-${Math.random().toString(36).slice(2)}`,
+        },
+      });
+    const [old, fresh, hidden] = [await game('ancien'), await game('récent'), await game('caché')];
+    const day = 86_400_000;
+    await db.userGame.createMany({
+      data: [
+        { userId: b.id, gameId: old.id, lastPlayedAt: new Date(Date.now() - 3 * day) },
+        { userId: b.id, gameId: fresh.id, lastPlayedAt: new Date(Date.now() - day) },
+        { userId: b.id, gameId: hidden.id, lastPlayedAt: new Date(), hidden: true },
+        { userId: stranger.id, gameId: fresh.id, lastPlayedAt: new Date() },
+      ],
+    });
+
+    expect(await friendsPlaying(a.id)).toEqual([]);
+    await requestFriend(a.id, b.handle);
+    await acceptFriend(b.id, a.id);
+    const rows = await friendsPlaying(a.id);
+    expect(rows.map((row) => row.game.id)).toEqual([fresh.id, old.id]);
+    expect(rows[0].user.handle).toBe(b.handle);
   });
 
   it('garde le blocage subi par le profil absorbé', async () => {

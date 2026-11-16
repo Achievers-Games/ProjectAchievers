@@ -2,6 +2,10 @@ import { db } from '../db';
 import { bestCards, chosenCards, profileCards } from './library';
 import { userStats } from './stats';
 import { MAX_SHOWCASE, cardSelect, publicUser, visibleGames } from './shared';
+import { friendIds } from '../social/friends';
+
+/** Les rangées de l'accueil défilent comme le direct : douze cartes chacune. */
+export const HOME_RAIL = 12;
 
 export async function dashboard(userId: string, showAdult = false) {
   const [recent, almost, stats] = await Promise.all([
@@ -13,7 +17,7 @@ export async function dashboard(userId: string, showAdult = false) {
         lastUnlockedAt: { not: null },
       },
       orderBy: { lastUnlockedAt: 'desc' },
-      take: 4,
+      take: HOME_RAIL,
       select: cardSelect,
     }),
     db.userGame.findMany({
@@ -24,7 +28,7 @@ export async function dashboard(userId: string, showAdult = false) {
         completion: { gte: 50, lt: 100 },
       },
       orderBy: { completion: 'desc' },
-      take: 4,
+      take: HOME_RAIL,
       select: cardSelect,
     }),
     userStats(userId),
@@ -92,6 +96,26 @@ export async function userProfile(handle: string, viewerId: string | null, showA
   // Une sélection vide ou masquée au visiteur ne laisse pas une vitrine vide.
   const showcase = (user.showcaseCustom && chosen.length ? chosen : cards).slice(0, MAX_SHOWCASE);
   return { user, stats, showcase, games: library.slice(0, 24), recent };
+}
+
+/**
+ * Les derniers jeux lancés par les amis du joueur. Un jeu qu'un ami a retiré de sa bibliothèque
+ * n'y apparaît pas.
+ */
+export async function friendsPlaying(userId: string, showAdult = false) {
+  const friends = await friendIds(userId);
+  if (!friends.length) return [];
+  return db.userGame.findMany({
+    where: {
+      userId: { in: friends },
+      hidden: false,
+      lastPlayedAt: { not: null },
+      game: visibleGames(showAdult),
+    },
+    orderBy: { lastPlayedAt: 'desc' },
+    take: HOME_RAIL,
+    select: { ...cardSelect, lastPlayedAt: true, user: { select: publicUser } },
+  });
 }
 
 /** Compare deux joueurs sur les jeux qu'ils possèdent tous les deux. */

@@ -3,6 +3,8 @@
   import { m } from '#lib/paraglide/messages';
   import Avatar from '#lib/components/Avatar.svelte';
   import Empty from '#lib/components/Empty.svelte';
+  import NewConversation from '#lib/components/NewConversation.svelte';
+  import { goto } from '$app/navigation';
   import SocialNav from '#lib/components/SocialNav.svelte';
   import { formatRelative } from '#lib/labels';
 
@@ -14,6 +16,7 @@
 <div class="mx-auto max-w-2xl space-y-4">
   <h1>{m.nav_messages()}</h1>
   <SocialNav />
+  <NewConversation onOpen={({ id }) => goto(`/messages/${id}`)} />
   {#if data.conversations.length}
     <ul class="card divide-y divide-line">
       {#each data.conversations as row (row.id)}
