@@ -82,6 +82,8 @@ const accountSelect = {
   avatarMotionUrl: true,
   frameUrl: true,
   frameMotionUrl: true,
+  backgroundUrl: true,
+  backgroundMotionUrl: true,
 } as const;
 
 /**
@@ -289,7 +291,9 @@ export async function afterSteamSync(userId: string) {
 const sameLook = (account: AccountLook, look: AccountLook) =>
   account.avatarMotionUrl === look.avatarMotionUrl &&
   account.frameUrl === look.frameUrl &&
-  account.frameMotionUrl === look.frameMotionUrl;
+  account.frameMotionUrl === look.frameMotionUrl &&
+  account.backgroundUrl === look.backgroundUrl &&
+  account.backgroundMotionUrl === look.backgroundMotionUrl;
 
 /** Le cadre et l'avatar animé, en un appel : rien n'est écrit s'ils n'ont pas changé. */
 async function refreshLook(account: SteamAccount) {

@@ -309,7 +309,7 @@ describe('amis, clans et discussions', () => {
     // Un jeu adulte choisi ne se montre qu'à qui a demandé à les voir.
     await db.user.update({ where: { id: player.id }, data: { backgroundGameId: adult.id } });
     expect(await background()).toBeNull();
-    expect((await background(true))?.slug).toBe(adult.slug);
+    expect(await background(true)).toMatchObject({ kind: 'game', slug: adult.slug });
 
     // Masqué de la bibliothèque, le jeu choisi n'habille plus rien.
     await db.user.update({ where: { id: player.id }, data: { backgroundGameId: chosen.id } });
@@ -323,6 +323,29 @@ describe('amis, clans et discussions', () => {
       where: { userId_gameId: { userId: player.id, gameId: chosen.id } },
       data: { hidden: false },
     });
+    // Le fond Steam passe avant le jeu choisi ; retiré sur Steam, le jeu choisi revient.
+    await db.user.update({ where: { id: player.id }, data: { backgroundSteam: true } });
+    const steam = { userId: player.id, provider: 'STEAM' as const };
+    await db.linkedAccount.updateMany({
+      where: steam,
+      data: {
+        backgroundUrl: 'https://cdn.example/fond.jpg',
+        backgroundMotionUrl: 'https://cdn.example/fond.mp4',
+      },
+    });
+    expect(await background()).toEqual({
+      kind: 'steam',
+      images: ['https://cdn.example/fond.jpg'],
+      motion: 'https://cdn.example/fond.mp4',
+    });
+    const [account] = (await userProfile(player.handle, null))?.user.accounts ?? [];
+    expect(account).not.toHaveProperty('backgroundUrl');
+    await db.linkedAccount.updateMany({
+      where: steam,
+      data: { backgroundUrl: null, backgroundMotionUrl: null },
+    });
+    expect(await background()).toMatchObject({ kind: 'game', slug: chosen.slug });
+
     await db.user.update({ where: { id: player.id }, data: { backgroundOff: true } });
     expect(await background()).toBeNull();
   });

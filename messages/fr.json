@@ -1888,5 +1888,8 @@
   "background_see_profile": "Voir mon profil",
   "background_pick": "Choisir un jeu",
   "background_choose": "Mettre {game} en fond",
-  "background_saved": "Fond du profil enregistré."
+  "background_saved": "Fond du profil enregistré.",
+  "background_steam_title": "Mon fond Steam",
+  "background_steam_use": "Utiliser le fond de mon profil Steam",
+  "background_steam_none": "Aucun fond n’est équipé sur ton profil Steam pour l’instant."
 }

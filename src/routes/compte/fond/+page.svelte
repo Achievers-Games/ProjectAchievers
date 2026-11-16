@@ -30,6 +30,43 @@
     <a href="/u/{data.handle}" class="btn btn-ghost ml-auto">{m.background_see_profile()}</a>
   </form>
 
+  {#if data.steam}
+    <section class="space-y-3">
+      <h2>{m.background_steam_title()}</h2>
+      {#if data.steam.url}
+        <form method="POST" action="?/mode" use:enhance={submit} class="max-w-md">
+          <button
+            name="mode"
+            value="steam"
+            class="background-tile aspect-video"
+            style:--art={art([data.steam.url])}
+            aria-pressed={data.mode === 'steam'}
+            aria-label={m.background_steam_use()}
+          >
+            {#if data.steam.motion}
+              <video
+                class="background-tile-video"
+                src={data.steam.motion}
+                poster={data.steam.url}
+                autoplay
+                muted
+                loop
+                playsinline
+                aria-hidden="true"
+              ></video>
+            {/if}
+            <span class="background-tile-name">{m.background_steam_use()}</span>
+            {#if data.mode === 'steam'}
+              <span class="background-tile-check" aria-hidden="true"><Check size={14} /></span>
+            {/if}
+          </button>
+        </form>
+      {:else}
+        <p class="card px-3 py-2 text-sm text-muted">{m.background_steam_none()}</p>
+      {/if}
+    </section>
+  {/if}
+
   <section class="space-y-3">
     <h2>{m.background_pick()}</h2>
     <form method="GET" class="flex gap-2">

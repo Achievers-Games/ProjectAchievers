@@ -120,6 +120,8 @@ model User {
   /// Jeu dont la grande image habille le profil ; sans choix, la première carte de la vitrine.
   backgroundGameId    String?
   backgroundGame      Game?     @relation("ProfileBackground", fields: [backgroundGameId], references: [id], onDelete: SetNull)
+  /// Le fond équipé sur Steam passe avant le jeu choisi, tant que Steam en donne un.
+  backgroundSteam     Boolean   @default(false)
   /// Le joueur a retiré le fond : son profil reste sobre.
   backgroundOff       Boolean   @default(false)
   /// Affiche les jeux centrés sur le contenu sexuel, masqués par défaut.
@@ -393,30 +395,33 @@ model Session {
 }
 
 model LinkedAccount {
-  id              String     @id @default(cuid())
-  userId          String
-  user            User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  provider        Provider
-  providerUserId  String
-  displayName     String
-  avatarUrl       String?
-  avatarMotionUrl String?
-  frameUrl        String?
-  frameMotionUrl  String?
-  profileUrl      String?
+  id                  String     @id @default(cuid())
+  userId              String
+  user                User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider            Provider
+  providerUserId      String
+  displayName         String
+  avatarUrl           String?
+  avatarMotionUrl     String?
+  frameUrl            String?
+  frameMotionUrl      String?
+  /// Fond équipé sur le profil Steam : son image, et sa vidéo quand il est animé.
+  backgroundUrl       String?
+  backgroundMotionUrl String?
+  profileUrl          String?
   /// Personnages WoW : leur liste exige le jeton du joueur, disponible seulement à la liaison.
-  characters      Json?
-  accessTokenEnc  String?
-  refreshTokenEnc String?
-  tokenExpiresAt  DateTime?
-  syncStatus      SyncStatus @default(IDLE)
-  syncError       String?
-  lastSyncedAt    DateTime?
+  characters          Json?
+  accessTokenEnc      String?
+  refreshTokenEnc     String?
+  tokenExpiresAt      DateTime?
+  syncStatus          SyncStatus @default(IDLE)
+  syncError           String?
+  lastSyncedAt        DateTime?
   /// Steam : le dernier passage du suivi en direct, plus récent que la tournée quotidienne.
-  liveCheckedAt   DateTime?
+  liveCheckedAt       DateTime?
   /// Steam : le joueur garde son temps de jeu privé ; le site affiche « privé » plutôt que rien.
-  playtimeHidden  Boolean    @default(false)
-  linkedAt        DateTime   @default(now())
+  playtimeHidden      Boolean    @default(false)
+  linkedAt            DateTime   @default(now())
 
   @@unique([provider, providerUserId])
   @@unique([userId, provider])

@@ -153,6 +153,9 @@ const STEAM_IMAGES = 'https://shared.fastly.steamstatic.com/community_assets/ima
 interface SteamItem {
   image_small?: string;
   image_large?: string;
+  /** Un fond animé : sa vidéo. Le MP4 passe partout, Safari compris ; le WebM en secours. */
+  movie_webm?: string;
+  movie_mp4?: string;
 }
 
 const steamImage = (path: string | undefined) => (path ? `${STEAM_IMAGES}${path}` : null);
@@ -171,13 +174,21 @@ export async function fetchSteamLook(steamId: string): Promise<AccountLook | nul
     const response = await fetch(url, { signal: AbortSignal.timeout(10_000) });
     if (!response.ok) throw new Error(`GetProfileItemsEquipped a répondu ${response.status}`);
     const data = (await response.json()) as {
-      response?: { animated_avatar?: SteamItem; avatar_frame?: SteamItem };
+      response?: {
+        animated_avatar?: SteamItem;
+        avatar_frame?: SteamItem;
+        profile_background?: SteamItem;
+      };
     };
     const items = data.response ?? {};
     return {
       avatarMotionUrl: steamImage(items.animated_avatar?.image_small),
       frameUrl: steamImage(items.avatar_frame?.image_large),
       frameMotionUrl: steamImage(items.avatar_frame?.image_small),
+      backgroundUrl: steamImage(items.profile_background?.image_large),
+      backgroundMotionUrl: steamImage(
+        items.profile_background?.movie_mp4 ?? items.profile_background?.movie_webm,
+      ),
     };
   } catch {
     return null;

@@ -1898,11 +1898,20 @@
 .profile-backdrop {
   @apply pointer-events-none fixed inset-0 -z-10;
   background-color: rgb(12 11 22);
-  background-image:
-    linear-gradient(180deg, rgb(8 6 18 / 0.15) 0%, rgb(8 6 18 / 0.55) 55%, rgb(8 6 18 / 0.9) 100%),
-    var(--art, none);
+  background-image: var(--art, none);
   background-position: center top;
   background-size: cover;
+}
+/* L'assombrissement passe au-dessus de l'image comme de la vidéo d'un fond animé. */
+.profile-backdrop::after {
+  content: '';
+  @apply absolute inset-0;
+  background: linear-gradient(
+    180deg,
+    rgb(8 6 18 / 0.15) 0%,
+    rgb(8 6 18 / 0.55) 55%,
+    rgb(8 6 18 / 0.9) 100%
+  );
 }
 .profile-page[data-backdrop] .profile-banner {
   @apply min-h-72 border-transparent bg-none sm:min-h-80;
@@ -1943,4 +1952,26 @@
 /* Un bouton bascule allumé se voit : c'est le mode en cours (vitrine, fond du profil). */
 .btn[aria-pressed='true'] {
   @apply border-accent bg-accent/15 text-ink;
+}
+
+/* Un fond Steam animé joue par-dessus son image fixe, qui reste là pendant le chargement. */
+.profile-backdrop-video,
+.background-tile-video {
+  @apply absolute inset-0 h-full w-full object-cover;
+}
+.profile-backdrop-video {
+  z-index: -1;
+}
+.background-tile-video {
+  @apply pointer-events-none;
+}
+.background-tile > :not(video) {
+  z-index: 1;
+  text-shadow: 0 1px 6px rgb(0 0 0 / 0.8);
+}
+@media (prefers-reduced-motion: reduce) {
+  .profile-backdrop-video,
+  .background-tile-video {
+    display: none;
+  }
 }

@@ -1851,5 +1851,8 @@
   "background_see_profile": "查看我的资料",
   "background_pick": "选择游戏",
   "background_choose": "将{game}设为背景",
-  "background_saved": "资料背景已保存。"
+  "background_saved": "资料背景已保存。",
+  "background_steam_title": "我的 Steam 背景",
+  "background_steam_use": "使用我的 Steam 资料背景",
+  "background_steam_none": "你的 Steam 资料暂未装备背景。"
 }

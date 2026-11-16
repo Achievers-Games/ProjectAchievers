@@ -1888,5 +1888,8 @@
   "background_see_profile": "Mein Profil ansehen",
   "background_pick": "Spiel auswählen",
   "background_choose": "{game} als Hintergrund nutzen",
-  "background_saved": "Profilhintergrund gespeichert."
+  "background_saved": "Profilhintergrund gespeichert.",
+  "background_steam_title": "Mein Steam-Hintergrund",
+  "background_steam_use": "Hintergrund meines Steam-Profils nutzen",
+  "background_steam_none": "Auf deinem Steam-Profil ist noch kein Hintergrund ausgerüstet."
 }

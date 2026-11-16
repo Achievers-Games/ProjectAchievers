@@ -119,12 +119,26 @@
 />
 
 {#if profile.background}
-  <div class="profile-backdrop" style:--art={art} aria-hidden="true"></div>
+  <div class="profile-backdrop" style:--art={art} aria-hidden="true">
+    {#if profile.background.kind === 'steam' && profile.background.motion}
+      <!-- Un fond Steam animé : la vidéo couvre l'image fixe, coupée si l'on préfère moins
+           d'animations. -->
+      <video
+        class="profile-backdrop-video"
+        src={profile.background.motion}
+        poster={profile.background.images[0]}
+        autoplay
+        muted
+        loop
+        playsinline
+      ></video>
+    {/if}
+  </div>
 {/if}
 
 <div class="profile-page space-y-8" data-backdrop={profile.background ? '' : undefined}>
   <header class="profile-banner">
-    {#if profile.background}
+    {#if profile.background?.kind === 'game'}
       <a
         href={gameHref(profile.background) ?? `/jeux/${profile.background.slug}`}
         class="profile-banner-game"

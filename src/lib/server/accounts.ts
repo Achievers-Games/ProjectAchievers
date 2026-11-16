@@ -85,6 +85,9 @@ export interface AccountLook {
   avatarMotionUrl: string | null;
   frameUrl: string | null;
   frameMotionUrl: string | null;
+  /** Le fond du profil Steam ; absent pour les autres plateformes, qui n'en ont pas. */
+  backgroundUrl?: string | null;
+  backgroundMotionUrl?: string | null;
 }
 
 export type BlizzardCharacter = { region: string; realm: string; name: string };
@@ -97,6 +100,8 @@ export interface Identity {
   avatarMotionUrl?: string | null;
   frameUrl?: string | null;
   frameMotionUrl?: string | null;
+  backgroundUrl?: string | null;
+  backgroundMotionUrl?: string | null;
   profileUrl?: string | null;
   accessToken?: string;
   refreshToken?: string | null;
@@ -117,6 +122,8 @@ function accountData(identity: Identity) {
     avatarMotionUrl: identity.avatarMotionUrl,
     frameUrl: identity.frameUrl,
     frameMotionUrl: identity.frameMotionUrl,
+    backgroundUrl: identity.backgroundUrl,
+    backgroundMotionUrl: identity.backgroundMotionUrl,
     profileUrl: identity.profileUrl,
     accessTokenEnc: identity.accessToken ? encrypt(identity.accessToken) : null,
     refreshTokenEnc: identity.refreshToken ? encrypt(identity.refreshToken) : null,
@@ -132,6 +139,12 @@ export const identityLook = (identity: Identity, account: AccountLook): AccountL
   frameUrl: identity.frameUrl === undefined ? account.frameUrl : identity.frameUrl,
   frameMotionUrl:
     identity.frameMotionUrl === undefined ? account.frameMotionUrl : identity.frameMotionUrl,
+  backgroundUrl:
+    identity.backgroundUrl === undefined ? account.backgroundUrl : identity.backgroundUrl,
+  backgroundMotionUrl:
+    identity.backgroundMotionUrl === undefined
+      ? account.backgroundMotionUrl
+      : identity.backgroundMotionUrl,
 });
 
 /** Reporte sur le compte et sur le profil ce que le joueur a changé sur la plateforme. */
