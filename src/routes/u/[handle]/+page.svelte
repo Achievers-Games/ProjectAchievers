@@ -50,6 +50,9 @@
   const art = $derived(
     profile.background?.images.map((image) => `url("${encodeURI(image)}")`).join(', '),
   );
+  const bannerArt = $derived(
+    profile.banner?.images.map((image) => `url("${encodeURI(image)}")`).join(', '),
+  );
   const isMe = $derived(data.user?.id === profile.user.id);
   /** L'image de partage n'existe que pour un profil public : sinon, l'avatar seul. */
   const shareImage = $derived(
@@ -137,14 +140,14 @@
 {/if}
 
 <div class="profile-page space-y-8" data-backdrop={profile.background ? '' : undefined}>
-  <header class="profile-banner">
-    {#if profile.background?.kind === 'game'}
+  <header class="profile-banner" style:--art={bannerArt} data-art={profile.banner ? '' : undefined}>
+    {#if profile.banner}
       <a
-        href={gameHref(profile.background) ?? `/jeux/${profile.background.slug}`}
+        href={gameHref(profile.banner) ?? `/jeux/${profile.banner.slug}`}
         class="profile-banner-game"
-        title={m.profile_banner_game({ game: profile.background.name })}
+        title={m.profile_banner_game({ game: profile.banner.name })}
       >
-        {profile.background.name}
+        {profile.banner.name}
       </a>
     {/if}
     <Avatar person={profile.user} play="always" size={112} />

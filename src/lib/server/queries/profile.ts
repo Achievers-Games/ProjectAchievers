@@ -82,6 +82,14 @@ export function profileBackground(
     : null;
 }
 
+/** La bannière de l'en-tête : la première carte de la vitrine qui a une image. */
+export function profileBanner(
+  showcase: { name: string; slug: string; headerUrl: string | null }[],
+) {
+  const first = showcase.find((card) => card.headerUrl);
+  return first?.headerUrl ? toBanner({ ...first, headerUrl: first.headerUrl }) : null;
+}
+
 /**
  * Une tuile par jeu : la version déjà choisie si elle en fait partie, sinon celle de Steam, qui a
  * une grande image ; à défaut, la première lue.
@@ -197,6 +205,8 @@ export async function userProfile(handle: string, viewerId: string | null, showA
     },
     stats,
     showcase,
+    // La bannière garde le jeu que le joueur met en avant, quel que soit le fond de la page.
+    banner: profileBanner(showcase),
     background: profileBackground(
       { backgroundGame, backgroundOff, backgroundSteam, steam },
       showcase,

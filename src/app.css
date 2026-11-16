@@ -1882,7 +1882,13 @@
 /* L'en-tête du profil : sans fond choisi, une bannière en dégradé. */
 .profile-banner {
   @apply relative flex min-h-56 flex-wrap items-end gap-4 overflow-hidden rounded-lg border border-line p-5 pt-16 text-ink sm:p-6 sm:pt-20;
-  background-image: linear-gradient(115deg, #2a0f3f, #0d0a1c);
+  background-color: rgb(var(--bg));
+  background-image:
+    linear-gradient(0deg, rgb(8 6 18 / 0.85), rgb(8 6 18 / 0.2) 70%),
+    linear-gradient(90deg, rgb(8 6 18 / 0.9) 10%, rgb(8 6 18 / 0.45) 60%, rgb(8 6 18 / 0.25)),
+    var(--art, none), linear-gradient(115deg, #2a0f3f, #0d0a1c);
+  background-position: center 30%;
+  background-size: cover;
   box-shadow: 0 12px 40px rgb(0 0 0 / 0.35);
 }
 .profile-banner h1 {
@@ -1913,10 +1919,17 @@
     rgb(8 6 18 / 0.9) 100%
   );
 }
-.profile-page[data-backdrop] .profile-banner {
-  @apply min-h-72 border-transparent bg-none sm:min-h-80;
+/* Sans jeu en vitrine, l'en-tête s'efface et laisse voir le fond ; avec un jeu, sa bannière
+   reste posée sur le fond, comme une carte. */
+.profile-page[data-backdrop] .profile-banner:not([data-art]) {
+  @apply min-h-72 border-transparent sm:min-h-80;
+  background-color: transparent;
   background-image: linear-gradient(0deg, rgb(8 6 18 / 0.7), transparent 75%);
   box-shadow: none;
+}
+.profile-page[data-backdrop] .profile-banner[data-art] {
+  @apply border-white/10;
+  box-shadow: 0 16px 48px rgb(0 0 0 / 0.5);
 }
 .profile-page[data-backdrop] .profile-panel,
 .profile-page[data-backdrop] > .card,
