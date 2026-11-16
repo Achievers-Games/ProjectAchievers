@@ -1879,5 +1879,6 @@
   "chat_new_loading": "Wird geladen…",
   "chat_new_no_friends": "Füge zuerst einen Freund hinzu, um ihm zu schreiben:",
   "chat_new_filter": "Freund suchen",
-  "chat_new_none": "Kein Freund passt."
+  "chat_new_none": "Kein Freund passt.",
+  "profile_banner_game": "Vorgestelltes Spiel: {game}"
 }

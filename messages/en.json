@@ -1879,5 +1879,6 @@
   "chat_new_loading": "Loading…",
   "chat_new_no_friends": "Add a friend first to write to them:",
   "chat_new_filter": "Find a friend",
-  "chat_new_none": "No friend matches."
+  "chat_new_none": "No friend matches.",
+  "profile_banner_game": "Showcased game: {game}"
 }

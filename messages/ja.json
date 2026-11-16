@@ -1842,5 +1842,6 @@
   "chat_new_loading": "読み込み中…",
   "chat_new_no_friends": "まずフレンドを追加してください：",
   "chat_new_filter": "フレンドを探す",
-  "chat_new_none": "該当するフレンドはいません。"
+  "chat_new_none": "該当するフレンドはいません。",
+  "profile_banner_game": "ショーケースのゲーム：{game}"
 }

@@ -1842,5 +1842,6 @@
   "chat_new_loading": "加载中…",
   "chat_new_no_friends": "先添加好友才能发消息：",
   "chat_new_filter": "查找好友",
-  "chat_new_none": "没有匹配的好友。"
+  "chat_new_none": "没有匹配的好友。",
+  "profile_banner_game": "展示的游戏：{game}"
 }

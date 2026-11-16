@@ -1879,5 +1879,6 @@
   "chat_new_loading": "Carregando…",
   "chat_new_no_friends": "Adicione um amigo primeiro para escrever para ele:",
   "chat_new_filter": "Procurar um amigo",
-  "chat_new_none": "Nenhum amigo corresponde."
+  "chat_new_none": "Nenhum amigo corresponde.",
+  "profile_banner_game": "Jogo em destaque: {game}"
 }

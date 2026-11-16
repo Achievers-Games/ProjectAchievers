@@ -1863,3 +1863,30 @@
   animation: frame-spin 8s linear infinite;
   box-shadow: 0 0 12px rgb(247 196 72 / 0.55);
 }
+
+/* La bannière du profil : le premier jeu de la vitrine en fond, comme une page de joueur.
+   Elle reste sombre dans les deux thèmes, pour que le texte se lise sur n'importe quelle image. */
+.profile-banner {
+  --bg: 12 11 22;
+  --surface: 21 20 36;
+  --raised: 32 30 52;
+  --line: 70 66 104;
+  --ink: 238 236 248;
+  --muted: 190 186 214;
+  @apply relative flex min-h-56 flex-wrap items-end gap-4 overflow-hidden rounded-lg border border-line p-5 pt-16 text-ink sm:p-6 sm:pt-20;
+  background-color: rgb(var(--bg));
+  background-image:
+    linear-gradient(0deg, rgb(8 6 18 / 0.85), rgb(8 6 18 / 0.2) 70%),
+    linear-gradient(90deg, rgb(8 6 18 / 0.9) 10%, rgb(8 6 18 / 0.45) 60%, rgb(8 6 18 / 0.25)),
+    var(--art, none), linear-gradient(115deg, #2a0f3f, #0d0a1c);
+  background-position: center 30%;
+  background-size: cover;
+  box-shadow: 0 12px 40px rgb(0 0 0 / 0.35);
+}
+.profile-banner h1 {
+  @apply text-3xl sm:text-4xl;
+  text-shadow: 0 2px 12px rgb(0 0 0 / 0.6);
+}
+.profile-banner-game {
+  @apply absolute right-4 top-4 max-w-[60%] truncate rounded-full border border-white/20 bg-black/40 px-3 py-1 text-xs font-semibold text-white/85 backdrop-blur transition-colors hover:bg-black/60 hover:text-white;
+}

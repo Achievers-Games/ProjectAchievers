@@ -115,7 +115,19 @@
 />
 
 <div class="space-y-8">
-  <header class="flex flex-wrap items-center gap-4">
+  <header
+    class="profile-banner"
+    style:--art={data.banner?.images.map((image) => `url("${encodeURI(image)}")`).join(', ')}
+  >
+    {#if data.banner}
+      <a
+        href={gameHref(data.banner) ?? `/jeux/${data.banner.slug}`}
+        class="profile-banner-game"
+        title={m.profile_banner_game({ game: data.banner.name })}
+      >
+        {data.banner.name}
+      </a>
+    {/if}
     <Avatar person={profile.user} play="always" size={112} />
     <div class="min-w-0">
       <h1>{profile.user.displayName}</h1>

@@ -1879,5 +1879,6 @@
   "chat_new_loading": "Chargement…",
   "chat_new_no_friends": "Ajoute d’abord un ami pour lui écrire :",
   "chat_new_filter": "Chercher un ami",
-  "chat_new_none": "Aucun ami ne correspond."
+  "chat_new_none": "Aucun ami ne correspond.",
+  "profile_banner_game": "Jeu en vitrine : {game}"
 }

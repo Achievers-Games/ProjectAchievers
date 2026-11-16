@@ -1929,5 +1929,6 @@
   "chat_new_loading": "Загрузка…",
   "chat_new_no_friends": "Сначала добавь друга, чтобы написать ему:",
   "chat_new_filter": "Найти друга",
-  "chat_new_none": "Совпадений нет."
+  "chat_new_none": "Совпадений нет.",
+  "profile_banner_game": "Игра на витрине: {game}"
 }
