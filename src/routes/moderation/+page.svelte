@@ -8,7 +8,7 @@
   import { m } from '#lib/paraglide/messages';
   import { enhance } from '$app/forms';
   import Empty from '#lib/components/Empty.svelte';
-  import { formatDate, formatRelative, PLATFORM_LABELS } from '#lib/labels';
+  import { formatDate, formatRelative } from '#lib/labels';
 
   let { data, form } = $props();
 
@@ -358,44 +358,7 @@
 
   <section class="space-y-3 pt-4">
     <h2>{m.mod_groups()}</h2>
-    <p class="text-sm text-muted">
-      {m.mod_groups_text()}
-    </p>
-
-    <form method="POST" action="?/join" use:enhance class="card flex flex-wrap gap-2 p-3">
-      <input
-        name="first"
-        required
-        aria-label={m.mod_first()}
-        placeholder={m.mod_first_placeholder()}
-        class="input max-w-xs"
-      />
-      <input
-        name="second"
-        required
-        aria-label={m.mod_second()}
-        placeholder={m.mod_second_placeholder()}
-        class="input max-w-xs"
-      />
-      <button class="btn">{m.mod_join()}</button>
-    </form>
-
-    <ul class="card divide-y divide-line">
-      {#each data.families as family (family.key)}
-        <li class="space-y-1 p-3">
-          {#each family.games as game (game.id)}
-            <div class="flex items-center justify-between gap-2 text-sm">
-              <a href="/jeux/{game.slug}" class="min-w-0 truncate">
-                {game.name} · {PLATFORM_LABELS[game.platform]}
-              </a>
-              <form method="POST" action="?/separate" use:enhance>
-                <input type="hidden" name="id" value={game.id} />
-                <button class="btn btn-ghost h-7">{m.mod_separate()}</button>
-              </form>
-            </div>
-          {/each}
-        </li>
-      {/each}
-    </ul>
+    <p class="text-sm text-muted">{m.mod_groups_text()}</p>
+    <a href="/moderation/familles" class="btn">{m.mod_groups_open()}</a>
   </section>
 </div>
