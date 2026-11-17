@@ -1907,6 +1907,17 @@
   @apply text-3xl sm:text-4xl;
   text-shadow: 0 2px 12px rgb(0 0 0 / 0.6);
 }
+/* Les succès du site : la catégorie qui compte le plus pour le joueur, en or et bien en vue. */
+.profile-ach-link {
+  @apply inline-flex h-9 items-center gap-2 rounded-md border px-3.5 text-sm font-bold text-gold transition-colors;
+  border-color: rgb(var(--gold) / 0.55);
+  background: rgb(var(--gold) / 0.14);
+  box-shadow: 0 0 18px rgb(var(--gold) / 0.18);
+}
+.profile-ach-link:hover {
+  background: rgb(var(--gold) / 0.24);
+  border-color: rgb(var(--gold) / 0.8);
+}
 .profile-banner-game {
   @apply absolute right-4 top-4 max-w-[60%] truncate rounded-full border border-white/20 bg-black/40 px-3 py-1 text-xs font-semibold text-white/85 backdrop-blur transition-colors hover:bg-black/60 hover:text-white;
 }

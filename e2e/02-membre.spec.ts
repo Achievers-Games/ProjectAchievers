@@ -549,10 +549,13 @@ test.describe('membre', () => {
     await page.getByRole('link', { name: 'Profil' }).first().click();
     await expect(page).toHaveURL(/\/u\/demo/);
 
-    // La carte se télécharge en PDF, sous un nom de fichier lisible.
+    // La carte se télécharge en PDF depuis son icône, sous un nom de fichier lisible.
+    await ready(page);
+    await closePops(page);
     const download = page.waitForEvent('download');
-    await page.getByRole('link', { name: 'Carte en PDF' }).click();
+    await page.getByRole('button', { name: 'Télécharger la carte (PDF)' }).click();
     expect((await download).suggestedFilename()).toBe('achievers-demo.pdf');
+    await expect(page.getByRole('button', { name: 'Télécharger la carte (PDF)' })).toBeEnabled();
 
     await page.getByRole('link', { name: 'Modifier', exact: true }).click();
     await expect(page).toHaveURL(/\/compte$/);

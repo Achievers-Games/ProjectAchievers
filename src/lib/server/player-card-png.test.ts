@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   renderPlayerCard,
   renderShareImage,
@@ -29,6 +29,27 @@ describe('carte de joueur en PNG', () => {
     // L'en-tête IHDR porte la largeur et la hauteur juste après la signature.
     expect(view.getUint32(16)).toBe(CARD_WIDTH * 2);
     expect(view.getUint32(20)).toBe(CARD_HEIGHT * 2);
+  });
+});
+
+describe('module rechargé', () => {
+  it('rend encore une image quand resvg a déjà été initialisé par une autre copie', async () => {
+    const svg = renderPlayerCard({
+      displayName: 'Ada',
+      handle: 'ada',
+      clan: null,
+      games: 1,
+      unlocked: 1,
+      cards: 0,
+      points: 0,
+      avatar: null,
+    });
+    await svgToPng(svg, CARD_WIDTH);
+    // Comme après un rechargement de Vite : une copie neuve du module, resvg déjà prêt.
+    vi.resetModules();
+    const fresh = await import('./player-card-png');
+    const png = await fresh.svgToPng(svg, CARD_WIDTH);
+    expect([...png.subarray(0, 8)]).toEqual(PNG_SIGNATURE);
   });
 });
 

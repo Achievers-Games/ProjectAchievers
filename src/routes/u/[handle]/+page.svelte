@@ -5,10 +5,11 @@
   import { submitWithToast } from '#lib/forms';
   import { m } from '#lib/paraglide/messages';
   import Gamepad2 from '@lucide/svelte/icons/gamepad-2';
-  import IdCard from '@lucide/svelte/icons/id-card';
-  import Download from '@lucide/svelte/icons/download';
-  import Link from '@lucide/svelte/icons/link';
+  import Trophy from '@lucide/svelte/icons/trophy';
+  import Scale from '@lucide/svelte/icons/scale';
+  import Palette from '@lucide/svelte/icons/palette';
   import Avatar from '#lib/components/Avatar.svelte';
+  import ProfileShare from '#lib/components/ProfileShare.svelte';
   import PageBackdrop from '#lib/components/PageBackdrop.svelte';
   import { cssArt } from '#lib/art';
   import Empty from '#lib/components/Empty.svelte';
@@ -18,7 +19,6 @@
   import TrophyBadge from '#lib/components/TrophyBadge.svelte';
   import StatGrid from '#lib/components/StatGrid.svelte';
   import { formatDate, formatNumber, formatRelative, PROVIDER_LABELS } from '#lib/labels';
-  import { toast } from '#lib/stores/toast';
   import { SITE_TOTAL } from '#lib/site-achievements';
 
   let { data } = $props();
@@ -65,27 +65,6 @@
   const playtimePrivate = $derived(
     playedHours === 0 && profile.user.accounts.some((account) => account.playtimeHidden),
   );
-  /** Le lien de l'image, prêt à coller sur un forum, Lure ou un README. */
-  async function shareCard() {
-    // Le PNG s’affiche partout, Discord compris ; le SVG reste servi pour qui le préfère.
-    const url = `${data.origin}/u/${profile.user.handle}/carte.png`;
-    try {
-      await navigator.clipboard.writeText(url);
-      toast(m.player_card_copied());
-    } catch {
-      toast(url);
-    }
-  }
-
-  async function share() {
-    try {
-      await navigator.clipboard.writeText(location.href);
-      toast(m.share_copied());
-    } catch {
-      // Presse-papiers refusé (contexte non sécurisé, permission) : on donne le lien à la main.
-      toast(location.href);
-    }
-  }
 </script>
 
 <Seo
@@ -205,26 +184,30 @@
         {/each}
       </ul>
     </div>
-    <div class="ml-auto flex flex-wrap justify-end gap-2">
-      <a class="btn" href="/u/{profile.user.handle}/succes">
+    <!-- Les liens d'abord, le partage regroupé dans un menu, l'action principale à droite. -->
+    <div class="ml-auto flex flex-wrap items-center justify-end gap-2">
+      <a class="profile-ach-link" href="/u/{profile.user.handle}/succes">
+        <Trophy size={16} aria-hidden="true" />
         {m.ach_profile_link({ count: data.siteAchievements, total: SITE_TOTAL })}
       </a>
-      <button type="button" class="btn" onclick={share}>
-        <Link size={14} aria-hidden="true" />
-        {m.share()}
-      </button>
-      {#if profile.user.isPublic}
-        <button type="button" class="btn" onclick={shareCard}>
-          <IdCard size={14} aria-hidden="true" />
-          {m.player_card()}
-        </button>
-        <a class="btn" href="/u/{profile.user.handle}/carte.pdf" download data-sveltekit-reload>
-          <Download size={14} aria-hidden="true" />
-          {m.player_card_pdf()}
+      {#if data.user && !isMe}
+        <a class="btn" href="/comparer?a={data.user.handle}&b={profile.user.handle}">
+          <Scale size={14} aria-hidden="true" />
+          {m.compare()}
         </a>
       {/if}
       {#if isMe}
-        <a class="btn" href="/compte/fond">{m.appearance_title()}</a>
+        <a class="btn" href="/compte/fond">
+          <Palette size={14} aria-hidden="true" />
+          {m.appearance_title()}
+        </a>
+      {/if}
+      <ProfileShare
+        handle={profile.user.handle}
+        origin={data.origin}
+        isPublic={profile.user.isPublic}
+      />
+      {#if isMe}
         <a class="btn btn-primary" href="/compte">{m.profile_edit()}</a>
       {/if}
       {#if data.relation === 'none'}
@@ -239,11 +222,6 @@
         </form>
       {:else if data.relation === 'sent' || data.relation === 'received'}
         <a class="btn" href="/amis">{m.friends_pending()}</a>
-      {/if}
-      {#if data.user && !isMe}
-        <a class="btn" href="/comparer?a={data.user.handle}&b={profile.user.handle}"
-          >{m.compare()}</a
-        >
       {/if}
     </div>
   </header>

@@ -70,7 +70,13 @@ let ready: Promise<Uint8Array[]> | null = null;
 /** Le WebAssembly et les polices, chargés une seule fois pour toute la vie du serveur. */
 function prepare() {
   ready ??= (async () => {
-    await initWasm(readFileSync(require.resolve('@resvg/resvg-wasm/index_bg.wasm')));
+    try {
+      await initWasm(readFileSync(require.resolve('@resvg/resvg-wasm/index_bg.wasm')));
+    } catch (cause) {
+      // Le WebAssembly vit dans le paquet, pas dans ce module : rechargé (Vite en dev, ou une
+      // deuxième copie du module), celui-ci repart de zéro alors que resvg est déjà prêt.
+      if (!(cause instanceof Error && cause.message.includes('Already initialized'))) throw cause;
+    }
     // Le latin étendu et le cyrillique couvrent les noms accentués et la version russe du site.
     // Le chinois et le japonais n'ont pas de glyphes dans Inter : leurs libellés resteraient vides.
     return SUBSETS.flatMap((subset) =>
