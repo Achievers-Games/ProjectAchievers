@@ -81,7 +81,7 @@
       {/if}
       {#if item.next}
         <p class="mt-1 text-xs text-muted">
-          {m.ach_next_step({ title: item.next.title, text: item.next.text })}
+          {m.ach_next_step({ text: item.next })}
         </p>
       {/if}
       {#if item.unlockedAt || item.rarity !== null}

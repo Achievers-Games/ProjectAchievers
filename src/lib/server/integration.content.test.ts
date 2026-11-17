@@ -808,11 +808,11 @@ describe('succès du site', () => {
     expect(zombies).toHaveLength(1);
     expect(zombies[0]).toMatchObject({ code: 'g_zombies_5', suggest: true, complete: false });
     expect(zombies[0]?.steps.map((step) => step.earned)).toEqual([true, false, false]);
-    // La carte dit le palier obtenu, en a la couleur, et nomme le suivant.
+    // La carte dit le palier obtenu, en a la couleur, et donne l'objectif du suivant.
     expect(zombies[0]).toMatchObject({
       title: m.ach_g_zombies_1_title(),
       tier: 1,
-      next: { title: expect.any(String), text: expect.stringContaining('5') },
+      next: expect.stringContaining('5'),
     });
     expect(zombies[0]?.steps.map((step) => step.tier)).toEqual([1, 2, 3]);
     expect(

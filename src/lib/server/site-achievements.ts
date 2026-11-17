@@ -246,10 +246,7 @@ export async function siteAchievementBoard(
         title: revealed ? siteTitle(shownCode) : null,
         text: revealed ? siteText(shownCode) : null,
         // Le palier suivant, une fois le premier obtenu : la carte dit d'où on part et où aller.
-        next:
-          revealed && reached >= 0 && !complete
-            ? { title: siteTitle(target), text: siteText(target) }
-            : null,
+        next: revealed && reached >= 0 && !complete ? siteText(target) : null,
         // La date et la couleur sont celles du dernier palier obtenu.
         unlockedAt: reached >= 0 ? (dates.get(steps[reached]!) ?? null) : null,
         complete,
@@ -364,7 +361,7 @@ export async function clanAchievementBoard(clanId: string) {
       code: target,
       title: siteTitle(shownCode),
       text: siteText(shownCode),
-      next: reached >= 0 && !complete ? { title: siteTitle(target), text: siteText(target) } : null,
+      next: reached >= 0 && !complete ? siteText(target) : null,
       icon,
       secret: SECRET_CODES.has(target),
       unlockedAt: reached >= 0 ? (dates.get(steps[reached]!) ?? null) : null,
