@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { PLATFORM_LABELS } from '#lib/labels';
   import { subscribeJson } from '#lib/sse';
   import { enhance } from '$app/forms';
   import { submitWithToast } from '#lib/forms';
@@ -61,6 +60,22 @@
   const gameHref = (card: { slug: string }) =>
     isMe ? undefined : `/jeux/${card.slug}?joueur=${profile.user.handle}`;
   const playedHours = $derived(Math.round(profile.stats.playtimeMinutes / 60));
+  /**
+   * Le temps de jeu rangé sous le compte qui l'a compté : PS4 et PS5 tiennent tous deux au compte
+   * PlayStation, et seul celui-là précise la console. Moins d'une heure ne s'affiche pas.
+   */
+  const accountRows = $derived(
+    profile.user.accounts.map((account) => ({
+      account,
+      rows: profile.stats.playtimeByPlatform.filter(
+        (row) =>
+          row.minutes >= 30 &&
+          (account.provider === 'PSN'
+            ? ['PSN', 'PS4', 'PS5'].includes(row.platform)
+            : row.platform === account.provider),
+      ),
+    })),
+  );
   /** Steam est la seule source de temps de jeu : s'il le garde privé, il n'y a rien à additionner. */
   const playtimePrivate = $derived(
     playedHours === 0 && profile.user.accounts.some((account) => account.playtimeHidden),
@@ -144,15 +159,6 @@
       {/if}
       <p class="text-muted">
         {m.member_since({ date: formatDate(profile.user.createdAt) })}
-        {#if playtimePrivate}
-          · <span data-testid="profile-playtime">{m.playtime_private()}</span>
-        {:else if playedHours > 0}
-          · <span data-testid="profile-playtime"
-            >{m.playtime_total({
-              time: m.playtime_hours({ hours: formatNumber(playedHours) }),
-            })}</span
-          >
-        {/if}
         {#if !profile.user.isPublic}· {m.private_profile()}{/if}
         {#if profile.user.clanMember}
           ·
@@ -161,23 +167,17 @@
           </a>
         {/if}
       </p>
-      {#if profile.stats.playtimeByPlatform.length}
-        <dl class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted">
-          {#each profile.stats.playtimeByPlatform as row (row.platform)}
-            <div class="flex gap-1">
-              <dt>
-                {PLATFORM_LABELS[row.platform as keyof typeof PLATFORM_LABELS] ?? row.platform}
-              </dt>
-              <dd class="tabular">
-                {m.playtime_hours({ hours: formatNumber(Math.round(row.minutes / 60)) })}
-              </dd>
-            </div>
-          {/each}
-        </dl>
+      {#if playtimePrivate}
+        <p class="text-sm text-muted" data-testid="profile-playtime">{m.playtime_private()}</p>
+      {:else if playedHours > 0}
+        <p class="text-sm font-semibold text-ink" data-testid="profile-playtime">
+          {m.playtime_overall({ hours: formatNumber(playedHours) })}
+        </p>
       {/if}
-      <ul class="mt-1 flex gap-3 text-muted">
-        {#each profile.user.accounts as account (account.provider)}
-          <li>
+      <!-- Chaque compte : son icône, qui mène au profil sur la plateforme, et ses heures à côté. -->
+      <ul class="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
+        {#each accountRows as { account, rows } (account.provider)}
+          <li class="flex items-center gap-1.5">
             <a
               href={account.profileUrl}
               target="_blank"
@@ -187,6 +187,13 @@
             >
               <ProviderIcon provider={account.provider} />
             </a>
+            {#each rows as row, index (row.platform)}
+              <span class="tabular">
+                {#if index}·{/if}
+                {#if rows.length > 1}{row.platform}{/if}
+                {m.playtime_short({ hours: formatNumber(Math.round(row.minutes / 60)) })}
+              </span>
+            {/each}
           </li>
         {/each}
       </ul>
