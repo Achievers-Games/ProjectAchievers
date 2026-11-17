@@ -8,6 +8,7 @@ import {
   XboxAuthError,
   type XboxSession,
 } from '../providers/xbox';
+import { rateLimit } from '../rate-limit';
 import { fetchRetry, SyncError, syncGames } from './errors';
 import {
   saveAchievements,
@@ -22,6 +23,8 @@ import { xboxConsole } from '#lib/collection';
 
 const log = logger('Xbox');
 const MAX_TITLES = 10_000;
+const PLAYTIME_EVERY = 6 * 60 * 60 * 1000;
+const STATS_BATCH = 100;
 
 interface XboxTitle {
   titleId: string;
@@ -129,6 +132,56 @@ async function fetchTitles(session: XboxSession): Promise<XboxTitle[]> {
   if (!response.ok) throw new Error(`TitleHub a répondu ${response.status}`);
   const data = (await response.json()) as { titles?: XboxTitle[] };
   return data.titles ?? [];
+}
+
+interface XboxStats {
+  statlistscollection?: {
+    stats?: { titleid?: string | number; name?: string; value?: unknown }[];
+  }[];
+}
+
+/** Minutes jouées par titre, telles que les rend le service des statistiques Xbox. */
+export function xboxMinutes(data: XboxStats): Map<string, number> {
+  const minutes = new Map<string, number>();
+  for (const list of data.statlistscollection ?? []) {
+    for (const stat of list.stats ?? []) {
+      if (stat.name !== 'MinutesPlayed' || stat.titleid === undefined) continue;
+      // Un jeu jamais lancé sur ce compte rend une valeur absente : il ne compte pas.
+      if (stat.value === undefined || stat.value === null || stat.value === '') continue;
+      const value = Number(stat.value);
+      if (!Number.isInteger(value) || value < 0 || value > 2_147_483_647) continue;
+      const titleId = String(stat.titleid);
+      minutes.set(titleId, Math.max(minutes.get(titleId) ?? 0, value));
+    }
+  }
+  return minutes;
+}
+
+async function syncXboxPlaytime(userId: string, session: XboxSession, titles: XboxTitle[]) {
+  for (let offset = 0; offset < titles.length; offset += STATS_BATCH) {
+    const batch = titles.slice(offset, offset + STATS_BATCH);
+    const response = await fetchRetry('https://userstats.xboxlive.com/batch', {
+      method: 'POST',
+      headers: { ...headers(session, '2'), 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        arrangebyfield: 'xuid',
+        xuids: [session.xuid],
+        stats: batch.map((t) => ({ name: 'MinutesPlayed', titleid: t.titleId })),
+      }),
+    });
+    if (!response.ok) throw new Error(`UserStats a répondu ${response.status}`);
+    const minutes = xboxMinutes((await response.json()) as XboxStats);
+    for (const [platformGameId, playtimeMinutes] of minutes) {
+      await db.userGame.updateMany({
+        where: {
+          userId,
+          playtimeMinutes: { not: playtimeMinutes },
+          game: { platform: 'XBOX', platformGameId },
+        },
+        data: { playtimeMinutes },
+      });
+    }
+  }
 }
 
 async function fetchPages<T>(
@@ -265,6 +318,13 @@ export const syncXbox: ProviderSync = async ({
       if (gained > 0) onUnlocked(game, gained);
     },
   );
+
+  // Après une partie (un succès de plus), ou au plus toutes les six heures, comme pour PSN.
+  if (achievements > 0 || rateLimit(`xbox-temps:${userId}`, 1, PLAYTIME_EVERY)) {
+    await syncXboxPlaytime(userId, session, titles).catch((cause) => {
+      log.warn('Temps de jeu Xbox indisponible :', cause);
+    });
+  }
 
   // Des totaux seulement : assez pour comprendre un import vide, sans donnée du joueur.
   log.info(

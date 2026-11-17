@@ -16,6 +16,7 @@ import {
   mapXbox360Achievement,
   mapXboxAchievement,
   xboxImage,
+  xboxMinutes,
   xboxUnlocks,
 } from './xbox';
 
@@ -188,6 +189,24 @@ describe('Xbox', () => {
       description: 'B',
       points: 20,
     });
+  });
+
+  it('lit les minutes jouées par titre et ignore les valeurs vides', () => {
+    const minutes = xboxMinutes({
+      statlistscollection: [
+        {
+          stats: [
+            { name: 'MinutesPlayed', titleid: '1234', value: '125' },
+            { name: 'MinutesPlayed', titleid: 5678, value: 40 },
+            { name: 'MinutesPlayed', titleid: '9', value: '' },
+            { name: 'MinutesPlayed', titleid: '10', value: 'n/a' },
+            { name: 'Autre', titleid: '11', value: '3' },
+          ],
+        },
+      ],
+    });
+    expect(Object.fromEntries(minutes)).toEqual({ '1234': 125, '5678': 40 });
+    expect(xboxMinutes({}).size).toBe(0);
   });
 });
 
