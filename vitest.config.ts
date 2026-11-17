@@ -46,6 +46,8 @@ export default defineConfig({
       DISCORD_BOT_TOKEN: 'bot',
       CLOUDFLARE_ACCOUNT_ID: 'compte',
       CLOUDFLARE_AI_TOKEN: 'jeton',
+      // Jamais de vrai mail depuis un test, même avec le SMTP du .env local.
+      SMTP_HOST: '',
     },
   },
 });
