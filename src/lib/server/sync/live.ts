@@ -56,6 +56,12 @@ const liveWork = new WorkScheduler(1, 'debug');
 const lastGames = new Map<string, string>();
 /** Le dernier passage où chaque joueur était sur le site. */
 const lastPresent = new Map<string, number>();
+/** Les succès d'un joueur absent qui joue : lus au plus toutes les 5 minutes, quota oblige. */
+const ABSENT_READ_EVERY = 5 * MINUTE;
+/** Le jeu en cours de chaque joueur absent : relu une dernière fois à sa fermeture. */
+const absentGames = new Map<string, string>();
+/** La dernière lecture des succès de chaque joueur absent. */
+const absentReads = new Map<string, number>();
 /** La dernière lecture du cadre, par joueur. */
 const lastLook = new Map<string, number>();
 /** La dernière réponse de Steam sur les jeux cachés, par joueur. */
@@ -364,10 +370,22 @@ export async function checkLiveGames() {
       })
     : [];
 
+  // Les joueurs absents passent dans le même appel : Steam ne donne plus la date du dernier
+  // lancement, seul le jeu en cours la révèle. Pour eux, rien d'autre n'est lu.
+  const absent = await db.linkedAccount.findMany({
+    where: {
+      provider: 'STEAM',
+      userId: { notIn: userIds },
+      syncStatus: { notIn: ['QUEUED', 'SYNCING'] },
+    },
+    select: { userId: true, providerUserId: true },
+  });
+
   // Un seul appel pour 100 joueurs, partagé avec la page « jeu en cours » des profils.
   const playing = new Map<string, string>();
-  const summaries = accounts.length
-    ? await fetchSteamSummaries(accounts.map((account) => account.providerUserId))
+  const steamIds = [...accounts, ...absent].map((account) => account.providerUserId);
+  const summaries = steamIds.length
+    ? await fetchSteamSummaries(steamIds)
     : new Map<string, SteamSummary>();
   const now = Date.now();
   // Ce que le joueur voit dans `/compte` : au plus une écriture par minute et par compte.
@@ -417,6 +435,33 @@ export async function checkLiveGames() {
 
   lastGames.clear();
   for (const [steamId, appId] of playing) lastGames.set(steamId, appId);
+
+  // Un joueur absent qui joue : son jeu est daté à la minute près, pour le rail de ses amis, et
+  // ses succès arrivent comme ceux d'un joueur présent, mais lus toutes les 5 minutes au plus
+  // (le quota Steam est partagé par tout le site), plus une dernière fois quand il ferme le jeu.
+  const stillPlaying = new Map<string, string>();
+  await mapLimit(absent, LIVE_CONCURRENCY, async ({ userId, providerUserId: steamId }) => {
+    const current = summaries.get(steamId)?.gameId;
+    const closed = current ? undefined : absentGames.get(steamId);
+    const appId = current ?? closed;
+    if (!appId) return;
+    if (current) stillPlaying.set(steamId, current);
+    try {
+      if (current) await notePlaying(userId, current, now);
+      if (!closed && now - (absentReads.get(userId) ?? 0) < ABSENT_READ_EVERY) return;
+      absentReads.set(userId, now);
+      const gained = await runLiveGame(userId, steamId, appId);
+      // Un jeu pas encore dans sa bibliothèque : importé comme pour un joueur présent.
+      if (gained === null) await importUnknown(userId, steamId, [{ appid: Number(appId) }]);
+    } catch (cause) {
+      log.error(cause);
+    }
+  });
+  absentGames.clear();
+  for (const [steamId, appId] of stillPlaying) absentGames.set(steamId, appId);
+  for (const [userId, at] of absentReads) {
+    if (now - at > ARRIVAL_GAP) absentReads.delete(userId);
+  }
 
   await mapLimit(checks, LIVE_CONCURRENCY, async ({ account, appId }) => {
     const { userId } = account;

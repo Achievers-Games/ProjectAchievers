@@ -280,8 +280,14 @@ describe('synchronisation Steam', () => {
         : api(input),
     );
   }
-  const reads = (mock: ReturnType<typeof steamWithCounts>, method: string) =>
-    mock.mock.calls.filter(([url]) => String(url).includes(method)).length;
+  /**
+   * Les appels d'une méthode, pour un joueur si on le précise : les joueurs des autres tests
+   * restent dans la base et passent dans le suivi des absents.
+   */
+  const reads = (mock: ReturnType<typeof steamWithCounts>, method: string, steamId?: string) =>
+    mock.mock.calls.filter(
+      ([url]) => String(url).includes(method) && (!steamId || String(url).includes(steamId)),
+    ).length;
 
   it('ne relit que les jeux dont le nombre de succès a bougé', async () => {
     vi.stubGlobal('fetch', steamApi(ownedGames));
@@ -609,6 +615,67 @@ describe('synchronisation Steam', () => {
 
     expect(events).toHaveLength(1);
     expect(events[0]).toMatchObject({ status: 'COMPLETED', achievements: 1, quiet: true });
+  });
+
+  it('suit aussi un joueur absent : lancement daté, succès lus toutes les 5 min et à la fermeture', async () => {
+    const unlocked = [{ apiname: 'A', achieved: 1, unlocktime: 1_700_000_000 }];
+    const asked: string[] = [];
+    let steamid = '';
+    let gameid: string | undefined = '999001';
+    const api = steamApi(ownedGames);
+    vi.stubGlobal('fetch', async (input: string | URL) => {
+      const url = String(input);
+      asked.push(url);
+      if (url.includes('GetPlayerSummaries')) {
+        return new Response(JSON.stringify({ response: { players: [{ steamid, gameid }] } }));
+      }
+      return url.includes('GetPlayerAchievements')
+        ? new Response(JSON.stringify({ playerstats: { achievements: unlocked } }))
+        : api(input);
+    });
+    // Le joueur n'a aucune page du site ouverte : il n'est pas suivi comme un joueur présent.
+    const userId = await steamUser();
+    steamid = (await db.linkedAccount.findFirstOrThrow({ where: { userId } })).providerUserId;
+    await runSync({ userId, provider: 'STEAM' });
+    await db.userGame.updateMany({ where: { userId }, data: { lastPlayedAt: null } });
+    // Seuls ses appels comptent : les joueurs des autres tests passent aussi dans le suivi.
+    const achievementReads = () =>
+      asked.filter((url) => url.includes('GetPlayerAchievements') && url.includes(steamid));
+    const unlocks = () => db.userAchievement.count({ where: { userId } });
+
+    // Il joue : le lancement est daté, ses succès sont lus une première fois.
+    const before = Date.now();
+    asked.length = 0;
+    await checkLiveGames();
+    const row = await db.userGame.findFirstOrThrow({
+      where: { userId, game: { platformGameId: '999001' } },
+      select: { lastPlayedAt: true },
+    });
+    expect(row.lastPlayedAt?.getTime()).toBeGreaterThanOrEqual(before);
+    expect(achievementReads()).toHaveLength(1);
+    expect(await unlocks()).toBe(1);
+
+    // Steam garde sa réponse quelques secondes en cache : l'horloge avance d'une minute à chaque
+    // passage, comme en vrai.
+    vi.useFakeTimers({ toFake: ['Date'], now: Date.now() });
+    try {
+      // La minute suivante, toujours en jeu : ses succès ne sont pas relus avant 5 minutes.
+      vi.setSystemTime(Date.now() + 61_000);
+      asked.length = 0;
+      await checkLiveGames();
+      expect(achievementReads()).toEqual([]);
+
+      // Il ferme le jeu : une dernière lecture rattrape le succès gagné juste avant.
+      unlocked.push({ apiname: 'B', achieved: 1, unlocktime: 1_700_000_100 });
+      gameid = undefined;
+      vi.setSystemTime(Date.now() + 61_000);
+      asked.length = 0;
+      await checkLiveGames();
+      expect(achievementReads()).toHaveLength(1);
+      expect(await unlocks()).toBe(2);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('rattrape un succès tombé après la fermeture du jeu', async () => {
@@ -1079,8 +1146,8 @@ describe('synchronisation Steam', () => {
     // Onglet en arrière-plan : seule la boucle des 10 s tourne, trois fois de suite.
     for (let pass = 0; pass < 3; pass++) await checkLiveGames();
     stop();
-    expect(reads(mock, 'GetPlayerAchievements')).toBe(0);
-    expect(reads(mock, 'GetTopAchievementsForGames')).toBe(3);
+    expect(reads(mock, 'GetPlayerAchievements', steamid.value)).toBe(0);
+    expect(reads(mock, 'GetTopAchievementsForGames', steamid.value)).toBe(3);
   });
 
   it('annonce un succès dès que GetTopAchievementsForGames le voit, puis corrige sa date', async () => {
