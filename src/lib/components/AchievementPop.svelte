@@ -1,15 +1,32 @@
 <script lang="ts">
   import SiteBadge from '#lib/components/SiteBadge.svelte';
   import { m } from '#lib/paraglide/messages';
-  import { dismissAllPops, dismissPop, popQueue } from '#lib/stores/achievement-pop';
+  import { closeAllPops, dismissPop, popQueue, present } from '#lib/stores/achievement-pop';
 
   const DURATION = 5200;
   const PARTICLES = 16;
   /** Les cartes visibles derrière la première : au-delà, le compteur suffit. */
   const LAYERS = 2;
 
-  const current = $derived($popQueue[0]);
+  // Un onglet caché garde ses succès : l'annonce attend que le joueur revienne.
+  let visible = $state(typeof document === 'undefined' || document.visibilityState === 'visible');
+  $effect(() => {
+    const update = () => (visible = document.visibilityState === 'visible');
+    update();
+    document.addEventListener('visibilitychange', update);
+    return () => document.removeEventListener('visibilitychange', update);
+  });
+
+  const current = $derived(visible ? $popQueue[0] : undefined);
   const waiting = $derived($popQueue.length - 1);
+
+  // Le joueur voit l'annonce : le serveur peut l'oublier. Une fois par annonce.
+  let presented = 0;
+  $effect(() => {
+    if (!current || current.id === presented) return;
+    presented = current.id;
+    present(current);
+  });
 
   // Seul le dernier succès s'efface tout seul : une pile attend qu'on la parcoure.
   $effect(() => {
@@ -34,7 +51,7 @@
 </script>
 
 <div class="pop-zone" aria-live="polite">
-  {#each $popQueue.slice(1, LAYERS + 1) as item, index (item.id)}
+  {#each visible ? $popQueue.slice(1, LAYERS + 1) : [] as item, index (item.id)}
     <span
       class="layer"
       data-category={item.pop.category}
@@ -98,8 +115,8 @@
       </button>
     {/if}
   {/key}
-  {#if waiting > 0}
-    <button type="button" class="close-all" onclick={dismissAllPops}>
+  {#if current && waiting > 0}
+    <button type="button" class="close-all" onclick={closeAllPops}>
       {m.ach_pop_close_all()}
     </button>
   {/if}

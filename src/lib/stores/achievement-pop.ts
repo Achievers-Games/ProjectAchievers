@@ -1,4 +1,4 @@
-import { writable } from 'svelte/store';
+import { get, writable } from 'svelte/store';
 import type { UnlockPop } from './sync';
 
 /** Un succès à fêter, du site ou d'une plateforme. */
@@ -12,10 +12,12 @@ export interface SitePop {
   image?: string | null;
   /** Le jeu d'où vient le succès, pour les plateformes. */
   game?: string;
+  /** Le succès de plateforme annoncé : le serveur attend que le joueur l'ait vu. */
+  unlockId?: string;
 }
 
 /** Une annonce de la pile : un succès à la fois. */
-interface PopItem {
+export interface PopItem {
   id: number;
   pop: SitePop;
 }
@@ -38,39 +40,66 @@ function readSeen(): Record<string, number> {
   }
 }
 
-/**
- * Fête des succès de plateforme une seule fois par navigateur. Le serveur retient déjà ceux
- * qu'il a envoyés ; cette mémoire couvre deux onglets ouverts ensemble, qui reçoivent chacun
- * le même succès.
- */
-export function celebrateOnce(unlocks: UnlockPop[]) {
-  if (!unlocks.length) return;
+function writeSeen(ids: string[]) {
   const now = Date.now();
-  const seen = readSeen();
-  const fresh = unlocks.filter((unlock) => !seen[unlock.id]);
-  if (!fresh.length) return;
-
-  const kept = Object.entries(seen).filter(([, at]) => now - at < SEEN_TTL);
-  const next = {
-    ...Object.fromEntries(kept),
-    ...Object.fromEntries(fresh.map((u) => [u.id, now])),
-  };
+  const kept = Object.entries(readSeen()).filter(([, at]) => now - at < SEEN_TTL);
+  const next = { ...Object.fromEntries(kept), ...Object.fromEntries(ids.map((id) => [id, now])) };
   try {
     localStorage.setItem(SEEN_KEY, JSON.stringify(next));
   } catch {
-    // Stockage plein ou masqué : le succès se fête quand même.
+    // Stockage plein ou masqué : le serveur retient quand même l'accusé.
   }
+}
 
+/** Le joueur a vu ces succès : le compte les retient, aucun appareil ne les rejouera. */
+function acknowledge(ids: string[]) {
+  if (!ids.length) return;
+  writeSeen(ids);
+  void fetch('/api/sync/fetes', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(ids),
+    keepalive: true,
+  }).catch(() => {
+    // Hors ligne : le succès reviendra à la prochaine visite, et cette mémoire l'écartera.
+  });
+}
+
+/**
+ * Met en file des succès de plateforme. Rien n'est retenu ici : un succès reçu par un onglet
+ * caché, ou un téléphone en veille, reste à fêter tant que le joueur ne l'a pas vu.
+ */
+export function celebrateOnce(unlocks: UnlockPop[]) {
+  if (!unlocks.length) return;
+  const seen = readSeen();
+  const queued = new Set(get(popQueue).map((item) => item.pop.unlockId));
+  const fresh = unlocks.filter((unlock) => !seen[unlock.id] && !queued.has(unlock.id));
   celebrate(
-    fresh.map(({ title, icon, game }) => ({
+    fresh.map(({ id, title, icon, game }) => ({
       title,
       game,
       icon: '',
       category: 'platform',
       level: 0,
       image: icon,
+      unlockId: id,
     })),
   );
+}
+
+/**
+ * L'annonce s'affiche, onglet visible. Faux si un autre onglet l'a déjà montrée entre-temps :
+ * elle quitte alors la pile sans se rejouer.
+ */
+export function present(item: PopItem): boolean {
+  const id = item.pop.unlockId;
+  if (!id) return true;
+  if (readSeen()[id]) {
+    dismissPop(item.id);
+    return false;
+  }
+  acknowledge([id]);
+  return true;
 }
 
 export function celebrate(pops: SitePop[]) {
@@ -84,4 +113,11 @@ export function dismissPop(id: number) {
 
 export function dismissAllPops() {
   popQueue.set([]);
+}
+
+/** Le joueur ferme la pile : ceux qui attendaient derrière comptent pour vus. */
+export function closeAllPops() {
+  const ids = get(popQueue).flatMap((item) => (item.pop.unlockId ? [item.pop.unlockId] : []));
+  acknowledge(ids);
+  dismissAllPops();
 }

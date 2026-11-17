@@ -1,12 +1,20 @@
 // @vitest-environment happy-dom
-import { render } from '@testing-library/svelte';
-import { afterEach, describe, expect, it } from 'vitest';
-import { celebrate, dismissAllPops } from '#lib/stores/achievement-pop';
+import { cleanup, render } from '@testing-library/svelte';
+import { tick } from 'svelte';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { celebrate, celebrateOnce, dismissAllPops } from '#lib/stores/achievement-pop';
 import AchievementPop from './AchievementPop.svelte';
 
 const pop = (title: string) => ({ title, icon: 'trophy', category: 'start', level: 2 });
 
-afterEach(() => dismissAllPops());
+afterEach(() => {
+  // Un composant resté monté d'un test précédent montrerait le succès à la place du nouveau.
+  cleanup();
+  dismissAllPops();
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+  localStorage.clear();
+});
 
 describe('succès affiché par-dessus la page', () => {
   it('affiche le premier succès et annonce ceux qui attendent', () => {
@@ -46,5 +54,25 @@ describe('succès affiché par-dessus la page', () => {
 
     expect(container.querySelector('button.pop')?.textContent).toContain('Deuxième');
     expect(container.querySelector('button.pop')?.classList.contains('last')).toBe(true);
+  });
+
+  it('attend que l’onglet soit visible pour montrer un succès et prévenir le serveur', async () => {
+    const fetchMock = vi.fn(() => Promise.resolve(new Response(null, { status: 204 })));
+    vi.stubGlobal('fetch', fetchMock);
+    let state: DocumentVisibilityState = 'hidden';
+    vi.spyOn(document, 'visibilityState', 'get').mockImplementation(() => state);
+
+    celebrateOnce([{ id: 'succes-1', title: 'Bêta', icon: null, game: 'Tunic' }]);
+    const { container } = render(AchievementPop);
+    await tick();
+    // Téléphone en veille : rien ne s'affiche, le serveur garde le succès à fêter.
+    expect(container.querySelector('button.pop')).toBeNull();
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    state = 'visible';
+    document.dispatchEvent(new Event('visibilitychange'));
+    await tick();
+    expect(container.querySelector('button.pop')?.textContent).toContain('Bêta');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });
