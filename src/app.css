@@ -1429,7 +1429,8 @@
   @apply relative overflow-hidden rounded-lg border border-line;
 }
 .carousel-track {
-  @apply flex overflow-x-auto;
+  /* Seul le glissement horizontal fait défiler : rien ne doit bouger de haut en bas. */
+  @apply flex overflow-x-auto overflow-y-hidden;
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
 }
@@ -1657,8 +1658,15 @@
   width: 122%;
   height: 122%;
 }
+/* Deux rangées de quatre : sur quatre rangées, les cadres dépassaient de la bannière. */
 .carousel-frames {
-  @apply absolute right-16 top-1/2 hidden -translate-y-1/2 grid-cols-2 gap-5 sm:grid;
+  @apply absolute right-16 top-1/2 hidden -translate-y-1/2 grid-cols-4 gap-4 md:grid;
+}
+/* Le texte s'arrête avant les cadres : 18,5rem de grille, 4rem de marge à droite, 1rem d'écart. */
+@media (min-width: 768px) {
+  .carousel-slide[data-slide='cadres'] > :is(.carousel-eyebrow, .carousel-title, .carousel-text) {
+    max-width: calc(100% - 20rem);
+  }
 }
 
 /* Toutes les tailles suivent celle de la racine : le site grandit avec l'écran. */
