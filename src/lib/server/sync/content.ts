@@ -257,6 +257,23 @@ export async function artNow(gameIds: string[], slugs: string[] = []) {
     where: { artCheckedAt: null, OR: [{ id: { in: gameIds } }, { slug: { in: slugs } }] },
     select: storeGame,
   });
-  if (!games.length) return 0;
-  return readStore(games, 0, writeArt(new Date()));
+  // Plusieurs visiteurs d'une même fiche ne lancent qu'une lecture : les suivants attendent
+  // celle en cours, ce qui garde au choix d'un fond son image dès le retour de la page.
+  const waiting = games.flatMap((game) => artReading.get(game.id) ?? []);
+  const fresh = games.filter((game) => !artReading.has(game.id));
+  let read = 0;
+  if (fresh.length) {
+    const run = readStore(fresh, 0, writeArt(new Date()));
+    const settled = run.catch(() => 0);
+    for (const game of fresh) artReading.set(game.id, settled);
+    void settled.finally(() => {
+      for (const game of fresh) if (artReading.get(game.id) === settled) artReading.delete(game.id);
+    });
+    read = await run;
+  }
+  await Promise.all(waiting);
+  return read;
 }
+
+/** Les lectures de captures en cours, par jeu. */
+const artReading = new Map<string, Promise<unknown>>();
