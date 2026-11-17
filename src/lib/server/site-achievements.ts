@@ -9,7 +9,7 @@ import {
   genreOf,
   groupSeries,
   seriesOf,
-  stepLevel,
+  stepTier,
   type BaseCode,
   type ClanKey,
   type SiteCode,
@@ -233,22 +233,28 @@ export async function siteAchievementBoard(
     items: groupSeries(codes as readonly string[]).map((steps) => {
       const reached = steps.findLastIndex((code) => dates.has(code));
       const target = steps.find((code) => !dates.has(code)) ?? steps.at(-1)!;
+      // La carte parle du palier obtenu ; tant qu'aucun ne l'est, de celui à viser.
+      const shownCode = reached >= 0 ? steps[reached]! : target;
       const revealed = revealedCode(target);
       const icon = revealed ? iconOf(target) : UNKNOWN_ICON;
       icons.add(icon);
-      const levelOf = (code: string, at: number) =>
-        genreOf(code)?.level ?? seriesOf(code)?.level ?? stepLevel(at, steps.length);
+      const complete = dates.has(target);
       return {
         // Le numéro n'apprend rien, contrairement au code d'un secret.
         key: index++,
         code: revealed ? target : null,
-        title: revealed ? siteTitle(target) : null,
-        text: revealed ? siteText(target) : null,
-        // La date et le badge sont ceux du dernier palier obtenu.
+        title: revealed ? siteTitle(shownCode) : null,
+        text: revealed ? siteText(shownCode) : null,
+        // Le palier suivant, une fois le premier obtenu : la carte dit d'où on part et où aller.
+        next:
+          revealed && reached >= 0 && !complete
+            ? { title: siteTitle(target), text: siteText(target) }
+            : null,
+        // La date et la couleur sont celles du dernier palier obtenu.
         unlockedAt: reached >= 0 ? (dates.get(steps[reached]!) ?? null) : null,
-        complete: dates.has(target),
+        complete,
         icon,
-        level: revealed && reached >= 0 ? levelOf(steps[reached]!, reached) : 0,
+        tier: revealed && reached >= 0 ? stepTier(reached, steps.length) : 0,
         proof: reached >= 0 ? proofOf(steps[reached]!) : null,
         // Comme la date : la part des joueurs qui ont le palier obtenu, pas celui à viser.
         rarity: revealed ? share(reached >= 0 ? steps[reached]! : target) : null,
@@ -259,7 +265,7 @@ export async function siteAchievementBoard(
             ? steps.map((code, at) => ({
                 title: siteTitle(code),
                 earned: dates.has(code),
-                level: levelOf(code, at),
+                tier: stepTier(at, steps.length),
               }))
             : [],
       };
@@ -352,15 +358,18 @@ export async function clanAchievementBoard(clanId: string) {
     const series = seriesOf(target);
     const icon = iconOf(target);
     icons.add(icon);
+    const shownCode = reached >= 0 ? steps[reached]! : target;
+    const complete = dates.has(target);
     return {
       code: target,
-      title: siteTitle(target),
-      text: siteText(target),
+      title: siteTitle(shownCode),
+      text: siteText(shownCode),
+      next: reached >= 0 && !complete ? { title: siteTitle(target), text: siteText(target) } : null,
       icon,
       secret: SECRET_CODES.has(target),
       unlockedAt: reached >= 0 ? (dates.get(steps[reached]!) ?? null) : null,
-      complete: dates.has(target),
-      level: reached >= 0 ? (seriesOf(steps[reached]!)?.level ?? 0) : 0,
+      complete,
+      tier: reached >= 0 ? stepTier(reached, steps.length) : 0,
       // L'avancée vers le palier visé : 1 234 succès sur 10 000.
       progress:
         series && facts && !dates.has(target)
@@ -368,10 +377,10 @@ export async function clanAchievementBoard(clanId: string) {
           : null,
       steps:
         steps.length > 1
-          ? steps.map((code) => ({
+          ? steps.map((code, at) => ({
               title: siteText(code),
               earned: dates.has(code),
-              level: seriesOf(code)?.level ?? 0,
+              tier: stepTier(at, steps.length),
             }))
           : [],
     };

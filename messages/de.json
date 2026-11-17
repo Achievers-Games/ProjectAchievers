@@ -2005,5 +2005,6 @@
   "ach_g_puzzle_30_title": "Überhitztes Gehirn",
   "ach_g_platformer_30_title": "Federn statt Knie",
   "ach_g_sci_fi_30_title": "Zeitreisender",
-  "ach_g_simulation_30_title": "Echter als echt"
+  "ach_g_simulation_30_title": "Echter als echt",
+  "ach_next_step": "Nächste Stufe: {title} · {text}"
 }

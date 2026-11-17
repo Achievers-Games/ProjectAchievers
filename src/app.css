@@ -619,6 +619,58 @@
   text-shadow: 0 0 12px rgb(255 90 31 / 0.9);
 }
 
+/* Un succès du site à paliers prend la couleur du dernier palier obtenu, comme une carte de jeu. */
+.site-card[data-tier] {
+  border: var(--tier-border) solid transparent;
+  background:
+    var(--tier-body) padding-box,
+    var(--tier-frame) border-box;
+  box-shadow:
+    0 0 0 1px rgb(var(--tier-glow) / 0.3),
+    0 0 18px rgb(var(--tier-glow) / 0.3);
+}
+.site-card[data-tier] .site-card-title {
+  color: var(--tier-title);
+  font-weight: 700;
+}
+.site-card[data-tier] .text-muted {
+  color: var(--tier-text);
+}
+.site-card[data-tier] .border-line {
+  border-color: rgb(var(--tier-glow) / 0.35);
+}
+.site-card[data-tier] a:hover {
+  color: var(--tier-title);
+}
+.site-card[data-tier='5'] {
+  background-size:
+    300% 300%,
+    300% 300%;
+  animation: tier-shift 5s linear infinite alternate;
+}
+.site-card[data-tier='5'] .site-card-title {
+  background: var(--tier-title-fill);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.site-card[data-tier='6'] {
+  background-size:
+    100% 100%,
+    300% 300%;
+  animation:
+    tier-shift-frame 3s linear infinite alternate,
+    tier-pulse 1.8s ease-in-out infinite alternate;
+}
+.site-card[data-tier='6'] .site-card-title {
+  text-shadow: 0 0 12px rgb(255 90 31 / 0.9);
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-card[data-tier] {
+    animation: none;
+  }
+}
+
 /* ── Exemplaires : ×2 étincelles, ×3 fond vivant, ×4 sujet détaché ─────── */
 
 .copies {

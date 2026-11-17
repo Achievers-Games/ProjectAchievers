@@ -438,6 +438,9 @@ export function groupSeries<T extends string>(codes: readonly T[]) {
   return [...groups.values()];
 }
 
-/** La couleur d'un palier : bronze, argent, or, quel que soit le nombre de paliers. */
-export const stepLevel = (index: number, steps: number) =>
-  steps <= 1 ? 0 : steps <= 3 ? index + 1 : Math.ceil(((index + 1) * 3) / steps);
+/**
+ * Le niveau de carte d'un palier, comme les cartes de jeux : Bronze, Argent, Or, Diamant,
+ * Prismatique, puis Légendaire. Au-delà de six paliers, ils se répartissent jusqu'au dernier.
+ */
+export const stepTier = (index: number, steps: number) =>
+  steps <= 1 ? 0 : steps <= 6 ? index + 1 : 1 + Math.round((index * 5) / (steps - 1));

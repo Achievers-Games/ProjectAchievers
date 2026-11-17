@@ -4,7 +4,8 @@
   interface Step {
     title: string;
     earned: boolean;
-    level: number;
+    /** Le niveau de carte du palier : Bronze, Argent, Or, Diamant, Prismatique, Légendaire. */
+    tier: number;
   }
 
   let { steps }: { steps: Step[] } = $props();
@@ -18,7 +19,7 @@
   {#each steps as step, at (at)}
     <li
       class="step"
-      data-level={step.level || undefined}
+      data-tier={step.tier || undefined}
       class:earned={step.earned}
       class:current={at === next}
       title={step.title}
@@ -30,28 +31,24 @@
 </ol>
 
 <style>
-  /* Un point par palier : plein une fois obtenu, cerclé pour celui à viser. */
+  /* Un point par palier, de la couleur de son niveau : plein une fois obtenu, cerclé pour celui à viser. */
   .step {
-    --ring: var(--muted);
+    --dot: rgb(var(--muted));
     width: 0.6rem;
     height: 0.6rem;
     border-radius: 9999px;
-    border: 1.5px solid rgb(var(--ring) / 0.7);
+    border: 1.5px solid var(--dot);
+    opacity: 0.75;
   }
-  .step[data-level='1'] {
-    --ring: var(--bronze);
-  }
-  .step[data-level='2'] {
-    --ring: var(--silver);
-  }
-  .step[data-level='3'] {
-    --ring: var(--gold);
+  .step[data-tier] {
+    --dot: var(--tier-ink);
   }
   .step.earned {
-    background: rgb(var(--ring));
-    border-color: rgb(var(--ring));
+    background: var(--dot);
+    opacity: 1;
   }
   .step.current {
+    opacity: 1;
     box-shadow: 0 0 0 2px rgb(var(--ink) / 0.35);
   }
 </style>

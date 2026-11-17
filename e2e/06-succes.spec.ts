@@ -12,8 +12,8 @@ test.describe('succès du site', () => {
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     // Les paliers d'un même succès ne font qu'une carte : le compte est écrit ici, sans passer
     // par le regroupement qui produit la page. Ajouter un succès le met à jour.
-    await expect(page.locator('main li.card')).toHaveCount(198);
-    await expect(page.locator('main section').last().locator('li.card')).toHaveCount(32);
+    await expect(page.locator('main li.card')).toHaveCount(203);
+    await expect(page.locator('main section').last().locator('li.card')).toHaveCount(30);
 
     await expect(async () => {
       await page.reload();

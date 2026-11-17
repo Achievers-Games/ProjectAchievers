@@ -25,6 +25,7 @@ import { UNKNOWN_ICON } from './site-icons';
 import { notePsnToken, psnTokenState, warnPsnToken } from './service-token';
 import { GENRES, SITE_TOTAL } from '#lib/site-achievements';
 import { PREFIX, identity, setupIntegration } from './test-helpers';
+import { m } from '#lib/paraglide/messages';
 
 setupIntegration();
 
@@ -807,6 +808,13 @@ describe('succès du site', () => {
     expect(zombies).toHaveLength(1);
     expect(zombies[0]).toMatchObject({ code: 'g_zombies_5', suggest: true, complete: false });
     expect(zombies[0]?.steps.map((step) => step.earned)).toEqual([true, false, false]);
+    // La carte dit le palier obtenu, en a la couleur, et nomme le suivant.
+    expect(zombies[0]).toMatchObject({
+      title: m.ach_g_zombies_1_title(),
+      tier: 1,
+      next: { title: expect.any(String), text: expect.stringContaining('5') },
+    });
+    expect(zombies[0]?.steps.map((step) => step.tier)).toEqual([1, 2, 3]);
     expect(
       (await siteAchievementBoard(owner.id, null)).categories.flatMap((c) => c.items),
     ).not.toContainEqual(expect.objectContaining({ suggest: true }));

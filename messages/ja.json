@@ -1968,5 +1968,6 @@
   "ach_g_puzzle_30_title": "オーバーヒート脳",
   "ach_g_platformer_30_title": "膝がバネ",
   "ach_g_sci_fi_30_title": "タイムトラベラー",
-  "ach_g_simulation_30_title": "現実より現実"
+  "ach_g_simulation_30_title": "現実より現実",
+  "ach_next_step": "次の段階：{title}・{text}"
 }

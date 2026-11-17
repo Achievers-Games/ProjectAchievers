@@ -72,17 +72,17 @@
 
 {#snippet line(item: Item, category: string)}
   <div class="flex gap-3">
-    <SiteBadge
-      icon={board.icons[item.icon] ?? ''}
-      {category}
-      level={item.level}
-      unlocked={item.unlockedAt !== null}
-    />
+    <SiteBadge icon={board.icons[item.icon] ?? ''} {category} unlocked={item.unlockedAt !== null} />
     <div class="min-w-0">
-      <p class="font-medium">{item.title ?? m.ach_secret_title()}</p>
+      <p class="site-card-title font-medium">{item.title ?? m.ach_secret_title()}</p>
       <p class="text-sm text-muted">{item.text ?? m.ach_secret_text()}</p>
       {#if item.steps.length}
         <StepDots steps={item.steps} />
+      {/if}
+      {#if item.next}
+        <p class="mt-1 text-xs text-muted">
+          {m.ach_next_step({ title: item.next.title, text: item.next.text })}
+        </p>
       {/if}
       {#if item.unlockedAt || item.rarity !== null}
         <p class="mt-1 text-xs text-muted">
@@ -204,7 +204,11 @@
         {/if}
         <ul class="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
           {#each visible as item (item.key)}
-            <li class="card p-3" class:opacity-70={!item.unlockedAt}>
+            <li
+              class="card site-card p-3"
+              class:opacity-70={!item.unlockedAt}
+              data-tier={item.tier || undefined}
+            >
               {#if item.proof || item.suggest}
                 <details
                   ontoggle={(event) => {

@@ -2005,5 +2005,6 @@
   "ach_g_puzzle_30_title": "Cerebro recalentado",
   "ach_g_platformer_30_title": "Muelles en las rodillas",
   "ach_g_sci_fi_30_title": "Viajero del tiempo",
-  "ach_g_simulation_30_title": "Más real que la realidad"
+  "ach_g_simulation_30_title": "Más real que la realidad",
+  "ach_next_step": "Siguiente nivel: {title} · {text}"
 }

@@ -85,18 +85,26 @@
     <p class="text-sm text-muted">{m.clan_ach_note()}</p>
     <ul class="grid gap-2 sm:grid-cols-2">
       {#each achievements.items as item (item.code)}
-        <li class="card flex gap-3 p-3" class:opacity-70={!item.unlockedAt}>
+        <li
+          class="card site-card flex gap-3 p-3"
+          class:opacity-70={!item.unlockedAt}
+          data-tier={item.tier || undefined}
+        >
           <SiteBadge
             icon={achievements.icons[item.icon] ?? ''}
             category={item.secret ? 'secret' : 'clan'}
-            level={item.level}
             unlocked={item.unlockedAt !== null}
           />
           <div class="min-w-0 flex-1">
-            <p class="font-medium">{item.title}</p>
+            <p class="site-card-title font-medium">{item.title}</p>
             <p class="text-sm text-muted">{item.text}</p>
             {#if item.steps.length}
               <StepDots steps={item.steps} />
+            {/if}
+            {#if item.next}
+              <p class="mt-1 text-xs text-muted">
+                {m.ach_next_step({ title: item.next.title, text: item.next.text })}
+              </p>
             {/if}
             {#if item.progress}
               <div class="mt-1.5">
