@@ -7,6 +7,7 @@ import { extractLocaleFromUrl, getLocale } from '#lib/paraglide/runtime';
 import { paraglideMiddleware } from '#lib/paraglide/server';
 import { syncCuratedGuides } from '#lib/server/curated-guides';
 import { clientAddress } from '#lib/server/client-address';
+import { markRunning, markStopped, warnCrash } from '#lib/server/crash-alert';
 import { secureCookie } from '#lib/server/cookies';
 import { env } from '#lib/server/env';
 import { grantFramesThrottled } from '#lib/server/frames';
@@ -26,6 +27,9 @@ const log = logger('Serveur');
 
 export const init: ServerInit = async () => {
   env();
+  // En développement, Vite s'arrête sans prévenir : ce n'est pas un plantage à signaler.
+  const crashed = dev ? null : markRunning();
+  if (crashed) void warnCrash(crashed).catch((cause) => log.error('Alerte de plantage :', cause));
   // Avant les tâches : la synchro PSN doit partir avec le jeton saisi sur le site.
   await loadSavedNpsso().catch((cause) => log.error('Jeton PSN :', cause));
   startWorkloadMonitor();
@@ -38,6 +42,7 @@ export const init: ServerInit = async () => {
   // `adapter-node` l'émet sur SIGTERM, une fois les requêtes terminées : la file et la base se
   // ferment proprement au lieu d'attendre que Docker tue le processus.
   process.once('sveltekit:shutdown', () => {
+    if (!dev) markStopped();
     void stopWorkers()
       .then(() => db.$disconnect())
       .catch((cause) => log.error('Arrêt :', cause))
@@ -46,6 +51,8 @@ export const init: ServerInit = async () => {
 };
 
 const WINDOW = 60_000;
+/** Au-delà, une page encore sans réponse est signalée dans le journal. */
+const STUCK_AFTER = 10_000;
 
 /** `/connexion`, `/en/connexion`, `/auth/xbox/start`… */
 const NOINDEX = /^(?:\/[a-z]{2}(?:-[A-Z]{2})?)?\/(?:connexion(?:\/|$)|auth\/)/;
@@ -137,16 +144,28 @@ const secured: Handle = async ({ event, resolve }) => {
     });
   }
 
+  const page = event.request.method === 'GET' && !path.startsWith('/api/');
   const started = performance.now();
-  event.locals.user = await validateSession(event.cookies);
-  if (event.locals.user && event.request.method === 'GET' && !path.startsWith('/api/')) {
-    autoRefresh(event.locals.user.id);
-  }
+  // « Page lente » n'est écrit qu'une fois la réponse prête : une page qui ne répond jamais n'en
+  // laissait aucune trace. Celle-ci se signale pendant qu'elle attend encore.
+  const stuck = page
+    ? setTimeout(() => {
+        log.warn('Page toujours en cours', {
+          route: event.route.id,
+          path,
+          connected: Boolean(event.locals.user),
+          seconds: STUCK_AFTER / 1000,
+        });
+      }, STUCK_AFTER).unref()
+    : undefined;
 
   const mutation = changesPublicData(event.request.method, path);
-  if (mutation) invalidatePublicCache();
   let response: Response;
   try {
+    event.locals.user = await validateSession(event.cookies);
+    if (event.locals.user && page) autoRefresh(event.locals.user.id);
+
+    if (mutation) invalidatePublicCache();
     response = await resolve(event, {
       // Lu au rendu : une action peut avoir changé le cookie pendant cette requête.
       transformPageChunk: ({ html }) =>
@@ -155,9 +174,10 @@ const secured: Handle = async ({ event, resolve }) => {
           .replace('%theme%', themeOf(event.cookies.get('pa_theme'))),
     });
   } finally {
+    clearTimeout(stuck);
     if (mutation) invalidatePublicCache();
   }
-  if (!path.startsWith('/api/') && event.request.method === 'GET') {
+  if (page) {
     const duration = Math.round(performance.now() - started);
     response.headers.append('Server-Timing', `app;dur=${duration}`);
     if (duration >= 500) log.warn('Page lente', { route: event.route.id, durationMs: duration });
