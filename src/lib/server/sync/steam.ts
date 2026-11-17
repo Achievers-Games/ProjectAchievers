@@ -72,6 +72,24 @@ export const steamPlayedAt = (
   return undefined;
 };
 
+/** `GetRecentlyPlayedGames` couvre les deux dernières semaines. */
+const RECENT_WINDOW = 14 * 24 * 60 * 60 * 1000;
+
+/**
+ * Un jeu de la liste des jeux récents de Steam a été lancé ces deux dernières semaines. Sans date
+ * aussi récente en base (temps de jeu déjà relu avant qu'on date les lancements), il est daté à
+ * la lecture, une minute d'écart par rang pour garder l'ordre de Steam. `undefined` : la date
+ * connue est déjà dans la fenêtre, elle fait foi.
+ */
+export const recentlyPlayedAt = (
+  known: Date | null,
+  rank: number,
+  now = Date.now(),
+): Date | undefined =>
+  known && known.getTime() >= now - RECENT_WINDOW
+    ? undefined
+    : new Date(now - Math.max(rank, 0) * 60_000);
+
 async function steamGet(path: string, params: Record<string, string | number>) {
   const url = new URL(`${API}${path}`);
   url.searchParams.set('key', env().STEAM_API_KEY ?? '');

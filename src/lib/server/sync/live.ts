@@ -20,6 +20,7 @@ import {
   type SteamPrivacy,
   steamAppInfo,
   steamPlayedAt,
+  recentlyPlayedAt,
   type OwnedGame,
   type TopGame,
 } from './steam';
@@ -179,10 +180,12 @@ async function catchUpRecent(userId: string, steamId: string, checkedAppId?: str
       gameId: true,
       unlockedCount: true,
       playtimeMinutes: true,
+      lastPlayedAt: true,
       game: { select: { platformGameId: true } },
     },
   });
   const stored = new Map(rows.map((row) => [row.game.platformGameId, row]));
+  const now = Date.now();
   const known = recent.filter((game) => stored.has(String(game.appid)));
   const unknown = recent.filter((game) => !stored.has(String(game.appid)));
   if (unknown.length) await importUnknown(userId, steamId, unknown);
@@ -206,8 +209,12 @@ async function catchUpRecent(userId: string, steamId: string, checkedAppId?: str
     // Seul un succès en plus compte : la relecture ne retire rien. Un jeu absent de la réponse
     // retombe sur le temps de jeu.
     const changed = count ? count.unlocked > row.unlockedCount : minutes > row.playtimeMinutes;
-    // Du temps en plus depuis la dernière lecture : le jeu a été lancé entre-temps.
-    const lastPlayedAt = steamPlayedAt(game, row.playtimeMinutes);
+    // Du temps en plus depuis la dernière lecture : le jeu a été lancé entre-temps. Sinon, le
+    // jeu figure parmi ceux joués ces deux semaines : sans date aussi récente en base, il est
+    // daté à cette lecture, dans l'ordre de Steam.
+    const lastPlayedAt =
+      steamPlayedAt(game, row.playtimeMinutes) ??
+      recentlyPlayedAt(row.lastPlayedAt, recent.indexOf(game), now);
     if (changed) {
       const appId = String(game.appid);
       await runLiveGame(userId, steamId, appId, game.playtime_forever, tops.get(game.appid));
