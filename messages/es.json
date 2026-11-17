@@ -2006,5 +2006,10 @@
   "ach_g_platformer_30_title": "Muelles en las rodillas",
   "ach_g_sci_fi_30_title": "Viajero del tiempo",
   "ach_g_simulation_30_title": "Más real que la realidad",
-  "ach_next_step": "Siguiente nivel: {text}"
+  "ach_next_step": "Siguiente nivel: {text}",
+  "home_guides": "Últimas guías",
+  "home_guides_official": "Oficiales",
+  "home_guides_community": "Comunidad",
+  "home_guides_official_empty": "Todavía no hay guías oficiales.",
+  "home_guides_community_empty": "Las guías de la comunidad aparecen aquí cuando están bien valoradas."
 }

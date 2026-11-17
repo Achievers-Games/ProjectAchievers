@@ -9,6 +9,7 @@ import {
   deleteGuide,
   editGuide,
   gameGuidesWhere,
+  homeGuides,
   isBuried,
   voteGuide,
 } from './guides';
@@ -247,5 +248,40 @@ describe('guides de jeu', () => {
     ]);
     expect(html).toContain('<h4>Détail</h4>');
     expect(html).toContain('data-check="0"');
+  });
+});
+
+describe('derniers guides de l’accueil', () => {
+  it('montre les guides de jeu officiels et ceux de la communauté bien notés', async () => {
+    const author = await player();
+    const { id: gameId } = await game();
+    // Datés dans le futur : les guides des autres tests ne passent pas devant.
+    const at = (days: number) => new Date(Date.now() + (365 + days) * 86_400_000);
+    const create = (data: { title: string; score?: number; curatedKey?: string; days: number }) =>
+      db.guide.create({
+        data: {
+          gameId,
+          authorId: author,
+          contentMd: 'Tout faire.',
+          title: data.title,
+          score: data.score ?? 0,
+          curatedKey: data.curatedKey,
+          createdAt: at(data.days),
+        },
+      });
+    const official = await create({ title: 'Officiel', curatedKey: `${PREFIX}-home`, days: 1 });
+    const liked = await create({ title: 'Aimé', score: 3, days: 2 });
+    const unrated = await create({ title: 'Pas noté', days: 3 });
+    const disliked = await create({ title: 'Mal noté', score: -2, days: 4 });
+    const tip = await achievementGuide(author, { curatedKey: `${PREFIX}-home-tip` });
+    await db.guide.update({ where: { id: tip.id }, data: { createdAt: at(5) } });
+
+    const { official: officials, community } = await homeGuides();
+    expect(officials[0]?.id).toBe(official.id);
+    // Un guide de succès n'est pas un guide de jeu complet : il reste hors de l'accueil.
+    expect(officials.map((guide) => guide.id)).not.toContain(tip.id);
+    expect(community[0]?.id).toBe(liked.id);
+    expect(community.map((guide) => guide.id)).not.toContain(unrated.id);
+    expect(community.map((guide) => guide.id)).not.toContain(disliked.id);
   });
 });

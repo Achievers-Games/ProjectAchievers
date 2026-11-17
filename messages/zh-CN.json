@@ -1969,5 +1969,10 @@
   "ach_g_platformer_30_title": "膝盖装了弹簧",
   "ach_g_sci_fi_30_title": "时间旅行者",
   "ach_g_simulation_30_title": "比真实还真实",
-  "ach_next_step": "下一阶段：{text}"
+  "ach_next_step": "下一阶段：{text}",
+  "home_guides": "最新攻略",
+  "home_guides_official": "官方",
+  "home_guides_community": "社区",
+  "home_guides_official_empty": "暂无官方攻略。",
+  "home_guides_community_empty": "社区攻略获得好评后会显示在这里。"
 }

@@ -2006,5 +2006,10 @@
   "ach_g_platformer_30_title": "Federn statt Knie",
   "ach_g_sci_fi_30_title": "Zeitreisender",
   "ach_g_simulation_30_title": "Echter als echt",
-  "ach_next_step": "Nächste Stufe: {text}"
+  "ach_next_step": "Nächste Stufe: {text}",
+  "home_guides": "Neueste Guides",
+  "home_guides_official": "Offiziell",
+  "home_guides_community": "Community",
+  "home_guides_official_empty": "Noch kein offizieller Guide.",
+  "home_guides_community_empty": "Community-Guides erscheinen hier, sobald sie gut bewertet sind."
 }

@@ -11,6 +11,7 @@ import {
 } from '#lib/server/queries';
 import { unlinkedPlatforms } from '#lib/server/accounts';
 import { db } from '#lib/server/db';
+import { homeGuides } from '#lib/server/guides';
 import { randomTagline } from '#lib/taglines';
 import type { PageServerLoad } from './$types';
 
@@ -20,7 +21,7 @@ export const load: PageServerLoad = async ({ locals, depends }) => {
   // Un jeu au hasard derrière l'accueil, tiré à chaque visite parmi les plus joués.
   const backdropTask = homeBackdrop();
   if (locals.user) {
-    const [podium, home, accounts, cards, banners, barelyPlayed, unlinked, friends] =
+    const [podium, home, accounts, cards, banners, barelyPlayed, unlinked, friends, guides] =
       await Promise.all([
         podiumTask,
         dashboard(locals.user.id, locals.user.showAdult),
@@ -30,6 +31,7 @@ export const load: PageServerLoad = async ({ locals, depends }) => {
         barelyPlayedGame(locals.user.id, locals.user.showAdult),
         unlinkedPlatforms(locals.user.id),
         friendsPlaying(locals.user.id, locals.user.showAdult),
+        homeGuides(locals.user.showAdult),
       ]);
     const { games, tiers } = home.stats;
     const { text: tagline, barelyPlayed: aboutBarelyPlayed } = randomTagline({
@@ -48,22 +50,25 @@ export const load: PageServerLoad = async ({ locals, depends }) => {
       podium,
       banners,
       friends,
+      guides,
       popular: null,
       tagline,
       backdrop: await backdropTask,
     };
   }
-  const [podium, games, cards, banners] = await Promise.all([
+  const [podium, games, cards, banners, guides] = await Promise.all([
     podiumTask,
     homePopularGames(),
     cardFeed(),
     podiumTask.then((podium) => homeBanners(podium[0])),
+    homeGuides(),
   ]);
   return {
     home: null,
     accounts: 0,
     unlinked: [],
     friends: [],
+    guides,
     cards,
     podium,
     banners,

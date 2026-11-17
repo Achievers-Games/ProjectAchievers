@@ -10,6 +10,7 @@
   import GameRail from '#lib/components/GameRail.svelte';
   import { formatRelative } from '#lib/labels';
   import HomeCarousel from '#lib/components/HomeCarousel.svelte';
+  import HomeGuides from '#lib/components/HomeGuides.svelte';
   import LiveCards from '#lib/components/LiveCards.svelte';
   import MissingPlatforms from '#lib/components/MissingPlatforms.svelte';
   import Podium from '#lib/components/Podium.svelte';
@@ -118,6 +119,10 @@
       </section>
     {/if}
 
+    <div class="home-panel">
+      <HomeGuides official={data.guides.official} community={data.guides.community} />
+    </div>
+
     <div class="home-panel"><Podium collectors={data.podium} /></div>
 
     <StatGrid
@@ -151,6 +156,10 @@
     <div class="home-panel"><LiveCards initial={data.cards} /></div>
 
     <div class="home-panel"><Podium collectors={data.podium} /></div>
+
+    <div class="home-panel">
+      <HomeGuides official={data.guides.official} community={data.guides.community} />
+    </div>
 
     {#if data.popular?.length}
       <section class="home-panel">

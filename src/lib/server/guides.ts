@@ -3,6 +3,7 @@ import type { Prisma } from '#prisma';
 import { m } from '#lib/paraglide/messages';
 import { db } from './db';
 import { renderGuide } from './markdown';
+import { publicUser, visibleGames } from './queries/shared';
 
 /** Score net à partir duquel la communauté a jugé un guide mauvais : il se replie par défaut. */
 export const BURIED_SCORE = -5;
@@ -139,4 +140,43 @@ export async function guideGame(slug: string, user: App.Locals['user']) {
   });
   if (!game || (game.adultOnly && !user?.showAdult)) error(404, m.game_not_found());
   return game;
+}
+
+/** Score net qu'un guide de la communauté doit atteindre pour paraître sur l'accueil. */
+export const HOME_GUIDE_SCORE = 1;
+const HOME_GUIDES = 5;
+
+/**
+ * Les derniers guides de jeu pour l'accueil : les officiels, et ceux de la communauté que les
+ * votes ont jugés utiles. Un guide pas encore noté reste sur sa fiche jusqu'à son premier avis.
+ */
+export async function homeGuides(showAdult = false) {
+  const select = {
+    id: true,
+    title: true,
+    score: true,
+    createdAt: true,
+    author: { select: publicUser },
+    game: { select: { slug: true, name: true, headerUrl: true } },
+  } satisfies Prisma.GuideSelect;
+  const where = {
+    status: 'PUBLISHED',
+    gameId: { not: null },
+    game: visibleGames(showAdult),
+  } satisfies Prisma.GuideWhereInput;
+  const [official, community] = await Promise.all([
+    db.guide.findMany({
+      where: { ...where, curatedKey: { not: null } },
+      orderBy: { createdAt: 'desc' },
+      take: HOME_GUIDES,
+      select,
+    }),
+    db.guide.findMany({
+      where: { ...where, curatedKey: null, score: { gte: HOME_GUIDE_SCORE } },
+      orderBy: { createdAt: 'desc' },
+      take: HOME_GUIDES,
+      select,
+    }),
+  ]);
+  return { official, community };
 }

@@ -2006,5 +2006,10 @@
   "ach_g_platformer_30_title": "Springs for Knees",
   "ach_g_sci_fi_30_title": "Time Traveler",
   "ach_g_simulation_30_title": "Realer Than Real",
-  "ach_next_step": "Next step: {text}"
+  "ach_next_step": "Next step: {text}",
+  "home_guides": "Latest guides",
+  "home_guides_official": "Official",
+  "home_guides_community": "Community",
+  "home_guides_official_empty": "No official guide yet.",
+  "home_guides_community_empty": "Community guides show up here once they are well rated."
 }

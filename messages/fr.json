@@ -2006,5 +2006,10 @@
   "ach_g_platformer_30_title": "Ressorts à la place des genoux",
   "ach_g_sci_fi_30_title": "Voyageur du temps",
   "ach_g_simulation_30_title": "Plus vrai que nature",
-  "ach_next_step": "Prochain palier : {text}"
+  "ach_next_step": "Prochain palier : {text}",
+  "home_guides": "Derniers guides",
+  "home_guides_official": "Officiels",
+  "home_guides_community": "Communauté",
+  "home_guides_official_empty": "Aucun guide officiel pour le moment.",
+  "home_guides_community_empty": "Les guides de la communauté arrivent ici une fois bien notés."
 }

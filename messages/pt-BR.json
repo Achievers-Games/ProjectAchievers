@@ -2006,5 +2006,10 @@
   "ach_g_platformer_30_title": "Molas no lugar dos joelhos",
   "ach_g_sci_fi_30_title": "Viajante do tempo",
   "ach_g_simulation_30_title": "Mais real que o real",
-  "ach_next_step": "Próximo nível: {text}"
+  "ach_next_step": "Próximo nível: {text}",
+  "home_guides": "Guias recentes",
+  "home_guides_official": "Oficiais",
+  "home_guides_community": "Comunidade",
+  "home_guides_official_empty": "Nenhum guia oficial por enquanto.",
+  "home_guides_community_empty": "Os guias da comunidade aparecem aqui quando são bem avaliados."
 }

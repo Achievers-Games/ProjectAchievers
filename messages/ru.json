@@ -2056,5 +2056,10 @@
   "ach_g_platformer_30_title": "Пружины вместо коленей",
   "ach_g_sci_fi_30_title": "Путешественник во времени",
   "ach_g_simulation_30_title": "Реальнее реального",
-  "ach_next_step": "Следующая ступень: {text}"
+  "ach_next_step": "Следующая ступень: {text}",
+  "home_guides": "Новые гайды",
+  "home_guides_official": "Официальные",
+  "home_guides_community": "Сообщество",
+  "home_guides_official_empty": "Официальных гайдов пока нет.",
+  "home_guides_community_empty": "Гайды сообщества появляются здесь, когда получают хорошие оценки."
 }
