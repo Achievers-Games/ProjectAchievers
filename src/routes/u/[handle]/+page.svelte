@@ -6,6 +6,7 @@
   import { m } from '#lib/paraglide/messages';
   import Gamepad2 from '@lucide/svelte/icons/gamepad-2';
   import IdCard from '@lucide/svelte/icons/id-card';
+  import Download from '@lucide/svelte/icons/download';
   import Link from '@lucide/svelte/icons/link';
   import Avatar from '#lib/components/Avatar.svelte';
   import PageBackdrop from '#lib/components/PageBackdrop.svelte';
@@ -217,6 +218,10 @@
           <IdCard size={14} aria-hidden="true" />
           {m.player_card()}
         </button>
+        <a class="btn" href="/u/{profile.user.handle}/carte.pdf" download data-sveltekit-reload>
+          <Download size={14} aria-hidden="true" />
+          {m.player_card_pdf()}
+        </a>
       {/if}
       {#if isMe}
         <a class="btn" href="/compte/fond">{m.appearance_title()}</a>

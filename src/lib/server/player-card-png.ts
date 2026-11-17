@@ -99,16 +99,31 @@ export async function svgToPng(
   width: number,
   scale = 2,
 ): Promise<Uint8Array<ArrayBuffer>> {
+  return render(svg, width * scale, (image) => new Uint8Array(image.asPng()));
+}
+
+/** Les pixels bruts, en RGBA prémultiplié, pour qui assemble lui-même son fichier (le PDF). */
+export async function svgToPixels(svg: string, width: number, scale = 2) {
+  return render(svg, width * scale, (image) => ({
+    width: image.width,
+    height: image.height,
+    rgba: new Uint8Array(image.pixels),
+  }));
+}
+
+type Rendered = ReturnType<InstanceType<typeof Resvg>['render']>;
+
+async function render<T>(svg: string, width: number, read: (image: Rendered) => T): Promise<T> {
   const fontBuffers = await prepare();
   const resvg = new Resvg(svg, {
-    fitTo: { mode: 'width', value: width * scale },
+    fitTo: { mode: 'width', value: width },
     font: { fontBuffers, defaultFontFamily: 'Inter', sansSerifFamily: 'Inter' },
   });
   try {
     const image = resvg.render();
     try {
       // Une copie détachée de la mémoire du WebAssembly, libérée juste après.
-      return new Uint8Array(image.asPng());
+      return read(image);
     } finally {
       image.free();
     }

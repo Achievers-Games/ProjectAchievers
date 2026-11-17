@@ -5,6 +5,7 @@
   import { onMount, tick } from 'svelte';
   import Flag from '@lucide/svelte/icons/flag';
   import Avatar from './Avatar.svelte';
+  import EmojiPicker from './EmojiPicker.svelte';
   import type { ChatEvent } from '#lib/server/sync/events';
   import { sendJson } from '#lib/http';
   import { incoming, unread } from '#lib/stores/chat';
@@ -31,6 +32,8 @@
   let draft = $state('');
   let sending = $state(false);
   let list = $state<HTMLElement>();
+  let field = $state<HTMLTextAreaElement>();
+  const MAX_LENGTH = 2000;
 
   const scrollDown = async () => {
     await tick();
@@ -99,6 +102,18 @@
     else toast(m.report_failed(), 'error');
   }
 
+  /** L'emoji va là où se trouve le curseur, puis le curseur se place juste après. */
+  async function insert(emoji: string) {
+    const start = field?.selectionStart ?? draft.length;
+    const end = field?.selectionEnd ?? draft.length;
+    const next = draft.slice(0, start) + emoji + draft.slice(end);
+    if (next.length > MAX_LENGTH) return;
+    draft = next;
+    await tick();
+    field?.focus();
+    field?.setSelectionRange(start + emoji.length, start + emoji.length);
+  }
+
   function onKeydown(event: KeyboardEvent) {
     if (event.key !== 'Enter' || event.shiftKey || event.isComposing) return;
     event.preventDefault();
@@ -140,12 +155,14 @@
       <li class="p-4 text-center text-sm text-muted">{m.chat_empty()}</li>
     {/each}
   </ul>
-  <form onsubmit={send} class="flex gap-2 border-t border-line p-2">
+  <form onsubmit={send} class="relative flex gap-2 border-t border-line p-2">
+    <EmojiPicker onPick={insert} />
     <textarea
+      bind:this={field}
       bind:value={draft}
       onkeydown={onKeydown}
       rows="1"
-      maxlength="2000"
+      maxlength={MAX_LENGTH}
       aria-label={m.chat_placeholder()}
       placeholder={m.chat_placeholder()}
       class="input h-auto min-h-9 flex-1 resize-none py-1.5"></textarea>

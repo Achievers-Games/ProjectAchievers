@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test';
-import { test, login, ready } from './helpers';
+import { test, closePops, login, ready } from './helpers';
 
 test.describe('membre', () => {
   test('voit son tableau de bord', async ({ page }) => {
@@ -548,6 +548,12 @@ test.describe('membre', () => {
     await page.goto('/');
     await page.getByRole('link', { name: 'Profil' }).first().click();
     await expect(page).toHaveURL(/\/u\/demo/);
+
+    // La carte se télécharge en PDF, sous un nom de fichier lisible.
+    const download = page.waitForEvent('download');
+    await page.getByRole('link', { name: 'Carte en PDF' }).click();
+    expect((await download).suggestedFilename()).toBe('achievers-demo.pdf');
+
     await page.getByRole('link', { name: 'Modifier', exact: true }).click();
     await expect(page).toHaveURL(/\/compte$/);
   });
@@ -653,8 +659,13 @@ test.describe('membre', () => {
     const field = page.getByLabel('Écris un message…');
     await expect(page.getByText(/Aucun message|Salut/).first()).toBeVisible();
     await field.fill(text);
+    // L'emoji s'ajoute au curseur, en fin de texte, et le champ garde le focus pour l'envoi.
+    await closePops(page);
+    await page.getByRole('button', { name: 'Insérer un emoji' }).click();
+    await page.getByRole('button', { name: '🦀' }).click();
+    await expect(field).toHaveValue(`${text}🦀`);
     await field.press('Enter');
-    await expect(friend.getByText(text)).toBeVisible();
+    await expect(friend.getByText(`${text}🦀`)).toBeVisible();
     await expect(friend.getByRole('link', { name: 'Demo', exact: true }).first()).toHaveAttribute(
       'href',
       '/u/demo',
