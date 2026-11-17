@@ -1,5 +1,5 @@
 import { expect, type Page } from '@playwright/test';
-import { test, login, ready } from './helpers';
+import { test, closePops, login, ready } from './helpers';
 
 test.describe('comparaison par jeu', () => {
   test('ouvre la comparaison depuis un profil, filtre, puis quitte', async ({ page }) => {
@@ -145,6 +145,7 @@ test.describe('clans', () => {
     await page.reload();
     await ready(page);
     await expect(requests).toContainText('Marco');
+    await closePops(page);
     await requests.getByRole('button', { name: 'Accepter' }).click();
     // Attendre que la demande ait disparu : recharger aussitôt après le clic pouvait couper
     // l'envoi du formulaire, et Marco n'était alors jamais accepté.
@@ -154,6 +155,8 @@ test.describe('clans', () => {
     await expect(requests).toHaveCount(0);
     const marcoRow = () => members.getByRole('listitem').filter({ hasText: 'Marco' });
     await expect(marcoRow()).toBeVisible();
+    // Le succès fêté en bas de l'écran recouvrait parfois ce bouton : le clic n'arrivait jamais.
+    await closePops(page);
     await marcoRow().getByRole('button', { name: 'Nommer officier' }).click();
     await expect(marcoRow()).toContainText('Officier');
 
@@ -164,6 +167,7 @@ test.describe('clans', () => {
     await leaveAnyClan(lea);
     await lea.goto('/clans');
     await ready(lea);
+    await closePops(lea);
     await lea
       .getByRole('listitem')
       .filter({ hasText: name })
@@ -177,6 +181,7 @@ test.describe('clans', () => {
       .locator('section')
       .filter({ has: marco.getByRole('heading', { name: /Demandes d.adhésion/ }) });
     await expect(officerRequests).toContainText('Léa');
+    await closePops(marco);
     await officerRequests.getByRole('button', { name: 'Accepter' }).click();
     // Même précaution : la demande doit être traitée avant de quitter la page.
     await expect(officerRequests).toHaveCount(0);

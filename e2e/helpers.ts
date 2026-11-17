@@ -32,3 +32,18 @@ export const login = (page: Page) => page.goto('/auth/dev');
 /** Attend que Svelte ait pris la main sur le HTML rendu par le serveur. */
 export const ready = (page: Page) =>
   page.locator('html[data-ready="true"]').waitFor({ state: 'attached' });
+
+/**
+ * Ferme les succès qui se fêtent à l'écran : ils arrivent quand ils veulent, en bas au centre, et
+ * recouvrent parfois le bouton que le test doit cliquer. Plusieurs : « Tout fermer » ; un seul :
+ * un clic dessus le range.
+ */
+export async function closePops(page: Page) {
+  for (let tries = 0; tries < 5; tries++) {
+    const all = page.locator('.pop-zone .close-all');
+    const pop = page.locator('.pop-zone .pop').first();
+    if (await all.isVisible()) await all.click();
+    else if (await pop.isVisible()) await pop.click();
+    else return;
+  }
+}
