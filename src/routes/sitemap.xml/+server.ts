@@ -24,15 +24,26 @@ type Entry = { path: string; updated?: Date };
 
 let cache: { entries: Entry[]; at: number; xml: Map<string, string> } | null = null;
 
+const later = (a: Date | undefined, b: Date) => (a && a > b ? a : b);
+
 async function entries(): Promise<Entry[]> {
-  const [games, users, clans, guides, achievements] = await Promise.all([
-    db.game.findMany({ where: { adultOnly: false }, select: { slug: true }, take: 40_000 }),
+  const [games, users, clans, guides, achievementGuides, achievements] = await Promise.all([
+    db.game.findMany({
+      where: { adultOnly: false },
+      select: { id: true, slug: true, createdAt: true },
+      take: 40_000,
+    }),
     db.user.findMany({ where: { isPublic: true }, select: { handle: true }, take: 10_000 }),
     db.clan.findMany({ select: { slug: true }, take: 10_000 }),
     db.guide.findMany({
       where: { status: 'PUBLISHED', game: { adultOnly: false } },
-      select: { id: true, updatedAt: true, game: { select: { slug: true } } },
+      select: { id: true, updatedAt: true, gameId: true, game: { select: { slug: true } } },
       take: 20_000,
+    }),
+    db.guide.findMany({
+      where: { status: 'PUBLISHED', achievement: { game: { adultOnly: false } } },
+      select: { updatedAt: true, achievementId: true, achievement: { select: { gameId: true } } },
+      take: 80_000,
     }),
     // Seuls les succès visibles qui ont un guide : une fiche vide n'apporte rien aux moteurs.
     db.achievement.findMany({
@@ -45,15 +56,38 @@ async function entries(): Promise<Entry[]> {
       take: 40_000,
     }),
   ]);
+  // Des dates qui ne bougent qu'avec ce que la page montre : l'apparition du jeu et ses guides.
+  // `Game.updatedAt` ne convient pas, les vérifications de fond le touchent chaque jour, et un
+  // `lastmod` qui change sans cesse est ignoré par Google.
+  const gameUpdated = new Map<string, Date>();
+  const achievementUpdated = new Map<string, Date>();
+  for (const g of guides) {
+    if (g.gameId) gameUpdated.set(g.gameId, later(gameUpdated.get(g.gameId), g.updatedAt));
+  }
+  for (const g of achievementGuides) {
+    if (!g.achievementId || !g.achievement) continue;
+    const { gameId } = g.achievement;
+    gameUpdated.set(gameId, later(gameUpdated.get(gameId), g.updatedAt));
+    achievementUpdated.set(
+      g.achievementId,
+      later(achievementUpdated.get(g.achievementId), g.updatedAt),
+    );
+  }
   return [
     ...['/', '/jeux', '/communaute', '/clans', '/classement', '/saison', '/developpeurs'].map(
       (path) => ({ path }),
     ),
-    ...games.map((g) => ({ path: `/jeux/${g.slug}` })),
+    ...games.map((g) => ({
+      path: `/jeux/${g.slug}`,
+      updated: later(gameUpdated.get(g.id), g.createdAt),
+    })),
     ...guides.flatMap((g) =>
       g.game ? [{ path: `/jeux/${g.game.slug}/guides/${g.id}`, updated: g.updatedAt }] : [],
     ),
-    ...achievements.map((a) => ({ path: `/succes/${a.id}` })),
+    ...achievements.map((a) => ({
+      path: `/succes/${a.id}`,
+      updated: achievementUpdated.get(a.id),
+    })),
     ...users.map((u) => ({ path: `/u/${u.handle}` })),
     ...clans.map((c) => ({ path: `/clans/${c.slug}` })),
   ];
