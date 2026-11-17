@@ -10,6 +10,7 @@
   import Languages from '@lucide/svelte/icons/languages';
   import RefreshCw from '@lucide/svelte/icons/refresh-cw';
   import Search from '@lucide/svelte/icons/search';
+  import ShieldCheck from '@lucide/svelte/icons/shield-check';
   import Trophy from '@lucide/svelte/icons/trophy';
   import User from '@lucide/svelte/icons/user';
   import Avatar from '#lib/components/Avatar.svelte';
@@ -269,6 +270,17 @@
       </span>
 
       {#if data.user}
+        {#if data.user.role !== 'USER'}
+          <a
+            href="/moderation"
+            class="btn w-9 px-0 text-muted"
+            aria-label={m.moderation()}
+            title={m.moderation()}
+            aria-current={isActive('/moderation', false) ? 'page' : undefined}
+          >
+            <ShieldCheck size={15} aria-hidden="true" />
+          </a>
+        {/if}
         <NotificationBell count={noticeCount} />
         <button
           type="button"

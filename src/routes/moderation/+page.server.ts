@@ -2,18 +2,13 @@ import { error, fail } from '@sveltejs/kit';
 import { signupStats } from '#lib/server/auth-events';
 import { z } from 'zod';
 import { db } from '#lib/server/db';
-import { moveGameFamilies } from '#lib/server/card-rarity';
 import { issuePartnerKey, revokePartnerKey } from '#lib/server/partner-api';
 import { issueWebhookSecret } from '#lib/server/partner-webhooks';
 import { isRedirectUri, issueOAuthClient, rotateOAuthSecret } from '#lib/server/oauth-provider';
 import { psnTokenState, savePsnNpsso } from '#lib/server/service-token';
+import { requireModerator } from '#lib/server/moderator';
 import type { Actions, PageServerLoad } from './$types';
 import { m } from '#lib/paraglide/messages';
-
-function requireModerator(locals: App.Locals) {
-  if (!locals.user || locals.user.role === 'USER') error(404, m.not_found());
-  return locals.user;
-}
 
 export const load: PageServerLoad = async ({ locals }) => {
   const moderator = requireModerator(locals);
@@ -81,25 +76,6 @@ export const load: PageServerLoad = async ({ locals }) => {
     ...messages.map((t) => [t.id, { contentMd: t.content, href: null }] as const),
   ]);
 
-  // Les familles de plusieurs jeux : c'est là que le rapprochement par titre peut se tromper.
-  const shared = await db.game.groupBy({
-    by: ['familyKey'],
-    where: { familyKey: { not: null } },
-    _count: { _all: true },
-    having: { familyKey: { _count: { gt: 1 } } },
-    orderBy: { familyKey: 'asc' },
-    take: 200,
-  });
-  const familyGames = await db.game.findMany({
-    where: { familyKey: { in: shared.map((f) => f.familyKey as string) } },
-    orderBy: { platform: 'asc' },
-    select: { id: true, name: true, slug: true, platform: true, familyKey: true },
-  });
-  const families = shared.map((family) => ({
-    key: family.familyKey as string,
-    games: familyGames.filter((game) => game.familyKey === family.familyKey),
-  }));
-
   const feedback = await db.feedback.findMany({
     orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
     take: 100,
@@ -162,7 +138,6 @@ export const load: PageServerLoad = async ({ locals }) => {
           }))
         : undefined,
     feedback,
-    families,
     reports: reports.map((report) => ({
       id: report.id,
       reason: report.reason,
@@ -342,26 +317,6 @@ export const actions: Actions = {
           ? { imagePending: false }
           : { image: null, imageType: null, imageAt: null, imagePending: false },
     });
-  },
-
-  separate: async ({ request, locals }) => {
-    requireModerator(locals);
-    const id = String((await request.formData()).get('id'));
-    await moveGameFamilies([id], { familyKey: `seul-${id}`, familyLocked: true });
-  },
-
-  join: async ({ request, locals }) => {
-    requireModerator(locals);
-    const form = await request.formData();
-    const [first, second] = await Promise.all(
-      ['first', 'second'].map((name) =>
-        db.game.findUnique({ where: { slug: String(form.get(name)).trim() } }),
-      ),
-    );
-    if (!first || !second) return fail(404, { error: m.mod_game_missing() });
-
-    const familyKey = first.familyKey ?? first.id;
-    await moveGameFamilies([first.id, second.id], { familyKey, familyLocked: true });
   },
 
   resolve: async ({ request, locals }) => {

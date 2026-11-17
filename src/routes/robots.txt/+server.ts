@@ -27,9 +27,12 @@ export const GET: RequestHandler = () =>
       'Allow: /auth/*/start',
       'Disallow: /api/',
       // Chaque page de succès y renvoie avec son adresse : une page de connexion par succès et
-      // par langue, que les robots suivaient par milliers.
+      // par langue, que les robots suivaient par milliers. Seule l'adresse nue reste ouverte :
+      // Google l'a indexée, et doit pouvoir y lire le `noindex` pour la retirer.
       'Disallow: /connexion',
       'Disallow: /*/connexion',
+      'Allow: /connexion$',
+      'Allow: /*/connexion$',
       '',
       `Sitemap: ${env().ORIGIN}/sitemap.xml`,
       '',
