@@ -543,19 +543,55 @@ test.describe('membre', () => {
     );
   });
 
+  test('règle sa bannière depuis l’aperçu, puis passe au fond', async ({ page }) => {
+    await login(page);
+    await page.goto('/compte/fond');
+    await ready(page);
+    await closePops(page);
+
+    const choose = page.getByRole('button', { name: 'Mettre Hollow Knight en bannière' });
+    await choose.click();
+    await expect(choose).toHaveAttribute('aria-pressed', 'true');
+    // L'aperçu suit le choix : la bannière porte maintenant le jeu choisi.
+    await expect(page.getByRole('link', { name: 'Bannière : Hollow Knight' })).toBeVisible();
+
+    // Un clic sur le fond de l'aperçu passe au réglage du fond, qui n'a pas bougé.
+    await page.getByRole('link', { name: /^Fond de la page :/ }).click();
+    await expect(page).toHaveURL(/cible=fond/);
+    await expect(
+      page.getByRole('button', { name: 'Mettre Hollow Knight en fond' }),
+    ).toHaveAttribute('aria-pressed', 'false');
+
+    // Retour à la vitrine, pour laisser le profil comme les autres tests l'attendent.
+    await page.goto('/compte/fond?cible=banniere');
+    await ready(page);
+    await closePops(page);
+    await page.getByRole('button', { name: /^Auto/ }).click();
+    await expect(page.getByRole('button', { name: /^Auto/ })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+  });
+
   test('ouvre son profil public et va le modifier', async ({ page }) => {
     await login(page);
     await page.goto('/');
     await page.getByRole('link', { name: 'Profil' }).first().click();
     await expect(page).toHaveURL(/\/u\/demo/);
 
-    // La carte se télécharge en PDF depuis son icône, sous un nom de fichier lisible.
+    // La carte de joueur s'enregistre en image ou en PDF, sous un nom de fichier lisible.
     await ready(page);
     await closePops(page);
-    const download = page.waitForEvent('download');
-    await page.getByRole('button', { name: 'Télécharger la carte (PDF)' }).click();
-    expect((await download).suggestedFilename()).toBe('achievers-demo.pdf');
-    await expect(page.getByRole('button', { name: 'Télécharger la carte (PDF)' })).toBeEnabled();
+    for (const [item, file] of [
+      ['Télécharger l’image (PNG)', 'achievers-demo.png'],
+      ['Télécharger la carte (PDF)', 'achievers-demo.pdf'],
+    ]) {
+      const download = page.waitForEvent('download');
+      await page.getByRole('button', { name: 'Carte de joueur' }).click();
+      await page.getByRole('menuitem', { name: item }).click();
+      expect((await download).suggestedFilename()).toBe(file);
+      await expect(page.getByRole('button', { name: 'Carte de joueur' })).toBeEnabled();
+    }
 
     await page.getByRole('link', { name: 'Modifier', exact: true }).click();
     await expect(page).toHaveURL(/\/compte$/);

@@ -4,7 +4,7 @@ import { requireLogin } from '#lib/server/auth';
 import { db } from '#lib/server/db';
 import { fetchSteamLook } from '#lib/server/providers/steam';
 import { artNow } from '#lib/server/sync/content';
-import { onePerFamily, toBanner } from '#lib/server/queries';
+import { onePerFamily, toBanner, userProfile, type ProfileBackground } from '#lib/server/queries';
 import { thumbArt } from '#lib/art';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -24,6 +24,24 @@ const TARGETS = {
 type Target = keyof typeof TARGETS;
 
 const targetOf = (value: unknown): Target => (value === 'fond' ? 'fond' : 'banniere');
+
+type Mode = 'auto' | 'steam' | 'game' | 'off';
+
+/** Ce que le joueur a réglé pour une cible : retirée, son fond Steam, un jeu, ou la vitrine. */
+const modeOf = (
+  profile: Record<'bannerOff' | 'bannerSteam' | 'backgroundOff' | 'backgroundSteam', boolean> &
+    Record<'bannerGameId' | 'backgroundGameId', string | null>,
+  target: Target,
+): Mode => {
+  const fields = TARGETS[target];
+  if (profile[fields.off]) return 'off';
+  if (profile[fields.steam]) return 'steam';
+  return profile[fields.game] ? 'game' : 'auto';
+};
+
+/** L'image affichée aujourd'hui, réduite à ce que l'aperçu dessine : ses images et son jeu. */
+const shown = (art: ProfileBackground | null) =>
+  art ? { images: art.images, name: art.kind === 'game' ? art.name : null } : null;
 
 /**
  * Le fond équipé sur Steam, relu à l'ouverture de la page : le joueur vient peut-être d'en
@@ -53,7 +71,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
   const target = targetOf(url.searchParams.get('cible'));
   const fields = TARGETS[target];
 
-  const [profile, steam, rows] = await Promise.all([
+  const [profile, steam, rows, look] = await Promise.all([
     db.user.findUniqueOrThrow({
       where: { id: user.id },
       select: {
@@ -98,22 +116,22 @@ export const load: PageServerLoad = async ({ locals, url }) => {
         },
       },
     }),
+    // Le profil tel qu'un visiteur le voit : l'aperçu montre exactement la même chose.
+    userProfile(user.handle, user.id, user.showAdult),
   ]);
   const chosen = profile[fields.game];
-  const mode = profile[fields.off]
-    ? 'off'
-    : profile[fields.steam]
-      ? 'steam'
-      : chosen
-        ? 'game'
-        : 'auto';
   return {
     q,
     target,
     handle: profile.handle,
-    mode,
+    mode: modeOf(profile, target),
     chosen,
     steam,
+    preview: {
+      person: look?.user ?? null,
+      banner: { mode: modeOf(profile, 'banniere'), art: shown(look?.banner ?? null) },
+      background: { mode: modeOf(profile, 'fond'), art: shown(look?.background ?? null) },
+    },
     games: onePerFamily(
       rows.map((row) => row.game),
       chosen,

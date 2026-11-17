@@ -119,7 +119,14 @@
     {/if}
     <Avatar person={profile.user} play="always" size={112} />
     <div class="min-w-0">
-      <h1>{profile.user.displayName}</h1>
+      <!-- Les succès du site à côté du nom : ce que le joueur regarde en premier sur un profil. -->
+      <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <h1>{profile.user.displayName}</h1>
+        <a class="profile-ach-link" href="/u/{profile.user.handle}/succes">
+          <Trophy size={16} aria-hidden="true" />
+          {m.ach_profile_link({ count: data.siteAchievements, total: SITE_TOTAL })}
+        </a>
+      </div>
       {#if playing}
         <a
           href="/jeux/{playing.slug}"
@@ -184,12 +191,8 @@
         {/each}
       </ul>
     </div>
-    <!-- Les liens d'abord, le partage regroupé dans un menu, l'action principale à droite. -->
+    <!-- Les réglages ou la comparaison, le partage en icônes, l'action principale à droite. -->
     <div class="ml-auto flex flex-wrap items-center justify-end gap-2">
-      <a class="profile-ach-link" href="/u/{profile.user.handle}/succes">
-        <Trophy size={16} aria-hidden="true" />
-        {m.ach_profile_link({ count: data.siteAchievements, total: SITE_TOTAL })}
-      </a>
       {#if data.user && !isMe}
         <a class="btn" href="/comparer?a={data.user.handle}&b={profile.user.handle}">
           <Scale size={14} aria-hidden="true" />
