@@ -62,6 +62,10 @@ function limitFor(request: Request, path: string): number | null {
   // Même raison pour les jetons OAuth : le partenaire les échange depuis un seul serveur, et
   // `oauth-provider.ts` limite déjà par client.
   if (path === '/oauth/token' || path === '/oauth/revoke') return 600;
+  // L'accusé des succès fêtés part à chaque succès montré : il a sa propre limite, plus large que
+  // celle des écritures, et le parcours e2e (une seule adresse pour toutes ses sessions) n'en a
+  // pas, comme pour la présence.
+  if (path === '/api/sync/fetes') return dev && env().DEV_LOGIN === '1' ? null : 120;
   if (request.method !== 'GET' && request.method !== 'HEAD') return 60;
   // Le flux reste ouvert : il ne doit pas bloquer le chat.
   if (path === '/api/sync/events') return null;
@@ -79,6 +83,8 @@ const PRIVATE_WRITES = [
   '/api/push',
   '/api/messages',
   '/api/notifications',
+  // Un succès fêté ne change ni l'accueil ni le classement : inutile d'en vider le cache.
+  '/api/sync/fetes',
   '/oauth/token',
   '/oauth/revoke',
   '/contact',
