@@ -86,8 +86,6 @@ export interface SiteFacts {
   soulmates: string | null;
   twins: string | null;
   perfectClan: boolean;
-  firstEver: string | null;
-  onlyOne: string | null;
   /** Les comptes des séries entre amis : jeux finis à deux, revanches, jours en synchro… */
   friendCounts: Record<FriendKey, number>;
   /** De quoi montrer chaque compte d'amis : les jeux ou succès, dans l'ordre des paliers. */
@@ -101,6 +99,8 @@ export interface SiteFacts {
   // Vide pour un commentaire de guide : le palier compte, sans succès à montrer en preuve.
   commentAchievementIds?: (string | null)[];
   reactionAchievementId?: string | null;
+  /** Le guide publié le mieux noté du joueur : son score, et ce qu'il explique. */
+  bestGuide?: { score: number; achievementId: string | null; gameId: string | null } | null;
   /** Un ami a commencé un jeu que le joueur avait laissé tomber. */
   badInfluence: string | null;
 }
@@ -316,6 +316,42 @@ export function evaluateSite(facts: SiteFacts) {
     return run.length === 10 && genreKeys.some((key) => run.every(tagged(GENRES[key].tags)));
   });
 
+  const totalPlaytime = games.reduce((sum, g) => sum + g.playtime, 0);
+  /** Un jeu fini longtemps après son premier succès. */
+  const lateGame = (years: number) =>
+    finishedByTime.find((g) => {
+      const first = firstAt(g);
+      return first !== undefined && g.lastAt - first >= years * YEAR;
+    });
+  /** Deux jeux finis à 100 % le même jour, sans rafale. */
+  const doubleDay = [
+    ...Map.groupBy(finishedByTime.filter(clean), (g) => dayKey(clock(g.lastAt))).values(),
+  ].find((day) => day.length >= 2);
+  /** Le samedi d'un week-end, à l'heure du joueur ; rien en semaine. */
+  const weekendOf = (date: Date) => {
+    const weekday = date.getUTCDay();
+    if (weekday !== 6 && weekday !== 0) return null;
+    return Math.floor(date.getTime() / DAY) - (weekday === 0 ? 1 : 0);
+  };
+  const busiestWeekend =
+    [
+      ...Map.groupBy(
+        unlocks.filter((u) => !u.burst && weekendOf(clock(u.at)) !== null),
+        (u) => weekendOf(clock(u.at)),
+      ).values(),
+    ].toSorted((a, b) => b.length - a.length)[0] ?? [];
+  /** Un jeu dont chaque succès est détenu par moins de 10 % des joueurs. */
+  const noSafetyNet = (g: GameFact) => {
+    const group = byGame.get(g.gameId) ?? [];
+    return (
+      g.total >= 5 &&
+      group.length >= g.total &&
+      clean(g) &&
+      group.every((u) => u.rarity !== null && u.rarity > 0 && u.rarity < 10)
+    );
+  };
+  const guideScore = facts.bestGuide?.score ?? 0;
+
   const rules: Record<Exclude<BaseCode, DirectCode | ClanCode>, boolean> = {
     first_account: platforms.length >= 1,
     two_platforms: platforms.length >= 2,
@@ -326,14 +362,18 @@ export function evaluateSite(facts: SiteFacts) {
 
     cards_1: cardCount >= 1,
     cards_10: cardCount >= 10,
+    cards_25: cardCount >= 25,
     cards_50: cardCount >= 50,
     cards_100: cardCount >= 100,
     cards_250: cardCount >= 250,
+    cards_500: cardCount >= 500,
     gold_1: tierCards(3) >= 1,
     gold_10: tierCards(3) >= 10,
     gold_25: tierCards(3) >= 25,
     diamond_1: tierCards(4) >= 1,
+    diamond_5: tierCards(4) >= 5,
     prismatic_1: tierCards(5) >= 1,
+    prismatic_5: tierCards(5) >= 5,
     bronze_25: cards.filter((card) => card.tier === 1).length >= 25,
     copies2_1: copies(2).length >= 1,
     copies2_5: copies(2).length >= 5,
@@ -348,28 +388,43 @@ export function evaluateSite(facts: SiteFacts) {
     shiny_double: copies(2).some((card) => card.tier >= 3),
     second_helping: cards.some((card) => card.next),
     legendary: cards.some((card) => card.tier >= 6),
+    legendary_3: tierCards(6) >= 3,
     game_100: finished.some((g) => g.total >= 100 && clean(g)),
+    game_250: finished.some((g) => g.total >= 250 && clean(g)),
     game_500: finished.some((g) => g.total >= 500 && clean(g)),
     small_10: finished.filter((g) => g.total <= 10).length >= 10,
     borderless: platforms.length >= 2 && platforms.every((platform) => doneOn.has(platform)),
 
     unlocks_100: unlockCount >= 100,
     unlocks_1000: unlockCount >= 1000,
+    unlocks_2500: unlockCount >= 2500,
     unlocks_5000: unlockCount >= 5000,
     unlocks_10000: unlockCount >= 10_000,
     unlocks_20000: unlockCount >= 20_000,
+    unlocks_50000: unlockCount >= 50_000,
 
     rare_1: rare(1) >= 1,
+    rare_10: rare(1) >= 10,
     rare_50: rare(1) >= 50,
+    rare_100: rare(1) >= 100,
+    rare_250: rare(1) >= 250,
     ultra_rare: rare(0.1) >= 1,
+    ultra_rare_5: rare(0.1) >= 5,
+    ultra_rare_25: rare(0.1) >= 25,
     podium: Boolean(season?.ended && season.rank && season.rank <= 3 && season.points > 0),
 
     hours_100: longest >= 100 * 60,
     hours_1000: longest >= 1000 * 60,
+    hours_2500: longest >= 2500 * 60,
+    playtime_1000: totalPlaytime >= 1000 * 60,
+    playtime_5000: totalPlaytime >= 5000 * 60,
+    playtime_10000: totalPlaytime >= 10_000 * 60,
     quick_1: quick(finished) >= 1,
     quick_5: quick(finished) >= 5,
+    quick_15: quick(finished) >= 15,
     library_500: games.length >= 500,
     library_1000: games.length >= 1000,
+    library_2000: games.length >= 2000,
 
     stalled_5: stalled >= 5,
     almost: games.some((g) => g.completion >= 95 && g.completion < 100),
@@ -387,16 +442,29 @@ export function evaluateSite(facts: SiteFacts) {
     one_more_50: busiestDay >= 50,
     withdrawal: returnIndex >= 0,
     yet_another: stalled >= 5 && games.some(isNewGame),
+    streak_7: streak >= 7,
+    streak_100: streak >= 100,
+    late_5: lateGame(5) !== undefined,
+    late_10: lateGame(10) !== undefined,
+    double_finish: doubleDay !== undefined,
+    weekend_100: busiestWeekend.length >= 100,
+    no_safety_net: finished.some(noSafetyNet),
 
     friend_1: facts.friends >= 1,
+    friends_3: facts.friends >= 3,
     friends_10: facts.friends >= 10,
     clan_join: facts.clan !== null,
     clan_5: Boolean(facts.clan?.owner && facts.clan.size >= 5),
+    messages_10: facts.messages >= 10,
     messages_100: facts.messages >= 100,
     comment_1: facts.comments >= 1,
+    comments_10: facts.comments >= 10,
     comments_50: facts.comments >= 50,
+    reactions_1: facts.reactions >= 1,
     reactions_10: facts.reactions >= 10,
+    reactions_25: facts.reactions >= 25,
     guide_done: facts.guideDone,
+    guide_score_10: guideScore >= 10,
     snitch: facts.upheldReport,
     support: facts.doneFeedback,
 
@@ -441,8 +509,6 @@ export function evaluateSite(facts: SiteFacts) {
     straight: [...monthTiers.values()].some((month) => new Set(month.map((c) => c.tier)).size >= 5),
     legend_double: copies(2).some((card) => card.tier >= 6),
     six_months: longestRun(finishDates.map(monthIndex)) >= 6,
-    first_ever: facts.firstEver !== null,
-    only_one: facts.onlyOne !== null,
     mood_swing: moodDay !== undefined,
     dark_hours: darkUnlock !== undefined,
     comfort_zone: comfortRun >= 0,
@@ -450,6 +516,7 @@ export function evaluateSite(facts: SiteFacts) {
     genre_tour_20: tourGame(20) !== undefined,
     genre_tour_30: tourGame(30) !== undefined,
     genre_tour_40: tourGame(40) !== undefined,
+    genre_tour_50: tourGame(50) !== undefined,
   };
   const genreCodes = [...SITE_CATEGORIES.genres, ...SITE_CATEGORIES.themes].flatMap((code) => {
     const genre = genreOf(code);
@@ -515,6 +582,9 @@ export function evaluateSite(facts: SiteFacts) {
         .toSorted((a, b) => b.completion - a.completion),
     );
   const longestGame = () => gamesOf(games.toSorted((a, b) => b.playtime - a.playtime).slice(0, 1));
+  /** Le temps total se montre par les jeux qui en ont pris le plus. */
+  const mostPlayed = () =>
+    gamesOf(games.filter((g) => g.playtime > 0).toSorted((a, b) => b.playtime - a.playtime));
   const firstDeepGap = (gap: number) => () =>
     gamesOf(finishedByTime.filter((g) => gapBeforeLast(g) >= gap).slice(0, 1));
   const lastLetter = () => {
@@ -539,19 +609,24 @@ export function evaluateSite(facts: SiteFacts) {
     genre_tour_20: () => gamesOf([tourGame(20)].flatMap((g) => g ?? [])),
     genre_tour_30: () => gamesOf([tourGame(30)].flatMap((g) => g ?? [])),
     genre_tour_40: () => gamesOf([tourGame(40)].flatMap((g) => g ?? [])),
+    genre_tour_50: () => gamesOf([tourGame(50)].flatMap((g) => g ?? [])),
     ...Object.fromEntries(
       genreCodes.map(({ code, count, tags }) => [code, () => nthFinished(count, tagged(tags))]),
     ),
     cards_1: () => nthCard(1),
     cards_10: () => nthCard(10),
+    cards_25: () => nthCard(25),
     cards_50: () => nthCard(50),
     cards_100: () => nthCard(100),
     cards_250: () => nthCard(250),
+    cards_500: () => nthCard(500),
     gold_1: () => nthCard(1, atLeast(3)),
     gold_10: () => nthCard(10, atLeast(3)),
     gold_25: () => nthCard(25, atLeast(3)),
     diamond_1: () => nthCard(1, atLeast(4)),
+    diamond_5: () => nthCard(5, atLeast(4)),
     prismatic_1: () => nthCard(1, atLeast(5)),
+    prismatic_5: () => nthCard(5, atLeast(5)),
     bronze_25: () => nthCard(25, (card) => card.tier === 1),
     copies2_1: () => nthCard(1, doubled),
     copies2_5: () => nthCard(5, doubled),
@@ -559,6 +634,7 @@ export function evaluateSite(facts: SiteFacts) {
     legend_double: () => nthCard(1, (card) => doubled(card) && card.tier >= 6),
     second_helping: () => nthCard(1, (card) => card.next),
     legendary: () => nthCard(1, atLeast(6)),
+    legendary_3: () => nthCard(3, atLeast(6)),
     wide_gap: () =>
       gamesOf(
         firstDay(
@@ -574,6 +650,7 @@ export function evaluateSite(facts: SiteFacts) {
       return gamesOf(ordered.slice(start, start + 6));
     },
     game_100: () => nthFinished(1, (g) => g.total >= 100 && clean(g)),
+    game_250: () => nthFinished(1, (g) => g.total >= 250 && clean(g)),
     game_500: () => nthFinished(1, (g) => g.total >= 500 && clean(g)),
     small_10: () => nthFinished(10, (g) => g.total <= 10),
     borderless: () =>
@@ -581,17 +658,29 @@ export function evaluateSite(facts: SiteFacts) {
 
     unlocks_100: () => nthUnlock(100),
     unlocks_1000: () => nthUnlock(1000),
+    unlocks_2500: () => nthUnlock(2500),
     unlocks_5000: () => nthUnlock(5000),
     unlocks_10000: () => nthUnlock(10_000),
     unlocks_20000: () => nthUnlock(20_000),
+    unlocks_50000: () => nthUnlock(50_000),
     rare_1: () => nthUnlock(1, rareUnlock(1)),
+    rare_10: () => nthUnlock(10, rareUnlock(1)),
     rare_50: () => nthUnlock(50, rareUnlock(1)),
+    rare_100: () => nthUnlock(100, rareUnlock(1)),
+    rare_250: () => nthUnlock(250, rareUnlock(1)),
     ultra_rare: () => nthUnlock(1, rareUnlock(0.1)),
+    ultra_rare_5: () => nthUnlock(5, rareUnlock(0.1)),
+    ultra_rare_25: () => nthUnlock(25, rareUnlock(0.1)),
 
     hours_100: longestGame,
     hours_1000: longestGame,
+    hours_2500: longestGame,
+    playtime_1000: mostPlayed,
+    playtime_5000: mostPlayed,
+    playtime_10000: mostPlayed,
     quick_1: () => nthFinished(1, isQuick),
     quick_5: () => nthFinished(5, isQuick),
+    quick_15: () => nthFinished(15, isQuick),
 
     stalled_5: stalledGames,
     almost: () =>
@@ -623,6 +712,13 @@ export function evaluateSite(facts: SiteFacts) {
     one_more_50: () => unlockProof(busiest),
     withdrawal: () => unlockProof(byTime.slice(returnIndex, returnIndex + 1)),
     yet_another: () => gamesOf(games.filter(isNewGame).slice(0, 1)),
+    streak_7: streakProof(7),
+    streak_100: streakProof(100),
+    late_5: () => gamesOf([lateGame(5)].flatMap((g) => g ?? [])),
+    late_10: () => gamesOf([lateGame(10)].flatMap((g) => g ?? [])),
+    double_finish: () => gamesOf(doubleDay?.slice(0, 2) ?? []),
+    weekend_100: () => unlockProof(busiestWeekend),
+    no_safety_net: () => nthFinished(1, noSafetyNet),
 
     season_finish_1: () => gamesOf(seasonGames),
     season_finish_3: () => gamesOf(seasonGames),
@@ -680,19 +776,25 @@ export function evaluateSite(facts: SiteFacts) {
         }),
       );
     },
-    first_ever: () => gameProof(facts.firstEver ? [facts.firstEver] : []),
-    only_one: () => gameProof(facts.onlyOne ? [facts.onlyOne] : []),
     bad_influence: () => gameProof(facts.badInfluence ? [facts.badInfluence] : []),
 
     friend_1: () => userProof(facts.friendIds?.slice(0, 1)),
+    friends_3: () => userProof(facts.friendIds?.slice(2, 3)),
     friends_10: () => userProof(facts.friendIds?.slice(9, 10)),
     clan_join: () => clanProof(facts.clanId),
     clan_5: () => clanProof(facts.clanId),
     perfect_clan: () => clanProof(facts.clanId),
     guide_done: () => achievementProof(facts.guideAchievementId),
     comment_1: () => achievementProof(facts.commentAchievementIds?.[0]),
+    comments_10: () => achievementProof(facts.commentAchievementIds?.[9]),
     comments_50: () => achievementProof(facts.commentAchievementIds?.[49]),
     reactions_10: () => achievementProof(facts.reactionAchievementId),
+    reactions_1: () => achievementProof(facts.reactionAchievementId),
+    reactions_25: () => achievementProof(facts.reactionAchievementId),
+    guide_score_10: () =>
+      facts.bestGuide?.achievementId
+        ? achievementProof(facts.bestGuide.achievementId)
+        : gameProof(facts.bestGuide?.gameId ? [facts.bestGuide.gameId] : []),
   };
 
   const earnedGenres = genreCodes

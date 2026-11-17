@@ -13,10 +13,6 @@ import { markBursts, type FriendProof, type SeasonFacts, type SiteFacts } from '
  */
 export const GAME_PROVIDERS: Provider[] = ['STEAM', 'PSN', 'XBOX', 'RETRO', 'BLIZZARD'];
 export const GAME_PLAYER = { accounts: { some: { provider: { in: GAME_PROVIDERS } } } };
-/** Être le premier ne compte qu'à partir d'ici : les finitions plus anciennes sont de l'histoire. */
-const LAUNCH = new Date('2026-11-03T00:00:00Z');
-/** En dessous, être le premier ou le seul sur un jeu ne prouve rien. */
-const MIN_PLAYERS = 5;
 /** Plus ancien, c'est une valeur par défaut de plateforme, pas une vraie date. */
 const FIRST_REAL_DATE = new Date('2000-01-01T00:00:00Z');
 const SEASON_CACHE = 10 * 60 * 1000;
@@ -268,23 +264,6 @@ async function hasPerfectClan(clanId: string) {
   });
 }
 
-/** Premier à finir un jeu, ou seul à l'avoir fini, parmi au moins `MIN_PLAYERS` joueurs. */
-async function pioneer(userId: string, alone: boolean) {
-  const rows = await db.$queryRaw<{ id: string }[]>`
-    SELECT mine."gameId" AS id FROM "UserGame" mine
-    WHERE mine."userId" = ${userId} AND mine.completion >= 100 AND NOT mine.hidden
-      AND mine."lastUnlockedAt" >= ${LAUNCH}
-      AND (SELECT count(*) FROM "UserGame" p WHERE p."gameId" = mine."gameId") >= ${MIN_PLAYERS}
-      AND NOT EXISTS (
-        SELECT 1 FROM "UserGame" other
-        WHERE other."gameId" = mine."gameId" AND other."userId" <> mine."userId"
-          AND other.completion >= 100
-          AND (${alone} OR other."lastUnlockedAt" < mine."lastUnlockedAt")
-      )
-    LIMIT 1`;
-  return rows[0]?.id ?? null;
-}
-
 export async function loadFacts(userId: string, earned: Set<string>): Promise<SiteFacts | null> {
   const user = await db.user.findUnique({
     where: { id: userId },
@@ -352,11 +331,10 @@ export async function loadFacts(userId: string, earned: Set<string>): Promise<Si
     upheld,
     feedback,
     guide,
+    bestGuide,
     soulmates,
     twins,
     perfectClan,
-    firstEver,
-    onlyOne,
     season,
     withFriends,
     influence,
@@ -372,18 +350,23 @@ export async function loadFacts(userId: string, earned: Set<string>): Promise<Si
     }),
     db.commentReaction.findMany({
       where: { comment: { authorId: userId, status: 'PUBLISHED' } },
-      take: 10,
+      take: 25,
       select: { comment: { select: { achievementId: true } } },
     }),
     db.pushSubscription.count({ where: { userId } }),
     db.report.count({ where: { reporterId: userId, upheld: true } }),
     db.feedback.count({ where: { userId, status: 'DONE' } }),
     missing('guide_done') && finishedGuide(userId),
+    missing('guide_score_10')
+      ? db.guide.findFirst({
+          where: { authorId: userId, status: 'PUBLISHED' },
+          orderBy: { score: 'desc' },
+          select: { score: true, achievementId: true, gameId: true },
+        })
+      : null,
     missing('soulmates') ? sharedUnlock(userId, friends) : null,
     missing('twins') ? sharedFinish(userId, friends) : null,
     missing('perfect_clan') && clan !== null && hasPerfectClan(clan.clanId),
-    missing('first_ever') ? pioneer(userId, false) : null,
-    missing('only_one') ? pioneer(userId, true) : null,
     seasonFacts(userId, now),
     // Inutile de recompter ce qui a déjà atteint son dernier palier.
     missing('duo_15') ||
@@ -391,7 +374,7 @@ export async function loadFacts(userId: string, earned: Set<string>): Promise<Si
     missing('teammates_10') ||
     missing('synchro_50') ||
     missing('prescriber_15') ||
-    missing('same_taste_100')
+    missing('same_taste_250')
       ? friendFacts(userId, friends)
       : null,
     missing('bad_influence') ? badInfluence(userId, friends) : null,
@@ -447,14 +430,13 @@ export async function loadFacts(userId: string, earned: Set<string>): Promise<Si
     guideAchievementId: guide ? guide.achievementId : null,
     commentAchievementIds: comments.map((row) => row.achievementId),
     reactionAchievementId: reactions[0]?.comment.achievementId ?? null,
+    bestGuide,
     upheldReport: upheld > 0,
     doneFeedback: feedback > 0,
     season,
     soulmates,
     twins,
     perfectClan,
-    firstEver,
-    onlyOne,
     friendCounts: withFriends?.counts ?? NO_FRIEND_COUNTS,
     friendProofs: withFriends?.proofs,
     badInfluence: influence,

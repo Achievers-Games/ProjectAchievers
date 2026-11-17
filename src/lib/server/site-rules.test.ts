@@ -45,8 +45,6 @@ const facts = (extra: Partial<SiteFacts> = {}): SiteFacts => ({
   soulmates: null,
   twins: null,
   perfectClan: false,
-  firstEver: null,
-  onlyOne: null,
   friendCounts: { duo: 0, revenge: 0, teammates: 0, synchro: 0, prescriber: 0, same_taste: 0 },
   badInfluence: null,
   ...extra,
@@ -81,10 +79,10 @@ const unlock = (gameId: string, at: number, extra: Partial<UnlockFact> = {}): Un
 const earned = (extra: Partial<SiteFacts>) => earnedCodes(facts(extra));
 
 describe('succès du site', () => {
-  it('compte 361 succès permanents, dont 32 secrets, tous traduits', () => {
-    expect(SITE_CODES.filter((code) => !EVENT_CODES.has(code))).toHaveLength(361);
+  it('compte 405 succès permanents, dont 30 secrets, tous traduits', () => {
+    expect(SITE_CODES.filter((code) => !EVENT_CODES.has(code))).toHaveLength(405);
     expect(new Set(SITE_CODES).size).toBe(SITE_CODES.length);
-    expect(SITE_CATEGORIES.secret).toHaveLength(32);
+    expect(SITE_CATEGORIES.secret).toHaveLength(30);
     for (const locale of ['fr', 'en', 'de', 'es', 'pt-BR', 'ru', 'ja', 'zh-CN']) {
       const messages = JSON.parse(readFileSync(`messages/${locale}.json`, 'utf8'));
       for (const code of SITE_CODES) {
@@ -404,5 +402,60 @@ describe('succès du site', () => {
     expect(earned({ games })).toContain('comfort_zone');
     const broken = games.with(4, game('other', { lastAt: NOW - 6 * DAY }));
     expect(earned({ games: broken })).not.toContain('comfort_zone');
+  });
+
+  it('finit un jeu des années après, et deux le même jour', () => {
+    const YEAR = 365 * DAY;
+    const old = game('old', { lastAt: NOW });
+    const start = unlock('old', NOW - 6 * YEAR);
+    expect(earned({ games: [old], unlocks: [start] })).toContain('late_5');
+    expect(earned({ games: [old], unlocks: [start] })).not.toContain('late_10');
+    expect(earned({ games: [old], unlocks: [unlock('old', NOW - YEAR)] })).not.toContain('late_5');
+
+    const pair = [game('a', { lastAt: NOW }), game('b', { lastAt: NOW + 3_600_000 })];
+    expect(earned({ games: pair })).toContain('double_finish');
+    expect(earned({ games: [pair[0]!, game('b', { lastAt: NOW + 2 * DAY })] })).not.toContain(
+      'double_finish',
+    );
+  });
+
+  it('enchaîne les jours, remplit un week-end et finit sans filet', () => {
+    const daily = Array.from({ length: 7 }, (_, i) => unlock('g', NOW - i * DAY));
+    expect(earned({ unlocks: daily })).toContain('streak_7');
+    expect(earned({ unlocks: daily.slice(1) })).not.toContain('streak_7');
+
+    // Un samedi puis le dimanche, assez espacés pour ne pas compter comme une rafale.
+    const saturday = Date.UTC(2026, 9, 10, 8);
+    const weekend = Array.from({ length: 100 }, (_, i) =>
+      unlock(`w${i % 10}`, saturday + i * 20 * 60_000),
+    );
+    expect(earned({ unlocks: weekend })).toContain('weekend_100');
+    const monday = weekend.map((u) => ({ ...u, at: u.at + 2 * DAY }));
+    expect(earned({ unlocks: monday })).not.toContain('weekend_100');
+
+    const hard = game('hard', { total: 5, unlocked: 5 });
+    const hardUnlocks = (rarity: number) =>
+      Array.from({ length: 5 }, (_, i) => unlock('hard', NOW - i * DAY, { rarity }));
+    expect(earned({ games: [hard], unlocks: hardUnlocks(4) })).toContain('no_safety_net');
+    expect(earned({ games: [hard], unlocks: hardUnlocks(12) })).not.toContain('no_safety_net');
+  });
+
+  it('compte le temps total, les premières marches du social et le guide utile', () => {
+    const games = Array.from({ length: 20 }, (_, i) => game(`t${i}`, { playtime: 60 * 60 }));
+    expect(earned({ games })).toContain('playtime_1000');
+    expect(earned({ games })).not.toContain('playtime_5000');
+
+    const social = earned({ friends: 3, messages: 10, comments: 10, reactions: 1 });
+    expect(social).toEqual(
+      expect.arrayContaining(['friends_3', 'messages_10', 'comments_10', 'reactions_1']),
+    );
+    expect(social).not.toContain('reactions_10');
+
+    const guide = { score: 10, achievementId: 'a1', gameId: null };
+    expect(earned({ bestGuide: guide })).toContain('guide_score_10');
+    expect(earned({ bestGuide: { ...guide, score: 9 } })).not.toContain('guide_score_10');
+    expect(evaluateSite(facts({ bestGuide: guide })).proof('guide_score_10')).toEqual({
+      achievements: ['a1'],
+    });
   });
 });
