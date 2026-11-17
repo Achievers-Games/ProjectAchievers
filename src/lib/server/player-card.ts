@@ -36,8 +36,8 @@ export interface PlayerCardData {
 }
 
 /**
- * Le jeu en fond, à droite, qui se fond dans le dégradé vers la gauche où vit le texte.
- * Le voile reprend les couleurs du fond : le texte garde le même contraste qu'avant.
+ * La bannière du profil, telle que le site la dessine : l'image sur toute la largeur, cadrée au
+ * centre, sous les deux mêmes voiles sombres (à gauche pour le nom, en bas pour les chiffres).
  */
 function backdropLayer(
   backdrop: string | null | undefined,
@@ -49,19 +49,19 @@ function backdropLayer(
   return (
     `<clipPath id="frame"><rect width="${width}" height="${height}" rx="${radius}"/></clipPath>` +
     `<g clip-path="url(#frame)">` +
-    `<image href="${escapeXml(backdrop)}" x="${width * 0.3}" y="0" width="${width * 0.7}" height="${height}" preserveAspectRatio="xMidYMid slice" opacity=".6"/>` +
+    `<image href="${escapeXml(backdrop)}" width="${width}" height="${height}" preserveAspectRatio="xMidYMid slice"/>` +
     `<rect width="${width}" height="${height}" fill="url(#veil)"/>` +
     `<rect width="${width}" height="${height}" fill="url(#shade)"/></g>`
   );
 }
 
 /**
- * Deux voiles aux couleurs du fond : l'un, de gauche à droite, couvre le nom et laisse voir
- * le jeu sur la droite ; l'autre assombrit le bas, où passent les chiffres.
+ * Les voiles de `.profile-banner` dans app.css, à l'identique : de gauche à droite, 90 % puis
+ * 45 % puis 25 % de nuit ; de bas en haut, 85 % qui s'éclaircit à 20 % aux deux tiers.
  */
 const VEILS =
-  `<linearGradient id="veil" x1="0" y1="0" x2="1" y2="0"><stop offset=".3" stop-color="#1f0d33"/><stop offset=".6" stop-color="#1f0d33" stop-opacity=".7"/><stop offset="1" stop-color="#1f0d33" stop-opacity=".15"/></linearGradient>` +
-  `<linearGradient id="shade" x1="0" y1="0" x2="0" y2="1"><stop offset=".5" stop-color="#0d0a1c" stop-opacity="0"/><stop offset="1" stop-color="#0d0a1c" stop-opacity=".85"/></linearGradient>`;
+  `<linearGradient id="veil" x1="0" y1="0" x2="1" y2="0"><stop offset=".1" stop-color="#080612" stop-opacity=".9"/><stop offset=".6" stop-color="#080612" stop-opacity=".45"/><stop offset="1" stop-color="#080612" stop-opacity=".25"/></linearGradient>` +
+  `<linearGradient id="shade" x1="0" y1="0" x2="0" y2="1"><stop offset=".3" stop-color="#080612" stop-opacity=".2"/><stop offset="1" stop-color="#080612" stop-opacity=".85"/></linearGradient>`;
 
 const XML_ENTITIES: Record<string, string> = {
   '&': '&amp;',
@@ -321,8 +321,12 @@ text{font-family:Inter,'Segoe UI',system-ui,sans-serif;fill:#fff}
 </style>
 </defs>
 <rect width="${SHARE_WIDTH}" height="${SHARE_HEIGHT}" fill="url(#bg)"/>
-${backdropLayer(card.backdrop, SHARE_WIDTH, SHARE_HEIGHT)}
-<rect width="${SHARE_WIDTH}" height="${SHARE_HEIGHT}" fill="url(#glow)"/>
+${
+  // La lueur violette ne sert qu'à habiller un profil sans bannière : sur une image, elle la teinte.
+  card.backdrop
+    ? backdropLayer(card.backdrop, SHARE_WIDTH, SHARE_HEIGHT)
+    : `<rect width="${SHARE_WIDTH}" height="${SHARE_HEIGHT}" fill="url(#glow)"/>`
+}
 <line x1="${margin}" y1="400" x2="${SHARE_WIDTH - margin}" y2="400" stroke="rgba(255,255,255,.12)" stroke-width="2"/>
 ${avatar}
 <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="4"/>
