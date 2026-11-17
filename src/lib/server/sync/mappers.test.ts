@@ -9,7 +9,7 @@ import {
 import { mapRetroAchievement, retroUnlocks } from './retro';
 import { isComplete } from '#lib/collection';
 import { fetchRetry, mapLimit, SyncError } from './errors';
-import { assertPsnResponse, mapTrophy } from './psn';
+import { assertPsnResponse, mapTrophy, noteLaunch } from './psn';
 import { mapSchema, steamPlayedAt, unchangedSince } from './steam';
 import {
   hasAchievements,
@@ -100,6 +100,17 @@ describe('Steam', () => {
 });
 
 describe('PSN', () => {
+  it('date le dernier lancement d’un jeu, sans trophée gagné, et garde le plus récent', () => {
+    const launched = new Map<string, Date>();
+    noteLaunch(launched, 'PPSA01234_00', '2026-11-16T21:30:00Z');
+    // Le même jeu revient plus ancien (autre région) : la date la plus récente reste.
+    noteLaunch(launched, 'PPSA01234_00', '2026-10-01T10:00:00Z');
+    // Une date absente ou illisible ne compte pas.
+    noteLaunch(launched, 'CUSA00001_00', undefined);
+    noteLaunch(launched, 'CUSA00002_00', 'pas une date');
+    expect(launched).toEqual(new Map([['PPSA01234_00', new Date('2026-11-16T21:30:00Z')]]));
+  });
+
   it('convertit le type et la rareté', () => {
     expect(
       mapTrophy({

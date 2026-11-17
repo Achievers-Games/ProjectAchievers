@@ -28,10 +28,23 @@ const PAGE = 800;
 const log = logger('PlayStation');
 const PLAYTIME_EVERY = 6 * 60 * 60 * 1000;
 
+/**
+ * Retient le dernier lancement d'un jeu, d'après la liste des jeux joués de Sony. Une date
+ * absente ou illisible ne compte pas ; la plus récente l'emporte si le jeu revient deux fois.
+ */
+export function noteLaunch(launched: Map<string, Date>, titleId: string, when?: string | null) {
+  const at = when ? new Date(when) : null;
+  if (!at || Number.isNaN(at.getTime())) return;
+  if (at > (launched.get(titleId) ?? new Date(0))) launched.set(titleId, at);
+}
+
 async function syncPsnPlaytime(userId: string, accountId: string, titles: TrophyTitle[]) {
   const authorization = await psnAuthorization();
   const trophyIds = new Set(titles.map((title) => title.npCommunicationId));
   const played = new Map<string, number>();
+  // Le dernier lancement de chaque jeu, que Sony donne avec le temps de jeu : la date des
+  // trophées ne bouge pas quand on joue sans en gagner, et le rail des amis restait figé.
+  const launched = new Map<string, Date>();
   const limit = 100;
   for (let offset = 0; ;) {
     const page = await getUserPlayedGames(authorization, accountId, {
@@ -40,8 +53,9 @@ async function syncPsnPlaytime(userId: string, accountId: string, titles: Trophy
       offset,
     });
     assertPsnResponse(page);
-    for (const { titleId, playDuration } of page.titles) {
+    for (const { titleId, playDuration, lastPlayedDateTime } of page.titles) {
       if (!/^(?:CUSA|PPSA)\d+(?:_\d+)?$/u.test(titleId)) continue;
+      noteLaunch(launched, titleId, lastPlayedDateTime);
       const duration = /^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?$/u.exec(playDuration);
       if (!duration || !duration.slice(1).some(Boolean)) continue;
       const seconds =
@@ -55,6 +69,7 @@ async function syncPsnPlaytime(userId: string, accountId: string, titles: Trophy
   }
 
   const totals = new Map<string, { ps4: number; ps5: number }>();
+  const lastPlayed = new Map<string, Date>();
   const ids = [...played.keys()];
   for (let offset = 0; offset < ids.length; offset += 5) {
     const batch = ids.slice(offset, offset + 5);
@@ -76,6 +91,9 @@ async function syncPsnPlaytime(userId: string, accountId: string, titles: Trophy
       const console = titleId.startsWith('CUSA') ? 'ps4' : 'ps5';
       total[console] += played.get(titleId) ?? 0;
       totals.set(id, total);
+      // Les versions PS4 et PS5 d'une même liste de trophées : la plus récente compte.
+      const at = launched.get(titleId);
+      if (at && at > (lastPlayed.get(id) ?? new Date(0))) lastPlayed.set(id, at);
     }
   }
 
@@ -95,6 +113,18 @@ async function syncPsnPlaytime(userId: string, accountId: string, titles: Trophy
         game: { platform: 'PSN', platformGameId },
       },
       data: { playtimeMinutes, ps4PlaytimeMinutes, ps5PlaytimeMinutes },
+    });
+  }
+
+  // Une date connue plus récente (un trophée gagné depuis) reste en place.
+  for (const [platformGameId, at] of lastPlayed) {
+    await db.userGame.updateMany({
+      where: {
+        userId,
+        game: { platform: 'PSN', platformGameId },
+        OR: [{ lastPlayedAt: null }, { lastPlayedAt: { lt: at } }],
+      },
+      data: { lastPlayedAt: at },
     });
   }
 }
