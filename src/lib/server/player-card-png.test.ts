@@ -33,7 +33,7 @@ describe('carte de joueur en PNG', () => {
 });
 
 describe('module rechargé', () => {
-  it('rend encore une image quand resvg a déjà été initialisé par une autre copie', async () => {
+  it('rend encore une image depuis une copie neuve du module', async () => {
     const svg = renderPlayerCard({
       displayName: 'Ada',
       handle: 'ada',
@@ -45,11 +45,37 @@ describe('module rechargé', () => {
       avatar: null,
     });
     await svgToPng(svg, CARD_WIDTH);
-    // Comme après un rechargement de Vite : une copie neuve du module, resvg déjà prêt.
+    // Comme après un rechargement de Vite : une copie neuve du module.
     vi.resetModules();
     const fresh = await import('./player-card-png');
     const png = await fresh.svgToPng(svg, CARD_WIDTH);
     expect([...png.subarray(0, 8)]).toEqual(PNG_SIGNATURE);
+  });
+});
+
+describe('rendu hors du thread principal', () => {
+  it('laisse le serveur répondre pendant qu’une grande carte se dessine', async () => {
+    const svg = renderPlayerCard({
+      displayName: 'Ada',
+      handle: 'ada',
+      clan: null,
+      games: 1,
+      unlocked: 1,
+      cards: 0,
+      points: 0,
+      avatar: null,
+    });
+    // Polices et thread prêts : seul le dessin reste à mesurer.
+    await svgToPng(svg, CARD_WIDTH);
+    let ticks = 0;
+    const timer = setInterval(() => (ticks += 1), 5);
+    const started = performance.now();
+    // Une carte à l'échelle 8 : assez lente pour que le thread principal ait des tours à faire.
+    await svgToPng(svg, CARD_WIDTH, 8);
+    const elapsed = performance.now() - started;
+    clearInterval(timer);
+    // Un rendu synchrone ne laisserait passer aucun tour pendant tout le dessin.
+    expect(ticks).toBeGreaterThan(Math.floor(elapsed / 5 / 4));
   });
 });
 

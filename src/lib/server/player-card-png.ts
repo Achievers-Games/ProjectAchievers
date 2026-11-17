@@ -1,13 +1,17 @@
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
+import { Worker } from 'node:worker_threads';
 import { inflateSync } from 'node:zlib';
-import { initWasm, Resvg } from '@resvg/resvg-wasm';
 
 /**
  * La carte de joueur en PNG, pour Discord et les forums qui n'affichent pas le SVG.
  *
  * Le rendu passe par resvg en WebAssembly : l'image du NAS est construite sur une autre
  * architecture que celle qui l'exécute, et une bibliothèque native n'y survivrait pas.
+ *
+ * Il tourne dans un thread à part : synchrone, il figeait tout le serveur pendant qu'il
+ * dessinait (1,7 s par carte sur le NAS, 7,6 s au premier rendu), et chaque partage d'un
+ * profil sur Discord bloquait alors toutes les pages du site.
  */
 
 const require = createRequire(import.meta.url);
@@ -65,35 +69,118 @@ function woffToSfnt(woff: Uint8Array): Uint8Array {
   return out;
 }
 
-let ready: Promise<Uint8Array[]> | null = null;
-
-/** Le WebAssembly et les polices, chargés une seule fois pour toute la vie du serveur. */
-function prepare() {
-  ready ??= (async () => {
+/**
+ * Le thread de rendu, en CommonJS évalué : il ne dépend d'aucun fichier produit par Vite.
+ * Les chemins de resvg et les polices lui arrivent tout prêts du thread principal.
+ */
+const WORKER_SOURCE = `
+const { parentPort, workerData } = require('node:worker_threads');
+const { readFileSync } = require('node:fs');
+const { initWasm, Resvg } = require(workerData.resvg);
+const ready = initWasm(readFileSync(workerData.wasm));
+parentPort.on('message', async ({ id, svg, width, pixels }) => {
+  try {
+    await ready;
+    const resvg = new Resvg(svg, {
+      fitTo: { mode: 'width', value: width },
+      font: { fontBuffers: workerData.fonts, defaultFontFamily: 'Inter', sansSerifFamily: 'Inter' },
+    });
     try {
-      await initWasm(readFileSync(require.resolve('@resvg/resvg-wasm/index_bg.wasm')));
-    } catch (cause) {
-      // Le WebAssembly vit dans le paquet, pas dans ce module : rechargé (Vite en dev, ou une
-      // deuxième copie du module), celui-ci repart de zéro alors que resvg est déjà prêt.
-      if (!(cause instanceof Error && cause.message.includes('Already initialized'))) throw cause;
+      const image = resvg.render();
+      try {
+        // Une copie détachée de la mémoire du WebAssembly, transférée sans recopie.
+        const data = new Uint8Array(pixels ? image.pixels : image.asPng());
+        parentPort.postMessage(
+          { id, data, width: image.width, height: image.height },
+          [data.buffer],
+        );
+      } finally {
+        image.free();
+      }
+    } finally {
+      resvg.free();
     }
-    // Le latin étendu et le cyrillique couvrent les noms accentués et la version russe du site.
-    // Le chinois et le japonais n'ont pas de glyphes dans Inter : leurs libellés resteraient vides.
-    return SUBSETS.flatMap((subset) =>
-      WEIGHTS.map((weight) =>
-        woffToSfnt(
-          readFileSync(
-            require.resolve(`@fontsource/inter/files/inter-${subset}-${weight}-normal.woff`),
-          ),
+  } catch (error) {
+    parentPort.postMessage({ id, error: String((error && error.stack) || error) });
+  }
+});
+`;
+
+interface Rendered {
+  data: Uint8Array<ArrayBuffer>;
+  width: number;
+  height: number;
+}
+
+type Pending = { resolve: (image: Rendered) => void; reject: (error: Error) => void };
+
+let worker: Worker | null = null;
+let nextId = 0;
+const pending = new Map<number, Pending>();
+
+/** Un thread perdu fait échouer ses rendus en cours ; la demande suivante en relance un. */
+function fail(error: Error) {
+  worker = null;
+  for (const { reject } of pending.values()) reject(error);
+  pending.clear();
+}
+
+function renderer() {
+  if (worker) return worker;
+  const started = new Worker(WORKER_SOURCE, {
+    eval: true,
+    workerData: {
+      resvg: require.resolve('@resvg/resvg-wasm'),
+      wasm: require.resolve('@resvg/resvg-wasm/index_bg.wasm'),
+      fonts: fonts(),
+    },
+  });
+  started.on('message', ({ id, error, ...image }: { id: number; error?: string } & Rendered) => {
+    const job = pending.get(id);
+    if (!job) return;
+    pending.delete(id);
+    if (error) job.reject(new Error(error));
+    else job.resolve(image);
+    // Au repos, le thread ne retient pas le processus (tests, arrêt du serveur).
+    if (!pending.size) started.unref();
+  });
+  started.on('error', (error: unknown) => {
+    if (worker === started) fail(error instanceof Error ? error : new Error(String(error)));
+  });
+  started.on('exit', (code) => {
+    if (worker === started) fail(new Error(`Rendu de carte arrêté (code ${code})`));
+  });
+  started.unref();
+  worker = started;
+  return started;
+}
+
+let fontCache: Uint8Array[] | null = null;
+
+/** Les polices, converties une seule fois pour toute la vie du serveur. */
+function fonts() {
+  // Le latin étendu et le cyrillique couvrent les noms accentués et la version russe du site.
+  // Le chinois et le japonais n'ont pas de glyphes dans Inter : leurs libellés resteraient vides.
+  fontCache ??= SUBSETS.flatMap((subset) =>
+    WEIGHTS.map((weight) =>
+      woffToSfnt(
+        readFileSync(
+          require.resolve(`@fontsource/inter/files/inter-${subset}-${weight}-normal.woff`),
         ),
       ),
-    );
-  })().catch((cause) => {
-    // Un échec ne doit pas rester en cache : la prochaine demande retentera.
-    ready = null;
-    throw cause;
+    ),
+  );
+  return fontCache;
+}
+
+function render(svg: string, width: number, pixels: boolean): Promise<Rendered> {
+  const thread = renderer();
+  const id = nextId++;
+  return new Promise<Rendered>((resolve, reject) => {
+    pending.set(id, { resolve, reject });
+    thread.ref();
+    thread.postMessage({ id, svg, width, pixels });
   });
-  return ready;
 }
 
 /**
@@ -105,35 +192,11 @@ export async function svgToPng(
   width: number,
   scale = 2,
 ): Promise<Uint8Array<ArrayBuffer>> {
-  return render(svg, width * scale, (image) => new Uint8Array(image.asPng()));
+  return (await render(svg, width * scale, false)).data;
 }
 
 /** Les pixels bruts, en RGBA prémultiplié, pour qui assemble lui-même son fichier (le PDF). */
 export async function svgToPixels(svg: string, width: number, scale = 2) {
-  return render(svg, width * scale, (image) => ({
-    width: image.width,
-    height: image.height,
-    rgba: new Uint8Array(image.pixels),
-  }));
-}
-
-type Rendered = ReturnType<InstanceType<typeof Resvg>['render']>;
-
-async function render<T>(svg: string, width: number, read: (image: Rendered) => T): Promise<T> {
-  const fontBuffers = await prepare();
-  const resvg = new Resvg(svg, {
-    fitTo: { mode: 'width', value: width },
-    font: { fontBuffers, defaultFontFamily: 'Inter', sansSerifFamily: 'Inter' },
-  });
-  try {
-    const image = resvg.render();
-    try {
-      // Une copie détachée de la mémoire du WebAssembly, libérée juste après.
-      return read(image);
-    } finally {
-      image.free();
-    }
-  } finally {
-    resvg.free();
-  }
+  const { width: w, height, data } = await render(svg, width * scale, true);
+  return { width: w, height, rgba: data };
 }
