@@ -74,12 +74,16 @@ export const steamPlayedAt = (
 
 /** `GetRecentlyPlayedGames` couvre les deux dernières semaines. */
 const RECENT_WINDOW = 14 * 24 * 60 * 60 * 1000;
+/** Les rangs départagés à la minute, tous datés dans la fenêtre. */
+const RANK_SLOTS = 60;
 
 /**
- * Un jeu de la liste des jeux récents de Steam a été lancé ces deux dernières semaines. Sans date
- * aussi récente en base (temps de jeu déjà relu avant qu'on date les lancements), il est daté à
- * la lecture, une minute d'écart par rang pour garder l'ordre de Steam. `undefined` : la date
- * connue est déjà dans la fenêtre, elle fait foi.
+ * Un jeu de la liste des jeux récents de Steam a été lancé ces deux dernières semaines, sans plus
+ * de précision : cette liste est triée par temps de jeu sur la période, pas par date, et ne
+ * porte aucune date. Sans date aussi récente en base, il est daté au début de la fenêtre : il
+ * entre dans le rail des amis sans jamais passer devant un lancement vraiment daté (jeu en cours,
+ * temps de jeu qui grandit). Une minute d'écart par rang garde le plus joué devant.
+ * `undefined` : la date connue est déjà dans la fenêtre, elle fait foi.
  */
 export const recentlyPlayedAt = (
   known: Date | null,
@@ -88,7 +92,9 @@ export const recentlyPlayedAt = (
 ): Date | undefined =>
   known && known.getTime() >= now - RECENT_WINDOW
     ? undefined
-    : new Date(now - Math.max(rank, 0) * 60_000);
+    : new Date(
+        now - RECENT_WINDOW + (RANK_SLOTS - Math.min(Math.max(rank, 0), RANK_SLOTS - 1)) * 60_000,
+      );
 
 async function steamGet(path: string, params: Record<string, string | number>) {
   const url = new URL(`${API}${path}`);

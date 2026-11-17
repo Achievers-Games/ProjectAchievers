@@ -85,12 +85,18 @@ describe('Steam', () => {
     expect(unchangedSince({ lastPlayedAt: null, playtimeMinutes: 120 }, null, 120, 30)).toBe(false);
   });
 
-  it('date à la lecture un jeu récent de Steam resté sans date récente, dans l’ordre de Steam', () => {
+  it('date au début de la fenêtre un jeu récent de Steam resté sans date récente', () => {
     const now = Date.parse('2026-11-17T10:00:00Z');
     const day = 86_400_000;
-    // Jamais daté, ou daté il y a un mois : il a pourtant été joué ces deux semaines.
-    expect(recentlyPlayedAt(null, 0, now)).toEqual(new Date(now));
-    expect(recentlyPlayedAt(new Date(now - 30 * day), 2, now)).toEqual(new Date(now - 2 * 60_000));
+    const windowStart = now - 14 * day;
+    // Jamais daté, ou daté il y a un mois : joué ces deux semaines, sans savoir quand. Daté au
+    // début de la fenêtre, le plus joué (rang 0) devant, jamais devant un lancement récent daté.
+    expect(recentlyPlayedAt(null, 0, now)).toEqual(new Date(windowStart + 60 * 60_000));
+    expect(recentlyPlayedAt(new Date(now - 30 * day), 2, now)).toEqual(
+      new Date(windowStart + 58 * 60_000),
+    );
+    expect(recentlyPlayedAt(null, 500, now)!.getTime()).toBeGreaterThan(windowStart);
+    expect(recentlyPlayedAt(null, 0, now)!.getTime()).toBeLessThan(now - 13 * day);
     // Une date déjà dans les deux semaines fait foi.
     expect(recentlyPlayedAt(new Date(now - 3 * day), 0, now)).toBeUndefined();
   });

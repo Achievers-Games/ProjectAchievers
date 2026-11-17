@@ -217,7 +217,7 @@ async function catchUpRecent(userId: string, steamId: string, checkedAppId?: str
     const changed = count ? count.unlocked > row.unlockedCount : minutes > row.playtimeMinutes;
     // Du temps en plus depuis la dernière lecture : le jeu a été lancé entre-temps. Sinon, le
     // jeu figure parmi ceux joués ces deux semaines : sans date aussi récente en base, il est
-    // daté à cette lecture, dans l'ordre de Steam.
+    // daté au début de la fenêtre, derrière tout lancement vraiment daté.
     const lastPlayedAt =
       steamPlayedAt(game, row.playtimeMinutes) ??
       recentlyPlayedAt(row.lastPlayedAt, recent.indexOf(game), now);
