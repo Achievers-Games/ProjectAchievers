@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { Worker } from 'node:worker_threads';
@@ -184,15 +185,43 @@ function render(svg: string, width: number, pixels: boolean): Promise<Rendered> 
 }
 
 /**
+ * Les PNG déjà rendus, par empreinte du SVG : une carte qui change change aussi de SVG, rien
+ * de périmé n'est donc servi. Plafonnés en octets (une carte pèse environ 500 Ko) ; deux
+ * demandes simultanées de la même carte partagent un seul rendu.
+ */
+const PNG_CACHE_BYTES = 20 * 1024 * 1024;
+const pngs = new Map<string, Promise<Uint8Array<ArrayBuffer>>>();
+let pngBytes = 0;
+
+/**
  * Le SVG rendu en PNG, par défaut au double de sa taille pour rester net sur écran dense.
  * L'image de partage reste à l'échelle 1 : les réseaux la veulent en 1200 × 630.
  */
-export async function svgToPng(
-  svg: string,
-  width: number,
-  scale = 2,
-): Promise<Uint8Array<ArrayBuffer>> {
-  return (await render(svg, width * scale, false)).data;
+export function svgToPng(svg: string, width: number, scale = 2): Promise<Uint8Array<ArrayBuffer>> {
+  const key = `${width * scale}:${createHash('sha256').update(svg).digest('base64url')}`;
+  const known = pngs.get(key);
+  if (known) {
+    // Relu : il repasse en tête, le plus ancien sortira le premier.
+    pngs.delete(key);
+    pngs.set(key, known);
+    return known;
+  }
+  const rendering = render(svg, width * scale, false).then(({ data }) => {
+    pngBytes += data.byteLength;
+    for (const [old, image] of pngs) {
+      if (pngBytes <= PNG_CACHE_BYTES) break;
+      if (old === key) continue;
+      pngs.delete(old);
+      void image.then((png) => (pngBytes -= png.byteLength)).catch(() => 0);
+    }
+    return data;
+  });
+  pngs.set(key, rendering);
+  // Un rendu raté ne reste pas en cache : la demande suivante retentera.
+  rendering.catch(() => {
+    if (pngs.get(key) === rendering) pngs.delete(key);
+  });
+  return rendering;
 }
 
 /** Les pixels bruts, en RGBA prémultiplié, pour qui assemble lui-même son fichier (le PDF). */

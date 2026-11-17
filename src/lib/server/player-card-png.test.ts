@@ -98,3 +98,34 @@ describe('image de partage', () => {
     expect(view.getUint32(20)).toBe(SHARE_HEIGHT);
   });
 });
+
+describe('cartes déjà rendues', () => {
+  const card = (displayName: string) =>
+    renderPlayerCard({
+      displayName,
+      handle: 'ada',
+      clan: null,
+      games: 1,
+      unlocked: 1,
+      cards: 0,
+      points: 0,
+      avatar: null,
+    });
+
+  it('ne dessine qu’une fois la même carte, même demandée deux fois en même temps', async () => {
+    const svg = card('Grace');
+    const [first, second] = await Promise.all([
+      svgToPng(svg, CARD_WIDTH),
+      svgToPng(svg, CARD_WIDTH),
+    ]);
+    expect(second).toBe(first);
+    expect(await svgToPng(svg, CARD_WIDTH)).toBe(first);
+  });
+
+  it('redessine une carte qui a changé', async () => {
+    const before = await svgToPng(card('Linus'), CARD_WIDTH);
+    const after = await svgToPng(card('Linus T.'), CARD_WIDTH);
+    expect(after).not.toBe(before);
+    expect([...after.subarray(0, 8)]).toEqual(PNG_SIGNATURE);
+  });
+});
