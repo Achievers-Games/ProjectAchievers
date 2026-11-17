@@ -9,6 +9,7 @@
   import Palette from '@lucide/svelte/icons/palette';
   import Avatar from '#lib/components/Avatar.svelte';
   import ProfileShare from '#lib/components/ProfileShare.svelte';
+  import PlaytimeBreakdown, { type PlaytimeLine } from '#lib/components/PlaytimeBreakdown.svelte';
   import PageBackdrop from '#lib/components/PageBackdrop.svelte';
   import { cssArt } from '#lib/art';
   import Empty from '#lib/components/Empty.svelte';
@@ -61,8 +62,9 @@
     isMe ? undefined : `/jeux/${card.slug}?joueur=${profile.user.handle}`;
   const playedHours = $derived(Math.round(profile.stats.playtimeMinutes / 60));
   /**
-   * Le temps de jeu rangé sous le compte qui l'a compté : PS4 et PS5 tiennent tous deux au compte
-   * PlayStation, et seul celui-là précise la console. Moins d'une heure ne s'affiche pas.
+   * Le temps de jeu rangé sous le compte qui l'a compté, une ligne par plateforme : PS4 et PS5
+   * tiennent toutes deux au compte PlayStation, chacune sur sa ligne. Moins d'une heure ne
+   * s'affiche pas.
    */
   const accountRows = $derived(
     profile.user.accounts.map((account) => ({
@@ -75,6 +77,18 @@
             : row.platform === account.provider),
       ),
     })),
+  );
+  const playtimeLines = $derived<PlaytimeLine[]>(
+    accountRows.flatMap(({ account, rows }) =>
+      rows.map((row) => ({
+        key: row.platform,
+        provider: account.provider,
+        console: row.platform === 'PS4' || row.platform === 'PS5' ? row.platform : null,
+        hours: m.playtime_short({ hours: formatNumber(Math.round(row.minutes / 60)) }),
+        href: account.profileUrl,
+        name: `${PROVIDER_LABELS[account.provider]} : ${account.displayName}`,
+      })),
+    ),
   );
   /** Steam est la seule source de temps de jeu : s'il le garde privé, il n'y a rien à additionner. */
   const playtimePrivate = $derived(
@@ -167,17 +181,19 @@
           </a>
         {/if}
       </p>
+      <!-- Le total seul ; son détail par plateforme s'ouvre au survol ou d'un clic. -->
       {#if playtimePrivate}
         <p class="text-sm text-muted" data-testid="profile-playtime">{m.playtime_private()}</p>
       {:else if playedHours > 0}
-        <p class="text-sm font-semibold text-ink" data-testid="profile-playtime">
-          {m.playtime_overall({ hours: formatNumber(playedHours) })}
-        </p>
+        <PlaytimeBreakdown
+          total={m.playtime_overall({ hours: formatNumber(playedHours) })}
+          lines={playtimeLines}
+        />
       {/if}
-      <!-- Chaque compte : son icône, qui mène au profil sur la plateforme, et ses heures à côté. -->
-      <ul class="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
-        {#each accountRows as { account, rows } (account.provider)}
-          <li class="flex items-center gap-1.5">
+      <!-- Les comptes, toujours là : chaque icône mène au profil sur sa plateforme. -->
+      <ul class="mt-1 flex flex-wrap items-center gap-3 text-muted">
+        {#each profile.user.accounts as account (account.provider)}
+          <li>
             <a
               href={account.profileUrl}
               target="_blank"
@@ -187,13 +203,6 @@
             >
               <ProviderIcon provider={account.provider} />
             </a>
-            {#each rows as row, index (row.platform)}
-              <span class="tabular">
-                {#if index}·{/if}
-                {#if rows.length > 1}{row.platform}{/if}
-                {m.playtime_short({ hours: formatNumber(Math.round(row.minutes / 60)) })}
-              </span>
-            {/each}
           </li>
         {/each}
       </ul>
