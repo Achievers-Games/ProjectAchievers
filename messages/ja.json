@@ -1974,5 +1974,6 @@
   "home_guides_official": "公式",
   "home_guides_community": "コミュニティ",
   "home_guides_official_empty": "公式ガイドはまだありません。",
-  "home_guides_community_empty": "コミュニティのガイドは高評価を得るとここに表示されます。"
+  "home_guides_community_empty": "コミュニティのガイドは高評価を得るとここに表示されます。",
+  "home_guides_by": "作成：{name}"
 }

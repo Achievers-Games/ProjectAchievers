@@ -2011,5 +2011,6 @@
   "home_guides_official": "Oficiales",
   "home_guides_community": "Comunidad",
   "home_guides_official_empty": "Todavía no hay guías oficiales.",
-  "home_guides_community_empty": "Las guías de la comunidad aparecen aquí cuando están bien valoradas."
+  "home_guides_community_empty": "Las guías de la comunidad aparecen aquí cuando están bien valoradas.",
+  "home_guides_by": "por {name}"
 }

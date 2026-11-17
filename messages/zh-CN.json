@@ -1974,5 +1974,6 @@
   "home_guides_official": "官方",
   "home_guides_community": "社区",
   "home_guides_official_empty": "暂无官方攻略。",
-  "home_guides_community_empty": "社区攻略获得好评后会显示在这里。"
+  "home_guides_community_empty": "社区攻略获得好评后会显示在这里。",
+  "home_guides_by": "作者：{name}"
 }
