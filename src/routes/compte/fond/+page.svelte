@@ -1,6 +1,8 @@
 <script lang="ts">
   import { m } from '#lib/paraglide/messages';
   import { enhance } from '$app/forms';
+  import { snapshot } from '$app/navigation';
+  import { page } from '$app/state';
   import Check from '@lucide/svelte/icons/check';
   import Sparkles from '@lucide/svelte/icons/sparkles';
   import Ban from '@lucide/svelte/icons/ban';
@@ -21,7 +23,7 @@
   type Look = (typeof data.preview)['banner'];
 
   /** Ce que porte une cible aujourd'hui, en quelques mots : « Auto · Hades », « Fond Steam »… */
-  function state({ mode, art }: Look) {
+  function lookLabel({ mode, art }: Look) {
     if (mode === 'off') return m.appearance_none();
     if (mode === 'steam') return m.appearance_steam();
     if (mode === 'auto')
@@ -47,6 +49,75 @@
   ]);
   const isBanner = $derived(data.target === 'banniere');
   const offLabel = $derived(isBanner ? m.banner_off() : m.background_off());
+
+  type Game = (typeof data.games)[number];
+
+  // La grille arrive par pages, comme la liste des jeux : la suivante se lit en approchant du bas.
+  let extra = $state<Game[]>([]);
+  let loadedPages = $state(0);
+  let loadedFor = $state<string | null>(null);
+  let loading = $state(false);
+  let failed = $state(false);
+  let request: AbortController | undefined;
+
+  /** Après un choix, la première page se relit : un jeu déjà là ne doit pas revenir deux fois. */
+  const games = $derived([
+    ...new Map([...data.games, ...extra].map((game) => [game.id, game])).values(),
+  ]);
+  const nextPage = $derived(2 + loadedPages);
+  const hasMore = $derived(nextPage <= data.pages);
+
+  // Autre onglet ou autre recherche : la grille repart de la page rendue par le serveur.
+  $effect(() => {
+    const search = page.url.search;
+    if (search === loadedFor) return;
+    request?.abort();
+    loadedFor = search;
+    extra = [];
+    loadedPages = 0;
+    loading = false;
+    failed = false;
+  });
+
+  async function loadMore() {
+    if (loading || !hasMore) return;
+    loading = true;
+    failed = false;
+    request = new AbortController();
+    const { signal } = request;
+    const query = new URLSearchParams({ cible: data.target, q: data.q, page: String(nextPage) });
+    try {
+      const response = await fetch(`/compte/fond/jeux?${query}`, { signal });
+      if (!response.ok) throw new Error(`Réponse ${response.status}`);
+      extra = [...extra, ...((await response.json()) as { games: Game[] }).games];
+      loadedPages += 1;
+      loading = false;
+    } catch {
+      if (signal.aborted) return;
+      failed = true;
+      loading = false;
+    }
+  }
+
+  function whenNear(element: HTMLElement) {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) loadMore();
+      },
+      { rootMargin: '600px' },
+    );
+    observer.observe(element);
+    return { destroy: () => observer.disconnect() };
+  }
+
+  snapshot<{ extra: Game[]; loadedPages: number; loadedFor: string | null }>({
+    capture: () => ({ extra: $state.snapshot(extra), loadedPages, loadedFor }),
+    restore: (saved) => {
+      extra = saved.extra;
+      loadedPages = saved.loadedPages;
+      loadedFor = saved.loadedFor;
+    },
+  });
 </script>
 
 <svelte:head><title>{m.appearance_title()} — Project Achievers</title></svelte:head>
@@ -76,7 +147,7 @@
       href="?cible=fond"
       class="look-page"
       aria-current={!isBanner ? 'page' : undefined}
-      aria-label="{m.background_page()} : {state(data.preview.background)}"
+      aria-label="{m.background_page()} : {lookLabel(data.preview.background)}"
     >
       <span class="look-chip"><Wallpaper size={13} aria-hidden="true" />{m.background_page()}</span>
     </a>
@@ -84,7 +155,7 @@
       href="?cible=banniere"
       class="look-banner"
       aria-current={isBanner ? 'page' : undefined}
-      aria-label="{m.banner_title()} : {state(data.preview.banner)}"
+      aria-label="{m.banner_title()} : {lookLabel(data.preview.banner)}"
       style:--art={data.preview.banner.art ? cssArt(data.preview.banner.art.images) : undefined}
     >
       {#if data.preview.person}
@@ -108,7 +179,7 @@
           <span class="block font-semibold text-ink">{target.label}</span>
           <span class="block text-xs text-muted">{target.desc}</span>
           <span class="mt-1 block truncate text-xs font-medium text-accent">
-            {state(target.look)}
+            {lookLabel(target.look)}
           </span>
         </span>
       </a>
@@ -201,9 +272,9 @@
       </form>
     </div>
 
-    {#if data.games.length}
+    {#if games.length}
       <ul class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {#each data.games as game (game.id)}
+        {#each games as game (game.id)}
           {@const current = data.mode === 'game' && data.chosen === game.id}
           <li>
             <form method="POST" action="?/choose" use:enhance={submit}>
@@ -234,6 +305,15 @@
           </li>
         {/each}
       </ul>
+      {#if hasMore}
+        {#key nextPage}
+          <div class="mt-4 flex justify-center" use:whenNear>
+            <button type="button" class="btn" disabled={loading} onclick={loadMore}>
+              {#if loading}{m.loading()}{:else if failed}{m.retry()}{:else}{m.show_more()}{/if}
+            </button>
+          </div>
+        {/key}
+      {/if}
     {:else}
       <Empty title={m.showcase_no_results()} />
     {/if}

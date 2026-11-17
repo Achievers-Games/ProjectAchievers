@@ -4,12 +4,9 @@ import { requireLogin } from '#lib/server/auth';
 import { db } from '#lib/server/db';
 import { fetchSteamLook } from '#lib/server/providers/steam';
 import { artNow } from '#lib/server/sync/content';
-import { onePerFamily, toBanner, userProfile, type ProfileBackground } from '#lib/server/queries';
-import { thumbArt } from '#lib/art';
+import { userProfile, type ProfileBackground } from '#lib/server/queries';
+import { appearanceGames } from '#lib/server/appearance-games';
 import type { Actions, PageServerLoad } from './$types';
-
-/** Assez pour choisir sans charger toute une bibliothèque Steam : la recherche fait le reste. */
-const SHOWN = 48;
 
 const requireUser = (locals: App.Locals) => requireLogin(locals, '/compte/fond');
 
@@ -71,7 +68,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
   const target = targetOf(url.searchParams.get('cible'));
   const fields = TARGETS[target];
 
-  const [profile, steam, rows, look] = await Promise.all([
+  const [profile, steam, look] = await Promise.all([
     db.user.findUniqueOrThrow({
       where: { id: user.id },
       select: {
@@ -85,37 +82,6 @@ export const load: PageServerLoad = async ({ locals, url }) => {
       },
     }),
     steamBackground(user.id),
-    db.userGame.findMany({
-      where: {
-        userId: user.id,
-        hidden: false,
-        game: {
-          headerUrl: { not: null },
-          // Une icône de trophée PlayStation ou Xbox étirée en fond est laide : seuls les jeux qui
-          // ont une grande image se proposent (images de la boutique Steam, ou d'un jeu Steam).
-          OR: [{ artUrl: { not: null } }, { heroUrl: { not: null } }, { platform: 'STEAM' }],
-          ...(q && { name: { contains: q, mode: 'insensitive' } }),
-        },
-      },
-      orderBy: [{ lastPlayedAt: { sort: 'desc', nulls: 'last' } }, { game: { name: 'asc' } }],
-      // Un jeu possédé sur plusieurs plateformes revient plusieurs fois : on en lit plus, puis on
-      // ne garde qu'une version par famille.
-      take: SHOWN * 3,
-      select: {
-        game: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            headerUrl: true,
-            artUrl: true,
-            heroUrl: true,
-            platform: true,
-            familyKey: true,
-          },
-        },
-      },
-    }),
     // Le profil tel qu'un visiteur le voit : l'aperçu montre exactement la même chose.
     userProfile(user.handle, user.id, user.showAdult),
   ]);
@@ -132,21 +98,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
       banner: { mode: modeOf(profile, 'banniere'), art: shown(look?.banner ?? null) },
       background: { mode: modeOf(profile, 'fond'), art: shown(look?.background ?? null) },
     },
-    games: onePerFamily(
-      rows.map((row) => row.game),
-      chosen,
-    )
-      .slice(0, SHOWN)
-      .map((game) => ({
-        id: game.id,
-        // Chaque onglet montre l'image qu'il posera : le bandeau pour la bannière, le fond de la
-        // page boutique pour le fond.
-        ...toBanner(
-          { ...game, headerUrl: game.headerUrl as string },
-          target === 'banniere' ? 'banner' : 'background',
-        ),
-        thumb: target === 'banniere' ? null : game.artUrl ? thumbArt(game.artUrl) : null,
-      })),
+    ...(await appearanceGames(user.id, target, { q, chosen })),
   };
 };
 
