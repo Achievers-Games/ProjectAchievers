@@ -160,6 +160,10 @@
     name: data.game.name,
     ...(data.game.headerUrl ? { image: data.game.headerUrl } : {}),
   }}
+  breadcrumbs={[
+    { name: m.nav_games(), path: '/jeux' },
+    { name: data.game.name, path: gameHref(data.game.slug) },
+  ]}
 />
 
 {#if data.game.headerUrl}

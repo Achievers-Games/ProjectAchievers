@@ -322,6 +322,7 @@ export async function clanPage(slug: string) {
     .sort((a, b) => b.achievements - a.achievements);
   return {
     name: clan.name,
+    slug: clan.slug,
     createdAt: clan.createdAt,
     image: clanImageUrl(clan),
     frame: clan.frame,

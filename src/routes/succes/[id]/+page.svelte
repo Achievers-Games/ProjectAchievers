@@ -90,6 +90,11 @@
         description: data.achievement.description,
         about: { '@type': 'VideoGame', name: data.achievement.game.name },
       }}
+  breadcrumbs={[
+    { name: m.nav_games(), path: '/jeux' },
+    { name: data.achievement.game.name, path: `/jeux/${data.achievement.game.slug}` },
+    { name: data.achievement.name, path: `/succes/${data.achievement.id}` },
+  ]}
 />
 
 <div class="mx-auto max-w-3xl space-y-8">

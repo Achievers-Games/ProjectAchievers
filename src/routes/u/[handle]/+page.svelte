@@ -125,6 +125,10 @@
       ...(profile.user.avatarUrl ? { image: profile.user.avatarUrl } : {}),
     },
   }}
+  breadcrumbs={[
+    { name: m.nav_community(), path: '/communaute' },
+    { name: profile.user.displayName, path: `/u/${profile.user.handle}` },
+  ]}
 />
 
 {#if profile.background}

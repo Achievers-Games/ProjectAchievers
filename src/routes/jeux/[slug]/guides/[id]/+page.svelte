@@ -69,6 +69,11 @@
     datePublished: new Date(data.guide.createdAt).toISOString(),
     dateModified: new Date(data.guide.updatedAt).toISOString(),
   }}
+  breadcrumbs={[
+    { name: m.nav_games(), path: '/jeux' },
+    { name: data.game.name, path: `/jeux/${data.game.slug}` },
+    { name: data.guide.title, path: data.canonicalPath },
+  ]}
 />
 
 <div class="mx-auto max-w-5xl space-y-6">

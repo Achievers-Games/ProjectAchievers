@@ -16,6 +16,10 @@
 <Seo
   title="{clan.name} — Project Achievers"
   description="{clan.name} : {m.count_achievements({ count: clan.achievements })}"
+  breadcrumbs={[
+    { name: m.clans_title(), path: '/clans' },
+    { name: clan.name, path: `/clans/${clan.slug}` },
+  ]}
 />
 
 <div class="mx-auto max-w-2xl space-y-6">

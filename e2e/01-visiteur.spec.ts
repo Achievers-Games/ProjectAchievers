@@ -130,6 +130,22 @@ test.describe('visiteur', () => {
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Léa');
   });
 
+  test('donne aux moteurs le fil d’Ariane de la fiche', async ({ page }) => {
+    await page.goto('/jeux/portal-2');
+    const origin = new URL(page.url()).origin;
+    const blocks = await page
+      .locator('script[type="application/ld+json"]')
+      .evaluateAll((scripts) => scripts.map((script) => JSON.parse(script.textContent ?? '')));
+    expect(blocks.find((block) => block['@type'] === 'BreadcrumbList')).toEqual({
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Jeux', item: `${origin}/jeux` },
+        { '@type': 'ListItem', position: 2, name: 'Portal 2', item: `${origin}/jeux/portal-2` },
+      ],
+    });
+  });
+
   test('révèle les succès cachés à la demande', async ({ page }) => {
     await page.goto('/jeux/portal-2');
     const secret = page.getByRole('link', { name: /Portal 2 — étape 51/ });

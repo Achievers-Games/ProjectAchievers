@@ -2,6 +2,7 @@
   import { page } from '$app/state';
   import { deLocalizeUrl, getLocale, locales } from '#lib/paraglide/runtime';
   import { localizedPath } from '#lib/localized-path';
+  import { breadcrumbList, type Crumb } from '#lib/breadcrumbs';
 
   interface Props {
     /** Titre complet de l'onglet, déjà suivi du nom du site si besoin. */
@@ -18,6 +19,8 @@
     type?: 'website' | 'article' | 'profile';
     /** Données structurées schema.org, lues par les moteurs pour les résultats enrichis. */
     jsonLd?: Record<string, unknown> | null;
+    /** Fil d'Ariane jusqu'à cette page incluse (Jeux › Hades › Succès), pour les résultats Google. */
+    breadcrumbs?: Crumb[] | null;
     /** Page à ne pas indexer, comme un succès caché qui ne montre rien. */
     noindex?: boolean;
   }
@@ -32,6 +35,7 @@
     imageSize = null,
     type = 'website',
     jsonLd = null,
+    breadcrumbs = null,
     noindex = false,
   }: Props = $props();
 
@@ -49,11 +53,17 @@
   const summary = $derived(shareDescription ?? description);
 
   // `<` échappé : un texte saisi par un joueur ne peut pas refermer la balise du script.
+  const script = (data: Record<string, unknown>) =>
+    `<script type="application/ld+json">${JSON.stringify(data).replace(/</g, '\\u003c')}</` +
+    'script>';
   const structured = $derived(
-    jsonLd
-      ? `<script type="application/ld+json">${JSON.stringify({ '@context': 'https://schema.org', ...jsonLd }).replace(/</g, '\\u003c')}</` +
-          'script>'
-      : '',
+    [
+      jsonLd ? script({ '@context': 'https://schema.org', ...jsonLd }) : '',
+      // Une page exclue des moteurs n'a pas de place à montrer dans leurs résultats.
+      breadcrumbs?.length && !noindex
+        ? script(breadcrumbList(breadcrumbs, page.url.origin, getLocale()))
+        : '',
+    ].join(''),
   );
 </script>
 
