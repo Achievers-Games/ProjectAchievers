@@ -206,6 +206,7 @@
       {#each platforms as platform (platform.label)}
         <a
           href={hrefWith({ plateforme: platform.value })}
+          rel="nofollow"
           data-sveltekit-reset="false"
           aria-current={(data.params.plateforme ?? null) === platform.value ? 'true' : undefined}
           class="px-3 py-1.5 text-sm transition-colors"
@@ -226,6 +227,7 @@
         {#each collections.filter((item) => !data.player || !['caches', 'saison', 'non-possedes'].includes(item.value ?? '')) as item (item.label)}
           <a
             href={hrefWith({ filtre: item.value })}
+            rel="nofollow"
             data-sveltekit-reset="false"
             aria-current={(data.params.filtre ?? null) === item.value ? 'true' : undefined}
             class="whitespace-nowrap px-3 py-1.5 text-sm transition-colors"
@@ -277,6 +279,7 @@
       </select>
       <a
         href={hrefWith({ vue: data.params.vue === 'grille' ? 'liste' : null })}
+        rel="nofollow"
         data-sveltekit-reset="false"
         class="btn w-9 px-0"
         aria-label={data.params.vue === 'grille' ? m.view_list() : m.view_grid()}

@@ -12,6 +12,9 @@ const UNWANTED = [
   'PetalBot',
 ];
 
+/** Les paramètres de `/jeux` qui multiplient les adresses sans rien apporter aux moteurs. */
+const JEUX_FILTERS = ['joueur', 'plateforme', 'filtre', 'tri', 'vue', 'q'];
+
 /** Servi par le site pour pointer le plan du site sur l'adresse publique, quelle qu'elle soit. */
 export const GET: RequestHandler = () =>
   new Response(
@@ -33,6 +36,9 @@ export const GET: RequestHandler = () =>
       'Disallow: /*/connexion',
       'Allow: /connexion$',
       'Allow: /*/connexion$',
+      // Les filtres de la liste des jeux se combinent à l'infini : Google en a exploré des milliers,
+      // vides pour la plupart (soft 404). Le niveau et la pagination restent ouverts.
+      ...JEUX_FILTERS.flatMap((key) => [`Disallow: /jeux?*${key}=`, `Disallow: /*/jeux?*${key}=`]),
       '',
       `Sitemap: ${env().ORIGIN}/sitemap.xml`,
       '',
