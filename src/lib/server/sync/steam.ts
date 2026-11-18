@@ -404,7 +404,7 @@ async function fetchSchema(appId: number): Promise<AchievementInput[] | null> {
       rarity.set(a.name, Number(a.percent));
     }
   }
-  return mapSchema(achievements, rarity);
+  return mapSchema(await withHiddenDescriptions(achievements, String(appId), 'french'), rarity);
 }
 
 const STEAM_LANGUAGES: Record<Locale, string> = {
@@ -421,22 +421,11 @@ const STEAM_LANGUAGES: Record<Locale, string> = {
 export async function fetchSteamTexts(appId: string, locale: Locale) {
   const achievements = await fetchSchemaAchievements(appId, STEAM_LANGUAGES[locale]);
   if (!achievements) throw new Error('GetSchemaForGame sans réponse');
-  const owner = await db.linkedAccount.findFirst({
-    where: {
-      provider: 'STEAM',
-      user: { games: { some: { game: { platform: 'STEAM', platformGameId: appId } } } },
-    },
-    select: { providerUserId: true },
-  });
-  // Les textes de l'API suffisent : la page publique ne fait que compléter les succès cachés.
-  const hidden = owner
-    ? await fetchPageDescriptions(owner.providerUserId, appId, locale).catch(() => null)
-    : null;
-
-  return achievements.map((a) => ({
+  const texts = await withHiddenDescriptions(achievements, appId, STEAM_LANGUAGES[locale]);
+  return texts.map((a) => ({
     platformAchievementId: a.name,
     name: a.displayName || a.name,
-    description: a.description || hidden?.get(a.name) || '',
+    description: a.description ?? '',
   }));
 }
 
@@ -448,55 +437,99 @@ const unescape = (text: string) => {
   }
 };
 
-/** Lit dans la page d'un joueur les données du site Steam, seules à décrire les succès cachés. */
-export function parseSteamPage(html: string) {
-  const entries =
-    /\\"api_name\\":\\"(.*?)\\",\\"name\\":\\".*?\\",\\"description\\":\\"(.*?)\\",\\"hidden\\":/g;
+/** Lit le schéma JSON intégré à la page publique des succès. */
+export function parseSteamPage(html: string, appId: string) {
   const descriptions = new Map<string, string>();
-  for (const [, apiName, description] of html.matchAll(entries)) {
-    if (apiName && description) descriptions.set(apiName, unescape(unescape(description)));
+  const payload = /<script\b[^>]*\bid="valve-ssr-data"[^>]*>([\s\S]*?)<\/script>/i.exec(html)?.[1];
+  if (!payload) return descriptions;
+
+  try {
+    const { renderContext } = JSON.parse(payload);
+    const data = renderContext?.queryData;
+    const cache = typeof data === 'string' ? JSON.parse(data) : data;
+    const queries = Array.isArray(cache?.queries) ? cache.queries : [];
+    const schema = queries.find((query: { queryKey?: unknown } | null) => {
+      const queryKey = query?.queryKey;
+      return (
+        Array.isArray(queryKey) &&
+        queryKey[0] === 'achievements' &&
+        String(queryKey[1]) === appId &&
+        queryKey[2] === 'schema_v2'
+      );
+    });
+    const groups = schema?.state?.data?.groups;
+    for (const group of Array.isArray(groups) ? groups : []) {
+      for (const entry of Array.isArray(group?.achievements) ? group.achievements : []) {
+        if (
+          entry?.hidden === true &&
+          typeof entry.api_name === 'string' &&
+          typeof entry.description === 'string' &&
+          entry.description.trim()
+        ) {
+          descriptions.set(entry.api_name, entry.description);
+        }
+      }
+    }
+  } catch {
+    // Steam peut modifier le format de la page. Les données de l'API restent utilisables.
   }
   return descriptions;
 }
 
-async function fetchPageDescriptions(steamId: string, appId: string, locale: Locale) {
-  const response = await fetchRetry(
-    `https://steamcommunity.com/profiles/${steamId}/stats/${appId}/achievements/`,
-    { headers: { Cookie: `Steam_Language=${STEAM_LANGUAGES[locale]}` } },
-  );
-  return response.ok ? parseSteamPage(await response.text()) : new Map<string, string>();
+async function withHiddenDescriptions(
+  achievements: SchemaAchievement[],
+  appId: string,
+  language: string,
+) {
+  if (!achievements.some((entry) => entry.hidden && !entry.description?.trim()))
+    return achievements;
+  const descriptions = await fetchRetry(
+    `https://steamcommunity.com/stats/${encodeURIComponent(appId)}/achievements/`,
+    {
+      headers: { Cookie: `Steam_Language=${language}` },
+      signal: AbortSignal.timeout(10_000),
+    },
+    1,
+  )
+    .then(async (response) => (response.ok ? parseSteamPage(await response.text(), appId) : null))
+    .catch(() => null);
+
+  return achievements.map((entry) => {
+    const description = descriptions?.get(entry.name);
+    return entry.hidden && !entry.description?.trim() && description
+      ? { ...entry, description }
+      : entry;
+  });
 }
 
 const HIDDEN_BATCH = 60;
 const HIDDEN_PAUSE = 2_000;
 
-/** L'API ne décrit pas les succès cachés : la page d'un joueur qui a le jeu comble ces trous. */
+/** Complète les descriptions cachées encore absentes du catalogue. */
 export async function fillHiddenDescriptions(limit = HIDDEN_BATCH, pause = HIDDEN_PAUSE) {
-  const games = await db.$queryRaw<{ id: string; appId: string; steamId: string }[]>`
-    SELECT id, "appId", "steamId"
-    FROM (
-      SELECT DISTINCT ON (g.id) g.id, g."platformGameId" AS "appId", la."providerUserId" AS "steamId"
-      FROM "Game" g
-      JOIN "Achievement" a ON a."gameId" = g.id AND a.hidden AND a.description = ''
-      JOIN "UserGame" ug ON ug."gameId" = g.id
-      JOIN "LinkedAccount" la ON la."userId" = ug."userId" AND la.provider = 'STEAM'
-      WHERE g.platform = 'STEAM'
-    ) missing
+  const games = await db.$queryRaw<{ id: string; appId: string }[]>`
+    SELECT g.id, g."platformGameId" AS "appId"
+    FROM "Game" g
+    WHERE g.platform = 'STEAM' AND EXISTS (
+      SELECT 1 FROM "Achievement" a
+      WHERE a."gameId" = g.id AND a.hidden AND a.description = ''
+    )
     ORDER BY random()
     LIMIT ${limit}`;
 
   let filled = 0;
   for (const game of games) {
-    const descriptions = await fetchPageDescriptions(game.steamId, game.appId, baseLocale);
-    await db.$transaction(
-      [...descriptions].map(([platformAchievementId, description]) =>
+    const texts = await fetchSteamTexts(game.appId, baseLocale).catch(() => []);
+    const descriptions = texts.filter((entry) => entry.description.trim());
+    const updates = await db.$transaction(
+      descriptions.map(({ platformAchievementId, description }) =>
         db.achievement.updateMany({
-          where: { gameId: game.id, platformAchievementId, description: '' },
+          where: { gameId: game.id, platformAchievementId, hidden: true, description: '' },
           data: { description },
         }),
       ),
     );
-    filled += descriptions.size ? 1 : 0;
+    if (updates.some(({ count }) => count > 0)) filled++;
     await sleep(pause);
   }
   return filled;

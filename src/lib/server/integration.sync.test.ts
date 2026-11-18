@@ -12,7 +12,7 @@ import { fetchPlayingGames, fetchSteamSummaries } from './providers/steam';
 import { enqueueSync, refreshAccounts, runSync, startWorkers } from './sync/queue';
 import { artGames, isAdultOnly, rateGames, tagGames } from './sync/content';
 import { markVisible, onCard, onSync, type SyncEvent } from './sync/events';
-import { parseSteamPage, steamImages } from './sync/steam';
+import { fetchSteamTexts, parseSteamPage, steamImages } from './sync/steam';
 import { saveAchievements, saveProgress, upsertGame } from './sync/store';
 import { matchTopAchievements } from './sync/steam-match';
 import { PREFIX, STEAM_ID, identity, setupIntegration } from './test-helpers';
@@ -1670,11 +1670,69 @@ describe('synchronisation Steam', () => {
 });
 
 describe('succès cachés Steam', () => {
-  it('lit leur description dans la page du joueur', () => {
-    const page = String.raw`{\"api_name\":\"BOSS\",\"name\":\"On répète\",\"description\":\"Éliminer le \\\"Polyèdre\\\"\",\"hidden\":true,\"icon\":\"a.jpg\"},{\"api_name\":\"VIDE\",\"name\":\"Rien\",\"description\":\"\",\"hidden\":true}`;
-    const descriptions = parseSteamPage(page);
-    expect(descriptions.get('BOSS')).toBe('Éliminer le "Polyèdre"');
-    expect(descriptions.has('VIDE')).toBe(false);
+  const queryData = {
+    queries: [
+      {
+        queryKey: ['achievements', 42, 'schema_v2'],
+        state: {
+          data: {
+            groups: [
+              {
+                achievements: [
+                  { api_name: 'BOSS', description: 'Éliminer le "Polyèdre"', hidden: true },
+                  { api_name: 'API', description: 'Description de la page', hidden: true },
+                  { api_name: 'VIDE', description: '', hidden: true },
+                ],
+              },
+            ],
+          },
+        },
+      },
+    ],
+  };
+  const page =
+    '<script type="application/json" id="valve-ssr-data">' +
+    JSON.stringify({ renderContext: { queryData: JSON.stringify(queryData) } }) +
+    '</script>';
+
+  it('lit le JSON de la page publique par identifiant de jeu et de succès', () => {
+    expect(parseSteamPage(page, '42').get('BOSS')).toBe('Éliminer le "Polyèdre"');
+    expect(parseSteamPage(page, '42').has('VIDE')).toBe(false);
+    expect(parseSteamPage(page, '43').size).toBe(0);
+    expect(parseSteamPage('<script id="valve-ssr-data">{</script>', '42').size).toBe(0);
+  });
+
+  it('garde le texte de l’API et complète seulement les succès cachés sans description', async () => {
+    const fetchMock = vi.fn(async (url: string | URL) =>
+      String(url).includes('GetSchemaForGame')
+        ? Response.json({
+            game: {
+              availableGameStats: {
+                achievements: [
+                  {
+                    name: 'API',
+                    displayName: 'API',
+                    hidden: 1,
+                    description: 'Description officielle',
+                  },
+                  { name: 'BOSS', displayName: 'Boss', hidden: 1 },
+                  { name: 'VIDE', displayName: 'Vide', hidden: 0 },
+                ],
+              },
+            },
+          })
+        : new Response(page),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    expect((await fetchSteamTexts('42', 'fr')).map((entry) => entry.description)).toEqual([
+      'Description officielle',
+      'Éliminer le "Polyèdre"',
+      '',
+    ]);
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      'https://steamcommunity.com/stats/42/achievements/',
+      expect.objectContaining({ headers: { Cookie: 'Steam_Language=french' } }),
+    );
   });
 });
 
