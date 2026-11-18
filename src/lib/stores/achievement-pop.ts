@@ -8,12 +8,18 @@ export interface SitePop {
   icon: string;
   category: string;
   level: number;
+  /** Le niveau du palier atteint, de Bronze (1) à Légendaire (6) : la couleur du badge. */
+  tier?: number;
   /** L'image du succès d'une plateforme, déjà dessinée par elle. */
   image?: string | null;
   /** Le jeu d'où vient le succès, pour les plateformes. */
   game?: string;
-  /** Le succès de plateforme annoncé : le serveur attend que le joueur l'ait vu. */
-  unlockId?: string;
+  /** Où mène un clic : le succès, ou la page du jeu quand plusieurs se fêtent ensemble. */
+  href?: string;
+  /** Plusieurs succès d'un même jeu, réunis en une seule annonce. */
+  count?: number;
+  /** Les succès de plateforme annoncés : le serveur attend que le joueur les ait vus. */
+  unlocks?: UnlockPop[];
 }
 
 /** Une annonce de la pile : un succès à la fois. */
@@ -72,39 +78,68 @@ function acknowledge(ids: string[]) {
 export function celebrateOnce(unlocks: UnlockPop[]) {
   if (!unlocks.length) return;
   const seen = readSeen();
-  const queued = new Set(get(popQueue).map((item) => item.pop.unlockId));
+  const queued = new Set(get(popQueue).flatMap((item) => idsOf(item.pop)));
   const fresh = unlocks.filter((unlock) => !seen[unlock.id] && !queued.has(unlock.id));
-  celebrate(
-    fresh.map(({ id, title, icon, game }) => ({
-      title,
-      game,
-      icon: '',
-      category: 'platform',
-      level: 0,
-      image: icon,
-      unlockId: id,
-    })),
-  );
+  if (!fresh.length) return;
+  popQueue.update((queue) => {
+    const next = [...queue];
+    // Pas de `Map.groupBy` ici : ce code tourne dans des navigateurs qui ne l'ont pas encore.
+    const byGame = new Map<string, UnlockPop[]>();
+    for (const unlock of fresh)
+      byGame.set(unlock.slug, [...(byGame.get(unlock.slug) ?? []), unlock]);
+    for (const [slug, list] of byGame) {
+      // Le jeu attend déjà derrière : ses nouveaux succès le rejoignent. Jamais celui affiché,
+      // qui changerait sous les yeux du joueur.
+      const at = next.findIndex((item, index) => index > 0 && item.pop.unlocks?.[0]?.slug === slug);
+      if (at > 0) next[at] = { ...next[at]!, pop: gamePop([...next[at]!.pop.unlocks!, ...list]) };
+      else next.push({ id: nextId++, pop: gamePop(list) });
+    }
+    return next;
+  });
 }
+
+/**
+ * Les succès d'un jeu : un seul garde son image et mène à sa page ; plusieurs se fêtent
+ * ensemble et mènent au jeu, plutôt que de défiler un par un.
+ */
+function gamePop(unlocks: UnlockPop[]): SitePop {
+  const [first] = unlocks as [UnlockPop, ...UnlockPop[]];
+  const base = { icon: '', category: 'platform', level: 0, image: first.icon, unlocks };
+  if (unlocks.length === 1) {
+    return { ...base, title: first.title, game: first.game, href: `/succes/${first.id}` };
+  }
+  return { ...base, title: first.game, count: unlocks.length, href: `/jeux/${first.slug}` };
+}
+
+const idsOf = (pop: SitePop) => pop.unlocks?.map((unlock) => unlock.id) ?? [];
 
 /**
  * L'annonce s'affiche, onglet visible. Faux si un autre onglet l'a déjà montrée entre-temps :
  * elle quitte alors la pile sans se rejouer.
  */
 export function present(item: PopItem): boolean {
-  const id = item.pop.unlockId;
-  if (!id) return true;
-  if (readSeen()[id]) {
+  const ids = idsOf(item.pop);
+  if (!ids.length) return true;
+  const seen = readSeen();
+  if (ids.every((id) => seen[id])) {
     dismissPop(item.id);
     return false;
   }
-  acknowledge([id]);
+  acknowledge(ids);
   return true;
 }
 
+/**
+ * Des succès du site : rares et propres au site, ils passent devant les jeux qui attendent,
+ * sans remplacer l'annonce déjà à l'écran.
+ */
 export function celebrate(pops: SitePop[]) {
   if (!pops.length) return;
-  popQueue.update((queue) => [...queue, ...pops.map((pop) => ({ id: nextId++, pop }))]);
+  popQueue.update((queue) => {
+    const items = pops.map((pop) => ({ id: nextId++, pop }));
+    const at = queue.findIndex((item, index) => index > 0 && item.pop.category === 'platform');
+    return at < 0 ? [...queue, ...items] : [...queue.slice(0, at), ...items, ...queue.slice(at)];
+  });
 }
 
 export function dismissPop(id: number) {
@@ -117,7 +152,7 @@ export function dismissAllPops() {
 
 /** Le joueur ferme la pile : ceux qui attendaient derrière comptent pour vus. */
 export function closeAllPops() {
-  const ids = get(popQueue).flatMap((item) => (item.pop.unlockId ? [item.pop.unlockId] : []));
+  const ids = get(popQueue).flatMap((item) => idsOf(item.pop));
   acknowledge(ids);
   dismissAllPops();
 }

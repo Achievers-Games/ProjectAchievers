@@ -10,6 +10,8 @@ export interface UnlockPop {
   title: string;
   icon: string | null;
   game: string;
+  /** L'adresse du jeu : plusieurs succès d'un même jeu se fêtent ensemble et mènent à lui. */
+  slug: string;
 }
 
 export interface SyncEvent {

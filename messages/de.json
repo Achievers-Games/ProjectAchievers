@@ -1361,8 +1361,10 @@
       }
     }
   ],
-  "ach_pop_next": "Nächsten zeigen",
-  "ach_pop_close_all": "Alle schließen",
+  "ach_pop_close_all": "Alle überspringen",
+  "ach_pop_group": "{count} Erfolge freigeschaltet!",
+  "ach_pop_open": "Ansehen",
+  "ach_pop_skip": "Überspringen",
   "clan_flag": "Unangemessener Name",
   "clan_flag_help": "Entfernt diesen Namen: Der Clan erhält einen neutralen Namen und sein Anführer muss einen neuen wählen.",
   "clan_renamed": "Clan umbenannt.",

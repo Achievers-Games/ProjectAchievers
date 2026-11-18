@@ -62,17 +62,38 @@ describe('succès affiché par-dessus la page', () => {
     let state: DocumentVisibilityState = 'hidden';
     vi.spyOn(document, 'visibilityState', 'get').mockImplementation(() => state);
 
-    celebrateOnce([{ id: 'succes-1', title: 'Bêta', icon: null, game: 'Tunic' }]);
+    celebrateOnce([{ id: 'succes-1', title: 'Bêta', icon: null, game: 'Tunic', slug: 'tunic' }]);
     const { container } = render(AchievementPop);
     await tick();
     // Téléphone en veille : rien ne s'affiche, le serveur garde le succès à fêter.
-    expect(container.querySelector('button.pop')).toBeNull();
+    expect(container.querySelector('.pop')).toBeNull();
     expect(fetchMock).not.toHaveBeenCalled();
 
     state = 'visible';
     document.dispatchEvent(new Event('visibilitychange'));
     await tick();
-    expect(container.querySelector('button.pop')?.textContent).toContain('Bêta');
+    expect(container.querySelector('.pop')?.textContent).toContain('Bêta');
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('ouvre le succès au clic, et la croix ou Échap passent au suivant', async () => {
+    celebrate([
+      { ...pop('Premier'), href: '/u/demo/succes#succes-cards_1' },
+      pop('Deuxième'),
+      pop('Troisième'),
+    ]);
+    const { container } = render(AchievementPop);
+    const card = container.querySelector('a.pop') as HTMLAnchorElement;
+    expect(card.getAttribute('href')).toBe('/u/demo/succes#succes-cards_1');
+    // L'invitation à ouvrir, qui n'existe que sur une annonce qui mène quelque part.
+    expect(card.querySelector('.open')).not.toBeNull();
+
+    (container.querySelector('button.pop-skip') as HTMLButtonElement).click();
+    await tick();
+    expect(container.querySelector('.pop')?.textContent).toContain('Deuxième');
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    await tick();
+    expect(container.querySelector('.pop')?.textContent).toContain('Troisième');
   });
 });

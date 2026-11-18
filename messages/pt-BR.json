@@ -1361,8 +1361,10 @@
       }
     }
   ],
-  "ach_pop_next": "Ver a próxima",
-  "ach_pop_close_all": "Fechar tudo",
+  "ach_pop_close_all": "Pular tudo",
+  "ach_pop_group": "{count} conquistas desbloqueadas!",
+  "ach_pop_open": "Ver",
+  "ach_pop_skip": "Pular",
   "clan_flag": "Nome inadequado",
   "clan_flag_help": "Remove este nome: o clã recebe um nome neutro e o líder precisa escolher outro.",
   "clan_renamed": "Clã renomeado.",

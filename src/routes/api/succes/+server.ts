@@ -15,7 +15,13 @@ export const GET: RequestHandler = async ({ locals, url }) => {
     where: { userId: locals.user.id, code: { in: codes } },
     select: { code: true },
   });
-  return json(rows.map((row) => sitePop(row.code)));
+  // Un clic sur l'annonce mène à la carte du succès, sur la page des succès du joueur.
+  return json(
+    rows.map((row) => ({
+      ...sitePop(row.code),
+      href: `/u/${locals.user!.handle}/succes#succes-${row.code}`,
+    })),
+  );
 };
 
 function isTimeZone(zone: string) {

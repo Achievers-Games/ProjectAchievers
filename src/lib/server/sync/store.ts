@@ -421,7 +421,12 @@ export async function recentUnlocks(userId: string, limit = 3) {
     take: limit,
     select: {
       achievement: {
-        select: { id: true, name: true, iconUrl: true, game: { select: { name: true } } },
+        select: {
+          id: true,
+          name: true,
+          iconUrl: true,
+          game: { select: { name: true, slug: true } },
+        },
       },
     },
   });
@@ -430,6 +435,7 @@ export async function recentUnlocks(userId: string, limit = 3) {
     title: achievement.name,
     icon: achievement.iconUrl,
     game: achievement.game.name,
+    slug: achievement.game.slug,
   }));
 }
 

@@ -35,15 +35,15 @@ export const ready = (page: Page) =>
 
 /**
  * Ferme les succès qui se fêtent à l'écran : ils arrivent quand ils veulent, en bas au centre, et
- * recouvrent parfois le bouton que le test doit cliquer. Plusieurs : « Tout fermer » ; un seul :
- * un clic dessus le range.
+ * recouvrent parfois le bouton que le test doit cliquer. Plusieurs : « Tout passer » ; un seul :
+ * sa croix le range (un clic sur la carte, lui, ouvrirait le succès).
  */
 export async function closePops(page: Page) {
   for (let tries = 0; tries < 5; tries++) {
     const all = page.locator('.pop-zone .close-all');
-    const pop = page.locator('.pop-zone .pop').first();
+    const skip = page.locator('.pop-zone .pop-skip').first();
     if (await all.isVisible()) await all.click();
-    else if (await pop.isVisible()) await pop.click();
+    else if (await skip.isVisible()) await skip.click();
     else return;
   }
 }

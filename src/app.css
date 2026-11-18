@@ -619,6 +619,23 @@
   text-shadow: 0 0 12px rgb(255 90 31 / 0.9);
 }
 
+/* La carte qu'une annonce de succès vient d'ouvrir : un contour qui pulse, le temps de la voir. */
+.site-card[data-focus] {
+  outline: 3px solid rgb(var(--accent));
+  outline-offset: 3px;
+  animation: site-card-focus 0.65s ease-in-out 4 alternate;
+}
+@keyframes site-card-focus {
+  to {
+    outline-color: rgb(var(--accent) / 0.25);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-card[data-focus] {
+    animation: none;
+  }
+}
+
 /* Un succès du site à paliers prend la couleur du dernier palier obtenu, comme une carte de jeu. */
 .site-card[data-tier] {
   border: var(--tier-border) solid transparent;

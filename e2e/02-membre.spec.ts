@@ -51,7 +51,13 @@ test.describe('membre', () => {
       achievements: 1,
       quiet: true,
       unlocks: [
-        { id: 'steam-1', title: 'Je refuse qu’on m’enferme', icon, game: 'Baldur’s Gate 3' },
+        {
+          id: 'steam-1',
+          title: 'Je refuse qu’on m’enferme',
+          icon,
+          game: 'Baldur’s Gate 3',
+          slug: 'baldurs-gate-3',
+        },
       ],
     };
     await page.route('**/api/sync/events', (route) =>
@@ -68,6 +74,56 @@ test.describe('membre', () => {
     await expect(pop.locator('.game')).toHaveText('Baldur’s Gate 3');
     // La vignette de la plateforme remplace le badge du site.
     await expect(pop.locator('img.art')).toHaveAttribute('src', icon);
+    // Un clic sur la carte mène au succès lui-même.
+    await expect(pop).toHaveAttribute('href', '/succes/steam-1');
+  });
+
+  test('réunit les succès d’un même jeu en une annonce, que la croix fait passer', async ({
+    page,
+  }) => {
+    await login(page);
+    const unlock = (id: string, title: string) => ({
+      id,
+      title,
+      icon: null,
+      game: 'Baldur’s Gate 3',
+      slug: 'baldurs-gate-3',
+    });
+    const event = {
+      provider: 'STEAM',
+      status: 'COMPLETED',
+      processed: 1,
+      total: 1,
+      achievements: 2,
+      quiet: true,
+      unlocks: [unlock('steam-a', 'Premier'), unlock('steam-b', 'Second')],
+    };
+    await page.route('**/api/sync/events', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'text/event-stream',
+        body: `data: ${JSON.stringify(event)}\n\n`,
+      }),
+    );
+    await page.goto('/');
+    await ready(page);
+
+    const pop = page.locator('.pop-zone .pop').first();
+    await expect(pop.locator('.heading')).toHaveText('2 succès débloqués !');
+    await expect(pop.locator('.title')).toHaveText('Baldur’s Gate 3');
+    await expect(pop).toHaveAttribute('href', '/jeux/baldurs-gate-3');
+    await page.locator('.pop-zone .pop-skip').click();
+    await expect(page.locator('.pop-zone .pop')).toHaveCount(0);
+    await expect(page).toHaveURL(/\/$/);
+  });
+
+  test('ouvre la page des succès sur la carte annoncée', async ({ page }) => {
+    await login(page);
+    await page.goto('/u/demo/succes#succes-cards_1');
+    await ready(page);
+    const card = page.locator('li[data-codes~="cards_1"]');
+    await expect(card).toHaveAttribute('data-focus', '');
+    await expect(card).toBeInViewport();
   });
 
   test('fait glisser le fil en direct à la souris sans ouvrir une carte', async ({ page }) => {

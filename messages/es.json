@@ -1361,8 +1361,10 @@
       }
     }
   ],
-  "ach_pop_next": "Ver el siguiente",
-  "ach_pop_close_all": "Cerrar todo",
+  "ach_pop_close_all": "Saltar todo",
+  "ach_pop_group": "¡{count} logros desbloqueados!",
+  "ach_pop_open": "Ver",
+  "ach_pop_skip": "Saltar",
   "clan_flag": "Nombre inapropiado",
   "clan_flag_help": "Retira este nombre: el clan recibe un nombre neutro y su líder debe elegir otro.",
   "clan_renamed": "Clan renombrado.",

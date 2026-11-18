@@ -2,6 +2,7 @@
   import SiteBadge from '#lib/components/SiteBadge.svelte';
   import { m } from '#lib/paraglide/messages';
   import { closeAllPops, dismissPop, popQueue, present } from '#lib/stores/achievement-pop';
+  import X from '@lucide/svelte/icons/x';
 
   const DURATION = 5200;
   const PARTICLES = 16;
@@ -50,6 +51,16 @@
   }));
 </script>
 
+<!-- Échap passe l'annonce, sauf quand le joueur est occupé ailleurs (un champ, un menu). -->
+<svelte:window
+  onkeydown={(event) => {
+    if (event.key !== 'Escape' || !current) return;
+    const focus = document.activeElement;
+    const idle = !focus || focus === document.body || focus.closest('.pop-zone');
+    if (idle) dismissPop(current.id);
+  }}
+/>
+
 <div class="pop-zone" aria-live="polite">
   {#each visible ? $popQueue.slice(1, LAYERS + 1) : [] as item, index (item.id)}
     <span
@@ -62,15 +73,8 @@
   {#key current?.id}
     {#if current}
       {@const pop = current.pop}
-      <button
-        type="button"
-        class="pop"
-        class:last={waiting === 0}
-        data-category={pop.category}
-        style:--duration="{DURATION}ms"
-        title={waiting > 0 ? m.ach_pop_next() : undefined}
-        onclick={() => dismissPop(current.id)}
-      >
+      <!-- Un clic mène au succès (ou au jeu) ; la croix, ou Échap, passe au suivant. -->
+      {#snippet body()}
         <span class="shine" aria-hidden="true"></span>
         <span class="medal" aria-hidden="true">
           <span class="rays"></span>
@@ -93,6 +97,7 @@
                 icon={pop.icon}
                 category={pop.category}
                 level={pop.level}
+                tier={pop.tier}
                 unlocked
                 size={3.25}
               />
@@ -100,7 +105,9 @@
           </span>
         </span>
         <span class="words">
-          <span class="heading">{m.ach_pop_heading()}</span>
+          <span class="heading">
+            {pop.count ? m.ach_pop_group({ count: pop.count }) : m.ach_pop_heading()}
+          </span>
           <span class="title">{pop.title}</span>
           {#if pop.game}
             <span class="game">{pop.game}</span>
@@ -109,9 +116,44 @@
             <span class="more">{m.ach_pop_more({ count: waiting })}</span>
           {/if}
         </span>
+        {#if pop.href}
+          <span class="open" aria-hidden="true">{m.ach_pop_open()} →</span>
+        {/if}
         {#if waiting === 0}
           <span class="timer" aria-hidden="true"></span>
         {/if}
+      {/snippet}
+      {#if pop.href}
+        <a
+          href={pop.href}
+          class="pop"
+          class:last={waiting === 0}
+          data-category={pop.category}
+          style:--duration="{DURATION}ms"
+          onclick={() => dismissPop(current.id)}
+        >
+          {@render body()}
+        </a>
+      {:else}
+        <button
+          type="button"
+          class="pop"
+          class:last={waiting === 0}
+          data-category={pop.category}
+          style:--duration="{DURATION}ms"
+          onclick={() => dismissPop(current.id)}
+        >
+          {@render body()}
+        </button>
+      {/if}
+      <button
+        type="button"
+        class="pop-skip"
+        aria-label={m.ach_pop_skip()}
+        title={m.ach_pop_skip()}
+        onclick={() => dismissPop(current.id)}
+      >
+        <X size={14} aria-hidden="true" />
       </button>
     {/if}
   {/key}
@@ -164,7 +206,8 @@
     align-items: center;
     gap: 1rem;
     overflow: hidden;
-    padding: 0.85rem 1rem 1rem;
+    /* À droite, la place de la croix. */
+    padding: 0.85rem 2.25rem 1rem 1rem;
     border: 1px solid rgb(var(--from) / 0.55);
     border-radius: 1rem;
     background:
@@ -186,10 +229,57 @@
       pop-out 450ms ease-in calc(var(--duration) - 450ms) forwards;
   }
 
+  a.pop {
+    text-decoration: none;
+  }
+  .pop:focus-visible {
+    outline: 2px solid rgb(var(--from));
+    outline-offset: 2px;
+  }
+
   .more {
     font-size: 0.75rem;
     color: rgb(var(--muted));
     animation: slide-in 450ms ease-out 450ms both;
+  }
+
+  /* L'invitation à ouvrir, en bas à droite ; elle s'éclaire au survol de la carte. */
+  .open {
+    align-self: flex-end;
+    margin-left: auto;
+    flex-shrink: 0;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: rgb(var(--muted));
+    transition: color 0.15s;
+  }
+  .pop:hover .open,
+  .pop:focus-visible .open {
+    color: rgb(var(--ink));
+  }
+
+  /* La croix passe l'annonce sans quitter la page ; posée sur la carte, hors du lien. */
+  .pop-skip {
+    position: absolute;
+    top: 0.45rem;
+    right: 0.45rem;
+    z-index: 2;
+    display: grid;
+    width: 1.6rem;
+    height: 1.6rem;
+    place-items: center;
+    border-radius: 9999px;
+    color: rgb(var(--muted));
+    pointer-events: auto;
+    transition:
+      color 0.15s,
+      background-color 0.15s;
+    animation: fade-in 300ms ease-out 300ms both;
+  }
+  .pop-skip:hover,
+  .pop-skip:focus-visible {
+    color: rgb(var(--ink));
+    background: rgb(var(--raised));
   }
 
   .close-all {

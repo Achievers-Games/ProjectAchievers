@@ -3,9 +3,31 @@
   import StepDots from '#lib/components/StepDots.svelte';
   import { formatDate, formatNumber } from '#lib/labels';
   import { m } from '#lib/paraglide/messages';
+  import { page } from '$app/state';
+  import { tick } from 'svelte';
 
   let { data } = $props();
   const { player, board } = $derived(data);
+
+  /**
+   * Une annonce de succès mène ici avec `#succes-<code>` : la carte de ce succès (ou de sa série)
+   * vient au centre de l'écran et s'éclaire un instant. Les filtres reviennent sur « Tous ».
+   */
+  $effect(() => {
+    const code = /^#succes-([a-z0-9_]+)$/.exec(page.url.hash)?.[1];
+    if (!code) return;
+    filter = 'all';
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    void tick().then(() => {
+      const card = document.querySelector<HTMLElement>(`li[data-codes~="${code}"]`);
+      if (!card) return;
+      card.closest('details')?.setAttribute('open', '');
+      card.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      card.dataset.focus = '';
+      timer = setTimeout(() => delete card.dataset.focus, 2600);
+    });
+    return () => clearTimeout(timer);
+  });
 
   type Item = (typeof board.categories)[number]['items'][number];
 
@@ -213,6 +235,7 @@
               class="card site-card p-3"
               class:opacity-70={!item.unlockedAt}
               data-tier={item.tier || undefined}
+              data-codes={item.anchors.join(' ') || undefined}
             >
               {#if item.proof || item.suggest}
                 <details

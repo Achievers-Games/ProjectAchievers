@@ -10,6 +10,7 @@ import {
   groupSeries,
   seriesOf,
   stepTier,
+  tierOf,
   type BaseCode,
   type ClanKey,
   type SiteCode,
@@ -140,6 +141,7 @@ export const sitePop = (code: string) => ({
   icon: ICON_PATHS[iconOf(code)],
   category: CATEGORY_OF.get(code) ?? 'start',
   level: genreOf(code)?.level ?? seriesOf(code)?.level ?? 0,
+  tier: tierOf(code),
 });
 
 export const siteAchievementCount = (userId: string) =>
@@ -243,6 +245,8 @@ export async function siteAchievementBoard(
         // Le numéro n'apprend rien, contrairement au code d'un secret.
         key: index++,
         code: revealed ? target : null,
+        // Les codes de tous ses paliers : une annonce de succès mène à cette carte, quel que soit le palier.
+        anchors: revealed ? steps : [],
         title: revealed ? siteTitle(shownCode) : null,
         text: revealed ? siteText(shownCode) : null,
         // Le palier suivant, une fois le premier obtenu : la carte dit d'où on part et où aller.

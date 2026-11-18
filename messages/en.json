@@ -1361,8 +1361,10 @@
       }
     }
   ],
-  "ach_pop_next": "Show the next one",
-  "ach_pop_close_all": "Close all",
+  "ach_pop_close_all": "Skip all",
+  "ach_pop_group": "{count} achievements unlocked!",
+  "ach_pop_open": "View",
+  "ach_pop_skip": "Skip",
   "clan_flag": "Inappropriate name",
   "clan_flag_help": "Remove this name: the clan gets a neutral name and its leader must pick another.",
   "clan_renamed": "Clan renamed.",

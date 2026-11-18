@@ -454,6 +454,7 @@ export async function runLiveGame(
     title: name,
     icon: iconUrl,
     game: owned.game.name,
+    slug: owned.game.slug,
   }));
   if (achievements.length) publishChat(userId, { type: 'unlocks', achievements });
 
