@@ -5,12 +5,15 @@
     category,
     unlocked,
     level = 0,
+    tier = 0,
     size = 2.5,
   }: {
     icon: string;
     category: string;
     unlocked: boolean;
     level?: number;
+    /** Le niveau du dernier palier obtenu, de Bronze (1) à Légendaire (6) ; 0 sans palier. */
+    tier?: number;
     size?: number;
   } = $props();
 </script>
@@ -20,6 +23,7 @@
   data-category={category}
   data-unlocked={unlocked || undefined}
   data-level={level || undefined}
+  data-tier={tier || undefined}
   style:--size="{size}rem"
   aria-hidden="true"
 >
@@ -49,6 +53,26 @@
     color: white;
     filter: none;
     box-shadow: 0 4px 14px rgb(var(--from) / 0.35);
+  }
+
+  /* Un succès à paliers prend le métal du dernier palier obtenu, comme sa carte : la palette
+     vient de `[data-tier]` dans app.css, de Bronze à Légendaire. */
+  .site-badge[data-unlocked][data-tier] {
+    background: var(--tier-badge);
+    color: var(--tier-badge-ink);
+    box-shadow: 0 4px 14px rgb(var(--tier-glow) / 0.45);
+  }
+  .site-badge[data-unlocked][data-tier='5'] {
+    background-size: 300% 300%;
+    animation: tier-shift 5s linear infinite alternate;
+  }
+  .site-badge[data-unlocked][data-tier='6'] {
+    animation: tier-pulse 1.8s ease-in-out infinite alternate;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .site-badge[data-tier] {
+      animation: none;
+    }
   }
 
   /* Les paliers d'un genre : bronze, argent, or. */

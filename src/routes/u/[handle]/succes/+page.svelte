@@ -72,7 +72,12 @@
 
 {#snippet line(item: Item, category: string)}
   <div class="flex gap-3">
-    <SiteBadge icon={board.icons[item.icon] ?? ''} {category} unlocked={item.unlockedAt !== null} />
+    <SiteBadge
+      icon={board.icons[item.icon] ?? ''}
+      {category}
+      unlocked={item.unlockedAt !== null}
+      tier={item.tier}
+    />
     <div class="min-w-0">
       <p class="site-card-title font-medium">{item.title ?? m.ach_secret_title()}</p>
       <p class="text-sm text-muted">{item.text ?? m.ach_secret_text()}</p>

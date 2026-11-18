@@ -702,7 +702,10 @@ describe('succès du site', () => {
   it('donne la part des joueurs du palier obtenu, pas du suivant', async () => {
     const owner = await withAccount(`${PREFIX}-succes-palier`);
     await db.siteUnlock.createMany({
-      data: ['guild_1000', 'guild_10000'].map((code) => ({ userId: owner.id, code })),
+      data: ['guild_1000', 'guild_2500', 'guild_5000', 'guild_10000'].map((code) => ({
+        userId: owner.id,
+        code,
+      })),
     });
     const board = await siteAchievementBoard(owner.id, owner.id);
     const guild = board.categories
@@ -806,20 +809,28 @@ describe('succès du site', () => {
     const genres = categories.find((entry) => entry.category === 'genres')!;
     const zombies = genres.items.filter((item) => item.code?.startsWith('g_zombies_'));
     expect(zombies).toHaveLength(1);
-    expect(zombies[0]).toMatchObject({ code: 'g_zombies_5', suggest: true, complete: false });
-    expect(zombies[0]?.steps.map((step) => step.earned)).toEqual([true, false, false]);
+    expect(zombies[0]).toMatchObject({ code: 'g_zombies_3', suggest: true, complete: false });
+    expect(zombies[0]?.steps.map((step) => step.earned)).toEqual([
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+    ]);
     // La carte dit le palier obtenu, en a la couleur, et donne l'objectif du suivant.
     expect(zombies[0]).toMatchObject({
       title: m.ach_g_zombies_1_title(),
       tier: 1,
-      next: expect.stringContaining('5'),
+      next: expect.stringContaining('3'),
     });
-    expect(zombies[0]?.steps.map((step) => step.tier)).toEqual([1, 2, 3]);
+    // Six paliers, de Bronze à Légendaire.
+    expect(zombies[0]?.steps.map((step) => step.tier)).toEqual([1, 2, 3, 4, 5, 6]);
     expect(
       (await siteAchievementBoard(owner.id, null)).categories.flatMap((c) => c.items),
     ).not.toContainEqual(expect.objectContaining({ suggest: true }));
 
-    const ideas = await siteSuggestions(owner.id, 'g_zombies_5');
+    const ideas = await siteSuggestions(owner.id, 'g_zombies_3');
     expect(ideas?.owned).toBe(true);
     expect(ideas?.games.map((game) => game.name)).toEqual([
       `${PREFIX} zombies proche`,
@@ -896,7 +907,7 @@ describe('succès du site', () => {
       })),
     });
     const gained = await checkClanAchievements(clan.id);
-    expect(gained).toEqual(expect.arrayContaining(['band_3', 'raid_3', 'nobody_behind']));
+    expect(gained).toEqual(expect.arrayContaining(['band_3', 'raid_2', 'raid_3', 'nobody_behind']));
     expect(
       await db.clan.findUniqueOrThrow({ where: { id: clan.id }, select: { frame: true } }),
     ).toEqual({
@@ -912,8 +923,8 @@ describe('succès du site', () => {
 
     const board = await clanAchievementBoard(clan.id);
     expect(board.items.find((item) => item.code.startsWith('band_'))).toMatchObject({
-      code: 'band_10',
-      progress: { value: 4, goal: 10 },
+      code: 'band_5',
+      progress: { value: 4, goal: 5 },
     });
   });
 });

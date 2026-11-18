@@ -94,6 +94,7 @@
             icon={achievements.icons[item.icon] ?? ''}
             category={item.secret ? 'secret' : 'clan'}
             unlocked={item.unlockedAt !== null}
+            tier={item.tier}
           />
           <div class="min-w-0 flex-1">
             <p class="site-card-title font-medium">{item.title}</p>
