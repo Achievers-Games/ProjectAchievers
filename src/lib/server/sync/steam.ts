@@ -418,6 +418,27 @@ const STEAM_LANGUAGES: Record<Locale, string> = {
   ja: 'japanese',
 };
 
+/** Ajoute le catalogue d'une édition Steam sans l'attribuer à un joueur. */
+export async function importSteamEdition(appId: number, name: string) {
+  if (!env().STEAM_API_KEY) return;
+  const platformGameId = String(appId);
+  const known = await db.game.findUnique({
+    where: { platform_platformGameId: { platform: 'STEAM', platformGameId } },
+    select: { id: true },
+  });
+  if (known) return;
+
+  const schema = await fetchSchema(appId);
+  if (!schema?.length) return;
+  const game = await upsertGame({
+    platform: 'STEAM',
+    platformGameId,
+    name,
+    ...(await steamImages(appId)),
+  });
+  await saveAchievements(game.id, schema);
+}
+
 export async function fetchSteamTexts(appId: string, locale: Locale) {
   const achievements = await fetchSchemaAchievements(appId, STEAM_LANGUAGES[locale]);
   if (!achievements) throw new Error('GetSchemaForGame sans réponse');

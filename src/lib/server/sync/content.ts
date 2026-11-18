@@ -2,6 +2,7 @@ import type { Prisma } from '#prisma';
 import { db } from '../db';
 import { familyKey } from '../family';
 import { fetchRetry, sleep } from './errors';
+import { importSteamEdition } from './steam';
 
 const STORE = 'https://store.steampowered.com/api/appdetails';
 /** La boutique tolère environ 200 requêtes par tranche de 5 minutes. */
@@ -138,7 +139,7 @@ async function steamTwin(name: string, key: string | null) {
   if (!response.ok) return undefined;
   const data = (await response.json()) as { items?: { id: number; name: string }[] };
   const wanted = episodeKey(key);
-  return data.items?.find((item) => episodeKey(familyKey(item.name)) === wanted)?.id ?? null;
+  return data.items?.find((item) => episodeKey(familyKey(item.name)) === wanted) ?? null;
 }
 
 type StoreArt = { tags: number[]; art: string | null; hero: string | null };
@@ -159,6 +160,7 @@ async function readStore(
   games: StoreGame[],
   pause: number,
   write: (item: StoreArt | undefined) => Prisma.GameUpdateInput,
+  discoverEditions = false,
 ) {
   const steamIds = new Map<string, number>();
   const unanswered = new Set<string>();
@@ -174,12 +176,21 @@ async function readStore(
           select: { platformGameId: true },
         })
       : null;
-    const appId = sibling
-      ? Number(sibling.platformGameId)
-      : await steamTwin(game.name, game.familyKey);
+    const twin = sibling ? null : await steamTwin(game.name, game.familyKey);
+    const appId = sibling ? Number(sibling.platformGameId) : twin?.id;
     if (!sibling) await sleep(pause);
-    if (appId === undefined) unanswered.add(game.id);
+    if (twin === undefined) unanswered.add(game.id);
     else if (appId && Number.isInteger(appId)) steamIds.set(game.id, appId);
+    if (
+      discoverEditions &&
+      twin &&
+      twin.id > 0 &&
+      Number.isSafeInteger(twin.id) &&
+      game.familyKey &&
+      familyKey(twin.name) === game.familyKey
+    ) {
+      await importSteamEdition(twin.id, twin.name).catch(() => {});
+    }
   }
 
   let read = 0;
@@ -216,13 +227,18 @@ export async function tagGames(limit = BATCH * 2, pause = PAUSE) {
     take: limit,
   });
   const now = new Date();
-  return readStore(games, pause, (item) => ({
-    tags: item?.tags ?? [],
-    tagsCheckedAt: now,
-    artUrl: item?.art ?? null,
-    heroUrl: item?.hero ?? null,
-    artCheckedAt: now,
-  }));
+  return readStore(
+    games,
+    pause,
+    (item) => ({
+      tags: item?.tags ?? [],
+      tagsCheckedAt: now,
+      artUrl: item?.art ?? null,
+      heroUrl: item?.hero ?? null,
+      artCheckedAt: now,
+    }),
+    true,
+  );
 }
 
 const writeArt = (now: Date) => (item: StoreArt | undefined) => ({
