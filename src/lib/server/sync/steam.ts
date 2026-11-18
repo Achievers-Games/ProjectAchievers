@@ -323,8 +323,8 @@ export const achievementCounts = (steamId: string, appIds: number[]) =>
   fetchTopAchievements(steamId, appIds);
 
 /**
- * Les jeux récents n'ont plus d'image à l'adresse classique : seule la boutique
- * connaît leur adresse, qui contient une empreinte propre à chaque jeu.
+ * La boutique fournit la vignette officielle. Un HTTP 200 sur une ancienne URL
+ * du CDN ne garantit pas que son image corresponde au jeu.
  */
 export async function steamImages(appId: string | number) {
   const classic = {
@@ -332,17 +332,21 @@ export async function steamImages(appId: string | number) {
     headerUrl: `${CDN}/${appId}/header.jpg`,
   };
   try {
-    const signal = AbortSignal.timeout(10_000);
-    const head = await fetch(classic.headerUrl, { method: 'HEAD', signal });
-    if (head.status !== 404) return classic;
-
-    const response = await fetchRetry(`${STORE}?appids=${appId}&filters=basic`);
+    const response = await fetchRetry(`${STORE}?appids=${appId}&filters=basic`, {
+      signal: AbortSignal.timeout(10_000),
+    });
     const data = (await response.json()) as Record<
       string,
       { data?: { header_image?: string } } | undefined
     >;
     const image = data[appId]?.data?.header_image;
-    return image ? { coverUrl: image, headerUrl: image } : classic;
+    if (!image) return classic;
+
+    const cover = await fetch(classic.coverUrl, {
+      method: 'HEAD',
+      signal: AbortSignal.timeout(3_000),
+    }).catch(() => null);
+    return { coverUrl: cover?.ok ? classic.coverUrl : image, headerUrl: image };
   } catch {
     return classic;
   }

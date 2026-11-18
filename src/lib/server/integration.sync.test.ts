@@ -574,14 +574,17 @@ describe('synchronisation Steam', () => {
     expect(account.syncStatus).toBe('COMPLETED');
   });
 
-  it('demande à la boutique l’image des jeux récents', async () => {
+  it('préfère la vignette de la boutique même si l’ancien CDN répond', async () => {
     const image = 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/42/abc.jpg';
     vi.stubGlobal('fetch', async (input: string | URL) =>
       String(input).includes('appdetails')
         ? new Response(JSON.stringify({ 42: { data: { header_image: image } } }))
-        : new Response(null, { status: 404 }),
+        : new Response(null, { status: 200 }),
     );
-    expect(await steamImages(42)).toEqual({ coverUrl: image, headerUrl: image });
+    expect(await steamImages(42)).toEqual({
+      coverUrl: expect.stringContaining('/42/library_600x900.jpg'),
+      headerUrl: image,
+    });
 
     vi.stubGlobal('fetch', async () => new Response(null, { status: 200 }));
     expect((await steamImages(42)).headerUrl).toContain('/42/header.jpg');
