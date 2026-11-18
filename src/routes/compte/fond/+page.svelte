@@ -3,6 +3,7 @@
   import { enhance } from '$app/forms';
   import { snapshot } from '$app/navigation';
   import { page } from '$app/state';
+  import { SvelteSet } from 'svelte/reactivity';
   import Check from '@lucide/svelte/icons/check';
   import Sparkles from '@lucide/svelte/icons/sparkles';
   import Ban from '@lucide/svelte/icons/ban';
@@ -58,12 +59,33 @@
   let loadedFor = $state<string | null>(null);
   let loading = $state(false);
   let failed = $state(false);
+  /** Les images qui n'ont pas pu se charger : leur jeu quitte la grille plutôt que d'y laisser un trou. */
+  const brokenImages = new SvelteSet<string>();
   let request: AbortController | undefined;
 
   /** Après un choix, la première page se relit : un jeu déjà là ne doit pas revenir deux fois. */
   const games = $derived([
     ...new Map([...data.games, ...extra].map((game) => [game.id, game])).values(),
   ]);
+  const visibleGames = $derived(games.filter((game) => !brokenImages.has(game.image)));
+
+  /**
+   * Une seule écoute, sur la grille, attrape au passage l'erreur de chaque image. Une action sur
+   * l'`<img>` ferait écrire à Svelte un `onerror` en ligne dans le HTML, que la CSP bloque.
+   */
+  let grid = $state<HTMLElement>();
+  const brokenTile = (event: Event) => {
+    const image = event.target;
+    if (image instanceof HTMLImageElement && image.dataset.image) {
+      brokenImages.add(image.dataset.image);
+    }
+  };
+  // Une image tombée en erreur avant que la page ne s'anime n'a prévenu personne : on la relit.
+  $effect(() => {
+    for (const image of grid?.querySelectorAll<HTMLImageElement>('img[data-image]') ?? []) {
+      if (image.complete && image.naturalWidth === 0) brokenImages.add(image.dataset.image!);
+    }
+  });
   const nextPage = $derived(2 + loadedPages);
   const hasMore = $derived(nextPage <= data.pages);
 
@@ -272,9 +294,13 @@
       </form>
     </div>
 
-    {#if games.length}
-      <ul class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {#each games as game (game.id)}
+    {#if visibleGames.length}
+      <ul
+        bind:this={grid}
+        class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
+        onerrorcapture={brokenTile}
+      >
+        {#each visibleGames as game (game.id)}
           {@const current = data.mode === 'game' && data.chosen === game.id}
           <li>
             <form method="POST" action="?/choose" use:enhance={submit}>
@@ -289,13 +315,16 @@
               >
                 <!-- Une image par jeu, chargée en arrivant à l'écran : les fonds de boutique n'ont
                      pas de vignette, et la page en propose des dizaines. -->
-                <img
-                  src={game.image}
-                  alt=""
-                  loading="lazy"
-                  decoding="async"
-                  class="background-tile-img"
-                />
+                {#key game.image}
+                  <img
+                    src={game.image}
+                    data-image={game.image}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                    class="background-tile-img"
+                  />
+                {/key}
                 <span class="background-tile-name">{game.name}</span>
                 {#if current}
                   <span class="background-tile-check" aria-hidden="true"><Check size={14} /></span>
@@ -305,16 +334,16 @@
           </li>
         {/each}
       </ul>
-      {#if hasMore}
-        {#key nextPage}
-          <div class="mt-4 flex justify-center" use:whenNear>
-            <button type="button" class="btn" disabled={loading} onclick={loadMore}>
-              {#if loading}{m.loading()}{:else if failed}{m.retry()}{:else}{m.show_more()}{/if}
-            </button>
-          </div>
-        {/key}
-      {/if}
-    {:else}
+    {/if}
+    {#if hasMore}
+      {#key nextPage}
+        <div class="mt-4 flex justify-center" use:whenNear>
+          <button type="button" class="btn" disabled={loading} onclick={loadMore}>
+            {#if loading}{m.loading()}{:else if failed}{m.retry()}{:else}{m.show_more()}{/if}
+          </button>
+        </div>
+      {/key}
+    {:else if !visibleGames.length}
       <Empty title={m.showcase_no_results()} />
     {/if}
   </section>
