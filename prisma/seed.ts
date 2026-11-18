@@ -59,6 +59,12 @@ async function main() {
         slug: slug(g.name),
         coverUrl: `${CDN}/${g.id}/library_600x900.jpg`,
         headerUrl: `${CDN}/${g.id}/header.jpg`,
+        ...(g.id === '367520' && {
+          heroUrl:
+            'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/367520/0daf3933d392d7bb7c5a890917e20c917fcc458e/library_hero.jpg',
+          artUrl:
+            'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/367520/ss_5384f9f8b96a0b9934b2bc35a4058376211636d2.1920x1080.jpg',
+        }),
         totalAchievements: g.count,
         schemaSyncedAt: new Date(),
       },

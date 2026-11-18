@@ -32,6 +32,8 @@ describe('grille de la bannière et du fond', () => {
             familyKey: `${key}-${i}`,
             headerUrl: `https://example.test/${i}/header.jpg`,
             artUrl: `https://example.test/${i}/art.jpg`,
+            heroUrl:
+              i === 0 && platform === 'STEAM' ? 'https://example.test/library_hero.jpg' : null,
           },
         });
         await db.userGame.create({ data: { userId, gameId: game.id } });
@@ -45,6 +47,14 @@ describe('grille de la bannière et du fond', () => {
     expect(second.games).toHaveLength(5);
     const ids = [...first.games, ...second.games].map((game) => game.id);
     expect(new Set(ids).size).toBe(total);
+    const banners = await appearanceGames(userId, 'banniere', { q: PREFIX });
+    expect(banners.games).toEqual([
+      {
+        id: expect.any(String),
+        name: `${PREFIX} 000 STEAM`,
+        image: 'https://example.test/library_hero.jpg',
+      },
+    ]);
 
     // Le point d'accès ne lit que la bibliothèque du joueur connecté.
     const response = await GET({

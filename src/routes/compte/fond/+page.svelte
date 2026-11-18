@@ -290,7 +290,7 @@
                 <!-- Une image par jeu, chargée en arrivant à l'écran : les fonds de boutique n'ont
                      pas de vignette, et la page en propose des dizaines. -->
                 <img
-                  src={game.thumb ?? game.images[0]}
+                  src={game.image}
                   alt=""
                   loading="lazy"
                   decoding="async"

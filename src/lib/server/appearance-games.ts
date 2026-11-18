@@ -1,11 +1,18 @@
-import { thumbArt } from '#lib/art';
 import { db } from './db';
-import { onePerFamily, toBanner } from './queries';
+import { onePerFamily } from './queries';
 
 /** Une page de la grille : la page suivante se charge en approchant du bas. */
 export const APPEARANCE_PAGE = 48;
 
 export type AppearanceTarget = 'banniere' | 'fond';
+
+export const appearanceAsset = (target: AppearanceTarget) =>
+  target === 'banniere' ? 'heroUrl' : 'artUrl';
+
+export const appearanceEligibility = (target: AppearanceTarget) => ({
+  headerUrl: { not: null },
+  [appearanceAsset(target)]: { not: null, notIn: [''] },
+});
 
 /**
  * Les jeux qui peuvent habiller la bannière ou le fond, une version par famille, les plus
@@ -17,15 +24,13 @@ export async function appearanceGames(
   target: AppearanceTarget,
   { q = '', chosen = null as string | null, page = 1 } = {},
 ) {
+  const asset = appearanceAsset(target);
   const rows = await db.userGame.findMany({
     where: {
       userId,
       hidden: false,
       game: {
-        headerUrl: { not: null },
-        // Une icône de trophée PlayStation ou Xbox étirée en fond est laide : seuls les jeux qui
-        // ont une grande image se proposent (images de la boutique Steam, ou d'un jeu Steam).
-        OR: [{ artUrl: { not: null } }, { heroUrl: { not: null } }, { platform: 'STEAM' }],
+        ...appearanceEligibility(target),
         ...(q && { name: { contains: q, mode: 'insensitive' } }),
       },
     },
@@ -36,7 +41,6 @@ export async function appearanceGames(
           id: true,
           name: true,
           slug: true,
-          headerUrl: true,
           artUrl: true,
           heroUrl: true,
           platform: true,
@@ -54,13 +58,8 @@ export async function appearanceGames(
     pages: Math.max(1, Math.ceil(all.length / APPEARANCE_PAGE)),
     games: all.slice(start, start + APPEARANCE_PAGE).map((game) => ({
       id: game.id,
-      // Chaque onglet montre l'image qu'il posera : le bandeau pour la bannière, le fond de la
-      // page boutique pour le fond.
-      ...toBanner(
-        { ...game, headerUrl: game.headerUrl as string },
-        target === 'banniere' ? 'banner' : 'background',
-      ),
-      thumb: target === 'banniere' ? null : game.artUrl ? thumbArt(game.artUrl) : null,
+      name: game.name,
+      image: game[asset]!,
     })),
   };
 }

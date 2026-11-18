@@ -3,9 +3,8 @@ import { m } from '#lib/paraglide/messages';
 import { requireLogin } from '#lib/server/auth';
 import { db } from '#lib/server/db';
 import { fetchSteamLook } from '#lib/server/providers/steam';
-import { artNow } from '#lib/server/sync/content';
 import { userProfile, type ProfileBackground } from '#lib/server/queries';
-import { appearanceGames } from '#lib/server/appearance-games';
+import { appearanceEligibility, appearanceGames } from '#lib/server/appearance-games';
 import type { Actions, PageServerLoad } from './$types';
 
 const requireUser = (locals: App.Locals) => requireLogin(locals, '/compte/fond');
@@ -128,9 +127,10 @@ export const actions: Actions = {
     const user = requireUser(locals);
     const form = await request.formData();
     const gameId = String(form.get('game') ?? '');
-    const fields = TARGETS[targetOf(form.get('cible'))];
+    const target = targetOf(form.get('cible'));
+    const fields = TARGETS[target];
     const owned = await db.userGame.findFirst({
-      where: { userId: user.id, gameId, hidden: false, game: { headerUrl: { not: null } } },
+      where: { userId: user.id, gameId, hidden: false, game: appearanceEligibility(target) },
       select: { gameId: true },
     });
     if (!owned) return fail(403, { error: m.showcase_not_owned() });
@@ -138,8 +138,6 @@ export const actions: Actions = {
       where: { id: user.id },
       data: { [fields.off]: false, [fields.steam]: false, [fields.game]: gameId },
     });
-    // La capture plein écran tout de suite, sans attendre la tâche de fond : Steam répond vite.
-    await artNow([gameId]).catch(() => 0);
     return { success: m.background_saved() };
   },
 };
