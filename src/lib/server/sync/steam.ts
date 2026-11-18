@@ -429,14 +429,6 @@ export async function fetchSteamTexts(appId: string, locale: Locale) {
   }));
 }
 
-const unescape = (text: string) => {
-  try {
-    return JSON.parse(`"${text}"`) as string;
-  } catch {
-    return text;
-  }
-};
-
 /** Lit le schéma JSON intégré à la page publique des succès. */
 export function parseSteamPage(html: string, appId: string) {
   const descriptions = new Map<string, string>();
