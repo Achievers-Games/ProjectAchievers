@@ -13,6 +13,7 @@ import { compareAchievements, compareBucket } from '#lib/compare';
 import { SEASON, seasonState } from '#lib/season';
 import { getLocale } from '#lib/paraglide/runtime';
 import { lureGameFor } from '#lib/server/lure-games';
+import { excludedSteamUnlocks } from '#lib/server/steam-integrity';
 import { completionTimes } from '#lib/server/completion-time';
 import { artNow } from '#lib/server/sync/content';
 import type { Actions, PageServerLoad } from './$types';
@@ -66,6 +67,7 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
         orderBy: [{ globalRarity: { sort: 'desc', nulls: 'last' } }, { name: 'asc' }],
         select: {
           id: true,
+          platformAchievementId: true,
           name: true,
           description: true,
           hidden: true,
@@ -92,6 +94,7 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
     times,
     achievements,
     player,
+    steamReview,
   ] = await Promise.all([
     locals.user
       ? db.userGame.findUnique({
@@ -153,6 +156,19 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
     completionTimes([game.id]),
     achievementQuery(),
     ofHandle ? gamePlayer({ viewerId: viewerId ?? null, gameId: game.id, handle: ofHandle }) : null,
+    viewerId && game.platform === 'STEAM'
+      ? db.steamIntegrityReview.findFirst({
+          where: { userId: viewerId, gameId: game.id },
+          orderBy: { openedAt: 'desc' },
+          select: {
+            status: true,
+            suspendedAt: true,
+            snapshot: true,
+            flagged: true,
+            rejected: true,
+          },
+        })
+      : null,
   ]);
 
   // Seuls les amis qui possèdent cette version ont quelque chose à comparer.
@@ -175,6 +191,8 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
   );
 
   const mine = new Map(unlocks.map((u) => [u.achievementId, u.unlockedAt]));
+  const excluded =
+    steamReview && (!player || player.self) ? excludedSteamUnlocks(steamReview) : null;
   // Les dates affichées sont celles du joueur regardé, sinon celles du visiteur.
   const unlockedAt = player
     ? new Map(player.unlocks.map((u) => [u.achievementId, u.unlockedAt]))
@@ -212,9 +230,10 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
   const rows = achievements.map((a) => {
     const [translation] = a.translations;
     const unlocked = unlockedAt.get(a.id) ?? null;
+    const excludedAt = unlocked ? null : (excluded?.get(a.platformAchievementId) ?? null);
     // Un succès caché reste masqué tant que le visiteur ne l'a pas obtenu ou demandé à le voir :
     // regarder la fiche d'un autre ne dévoile pas ce qu'il a trouvé.
-    const secret = a.hidden && !(player && !player.self ? mine.get(a.id) : unlocked);
+    const secret = a.hidden && !(player && !player.self ? mine.get(a.id) : unlocked || excludedAt);
     const masked = secret && !revealed;
     return {
       id: a.id,
@@ -224,8 +243,9 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
       globalRarity: a.globalRarity,
       name: masked ? m.achievement_hidden() : (translation?.name ?? a.name),
       description: masked ? '' : translation?.description || a.description,
-      iconUrl: masked ? null : unlocked ? a.iconUrl : (a.iconLockedUrl ?? a.iconUrl),
+      iconUrl: masked ? null : unlocked || excludedAt ? a.iconUrl : (a.iconLockedUrl ?? a.iconUrl),
       unlockedAt: unlocked,
+      excludedAt,
       // Même caché, un succès manquable se signale : c'est avant de jouer qu'il faut le savoir.
       missable: a.missable,
       guided: a.guides.length > 0,
@@ -238,12 +258,15 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
   const comparing = Boolean(rival?.progress && progress);
   const requestedFilter = url.searchParams.get('succes');
   const filters = comparing ? ['commun', 'moi', 'lui'] : ['obtenus', 'restants', 'manquables'];
+  const hasExcluded = rows.some((row) => row.excludedAt !== null);
+  if (hasExcluded) filters.push('hors-score');
   const filter = filters.find((value) => value === requestedFilter) ?? 'tous';
   const sort = url.searchParams.get('tri') === 'nom' ? 'nom' : 'rarete';
   const theirUnlocks = new Set(rival?.unlocked);
   const visible = rows.filter((row) => {
     if (filter === 'obtenus') return row.unlockedAt !== null;
-    if (filter === 'restants') return row.unlockedAt === null;
+    if (filter === 'restants') return row.unlockedAt === null && row.excludedAt === null;
+    if (filter === 'hors-score') return row.excludedAt !== null;
     if (filter === 'manquables') return row.missable;
     if (filter === 'tous') return true;
     const bucket = compareBucket(row, theirUnlocks);
@@ -312,6 +335,9 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
     },
     missables: missablesOf({ guideReviewedAt: game.guideReviewedAt, achievements }, others),
     progress,
+    steamSuspended:
+      steamReview?.suspendedAt && (!player || player.self) ? steamReview.status : null,
+    hasExcluded,
     season,
     players,
     lure,

@@ -13,6 +13,7 @@ import {
   addSteamGame,
   fetchLibrary,
   fetchOwnedApps,
+  fetchUnlocks,
   fetchRecentGames,
   fetchTopAchievements,
   steamPrivacy,
@@ -24,6 +25,7 @@ import {
   type OwnedGame,
   type TopGame,
 } from './steam';
+import { REMOVAL_CONFIRM, saveProgress } from './store';
 
 /**
  * Steam n'envoie aucune notification : le site va voir, le moins souvent possible.
@@ -184,7 +186,8 @@ async function catchUpRecent(userId: string, steamId: string, checkedAppId?: str
     },
     select: {
       gameId: true,
-      unlockedCount: true,
+      reportedUnlockedCount: true,
+      removalSeenAt: true,
       playtimeMinutes: true,
       lastPlayedAt: true,
       game: { select: { platformGameId: true } },
@@ -214,7 +217,11 @@ async function catchUpRecent(userId: string, steamId: string, checkedAppId?: str
     const count = counts?.get(game.appid);
     // Seul un succès en plus compte : la relecture ne retire rien. Un jeu absent de la réponse
     // retombe sur le temps de jeu.
-    const changed = count ? count.unlocked > row.unlockedCount : minutes > row.playtimeMinutes;
+    const confirmRemoval =
+      row.removalSeenAt && Date.now() - row.removalSeenAt.getTime() >= REMOVAL_CONFIRM;
+    const changed =
+      confirmRemoval ||
+      (count ? count.unlocked !== row.reportedUnlockedCount : minutes > row.playtimeMinutes);
     // Du temps en plus depuis la dernière lecture : le jeu a été lancé entre-temps. Sinon, le
     // jeu figure parmi ceux joués ces deux semaines : sans date aussi récente en base, il est
     // daté au début de la fenêtre, derrière tout lancement vraiment daté.
@@ -491,6 +498,52 @@ export async function checkLiveGames() {
  * semaines relue chaque jour ne laisse passer aucun jeu joué, et un jeu acheté sans être lancé
  * apparaît au plus tard le lendemain.
  */
+/** Revérifie quelques anciens lots à chaque passage, avec les heures fournies par Steam. */
+export async function auditSteamHistory(limit = 24, userId?: string) {
+  if (!availableProviders().STEAM) return;
+  const games = await db.$queryRaw<
+    { userId: string; steamId: string; gameId: string; appId: string }[]
+  >`
+    SELECT ug."userId", la."providerUserId" AS "steamId", ug."gameId", g."platformGameId" AS "appId"
+    FROM "UserGame" ug JOIN "Game" g ON g.id = ug."gameId"
+    JOIN "LinkedAccount" la ON la."userId" = ug."userId" AND la.provider = 'STEAM'
+    WHERE (${userId ?? null}::text IS NULL OR ug."userId" = ${userId ?? null}) AND g.platform = 'STEAM'
+      AND ug."reportedUnlockedCount" IS NULL AND NOT g."allowSteamBatches" AND g.name NOT ILIKE 'Zup!%'
+      AND g."platformGameId" <> '1258080' AND ug."unlockedCount" >= 8
+      AND EXISTS (
+        SELECT 1 FROM "UserAchievement" ua JOIN "Achievement" a ON a.id = ua."achievementId"
+        WHERE a."gameId" = g.id AND ua."userId" = ug."userId" AND ua."unlockedAt" > '2003-09-12'
+        GROUP BY date_trunc('second', ua."unlockedAt")
+        HAVING count(*) >= 20 OR count(*) >= greatest(10, ceil(g."totalAchievements" * 0.2))
+          OR count(*) >= greatest(8, ceil(g."totalAchievements" * 0.65))
+      )
+    ORDER BY ug."achievementsCheckedAt" ASC NULLS FIRST, ug."gameId"
+    LIMIT ${limit}`;
+  for (const game of games) {
+    const { userId, steamId } = game;
+    const checked = new Date();
+    try {
+      const unlocks = await fetchUnlocks(steamId, Number(game.appId));
+      await saveProgress(
+        userId,
+        game.gameId,
+        unlocks,
+        { achievementsCheckedAt: checked },
+        {
+          steamId,
+          complete: true,
+        },
+      );
+    } catch (cause) {
+      await db.userGame.updateMany({
+        where: { userId, gameId: game.gameId, reportedUnlockedCount: null },
+        data: { achievementsCheckedAt: checked },
+      });
+      if (!(cause instanceof SyncError)) log.error('Contrôle des anciens succès Steam :', cause);
+    }
+  }
+}
+
 export async function steamDailyPass(userId: string) {
   const account = await db.linkedAccount.findUnique({
     where: { userId_provider: { userId, provider: 'STEAM' } },

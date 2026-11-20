@@ -119,7 +119,8 @@ interface UnlocksEvent {
   achievements: UnlockPop[];
 }
 
-export type LiveEvent = ChatEvent | InviteEvent | SiteAchievementEvent | UnlocksEvent;
+export type LiveEvent =
+  ChatEvent | InviteEvent | SiteAchievementEvent | UnlocksEvent | { type: 'steam-review' };
 
 export const publishChat = (userId: string, event: LiveEvent) => bus.emit(`chat:${userId}`, event);
 

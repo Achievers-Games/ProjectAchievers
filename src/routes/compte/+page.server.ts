@@ -23,6 +23,7 @@ import { leaveClan } from '#lib/server/social';
 import { activePartnerLinks, unlinkPartner as removePartnerLink } from '#lib/server/partner-link';
 import { activeGrants, revokeGrant } from '#lib/server/oauth-provider';
 import { queueAccountDeletion, queueAccountEvent } from '#lib/server/partner-webhooks';
+import { lockSteamAccount } from '#lib/server/steam-integrity';
 import { forgetPresence } from '#lib/server/presence';
 import { pushPublicKey } from '#lib/server/push';
 import { enqueueSync, refreshAccounts, SYNC_DELAYS } from '#lib/server/sync/queue';
@@ -199,7 +200,7 @@ export const actions: Actions = {
 
     const accounts = await db.linkedAccount.findMany({
       where: { userId: user.id },
-      select: { provider: true, syncStatus: true, frameUrl: true },
+      select: { provider: true, providerUserId: true, syncStatus: true, frameUrl: true },
     });
     const target = accounts.find((a) => a.provider === provider.data);
     if (!target) return fail(404, { error: m.account_not_linked() });
@@ -219,6 +220,13 @@ export const actions: Actions = {
     }
 
     await db.$transaction(async (tx) => {
+      if (provider.data === 'STEAM') {
+        await lockSteamAccount(tx, target.providerUserId);
+        await tx.steamIntegrityReview.updateMany({
+          where: { userId: user.id, steamId: target.providerUserId },
+          data: { userId: null },
+        });
+      }
       if (target.frameUrl) {
         await tx.user.updateMany({
           where: { id: user.id, frame: target.frameUrl },

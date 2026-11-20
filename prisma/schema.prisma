@@ -151,6 +151,7 @@ model User {
   sessions      Session[]
   games         UserGame[]
   achievements  UserAchievement[]
+  steamReviews  SteamIntegrityReview[]
   guides        Guide[]
   guideVotes    GuideVote[]
   guideChecks   GuideCheck[]
@@ -510,9 +511,11 @@ model Game {
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
 
-  achievements Achievement[]
-  players      UserGame[]
-  guides       Guide[]
+  achievements      Achievement[]
+  steamReviews      SteamIntegrityReview[]
+  allowSteamBatches Boolean                @default(false)
+  players           UserGame[]
+  guides            Guide[]
 
   @@unique([platform, platformGameId])
   @@index([name])
@@ -594,11 +597,42 @@ model UserGame {
   /// Une lecture complète n'a plus montré certains succès enregistrés : ils ne sont retirés que
   /// si une seconde lecture, au moins une heure plus tard, le confirme.
   removalSeenAt         DateTime?
+  reportedUnlockedCount Int?
 
   @@id([userId, gameId])
   @@index([userId, lastUnlockedAt])
   @@index([gameId])
   @@index([lastUnlockedAt])
+}
+
+enum SteamReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+/// La décision suit le compte Steam à travers une déliaison ou une recréation du profil.
+model SteamIntegrityReview {
+  id          String            @id @default(cuid())
+  steamId     String
+  userId      String?
+  user        User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  gameId      String
+  game        Game              @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  status      SteamReviewStatus @default(PENDING)
+  suspendedAt DateTime?
+  flagged     String[]
+  approved    String[]
+  rejected    String[]
+  snapshot    Json
+  createdAt   DateTime          @default(now())
+  openedAt    DateTime          @default(now())
+  reviewedAt  DateTime?
+  reviewedBy  String?
+
+  @@unique([steamId, gameId])
+  @@index([status, openedAt])
+  @@index([userId, suspendedAt])
 }
 
 model UserAchievement {

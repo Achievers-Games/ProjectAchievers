@@ -19,6 +19,7 @@
   import NotificationBell from '#lib/components/NotificationBell.svelte';
   import PushPrompt from '#lib/components/PushPrompt.svelte';
   import SteamPrivacyPrompt from '#lib/components/SteamPrivacyPrompt.svelte';
+  import SteamReviewPrompt from '#lib/components/SteamReviewPrompt.svelte';
   import RewardReveal from '#lib/components/RewardReveal.svelte';
   import Toasts from '#lib/components/Toasts.svelte';
   import AchievementPop from '#lib/components/AchievementPop.svelte';
@@ -146,7 +147,11 @@
           if (event.type === 'chat') receive(event);
           else if (event.type === 'invite') receiveInvite(event);
           else if (event.type === 'unlocks') celebrateOnce(event.achievements);
-          else void announceAchievements(event.codes);
+          else if (event.type === 'steam-review') {
+            void invalidate('app:notices');
+            void invalidate('app:steam-review');
+            refreshData.request();
+          } else void announceAchievements(event.codes);
           return;
         }
         syncState.update((state) => ({ ...state, [event.provider]: event }));
@@ -347,6 +352,7 @@
 {#if data.user}<PushPrompt publicKey={data.pushKey} />{/if}
 {#if data.user}
   <SteamPrivacyPrompt userId={data.user.id} issue={data.steamPrivacy} />
+  <SteamReviewPrompt userId={data.user.id} reviews={data.steamReviews} />
 {/if}
 <CommandPalette bind:open={paletteOpen} />
 <RewardReveal />

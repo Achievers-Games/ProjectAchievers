@@ -10,7 +10,7 @@ export const load: LayoutServerLoad = async ({ locals, cookies, depends }) => {
   depends('app:sync');
   depends('app:invites');
   depends('app:notices');
-  const [unread, invites, unseen, steam] = locals.user
+  const [unread, invites, unseen, steam, steamReviews] = locals.user
     ? await Promise.all([
         unreadCount(locals.user.id),
         pendingInvites(locals.user.id),
@@ -20,13 +20,24 @@ export const load: LayoutServerLoad = async ({ locals, cookies, depends }) => {
           where: { userId_provider: { userId: locals.user.id, provider: 'STEAM' } },
           select: { playtimeHidden: true, syncError: true },
         }),
+        db.steamIntegrityReview.findMany({
+          where: {
+            userId: locals.user.id,
+            status: 'PENDING',
+            openedAt: { gte: new Date(Date.now() - 30 * 86_400_000) },
+          },
+          orderBy: { openedAt: 'desc' },
+          take: 30,
+          select: { id: true, openedAt: true, game: { select: { name: true, slug: true } } },
+        }),
       ])
-    : [0, { friends: 0, clans: 0 }, 0, null];
+    : [0, { friends: 0, clans: 0 }, 0, null, []];
   return {
     unread,
     invites,
     notices: { unseen },
     steamPrivacy: steam && steamPrivacy(steam),
+    steamReviews,
     pushKey: pushPublicKey(),
     user: locals.user && {
       id: locals.user.id,
