@@ -4,6 +4,7 @@ import { secureCookie } from './cookies';
 import { decrypt, encrypt } from './crypto';
 import { db } from './db';
 import { directKey, leaveClan } from './social';
+import { lockSteamAccount } from './steam-integrity';
 
 const MERGE_COOKIE = 'pa_merge';
 const MERGE_ATTEMPTS = 3;
@@ -181,11 +182,15 @@ export async function mergeUsers(
 
         const accounts = await tx.linkedAccount.findMany({
           where: { userId: { in: [sourceId, targetId] } },
-          select: { userId: true, provider: true, syncStatus: true },
+          select: { userId: true, provider: true, providerUserId: true, syncStatus: true },
         });
         if (accounts.some((a) => a.syncStatus === 'QUEUED' || a.syncStatus === 'SYNCING')) {
           return 'sync_running';
         }
+        const steam = accounts.find(
+          (account) => account.provider === 'STEAM' && account.userId === sourceId,
+        );
+        if (steam) await lockSteamAccount(tx, steam.providerUserId);
         const taken = new Set(accounts.filter((a) => a.userId === targetId).map((a) => a.provider));
         if (accounts.some((a) => a.userId === sourceId && taken.has(a.provider))) {
           return 'provider_conflict';
@@ -233,6 +238,12 @@ export async function mergeUsers(
 
         const owner = { where: { userId: sourceId }, data: { userId: targetId } };
         await tx.linkedAccount.updateMany(owner);
+        if (steam) {
+          await tx.steamIntegrityReview.updateMany({
+            where: { userId: sourceId, steamId: steam.providerUserId },
+            data: { userId: targetId },
+          });
+        }
         await tx.partnerLink.updateMany(owner);
         await tx.oAuthGrant.updateMany(owner);
         // Les événements pas encore envoyés suivent le joueur : sinon ils partiraient sans lui.

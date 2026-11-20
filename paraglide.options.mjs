@@ -8,6 +8,10 @@ const LOCALES = ['fr', 'en', 'es', 'de', 'pt-BR', 'ru', 'zh-CN', 'ja'];
 export const paraglideOptions = {
   project: './project.inlang',
   outdir: './src/lib/paraglide',
+  // Un lot de messages par module évite des milliers de requêtes au démarrage en dev.
+  // Vite et les vérifications doivent aussi publier la même structure dans cet outdir.
+  outputStructure: 'message-modules',
+  messageModuleSize: 128,
   strategy: ['cookie', 'preferredLanguage', 'baseLocale'],
   cookieName: 'pa_lang',
   // Une adresse par langue pour les moteurs : /fr/…, /en/…, /de/… Sous ce préfixe, l'adresse

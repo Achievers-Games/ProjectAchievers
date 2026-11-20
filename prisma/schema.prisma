@@ -12,6 +12,48 @@ datasource db {
   provider = "postgresql"
 }
 
+/// Ce qui a rapporté des éclats, la monnaie des boosters de cartes.
+enum ShardReason {
+  /// Un succès débloqué après `User.shardsFrom`.
+  ACHIEVEMENT
+  /// Un jeu fini à 100 % après `User.shardsFrom`.
+  COMPLETION
+  /// Le capital de départ, tiré de l'historique d'avant `User.shardsFrom`.
+  STARTER
+  /// Un booster acheté : un débit.
+  BOOSTER
+  /// Une édition déjà possédée, sortie d'un booster et recyclée.
+  DUPLICATE
+}
+
+/// Les éditions visuelles d'une carte, de la plus courante à la plus rare.
+enum EditionKind {
+  /// Parallaxe : chaque plan suit le pointeur selon sa profondeur.
+  RELIEF
+  /// Parallaxe et décor animé.
+  VIVANTE
+  /// Tout s'anime, personnages compris.
+  MYTHIQUE
+}
+
+enum BoosterKind {
+  NORMAL
+  /// Chaque 10e booster normal : une Vivante au moins.
+  GOLDEN
+  STARRED
+  CELESTIAL
+}
+
+/// D'où vient un booster ouvert.
+enum BoosterSource {
+  /// Le booster offert chaque jour.
+  DAILY
+  /// Acheté avec des éclats.
+  SHARDS
+  /// Une récompense de mission.
+  MISSION
+}
+
 enum Provider {
   STEAM
   DISCORD
@@ -105,8 +147,8 @@ enum ReportTarget {
 // ── Comptes ────────────────────────────────────────────────────────────
 
 model User {
-  id                  String    @id @default(cuid())
-  handle              String    @unique
+  id                  String       @id @default(cuid())
+  handle              String       @unique
   displayName         String
   avatarUrl           String?
   /// Version animée de `avatarUrl`, chargée seulement quand elle doit jouer.
@@ -114,35 +156,37 @@ model User {
   /// Cadre équipé : un identifiant de `frames`, ou l'image d'un cadre importé d'un compte.
   frameMotionUrl      String?
   frame               String?
-  isPublic            Boolean   @default(true)
+  isPublic            Boolean      @default(true)
   /// Vitrine choisie à la main ; sinon, les meilleures cartes.
-  showcaseCustom      Boolean   @default(false)
+  showcaseCustom      Boolean      @default(false)
   /// Jeu dont la grande image habille le profil ; sans choix, la première carte de la vitrine.
   backgroundGameId    String?
-  backgroundGame      Game?     @relation("ProfileBackground", fields: [backgroundGameId], references: [id], onDelete: SetNull)
+  backgroundGame      Game?        @relation("ProfileBackground", fields: [backgroundGameId], references: [id], onDelete: SetNull)
   /// Le fond équipé sur Steam passe avant le jeu choisi, tant que Steam en donne un.
-  backgroundSteam     Boolean   @default(false)
+  backgroundSteam     Boolean      @default(false)
   /// Le joueur a retiré le fond : son profil reste sobre.
-  backgroundOff       Boolean   @default(false)
+  backgroundOff       Boolean      @default(false)
   /// Bannière du profil et de la carte de joueur, choisie comme le fond : un jeu, le fond Steam ou
   /// rien ; sans choix, la première carte de la vitrine.
   bannerGameId        String?
-  bannerGame          Game?     @relation("ProfileBanner", fields: [bannerGameId], references: [id], onDelete: SetNull)
-  bannerSteam         Boolean   @default(false)
-  bannerOff           Boolean   @default(false)
+  bannerEditionId     String?
+  bannerEdition       GameEdition? @relation(fields: [bannerEditionId], references: [id], onDelete: SetNull)
+  bannerGame          Game?        @relation("ProfileBanner", fields: [bannerGameId], references: [id], onDelete: SetNull)
+  bannerSteam         Boolean      @default(false)
+  bannerOff           Boolean      @default(false)
   /// Affiche les jeux centrés sur le contenu sexuel, masqués par défaut.
-  showAdult           Boolean   @default(false)
+  showAdult           Boolean      @default(false)
   /// Montre les messages tels qu'ils ont été écrits ; sinon, les grossièretés sont masquées.
-  allowProfanity      Boolean   @default(false)
+  allowProfanity      Boolean      @default(false)
   /// Fuseau du navigateur : certains succès du site dépendent de l'heure du joueur.
   timeZone            String?
   friendsSeenAt       DateTime?
   clansSeenAt         DateTime?
   /// Dernière lecture du centre de notifications : succès et jeux terminés avant cette date sont vus.
   notificationsSeenAt DateTime?
-  role                Role      @default(USER)
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  role                Role         @default(USER)
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
 
   accounts      LinkedAccount[]
   partnerLinks  PartnerLink[]
@@ -151,6 +195,7 @@ model User {
   sessions      Session[]
   games         UserGame[]
   achievements  UserAchievement[]
+  steamReviews  SteamIntegrityReview[]
   guides        Guide[]
   guideVotes    GuideVote[]
   guideChecks   GuideCheck[]
@@ -178,6 +223,23 @@ model User {
   pushInvites       Boolean            @default(true)
   pushEvents        Boolean            @default(true)
   pushSubscriptions PushSubscription[]
+
+  /// Éclats disponibles : la somme de `shardEntries`, tenue à jour dans la même transaction.
+  shards       Int          @default(0)
+  /// Les succès débloqués avant cette date comptent seulement dans le capital de départ, plafonné ;
+  /// ceux d'après rapportent chacun des éclats. Un nouvel inscrit commence à son inscription.
+  shardsFrom   DateTime     @default(now())
+  shardEntries ShardEntry[]
+
+  /// Boosters offerts en attente, cumulables jusqu'à 7 ; `dailyAt` est le dernier jour compté.
+  dailyBoosters  Int              @default(1)
+  dailyAt        DateTime         @default(now())
+  /// Boosters normaux ouverts : chaque 10e est doré.
+  boostersOpened Int              @default(0)
+  /// Boosters ouverts depuis la dernière Mythique, pour la garantie.
+  pityMythique   Int              @default(0)
+  editions       UserEdition[]
+  boosters       BoosterOpening[]
 }
 
 /// Un navigateur abonné aux notifications. Lié à la session : se déconnecter l'arrête.
@@ -374,6 +436,66 @@ model SiteUnlock {
   @@index([code])
 }
 
+/// Chaque mouvement d'éclats. La clé unique rend chaque crédit idempotent : une synchro rejouée,
+/// un succès retiré puis retrouvé ou un capital recalculé ne paient jamais deux fois.
+model ShardEntry {
+  id        String      @id @default(cuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  delta     Int
+  reason    ShardReason
+  /// Ce qui a rapporté : l'id du succès, l'id du jeu fini, ou le palier du capital de départ.
+  refId     String
+  /// Le jeu concerné, pour le plafond d'éclats par jeu.
+  gameId    String?
+  createdAt DateTime    @default(now())
+
+  @@unique([userId, reason, refId])
+  @@index([userId, gameId])
+}
+
+/// Une édition qui existe pour une famille de jeu, toutes plateformes confondues.
+model GameEdition {
+  id          String        @id @default(cuid())
+  familyKey   String
+  kind        EditionKind
+  /// Dossier des calques et du script de la carte, versionné pour vider les caches.
+  assetPath   String
+  enabled     Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  owners      UserEdition[]
+  bannerUsers User[]
+
+  @@unique([familyKey, kind])
+}
+
+/// Une édition possédée. Elle ne se montre aux autres que si le jeu est fini à 100 %.
+model UserEdition {
+  userId     String
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  editionId  String
+  edition    GameEdition @relation(fields: [editionId], references: [id], onDelete: Cascade)
+  obtainedAt DateTime    @default(now())
+  crafted    Boolean     @default(false)
+  /// L'édition montrée pour ce jeu ; sans choix, la plus rare.
+  equipped   Boolean     @default(false)
+
+  @@id([userId, editionId])
+}
+
+model BoosterOpening {
+  id        String        @id @default(cuid())
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      BoosterKind
+  source    BoosterSource
+  /// Les cartes tirées, dans l'ordre : édition, nouvelle ou doublon, éclats rendus.
+  results   Json
+  createdAt DateTime      @default(now())
+
+  @@index([userId, createdAt])
+}
+
 model UserFrame {
   userId   String
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -510,9 +632,12 @@ model Game {
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
 
-  achievements Achievement[]
-  players      UserGame[]
-  guides       Guide[]
+  achievements      Achievement[]
+  steamReviews      SteamIntegrityReview[]
+  /// Ce jeu peut attribuer de grands lots à la même seconde.
+  allowSteamBatches Boolean                @default(false)
+  players           UserGame[]
+  guides            Guide[]
 
   @@unique([platform, platformGameId])
   @@index([name])
@@ -594,11 +719,43 @@ model UserGame {
   /// Une lecture complète n'a plus montré certains succès enregistrés : ils ne sont retirés que
   /// si une seconde lecture, au moins une heure plus tard, le confirme.
   removalSeenAt         DateTime?
+  /// Décompte Steam brut pour planifier les lectures, même si des succès sont en revue.
+  reportedUnlockedCount Int?
 
   @@id([userId, gameId])
   @@index([userId, lastUnlockedAt])
   @@index([gameId])
   @@index([lastUnlockedAt])
+}
+
+enum SteamReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+/// La décision suit le compte Steam à travers une déliaison ou une recréation du profil.
+model SteamIntegrityReview {
+  id          String            @id @default(cuid())
+  steamId     String
+  userId      String?
+  user        User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  gameId      String
+  game        Game              @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  status      SteamReviewStatus @default(PENDING)
+  suspendedAt DateTime?
+  flagged     String[]
+  approved    String[]
+  rejected    String[]
+  snapshot    Json
+  createdAt   DateTime          @default(now())
+  openedAt    DateTime          @default(now())
+  reviewedAt  DateTime?
+  reviewedBy  String?
+
+  @@unique([steamId, gameId])
+  @@index([status, openedAt])
+  @@index([userId, suspendedAt])
 }
 
 model UserAchievement {

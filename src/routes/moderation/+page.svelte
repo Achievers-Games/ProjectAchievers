@@ -31,6 +31,75 @@
 <div class="mx-auto max-w-3xl space-y-4">
   <h1>{m.moderation()}</h1>
 
+  <section id="steam-reviews" class="card space-y-3 p-4">
+    <h2 class="text-base">{m.steam_review_title()}</h2>
+    {#if form?.error}<p class="text-sm text-danger" role="alert">{form.error}</p>{/if}
+    {#if !data.steamReviews.length}
+      <p class="text-sm text-muted">{m.steam_review_empty()}</p>
+    {/if}
+    {#each data.steamReviews as review (review.id)}
+      <details class="rounded-md border border-line p-3" id={`steam-review-${review.id}`}>
+        <summary class="cursor-pointer font-medium">
+          {review.game.name} · {review.player?.displayName ?? m.steam_review_deleted_player()}
+          <span class="text-sm text-muted">
+            · {review.status === 'REJECTED'
+              ? m.steam_review_rejected()
+              : review.suspended
+                ? m.steam_review_suspended()
+                : m.steam_review_pending()}
+          </span>
+        </summary>
+        <form method="POST" action="?/steamReview" use:enhance class="mt-3 space-y-3 text-sm">
+          <input type="hidden" name="id" value={review.id} />
+          <input type="hidden" name="version" value={review.openedAt.getTime()} />
+          <div class="flex gap-3">
+            <a class="underline" href="/jeux/{review.game.slug}">{review.game.name}</a>
+            {#if review.player}
+              <a class="underline" href="/u/{review.player.handle}">{review.player.displayName}</a>
+            {/if}
+          </div>
+          {#if review.status === 'PENDING'}
+            <fieldset class="space-y-1">
+              <legend class="font-medium">{m.steam_review_selection()}</legend>
+              {#each review.unlocks as unlock (unlock.key)}
+                <label class="flex items-start gap-2">
+                  <input
+                    type="checkbox"
+                    name="accepted"
+                    value={unlock.key}
+                    disabled={!unlock.available}
+                  />
+                  <span
+                    >{unlock.name} · {unlock.at.toISOString().replace('T', ' ').slice(0, 19)} UTC</span
+                  >
+                </label>
+              {/each}
+            </fieldset>
+          {/if}
+          {#if !review.game.allowSteamBatches}
+            <label class="flex items-center gap-2">
+              <input type="checkbox" name="allowBatches" value="1" />
+              {m.steam_review_exception()}
+            </label>
+          {/if}
+          <div class="flex flex-wrap gap-2">
+            {#if review.status === 'PENDING'}
+              <button class="btn btn-secondary" name="decision" value="selected">
+                {m.steam_review_validate_selection()}
+              </button>
+              <button class="btn btn-secondary" name="decision" value="suspend">
+                {m.steam_review_suspend_game()}
+              </button>
+            {/if}
+            <button class="btn btn-secondary" name="decision" value="approve">
+              {m.steam_review_validate_all()}
+            </button>
+          </div>
+        </form>
+      </details>
+    {/each}
+  </section>
+
   {#if data.signups}
     {@const stats = data.signups}
     <section class="card space-y-3 p-4 text-sm" data-testid="signups">

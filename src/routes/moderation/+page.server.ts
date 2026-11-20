@@ -7,11 +7,18 @@ import { issueWebhookSecret } from '#lib/server/partner-webhooks';
 import { isRedirectUri, issueOAuthClient, rotateOAuthSecret } from '#lib/server/oauth-provider';
 import { psnTokenState, savePsnNpsso } from '#lib/server/service-token';
 import { requireModerator } from '#lib/server/moderator';
+import {
+  steamAchievementId,
+  steamReviewUnlocks,
+  steamUnlockKey,
+} from '#lib/server/steam-integrity';
+import { resolveSteamReview } from '#lib/server/sync/store';
 import type { Actions, PageServerLoad } from './$types';
 import { m } from '#lib/paraglide/messages';
 
-export const load: PageServerLoad = async ({ locals }) => {
+export const load: PageServerLoad = async ({ locals, depends }) => {
   const moderator = requireModerator(locals);
+  depends('app:steam-review');
 
   const reports = await db.report.findMany({
     where: { resolvedAt: null },
@@ -99,7 +106,54 @@ export const load: PageServerLoad = async ({ locals }) => {
     select: { id: true, name: true, slug: true, imageAt: true },
   });
 
+  const reviews = await db.steamIntegrityReview.findMany({
+    where: { OR: [{ status: 'PENDING' }, { status: 'REJECTED', suspendedAt: { not: null } }] },
+    orderBy: [{ status: 'asc' }, { openedAt: 'desc' }],
+    take: 50,
+    include: {
+      game: { select: { id: true, name: true, slug: true, allowSteamBatches: true } },
+      user: { select: { handle: true, displayName: true } },
+    },
+  });
+  const reviewAchievements = await db.achievement.findMany({
+    where: {
+      OR: reviews.map((review) => ({
+        gameId: review.gameId,
+        platformAchievementId: { in: [...new Set(review.flagged.map(steamAchievementId))] },
+      })),
+    },
+    select: { gameId: true, platformAchievementId: true, name: true },
+  });
+  const names = new Map(
+    reviewAchievements.map((achievement) => [
+      `${achievement.gameId}:${achievement.platformAchievementId}`,
+      achievement.name,
+    ]),
+  );
+
   return {
+    steamReviews: reviews.map((review) => {
+      const available = new Set(steamReviewUnlocks(review).map(steamUnlockKey));
+      return {
+        id: review.id,
+        game: review.game,
+        player: review.user,
+        openedAt: review.openedAt,
+        status: review.status,
+        suspended: Boolean(review.suspendedAt),
+        unlocks: review.flagged
+          .map((key) => {
+            const achievementId = steamAchievementId(key);
+            return {
+              key,
+              at: new Date(Number(key.slice(0, key.indexOf(':')))),
+              name: names.get(`${review.gameId}:${achievementId}`) ?? achievementId,
+              available: available.has(key),
+            };
+          })
+          .sort((a, b) => a.at.getTime() - b.at.getTime()),
+      };
+    }),
     emblems: emblems.map((clan) => ({
       ...clan,
       url: `/clans/${clan.slug}/image?v=${clan.imageAt!.getTime()}`,
@@ -191,6 +245,26 @@ const npsso = z
   .regex(/^[A-Za-z0-9_-]+$/);
 
 export const actions: Actions = {
+  steamReview: async ({ request, locals }) => {
+    const moderator = requireModerator(locals);
+    const form = await request.formData();
+    const id = z.string().min(1).max(100).safeParse(form.get('id'));
+    const version = Number(form.get('version'));
+    const action = z.enum(['approve', 'selected', 'suspend']).safeParse(form.get('decision'));
+    if (!id.success || !Number.isFinite(version) || !action.success) {
+      return fail(400, { error: m.action_failed() });
+    }
+    const accepted = form.getAll('accepted').filter((value) => typeof value === 'string');
+    const updated = await resolveSteamReview(
+      id.data,
+      new Date(version),
+      moderator.id,
+      accepted,
+      action.data,
+      form.get('allowBatches') === '1',
+    );
+    if (!updated) return fail(409, { error: m.steam_review_changed() });
+  },
   /** Remplace le jeton du compte de service PSN, vérifié par Sony avant d'être enregistré. */
   psnToken: async ({ request, locals }) => {
     requireAdmin(locals);

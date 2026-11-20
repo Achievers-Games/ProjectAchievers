@@ -22,6 +22,7 @@
     invite_clan: Shield,
     clan_request: Shield,
     clan_rename: TriangleAlert,
+    integrity: TriangleAlert,
     unlock: Trophy,
     card: Layers,
   };
@@ -44,6 +45,7 @@
       invite_clan: m.notification_invite_clan(),
       clan_request: m.notification_clan_request(),
       clan_rename: m.notification_clan_rename(),
+      integrity: m.steam_review_title(),
       unlock: m.notification_unlock(),
       card: m.notification_card(),
     })[kind];

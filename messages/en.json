@@ -2039,6 +2039,28 @@
   "clans_points": "Points",
   "notification_clan_request": "Clan request",
   "notification_clan_rename": "Clan name removed",
+  "steam_review_title": "Steam achievement review",
+  "steam_review_changed": "This case has changed. Reload the page before deciding.",
+  "steam_review_empty": "No Steam cases to review.",
+  "steam_review_deleted_player": "Deleted Achievers account",
+  "steam_review_rejected": "Suspension confirmed",
+  "steam_review_suspended": "Game suspended",
+  "steam_review_pending": "Achievements to review",
+  "steam_review_selection": "Select achievements to approve. The rest will be rejected.",
+  "steam_review_exception": "Allow batch unlocks for this game",
+  "steam_review_validate_selection": "Approve selected",
+  "steam_review_validate_all": "Approve all achievements",
+  "steam_review_suspend_game": "Confirm game exclusion",
+  "steam_review_player_notice": "Suspected abuse in {game}",
+  "steam_review_mod_notice": "Achievements to review in {game}",
+  "steam_review_player_detail": "Points and 100% completion for this game are suspended. A moderator will review the unlocks.",
+  "steam_review_player_rejected": "Moderation confirmed the exclusion of this game's points and 100% completion.",
+  "steam_review_player_approved": "Achievements restored in {game}",
+  "steam_review_unscored_detail": "Achievements flagged for suspected cheating remain visible on the game page and are excluded from scoring. Moderators review pending cases.",
+  "steam_review_unscored": "Excluded from score",
+  "steam_review_popup_title": "Achievements flagged for suspected cheating",
+  "steam_review_popup_detail": "Some achievements in these games are excluded from scoring while moderators review them. You can still see them on each game page.",
+  "steam_review_popup_ok": "Got it",
   "game_lure_link": "See on Lure",
   "game_completion_time": "{hours} h to 100% (median of {count} Achievers players)",
   "nav_developers": "Developers",
@@ -2285,5 +2307,152 @@
   "home_guides_community": "Community",
   "home_guides_official_empty": "No official guide yet.",
   "home_guides_community_empty": "Community guides show up here once they are well rated.",
-  "home_guides_by": "by {name}"
+  "home_guides_by": "by {name}",
+  "boosters_title": "Boosters",
+  "boosters_help": "Open boosters to get animated editions of the cards in your library. An edition shows on your profile once the game is 100 % complete.",
+  "boosters_shards": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "{n} shard",
+        "c=*": "{n} shards"
+      }
+    }
+  ],
+  "boosters_daily": "Free boosters: {count}/{max}",
+  "boosters_next_golden": "Your next booster is golden: at least one Vivante.",
+  "boosters_pity": "Mythique guaranteed within {count} boosters.",
+  "boosters_open_daily": "Open a free booster",
+  "boosters_buy": "Open a booster ({price} shards)",
+  "boosters_no_cards": "No game in your library has an edition yet: boosters open as soon as one does.",
+  "boosters_no_booster": "No free booster left for now: the next one arrives at midnight.",
+  "boosters_no_shards": "Not enough shards for this booster.",
+  "boosters_eligible": "Possible games: {relief} in Relief, {vivante} in Vivante, {mythique} in Mythique.",
+  "boosters_golden": "Golden booster",
+  "boosters_opened": "Your booster",
+  "boosters_rates": "Odds per card",
+  "boosters_rate_edition": "Edition",
+  "boosters_rate_chance": "Chance",
+  "boosters_rates_help": "Five cards per booster. Every 10th booster is golden with at least one Vivante; after {pity} boosters without a Mythique, the last card is one.",
+  "boosters_history": "Recent boosters",
+  "boosters_new": "New",
+  "boosters_duplicate": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "Duplicate: +{n} shard",
+        "c=*": "Duplicate: +{n} shards"
+      }
+    }
+  ],
+  "edition_relief": "Relief",
+  "edition_vivante": "Vivante",
+  "edition_mythique": "Mythique",
+  "booster_dialog": "Opening a booster",
+  "booster_sound_on": "Turn sound on",
+  "booster_sound_off": "Mute sound",
+  "booster_tap_open": "Tap the booster to open it",
+  "booster_drag_open": "Pull the top-right tab downward, or tap the booster to open it.",
+  "booster_inspect": "Inspect {name}",
+  "booster_replay": "Replay animation",
+  "booster_show_back": "Show back",
+  "booster_show_front": "Show front",
+  "booster_previous": "Previous card",
+  "booster_next": "Next card",
+  "booster_reveal_again": "Replay reveal",
+  "booster_tap_card": "Tap a card to flip it",
+  "booster_reveal_all": "Flip all",
+  "booster_close": "Close",
+  "booster_recap_new": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "{n} new card",
+        "c=*": "{n} new cards"
+      }
+    }
+  ],
+  "booster_recap_duplicates": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "{n} duplicate",
+        "c=*": "{n} duplicates"
+      }
+    }
+  ],
+  "booster_recap_recycled": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "+{n} shard recycled",
+        "c=*": "+{n} shards recycled"
+      }
+    }
+  ],
+  "booster_open_next": "Open the next one",
+  "booster_open_next_shards": "Open the next one ({price} shards)",
+  "collection_link": "View my collection",
+  "collection_title": "My collection",
+  "collection_help": "The cards you pulled from your boosters. Tap a card to admire it.",
+  "collection_empty": "No cards yet: open a booster to start your collection.",
+  "collection_open": "Open a booster",
+  "collection_progress": "Progress by edition",
+  "collection_to_discover": "{count} left to discover",
+  "collection_complete": "All discovered",
+  "collection_filter": "Filter by edition",
+  "collection_all": "All · {count}",
+  "collection_obtained": "Obtained on {date}",
+  "booster_mythique_title": "Mythique!",
+  "booster_mythique_odds": "{odds} chance per card",
+  "booster_continue": "Continue",
+  "booster_tap_flip": "Tap the card to flip it",
+  "booster_clue_genre": "Genre: {genre}",
+  "booster_clue_achievements": "{count} achievements to unlock",
+  "booster_clue_time": "{hours} h median to 100 %",
+  "collection_banner_equip": "Set as banner",
+  "collection_banner_equipped": "Profile banner equipped",
+  "collection_banner_remove": "Remove animated banner",
+  "collection_banner_removed": "Animated banner removed",
+  "collection_banner_help": "Complete a game 100% to use one of its cards as your public profile banner.",
+  "collection_banner_ineligible": "This card cannot be used as a banner.",
+  "collection_banner_preview": "Banner preview",
+  "collection_banner_mobile": "Mobile view",
+  "collection_banner_progress": "Game completion: {progress}. Reach 100% to equip this card.",
+  "collection_banner_game_page": "View game page"
 }

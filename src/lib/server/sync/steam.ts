@@ -561,13 +561,19 @@ export async function fetchUnlocks(steamId: string, appId: number) {
   if (!response.ok) throw new Error(`GetPlayerAchievements a répondu ${response.status}`);
 
   const data = (await response.json()) as {
-    playerstats?: { achievements?: { apiname: string; achieved: number; unlocktime: number }[] };
+    playerstats?: {
+      success?: boolean;
+      achievements?: { apiname: string; achieved: number; unlocktime: number }[];
+    };
   };
-  return (data.playerstats?.achievements ?? [])
+  if (data.playerstats?.success === false || !Array.isArray(data.playerstats?.achievements)) {
+    throw new Error('GetPlayerAchievements : liste de succès indisponible');
+  }
+  return data.playerstats.achievements
     .filter((a) => a.achieved === 1)
     .map((a) => ({
       platformAchievementId: a.apiname,
-      unlockedAt: new Date(a.unlocktime * 1000),
+      unlockedAt: new Date(Number.isFinite(a.unlocktime) ? a.unlocktime * 1000 : 0),
     }));
 }
 
@@ -677,7 +683,7 @@ async function syncSteamGame(
         : { playtimeMinutes: source.playtime_forever ?? 0, lastPlayedAt }),
     },
     // GetPlayerAchievements rend tous les succès du joueur sur ce jeu.
-    { complete: true },
+    { complete: true, steamId },
   );
   return { game, gained };
 }
@@ -729,6 +735,7 @@ export const syncSteam: ProviderSync = async ({
     where: { userId, game: { platform: 'STEAM' } },
     select: {
       unlockedCount: true,
+      reportedUnlockedCount: true,
       lastPlayedAt: true,
       playtimeMinutes: true,
       achievementsCheckedAt: true,
@@ -826,7 +833,7 @@ export const syncSteam: ProviderSync = async ({
         refreshSchema =
           count.total !== known.game.totalAchievements &&
           Date.now() - (known.game.schemaSyncedAt?.getTime() ?? 0) > ACHIEVEMENT_RECHECK;
-        if (count.unlocked === known.unlockedCount && !refreshSchema) {
+        if (count.unlocked === known.reportedUnlockedCount && !refreshSchema) {
           const played = borrowed ? ownedGame.playtime_forever : minutes;
           if (played !== undefined && played !== known.playtimeMinutes) {
             await db.userGame.update({

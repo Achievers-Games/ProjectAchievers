@@ -1972,6 +1972,11 @@
   background-size: cover;
   box-shadow: 0 12px 40px rgb(0 0 0 / 0.35);
 }
+.profile-banner[data-card-banner] {
+  width: 100%;
+  aspect-ratio: 460 / 215;
+  background-size: cover, cover, contain, cover;
+}
 .profile-banner h1 {
   @apply text-3xl sm:text-4xl;
   text-shadow: 0 2px 12px rgb(0 0 0 / 0.6);

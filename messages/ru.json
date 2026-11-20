@@ -2335,5 +2335,141 @@
   "home_guides_community": "Сообщество",
   "home_guides_official_empty": "Официальных гайдов пока нет.",
   "home_guides_community_empty": "Гайды сообщества появляются здесь, когда получают хорошие оценки.",
-  "home_guides_by": "автор: {name}"
+  "home_guides_by": "автор: {name}",
+  "boosters_title": "Бустеры",
+  "boosters_help": "Открывайте бустеры, чтобы получать анимированные издания карт из вашей библиотеки. Издание видно в профиле, когда игра пройдена на 100 %.",
+  "boosters_shards": "Осколков: {count}",
+  "boosters_daily": "Бесплатные бустеры: {count}/{max}",
+  "boosters_next_golden": "Следующий бустер золотой: минимум одна Vivante.",
+  "boosters_pity": "Mythique гарантирована не позже чем через {count} бустеров.",
+  "boosters_open_daily": "Открыть бесплатный бустер",
+  "boosters_buy": "Открыть бустер ({price} осколков)",
+  "boosters_no_cards": "Ни у одной игры из вашей библиотеки пока нет издания: бустеры откроются, как только оно появится.",
+  "boosters_no_booster": "Бесплатных бустеров пока нет: следующий появится в полночь.",
+  "boosters_no_shards": "Недостаточно осколков для этого бустера.",
+  "boosters_eligible": "Доступные игры: {relief} в Relief, {vivante} в Vivante, {mythique} в Mythique.",
+  "boosters_golden": "Золотой бустер",
+  "boosters_opened": "Ваш бустер",
+  "boosters_rates": "Шансы на карту",
+  "boosters_rate_edition": "Издание",
+  "boosters_rate_chance": "Шанс",
+  "boosters_rates_help": "Пять карт в бустере. Каждый 10-й бустер золотой и содержит минимум одну Vivante; после {pity} бустеров без Mythique последняя карта будет ею.",
+  "boosters_history": "Последние бустеры",
+  "boosters_new": "Новая",
+  "boosters_duplicate": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "Дубликат: +{n} осколок",
+        "c=few": "Дубликат: +{n} осколка",
+        "c=*": "Дубликат: +{n} осколков"
+      }
+    }
+  ],
+  "edition_relief": "Relief",
+  "edition_vivante": "Vivante",
+  "edition_mythique": "Mythique",
+  "booster_dialog": "Открытие бустера",
+  "booster_sound_on": "Включить звук",
+  "booster_sound_off": "Выключить звук",
+  "booster_tap_open": "Нажмите на бустер, чтобы открыть его",
+  "booster_drag_open": "Потяните верхний правый язычок вниз или нажмите на бустер, чтобы открыть его.",
+  "booster_inspect": "Осмотреть {name}",
+  "booster_replay": "Повторить анимацию",
+  "booster_show_back": "Показать оборот",
+  "booster_show_front": "Показать лицевую сторону",
+  "booster_previous": "Предыдущая карта",
+  "booster_next": "Следующая карта",
+  "booster_reveal_again": "Повторить раскрытие",
+  "booster_tap_card": "Нажмите на карту, чтобы перевернуть её",
+  "booster_reveal_all": "Перевернуть все",
+  "booster_close": "Закрыть",
+  "booster_recap_new": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "{n} новая карта",
+        "c=few": "{n} новые карты",
+        "c=*": "{n} новых карт"
+      }
+    }
+  ],
+  "booster_recap_duplicates": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "{n} дубликат",
+        "c=few": "{n} дубликата",
+        "c=*": "{n} дубликатов"
+      }
+    }
+  ],
+  "booster_recap_recycled": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "+{n} осколок",
+        "c=few": "+{n} осколка",
+        "c=*": "+{n} осколков"
+      }
+    }
+  ],
+  "booster_open_next": "Открыть следующий",
+  "booster_open_next_shards": "Открыть следующий ({price} осколков)",
+  "collection_link": "Моя коллекция",
+  "collection_title": "Моя коллекция",
+  "collection_help": "Карты, которые выпали тебе в бустерах. Нажми на карту, чтобы рассмотреть её.",
+  "collection_empty": "Пока нет карт: открой бустер, чтобы начать коллекцию.",
+  "collection_open": "Открыть бустер",
+  "collection_progress": "Прогресс по изданиям",
+  "collection_to_discover": "Ещё не открыто: {count}",
+  "collection_complete": "Все открыты",
+  "collection_filter": "Фильтр по изданию",
+  "collection_all": "Все · {count}",
+  "collection_obtained": "Получена {date}",
+  "booster_mythique_title": "Mythique!",
+  "booster_mythique_odds": "Шанс {odds} на карту",
+  "booster_continue": "Продолжить",
+  "booster_tap_flip": "Нажмите на карту, чтобы перевернуть её",
+  "booster_clue_genre": "Жанр: {genre}",
+  "booster_clue_achievements": "Достижений: {count}",
+  "booster_clue_time": "Медиана до 100 %: {hours} ч",
+  "collection_banner_equip": "Установить как баннер",
+  "collection_banner_equipped": "Баннер профиля установлен",
+  "collection_banner_remove": "Убрать анимированный баннер",
+  "collection_banner_removed": "Анимированный баннер убран",
+  "collection_banner_help": "Пройдите игру на 100 %, чтобы установить одну из её карт как баннер публичного профиля.",
+  "collection_banner_ineligible": "Эту карту нельзя использовать как баннер.",
+  "collection_banner_preview": "Просмотр баннера",
+  "collection_banner_mobile": "Вид на телефоне",
+  "collection_banner_progress": "Игра пройдена на {progress}. Чтобы установить карту, пройдите игру на 100 %.",
+  "collection_banner_game_page": "Открыть страницу игры"
 }

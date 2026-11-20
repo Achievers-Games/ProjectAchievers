@@ -23,15 +23,23 @@ const completedSince = (userId: string, after: Date) => ({
 async function seenAt(userId: string) {
   const user = await db.user.findUnique({
     where: { id: userId },
-    select: { friendsSeenAt: true, clansSeenAt: true, notificationsSeenAt: true },
+    select: { friendsSeenAt: true, clansSeenAt: true, notificationsSeenAt: true, role: true },
   });
   const epoch = new Date(0);
   return {
     friends: user?.friendsSeenAt ?? epoch,
     clans: user?.clansSeenAt ?? epoch,
     notices: user?.notificationsSeenAt ?? epoch,
+    moderator: user?.role === 'ADMIN' || user?.role === 'MODERATOR',
   };
 }
+
+const integrityNotices = (userId: string, moderator: boolean, after: Date) => ({
+  OR: [
+    { userId, openedAt: { gt: after } },
+    ...(moderator ? [{ status: 'PENDING' as const, openedAt: { gt: after } }] : []),
+  ],
+});
 
 /**
  * Ce qui est arrivé au joueur récemment : messages, invitations en attente, succès de
@@ -42,75 +50,123 @@ export async function notifications(userId: string, limit = 12): Promise<Notice[
   const since = new Date(Date.now() - NOTICE_DAYS * DAY);
   const seen = await seenAt(userId);
 
-  const [conversations, received, clanInvites, clanRequests, flaggedClans, unlocks, cards] =
-    await Promise.all([
-      listConversations(userId),
-      db.friendship.findMany({
-        where: { addresseeId: userId, accepted: false },
-        orderBy: { createdAt: 'desc' },
-        take: INVITE_NOTICES,
-        select: { id: true, createdAt: true, requester: { select: personSelect } },
-      }),
-      db.clanInvite.findMany({
-        where: { userId },
-        orderBy: { createdAt: 'desc' },
-        take: INVITE_NOTICES,
-        select: { createdAt: true, clan: { select: { name: true, slug: true, imageAt: true } } },
-      }),
-      // Les demandes d'adhésion arrivent au chef et aux officiers du clan.
-      db.clanRequest.findMany({
-        where: { clan: { members: { some: { userId, role: { not: 'MEMBER' } } } } },
-        orderBy: { createdAt: 'desc' },
-        take: INVITE_NOTICES,
-        select: {
-          createdAt: true,
-          clan: { select: { name: true } },
-          user: { select: personSelect },
-        },
-      }),
-      // Un nom retiré laisse une action en attente : le badge la compte déjà, le panneau doit la
-      // montrer, sans quoi la cloche annonce une nouveauté introuvable.
-      db.clanMember.findMany({
-        where: { userId, role: 'OWNER', clan: { flaggedName: { not: null } } },
-        select: { clan: { select: { id: true, flaggedName: true } } },
-      }),
-      // Classés à l'arrivée sur le site : un succès d'hier lu ce matin par la synchronisation
-      // est une nouvelle d'aujourd'hui.
-      db.userAchievement.findMany({
-        where: { userId, createdAt: { gte: since } },
-        orderBy: { createdAt: 'desc' },
-        take: UNLOCK_NOTICES,
-        select: {
-          unlockedAt: true,
-          createdAt: true,
-          achievement: {
-            select: {
-              id: true,
-              name: true,
-              iconUrl: true,
-              game: { select: { name: true, slug: true } },
-            },
+  const [
+    conversations,
+    received,
+    clanInvites,
+    clanRequests,
+    flaggedClans,
+    unlocks,
+    cards,
+    reviews,
+  ] = await Promise.all([
+    listConversations(userId),
+    db.friendship.findMany({
+      where: { addresseeId: userId, accepted: false },
+      orderBy: { createdAt: 'desc' },
+      take: INVITE_NOTICES,
+      select: { id: true, createdAt: true, requester: { select: personSelect } },
+    }),
+    db.clanInvite.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: INVITE_NOTICES,
+      select: { createdAt: true, clan: { select: { name: true, slug: true, imageAt: true } } },
+    }),
+    // Les demandes d'adhésion arrivent au chef et aux officiers du clan.
+    db.clanRequest.findMany({
+      where: { clan: { members: { some: { userId, role: { not: 'MEMBER' } } } } },
+      orderBy: { createdAt: 'desc' },
+      take: INVITE_NOTICES,
+      select: {
+        createdAt: true,
+        clan: { select: { name: true } },
+        user: { select: personSelect },
+      },
+    }),
+    // Un nom retiré laisse une action en attente : le badge la compte déjà, le panneau doit la
+    // montrer, sans quoi la cloche annonce une nouveauté introuvable.
+    db.clanMember.findMany({
+      where: { userId, role: 'OWNER', clan: { flaggedName: { not: null } } },
+      select: { clan: { select: { id: true, flaggedName: true } } },
+    }),
+    // Classés à l'arrivée sur le site : un succès d'hier lu ce matin par la synchronisation
+    // est une nouvelle d'aujourd'hui.
+    db.userAchievement.findMany({
+      where: { userId, createdAt: { gte: since } },
+      orderBy: { createdAt: 'desc' },
+      take: UNLOCK_NOTICES,
+      select: {
+        unlockedAt: true,
+        createdAt: true,
+        achievement: {
+          select: {
+            id: true,
+            name: true,
+            iconUrl: true,
+            game: { select: { name: true, slug: true } },
           },
         },
-      }),
-      db.userGame.findMany({
-        where: {
-          userId,
-          hidden: false,
-          completion: { gte: 100 },
-          ...completedSince(userId, since),
-        },
-        orderBy: { lastUnlockedAt: 'desc' },
-        take: CARD_NOTICES,
-        select: {
-          lastUnlockedAt: true,
-          gameId: true,
-          game: { select: { name: true, slug: true, headerUrl: true } },
-        },
-      }),
-    ]);
+      },
+    }),
+    db.userGame.findMany({
+      where: {
+        userId,
+        hidden: false,
+        completion: { gte: 100 },
+        ...completedSince(userId, since),
+      },
+      orderBy: { lastUnlockedAt: 'desc' },
+      take: CARD_NOTICES,
+      select: {
+        lastUnlockedAt: true,
+        gameId: true,
+        game: { select: { name: true, slug: true, headerUrl: true } },
+      },
+    }),
+    db.steamIntegrityReview.findMany({
+      where: integrityNotices(userId, seen.moderator, since),
+      orderBy: { openedAt: 'desc' },
+      take: limit,
+      select: {
+        id: true,
+        userId: true,
+        suspendedAt: true,
+        openedAt: true,
+        status: true,
+        game: { select: { name: true, slug: true } },
+      },
+    }),
+  ]);
 
   const notices: Notice[] = [];
+  for (const review of reviews) {
+    const own = review.userId === userId;
+    const at = review.openedAt;
+    notices.push({
+      id: `integrity:${review.id}`,
+      kind: 'integrity',
+      at: at.toISOString(),
+      href: own
+        ? `/jeux/${review.game.slug}?succes=hors-score`
+        : `/moderation#steam-review-${review.id}`,
+      title: own
+        ? review.status === 'APPROVED'
+          ? m.steam_review_player_approved({ game: review.game.name })
+          : m.steam_review_player_notice({ game: review.game.name })
+        : m.steam_review_mod_notice({ game: review.game.name }),
+      detail: own
+        ? review.status === 'APPROVED'
+          ? null
+          : review.suspendedAt
+            ? review.status === 'REJECTED'
+              ? m.steam_review_player_rejected()
+              : m.steam_review_player_detail()
+            : m.steam_review_unscored_detail()
+        : null,
+      unread: at > seen.notices,
+    });
+  }
 
   // listConversations trie déjà du plus récent au plus ancien ; une discussion encore vide
   // ne dit rien.
@@ -227,16 +283,17 @@ export async function notifications(userId: string, limit = 12): Promise<Notice[
 
 /** Ce que le badge doit compter en plus des messages et des invitations déjà comptés ailleurs. */
 export async function unseenNotices(userId: string) {
-  const { notices: seen } = await seenAt(userId);
+  const { notices: seen, moderator } = await seenAt(userId);
   const since = new Date(Date.now() - NOTICE_DAYS * DAY);
   const after = seen > since ? seen : since;
-  const [unlocks, cards] = await Promise.all([
+  const [unlocks, cards, reviews] = await Promise.all([
     db.userAchievement.count({ where: { userId, createdAt: { gt: after } } }),
     db.userGame.count({
       where: { userId, hidden: false, completion: { gte: 100 }, ...completedSince(userId, after) },
     }),
+    db.steamIntegrityReview.count({ where: integrityNotices(userId, moderator, after) }),
   ]);
-  return unlocks + cards;
+  return unlocks + cards + reviews;
 }
 
 /**

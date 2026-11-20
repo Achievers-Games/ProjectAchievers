@@ -32,7 +32,8 @@
 
   let { data } = $props();
 
-  type Filter = 'tous' | 'obtenus' | 'restants' | 'manquables' | 'commun' | 'moi' | 'lui';
+  type Filter =
+    'tous' | 'obtenus' | 'restants' | 'manquables' | 'commun' | 'moi' | 'lui' | 'hors-score';
   const complete = $derived(isComplete(data.progress));
   /** Un jeu sans succès (Honkai Impact 3rd sur Steam) : seul le temps de jeu y est suivi. */
   const noAchievements = $derived(data.achievementTotal === 0);
@@ -98,6 +99,9 @@
       : [
           { value: 'tous', label: m.filter_all() },
           { value: 'obtenus', label: m.filter_unlocked() },
+          ...(data.hasExcluded
+            ? [{ value: 'hors-score' as const, label: m.steam_review_unscored() }]
+            : []),
           { value: 'restants', label: m.filter_remaining() },
           ...(data.hasMissables
             ? [{ value: 'manquables' as const, label: m.filter_missable() }]
@@ -204,6 +208,15 @@
     {/if}
     <div class="min-w-0 flex-1 space-y-2">
       <h1>{data.game.name}</h1>
+      {#if data.steamSuspended || data.hasExcluded}
+        <p class="rounded-md border border-line bg-surface p-3 text-sm">
+          {data.steamSuspended === 'REJECTED'
+            ? m.steam_review_player_rejected()
+            : data.steamSuspended
+              ? m.steam_review_player_detail()
+              : m.steam_review_unscored_detail()}
+        </p>
+      {/if}
       <p class="text-sm text-muted">
         {editionLabel(data.game)} · {m.count_achievements({
           count: data.achievementTotal,
@@ -241,7 +254,7 @@
           {/each}
         </p>
       {/if}
-      {#if data.season}
+      {#if data.season && !data.steamSuspended}
         <a href="/saison" class="flex flex-wrap items-center gap-2 text-sm">
           {#if data.season.counts}
             <span class="season-badge"><Flame size={11} aria-hidden="true" /> {m.nav_season()}</span
@@ -543,6 +556,7 @@
           <a
             href="/succes/{achievement.id}{data.revealed && achievement.secret ? '?caches=1' : ''}"
             data-unlocked={achievement.unlockedAt ? '' : undefined}
+            data-excluded={achievement.excludedAt ? '' : undefined}
             class="achievement-row flex items-center gap-3 p-3 transition-colors hover:bg-raised"
           >
             <span class="relative shrink-0">
@@ -550,8 +564,12 @@
                 <AchievementIcon
                   src={achievement.iconUrl}
                   size={40}
-                  dim={!achievement.unlockedAt}
+                  dim={!achievement.unlockedAt && !achievement.excludedAt}
                 />
+              {:else if achievement.excludedAt}
+                <span class="grid h-10 w-10 place-items-center rounded bg-raised text-muted">
+                  <TriangleAlert size={14} aria-hidden="true" />
+                </span>
               {:else}
                 <span class="grid h-10 w-10 place-items-center rounded bg-raised text-muted">
                   <Lock size={14} aria-hidden="true" />
@@ -563,7 +581,10 @@
             </span>
             <div class="min-w-0 flex-1">
               <p class="flex items-center gap-1.5 text-sm font-medium">
-                <span class="truncate" class:text-muted={data.user && !achievement.unlockedAt}>
+                <span
+                  class="truncate"
+                  class:text-muted={data.user && !achievement.unlockedAt && !achievement.excludedAt}
+                >
                   {achievement.name}
                 </span>
                 {#if achievement.secret && data.revealed}
@@ -578,6 +599,12 @@
                   <span class="missable-badge" title={m.missable_hint()}>
                     <TriangleAlert size={11} aria-hidden="true" />
                     {m.missable_badge()}
+                  </span>
+                {/if}
+                {#if achievement.excludedAt}
+                  <span class="missable-badge shrink-0">
+                    <TriangleAlert size={11} aria-hidden="true" />
+                    {m.steam_review_unscored()}
                   </span>
                 {/if}
                 {#if achievement.guided}
@@ -631,6 +658,8 @@
                   <span class="font-semibold text-success"
                     >{formatDate(achievement.unlockedAt)}</span
                   >
+                {:else if achievement.excludedAt}
+                  {formatDate(achievement.excludedAt)}
                 {:else if achievement.globalRarity !== null}
                   {m.percent({ value: formatRarity(achievement.globalRarity) })}
                 {/if}

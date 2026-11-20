@@ -2285,5 +2285,120 @@
   "home_guides_community": "Community",
   "home_guides_official_empty": "Noch kein offizieller Guide.",
   "home_guides_community_empty": "Community-Guides erscheinen hier, sobald sie gut bewertet sind.",
-  "home_guides_by": "von {name}"
+  "home_guides_by": "von {name}",
+  "boosters_title": "Booster",
+  "boosters_help": "Öffne Booster, um animierte Editionen der Karten deiner Bibliothek zu bekommen. Eine Edition erscheint auf deinem Profil, sobald das Spiel zu 100 % abgeschlossen ist.",
+  "boosters_shards": "{count} Splitter",
+  "boosters_daily": "Gratis-Booster: {count}/{max}",
+  "boosters_next_golden": "Dein nächster Booster ist golden: mindestens eine Vivante.",
+  "boosters_pity": "Mythique garantiert in spätestens {count} Boostern.",
+  "boosters_open_daily": "Gratis-Booster öffnen",
+  "boosters_buy": "Booster öffnen ({price} Splitter)",
+  "boosters_no_cards": "Noch kein Spiel deiner Bibliothek hat eine Edition: Booster lassen sich öffnen, sobald es eine gibt.",
+  "boosters_no_booster": "Gerade kein Gratis-Booster mehr: der nächste kommt um Mitternacht.",
+  "boosters_no_shards": "Nicht genug Splitter für diesen Booster.",
+  "boosters_eligible": "Mögliche Spiele: {relief} in Relief, {vivante} in Vivante, {mythique} in Mythique.",
+  "boosters_golden": "Goldener Booster",
+  "boosters_opened": "Dein Booster",
+  "boosters_rates": "Chancen pro Karte",
+  "boosters_rate_edition": "Edition",
+  "boosters_rate_chance": "Chance",
+  "boosters_rates_help": "Fünf Karten pro Booster. Jeder 10. Booster ist golden und enthält mindestens eine Vivante; nach {pity} Boostern ohne Mythique ist die letzte Karte eine.",
+  "boosters_history": "Letzte Booster",
+  "boosters_new": "Neu",
+  "boosters_duplicate": "Doppelt: +{count} Splitter",
+  "edition_relief": "Relief",
+  "edition_vivante": "Vivante",
+  "edition_mythique": "Mythique",
+  "booster_dialog": "Booster wird geöffnet",
+  "booster_sound_on": "Ton einschalten",
+  "booster_sound_off": "Ton ausschalten",
+  "booster_tap_open": "Tippe auf den Booster, um ihn zu öffnen",
+  "booster_drag_open": "Ziehe die Lasche oben rechts nach unten oder tippe auf den Booster, um ihn zu öffnen.",
+  "booster_inspect": "{name} ansehen",
+  "booster_replay": "Animation erneut abspielen",
+  "booster_show_back": "Rückseite zeigen",
+  "booster_show_front": "Vorderseite zeigen",
+  "booster_previous": "Vorherige Karte",
+  "booster_next": "Nächste Karte",
+  "booster_reveal_again": "Enthüllung erneut ansehen",
+  "booster_tap_card": "Tippe auf eine Karte, um sie umzudrehen",
+  "booster_reveal_all": "Alle umdrehen",
+  "booster_close": "Schließen",
+  "booster_recap_new": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "{n} neue Karte",
+        "c=*": "{n} neue Karten"
+      }
+    }
+  ],
+  "booster_recap_duplicates": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "{n} Doppelte"
+      }
+    }
+  ],
+  "booster_recap_recycled": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "+{n} Splitter recycelt"
+      }
+    }
+  ],
+  "booster_open_next": "Nächsten öffnen",
+  "booster_open_next_shards": "Nächsten öffnen ({price} Splitter)",
+  "collection_link": "Meine Sammlung ansehen",
+  "collection_title": "Meine Sammlung",
+  "collection_help": "Die Karten aus deinen Boostern. Tippe auf eine Karte, um sie zu bewundern.",
+  "collection_empty": "Noch keine Karten: Öffne einen Booster, um deine Sammlung zu beginnen.",
+  "collection_open": "Booster öffnen",
+  "collection_progress": "Fortschritt nach Edition",
+  "collection_to_discover": "Noch {count} zu entdecken",
+  "collection_complete": "Alle entdeckt",
+  "collection_filter": "Nach Edition filtern",
+  "collection_all": "Alle · {count}",
+  "collection_obtained": "Erhalten am {date}",
+  "booster_mythique_title": "Mythique!",
+  "booster_mythique_odds": "{odds} Chance pro Karte",
+  "booster_continue": "Weiter",
+  "booster_tap_flip": "Tippe auf die Karte, um sie umzudrehen",
+  "booster_clue_genre": "Genre: {genre}",
+  "booster_clue_achievements": "{count} Erfolge freizuschalten",
+  "booster_clue_time": "{hours} Std. im Median bis 100 %",
+  "collection_banner_equip": "Als Banner verwenden",
+  "collection_banner_equipped": "Profilbanner ausgewählt",
+  "collection_banner_remove": "Animiertes Banner entfernen",
+  "collection_banner_removed": "Animiertes Banner entfernt",
+  "collection_banner_help": "Schließe ein Spiel zu 100 % ab, um eine seiner Karten als öffentliches Profilbanner zu verwenden.",
+  "collection_banner_ineligible": "Diese Karte kann nicht als Banner verwendet werden.",
+  "collection_banner_preview": "Bannervorschau",
+  "collection_banner_mobile": "Mobilansicht",
+  "collection_banner_progress": "Spielfortschritt: {progress}. Erreiche 100 %, um diese Karte zu verwenden.",
+  "collection_banner_game_page": "Spielseite öffnen"
 }

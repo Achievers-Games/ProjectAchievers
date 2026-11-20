@@ -2285,5 +2285,152 @@
   "home_guides_community": "Comunidad",
   "home_guides_official_empty": "Todavía no hay guías oficiales.",
   "home_guides_community_empty": "Las guías de la comunidad aparecen aquí cuando están bien valoradas.",
-  "home_guides_by": "por {name}"
+  "home_guides_by": "por {name}",
+  "boosters_title": "Sobres",
+  "boosters_help": "Abre sobres para conseguir ediciones animadas de las cartas de tu biblioteca. Una edición se muestra en tu perfil cuando el juego está completado al 100 %.",
+  "boosters_shards": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "{n} fragmento",
+        "c=*": "{n} fragmentos"
+      }
+    }
+  ],
+  "boosters_daily": "Sobres gratis: {count}/{max}",
+  "boosters_next_golden": "Tu próximo sobre es dorado: al menos una Vivante.",
+  "boosters_pity": "Mythique garantizada en {count} sobres como máximo.",
+  "boosters_open_daily": "Abrir un sobre gratis",
+  "boosters_buy": "Abrir un sobre ({price} fragmentos)",
+  "boosters_no_cards": "Ningún juego de tu biblioteca tiene edición todavía: los sobres se abrirán en cuanto haya una.",
+  "boosters_no_booster": "No quedan sobres gratis por ahora: el siguiente llega a medianoche.",
+  "boosters_no_shards": "No tienes suficientes fragmentos para este sobre.",
+  "boosters_eligible": "Juegos posibles: {relief} en Relief, {vivante} en Vivante, {mythique} en Mythique.",
+  "boosters_golden": "Sobre dorado",
+  "boosters_opened": "Tu sobre",
+  "boosters_rates": "Probabilidad por carta",
+  "boosters_rate_edition": "Edición",
+  "boosters_rate_chance": "Probabilidad",
+  "boosters_rates_help": "Cinco cartas por sobre. Cada 10.º sobre es dorado y trae al menos una Vivante; tras {pity} sobres sin Mythique, la última carta lo es.",
+  "boosters_history": "Últimos sobres",
+  "boosters_new": "Nueva",
+  "boosters_duplicate": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "Repetida: +{n} fragmento",
+        "c=*": "Repetida: +{n} fragmentos"
+      }
+    }
+  ],
+  "edition_relief": "Relief",
+  "edition_vivante": "Vivante",
+  "edition_mythique": "Mythique",
+  "booster_dialog": "Apertura de un sobre",
+  "booster_sound_on": "Activar el sonido",
+  "booster_sound_off": "Silenciar",
+  "booster_tap_open": "Toca el sobre para abrirlo",
+  "booster_drag_open": "Tira hacia abajo de la pestaña superior derecha o toca el sobre para abrirlo.",
+  "booster_inspect": "Inspeccionar {name}",
+  "booster_replay": "Repetir animación",
+  "booster_show_back": "Ver reverso",
+  "booster_show_front": "Ver anverso",
+  "booster_previous": "Carta anterior",
+  "booster_next": "Carta siguiente",
+  "booster_reveal_again": "Repetir revelación",
+  "booster_tap_card": "Toca una carta para darle la vuelta",
+  "booster_reveal_all": "Voltear todas",
+  "booster_close": "Cerrar",
+  "booster_recap_new": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "{n} carta nueva",
+        "c=*": "{n} cartas nuevas"
+      }
+    }
+  ],
+  "booster_recap_duplicates": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "{n} repetida",
+        "c=*": "{n} repetidas"
+      }
+    }
+  ],
+  "booster_recap_recycled": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "+{n} fragmento reciclado",
+        "c=*": "+{n} fragmentos reciclados"
+      }
+    }
+  ],
+  "booster_open_next": "Abrir el siguiente",
+  "booster_open_next_shards": "Abrir el siguiente ({price} fragmentos)",
+  "collection_link": "Ver mi colección",
+  "collection_title": "Mi colección",
+  "collection_help": "Las cartas que sacaste de tus sobres. Toca una carta para admirarla.",
+  "collection_empty": "Aún no tienes cartas: abre un sobre para empezar tu colección.",
+  "collection_open": "Abrir un sobre",
+  "collection_progress": "Progreso por edición",
+  "collection_to_discover": "{count} por descubrir",
+  "collection_complete": "Todas descubiertas",
+  "collection_filter": "Filtrar por edición",
+  "collection_all": "Todas · {count}",
+  "collection_obtained": "Obtenida el {date}",
+  "booster_mythique_title": "¡Mythique!",
+  "booster_mythique_odds": "{odds} de probabilidad por carta",
+  "booster_continue": "Continuar",
+  "booster_tap_flip": "Toca la carta para darle la vuelta",
+  "booster_clue_genre": "Género: {genre}",
+  "booster_clue_achievements": "{count} logros por desbloquear",
+  "booster_clue_time": "{hours} h de mediana para el 100 %",
+  "collection_banner_equip": "Usar como banner",
+  "collection_banner_equipped": "Banner de perfil equipado",
+  "collection_banner_remove": "Quitar banner animado",
+  "collection_banner_removed": "Banner animado eliminado",
+  "collection_banner_help": "Completa un juego al 100 % para usar una de sus cartas como banner de tu perfil público.",
+  "collection_banner_ineligible": "Esta carta no se puede usar como banner.",
+  "collection_banner_preview": "Vista previa del banner",
+  "collection_banner_mobile": "Vista móvil",
+  "collection_banner_progress": "Juego completado al {progress}. Alcanza el 100 % para equipar esta carta.",
+  "collection_banner_game_page": "Ver ficha del juego"
 }

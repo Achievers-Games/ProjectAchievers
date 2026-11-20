@@ -2,6 +2,16 @@ import type { Prisma, Platform, TrophyType } from '#prisma';
 import { db } from '../db';
 import { familyKey } from '../family';
 import { lockCardCatalog, refreshSharedTier, updateFamilyTiers } from '../card-rarity';
+import { creditCompletion, creditUnlocks } from '../shards';
+import {
+  filterSteamProgress,
+  lockSteamAccount,
+  steamAchievementId,
+  steamReviewUnlocks,
+  withdrawSteamProgress,
+} from '../steam-integrity';
+import { invalidatePublicCache } from '../public-cache';
+import { connectedUsers, publishChat } from './events';
 import { slugify } from '#lib/slug';
 import { logger } from '#lib/logger';
 
@@ -271,18 +281,17 @@ async function reviewRemovals(
   userId: string,
   gameId: string,
   unlocks: UnlockInput[],
+  confirmedSteamRead = false,
   now = Date.now(),
 ): Promise<{ seenAt: Date | null; removed: number } | undefined> {
-  if (!unlocks.length) return undefined;
+  if (!unlocks.length && !confirmedSteamRead) return undefined;
   const reported = new Set(unlocks.map((unlock) => unlock.platformAchievementId));
   const stored = await tx.$queryRaw<{ achievementId: string; platformAchievementId: string }[]>`
     SELECT ua."achievementId", a."platformAchievementId"
     FROM "UserAchievement" ua
     JOIN "Achievement" a ON a.id = ua."achievementId"
     WHERE ua."userId" = ${userId} AND a."gameId" = ${gameId}`;
-  const missing = stored
-    .filter((row) => !reported.has(row.platformAchievementId))
-    .map((row) => row.achievementId);
+  const missing = stored.filter((row) => !reported.has(row.platformAchievementId));
   const seen = (
     await tx.userGame.findUnique({
       where: { userId_gameId: { userId, gameId } },
@@ -294,7 +303,18 @@ async function reviewRemovals(
   if (!seen) return { seenAt: new Date(now), removed: 0 };
   if (now - seen.getTime() < REMOVAL_CONFIRM) return undefined;
 
-  await tx.userAchievement.deleteMany({ where: { userId, achievementId: { in: missing } } });
+  if (confirmedSteamRead) {
+    await withdrawSteamProgress(
+      tx,
+      userId,
+      gameId,
+      missing.map((row) => row.platformAchievementId),
+    );
+  } else {
+    await tx.userAchievement.deleteMany({
+      where: { userId, achievementId: { in: missing.map((row) => row.achievementId) } },
+    });
+  }
   log.info('Succès retirés', { userId, gameId, count: missing.length });
   return { seenAt: null, removed: missing.length };
 }
@@ -303,106 +323,257 @@ async function reviewRemovals(
  * Enregistre les déverrouillages d'un joueur et recalcule sa progression.
  * Renvoie le nombre de succès nouvellement obtenus et de quoi les annoncer.
  */
+type ProgressActivity = {
+  playtimeMinutes?: number;
+  lastPlayedAt?: Date | null;
+  achievementsCheckedAt?: Date;
+};
+
 export async function saveProgress(
   userId: string,
   gameId: string,
   unlocks: UnlockInput[],
-  activity: {
-    playtimeMinutes?: number;
-    lastPlayedAt?: Date | null;
-    achievementsCheckedAt?: Date;
-  } = {},
+  activity: ProgressActivity = {},
   /**
    * `complete` : `unlocks` est toute la liste que la plateforme donne pour ce jeu, pas un
    * extrait. Un succès enregistré qu'elle ne montre plus (progression réinitialisée) peut alors
    * être retiré, avec les garde-fous de `REMOVAL_CONFIRM`.
    */
-  { complete = false }: { complete?: boolean } = {},
+  { complete = false, steamId }: { complete?: boolean; steamId?: string } = {},
 ): Promise<SaveResult> {
-  return db.$transaction(
-    async (db) => {
+  const result = await db.$transaction(
+    async (tx) => {
+      if (steamId) {
+        await lockSteamAccount(tx, steamId);
+        const account = await tx.linkedAccount.findUnique({
+          where: { provider_providerUserId: { provider: 'STEAM', providerUserId: steamId } },
+          select: { userId: true },
+        });
+        if (account?.userId !== userId)
+          return { gained: 0, fresh: [], removed: 0, withdrawn: false, reviewChanged: false };
+      }
       // Sérialise import complet et suivi en direct du même jeu pour ce joueur.
-      await db.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${JSON.stringify([userId, gameId])}, 0))::text`;
+      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${JSON.stringify([userId, gameId])}, 0))::text`;
+      const filtered = steamId
+        ? await filterSteamProgress(tx, userId, gameId, steamId, unlocks)
+        : { unlocks, withdrawn: false, reviewChanged: false };
+      const removal = complete
+        ? await reviewRemovals(tx, userId, gameId, unlocks, Boolean(steamId))
+        : undefined;
+      return {
+        ...(await writeProgress(tx, userId, gameId, filtered.unlocks, activity, {
+          removal,
+          reportedUnlockedCount: steamId ? unlocks.length : undefined,
+        })),
+        withdrawn: filtered.withdrawn || Boolean(removal?.removed),
+        reviewChanged: filtered.reviewChanged,
+      };
+    },
+    { timeout: 30_000 },
+  );
+  if (result.withdrawn) invalidatePublicCache();
+  if (result.reviewChanged) await publishSteamReview(userId);
+  return { gained: result.gained, fresh: result.fresh, removed: result.removed };
+}
 
-      let gained = 0;
-      const freshIds: string[] = [];
-      // La taille du SQL et des résultats Prisma reste bornée, même pour 8 000 succès WoW.
-      const batchSize = 250;
-      for (let offset = 0; offset < unlocks.length; offset += batchSize) {
-        const batch = unlocks.slice(offset, offset + batchSize);
-        const platformIds = batch.map((row) => row.platformAchievementId);
-        const known = await db.$queryRaw<{ id: string; platformAchievementId: string }[]>`
+async function publishSteamReview(userId: string | null) {
+  if (userId) publishChat(userId, { type: 'steam-review' });
+  const online = [...connectedUsers()].filter((id) => id !== userId);
+  if (!online.length) return;
+  const moderators = await db.user
+    .findMany({
+      where: { id: { in: online }, role: { in: ['ADMIN', 'MODERATOR'] } },
+      select: { id: true },
+    })
+    .catch((cause: unknown) => {
+      log.error('Notification de modération Steam :', cause);
+      return [];
+    });
+  for (const moderator of moderators) publishChat(moderator.id, { type: 'steam-review' });
+}
+
+async function writeProgress(
+  db: Prisma.TransactionClient,
+  userId: string,
+  gameId: string,
+  unlocks: UnlockInput[],
+  activity: ProgressActivity,
+  {
+    removal,
+    reportedUnlockedCount,
+  }: {
+    removal?: { seenAt: Date | null; removed: number };
+    reportedUnlockedCount?: number;
+  } = {},
+): Promise<SaveResult> {
+  let gained = 0;
+  const freshIds: string[] = [];
+  // Les succès vraiment nouveaux, pour les éclats.
+  const newUnlocks: { achievementId: string; unlockedAt: Date }[] = [];
+  // La taille du SQL et des résultats Prisma reste bornée, même pour 8 000 succès WoW.
+  const batchSize = 250;
+  for (let offset = 0; offset < unlocks.length; offset += batchSize) {
+    const batch = unlocks.slice(offset, offset + batchSize);
+    const platformIds = batch.map((row) => row.platformAchievementId);
+    const known = await db.$queryRaw<{ id: string; platformAchievementId: string }[]>`
           SELECT id, "platformAchievementId" FROM "Achievement"
           WHERE "gameId" = ${gameId} AND "platformAchievementId" = ANY(${platformIds}::text[])`;
-        const byPlatformId = new Map(known.map((row) => [row.platformAchievementId, row]));
-        const pending = new Map<string, Date>();
-        for (const unlock of batch) {
-          const achievement = byPlatformId.get(unlock.platformAchievementId);
-          if (achievement && !pending.has(achievement.id))
-            pending.set(achievement.id, unlock.unlockedAt);
-        }
-        if (!pending.size) continue;
-        // Deux tableaux paramétrés évitent de construire un gros arbre de requête Prisma.
-        const ids = [...pending.keys()];
-        const dates = [...pending.values()].map((date) => date.toISOString());
-        // Le suivi en direct date un succès à sa détection, avant que Steam ne donne l'heure
-        // exacte : une date plus ancienne remplace la précédente. `xmax = 0` distingue un
-        // succès nouveau d'une date corrigée.
-        const written = await db.$queryRaw<{ achievementId: string; inserted: boolean }[]>`
+    const byPlatformId = new Map(known.map((row) => [row.platformAchievementId, row]));
+    const pending = new Map<string, Date>();
+    for (const unlock of batch) {
+      const achievement = byPlatformId.get(unlock.platformAchievementId);
+      if (achievement && !pending.has(achievement.id))
+        pending.set(achievement.id, unlock.unlockedAt);
+    }
+    if (!pending.size) continue;
+    // Deux tableaux paramétrés évitent de construire un gros arbre de requête Prisma.
+    const ids = [...pending.keys()];
+    const dates = [...pending.values()].map((date) => date.toISOString());
+    // Le suivi en direct date un succès à sa détection, avant que Steam ne donne l'heure
+    // exacte : une date plus ancienne remplace la précédente. `xmax = 0` distingue un
+    // succès nouveau d'une date corrigée.
+    const written = await db.$queryRaw<
+      { achievementId: string; unlockedAt: Date; inserted: boolean }[]
+    >`
           INSERT INTO "UserAchievement" ("userId", "achievementId", "unlockedAt")
           SELECT ${userId}, row.id, row.at
           FROM unnest(${ids}::text[], ${dates}::timestamp[]) AS row(id, at)
           ON CONFLICT ("userId", "achievementId") DO UPDATE SET "unlockedAt" = EXCLUDED."unlockedAt"
           WHERE EXCLUDED."unlockedAt" < "UserAchievement"."unlockedAt"
-          RETURNING "achievementId", (xmax = 0) AS inserted`;
-        const inserted = written.filter((row) => row.inserted);
-        gained += inserted.length;
-        for (const row of inserted.slice(0, 5 - freshIds.length)) freshIds.push(row.achievementId);
-      }
+          RETURNING "achievementId", "unlockedAt", (xmax = 0) AS inserted`;
+    const inserted = written.filter((row) => row.inserted);
+    gained += inserted.length;
+    for (const row of inserted) newUnlocks.push(row);
+    for (const row of inserted.slice(0, 5 - freshIds.length)) freshIds.push(row.achievementId);
+  }
 
-      const removal = complete ? await reviewRemovals(db, userId, gameId, unlocks) : undefined;
-
-      // Les agrégats restent dans Postgres : inutile de charger chaque succès déjà acquis.
-      const [total, progress] = await Promise.all([
-        db.achievement.count({ where: { gameId } }),
-        db.$queryRaw<{ unlockedCount: number; lastUnlockedAt: Date | null; platinum: boolean }[]>`
+  // Les agrégats restent dans Postgres : inutile de charger chaque succès déjà acquis.
+  const [total, progress] = await Promise.all([
+    db.achievement.count({ where: { gameId } }),
+    db.$queryRaw<{ unlockedCount: number; lastUnlockedAt: Date | null; platinum: boolean }[]>`
           SELECT count(*)::int AS "unlockedCount", max(ua."unlockedAt") AS "lastUnlockedAt",
             coalesce(bool_or(a."trophyType" = 'PLATINUM'), false) AS platinum
           FROM "UserAchievement" ua
           JOIN "Achievement" a ON a.id = ua."achievementId"
           WHERE ua."userId" = ${userId} AND a."gameId" = ${gameId}`,
-      ]);
-      const { unlockedCount, lastUnlockedAt, platinum } = progress[0]!;
-      const data = {
-        unlockedCount,
-        totalCount: total,
-        completion: total > 0 ? (unlockedCount / total) * 100 : 0,
-        platinum,
-        lastUnlockedAt,
-        ...(activity.playtimeMinutes !== undefined && {
-          playtimeMinutes: activity.playtimeMinutes,
-        }),
-        ...(activity.lastPlayedAt !== undefined && { lastPlayedAt: activity.lastPlayedAt }),
-        ...(activity.achievementsCheckedAt !== undefined && {
-          achievementsCheckedAt: activity.achievementsCheckedAt,
-        }),
-        ...(removal !== undefined && { removalSeenAt: removal.seenAt }),
-      };
-      await db.userGame.upsert({
-        where: { userId_gameId: { userId, gameId } },
-        update: data,
-        create: { ...data, userId, gameId },
+  ]);
+  const { unlockedCount, lastUnlockedAt, platinum } = progress[0]!;
+  const data = {
+    unlockedCount,
+    totalCount: total,
+    completion: total > 0 ? (unlockedCount / total) * 100 : 0,
+    platinum,
+    lastUnlockedAt,
+    ...(activity.playtimeMinutes !== undefined && {
+      playtimeMinutes: activity.playtimeMinutes,
+    }),
+    ...(activity.lastPlayedAt !== undefined && { lastPlayedAt: activity.lastPlayedAt }),
+    ...(activity.achievementsCheckedAt !== undefined && {
+      achievementsCheckedAt: activity.achievementsCheckedAt,
+    }),
+    ...(removal !== undefined && { removalSeenAt: removal.seenAt }),
+    ...(reportedUnlockedCount !== undefined && { reportedUnlockedCount }),
+  };
+  await db.userGame.upsert({
+    where: { userId_gameId: { userId, gameId } },
+    update: data,
+    create: { ...data, userId, gameId },
+  });
+  // Les éclats suivent les succès dans la même transaction : jamais l'un sans l'autre.
+  const { shardsFrom } = await db.user.findUniqueOrThrow({
+    where: { id: userId },
+    select: { shardsFrom: true },
+  });
+  await creditUnlocks(db, userId, gameId, newUnlocks, shardsFrom);
+  if (data.completion >= 100) {
+    await creditCompletion(db, userId, gameId, lastUnlockedAt, shardsFrom);
+  }
+  const fresh = freshIds.length
+    ? await db.achievement.findMany({
+        where: { id: { in: freshIds } },
+        select: { id: true, name: true, iconUrl: true },
+      })
+    : [];
+  return { gained, fresh, removed: removal?.removed ?? 0 };
+}
+
+export async function resolveSteamReview(
+  id: string,
+  version: Date,
+  moderatorId: string,
+  accepted: string[],
+  decision: 'approve' | 'selected' | 'suspend',
+  allowBatches: boolean,
+) {
+  const approveAll = decision === 'approve';
+  const review = await db.$transaction(
+    async (tx) => {
+      const scope = await tx.steamIntegrityReview.findUnique({
+        where: { id },
+        select: { steamId: true },
       });
-      const fresh = freshIds.length
-        ? await db.achievement.findMany({
-            where: { id: { in: freshIds } },
-            select: { id: true, name: true, iconUrl: true },
-          })
-        : [];
-      return { gained, fresh, removed: removal?.removed ?? 0 };
+      if (!scope) return false;
+      await lockSteamAccount(tx, scope.steamId);
+      const current = await tx.steamIntegrityReview.findUniqueOrThrow({ where: { id } });
+      if (
+        current.openedAt.getTime() !== version.getTime() ||
+        (!approveAll && current.status !== 'PENDING')
+      ) {
+        return false;
+      }
+      const selected = new Set(accepted);
+      const rejected = approveAll
+        ? []
+        : [
+            ...new Set([
+              ...current.rejected,
+              ...current.flagged.filter((key) => !selected.has(key)).map(steamAchievementId),
+            ]),
+          ];
+      const approved = [
+        ...new Set([
+          ...current.approved,
+          ...current.flagged.filter((key) => approveAll || selected.has(key)),
+        ]),
+      ];
+      const suspendedAt = decision === 'suspend' ? (current.suspendedAt ?? new Date()) : null;
+      await tx.steamIntegrityReview.update({
+        where: { id },
+        data: {
+          status: rejected.length || suspendedAt ? 'REJECTED' : 'APPROVED',
+          rejected,
+          approved,
+          suspendedAt,
+          reviewedAt: new Date(),
+          reviewedBy: moderatorId,
+        },
+      });
+      if (approveAll && allowBatches) {
+        await tx.game.update({
+          where: { id: current.gameId },
+          data: { allowSteamBatches: true },
+        });
+      }
+      const account = await tx.linkedAccount.findUnique({
+        where: { provider_providerUserId: { provider: 'STEAM', providerUserId: scope.steamId } },
+        select: { userId: true },
+      });
+      if (account && account.userId === current.userId) {
+        const excluded = new Set(rejected);
+        const unlocks = steamReviewUnlocks(current).filter(
+          (unlock) => !excluded.has(unlock.platformAchievementId),
+        );
+        if (suspendedAt) await withdrawSteamProgress(tx, account.userId, current.gameId);
+        else await writeProgress(tx, account.userId, current.gameId, unlocks, {});
+      }
+      return { userId: current.userId };
     },
     { timeout: 30_000 },
   );
+  if (!review) return false;
+  invalidatePublicCache();
+  await publishSteamReview(review.userId);
+  return true;
 }
 
 /** Au-delà, un succès retrouvé à la visite suivante n'est plus une nouvelle. */

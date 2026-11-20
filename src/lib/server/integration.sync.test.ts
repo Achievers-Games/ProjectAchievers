@@ -1153,7 +1153,7 @@ describe('synchronisation Steam', () => {
     expect(reads(mock, 'GetTopAchievementsForGames', steamid.value)).toBe(3);
   });
 
-  it('annonce un succès dès que GetTopAchievementsForGames le voit, puis corrige sa date', async () => {
+  it('attend la date Steam officielle avant de compter et annoncer un succès en direct', async () => {
     const steamid = { value: '' };
     const player = [{ apiname: 'A', achieved: 1, unlocktime: 1_700_000_000 }];
     const top: { statid: number; bit: number; name: string; icon: string }[] = [];
@@ -1179,20 +1179,18 @@ describe('synchronisation Steam', () => {
     top.push({ statid: 1, bit: 0, name: 'Alpha', icon: 'i' });
     top.push({ statid: 1, bit: 1, name: 'Bêta', icon: 'i' });
     await checkLiveGames();
-    expect(events.find((event) => event.status === 'COMPLETED')).toMatchObject({
-      achievements: 1,
-    });
+    expect(events.find((event) => event.status === 'COMPLETED')).toBeUndefined();
     const beta = await db.achievement.findFirstOrThrow({
       where: { game: { platformGameId: '999001' }, platformAchievementId: 'B' },
     });
     // Reconnu par son nom (les deux icônes sont les mêmes), sa position est retenue.
     expect(beta.steamStatBit).toBe(33);
-    const provisional = await db.userAchievement.findFirstOrThrow({
+    const provisional = await db.userAchievement.findFirst({
       where: { userId, achievementId: beta.id },
     });
-    expect(provisional.unlockedAt.getTime()).toBeGreaterThan(Date.now() - 60_000);
+    expect(provisional).toBeNull();
 
-    // GetPlayerAchievements rattrape : l'heure exacte remplace l'heure de détection.
+    // GetPlayerAchievements rattrape : le succès entre avec l'heure officielle.
     player.push({ apiname: 'B', achieved: 1, unlocktime: 1_700_000_100 });
     await checkLiveGames();
     stop();
@@ -1201,6 +1199,7 @@ describe('synchronisation Steam', () => {
     });
     expect(exact.unlockedAt.getTime()).toBe(1_700_000_100_000);
     expect(events.filter((event) => event.status === 'COMPLETED')).toHaveLength(1);
+    expect(events.find((event) => event.status === 'COMPLETED')).toMatchObject({ achievements: 1 });
   });
 
   it('suit l’avatar, le cadre et l’avatar animé changés sur Steam', async () => {
