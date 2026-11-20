@@ -606,7 +606,20 @@ export async function auditSteamHistory(limit = 24, userId?: string) {
         GROUP BY date_trunc('second', ua."unlockedAt")
         HAVING count(*) >= 20 OR count(*) >= greatest(10, ceil(g."totalAchievements" * 0.2))
           OR count(*) >= greatest(8, ceil(g."totalAchievements" * 0.65))
-      )))
+      ))
+      -- Moins d'une minute de jeu par succès, sans lot : relu au plus une fois par semaine pour
+      -- le contrôle du rythme (steamPaceSuspects), qui tranche avec la rareté et les pairs.
+      OR (ug."unlockedCount" >= 10 AND ug."playtimeMinutes" > 0
+        AND ug."playtimeMinutes" < ug."unlockedCount"
+        AND NOT la."playtimeHidden" AND NOT g."allowSteamBatches" AND NOT g."crossProgress"
+        AND g.name NOT ILIKE 'Zup!%' AND g."platformGameId" <> '1258080'
+        AND (ug."achievementsCheckedAt" IS NULL
+          OR ug."achievementsCheckedAt" < now() - interval '7 days')
+        AND NOT EXISTS (
+          SELECT 1 FROM "SteamIntegrityReview" r
+          WHERE r."gameId" = g.id AND r."userId" = ug."userId"
+            AND (r.status = 'PENDING' OR r."suspendedAt" IS NOT NULL)
+        )))
     ORDER BY ug."achievementsCheckedAt" ASC NULLS FIRST, ug."gameId"
     LIMIT ${limit}`;
   for (const game of games) {

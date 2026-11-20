@@ -2347,5 +2347,7 @@
   "steam_cross_unmark": "Entfernen",
   "notifications_see_all": "Alle ansehen",
   "notifications_page_hint": "Benachrichtigungen der letzten 30 Tage.",
-  "steam_ranking_hidden": "Deine Steam-Spielzeit ist privat: Solange das so bleibt, erscheinst du in keiner Rangliste."
+  "steam_ranking_hidden": "Deine Steam-Spielzeit ist privat: Solange das so bleibt, erscheinst du in keiner Rangliste.",
+  "steam_trust_pace": "Am Tempo erkannt, ohne Block: zu viele Erfolge für die Spielzeit, einzeln freigeschaltet",
+  "steam_trust_playtime_reference": "Spielzeit: {time}, gegenüber {expected}, die Lure für diesen Fortschritt erwartet"
 }

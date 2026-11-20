@@ -49,6 +49,13 @@
         return m.steam_trust_near_impossible({ count: String(signal.count) });
       case 'cross_progress':
         return m.steam_trust_cross_progress();
+      case 'pace':
+        return m.steam_trust_pace();
+      case 'playtime_reference':
+        return m.steam_trust_playtime_reference({
+          time: hours(signal.minutes),
+          expected: hours(signal.expected),
+        });
       case 'other_platform':
         return m.steam_trust_other_platform({
           platform:

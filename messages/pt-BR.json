@@ -2347,5 +2347,7 @@
   "steam_cross_unmark": "Remover",
   "notifications_see_all": "Ver todas",
   "notifications_page_hint": "Notificações dos últimos 30 dias.",
-  "steam_ranking_hidden": "Seu tempo de jogo na Steam está privado: você não aparece nos rankings enquanto ele continuar assim."
+  "steam_ranking_hidden": "Seu tempo de jogo na Steam está privado: você não aparece nos rankings enquanto ele continuar assim.",
+  "steam_trust_pace": "Detectado pelo ritmo, sem lote: conquistas demais para o tempo jogado, desbloqueadas uma a uma",
+  "steam_trust_playtime_reference": "Tempo de jogo: {time}, contra {expected} esperados pela Lure para este progresso"
 }

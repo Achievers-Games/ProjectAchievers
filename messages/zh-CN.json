@@ -2310,5 +2310,7 @@
   "steam_cross_unmark": "移除",
   "notifications_see_all": "查看全部",
   "notifications_page_hint": "最近 30 天的通知。",
-  "steam_ranking_hidden": "你的 Steam 游戏时长为私密：在公开之前，你不会出现在排行榜中。"
+  "steam_ranking_hidden": "你的 Steam 游戏时长为私密：在公开之前，你不会出现在排行榜中。",
+  "steam_trust_pace": "按节奏发现，并非批量：相对游戏时长成就过多，且是逐个解锁的",
+  "steam_trust_playtime_reference": "游戏时长：{time}，Lure 估计此进度需 {expected}"
 }

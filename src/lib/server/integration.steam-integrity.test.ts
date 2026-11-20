@@ -565,3 +565,48 @@ it('joint les preuves du joueur à sa revue en attente, trois au plus', async ()
     ),
   ).toBe(true);
 });
+
+it('repère une progression trop rapide sans lot, d’après le temps complétionniste de Lure', async () => {
+  const user = await player();
+  const steamId = user.accounts[0]!.providerUserId;
+  const appId = `${PREFIX}-${crypto.randomUUID()}`;
+  const gameId = await game(false, appId);
+  await db.game.update({ where: { id: gameId }, data: { totalAchievements: 21 } });
+  // 100 % en 40 h d'ordinaire : 21 succès espacés d'une heure, en 3 h de jeu.
+  await db.lureGame.create({
+    data: { steamAppId: appId, found: true, completionistMinutes: 2400, fetchedAt: new Date() },
+  });
+  const at = Math.floor(Date.now() / 1000) * 1000 - 30 * 86_400_000;
+  const spread = Array.from({ length: 21 }, (_, i) => ({
+    platformAchievementId: `a${i}`,
+    unlockedAt: new Date(at + i * 3_600_000),
+  }));
+  await saveProgress(
+    user.id,
+    gameId,
+    spread,
+    { playtimeMinutes: 180 },
+    { steamId, complete: true },
+  );
+  expect(await progress(user.id, gameId)).toMatchObject({ unlockedCount: 0 });
+  expect(
+    await db.steamIntegrityReview.findUniqueOrThrow({
+      where: { steamId_gameId: { steamId, gameId } },
+    }),
+  ).toMatchObject({ trust: { verdict: 'cheat' } });
+
+  // Le même rythme avec 30 h de jeu : rien à signaler.
+  const other = await player();
+  const otherSteam = other.accounts[0]!.providerUserId;
+  await saveProgress(
+    other.id,
+    gameId,
+    spread,
+    { playtimeMinutes: 1800 },
+    {
+      steamId: otherSteam,
+      complete: true,
+    },
+  );
+  expect(await progress(other.id, gameId)).toMatchObject({ unlockedCount: 21 });
+});

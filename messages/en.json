@@ -2347,5 +2347,7 @@
   "steam_cross_unmark": "Remove",
   "notifications_see_all": "See all",
   "notifications_page_hint": "Notifications from the last 30 days.",
-  "steam_ranking_hidden": "Your Steam playtime is private: you do not appear in the rankings while it stays private."
+  "steam_ranking_hidden": "Your Steam playtime is private: you do not appear in the rankings while it stays private.",
+  "steam_trust_pace": "Caught by pace, without a batch: too many achievements for the time played, unlocked one by one",
+  "steam_trust_playtime_reference": "Playtime: {time}, against {expected} expected by Lure for this progress"
 }

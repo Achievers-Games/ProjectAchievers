@@ -1,5 +1,6 @@
 import { Prisma, type SteamIntegrityReview } from '#prisma';
 import type { ProgressActivity, UnlockInput } from './sync/store';
+import { lureGameFor } from './lure-games';
 
 const WINDOW = 2 * 60 * 60 * 1000;
 const THRESHOLD = 10;
@@ -124,11 +125,13 @@ function removeBatch(batches: Map<string, number>, gameId: string) {
 export type TrustSignal =
   | { kind: 'playtime_peers'; weight: number; minutes: number; median: number; peers: number }
   | { kind: 'playtime_rate'; weight: number; minutes: number; perAchievement: number }
+  | { kind: 'playtime_reference'; weight: number; minutes: number; expected: number }
   | { kind: 'playtime_unknown'; weight: 0 }
   | { kind: 'offline'; weight: number; minutes: number }
   | { kind: 'history'; weight: number; count: number }
   | { kind: 'near_impossible'; weight: number; count: number }
   | { kind: 'cross_progress'; weight: 0 }
+  | { kind: 'pace'; weight: 0 }
   | {
       kind: 'other_platform';
       weight: number;
@@ -152,12 +155,16 @@ export type TrustEvidence = {
   /** Temps médian des autres membres arrivés au moins aussi loin, et leur nombre. */
   peerMedian: number | null;
   peers: number;
+  /** Temps attendu pour cette progression d'après Lure, quand les membres sont trop peu. */
+  expected?: number | null;
   /** Moments de déblocage distincts avant le premier lot douteux. */
   history: number;
   /** Succès du lot que presque personne n'a sur Steam (moins de 0,1 %). */
   nearImpossible: number;
   /** Le jeu reprend une progression d'ailleurs : peu de temps sur Steam ne dit rien. */
   crossProgress?: boolean;
+  /** Repéré au rythme, sans lot : trop de succès pour le temps joué. */
+  pace?: boolean;
   /** Le même jeu sur un autre compte lié du joueur (Xbox, PlayStation…), le plus avancé. */
   otherPlatform?: { platform: string; completion: number; minutes: number } | null;
 };
@@ -187,6 +194,14 @@ export function steamTrust(evidence: TrustEvidence): SteamTrust {
       median: evidence.peerMedian,
       peers: evidence.peers,
     });
+  } else if (evidence.expected) {
+    const ratio = playtime / evidence.expected;
+    signals.push({
+      kind: 'playtime_reference',
+      weight: ratio >= 0.4 ? PLAYTIME_MAX : ratio < 0.1 ? -3 : ratio < 0.25 ? -1 : 0,
+      minutes: playtime,
+      expected: evidence.expected,
+    });
   } else {
     const perAchievement = playtime / Math.max(unlocked, 1);
     signals.push({
@@ -205,6 +220,7 @@ export function steamTrust(evidence: TrustEvidence): SteamTrust {
   const time = signals[0]!;
   if (imported && time.weight < 0) time.weight = 0;
   if (evidence.crossProgress) signals.push({ kind: 'cross_progress', weight: 0 });
+  if (evidence.pace) signals.push({ kind: 'pace', weight: 0 });
   if (other && (other.completion > 0 || other.minutes > 0)) {
     // Vérifié par le site lui-même : une vraie partie ailleurs vaut une validation.
     signals.push({ kind: 'other_platform', weight: playedElsewhere ? 3 : 1, ...other });
@@ -236,6 +252,8 @@ async function assessSteamTrust(
     activity,
     onlineCap,
     crossProgress,
+    pace,
+    game,
   }: {
     userId: string;
     gameId: string;
@@ -246,6 +264,8 @@ async function assessSteamTrust(
     /** Le temps connecté noté quand le lot a été repéré : ce qui a suivi ne compte pas. */
     onlineCap: number | null;
     crossProgress: boolean;
+    pace: boolean;
+    game: { platformGameId: string; totalAchievements: number };
   },
 ) {
   const [account, row, rarities] = await Promise.all([
@@ -308,6 +328,8 @@ async function assessSteamTrust(
     playtime,
     offline,
     crossProgress,
+    pace,
+    expected: await expectedMinutes(tx, game, unlocks.length),
     otherPlatform: other ?? null,
     peerMedian: peers?.median ?? null,
     peers: Number(peers?.count ?? 0),
@@ -317,6 +339,110 @@ async function assessSteamTrust(
     ).length,
   });
   return { trust, online };
+}
+
+/** Sous une heure pour tout finir, un jeu se boucle trop vite pour juger le rythme sur ce temps. */
+const MIN_REFERENCE = 60;
+
+/**
+ * Le temps qu'il faut d'ordinaire pour cette progression, d'après le temps complétionniste de Lure
+ * (100 % du jeu) au prorata des succès obtenus. Un jeu pas encore demandé à Lure l'est en
+ * arrière-plan : la référence servira à la lecture suivante.
+ */
+async function expectedMinutes(
+  tx: Prisma.TransactionClient,
+  game: { platformGameId: string; totalAchievements: number },
+  unlocked: number,
+) {
+  const lure = await tx.lureGame.findUnique({
+    where: { steamAppId: game.platformGameId },
+    select: { found: true, completionistMinutes: true },
+  });
+  if (!lure) {
+    void lureGameFor({
+      platform: 'STEAM',
+      platformGameId: game.platformGameId,
+      familyKey: null,
+    }).catch(() => undefined);
+    return null;
+  }
+  const full = lure.found ? lure.completionistMinutes : null;
+  if (!full || full < MIN_REFERENCE || !game.totalAchievements) return null;
+  return Math.round(full * Math.min(1, unlocked / game.totalAchievements));
+}
+
+/** Steam ne compte le temps de jeu que depuis 2009 : un succès plus ancien ne dit rien du rythme. */
+const PACE_FROM = Date.UTC(2009, 3, 1);
+/** En dessous, quelques succès rapides sont normaux (tutoriel, premier niveau). */
+const PACE_MIN_UNLOCKS = 10;
+/** Des succès que la moitié des joueurs ont : souvent obtenus en quelques secondes, par tous. */
+const PACE_COMMON_RARITY = 50;
+
+/**
+ * Les succès d'un jeu débloqués à un rythme impossible : moins d'une minute de jeu par succès, sur
+ * au moins dix succès, quand les autres membres arrivés aussi loin ont joué dix fois plus. C'est la
+ * trace d'un outil qui les débloque un par un, espacés, sans jamais former de lot. Rien n'est
+ * signalé sans temps de jeu connu (profil privé, pas encore lu), ni sur des succès que tout le
+ * monde obtient en passant.
+ */
+async function steamPaceSuspects(
+  tx: Prisma.TransactionClient,
+  {
+    userId,
+    gameId,
+    steamId,
+    unlocks,
+    activity,
+    game,
+  }: {
+    userId: string;
+    gameId: string;
+    steamId: string;
+    unlocks: UnlockInput[];
+    activity: ProgressActivity;
+    game: { platformGameId: string; totalAchievements: number };
+  },
+) {
+  const tracked = unlocks.filter((unlock) => unlock.unlockedAt.getTime() >= PACE_FROM);
+  if (tracked.length < PACE_MIN_UNLOCKS) return [];
+  const [account, row] = await Promise.all([
+    tx.linkedAccount.findUnique({
+      where: { provider_providerUserId: { provider: 'STEAM', providerUserId: steamId } },
+      select: { playtimeHidden: true },
+    }),
+    tx.userGame.findUnique({
+      where: { userId_gameId: { userId, gameId } },
+      select: { playtimeMinutes: true },
+    }),
+  ]);
+  const minutes = Math.max(activity.playtimeMinutes ?? 0, row?.playtimeMinutes ?? 0);
+  if (account?.playtimeHidden || !minutes) return [];
+  const expected = await expectedMinutes(tx, game, tracked.length);
+  // Au moins une minute par succès, et au moins un dixième du temps attendu : rien à voir.
+  if (minutes >= tracked.length && (expected === null || minutes >= expected * 0.1)) return [];
+  const ids = tracked.map((unlock) => unlock.platformAchievementId);
+  const [stats] = await tx.$queryRaw<
+    { rarity: number | null; median: number | null; peers: bigint }[]
+  >`
+    SELECT
+      (SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY a."globalRarity")::float
+        FROM "Achievement" a
+        WHERE a."gameId" = ${gameId} AND a."platformAchievementId" = ANY(${ids}::text[])
+          AND a."globalRarity" IS NOT NULL) AS rarity,
+      percentile_cont(0.5) WITHIN GROUP (ORDER BY ug."playtimeMinutes")::float AS median,
+      count(ug."userId") AS peers
+    FROM "UserGame" ug
+    WHERE ug."gameId" = ${gameId} AND ug."userId" <> ${userId} AND ug."playtimeMinutes" > 0
+      AND ug."unlockedCount" >= ${Math.ceil(tracked.length * 0.8)}`;
+  if (stats?.rarity != null && stats.rarity >= PACE_COMMON_RARITY) return [];
+  // Assez de membres aussi avancés, qui n'ont pas joué tellement plus : le jeu est juste court.
+  const suspects = tracked.map(steamUnlockKey);
+  // Les autres membres d'abord, puis le temps complétionniste de Lure, puis une minute par succès.
+  if (Number(stats?.peers ?? 0) >= 3 && stats?.median) {
+    return minutes >= stats.median * 0.1 ? [] : suspects;
+  }
+  if (expected !== null) return minutes >= expected * 0.1 ? [] : suspects;
+  return minutes >= tracked.length ? [] : suspects;
 }
 
 export function steamReviewUnlocks(review: Pick<SteamIntegrityReview, 'snapshot'>): UnlockInput[] {
@@ -398,7 +524,18 @@ export async function filterSteamProgress(
     at: unlock.unlockedAt.getTime(),
   }));
   const rejected = previous?.rejected ?? [];
-  const detected = steamSuspects(unlocks, game.totalAchievements, steamBatchException(game));
+  // Les lots à la même seconde, et la progression trop rapide pour le temps joué : un outil qui
+  // débloque les succès un par un, espacés, ne forme jamais de lot.
+  const paced =
+    complete && !steamBatchException(game) && !game.crossProgress
+      ? await steamPaceSuspects(tx, { userId, gameId, steamId, unlocks, activity, game })
+      : [];
+  const detected = [
+    ...new Set([
+      ...steamSuspects(unlocks, game.totalAchievements, steamBatchException(game)),
+      ...paced,
+    ]),
+  ];
   const fresh = detected.filter(
     (key) => !previous?.approved.includes(key) && !rejected.includes(steamAchievementId(key)),
   );
@@ -419,6 +556,8 @@ export async function filterSteamProgress(
         activity,
         onlineCap: frozen,
         crossProgress: game.crossProgress,
+        pace: paced.some((key) => candidates.includes(key)),
+        game,
       })
     : null;
   const trust = assessed?.trust ?? null;

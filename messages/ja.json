@@ -2310,5 +2310,7 @@
   "steam_cross_unmark": "解除",
   "notifications_see_all": "すべて表示",
   "notifications_page_hint": "過去30日間の通知です。",
-  "steam_ranking_hidden": "Steamのプレイ時間が非公開のため、公開するまでランキングに表示されません。"
+  "steam_ranking_hidden": "Steamのプレイ時間が非公開のため、公開するまでランキングに表示されません。",
+  "steam_trust_pace": "まとめての解除ではなくペースで検出：プレイ時間に対して実績が多すぎ、1つずつ解除されています",
+  "steam_trust_playtime_reference": "プレイ時間：{time}（Lureによるこの進行状況の目安は{expected}）"
 }

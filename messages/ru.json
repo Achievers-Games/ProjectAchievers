@@ -2397,5 +2397,7 @@
   "steam_cross_unmark": "Убрать",
   "notifications_see_all": "Показать все",
   "notifications_page_hint": "Уведомления за последние 30 дней.",
-  "steam_ranking_hidden": "Ваше время в Steam скрыто: пока это так, вас нет в рейтингах."
+  "steam_ranking_hidden": "Ваше время в Steam скрыто: пока это так, вас нет в рейтингах.",
+  "steam_trust_pace": "Выявлено по темпу, без пакета: слишком много достижений для сыгранного времени, получены по одному",
+  "steam_trust_playtime_reference": "Время в игре: {time}, при ожидаемых по Lure {expected} для такого прогресса"
 }
