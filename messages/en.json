@@ -2496,5 +2496,6 @@
   "collection_banner_preview": "Banner preview",
   "collection_banner_mobile": "Mobile view",
   "collection_banner_progress": "Game completion: {progress}. Reach 100% to equip this card.",
-  "collection_banner_game_page": "View game page"
+  "collection_banner_game_page": "View game page",
+  "boosters_playtime_hidden": "Your Steam playtime is private: you earn no shards or boosters while it stays private."
 }

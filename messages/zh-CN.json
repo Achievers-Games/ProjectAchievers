@@ -2384,5 +2384,6 @@
   "collection_banner_preview": "横幅预览",
   "collection_banner_mobile": "移动端视图",
   "collection_banner_progress": "游戏已完成 {progress}。达到 100% 即可使用这张卡片。",
-  "collection_banner_game_page": "查看游戏页面"
+  "collection_banner_game_page": "查看游戏页面",
+  "boosters_playtime_hidden": "你的 Steam 游戏时长为私密：在公开之前，你无法获得碎片或卡包。"
 }

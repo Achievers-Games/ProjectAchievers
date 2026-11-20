@@ -68,6 +68,7 @@ const failures = {
   no_booster: () => m.boosters_no_booster(),
   no_shards: () => m.boosters_no_shards(),
   no_cards: () => m.boosters_no_cards(),
+  playtime_hidden: () => m.boosters_playtime_hidden(),
 };
 
 export const actions: Actions = {

@@ -94,6 +94,31 @@ describe('ouverture d’un booster', () => {
     expect(BOOSTER_PRICE + (ledger._sum.delta ?? 0)).toBe(after.shards);
   });
 
+  it('ne s’ouvre pas tant que le temps de jeu Steam est privé', async () => {
+    const user = await player(BOOSTER_PRICE);
+    await playedGameWithRelief(user.id);
+    const account = await db.linkedAccount.create({
+      data: {
+        userId: user.id,
+        provider: 'STEAM',
+        providerUserId: `${PREFIX}-${Math.random()}`,
+        displayName: PREFIX,
+        playtimeHidden: true,
+      },
+    });
+    expect(await boosterState(user.id)).toMatchObject({ playtimeHidden: true });
+    await expect(openBooster(user.id, 'DAILY')).rejects.toMatchObject({ code: 'playtime_hidden' });
+    await expect(openBooster(user.id, 'SHARDS')).rejects.toMatchObject({
+      code: 'playtime_hidden',
+    });
+    expect((await db.user.findUniqueOrThrow({ where: { id: user.id } })).shards).toBe(
+      BOOSTER_PRICE,
+    );
+
+    await db.linkedAccount.update({ where: { id: account.id }, data: { playtimeHidden: false } });
+    await expect(openBooster(user.id, 'DAILY')).resolves.toBeTruthy();
+  });
+
   it('ne s’ouvre pas sans édition possible, et écarte les jeux réservés aux adultes', async () => {
     const user = await player(100);
     await playedGameWithRelief(user.id, { adultOnly: true });

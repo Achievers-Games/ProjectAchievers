@@ -2535,5 +2535,6 @@
   "collection_banner_preview": "Просмотр баннера",
   "collection_banner_mobile": "Вид на телефоне",
   "collection_banner_progress": "Игра пройдена на {progress}. Чтобы установить карту, пройдите игру на 100 %.",
-  "collection_banner_game_page": "Открыть страницу игры"
+  "collection_banner_game_page": "Открыть страницу игры",
+  "boosters_playtime_hidden": "Ваше время в Steam скрыто: пока это так, вы не получаете ни осколков, ни бустеров."
 }

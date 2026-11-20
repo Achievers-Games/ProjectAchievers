@@ -13,7 +13,7 @@ import {
 import { GENRES } from '#lib/site-achievements';
 import { completionTimes } from './completion-time';
 import { db } from './db';
-import { addEntries, type Tx } from './shards';
+import { addEntries, playtimeHidden, type Tx } from './shards';
 
 /** Une carte sortie d'un booster, telle qu'enregistrée dans `BoosterOpening.results`. */
 export interface BoosterCard {
@@ -26,7 +26,7 @@ export interface BoosterCard {
 }
 
 export class BoosterError extends Error {
-  constructor(readonly code: 'no_booster' | 'no_shards' | 'no_cards') {
+  constructor(readonly code: 'no_booster' | 'no_shards' | 'no_cards' | 'playtime_hidden') {
     super(code);
   }
 }
@@ -57,7 +57,7 @@ export async function editionPool(tx: Tx | typeof db, userId: string): Promise<P
 
 /** Ce que la page des boosters affiche : solde, boosters offerts, garantie, éditions possibles. */
 export async function boosterState(userId: string) {
-  const [user, pool] = await Promise.all([
+  const [user, pool, hidden] = await Promise.all([
     db.user.findUniqueOrThrow({
       where: { id: userId },
       select: {
@@ -69,8 +69,10 @@ export async function boosterState(userId: string) {
       },
     }),
     editionPool(db, userId),
+    playtimeHidden(db, userId),
   ]);
   return {
+    playtimeHidden: hidden,
     shards: user.shards,
     daily: dailyStock(user.dailyBoosters, user.dailyAt),
     nextGolden: normalKind(user.boostersOpened) === 'GOLDEN',
@@ -95,6 +97,7 @@ export async function openBooster(userId: string, source: Exclude<BoosterSource,
       where: { id: userId },
       select: { dailyBoosters: true, dailyAt: true, boostersOpened: true, pityMythique: true },
     });
+    if (await playtimeHidden(tx, userId)) throw new BoosterError('playtime_hidden');
     const pool = await editionPool(tx, userId);
     if (!canDraw(pool)) throw new BoosterError('no_cards');
 

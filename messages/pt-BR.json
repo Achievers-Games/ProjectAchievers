@@ -2496,5 +2496,6 @@
   "collection_banner_preview": "Prévia do banner",
   "collection_banner_mobile": "Visualização móvel",
   "collection_banner_progress": "Jogo concluído em {progress}. Chegue a 100% para equipar esta carta.",
-  "collection_banner_game_page": "Ver página do jogo"
+  "collection_banner_game_page": "Ver página do jogo",
+  "boosters_playtime_hidden": "Seu tempo de jogo na Steam está privado: você não ganha fragmentos nem pacotes enquanto ele continuar assim."
 }

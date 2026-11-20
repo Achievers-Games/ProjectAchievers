@@ -65,6 +65,31 @@ describe('éclats gagnés à la synchro', () => {
     expect(await ledger(userId)).toBe(33);
   });
 
+  it('ne verse rien tant que le temps de jeu Steam est privé, capital compris', async () => {
+    const { id: userId } = await player();
+    const { id: gameId } = await game([80, 30, 0.5, 60]);
+    const account = await db.linkedAccount.create({
+      data: {
+        userId,
+        provider: 'STEAM',
+        providerUserId: `${PREFIX}-${Math.random()}`,
+        displayName: PREFIX,
+        playtimeHidden: true,
+      },
+    });
+    await saveProgress(userId, gameId, unlocks([0], before));
+    await saveProgress(userId, gameId, unlocks([1, 2], after));
+    expect(await grantStarter(userId)).toBe(0);
+    expect(await balance(userId)).toBe(0);
+
+    // Rendu public : le capital de départ arrive, les succès gagnés en privé restent sans éclats.
+    await db.linkedAccount.update({ where: { id: account.id }, data: { playtimeHidden: false } });
+    expect(await grantStarter(userId)).toBeGreaterThan(0);
+    await saveProgress(userId, gameId, unlocks([0, 1, 2], after));
+    expect(await ledger(userId)).toBe(await balance(userId));
+    expect(await db.shardEntry.count({ where: { userId, reason: 'ACHIEVEMENT' } })).toBe(0);
+  });
+
   it('laisse l’historique d’avant le départ au capital de départ', async () => {
     const { id: userId } = await player();
     // Un troisième succès reste verrouillé : le jeu n'est pas fini, donc pas de bonus ici.

@@ -2496,5 +2496,6 @@
   "collection_banner_preview": "Aperçu de la bannière",
   "collection_banner_mobile": "Format mobile",
   "collection_banner_progress": "Jeu terminé à {progress}. Atteins 100 % pour équiper cette carte.",
-  "collection_banner_game_page": "Voir la fiche du jeu"
+  "collection_banner_game_page": "Voir la fiche du jeu",
+  "boosters_playtime_hidden": "Ton temps de jeu Steam est privé : tu ne gagnes ni éclats ni boosters tant qu’il le reste."
 }

@@ -138,7 +138,7 @@
         name="source"
         value="daily"
         class="btn btn-primary"
-        disabled={!info.canDraw || info.daily < 1}
+        disabled={!info.canDraw || info.playtimeHidden || info.daily < 1}
       >
         {m.boosters_open_daily()}
       </button>
@@ -147,12 +147,19 @@
         name="source"
         value="shards"
         class="btn"
-        disabled={!info.canDraw || info.shards < BOOSTER_PRICE}
+        disabled={!info.canDraw || info.playtimeHidden || info.shards < BOOSTER_PRICE}
       >
         {m.boosters_buy({ price: BOOSTER_PRICE })}
       </button>
     </form>
   </section>
+
+  {#if info.playtimeHidden}
+    <p class="rounded-md border border-line bg-surface p-3 text-sm">
+      {m.boosters_playtime_hidden()}
+      {m.steam_privacy_how()}
+    </p>
+  {/if}
 
   {#if !info.canDraw}
     <Empty title={m.boosters_no_cards()} />

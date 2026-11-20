@@ -2464,5 +2464,6 @@
   "collection_banner_preview": "Bannervorschau",
   "collection_banner_mobile": "Mobilansicht",
   "collection_banner_progress": "Spielfortschritt: {progress}. Erreiche 100 %, um diese Karte zu verwenden.",
-  "collection_banner_game_page": "Spielseite öffnen"
+  "collection_banner_game_page": "Spielseite öffnen",
+  "boosters_playtime_hidden": "Deine Steam-Spielzeit ist privat: Solange das so bleibt, bekommst du weder Splitter noch Booster."
 }

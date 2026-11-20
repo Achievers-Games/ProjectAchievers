@@ -2384,5 +2384,6 @@
   "collection_banner_preview": "バナーのプレビュー",
   "collection_banner_mobile": "モバイル表示",
   "collection_banner_progress": "ゲームの達成率は{progress}です。100%でこのカードを設定できます。",
-  "collection_banner_game_page": "ゲームページを見る"
+  "collection_banner_game_page": "ゲームページを見る",
+  "boosters_playtime_hidden": "Steamのプレイ時間が非公開のため、公開するまで欠片もブースターも獲得できません。"
 }

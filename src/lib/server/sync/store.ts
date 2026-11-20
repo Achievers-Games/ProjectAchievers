@@ -2,7 +2,7 @@ import type { Prisma, Platform, TrophyType } from '#prisma';
 import { db } from '../db';
 import { familyKey } from '../family';
 import { lockCardCatalog, refreshSharedTier, updateFamilyTiers } from '../card-rarity';
-import { creditCompletion, creditUnlocks } from '../shards';
+import { creditCompletion, creditUnlocks, playtimeHidden } from '../shards';
 import {
   filterSteamProgress,
   lockSteamAccount,
@@ -499,14 +499,17 @@ async function writeProgress(
     update: data,
     create: { ...data, userId, gameId },
   });
-  // Les éclats suivent les succès dans la même transaction : jamais l'un sans l'autre.
-  const { shardsFrom } = await db.user.findUniqueOrThrow({
-    where: { id: userId },
-    select: { shardsFrom: true },
-  });
-  await creditUnlocks(db, userId, gameId, newUnlocks, shardsFrom);
-  if (data.completion >= 100) {
-    await creditCompletion(db, userId, gameId, lastUnlockedAt, shardsFrom);
+  // Les éclats suivent les succès dans la même transaction : jamais l'un sans l'autre. Rien
+  // pendant que le temps de jeu Steam reste privé.
+  if (!(await playtimeHidden(db, userId))) {
+    const { shardsFrom } = await db.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { shardsFrom: true },
+    });
+    await creditUnlocks(db, userId, gameId, newUnlocks, shardsFrom);
+    if (data.completion >= 100) {
+      await creditCompletion(db, userId, gameId, lastUnlockedAt, shardsFrom);
+    }
   }
   const fresh = freshIds.length
     ? await db.achievement.findMany({

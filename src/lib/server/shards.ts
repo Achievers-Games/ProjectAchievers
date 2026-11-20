@@ -37,6 +37,18 @@ export async function addEntries(tx: Tx, userId: string, entries: Entry[]) {
   return gained;
 }
 
+/**
+ * Un temps de jeu Steam privé ne laisse rien vérifier : le joueur garde sa collection, mais ne
+ * gagne ni éclats ni boosters tant qu'il ne le rend pas public (comme pour le classement).
+ */
+export async function playtimeHidden(tx: Tx | typeof db, userId: string) {
+  const account = await tx.linkedAccount.findUnique({
+    where: { userId_provider: { userId, provider: 'STEAM' } },
+    select: { playtimeHidden: true },
+  });
+  return Boolean(account?.playtimeHidden);
+}
+
 /** Les éclats déjà gagnés sur un jeu par ses succès, pour le plafond par jeu. */
 async function earnedOnGame(tx: Tx, userId: string, gameId: string) {
   const [row] = await tx.$queryRaw<{ total: number }[]>`
@@ -133,6 +145,10 @@ export async function grantMissingStarters(limit: number) {
         SELECT 1 FROM "UserAchievement" ua
         WHERE ua."userId" = u.id AND ua."unlockedAt" < u."shardsFrom"
       )
+      AND NOT EXISTS (
+        SELECT 1 FROM "LinkedAccount" la
+        WHERE la."userId" = u.id AND la.provider = 'STEAM' AND la."playtimeHidden"
+      )
     LIMIT ${limit}`;
   for (const user of users) await grantStarter(user.id);
   return users.length;
@@ -145,7 +161,8 @@ export async function grantMissingStarters(limit: number) {
  */
 export async function grantStarter(userId: string) {
   const user = await db.user.findUnique({ where: { id: userId }, select: { shardsFrom: true } });
-  if (!user) return 0;
+  // Le capital attend que le temps de jeu soit public : la tournée d'entretien le versera alors.
+  if (!user || (await playtimeHidden(db, userId))) return 0;
   const target = Math.min(STARTER_CAP, await historyValue(userId, user.shardsFrom));
   return db.$transaction(async (tx) => {
     // Sérialise deux comptes qui finissent leur premier import en même temps.
