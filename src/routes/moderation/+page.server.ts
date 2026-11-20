@@ -11,7 +11,7 @@ import {
   steamAchievementId,
   steamReviewUnlocks,
   steamUnlockKey,
-  UNTURNED_STEAM_APP_ID,
+  type SteamTrust,
 } from '#lib/server/steam-integrity';
 import { resolveSteamReview } from '#lib/server/sync/store';
 import type { Actions, PageServerLoad } from './$types';
@@ -144,7 +144,7 @@ export const load: PageServerLoad = async ({ locals, depends }) => {
         openedAt: review.openedAt,
         status: review.status,
         suspended: Boolean(review.suspendedAt),
-        fullUnlockPolicy: review.game.platformGameId === UNTURNED_STEAM_APP_ID,
+        trust: review.trust as SteamTrust | null,
         unlocks: review.flagged
           .map((key) => {
             const achievementId = steamAchievementId(key);

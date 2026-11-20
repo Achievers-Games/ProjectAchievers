@@ -134,6 +134,7 @@ export async function notifications(userId: string, limit = 12): Promise<Notice[
         suspendedAt: true,
         openedAt: true,
         status: true,
+        resetAt: true,
         game: { select: { name: true, slug: true } },
       },
     }),
@@ -152,7 +153,9 @@ export async function notifications(userId: string, limit = 12): Promise<Notice[
         : `/moderation#steam-review-${review.id}`,
       title: own
         ? review.status === 'APPROVED'
-          ? m.steam_review_player_approved({ game: review.game.name })
+          ? review.resetAt
+            ? m.steam_status_player_unblocked({ game: review.game.name })
+            : m.steam_review_player_approved({ game: review.game.name })
           : m.steam_review_player_notice({ game: review.game.name })
         : m.steam_review_mod_notice({ game: review.game.name }),
       detail: own

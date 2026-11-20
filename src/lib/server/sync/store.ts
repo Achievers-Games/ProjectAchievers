@@ -7,7 +7,6 @@ import {
   lockSteamAccount,
   steamAchievementId,
   steamReviewUnlocks,
-  UNTURNED_STEAM_APP_ID,
   withdrawSteamProgress,
 } from '../steam-integrity';
 import { invalidatePublicCache } from '../public-cache';
@@ -321,8 +320,9 @@ async function reviewRemovals(
  * Enregistre les déverrouillages d'un joueur et recalcule sa progression.
  * Renvoie le nombre de succès nouvellement obtenus et de quoi les annoncer.
  */
-type ProgressActivity = {
+export type ProgressActivity = {
   playtimeMinutes?: number;
+  offlinePlaytimeMinutes?: number;
   lastPlayedAt?: Date | null;
   achievementsCheckedAt?: Date;
 };
@@ -353,7 +353,7 @@ export async function saveProgress(
       // Sérialise import complet et suivi en direct du même jeu pour ce joueur.
       await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${JSON.stringify([userId, gameId])}, 0))::text`;
       const filtered = steamId
-        ? await filterSteamProgress(tx, userId, gameId, steamId, unlocks)
+        ? await filterSteamProgress(tx, userId, gameId, steamId, unlocks, activity, complete)
         : { unlocks, withdrawn: false, reviewChanged: false };
       const removal = complete
         ? await reviewRemovals(tx, userId, gameId, unlocks, Boolean(steamId))
@@ -462,6 +462,9 @@ async function writeProgress(
     ...(activity.playtimeMinutes !== undefined && {
       playtimeMinutes: activity.playtimeMinutes,
     }),
+    ...(activity.offlinePlaytimeMinutes !== undefined && {
+      offlinePlaytimeMinutes: activity.offlinePlaytimeMinutes,
+    }),
     ...(activity.lastPlayedAt !== undefined && { lastPlayedAt: activity.lastPlayedAt }),
     ...(activity.achievementsCheckedAt !== undefined && {
       achievementsCheckedAt: activity.achievementsCheckedAt,
@@ -536,7 +539,7 @@ export async function resolveSteamReview(
       });
       if (approveAll && allowBatches) {
         await tx.game.updateMany({
-          where: { id: current.gameId, platformGameId: { not: UNTURNED_STEAM_APP_ID } },
+          where: { id: current.gameId },
           data: { allowSteamBatches: true },
         });
       }

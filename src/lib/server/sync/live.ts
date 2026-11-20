@@ -1,5 +1,4 @@
 import { db } from '../db';
-import { UNTURNED_STEAM_APP_ID } from '../steam-integrity';
 import { WorkScheduler } from '../workload';
 import { globals } from '../globals';
 import { logger } from '#lib/logger';
@@ -509,8 +508,13 @@ export async function auditSteamHistory(limit = 24, userId?: string) {
     FROM "UserGame" ug JOIN "Game" g ON g.id = ug."gameId"
     JOIN "LinkedAccount" la ON la."userId" = ug."userId" AND la.provider = 'STEAM'
     WHERE (${userId ?? null}::text IS NULL OR ug."userId" = ${userId ?? null}) AND g.platform = 'STEAM'
-      AND ug."reportedUnlockedCount" IS NULL
-      AND (g."platformGameId" = ${UNTURNED_STEAM_APP_ID} OR (NOT g."allowSteamBatches" AND g.name NOT ILIKE 'Zup!%'))
+      AND (EXISTS (
+        -- Les revues ouvertes avant le score de confiance sont relues une fois pour le calculer.
+        SELECT 1 FROM "SteamIntegrityReview" r
+        WHERE r."gameId" = g.id AND r."userId" = ug."userId" AND r.status = 'PENDING'
+          AND r."suspendedAt" IS NULL AND r.trust IS NULL
+      ) OR (ug."reportedUnlockedCount" IS NULL
+      AND NOT g."allowSteamBatches" AND g.name NOT ILIKE 'Zup!%'
       AND g."platformGameId" <> '1258080' AND ug."unlockedCount" >= 8
       AND EXISTS (
         SELECT 1 FROM "UserAchievement" ua JOIN "Achievement" a ON a.id = ua."achievementId"
@@ -518,7 +522,7 @@ export async function auditSteamHistory(limit = 24, userId?: string) {
         GROUP BY date_trunc('second', ua."unlockedAt")
         HAVING count(*) >= 20 OR count(*) >= greatest(10, ceil(g."totalAchievements" * 0.2))
           OR count(*) >= greatest(8, ceil(g."totalAchievements" * 0.65))
-      )
+      )))
     ORDER BY ug."achievementsCheckedAt" ASC NULLS FIRST, ug."gameId"
     LIMIT ${limit}`;
   for (const game of games) {

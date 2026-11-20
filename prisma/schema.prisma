@@ -576,28 +576,30 @@ model Achievement {
 }
 
 model UserGame {
-  userId                String
-  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  gameId                String
-  game                  Game      @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  unlockedCount         Int       @default(0)
-  totalCount            Int       @default(0)
-  completion            Float     @default(0)
-  platinum              Boolean   @default(false)
-  playtimeMinutes       Int       @default(0)
-  ps4PlaytimeMinutes    Int       @default(0)
-  ps5PlaytimeMinutes    Int       @default(0)
-  lastPlayedAt          DateTime?
+  userId                 String
+  user                   User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gameId                 String
+  game                   Game      @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  unlockedCount          Int       @default(0)
+  totalCount             Int       @default(0)
+  completion             Float     @default(0)
+  platinum               Boolean   @default(false)
+  playtimeMinutes        Int       @default(0)
+  ps4PlaytimeMinutes     Int       @default(0)
+  ps5PlaytimeMinutes     Int       @default(0)
+  /// Temps joué sans connexion à Steam : ses succès arrivent ensuite d'un seul coup.
+  offlinePlaytimeMinutes Int       @default(0)
+  lastPlayedAt           DateTime?
   /// Dernière lecture réussie des succès chez le fournisseur, distincte du temps de jeu.
-  achievementsCheckedAt DateTime?
-  lastUnlockedAt        DateTime?
-  updatedAt             DateTime  @updatedAt
+  achievementsCheckedAt  DateTime?
+  lastUnlockedAt         DateTime?
+  updatedAt              DateTime  @updatedAt
   /// Retiré de la bibliothèque par le joueur, sans toucher à sa progression.
-  hidden                Boolean   @default(false)
+  hidden                 Boolean   @default(false)
   /// Une lecture complète n'a plus montré certains succès enregistrés : ils ne sont retirés que
   /// si une seconde lecture, au moins une heure plus tard, le confirme.
-  removalSeenAt         DateTime?
-  reportedUnlockedCount Int?
+  removalSeenAt          DateTime?
+  reportedUnlockedCount  Int?
 
   @@id([userId, gameId])
   @@index([userId, lastUnlockedAt])
@@ -625,6 +627,12 @@ model SteamIntegrityReview {
   approved    String[]
   rejected    String[]
   snapshot    Json
+  /// Le score de confiance et ses signaux, calculés à la dernière lecture (`steamTrust`).
+  trust       Json?
+  /// Première lecture complète sans aucun succès : une seconde, une heure après, la confirme.
+  emptySeenAt DateTime?
+  /// Le joueur a remis le jeu à zéro sur Steam : le blocage est levé, la suite repart de rien.
+  resetAt     DateTime?
   createdAt   DateTime          @default(now())
   openedAt    DateTime          @default(now())
   reviewedAt  DateTime?

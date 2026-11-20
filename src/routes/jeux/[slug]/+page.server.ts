@@ -338,6 +338,13 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
     steamSuspended:
       steamReview?.suspendedAt && (!player || player.self) ? steamReview.status : null,
     hasExcluded,
+    // Jeu bloqué : la page donne la commande Steam qui le remet à zéro pour repartir proprement.
+    steamResetAppId:
+      steamReview &&
+      (!player || player.self) &&
+      (steamReview.suspendedAt || steamReview.status === 'REJECTED')
+        ? game.platformGameId
+        : null,
     season,
     players,
     lure,

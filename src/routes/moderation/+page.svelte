@@ -21,6 +21,34 @@
     deja_lie: m.mod_signups_reason_taken,
   };
   const authReason = (reason: string) => AUTH_REASONS[reason]?.() ?? reason;
+
+  type TrustSignal = NonNullable<(typeof data.steamReviews)[number]['trust']>['signals'][number];
+  const hours = (minutes: number) => `${Math.round(minutes / 6) / 10} h`;
+  const signed = (value: number) => (value > 0 ? `+${value}` : String(value));
+  /** Un signal du score de confiance Steam, en mots. */
+  function trustLabel(signal: TrustSignal) {
+    switch (signal.kind) {
+      case 'playtime_peers':
+        return m.steam_trust_playtime_peers({
+          time: hours(signal.minutes),
+          median: hours(signal.median),
+          peers: String(signal.peers),
+        });
+      case 'playtime_rate':
+        return m.steam_trust_playtime_rate({
+          time: hours(signal.minutes),
+          rate: String(signal.perAchievement),
+        });
+      case 'playtime_unknown':
+        return m.steam_trust_playtime_unknown();
+      case 'offline':
+        return m.steam_trust_offline({ time: hours(signal.minutes) });
+      case 'history':
+        return m.steam_trust_history({ count: String(signal.count) });
+      case 'near_impossible':
+        return m.steam_trust_near_impossible({ count: String(signal.count) });
+    }
+  }
 </script>
 
 <svelte:head>
@@ -58,6 +86,23 @@
               <a class="underline" href="/u/{review.player.handle}">{review.player.displayName}</a>
             {/if}
           </div>
+          {#if review.trust}
+            <div>
+              <p class="font-medium">
+                {m.steam_trust_score({ score: signed(review.trust.score) })}
+              </p>
+              <ul class="list-disc pl-5 text-muted">
+                {#each review.trust.signals as signal (signal.kind)}
+                  <li>
+                    {trustLabel(signal)}{#if signal.weight}
+                      ({signed(signal.weight)}){/if}
+                  </li>
+                {/each}
+              </ul>
+            </div>
+          {:else}
+            <p class="text-muted">{m.steam_trust_none()}</p>
+          {/if}
           {#if review.status === 'PENDING'}
             <fieldset class="space-y-1">
               <legend class="font-medium">{m.steam_review_selection()}</legend>
@@ -76,9 +121,7 @@
               {/each}
             </fieldset>
           {/if}
-          {#if review.fullUnlockPolicy}
-            <p class="text-muted">{m.steam_review_full_unlock_policy()}</p>
-          {:else if !review.game.allowSteamBatches}
+          {#if !review.game.allowSteamBatches}
             <label class="flex items-center gap-2">
               <input type="checkbox" name="allowBatches" value="1" />
               {m.steam_review_exception()}

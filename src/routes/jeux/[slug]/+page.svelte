@@ -217,6 +217,25 @@
               : m.steam_review_unscored_detail()}
         </p>
       {/if}
+      {#if data.steamResetAppId}
+        <div class="space-y-2 rounded-md border border-line bg-surface p-3 text-sm">
+          <h2 class="text-sm font-semibold">{m.steam_reset_title()}</h2>
+          <ol class="list-decimal space-y-1.5 pl-5">
+            <li>{m.steam_reset_step_close()}</li>
+            <li>
+              {m.steam_reset_step_console()}
+              <a class="underline" href="steam://open/console">{m.steam_reset_open_console()}</a>
+            </li>
+            <li>
+              {m.steam_reset_step_command()}
+              <code class="mt-1 block w-fit rounded bg-raised px-2 py-1 font-mono select-all"
+                >reset_all_stats {data.steamResetAppId}</code
+              >
+            </li>
+            <li>{m.steam_reset_step_replay()}</li>
+          </ol>
+        </div>
+      {/if}
       <p class="text-sm text-muted">
         {editionLabel(data.game)} · {m.count_achievements({
           count: data.achievementTotal,

@@ -25,6 +25,8 @@ export interface OwnedGame {
   playtime_forever?: number;
   playtime_2weeks?: number;
   rtime_last_played?: number;
+  /** Minutes jouées hors ligne : Steam reçoit leurs succès en bloc à la reconnexion. */
+  playtime_disconnected?: number;
   has_community_visible_stats?: boolean;
   /** Prêté par un membre de la famille Steam : le temps de jeu reste celui du joueur. */
   family_shared?: boolean;
@@ -648,6 +650,7 @@ export async function addSteamGame(userId: string, source: OwnedGame, statless =
   const game = await steamCatalogGame(source, false, statless);
   await saveProgress(userId, game.id, [], {
     playtimeMinutes: source.playtime_forever ?? 0,
+    offlinePlaytimeMinutes: source.playtime_disconnected ?? 0,
     lastPlayedAt: source.rtime_last_played ? new Date(source.rtime_last_played * 1000) : null,
     ...(statless && { achievementsCheckedAt: new Date() }),
   });
@@ -680,7 +683,11 @@ async function syncSteamGame(
       achievementsCheckedAt: new Date(),
       ...(shared
         ? { playtimeMinutes: source.playtime_forever }
-        : { playtimeMinutes: source.playtime_forever ?? 0, lastPlayedAt }),
+        : {
+            playtimeMinutes: source.playtime_forever ?? 0,
+            offlinePlaytimeMinutes: source.playtime_disconnected ?? 0,
+            lastPlayedAt,
+          }),
     },
     // GetPlayerAchievements rend tous les succès du joueur sur ce jeu.
     { complete: true, steamId },
@@ -709,7 +716,7 @@ async function notePlaytimePrivacy(
   if (hidden) {
     await db.userGame.updateMany({
       where: { userId, playtimeMinutes: { gt: 0 }, game: { platform: 'STEAM' } },
-      data: { playtimeMinutes: 0 },
+      data: { playtimeMinutes: 0, offlinePlaytimeMinutes: 0 },
     });
   }
   if (hidden !== account.playtimeHidden) {
