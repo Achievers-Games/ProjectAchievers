@@ -16,14 +16,25 @@ describe('steamTrust', () => {
     expect(steamTrust(base)).toMatchObject({ score: 0, verdict: 'review' });
   });
 
-  it('valide une complétion avec un temps de jeu à la hauteur', () => {
-    // Lies of P : 44 succès, 70 h de jeu, tout arrivé à la même seconde.
-    expect(steamTrust({ ...base, playtime: 70 * 60 }).verdict).toBe('trusted');
+  it('ne valide jamais sur le seul temps de jeu, qu’un outil peut gonfler', () => {
+    // 70 h pour 44 succès, sans autre trace : en attente.
+    expect(steamTrust({ ...base, playtime: 70 * 60 })).toMatchObject({
+      score: 2,
+      verdict: 'review',
+    });
+    // Lies of P : 10,7 h dont 7,7 h hors ligne pour 42 succès. Le jeu hors ligne fait la différence.
+    expect(steamTrust({ ...base, unlocked: 42, playtime: 642, offline: 462 })).toMatchObject({
+      score: 4,
+      verdict: 'trusted',
+    });
   });
 
   it('compare au temps médian des autres membres quand ils sont assez nombreux', () => {
     const peers = { peerMedian: 60 * 60, peers: 5 };
-    expect(steamTrust({ ...base, ...peers, playtime: 40 * 60 }).verdict).toBe('trusted');
+    expect(steamTrust({ ...base, ...peers, playtime: 40 * 60 }).verdict).toBe('review');
+    expect(steamTrust({ ...base, ...peers, playtime: 40 * 60, history: 5 }).verdict).toBe(
+      'trusted',
+    );
     expect(steamTrust({ ...base, ...peers, playtime: 3 * 60 }).verdict).toBe('cheat');
     // Deux pairs ne suffisent pas : la règle par succès reprend la main.
     expect(steamTrust({ ...base, peerMedian: 60 * 60, peers: 2, playtime: 40 * 60 })).toMatchObject(
@@ -46,5 +57,24 @@ describe('steamTrust', () => {
     expect(steamTrust({ ...base, unlocked: 30, playtime: 60, nearImpossible: 3 }).verdict).toBe(
       'cheat',
     );
+  });
+
+  it('ne condamne pas un jeu qui reprend une progression d’ailleurs', () => {
+    const imported = { ...base, unlocked: 30, playtime: 12, crossProgress: true };
+    expect(steamTrust(imported)).toMatchObject({ score: 0, verdict: 'review' });
+    expect(steamTrust({ ...imported, nearImpossible: 3 }).verdict).toBe('review');
+  });
+
+  it('valide sur la foi du même jeu joué sur un autre compte lié', () => {
+    const other = { platform: 'XBOX', completion: 80, minutes: 0 };
+    // 10 min sur Steam ne pèsent plus : la progression vient du compte Xbox.
+    expect(steamTrust({ ...base, playtime: 10, otherPlatform: other })).toMatchObject({
+      score: 3,
+      verdict: 'trusted',
+    });
+    expect(
+      steamTrust({ ...base, otherPlatform: { platform: 'XBOX', completion: 5, minutes: 30 } })
+        .score,
+    ).toBe(1);
   });
 });

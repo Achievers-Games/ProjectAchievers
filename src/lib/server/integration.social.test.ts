@@ -2,6 +2,7 @@
 import 'dotenv/config';
 import { describe, expect, it, vi } from 'vitest';
 import {
+  allCollectors,
   activityFeed,
   friendsPlaying,
   hasRecentFeat,
@@ -887,6 +888,39 @@ describe('fil de la communauté', () => {
     const ranking = await leaderboard('tout', 20, [lea]);
     expect(ranking.map((row) => row.handle)).toEqual(['lea']);
     expect(await leaderboard('tout', 20, [])).toEqual([]);
+  });
+
+  it('sort des classements un joueur au temps de jeu Steam privé', async () => {
+    const lea = await db.user.findUniqueOrThrow({ where: { handle: 'lea' }, select: { id: true } });
+    expect((await leaderboard('tout', 20, [lea.id])).map((row) => row.handle)).toEqual(['lea']);
+    const before = await db.linkedAccount.findUnique({
+      where: { userId_provider: { userId: lea.id, provider: 'STEAM' } },
+    });
+    const account = await db.linkedAccount.upsert({
+      where: { userId_provider: { userId: lea.id, provider: 'STEAM' } },
+      create: {
+        userId: lea.id,
+        provider: 'STEAM',
+        providerUserId: `${crypto.randomUUID()}`,
+        displayName: 'lea',
+        playtimeHidden: true,
+      },
+      update: { playtimeHidden: true },
+    });
+    try {
+      expect(await leaderboard('tout', 20, [lea.id])).toEqual([]);
+      expect((await allCollectors()).some((row) => row.id === lea.id)).toBe(false);
+    } finally {
+      if (before) {
+        await db.linkedAccount.update({
+          where: { id: account.id },
+          data: { playtimeHidden: before.playtimeHidden },
+        });
+      } else {
+        await db.linkedAccount.delete({ where: { id: account.id } });
+      }
+    }
+    expect((await leaderboard('tout', 20, [lea.id])).map((row) => row.handle)).toEqual(['lea']);
   });
 
   it('signale un exploit récent, pas un succès banal', async () => {

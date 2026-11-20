@@ -1,7 +1,7 @@
 import { Prisma } from '#prisma';
 import { RARITY_POINTS, SEASON, seasonState, type Season } from '#lib/season';
 import { db } from '../db';
-import { cardScore, tierCounts, visibleGames, type TierCounts } from './shared';
+import { cardScore, rankedUser, tierCounts, visibleGames, type TierCounts } from './shared';
 
 const BARELY_PLAYED_MINUTES = 60;
 
@@ -114,7 +114,7 @@ export async function seasonStats(season: Season) {
            t.unlocked
     FROM earned e
     FULL JOIN finished f USING ("userId")
-    JOIN "User" u ON u.id = "userId"
+    JOIN "User" u ON u.id = "userId" AND ${rankedUser('u')}
     CROSS JOIN total t
     ORDER BY points DESC, u.handle`;
 

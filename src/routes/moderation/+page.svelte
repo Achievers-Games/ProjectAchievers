@@ -8,7 +8,7 @@
   import { m } from '#lib/paraglide/messages';
   import { enhance } from '$app/forms';
   import Empty from '#lib/components/Empty.svelte';
-  import { formatDate, formatRelative } from '#lib/labels';
+  import { formatDate, formatRelative, PLATFORM_LABELS } from '#lib/labels';
 
   let { data, form } = $props();
 
@@ -47,6 +47,15 @@
         return m.steam_trust_history({ count: String(signal.count) });
       case 'near_impossible':
         return m.steam_trust_near_impossible({ count: String(signal.count) });
+      case 'cross_progress':
+        return m.steam_trust_cross_progress();
+      case 'other_platform':
+        return m.steam_trust_other_platform({
+          platform:
+            PLATFORM_LABELS[signal.platform as keyof typeof PLATFORM_LABELS] ?? signal.platform,
+          completion: String(Math.round(signal.completion)),
+          time: hours(signal.minutes),
+        });
     }
   }
 </script>
@@ -103,6 +112,27 @@
           {:else}
             <p class="text-muted">{m.steam_trust_none()}</p>
           {/if}
+          {#if review.proofs.length}
+            <div class="space-y-2">
+              <p class="font-medium">{m.steam_proof_mod_title()}</p>
+              {#each review.proofs as proof (proof.id)}
+                <div class="space-y-1 rounded-md border border-line p-2">
+                  <p class="text-xs text-muted">{formatRelative(proof.createdAt)}</p>
+                  {#if proof.message}<p class="whitespace-pre-line">{proof.message}</p>{/if}
+                  {#if proof.image}
+                    <a href={proof.image} target="_blank" rel="noopener">
+                      <img
+                        src={proof.image}
+                        alt={m.steam_proof_mod_image()}
+                        class="max-h-64 rounded border border-line"
+                        loading="lazy"
+                      />
+                    </a>
+                  {/if}
+                </div>
+              {/each}
+            </div>
+          {/if}
           {#if review.status === 'PENDING'}
             <fieldset class="space-y-1">
               <legend class="font-medium">{m.steam_review_selection()}</legend>
@@ -143,6 +173,39 @@
         </form>
       </details>
     {/each}
+    {#if data.importSuggestions.length || data.crossProgressGames.length}
+      <div class="space-y-2 border-t border-line pt-3 text-sm">
+        <h3 class="font-medium">{m.steam_cross_title()}</h3>
+        <p class="text-muted">{m.steam_cross_detail()}</p>
+        <ul class="space-y-1">
+          {#each data.importSuggestions as game (game.id)}
+            <li class="flex items-center justify-between gap-2">
+              <a class="underline" href="/jeux/{game.slug}">{game.name}</a>
+              <span class="flex items-center gap-2">
+                <span class="text-muted"
+                  >{m.steam_cross_players({ count: String(game.players) })}</span
+                >
+                <form method="POST" action="?/crossProgress" use:enhance>
+                  <input type="hidden" name="id" value={game.id} />
+                  <input type="hidden" name="value" value="1" />
+                  <button class="btn btn-secondary">{m.steam_cross_mark()}</button>
+                </form>
+              </span>
+            </li>
+          {/each}
+          {#each data.crossProgressGames as game (game.id)}
+            <li class="flex items-center justify-between gap-2">
+              <a class="underline" href="/jeux/{game.slug}">{game.name}</a>
+              <form method="POST" action="?/crossProgress" use:enhance>
+                <input type="hidden" name="id" value={game.id} />
+                <input type="hidden" name="value" value="0" />
+                <button class="btn btn-secondary">{m.steam_cross_unmark()}</button>
+              </form>
+            </li>
+          {/each}
+        </ul>
+      </div>
+    {/if}
   </section>
 
   {#if data.signups}

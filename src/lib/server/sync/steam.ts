@@ -25,7 +25,7 @@ export interface OwnedGame {
   playtime_forever?: number;
   playtime_2weeks?: number;
   rtime_last_played?: number;
-  /** Minutes jouées hors ligne : Steam reçoit leurs succès en bloc à la reconnexion. */
+  /** Minutes jouées hors ligne, en plus de `playtime_forever` : leurs succès arrivent en bloc. */
   playtime_disconnected?: number;
   has_community_visible_stats?: boolean;
   /** Prêté par un membre de la famille Steam : le temps de jeu reste celui du joueur. */
@@ -117,6 +117,16 @@ const LIBRARY = {
   include_family_licenses: 1,
 };
 
+/**
+ * `playtime_forever` ne compte que le temps joué connecté : celui hors ligne arrive à part, dans
+ * `playtime_disconnected`. Le profil Steam montre les deux additionnés (Lies of P : 10,7 h au
+ * profil, 3 h connecté) ; le site aussi, partout où il lit un temps de jeu.
+ */
+const withOfflineTime = (game: OwnedGame): OwnedGame =>
+  game.playtime_disconnected
+    ? { ...game, playtime_forever: (game.playtime_forever ?? 0) + game.playtime_disconnected }
+    : game;
+
 async function ownedGames(steamId: string, extra: Record<string, number> = {}) {
   const response = await steamGet('/IPlayerService/GetOwnedGames/v1/', {
     steamid: steamId,
@@ -129,7 +139,7 @@ async function ownedGames(steamId: string, extra: Record<string, number> = {}) {
   };
   // Steam répond 200 avec un objet vide quand les détails de jeu sont privés. Une bibliothèque
   // publique mais vide donne `game_count: 0` sans `games` : ce n'est pas un profil privé.
-  if (data.response?.games) return data.response.games;
+  if (data.response?.games) return data.response.games.map(withOfflineTime);
   if (typeof data.response?.game_count === 'number') return [];
   throw new SyncError('sync_steam_private');
 }
@@ -243,7 +253,7 @@ export async function fetchRecentGames(steamId: string): Promise<OwnedGame[]> {
   });
   if (!response.ok) return [];
   const data = (await response.json()) as { response?: { games?: OwnedGame[] } };
-  return data.response?.games ?? [];
+  return (data.response?.games ?? []).map(withOfflineTime);
 }
 
 /** Au-delà d'aucun jeu connu : la réponse porte alors tous les succès obtenus, donc leur nombre. */
@@ -551,12 +561,20 @@ export async function fillHiddenDescriptions(limit = HIDDEN_BATCH, pause = HIDDE
 }
 
 export async function fetchUnlocks(steamId: string, appId: number) {
+  return (await fetchUnlockList(steamId, appId)).unlocks;
+}
+
+/**
+ * Les succès obtenus, et `cleared` : Steam a bien listé les succès du jeu, aucun n'est obtenu.
+ * C'est la trace d'une remise à zéro (`reset_all_stats`), pas d'un raté, qui répond en erreur.
+ */
+export async function fetchUnlockList(steamId: string, appId: number) {
   const response = await steamGet('/ISteamUserStats/GetPlayerAchievements/v1/', {
     steamid: steamId,
     appid: appId,
   });
   // 400 : le jeu n'a pas de statistiques. Ce n'est pas une erreur du joueur.
-  if (response.status === 400) return [];
+  if (response.status === 400) return { unlocks: [], cleared: false };
   if (response.status === 403) {
     throw new SyncError('sync_steam_achievements_private');
   }
@@ -571,12 +589,14 @@ export async function fetchUnlocks(steamId: string, appId: number) {
   if (data.playerstats?.success === false || !Array.isArray(data.playerstats?.achievements)) {
     throw new Error('GetPlayerAchievements : liste de succès indisponible');
   }
-  return data.playerstats.achievements
+  const { achievements } = data.playerstats;
+  const unlocks = achievements
     .filter((a) => a.achieved === 1)
     .map((a) => ({
       platformAchievementId: a.apiname,
       unlockedAt: new Date(Number.isFinite(a.unlocktime) ? a.unlocktime * 1000 : 0),
     }));
+  return { unlocks, cleared: achievements.length > 0 && unlocks.length === 0 };
 }
 
 /**

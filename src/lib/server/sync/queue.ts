@@ -762,8 +762,10 @@ export async function startWorkers() {
   await instance.work(SWEEP_QUEUE, async () => sweep());
   await instance.schedule(SWEEP_QUEUE, '0 * * * *');
   await instance.work(CONTENT_QUEUE, async () => {
-    const { auditSteamHistory } = await import('./live');
+    const { auditSteamHistory, recheckBlockedSteam } = await import('./live');
     await backgroundWork('Contrôle rétroactif Steam', () => auditSteamHistory(), 0);
+    // Les joueurs absents aussi : un jeu remis à zéro sans revenir sur le site se débloque.
+    await backgroundWork('Jeux Steam bloqués', () => recheckBlockedSteam(), 0);
     await inSlices('Classification des jeux', 15, 10, (limit) => rateGames(limit));
     await inSlices('Genres des jeux', 10, 30, (limit) => tagGames(limit));
     await inSlices('Images des jeux Steam', 20, 50, (limit) => artGames(limit, undefined, 'steam'));

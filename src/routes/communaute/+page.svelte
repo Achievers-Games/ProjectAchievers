@@ -1,6 +1,7 @@
 <script lang="ts">
   import { HOLO_TIER } from '#lib/collection';
   import Seo from '#lib/components/Seo.svelte';
+  import RankingPrivacyNotice from '#lib/components/RankingPrivacyNotice.svelte';
   import { m } from '#lib/paraglide/messages';
   import { invalidate } from '$app/navigation';
   import { fly } from 'svelte/transition';
@@ -238,6 +239,7 @@
   </section>
 
   <section class="min-w-0 space-y-3" aria-labelledby="classement">
+    <RankingPrivacyNotice />
     <div class="flex items-center justify-between gap-2">
       <h2 id="classement"><a href="/classement" class="hover:text-accent">{rankingTitle}</a></h2>
       <div class="flex rounded border border-line text-xs" role="group" aria-label={m.period()}>

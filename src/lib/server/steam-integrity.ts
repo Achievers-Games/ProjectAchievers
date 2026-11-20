@@ -53,15 +53,13 @@ type Evidence = {
     platformGameId: string;
     totalAchievements: number;
     allowSteamBatches: boolean;
+    crossProgress: boolean;
     name: string;
   };
 };
 
 export const steamBatchException = (game: Evidence['game']) =>
   game.allowSteamBatches || /^Zup!/i.test(game.name) || game.platformGameId === '1258080';
-
-// Ces jeux peuvent importer une progression ou présentent des lots récurrents sur plusieurs comptes.
-export const MANUAL_REVIEW_APPS = new Set(['359550', '230410', '2357570']);
 
 /** Croise les lots de titres distincts dans une même fenêtre de deux heures. */
 export function corroboratedGames(evidence: Evidence[], currentGame: string, now = Date.now()) {
@@ -70,7 +68,7 @@ export function corroboratedGames(evidence: Evidence[], currentGame: string, now
     if (
       steamBatchException(row.game) ||
       row.game.totalAchievements >= 500 ||
-      MANUAL_REVIEW_APPS.has(row.game.platformGameId)
+      row.game.crossProgress
     )
       continue;
     const counts = new Map<number, number>();
@@ -129,7 +127,15 @@ export type TrustSignal =
   | { kind: 'playtime_unknown'; weight: 0 }
   | { kind: 'offline'; weight: number; minutes: number }
   | { kind: 'history'; weight: number; count: number }
-  | { kind: 'near_impossible'; weight: number; count: number };
+  | { kind: 'near_impossible'; weight: number; count: number }
+  | { kind: 'cross_progress'; weight: 0 }
+  | {
+      kind: 'other_platform';
+      weight: number;
+      platform: string;
+      completion: number;
+      minutes: number;
+    };
 
 export type SteamTrust = {
   score: number;
@@ -150,9 +156,18 @@ export type TrustEvidence = {
   history: number;
   /** Succès du lot que presque personne n'a sur Steam (moins de 0,1 %). */
   nearImpossible: number;
+  /** Le jeu reprend une progression d'ailleurs : peu de temps sur Steam ne dit rien. */
+  crossProgress?: boolean;
+  /** Le même jeu sur un autre compte lié du joueur (Xbox, PlayStation…), le plus avancé. */
+  otherPlatform?: { platform: string; completion: number; minutes: number } | null;
 };
 
 export const TRUSTED_SCORE = 3;
+/**
+ * Le temps de jeu seul ne valide jamais : des outils le font monter sans jouer (ArchiSteamFarm).
+ * Il faut un second signal indépendant (hors ligne, historique, autre plateforme) pour passer.
+ */
+const PLAYTIME_MAX = 2;
 export const CHEAT_SCORE = -3;
 const MIN_PEERS = 3;
 const OFFLINE_MINUTES = 30;
@@ -167,7 +182,7 @@ export function steamTrust(evidence: TrustEvidence): SteamTrust {
     const ratio = playtime / evidence.peerMedian;
     signals.push({
       kind: 'playtime_peers',
-      weight: ratio >= 0.4 ? 3 : ratio < 0.1 ? -3 : ratio < 0.25 ? -1 : 0,
+      weight: ratio >= 0.4 ? PLAYTIME_MAX : ratio < 0.1 ? -3 : ratio < 0.25 ? -1 : 0,
       minutes: playtime,
       median: evidence.peerMedian,
       peers: evidence.peers,
@@ -177,18 +192,22 @@ export function steamTrust(evidence: TrustEvidence): SteamTrust {
     signals.push({
       kind: 'playtime_rate',
       weight:
-        perAchievement >= 30
-          ? 3
-          : perAchievement >= 15
-            ? 2
-            : perAchievement < 1
-              ? -3
-              : perAchievement < 3
-                ? -1
-                : 0,
+        perAchievement >= 15 ? PLAYTIME_MAX : perAchievement < 1 ? -3 : perAchievement < 3 ? -1 : 0,
       minutes: playtime,
       perAchievement: Math.round(perAchievement * 10) / 10,
     });
+  }
+  const other = evidence.otherPlatform;
+  const playedElsewhere = Boolean(other && (other.completion >= 50 || other.minutes >= 600));
+  // Un temps Steam faible n'accuse personne quand la progression vient d'ailleurs : jeu connu
+  // pour la reprendre, ou vraie partie vérifiée sur un autre compte lié.
+  const imported = Boolean(evidence.crossProgress) || playedElsewhere;
+  const time = signals[0]!;
+  if (imported && time.weight < 0) time.weight = 0;
+  if (evidence.crossProgress) signals.push({ kind: 'cross_progress', weight: 0 });
+  if (other && (other.completion > 0 || other.minutes > 0)) {
+    // Vérifié par le site lui-même : une vraie partie ailleurs vaut une validation.
+    signals.push({ kind: 'other_platform', weight: playedElsewhere ? 3 : 1, ...other });
   }
   if (evidence.offline >= OFFLINE_MINUTES) {
     signals.push({ kind: 'offline', weight: 2, minutes: evidence.offline });
@@ -200,7 +219,8 @@ export function steamTrust(evidence: TrustEvidence): SteamTrust {
     signals.push({ kind: 'near_impossible', weight: -2, count: evidence.nearImpossible });
   }
   const score = signals.reduce((sum, signal) => sum + signal.weight, 0);
-  const verdict = score >= TRUSTED_SCORE ? 'trusted' : score <= CHEAT_SCORE ? 'cheat' : 'review';
+  const verdict =
+    score >= TRUSTED_SCORE ? 'trusted' : score <= CHEAT_SCORE && !imported ? 'cheat' : 'review';
   return { score, verdict, signals };
 }
 
@@ -214,6 +234,8 @@ async function assessSteamTrust(
     unlocks,
     flagged,
     activity,
+    onlineCap,
+    crossProgress,
   }: {
     userId: string;
     gameId: string;
@@ -221,6 +243,9 @@ async function assessSteamTrust(
     unlocks: UnlockInput[];
     flagged: string[];
     activity: ProgressActivity;
+    /** Le temps connecté noté quand le lot a été repéré : ce qui a suivi ne compte pas. */
+    onlineCap: number | null;
+    crossProgress: boolean;
   },
 ) {
   const [account, row, rarities] = await Promise.all([
@@ -240,8 +265,12 @@ async function assessSteamTrust(
       select: { globalRarity: true },
     }),
   ]);
-  const minutes = Math.max(activity.playtimeMinutes ?? 0, row?.playtimeMinutes ?? 0);
-  const playtime = account?.playtimeHidden || !minutes ? null : minutes;
+  // Le temps total de Steam additionne le jeu connecté et hors ligne (`withOfflineTime`).
+  const total = Math.max(activity.playtimeMinutes ?? 0, row?.playtimeMinutes ?? 0);
+  const offline = Math.max(activity.offlinePlaytimeMinutes ?? 0, row?.offlinePlaytimeMinutes ?? 0);
+  const online = Math.max(0, total - offline);
+  const counted = (onlineCap === null ? online : Math.min(online, onlineCap)) + offline;
+  const playtime = account?.playtimeHidden || !counted ? null : counted;
   // Les pairs : d'autres membres arrivés au moins aussi loin, sans revue en attente sur ce jeu.
   const [peers] = await tx.$queryRaw<{ median: number | null; count: bigint }[]>`
     SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY ug."playtimeMinutes")::float AS median,
@@ -254,6 +283,14 @@ async function assessSteamTrust(
         WHERE r."gameId" = ug."gameId" AND r."userId" = ug."userId"
           AND (r.status = 'PENDING' OR r."suspendedAt" IS NOT NULL)
       )`;
+  // Le même jeu ailleurs, reconnu par sa famille (même nom d'une plateforme à l'autre).
+  const [other] = await tx.$queryRaw<{ platform: string; completion: number; minutes: number }[]>`
+    SELECT g.platform::text AS platform, ug.completion, ug."playtimeMinutes" AS minutes
+    FROM "UserGame" ug JOIN "Game" g ON g.id = ug."gameId"
+    WHERE ug."userId" = ${userId} AND g.platform <> 'STEAM'
+      AND g."familyKey" = (SELECT "familyKey" FROM "Game" WHERE id = ${gameId})
+    ORDER BY ug.completion DESC, ug."playtimeMinutes" DESC
+    LIMIT 1`;
   const firstFlagged = Math.min(...flagged.map(stampOf));
   const flaggedIds = new Set(flagged.map(steamAchievementId));
   const history = new Set(
@@ -266,10 +303,12 @@ async function assessSteamTrust(
           !flaggedIds.has(unlocks[index]!.platformAchievementId),
       ),
   ).size;
-  return steamTrust({
+  const trust = steamTrust({
     unlocked: unlocks.length,
     playtime,
-    offline: Math.max(activity.offlinePlaytimeMinutes ?? 0, row?.offlinePlaytimeMinutes ?? 0),
+    offline,
+    crossProgress,
+    otherPlatform: other ?? null,
     peerMedian: peers?.median ?? null,
     peers: Number(peers?.count ?? 0),
     history,
@@ -277,6 +316,7 @@ async function assessSteamTrust(
       (achievement) => achievement.globalRarity !== null && achievement.globalRarity < RARE_PERCENT,
     ).length,
   });
+  return { trust, online };
 }
 
 export function steamReviewUnlocks(review: Pick<SteamIntegrityReview, 'snapshot'>): UnlockInput[] {
@@ -332,12 +372,14 @@ export async function filterSteamProgress(
   unlocks: UnlockInput[],
   activity: ProgressActivity = {},
   complete = false,
+  cleared = false,
 ) {
   const scope = { steamId_gameId: { steamId, gameId } };
   const gameSelect = {
     platformGameId: true,
     totalAchievements: true,
     allowSteamBatches: true,
+    crossProgress: true,
     name: true,
   };
   const [game, stored] = await Promise.all([
@@ -347,7 +389,7 @@ export async function filterSteamProgress(
   if (stored?.suspendedAt && stored.userId !== userId) {
     await withdrawSteamProgress(tx, userId, gameId);
   }
-  const reset = await steamReset(tx, stored, unlocks, complete);
+  const reset = await steamReset(tx, stored, unlocks, complete, cleared);
   if (reset.waiting) return { unlocks, withdrawn: false, reviewChanged: false };
   // Après une remise à zéro, la nouvelle partie passe les contrôles comme un jeu neuf.
   const previous = reset.review;
@@ -364,8 +406,10 @@ export async function filterSteamProgress(
   const candidates = [...new Set([...(wasPending ? previous.flagged : []), ...fresh])];
   if (!previous && !candidates.length) return { unlocks, withdrawn: false, reviewChanged: false };
 
-  // Les jeux qui importent une progression restent toujours en revue manuelle.
-  const trust = candidates.length
+  // Le temps connecté se fige au premier examen d'un lot, et le reste tant qu'il est en attente :
+  // un nouveau lot ajouté après des heures à laisser tourner le jeu ne le relève pas.
+  const frozen = wasPending ? (previous.flaggedPlaytime ?? null) : null;
+  const assessed = candidates.length
     ? await assessSteamTrust(tx, {
         userId,
         gameId,
@@ -373,12 +417,17 @@ export async function filterSteamProgress(
         unlocks,
         flagged: candidates,
         activity,
+        onlineCap: frozen,
+        crossProgress: game.crossProgress,
       })
     : null;
-  const autoApproved =
-    trust?.verdict === 'trusted' &&
-    !MANUAL_REVIEW_APPS.has(game.platformGameId) &&
-    !previous?.suspendedAt;
+  const trust = assessed?.trust ?? null;
+  // Une suspension automatique tombe si les traces du joueur la démentent ensuite (temps hors ligne
+  // arrivé plus tard). Celle qu'un modérateur a confirmée, avec ses succès refusés, reste.
+  const moderatorSuspended =
+    Boolean(previous?.suspendedAt) &&
+    (previous?.status !== 'PENDING' || (previous?.rejected.length ?? 0) > 0);
+  const autoApproved = trust?.verdict === 'trusted' && !moderatorSuspended;
   const flagged = autoApproved ? [] : candidates;
   const approved = [
     ...new Set([...(previous?.approved ?? []), ...(autoApproved ? candidates : [])]),
@@ -391,6 +440,9 @@ export async function filterSteamProgress(
 
   const now = new Date();
   const trustData = trust ? { trust: trust as unknown as Prisma.InputJsonValue } : {};
+  // Zéro au premier examen veut dire « pas encore lu » (profil privé, bibliothèque en cours) : rien
+  // n'est figé, le premier temps connu le sera.
+  const flaggedPlaytime = flagged.length ? (frozen ?? (assessed?.online || null)) : null;
   const current = await tx.steamIntegrityReview.upsert({
     where: scope,
     create: {
@@ -402,6 +454,7 @@ export async function filterSteamProgress(
       approved,
       rejected,
       ...trustData,
+      flaggedPlaytime,
       // Validé d'office sans jamais avoir été ouvert : aucune notification à envoyer.
       ...(autoApproved && { status: 'APPROVED', openedAt: new Date(0), reviewedAt: now }),
       ...(caught && { suspendedAt: now }),
@@ -412,11 +465,18 @@ export async function filterSteamProgress(
       flagged,
       approved,
       ...trustData,
+      flaggedPlaytime,
       // Des succès revenus : la lecture vide précédente était un raté.
       ...(unlocks.length > 0 && { emptySeenAt: null }),
       ...(opened && { status: 'PENDING', openedAt: now, reviewedAt: null, reviewedBy: null }),
       ...(autoApproved &&
-        wasPending && { status: 'APPROVED', openedAt: now, reviewedAt: now, reviewedBy: null }),
+        wasPending && {
+          status: 'APPROVED',
+          suspendedAt: null,
+          openedAt: now,
+          reviewedAt: now,
+          reviewedBy: null,
+        }),
       ...(caught && { suspendedAt: now, openedAt: now }),
     },
   });
@@ -461,13 +521,15 @@ const RESET_CONFIRM = 60 * 60 * 1000;
 /**
  * Un joueur bloqué peut repartir de zéro : il réinitialise les succès du jeu sur Steam, puis le
  * refait. La remise à zéro se voit quand Steam ne montre plus aucun déblocage antérieur au
- * blocage : soit des succès tous obtenus depuis, soit une liste vide confirmée une heure plus tard. Le blocage est alors levé et la suite repasse les contrôles habituels.
+ * blocage : des succès tous obtenus depuis, ou tous les succès du jeu listés à zéro par Steam (levée
+ * immédiate). Une liste vide sans ce détail est confirmée une heure plus tard. Le blocage est alors levé et la suite repasse les contrôles habituels.
  */
 async function steamReset(
   tx: Prisma.TransactionClient,
   review: SteamIntegrityReview | null,
   unlocks: UnlockInput[],
   complete: boolean,
+  cleared: boolean,
 ): Promise<{ review: SteamIntegrityReview | null; waiting: boolean; done: boolean }> {
   const unchanged = { review, waiting: false, done: false };
   if (!review || !complete) return unchanged;
@@ -484,7 +546,8 @@ async function steamReset(
   if (unlocks.some((unlock) => unlock.unlockedAt.getTime() <= blockedAt)) return unchanged;
 
   const now = new Date();
-  if (!unlocks.length) {
+  // Une liste vide sans la liste complète de Steam pour la confirmer attend une seconde lecture.
+  if (!unlocks.length && !cleared) {
     if (!review.emptySeenAt) {
       await tx.steamIntegrityReview.update({
         where: { id: review.id },
@@ -495,7 +558,7 @@ async function steamReset(
       return { review, waiting: true, done: false };
     }
   }
-  const cleared = await tx.steamIntegrityReview.update({
+  const fresh = await tx.steamIntegrityReview.update({
     where: { id: review.id },
     data: {
       status: 'APPROVED',
@@ -512,5 +575,5 @@ async function steamReset(
       reviewedBy: null,
     },
   });
-  return { review: cleared, waiting: false, done: true };
+  return { review: fresh, waiting: false, done: true };
 }

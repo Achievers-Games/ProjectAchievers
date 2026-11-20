@@ -514,6 +514,9 @@ model Game {
   achievements      Achievement[]
   steamReviews      SteamIntegrityReview[]
   allowSteamBatches Boolean                @default(false)
+  /// Le jeu reprend une progression d'une autre plateforme (Overwatch depuis Battle.net) : un
+  /// temps de jeu Steam faible n'y prouve rien.
+  crossProgress     Boolean                @default(false)
   players           UserGame[]
   guides            Guide[]
 
@@ -615,32 +618,53 @@ enum SteamReviewStatus {
 
 /// La décision suit le compte Steam à travers une déliaison ou une recréation du profil.
 model SteamIntegrityReview {
-  id          String            @id @default(cuid())
-  steamId     String
-  userId      String?
-  user        User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
-  gameId      String
-  game        Game              @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  status      SteamReviewStatus @default(PENDING)
-  suspendedAt DateTime?
-  flagged     String[]
-  approved    String[]
-  rejected    String[]
-  snapshot    Json
+  id              String            @id @default(cuid())
+  steamId         String
+  userId          String?
+  user            User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  gameId          String
+  game            Game              @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  status          SteamReviewStatus @default(PENDING)
+  suspendedAt     DateTime?
+  flagged         String[]
+  approved        String[]
+  rejected        String[]
+  snapshot        Json
   /// Le score de confiance et ses signaux, calculés à la dernière lecture (`steamTrust`).
-  trust       Json?
+  trust           Json?
+  /// Minutes jouées connecté quand le lot a été repéré. Celles d'après ne comptent pas : laisser
+  /// tourner le jeu ne rachète pas un lot. Le temps hors ligne, lui, s'ajoute.
+  flaggedPlaytime Int?
   /// Première lecture complète sans aucun succès : une seconde, une heure après, la confirme.
-  emptySeenAt DateTime?
+  emptySeenAt     DateTime?
   /// Le joueur a remis le jeu à zéro sur Steam : le blocage est levé, la suite repart de rien.
-  resetAt     DateTime?
-  createdAt   DateTime          @default(now())
-  openedAt    DateTime          @default(now())
-  reviewedAt  DateTime?
-  reviewedBy  String?
+  resetAt         DateTime?
+  createdAt       DateTime          @default(now())
+  openedAt        DateTime          @default(now())
+  reviewedAt      DateTime?
+  reviewedBy      String?
+
+  proofs  SteamReviewProof[]
+  /// Dernière preuve envoyée par le joueur : elle remet la revue sous les yeux des modérateurs.
+  proofAt DateTime?
 
   @@unique([steamId, gameId])
   @@index([status, openedAt])
   @@index([userId, suspendedAt])
+}
+
+/// Ce que le joueur montre pour défendre un lot : une capture de son temps de jeu ailleurs, et un mot.
+model SteamReviewProof {
+  id        String               @id @default(cuid())
+  reviewId  String
+  review    SteamIntegrityReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  userId    String
+  image     Bytes?
+  imageType String?
+  message   String
+  createdAt DateTime             @default(now())
+
+  @@index([reviewId, createdAt])
 }
 
 model UserAchievement {

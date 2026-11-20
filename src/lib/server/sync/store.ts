@@ -337,7 +337,16 @@ export async function saveProgress(
    * extrait. Un succès enregistré qu'elle ne montre plus (progression réinitialisée) peut alors
    * être retiré, avec les garde-fous de `REMOVAL_CONFIRM`.
    */
-  { complete = false, steamId }: { complete?: boolean; steamId?: string } = {},
+  {
+    complete = false,
+    steamId,
+    cleared = false,
+  }: {
+    complete?: boolean;
+    steamId?: string;
+    /** Steam a listé tous les succès du jeu, aucun obtenu : une remise à zéro certaine. */
+    cleared?: boolean;
+  } = {},
 ): Promise<SaveResult> {
   const result = await db.$transaction(
     async (tx) => {
@@ -353,7 +362,16 @@ export async function saveProgress(
       // Sérialise import complet et suivi en direct du même jeu pour ce joueur.
       await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${JSON.stringify([userId, gameId])}, 0))::text`;
       const filtered = steamId
-        ? await filterSteamProgress(tx, userId, gameId, steamId, unlocks, activity, complete)
+        ? await filterSteamProgress(
+            tx,
+            userId,
+            gameId,
+            steamId,
+            unlocks,
+            activity,
+            complete,
+            cleared,
+          )
         : { unlocks, withdrawn: false, reviewChanged: false };
       const removal = complete
         ? await reviewRemovals(tx, userId, gameId, unlocks, Boolean(steamId))
@@ -374,7 +392,7 @@ export async function saveProgress(
   return { gained: result.gained, fresh: result.fresh, removed: result.removed };
 }
 
-async function publishSteamReview(userId: string | null) {
+export async function publishSteamReview(userId: string | null) {
   if (userId) publishChat(userId, { type: 'steam-review' });
   const online = [...connectedUsers()].filter((id) => id !== userId);
   if (!online.length) return;

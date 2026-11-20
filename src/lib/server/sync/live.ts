@@ -14,6 +14,7 @@ import {
   fetchLibrary,
   fetchOwnedApps,
   fetchUnlocks,
+  fetchUnlockList,
   fetchRecentGames,
   fetchTopAchievements,
   steamPrivacy,
@@ -484,6 +485,11 @@ export async function checkLiveGames() {
     }
   });
 
+  // Ses jeux bloqués ou en attente : une remise à zéro se voit dans les 30 s.
+  await recheckBlockedSteam(accounts.map((account) => account.userId)).catch((cause) =>
+    log.error('Jeux bloqués :', cause),
+  );
+
   // Un joueur parti depuis longtemps ne laisse rien en mémoire : à son retour, tout repart.
   for (const [userId, at] of lastPresent) {
     if (now - at <= ARRIVAL_GAP) continue;
@@ -498,6 +504,84 @@ export async function checkLiveGames() {
  * semaines relue chaque jour ne laisse passer aucun jeu joué, et un jeu acheté sans être lancé
  * apparaît au plus tard le lendemain.
  */
+/** Un joueur présent voit ses jeux bloqués relus au plus toutes les 30 s. */
+const BLOCKED_EVERY = 30_000;
+const blockedReads = new Map<string, number>();
+
+/**
+ * Relit les jeux bloqués ou en attente, sans attendre que le joueur y rejoue : une remise à zéro
+ * (`reset_all_stats`) lève le blocage aussitôt, et le temps de jeu frais (hors ligne compris)
+ * refait le score de confiance. `userIds` : les joueurs présents, ou celui qui ouvre la page de
+ * son jeu bloqué ; sans eux, tous les comptes, pour la tournée de fond.
+ */
+export async function recheckBlockedSteam(userIds?: string[], limit = 50) {
+  if (!availableProviders().STEAM) return;
+  const now = Date.now();
+  const due = userIds?.filter((id) => now - (blockedReads.get(id) ?? 0) >= BLOCKED_EVERY);
+  if (due && !due.length) return;
+  const reviews = await db.steamIntegrityReview.findMany({
+    where: {
+      userId: due ? { in: due } : { not: null },
+      OR: [{ status: 'PENDING' }, { suspendedAt: { not: null } }, { rejected: { isEmpty: false } }],
+    },
+    orderBy: { openedAt: 'asc' },
+    take: limit,
+    select: {
+      userId: true,
+      steamId: true,
+      gameId: true,
+      game: { select: { platformGameId: true } },
+    },
+  });
+  for (const id of due ?? []) blockedReads.set(id, now);
+  const byAccount = new Map<string, { userId: string; steamId: string; games: typeof reviews }>();
+  for (const review of reviews) {
+    const key = `${review.userId}:${review.steamId}`;
+    const entry = byAccount.get(key) ?? {
+      userId: review.userId!,
+      steamId: review.steamId,
+      games: [],
+    };
+    entry.games.push(review);
+    byAccount.set(key, entry);
+  }
+  for (const { userId, steamId, games } of byAccount.values()) {
+    const linked = await db.linkedAccount.findUnique({
+      where: { provider_providerUserId: { provider: 'STEAM', providerUserId: steamId } },
+      select: { userId: true },
+    });
+    // Le compte Steam a changé de main : la revue suit le compte, pas l'ancien joueur.
+    if (linked?.userId !== userId) continue;
+    const owned = await fetchOwnedApps(
+      steamId,
+      games.map((game) => Number(game.game.platformGameId)),
+    ).catch(() => [] as OwnedGame[]);
+    const sources = new Map(owned.map((game) => [String(game.appid), game]));
+    for (const game of games) {
+      const appId = game.game.platformGameId;
+      try {
+        const { unlocks, cleared } = await fetchUnlockList(steamId, Number(appId));
+        const source = sources.get(appId);
+        await saveProgress(
+          userId,
+          game.gameId,
+          unlocks,
+          {
+            achievementsCheckedAt: new Date(),
+            ...(source && {
+              playtimeMinutes: source.playtime_forever ?? 0,
+              offlinePlaytimeMinutes: source.playtime_disconnected ?? 0,
+            }),
+          },
+          { steamId, complete: true, cleared },
+        );
+      } catch (cause) {
+        if (!(cause instanceof SyncError)) log.error('Jeu bloqué :', cause);
+      }
+    }
+  }
+}
+
 /** Revérifie quelques anciens lots à chaque passage, avec les heures fournies par Steam. */
 export async function auditSteamHistory(limit = 24, userId?: string) {
   if (!availableProviders().STEAM) return;

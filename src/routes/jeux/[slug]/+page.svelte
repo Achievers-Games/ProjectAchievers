@@ -25,6 +25,7 @@
   import LureCard from '#lib/components/LureCard.svelte';
   import Seo from '#lib/components/Seo.svelte';
   import GameGuides from './GameGuides.svelte';
+  import SteamProofForm from './SteamProofForm.svelte';
   import { editionLabel, formatDate, formatPercent, formatRarity } from '#lib/labels';
   import { getLocale } from '#lib/paraglide/runtime';
   import { isComplete } from '#lib/collection';
@@ -235,6 +236,9 @@
             <li>{m.steam_reset_step_replay()}</li>
           </ol>
         </div>
+      {/if}
+      {#if data.steamProof}
+        <SteamProofForm sentAt={data.steamProof.sentAt} />
       {/if}
       <p class="text-sm text-muted">
         {editionLabel(data.game)} · {m.count_achievements({

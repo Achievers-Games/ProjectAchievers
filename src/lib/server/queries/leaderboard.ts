@@ -1,7 +1,7 @@
 import { Prisma } from '#prisma';
 import { db } from '../db';
 import { publicCache } from '../public-cache';
-import { TIER_POINTS, tierCounts, type TierCounts } from './shared';
+import { rankedUser, TIER_POINTS, tierCounts, type TierCounts } from './shared';
 
 export type LeaderboardPeriod = 'semaine' | 'mois' | 'tout';
 
@@ -28,7 +28,7 @@ export async function leaderboard(period: LeaderboardPeriod, limit = 20, userIds
     SELECT u.handle, u."displayName", u."avatarUrl", u."avatarMotionUrl", u.frame, u."frameMotionUrl",
            count(*) AS unlocked
     FROM "UserAchievement" ua
-    JOIN "User" u ON u.id = ua."userId" AND u."isPublic"
+    JOIN "User" u ON u.id = ua."userId" AND u."isPublic" AND ${rankedUser('u')}
     WHERE ua."unlockedAt" >= ${since}
       ${userIds ? Prisma.sql`AND u.id = ANY(${userIds}::text[])` : Prisma.empty}
     GROUP BY u.id
@@ -74,7 +74,7 @@ async function rankedCollectors(limit: number) {
              + c.t4 * ${TIER_POINTS[3]} + c.t5 * ${TIER_POINTS[4]} + c.t6 * ${TIER_POINTS[5]})::bigint
              AS score
     FROM counts c
-    JOIN "User" u ON u.id = c."userId" AND u."isPublic"
+    JOIN "User" u ON u.id = c."userId" AND u."isPublic" AND ${rankedUser('u')}
     ORDER BY score DESC, u.handle
     LIMIT ${limit}`;
 

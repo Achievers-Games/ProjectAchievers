@@ -116,7 +116,26 @@ export const load: PageServerLoad = async ({ locals, depends }) => {
         select: { id: true, name: true, slug: true, platformGameId: true, allowSteamBatches: true },
       },
       user: { select: { handle: true, displayName: true } },
+      proofs: {
+        orderBy: { createdAt: 'desc' },
+        select: { id: true, message: true, createdAt: true, imageType: true },
+      },
     },
+  });
+  // Plusieurs joueurs pris sur le même jeu : sans doute un jeu qui reprend une progression
+  // d'ailleurs. Le modérateur le marque d'un clic, plutôt que de laisser chacun en revue.
+  const importSuggestions = await db.$queryRaw<
+    { id: string; name: string; slug: string; players: number }[]
+  >`
+    SELECT g.id, g.name, g.slug, count(DISTINCT r."userId")::int AS players
+    FROM "SteamIntegrityReview" r JOIN "Game" g ON g.id = r."gameId"
+    WHERE NOT g."crossProgress" AND NOT g."allowSteamBatches" AND r."userId" IS NOT NULL
+    GROUP BY g.id HAVING count(DISTINCT r."userId") >= 3
+    ORDER BY players DESC, g.name LIMIT 20`;
+  const crossProgressGames = await db.game.findMany({
+    where: { crossProgress: true },
+    orderBy: { name: 'asc' },
+    select: { id: true, name: true, slug: true },
   });
   const reviewAchievements = await db.achievement.findMany({
     where: {
@@ -145,6 +164,10 @@ export const load: PageServerLoad = async ({ locals, depends }) => {
         status: review.status,
         suspended: Boolean(review.suspendedAt),
         trust: review.trust as SteamTrust | null,
+        proofs: review.proofs.map(({ imageType, ...proof }) => ({
+          ...proof,
+          image: imageType ? `/moderation/preuves/${proof.id}` : null,
+        })),
         unlocks: review.flagged
           .map((key) => {
             const achievementId = steamAchievementId(key);
@@ -158,6 +181,8 @@ export const load: PageServerLoad = async ({ locals, depends }) => {
           .sort((a, b) => a.at.getTime() - b.at.getTime()),
       };
     }),
+    importSuggestions,
+    crossProgressGames,
     emblems: emblems.map((clan) => ({
       ...clan,
       url: `/clans/${clan.slug}/image?v=${clan.imageAt!.getTime()}`,
@@ -268,6 +293,17 @@ export const actions: Actions = {
       form.get('allowBatches') === '1',
     );
     if (!updated) return fail(409, { error: m.steam_review_changed() });
+  },
+  /** Marque un jeu comme reprenant une progression d'une autre plateforme, ou l'en retire. */
+  crossProgress: async ({ request, locals }) => {
+    requireModerator(locals);
+    const form = await request.formData();
+    const id = z.string().min(1).max(100).safeParse(form.get('id'));
+    if (!id.success) return fail(400, { error: m.action_failed() });
+    await db.game.updateMany({
+      where: { id: id.data, platform: 'STEAM' },
+      data: { crossProgress: form.get('value') === '1' },
+    });
   },
   /** Remplace le jeton du compte de service PSN, vérifié par Sony avant d'être enregistré. */
   psnToken: async ({ request, locals }) => {

@@ -14,6 +14,8 @@ import { SEASON, seasonState } from '#lib/season';
 import { getLocale } from '#lib/paraglide/runtime';
 import { lureGameFor } from '#lib/server/lure-games';
 import { excludedSteamUnlocks } from '#lib/server/steam-integrity';
+import { addSteamProof, type ProofFailure } from '#lib/server/steam-proof';
+import { rateLimit } from '#lib/server/rate-limit';
 import { completionTimes } from '#lib/server/completion-time';
 import { artNow } from '#lib/server/sync/content';
 import type { Actions, PageServerLoad } from './$types';
@@ -164,6 +166,7 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
             status: true,
             suspendedAt: true,
             snapshot: true,
+            proofAt: true,
             flagged: true,
             rejected: true,
           },
@@ -190,6 +193,13 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
       : [],
   );
 
+  // Le joueur revient voir son jeu bloqué, souvent juste après la remise à zéro : relu tout de
+  // suite, la page se met à jour d'elle-même quand le blocage tombe.
+  if (viewerId && steamReview?.status !== 'APPROVED' && steamReview && (!player || player.self)) {
+    void import('#lib/server/sync/live').then(({ recheckBlockedSteam }) =>
+      recheckBlockedSteam([viewerId]).catch(() => undefined),
+    );
+  }
   const mine = new Map(unlocks.map((u) => [u.achievementId, u.unlockedAt]));
   const excluded =
     steamReview && (!player || player.self) ? excludedSteamUnlocks(steamReview) : null;
@@ -345,6 +355,11 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
       (steamReview.suspendedAt || steamReview.status === 'REJECTED')
         ? game.platformGameId
         : null,
+    // Lot en attente : le joueur peut envoyer une preuve de sa progression sur une autre plateforme.
+    steamProof:
+      steamReview?.status === 'PENDING' && (!player || player.self)
+        ? { sentAt: steamReview.proofAt }
+        : null,
     season,
     players,
     lure,
@@ -361,7 +376,33 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
   };
 };
 
+const PROOF_ERRORS: Record<ProofFailure, () => string> = {
+  proof_closed: m.steam_proof_closed,
+  proof_invalid: m.steam_proof_invalid,
+  proof_too_big: m.steam_proof_too_big,
+};
+
 export const actions: Actions = {
+  /** Une preuve jointe à la revue Steam du joueur : capture de sa progression ailleurs, et un mot. */
+  steamProof: async ({ request, params, locals }) => {
+    if (!locals.user) return fail(401, { error: m.login_required() });
+    if (!rateLimit(`preuve-steam:${locals.user.id}`, 5, 3_600_000)) {
+      return fail(429, { error: m.steam_proof_too_many() });
+    }
+    const game = await db.game.findUnique({ where: { slug: params.slug }, select: { id: true } });
+    if (!game) return fail(404, { error: m.game_not_found() });
+    const form = await request.formData();
+    const file = form.get('image');
+    const result = await addSteamProof(
+      locals.user.id,
+      game.id,
+      String(form.get('message') ?? ''),
+      file instanceof File ? file : null,
+    );
+    if (!result.ok) return fail(400, { error: PROOF_ERRORS[result.reason]() });
+    return { success: m.steam_proof_sent() };
+  },
+
   /** Cache ou remontre un jeu : toutes ses versions, car elles forment une seule carte. */
   hide: async ({ request, params, locals }) => {
     if (!locals.user) return fail(401, { error: m.login_required() });
