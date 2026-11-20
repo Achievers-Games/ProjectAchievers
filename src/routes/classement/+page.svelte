@@ -1,6 +1,7 @@
 <script lang="ts">
   import { TIERS } from '#lib/collection';
   import Seo from '#lib/components/Seo.svelte';
+  import RankingPrivacyNotice from '#lib/components/RankingPrivacyNotice.svelte';
   import { m } from '#lib/paraglide/messages';
   import Avatar from '#lib/components/Avatar.svelte';
   import Empty from '#lib/components/Empty.svelte';
@@ -20,6 +21,7 @@
     <p class="text-sm text-muted">{m.ranking_rules()}</p>
     <a href="/clans" class="text-sm text-muted hover:text-ink">{m.clans_title()} →</a>
   </div>
+  <RankingPrivacyNotice />
 
   {#if data.ranking.length === 0}
     <Empty title={m.ranking_collectors_empty()} />

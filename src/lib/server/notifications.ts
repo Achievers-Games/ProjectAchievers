@@ -37,7 +37,13 @@ async function seenAt(userId: string) {
 const integrityNotices = (userId: string, moderator: boolean, after: Date) => ({
   OR: [
     { userId, openedAt: { gt: after } },
-    ...(moderator ? [{ status: 'PENDING' as const, openedAt: { gt: after } }] : []),
+    // Une preuve envoyée par le joueur remet la revue sous les yeux des modérateurs.
+    ...(moderator
+      ? [
+          { status: 'PENDING' as const, openedAt: { gt: after } },
+          { status: 'PENDING' as const, proofAt: { gt: after } },
+        ]
+      : []),
   ],
 });
 
@@ -46,7 +52,13 @@ const integrityNotices = (userId: string, moderator: boolean, after: Date) => ({
  * plateforme et jeux terminés. Tout vient des tables existantes, avec les marqueurs de
  * lecture du site : aucune notification n'est recopiée ailleurs.
  */
-export async function notifications(userId: string, limit = 12): Promise<Notice[]> {
+/** Ce que montre la cloche ; la page des notifications en demande bien plus. */
+export const PANEL_NOTICES = 12;
+export const PAGE_NOTICES = 100;
+
+export async function notifications(userId: string, limit = PANEL_NOTICES): Promise<Notice[]> {
+  // Chaque source garde sa part de la liste, agrandie avec elle.
+  const scale = Math.max(1, Math.ceil(limit / PANEL_NOTICES));
   const since = new Date(Date.now() - NOTICE_DAYS * DAY);
   const seen = await seenAt(userId);
 
@@ -64,20 +76,20 @@ export async function notifications(userId: string, limit = 12): Promise<Notice[
     db.friendship.findMany({
       where: { addresseeId: userId, accepted: false },
       orderBy: { createdAt: 'desc' },
-      take: INVITE_NOTICES,
+      take: INVITE_NOTICES * scale,
       select: { id: true, createdAt: true, requester: { select: personSelect } },
     }),
     db.clanInvite.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
-      take: INVITE_NOTICES,
+      take: INVITE_NOTICES * scale,
       select: { createdAt: true, clan: { select: { name: true, slug: true, imageAt: true } } },
     }),
     // Les demandes d'adhésion arrivent au chef et aux officiers du clan.
     db.clanRequest.findMany({
       where: { clan: { members: { some: { userId, role: { not: 'MEMBER' } } } } },
       orderBy: { createdAt: 'desc' },
-      take: INVITE_NOTICES,
+      take: INVITE_NOTICES * scale,
       select: {
         createdAt: true,
         clan: { select: { name: true } },
@@ -95,7 +107,7 @@ export async function notifications(userId: string, limit = 12): Promise<Notice[
     db.userAchievement.findMany({
       where: { userId, createdAt: { gte: since } },
       orderBy: { createdAt: 'desc' },
-      take: UNLOCK_NOTICES,
+      take: UNLOCK_NOTICES * scale,
       select: {
         unlockedAt: true,
         createdAt: true,
@@ -117,7 +129,7 @@ export async function notifications(userId: string, limit = 12): Promise<Notice[
         ...completedSince(userId, since),
       },
       orderBy: { lastUnlockedAt: 'desc' },
-      take: CARD_NOTICES,
+      take: CARD_NOTICES * scale,
       select: {
         lastUnlockedAt: true,
         gameId: true,
@@ -133,7 +145,9 @@ export async function notifications(userId: string, limit = 12): Promise<Notice[
         userId: true,
         suspendedAt: true,
         openedAt: true,
+        proofAt: true,
         status: true,
+        resetAt: true,
         game: { select: { name: true, slug: true } },
       },
     }),
@@ -142,7 +156,8 @@ export async function notifications(userId: string, limit = 12): Promise<Notice[
   const notices: Notice[] = [];
   for (const review of reviews) {
     const own = review.userId === userId;
-    const at = review.openedAt;
+    const at =
+      !own && review.proofAt && review.proofAt > review.openedAt ? review.proofAt : review.openedAt;
     notices.push({
       id: `integrity:${review.id}`,
       kind: 'integrity',
@@ -152,7 +167,9 @@ export async function notifications(userId: string, limit = 12): Promise<Notice[
         : `/moderation#steam-review-${review.id}`,
       title: own
         ? review.status === 'APPROVED'
-          ? m.steam_review_player_approved({ game: review.game.name })
+          ? review.resetAt
+            ? m.steam_status_player_unblocked({ game: review.game.name })
+            : m.steam_review_player_approved({ game: review.game.name })
           : m.steam_review_player_notice({ game: review.game.name })
         : m.steam_review_mod_notice({ game: review.game.name }),
       detail: own
@@ -170,7 +187,7 @@ export async function notifications(userId: string, limit = 12): Promise<Notice[
 
   // listConversations trie déjà du plus récent au plus ancien ; une discussion encore vide
   // ne dit rien.
-  for (const row of conversations.slice(0, MESSAGE_NOTICES)) {
+  for (const row of conversations.slice(0, MESSAGE_NOTICES * scale)) {
     if (!row.at) continue;
     notices.push({
       id: `message:${row.id}`,

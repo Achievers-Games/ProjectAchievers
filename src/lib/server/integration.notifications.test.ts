@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 import { resolveIdentity } from './accounts';
 import { db } from './db';
-import { markNotificationsRead, notifications, unseenNotices } from './notifications';
+import { markNotificationsRead, notifications, PAGE_NOTICES, unseenNotices } from './notifications';
 import {
   acceptFriend,
   createClan,
@@ -134,4 +134,34 @@ describe('centre de notifications', () => {
     const [newest] = await notifications(me.id);
     expect(await notifications(me.id, 1)).toEqual([newest]);
   });
+});
+
+it('donne à la page toutes les notifications que la cloche coupe', async () => {
+  const me = await player();
+  const game = await upsertGame({
+    platform: 'PSN',
+    platformGameId: `${PREFIX}-${Math.random()}`,
+    name: `${PREFIX} jeu`,
+  });
+  await saveAchievements(
+    game.id,
+    Array.from({ length: 15 }, (_, i) => ({
+      platformAchievementId: String(i),
+      name: `${PREFIX} T${i}`,
+      description: '',
+      hidden: false,
+      trophyType: 'BRONZE' as const,
+    })),
+  );
+  await saveProgress(
+    me.id,
+    game.id,
+    Array.from({ length: 10 }, (_, i) => ({
+      platformAchievementId: String(i),
+      unlockedAt: new Date(Date.now() - i * 60_000),
+    })),
+  );
+  const unlocks = (items: { kind: string }[]) => items.filter((item) => item.kind === 'unlock');
+  expect(unlocks(await notifications(me.id))).toHaveLength(6);
+  expect(unlocks(await notifications(me.id, PAGE_NOTICES))).toHaveLength(10);
 });

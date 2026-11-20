@@ -5,6 +5,16 @@ import type { LibraryCard } from '../library';
 export const PAGE_SIZE = 36;
 export const MAX_SHOWCASE = 8;
 
+/**
+ * Un joueur qui cache son temps de jeu Steam garde sa collection, mais ne se classe pas : sans
+ * ce temps, rien ne permet de vérifier ses déblocages. `alias` : la table `User` de la requête.
+ */
+export const rankedUser = (alias: string) => Prisma.sql`NOT EXISTS (
+  SELECT 1 FROM "LinkedAccount" hidden_playtime
+  WHERE hidden_playtime."userId" = ${Prisma.raw(`${alias}.id`)}
+    AND hidden_playtime.provider = 'STEAM' AND hidden_playtime."playtimeHidden"
+)`;
+
 /** Les jeux adultes restent masqués tant que le visiteur ne les a pas demandés. */
 export const visibleGames = (showAdult = false) =>
   (showAdult ? {} : { adultOnly: false }) satisfies Prisma.GameWhereInput;

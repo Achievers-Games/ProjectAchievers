@@ -8,7 +8,7 @@
   import { m } from '#lib/paraglide/messages';
   import { enhance } from '$app/forms';
   import Empty from '#lib/components/Empty.svelte';
-  import { formatDate, formatRelative } from '#lib/labels';
+  import { formatDate, formatRelative, PLATFORM_LABELS } from '#lib/labels';
 
   let { data, form } = $props();
 
@@ -21,6 +21,50 @@
     deja_lie: m.mod_signups_reason_taken,
   };
   const authReason = (reason: string) => AUTH_REASONS[reason]?.() ?? reason;
+
+  type TrustSignal = NonNullable<(typeof data.steamReviews)[number]['trust']>['signals'][number];
+  const hours = (minutes: number) => `${Math.round(minutes / 6) / 10} h`;
+  const signed = (value: number) => (value > 0 ? `+${value}` : String(value));
+  /** Un signal du score de confiance Steam, en mots. */
+  function trustLabel(signal: TrustSignal) {
+    switch (signal.kind) {
+      case 'playtime_peers':
+        return m.steam_trust_playtime_peers({
+          time: hours(signal.minutes),
+          median: hours(signal.median),
+          peers: String(signal.peers),
+        });
+      case 'playtime_rate':
+        return m.steam_trust_playtime_rate({
+          time: hours(signal.minutes),
+          rate: String(signal.perAchievement),
+        });
+      case 'playtime_unknown':
+        return m.steam_trust_playtime_unknown();
+      case 'offline':
+        return m.steam_trust_offline({ time: hours(signal.minutes) });
+      case 'history':
+        return m.steam_trust_history({ count: String(signal.count) });
+      case 'near_impossible':
+        return m.steam_trust_near_impossible({ count: String(signal.count) });
+      case 'cross_progress':
+        return m.steam_trust_cross_progress();
+      case 'pace':
+        return m.steam_trust_pace();
+      case 'playtime_reference':
+        return m.steam_trust_playtime_reference({
+          time: hours(signal.minutes),
+          expected: hours(signal.expected),
+        });
+      case 'other_platform':
+        return m.steam_trust_other_platform({
+          platform:
+            PLATFORM_LABELS[signal.platform as keyof typeof PLATFORM_LABELS] ?? signal.platform,
+          completion: String(Math.round(signal.completion)),
+          time: hours(signal.minutes),
+        });
+    }
+  }
 </script>
 
 <svelte:head>
@@ -58,6 +102,44 @@
               <a class="underline" href="/u/{review.player.handle}">{review.player.displayName}</a>
             {/if}
           </div>
+          {#if review.trust}
+            <div>
+              <p class="font-medium">
+                {m.steam_trust_score({ score: signed(review.trust.score) })}
+              </p>
+              <ul class="list-disc pl-5 text-muted">
+                {#each review.trust.signals as signal (signal.kind)}
+                  <li>
+                    {trustLabel(signal)}{#if signal.weight}
+                      ({signed(signal.weight)}){/if}
+                  </li>
+                {/each}
+              </ul>
+            </div>
+          {:else}
+            <p class="text-muted">{m.steam_trust_none()}</p>
+          {/if}
+          {#if review.proofs.length}
+            <div class="space-y-2">
+              <p class="font-medium">{m.steam_proof_mod_title()}</p>
+              {#each review.proofs as proof (proof.id)}
+                <div class="space-y-1 rounded-md border border-line p-2">
+                  <p class="text-xs text-muted">{formatRelative(proof.createdAt)}</p>
+                  {#if proof.message}<p class="whitespace-pre-line">{proof.message}</p>{/if}
+                  {#if proof.image}
+                    <a href={proof.image} target="_blank" rel="noopener">
+                      <img
+                        src={proof.image}
+                        alt={m.steam_proof_mod_image()}
+                        class="max-h-64 rounded border border-line"
+                        loading="lazy"
+                      />
+                    </a>
+                  {/if}
+                </div>
+              {/each}
+            </div>
+          {/if}
           {#if review.status === 'PENDING'}
             <fieldset class="space-y-1">
               <legend class="font-medium">{m.steam_review_selection()}</legend>
@@ -98,6 +180,39 @@
         </form>
       </details>
     {/each}
+    {#if data.importSuggestions.length || data.crossProgressGames.length}
+      <div class="space-y-2 border-t border-line pt-3 text-sm">
+        <h3 class="font-medium">{m.steam_cross_title()}</h3>
+        <p class="text-muted">{m.steam_cross_detail()}</p>
+        <ul class="space-y-1">
+          {#each data.importSuggestions as game (game.id)}
+            <li class="flex items-center justify-between gap-2">
+              <a class="underline" href="/jeux/{game.slug}">{game.name}</a>
+              <span class="flex items-center gap-2">
+                <span class="text-muted"
+                  >{m.steam_cross_players({ count: String(game.players) })}</span
+                >
+                <form method="POST" action="?/crossProgress" use:enhance>
+                  <input type="hidden" name="id" value={game.id} />
+                  <input type="hidden" name="value" value="1" />
+                  <button class="btn btn-secondary">{m.steam_cross_mark()}</button>
+                </form>
+              </span>
+            </li>
+          {/each}
+          {#each data.crossProgressGames as game (game.id)}
+            <li class="flex items-center justify-between gap-2">
+              <a class="underline" href="/jeux/{game.slug}">{game.name}</a>
+              <form method="POST" action="?/crossProgress" use:enhance>
+                <input type="hidden" name="id" value={game.id} />
+                <input type="hidden" name="value" value="0" />
+                <button class="btn btn-secondary">{m.steam_cross_unmark()}</button>
+              </form>
+            </li>
+          {/each}
+        </ul>
+      </div>
+    {/if}
   </section>
 
   {#if data.signups}

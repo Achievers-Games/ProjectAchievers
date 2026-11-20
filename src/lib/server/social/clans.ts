@@ -6,7 +6,7 @@ import { checkClanAchievements } from '../clan-achievements';
 import { clanImageUrl } from '../clan-image';
 import { randomToken } from '../crypto';
 import { db } from '../db';
-import { TIER_POINTS } from '../queries/shared';
+import { rankedUser, TIER_POINTS } from '../queries/shared';
 import { notify } from '../push';
 import { relationWith } from './friends';
 import { MAX_CLAN_MEMBERS, inviteNotice, personSelect, type SocialFailure } from './shared';
@@ -273,7 +273,7 @@ export async function listClans() {
         AS points
     FROM "Clan" c
     LEFT JOIN "ClanMember" cm ON cm."clanId" = c.id
-    LEFT JOIN "User" u ON u.id = cm."userId" AND u."isPublic"
+    LEFT JOIN "User" u ON u.id = cm."userId" AND u."isPublic" AND ${rankedUser('u')}
     LEFT JOIN scores s ON s."userId" = cm."userId"
     GROUP BY c.id
     ORDER BY points DESC, c.name`;

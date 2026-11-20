@@ -267,8 +267,6 @@ interface SaveResult {
 /** Le délai minimal entre la lecture qui repère un retrait et celle qui le confirme. */
 export const REMOVAL_CONFIRM = 60 * 60 * 1000;
 
-type Tx = Parameters<Parameters<typeof db.$transaction>[0]>[0];
-
 /**
  * Les succès enregistrés que la plateforme ne montre plus. Rien n'est retiré sur une liste vide :
  * elle ressemble davantage à une réponse ratée qu'à une progression remise à zéro. Une première
@@ -277,7 +275,7 @@ type Tx = Parameters<Parameters<typeof db.$transaction>[0]>[0];
  * enregistre avant que la liste complète ne les montre. Renvoie `seenAt` à écrire sur le jeu.
  */
 async function reviewRemovals(
-  tx: Tx,
+  tx: Prisma.TransactionClient,
   userId: string,
   gameId: string,
   unlocks: UnlockInput[],
@@ -323,8 +321,9 @@ async function reviewRemovals(
  * Enregistre les déverrouillages d'un joueur et recalcule sa progression.
  * Renvoie le nombre de succès nouvellement obtenus et de quoi les annoncer.
  */
-type ProgressActivity = {
+export type ProgressActivity = {
   playtimeMinutes?: number;
+  offlinePlaytimeMinutes?: number;
   lastPlayedAt?: Date | null;
   achievementsCheckedAt?: Date;
 };
@@ -339,7 +338,16 @@ export async function saveProgress(
    * extrait. Un succès enregistré qu'elle ne montre plus (progression réinitialisée) peut alors
    * être retiré, avec les garde-fous de `REMOVAL_CONFIRM`.
    */
-  { complete = false, steamId }: { complete?: boolean; steamId?: string } = {},
+  {
+    complete = false,
+    steamId,
+    cleared = false,
+  }: {
+    complete?: boolean;
+    steamId?: string;
+    /** Steam a listé tous les succès du jeu, aucun obtenu : une remise à zéro certaine. */
+    cleared?: boolean;
+  } = {},
 ): Promise<SaveResult> {
   const result = await db.$transaction(
     async (tx) => {
@@ -355,7 +363,16 @@ export async function saveProgress(
       // Sérialise import complet et suivi en direct du même jeu pour ce joueur.
       await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${JSON.stringify([userId, gameId])}, 0))::text`;
       const filtered = steamId
-        ? await filterSteamProgress(tx, userId, gameId, steamId, unlocks)
+        ? await filterSteamProgress(
+            tx,
+            userId,
+            gameId,
+            steamId,
+            unlocks,
+            activity,
+            complete,
+            cleared,
+          )
         : { unlocks, withdrawn: false, reviewChanged: false };
       const removal = complete
         ? await reviewRemovals(tx, userId, gameId, unlocks, Boolean(steamId))
@@ -376,7 +393,7 @@ export async function saveProgress(
   return { gained: result.gained, fresh: result.fresh, removed: result.removed };
 }
 
-async function publishSteamReview(userId: string | null) {
+export async function publishSteamReview(userId: string | null) {
   if (userId) publishChat(userId, { type: 'steam-review' });
   const online = [...connectedUsers()].filter((id) => id !== userId);
   if (!online.length) return;
@@ -467,6 +484,9 @@ async function writeProgress(
     ...(activity.playtimeMinutes !== undefined && {
       playtimeMinutes: activity.playtimeMinutes,
     }),
+    ...(activity.offlinePlaytimeMinutes !== undefined && {
+      offlinePlaytimeMinutes: activity.offlinePlaytimeMinutes,
+    }),
     ...(activity.lastPlayedAt !== undefined && { lastPlayedAt: activity.lastPlayedAt }),
     ...(activity.achievementsCheckedAt !== undefined && {
       achievementsCheckedAt: activity.achievementsCheckedAt,
@@ -549,7 +569,7 @@ export async function resolveSteamReview(
         },
       });
       if (approveAll && allowBatches) {
-        await tx.game.update({
+        await tx.game.updateMany({
           where: { id: current.gameId },
           data: { allowSteamBatches: true },
         });

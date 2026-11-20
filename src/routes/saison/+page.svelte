@@ -1,6 +1,7 @@
 <script lang="ts">
   import { m } from '#lib/paraglide/messages';
   import Seo from '#lib/components/Seo.svelte';
+  import RankingPrivacyNotice from '#lib/components/RankingPrivacyNotice.svelte';
   import { onMount } from 'svelte';
   import Avatar from '#lib/components/Avatar.svelte';
   import Empty from '#lib/components/Empty.svelte';
@@ -71,6 +72,7 @@
 <Seo title="{m.banner_season_title()} — Project Achievers" description={m.season_intro()} />
 
 <div class="space-y-8">
+  <RankingPrivacyNotice />
   <header class="space-y-4">
     <div class="season-art">
       <img src="/saison/finish-them.webp" alt="Finish them" width="1536" height="640" />

@@ -1,31 +1,11 @@
 <script lang="ts">
   import { m } from '#lib/paraglide/messages';
-  import { page } from '$app/state';
   import { invalidate } from '$app/navigation';
   import Bell from '@lucide/svelte/icons/bell';
-  import Layers from '@lucide/svelte/icons/layers';
-  import MessageCircle from '@lucide/svelte/icons/message-circle';
-  import Shield from '@lucide/svelte/icons/shield';
-  import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
-  import Trophy from '@lucide/svelte/icons/trophy';
-  import UserPlus from '@lucide/svelte/icons/user-plus';
-  import type { Component } from 'svelte';
-  import { displayText } from '#lib/profanity';
-  import { formatRelative } from '#lib/labels';
-  import type { Notice, NoticeKind } from '#lib/notices';
+  import type { Notice } from '#lib/notices';
+  import NoticeRow from './NoticeRow.svelte';
 
   let { count = 0 }: { count?: number } = $props();
-
-  const KIND_ICONS: Record<NoticeKind, Component<{ size?: number }>> = {
-    message: MessageCircle,
-    invite_friend: UserPlus,
-    invite_clan: Shield,
-    clan_request: Shield,
-    clan_rename: TriangleAlert,
-    integrity: TriangleAlert,
-    unlock: Trophy,
-    card: Layers,
-  };
 
   let open = $state(false);
   let button = $state<HTMLButtonElement>();
@@ -37,23 +17,6 @@
   /** Au-delà de neuf, le compte exact ne change plus rien à l'écran. */
   const shown = $derived(count > 9 ? '9+' : String(count));
   const hasUnread = $derived(items.some((item) => item.unread));
-
-  const kindLabel = (kind: NoticeKind) =>
-    ({
-      message: m.notification_message(),
-      invite_friend: m.notification_invite_friend(),
-      invite_clan: m.notification_invite_clan(),
-      clan_request: m.notification_clan_request(),
-      clan_rename: m.notification_clan_rename(),
-      integrity: m.steam_review_title(),
-      unlock: m.notification_unlock(),
-      card: m.notification_card(),
-    })[kind];
-
-  const detail = (notice: Notice) =>
-    notice.detail
-      ? displayText(notice.detail, page.data.user?.allowProfanity, notice.detailLocale)
-      : '';
 
   async function load() {
     loading = true;
@@ -140,56 +103,22 @@
           <p class="px-2 py-6 text-center text-sm text-muted">{m.notifications_empty()}</p>
         {:else}
           {#each items as notice (notice.id)}
-            {@const Icon = KIND_ICONS[notice.kind]}
-            <a
-              href={notice.href}
-              data-unread={notice.unread}
-              class="flex gap-2.5 rounded px-2 py-2 transition-colors hover:bg-raised {notice.unread
-                ? 'bg-accent/10'
-                : ''}"
-              onclick={() => (open = false)}
-            >
-              {#if notice.icon}
-                <img
-                  src={notice.icon}
-                  alt=""
-                  class="size-8 shrink-0 rounded object-cover"
-                  loading="lazy"
-                />
-              {:else}
-                <span
-                  class="grid size-8 shrink-0 place-items-center rounded bg-raised text-muted"
-                  aria-hidden="true"
-                >
-                  <Icon size={15} />
-                </span>
-              {/if}
-
-              <span class="min-w-0 flex-1">
-                <span class="flex items-baseline gap-1.5 text-[11px] text-muted">
-                  <span class="truncate">{kindLabel(notice.kind)}</span>
-                  <span class="ml-auto shrink-0">{formatRelative(notice.at)}</span>
-                </span>
-                <span class="block truncate text-sm font-medium">{notice.title}</span>
-                {#if detail(notice)}
-                  <span class="block truncate text-xs text-muted">{detail(notice)}</span>
-                {/if}
-              </span>
-
-              {#if notice.unread}
-                <span class="mt-2 size-1.5 shrink-0 rounded-full bg-accent" aria-hidden="true"
-                ></span>
-                <span class="sr-only">{m.notification_unread()}</span>
-              {/if}
-            </a>
+            <NoticeRow {notice} onclick={() => (open = false)} />
           {/each}
         {/if}
       </div>
 
-      <div class="border-t border-line p-2">
+      <div class="grid grid-cols-2 gap-1 border-t border-line p-2">
+        <a
+          href="/notifications"
+          class="btn btn-ghost px-2 text-xs whitespace-nowrap"
+          onclick={() => (open = false)}
+        >
+          {m.notifications_see_all()}
+        </a>
         <button
           type="button"
-          class="btn btn-ghost w-full"
+          class="btn btn-ghost px-2 text-xs whitespace-nowrap"
           onclick={markAll}
           disabled={!hasUnread || marking}
         >
