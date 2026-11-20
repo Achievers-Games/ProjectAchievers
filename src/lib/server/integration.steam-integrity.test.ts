@@ -164,12 +164,13 @@ it('réexamine les succès historiques, les garde visibles hors score et n’env
   expect(excludedSteamUnlocks(resolved).size).toBe(0);
 });
 
-it('conserve les lots légitimes déclarés et ne transforme pas Unturned en preuve de corroboration', async () => {
+it('place Unturned en revue malgré une ancienne exception et retire le jeu après confirmation', async () => {
   const user = await player();
+  const moderator = await player('MODERATOR');
   const steamId = user.accounts[0]!.providerUserId;
   const allowed = await game(true);
   const ordinary = await game();
-  const manual = await game(false, '304930');
+  const manual = await game(true, '304930');
   const at = Math.floor(Date.now() / 1000) * 1000;
   for (const gameId of [allowed, ordinary, manual]) {
     await saveProgress(user.id, gameId, full(at), {}, { steamId, complete: true });
@@ -179,6 +180,14 @@ it('conserve les lots légitimes déclarés et ne transforme pas Unturned en pre
     await db.steamIntegrityReview.count({ where: { steamId, suspendedAt: { not: null } } }),
   ).toBe(0);
   expect(await db.steamIntegrityReview.count({ where: { steamId, status: 'PENDING' } })).toBe(2);
+  expect(await progress(user.id, manual)).toMatchObject({ unlockedCount: 1 });
+
+  const review = await db.steamIntegrityReview.findFirstOrThrow({
+    where: { steamId, gameId: manual },
+  });
+  await resolveSteamReview(review.id, review.openedAt, moderator.id, [], 'suspend', false);
+  expect(await progress(user.id, manual)).toMatchObject({ unlockedCount: 0, completion: 0 });
+  expect(await progress(user.id, allowed)).toMatchObject({ completion: 100 });
 });
 
 it('garde une exclusion confirmée après suppression et accepte une remise à zéro Steam confirmée', async () => {

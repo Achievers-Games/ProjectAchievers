@@ -2051,6 +2051,7 @@
   "steam_review_validate_selection": "Approve selected",
   "steam_review_validate_all": "Approve all achievements",
   "steam_review_suspend_game": "Confirm game exclusion",
+  "steam_review_full_unlock_policy": "Unturned can be completed through gameplay. Confirm the exclusion if use of the full unlock option is established. A batch at the same second warrants review.",
   "steam_review_player_notice": "Suspected abuse in {game}",
   "steam_review_mod_notice": "Achievements to review in {game}",
   "steam_review_player_detail": "Points and 100% completion for this game are suspended. A moderator will review the unlocks.",

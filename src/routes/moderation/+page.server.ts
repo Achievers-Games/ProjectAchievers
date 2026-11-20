@@ -11,6 +11,7 @@ import {
   steamAchievementId,
   steamReviewUnlocks,
   steamUnlockKey,
+  UNTURNED_STEAM_APP_ID,
 } from '#lib/server/steam-integrity';
 import { resolveSteamReview } from '#lib/server/sync/store';
 import type { Actions, PageServerLoad } from './$types';
@@ -111,7 +112,9 @@ export const load: PageServerLoad = async ({ locals, depends }) => {
     orderBy: [{ status: 'asc' }, { openedAt: 'desc' }],
     take: 50,
     include: {
-      game: { select: { id: true, name: true, slug: true, allowSteamBatches: true } },
+      game: {
+        select: { id: true, name: true, slug: true, platformGameId: true, allowSteamBatches: true },
+      },
       user: { select: { handle: true, displayName: true } },
     },
   });
@@ -141,6 +144,7 @@ export const load: PageServerLoad = async ({ locals, depends }) => {
         openedAt: review.openedAt,
         status: review.status,
         suspended: Boolean(review.suspendedAt),
+        fullUnlockPolicy: review.game.platformGameId === UNTURNED_STEAM_APP_ID,
         unlocks: review.flagged
           .map((key) => {
             const achievementId = steamAchievementId(key);

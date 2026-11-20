@@ -2014,6 +2014,7 @@
   "steam_review_validate_selection": "選択した実績を承認",
   "steam_review_validate_all": "すべての実績を承認",
   "steam_review_suspend_game": "ゲームを集計から除外する",
+  "steam_review_full_unlock_policy": "Unturned の全実績は通常プレイで解除できます。一括解除オプションの使用が確認できた場合は、ゲームを集計から除外してください。同じ秒に解除された実績のまとまりは審査の対象です。",
   "steam_review_player_notice": "{game} で不正の疑い",
   "steam_review_mod_notice": "{game} に審査待ちの実績があります",
   "steam_review_player_detail": "このゲームのポイントと 100% 達成記録は集計を停止しています。モデレーターが実績の解除状況を確認します。",

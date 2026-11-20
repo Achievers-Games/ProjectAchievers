@@ -7,6 +7,7 @@ import {
   lockSteamAccount,
   steamAchievementId,
   steamReviewUnlocks,
+  UNTURNED_STEAM_APP_ID,
   withdrawSteamProgress,
 } from '../steam-integrity';
 import { invalidatePublicCache } from '../public-cache';
@@ -534,8 +535,8 @@ export async function resolveSteamReview(
         },
       });
       if (approveAll && allowBatches) {
-        await tx.game.update({
-          where: { id: current.gameId },
+        await tx.game.updateMany({
+          where: { id: current.gameId, platformGameId: { not: UNTURNED_STEAM_APP_ID } },
           data: { allowSteamBatches: true },
         });
       }

@@ -2051,6 +2051,7 @@
   "steam_review_validate_selection": "Ausgewählte Erfolge freigeben",
   "steam_review_validate_all": "Alle Erfolge freigeben",
   "steam_review_suspend_game": "Ausschluss des Spiels bestätigen",
+  "steam_review_full_unlock_policy": "Unturned kann durch reguläres Spielen abgeschlossen werden. Bestätige den Ausschluss, wenn die Nutzung der vollständigen Freischaltung feststeht. Gleichzeitige Freischaltungen müssen geprüft werden.",
   "steam_review_player_notice": "Verdacht auf Missbrauch bei {game}",
   "steam_review_mod_notice": "Erfolge in {game} prüfen",
   "steam_review_player_detail": "Punkte und der 100-%-Abschluss dieses Spiels sind vorläufig gesperrt. Das Moderationsteam prüft die Freischaltungen.",

@@ -2014,6 +2014,7 @@
   "steam_review_validate_selection": "通过所选成就",
   "steam_review_validate_all": "通过所有成就",
   "steam_review_suspend_game": "确认将此游戏排除出计分",
+  "steam_review_full_unlock_policy": "Unturned 可以通过正常游玩达成全成就。如果确认玩家使用了一次性全解锁选项，请确认将游戏排除出计分。同一秒内批量解锁的成就需要审核。",
   "steam_review_player_notice": "{game} 涉嫌违规",
   "steam_review_mod_notice": "{game} 有成就待审核",
   "steam_review_player_detail": "此游戏的积分与 100% 完成记录已暂停计入。管理员将审核相关成就的解锁情况。",

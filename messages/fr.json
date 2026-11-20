@@ -2051,6 +2051,7 @@
   "steam_review_validate_selection": "Valider la sélection",
   "steam_review_validate_all": "Valider tous les succès",
   "steam_review_suspend_game": "Confirmer l’exclusion du jeu",
+  "steam_review_full_unlock_policy": "Unturned peut être terminé en jouant. Confirmez l’exclusion si l’usage du déblocage intégral est établi. Un lot à la même seconde justifie une vérification.",
   "steam_review_player_notice": "Abus présumé sur {game}",
   "steam_review_mod_notice": "Succès à examiner sur {game}",
   "steam_review_player_detail": "Les points et le 100 % de ce jeu sont suspendus. Un modérateur examinera les déblocages.",

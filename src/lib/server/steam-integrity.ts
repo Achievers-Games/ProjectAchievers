@@ -57,12 +57,15 @@ type Evidence = {
   };
 };
 
-export const steamBatchException = (game: Evidence['game']) =>
-  game.allowSteamBatches || /^Zup!/i.test(game.name) || game.platformGameId === '1258080';
+export const UNTURNED_STEAM_APP_ID = '304930';
 
-// Déblocage intégral officiel (Unturned), progression importée ou lots récurrents sur plusieurs
-// comptes (Rainbow Six Siege, Warframe, Overwatch). Ces lots demandent une décision humaine.
-const MANUAL_REVIEW_APPS = new Set(['304930', '359550', '230410', '2357570']);
+export const steamBatchException = (game: Evidence['game']) =>
+  game.platformGameId !== UNTURNED_STEAM_APP_ID &&
+  (game.allowSteamBatches || /^Zup!/i.test(game.name) || game.platformGameId === '1258080');
+
+// La méthode de déblocage d'Unturned doit être établie en revue. Les autres jeux de cette liste
+// peuvent importer une progression ou présentent des lots récurrents sur plusieurs comptes.
+const MANUAL_REVIEW_APPS = new Set([UNTURNED_STEAM_APP_ID, '359550', '230410', '2357570']);
 
 /** Croise les lots de titres distincts dans une même fenêtre de deux heures. */
 export function corroboratedGames(evidence: Evidence[], currentGame: string, now = Date.now()) {

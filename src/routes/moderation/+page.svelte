@@ -76,7 +76,9 @@
               {/each}
             </fieldset>
           {/if}
-          {#if !review.game.allowSteamBatches}
+          {#if review.fullUnlockPolicy}
+            <p class="text-muted">{m.steam_review_full_unlock_policy()}</p>
+          {:else if !review.game.allowSteamBatches}
             <label class="flex items-center gap-2">
               <input type="checkbox" name="allowBatches" value="1" />
               {m.steam_review_exception()}

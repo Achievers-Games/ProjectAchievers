@@ -1,4 +1,5 @@
 import { db } from '../db';
+import { UNTURNED_STEAM_APP_ID } from '../steam-integrity';
 import { WorkScheduler } from '../workload';
 import { globals } from '../globals';
 import { logger } from '#lib/logger';
@@ -508,7 +509,8 @@ export async function auditSteamHistory(limit = 24, userId?: string) {
     FROM "UserGame" ug JOIN "Game" g ON g.id = ug."gameId"
     JOIN "LinkedAccount" la ON la."userId" = ug."userId" AND la.provider = 'STEAM'
     WHERE (${userId ?? null}::text IS NULL OR ug."userId" = ${userId ?? null}) AND g.platform = 'STEAM'
-      AND ug."reportedUnlockedCount" IS NULL AND NOT g."allowSteamBatches" AND g.name NOT ILIKE 'Zup!%'
+      AND ug."reportedUnlockedCount" IS NULL
+      AND (g."platformGameId" = ${UNTURNED_STEAM_APP_ID} OR (NOT g."allowSteamBatches" AND g.name NOT ILIKE 'Zup!%'))
       AND g."platformGameId" <> '1258080' AND ug."unlockedCount" >= 8
       AND EXISTS (
         SELECT 1 FROM "UserAchievement" ua JOIN "Achievement" a ON a.id = ua."achievementId"

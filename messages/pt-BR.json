@@ -2051,6 +2051,7 @@
   "steam_review_validate_selection": "Aprovar conquistas selecionadas",
   "steam_review_validate_all": "Aprovar todas as conquistas",
   "steam_review_suspend_game": "Confirmar a exclusão do jogo",
+  "steam_review_full_unlock_policy": "É possível completar Unturned jogando. Confirme a exclusão se houver confirmação de que a opção de desbloqueio total foi usada. Um lote desbloqueado no mesmo segundo requer análise.",
   "steam_review_player_notice": "Suspeita de abuso em {game}",
   "steam_review_mod_notice": "Conquistas para analisar em {game}",
   "steam_review_player_detail": "Os pontos e o 100% deste jogo estão suspensos. A moderação vai analisar os desbloqueios.",
