@@ -3,7 +3,14 @@ import 'dotenv/config';
 import { afterAll, describe, expect, it } from 'vitest';
 import { BOOSTER_PRICE } from '#lib/boosters';
 import { db } from './db';
-import { BoosterError, boosterState, openBooster, userCollection } from './boosters';
+import {
+  BoosterError,
+  boosterState,
+  collectionPage,
+  collectionSummary,
+  decodeCursor,
+  openBooster,
+} from './boosters';
 import { profileCardBanner, resolveCardBanner } from './card-banner';
 import { syncCardCatalogue } from './card-catalogue';
 import { saveAchievements, saveProgress, upsertGame } from './sync/store';
@@ -183,20 +190,66 @@ describe('la collection', () => {
     const user = await player();
     const { game, edition } = await playedGameWithRelief(user.id);
 
-    const before = await userCollection(user.id);
-    expect(before.cards).toEqual([]);
-    expect(before.missing).toEqual({ RELIEF: 1, VIVANTE: 0, MYTHIQUE: 0 });
+    expect(await collectionSummary(user.id)).toEqual({
+      owned: { RELIEF: 0, VIVANTE: 0, MYTHIQUE: 0 },
+      missing: { RELIEF: 1, VIVANTE: 0, MYTHIQUE: 0 },
+    });
+    expect((await collectionPage(user.id)).cards).toEqual([]);
 
     await openBooster(user.id, 'DAILY');
-    const after = await userCollection(user.id);
+    const summary = await collectionSummary(user.id);
     // Les doublons du même booster ne créent pas de seconde carte.
-    expect(after.cards).toHaveLength(1);
-    expect(after.cards[0]).toMatchObject({
+    expect(summary.owned.RELIEF).toBe(1);
+    expect(summary.missing.RELIEF).toBe(0);
+    const page = await collectionPage(user.id);
+    expect(page.next).toBeNull();
+    expect(page.cards).toHaveLength(1);
+    expect(page.cards[0]).toMatchObject({
       editionId: edition.id,
       kind: 'RELIEF',
       game: { slug: game.slug, headerUrl: `${edition.assetPath}/full.jpg` },
     });
-    expect(after.missing.RELIEF).toBe(0);
+    // Un seul propriétaire : la carte est comptée une fois, même tirée cinq fois.
+    expect((await db.gameEdition.findUniqueOrThrow({ where: { id: edition.id } })).ownerCount).toBe(
+      1,
+    );
+    expect(page.cards[0]!.ownerShare).toBeGreaterThan(0);
+  });
+
+  it('lit la collection par pages, filtrée par rareté et par nom de jeu', async () => {
+    const user = await player();
+    const editions = [];
+    for (let i = 0; i < 5; i++) editions.push((await playedGameWithRelief(user.id)).edition);
+    const named = await db.game.findFirstOrThrow({
+      where: { familyKey: editions[2]!.familyKey },
+      select: { id: true },
+    });
+    await db.game.update({ where: { id: named.id }, data: { name: `${PREFIX} Lanterne unique` } });
+    // Des dates d'obtention distinctes : la plus récente d'abord.
+    await db.userEdition.createMany({
+      data: editions.map((edition, index) => ({
+        userId: user.id,
+        editionId: edition.id,
+        obtainedAt: new Date(Date.UTC(2026, 0, 1 + index)),
+      })),
+    });
+
+    const first = await collectionPage(user.id, { limit: 2 });
+    expect(first.cards.map((card) => card.editionId)).toEqual([editions[4]!.id, editions[3]!.id]);
+    expect(first.next).not.toBeNull();
+    const second = await collectionPage(user.id, { limit: 2, cursor: decodeCursor(first.next) });
+    expect(second.cards.map((card) => card.editionId)).toEqual([editions[2]!.id, editions[1]!.id]);
+    const third = await collectionPage(user.id, { limit: 2, cursor: decodeCursor(second.next) });
+    expect(third.cards.map((card) => card.editionId)).toEqual([editions[0]!.id]);
+    expect(third.next).toBeNull();
+
+    expect(
+      (await collectionPage(user.id, { search: 'lanterne' })).cards.map((card) => card.editionId),
+    ).toEqual([editions[2]!.id]);
+    expect((await collectionPage(user.id, { kind: 'MYTHIQUE' })).cards).toEqual([]);
+    expect((await collectionPage(user.id, { kind: 'RELIEF' })).cards).toHaveLength(5);
+    // Une adresse abîmée repart du début au lieu d'échouer.
+    expect(decodeCursor('pas-un-curseur')).toBeNull();
   });
 });
 

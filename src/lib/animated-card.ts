@@ -1,5 +1,7 @@
 import type { Action } from 'svelte/action';
 import type { CardFrameTheme } from '#lib/card-frame';
+import { CARDS_URL } from '#lib/card-catalogue';
+import { reportClientError } from '#lib/report';
 import type { EditionKind } from '#prisma';
 
 /**
@@ -99,6 +101,15 @@ export const soundUrl = (assetPath: string, sound: string) => inFolder(assetPath
 export const editionStill = (assetPath: string | null | undefined, fallback: string | null) =>
   assetPath ? inFolder(assetPath, 'full.jpg') : fallback;
 
+/**
+ * La miniature d'une édition pour les grilles : `thumb.webp`, générée à la publication (environ
+ * 30 Ko au lieu de 200). Une carte de l'atelier, non publiée, n'en a pas : son image fixe sert.
+ */
+export const editionThumb = (assetPath: string | null | undefined, fallback: string | null) =>
+  assetPath?.startsWith(`${CARDS_URL}/`)
+    ? inFolder(assetPath, 'thumb.webp')
+    : editionStill(assetPath, fallback);
+
 /** Le jeu d'une carte, avec l'image fixe de son édition à la place du visuel Steam. */
 export const withEditionStill = <Game extends { headerUrl: string | null }>(
   game: Game | null | undefined,
@@ -118,18 +129,24 @@ export const animatedCard: Action<
 > = (canvas, params) => {
   let stop: (() => void) | undefined;
   let cancelled = false;
+  const context = `carte ${params.assetPath}`;
   void (async () => {
     if (!params.assetPath) return;
     const manifest = await loadManifest(params.assetPath);
-    if (!manifest || cancelled) return;
+    if (cancelled) return;
+    if (!manifest) throw new Error('edition.json introuvable ou illisible');
     await loadScript(params.assetPath);
     const api = window.AchieversCards?.[manifest.id];
-    if (!api || cancelled) return;
+    if (cancelled) return;
+    if (!api) throw new Error(`cards.js n'enregistre pas « ${manifest.id} »`);
     stop = await api.mount(canvas, params.level);
     if (cancelled) stop();
     else canvas.dataset.ready = 'true';
-  })().catch(() => {
-    // L'image fixe reste : une carte animée manquante ne casse pas la révélation.
+  })().catch((error: unknown) => {
+    // L'image fixe reste : une carte animée manquante ne casse pas la révélation. Le journal du
+    // serveur la signale, une fois par visite, pour qu'elle ne reste pas cassée sans que personne
+    // ne le voie.
+    reportClientError(error, context);
   });
   return {
     destroy() {

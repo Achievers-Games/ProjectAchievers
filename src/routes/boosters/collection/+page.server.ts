@@ -1,32 +1,32 @@
 import { fail } from '@sveltejs/kit';
 import { m } from '#lib/paraglide/messages';
 import { requireLogin } from '#lib/server/auth';
-import { userCollection } from '#lib/server/boosters';
-import { bannerProgress, resolveCardBanner } from '#lib/server/card-banner';
+import { collectionSummary } from '#lib/server/boosters';
+import { resolveCardBanner } from '#lib/server/card-banner';
 import { db } from '#lib/server/db';
+import { collectionCards, collectionFilters } from './collection.server';
 import type { Actions, PageServerLoad } from './$types';
 
 const requireUser = (locals: App.Locals) => requireLogin(locals, '/boosters/collection');
 
-/** La collection reste privée : chacun ne voit que ses propres cartes. */
-export const load: PageServerLoad = async ({ locals, depends }) => {
+/**
+ * La collection reste privée : chacun ne voit que ses propres cartes. Les compteurs viennent de la
+ * base, et seule la première page de cartes est chargée : « Afficher plus » lit la suite.
+ */
+export const load: PageServerLoad = async ({ locals, depends, url }) => {
   depends('app:sync');
   const user = requireUser(locals);
-  const [collection, profile] = await Promise.all([
-    userCollection(user.id),
+  const filters = collectionFilters(url);
+  const [summary, page, profile] = await Promise.all([
+    collectionSummary(user.id),
+    collectionCards(user.id, { ...filters, cursor: null }),
     db.user.findUniqueOrThrow({ where: { id: user.id }, select: { bannerEditionId: true } }),
   ]);
-  const progress = await bannerProgress(
-    user.id,
-    collection.cards.map((card) => card.familyKey),
-  );
   return {
-    ...collection,
+    ...summary,
+    ...page,
+    filter: { kind: filters.kind, search: filters.search },
     bannerEditionId: profile.bannerEditionId,
-    cards: collection.cards.map((card) => ({
-      ...card,
-      bannerCompletion: card.enabled ? (progress.get(card.familyKey) ?? null) : null,
-    })),
   };
 };
 

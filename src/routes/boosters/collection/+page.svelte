@@ -2,6 +2,7 @@
   import { m } from '#lib/paraglide/messages';
   import { getLocale } from '#lib/paraglide/runtime';
   import { enhance } from '$app/forms';
+  import { page } from '$app/state';
   import CardInspection from '#lib/components/CardInspection.svelte';
   import CardBannerChoice from '#lib/components/CardBannerChoice.svelte';
   import Empty from '#lib/components/Empty.svelte';
@@ -20,35 +21,78 @@
   };
   const RAREST_FIRST = [...EDITIONS].reverse();
 
-  /** Le filtre par édition ; sans filtre, toutes les cartes. */
-  let filter = $state<EditionKind | null>(null);
-  const shown = $derived(data.cards.filter((card) => !filter || card.kind === filter));
-  const owned = $derived(
-    Object.fromEntries(
-      EDITIONS.map((kind) => [kind, data.cards.filter((card) => card.kind === kind).length]),
-    ) as Record<EditionKind, number>,
-  );
+  type Card = (typeof data.cards)[number];
+  /**
+   * Les cartes affichées : la première page chargée par le serveur, puis celles qu'« Afficher
+   * plus » ajoute. Les ajouts valent pour un filtre : en changer repart de la première page.
+   */
+  let added = $state<{ from: string | null; cards: Card[]; next: string | null } | null>(null);
+  let loading = $state(false);
+  const sameView = $derived(added !== null && added.from === data.next);
+  const cards = $derived(sameView ? [...data.cards, ...added!.cards] : data.cards);
+  const next = $derived(sameView ? added!.next : data.next);
+  const total = $derived(EDITIONS.reduce((sum, kind) => sum + data.owned[kind], 0));
   const toDiscover = $derived(EDITIONS.reduce((sum, kind) => sum + data.missing[kind], 0));
 
+  /** L'adresse de la collection avec un autre filtre, la recherche gardée. */
+  function filterUrl(kind: EditionKind | null) {
+    const url = new URL(page.url.href);
+    url.searchParams.delete('curseur');
+    if (kind) url.searchParams.set('edition', kind.toLowerCase());
+    else url.searchParams.delete('edition');
+    return `${url.pathname}${url.search}`;
+  }
+
+  async function more() {
+    if (!next || loading) return;
+    loading = true;
+    try {
+      const url = new URL('/boosters/collection/cartes', page.url.origin);
+      if (data.filter.kind) url.searchParams.set('edition', data.filter.kind.toLowerCase());
+      if (data.filter.search) url.searchParams.set('q', data.filter.search);
+      url.searchParams.set('curseur', next);
+      const response = await fetch(url);
+      if (!response.ok) return;
+      const loaded = (await response.json()) as { cards: Card[]; next: string | null };
+      added = {
+        from: data.next,
+        cards: [...(sameView ? added!.cards : []), ...loaded.cards],
+        next: loaded.next,
+      };
+    } finally {
+      loading = false;
+    }
+  }
+
   let inspected = $state<number | null>(null);
-  const obtained = (date: Date) =>
+  const obtained = (date: Date | string) =>
     m.collection_obtained({
       date: new Intl.DateTimeFormat(getLocale(), { dateStyle: 'long' }).format(new Date(date)),
     });
+  const share = (value: number) =>
+    new Intl.NumberFormat(getLocale(), {
+      style: 'percent',
+      maximumFractionDigits: value < 0.01 ? 2 : value < 0.1 ? 1 : 0,
+    }).format(value);
+  /** La date d'obtention, et la part des collectionneurs qui ont aussi la carte. */
+  const status = (card: Card) =>
+    card.ownerShare === null
+      ? obtained(card.obtainedAt)
+      : `${obtained(card.obtainedAt)} · ${m.collection_owned_by({ share: share(card.ownerShare) })}`;
   const move = (direction: number) => {
     if (inspected === null) return;
-    inspected = (inspected + direction + shown.length) % shown.length;
+    inspected = (inspected + direction + cards.length) % cards.length;
   };
 </script>
 
 <svelte:head><title>{m.collection_title()} — Project Achievers</title></svelte:head>
 
-{#if inspected !== null && shown[inspected]}
+{#if inspected !== null && cards[inspected]}
   <CardInspection
-    card={shown[inspected]}
+    card={cards[inspected]}
     position={inspected + 1}
-    total={shown.length}
-    status={obtained(shown[inspected].obtainedAt)}
+    total={cards.length}
+    status={status(cards[inspected])}
     onclose={() => (inspected = null)}
     onprevious={() => move(-1)}
     onnext={() => move(1)}
@@ -62,7 +106,7 @@
     <p class="text-sm text-muted">{m.collection_help()}</p>
   </div>
 
-  {#if data.cards.length || data.bannerEditionId}
+  {#if total || data.bannerEditionId}
     <div class="card flex flex-wrap items-center justify-between gap-3 p-4">
       <p class="text-sm text-muted">{m.collection_banner_help()}</p>
       {#if data.bannerEditionId}
@@ -74,7 +118,7 @@
   {/if}
   {#if form?.error}<p class="text-sm" role="alert">{form.error}</p>{/if}
 
-  {#if !data.cards.length}
+  {#if !total}
     <Empty title={m.collection_empty()}>
       {#snippet action()}<a href="/boosters" class="btn btn-primary">{m.collection_open()}</a
         >{/snippet}
@@ -84,7 +128,7 @@
       {#each RAREST_FIRST as kind (kind)}
         <div class="stat" data-edition={kind.toLowerCase()}>
           <span class="stat-name">{editionName[kind]()}</span>
-          <span class="stat-count">{owned[kind]}</span>
+          <span class="stat-count">{data.owned[kind]}</span>
           <span class="text-xs text-muted">
             {data.missing[kind]
               ? m.collection_to_discover({ count: data.missing[kind] })
@@ -95,33 +139,54 @@
     </section>
 
     <div class="flex flex-wrap items-center gap-2" role="group" aria-label={m.collection_filter()}>
-      <button
-        type="button"
+      <a
+        href={filterUrl(null)}
         class="btn"
-        class:btn-primary={filter === null}
-        aria-pressed={filter === null}
-        onclick={() => (filter = null)}>{m.collection_all({ count: data.cards.length })}</button
+        class:btn-primary={data.filter.kind === null}
+        aria-current={data.filter.kind === null ? 'page' : undefined}
+        data-sveltekit-noscroll>{m.collection_all({ count: total })}</a
       >
       {#each RAREST_FIRST as kind (kind)}
-        {#if owned[kind]}
-          <button
-            type="button"
+        {#if data.owned[kind]}
+          <a
+            href={filterUrl(kind)}
             class="btn"
-            class:btn-primary={filter === kind}
-            aria-pressed={filter === kind}
-            onclick={() => (filter = kind)}>{editionName[kind]()} · {owned[kind]}</button
+            class:btn-primary={data.filter.kind === kind}
+            aria-current={data.filter.kind === kind ? 'page' : undefined}
+            data-sveltekit-noscroll>{editionName[kind]()} · {data.owned[kind]}</a
           >
         {/if}
       {/each}
-      {#if toDiscover}
-        <span class="ml-auto text-sm text-muted"
-          >{m.collection_to_discover({ count: toDiscover })}</span
-        >
-      {/if}
+      <form
+        method="GET"
+        class="ml-auto flex gap-2"
+        data-sveltekit-noscroll
+        data-sveltekit-keepfocus
+      >
+        {#if data.filter.kind}<input
+            type="hidden"
+            name="edition"
+            value={data.filter.kind.toLowerCase()}
+          />{/if}
+        <input
+          type="search"
+          name="q"
+          value={data.filter.search}
+          aria-label={m.collection_search()}
+          placeholder={m.collection_search()}
+          class="input max-w-xs"
+        />
+      </form>
     </div>
+    {#if toDiscover}
+      <p class="text-sm text-muted">{m.collection_to_discover({ count: toDiscover })}</p>
+    {/if}
 
+    {#if !cards.length}
+      <Empty title={m.collection_no_match()} />
+    {/if}
     <ul class="grid grid-cols-2 gap-4 sm:grid-cols-3">
-      {#each shown as card, index (card.editionId)}
+      {#each cards as card, index (card.editionId)}
         <li use:cardTilt>
           <button
             type="button"
@@ -132,10 +197,11 @@
           >
             <span class="tile-surface">
               <span class="art">
-                {#if card.game?.headerUrl}<img
-                    src={card.game.headerUrl}
+                {#if card.thumbUrl}<img
+                    src={card.thumbUrl}
                     alt=""
                     loading="lazy"
+                    decoding="async"
                   />{:else}<span class="empty-art" aria-hidden="true">✦</span>{/if}
                 <span class="badge">{editionName[card.kind]()}</span>
               </span>
@@ -157,6 +223,13 @@
         </li>
       {/each}
     </ul>
+    {#if next}
+      <div class="flex justify-center">
+        <button type="button" class="btn" onclick={more} disabled={loading} aria-busy={loading}
+          >{m.collection_more()}</button
+        >
+      </div>
+    {/if}
   {/if}
 </div>
 

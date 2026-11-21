@@ -1,5 +1,5 @@
 import { error, fail } from '@sveltejs/kit';
-import { withEditionStill } from '#lib/animated-card';
+import { editionThumb, withEditionStill } from '#lib/animated-card';
 import { m } from '#lib/paraglide/messages';
 import { requireLogin } from '#lib/server/auth';
 import { bannerProgress } from '#lib/server/card-banner';
@@ -64,10 +64,16 @@ export const load: PageServerLoad = async ({ locals, depends }) => {
       id: opening.id,
       kind: opening.kind,
       createdAt: opening.createdAt,
-      cards: opening.cards.map((card) => ({
-        ...card,
-        game: withEditionStill(art.get(card.familyKey), assets.get(card.editionId)),
-      })),
+      // L'historique montre de petites vignettes : la miniature suffit.
+      cards: opening.cards.map((card) => {
+        const game = art.get(card.familyKey);
+        return {
+          ...card,
+          game: game
+            ? { ...game, headerUrl: editionThumb(assets.get(card.editionId), game.headerUrl) }
+            : null,
+        };
+      }),
     })),
   };
 };

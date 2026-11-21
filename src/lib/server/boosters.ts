@@ -1,6 +1,6 @@
 import { randomInt, randomUUID } from 'node:crypto';
-import type { BoosterSource, EditionKind } from '#prisma';
-import { withEditionStill } from '#lib/animated-card';
+import { Prisma, type BoosterSource, type EditionKind } from '#prisma';
+import { editionThumb, withEditionStill } from '#lib/animated-card';
 import {
   BOOSTER_PRICE,
   canDraw,
@@ -137,12 +137,18 @@ export async function openBooster(userId: string, source: Exclude<BoosterSource,
       return { ...card, duplicate, shards: duplicate ? DUPLICATE_SHARDS[card.kind] : 0 };
     });
 
+    const fresh = cards.filter((card) => !card.duplicate).map((card) => card.editionId);
     await tx.userEdition.createMany({
-      data: cards
-        .filter((card) => !card.duplicate)
-        .map((card) => ({ userId, editionId: card.editionId })),
+      data: fresh.map((editionId) => ({ userId, editionId })),
       skipDuplicates: true,
     });
+    // Le verrou du joueur rend la liste des nouvelles cartes exacte : chacune gagne un propriétaire.
+    if (fresh.length) {
+      await tx.gameEdition.updateMany({
+        where: { id: { in: fresh } },
+        data: { ownerCount: { increment: 1 } },
+      });
+    }
     await addEntries(
       tx,
       userId,
@@ -253,53 +259,161 @@ export interface CollectionCard {
   familyKey: string;
   kind: EditionKind;
   assetPath: string;
+  /** La miniature des grilles : légère, contrairement à l'image fixe en grand. */
+  thumbUrl: string | null;
   obtainedAt: Date;
+  /** Part des collectionneurs qui possèdent aussi cette édition, entre 0 et 1. */
+  ownerShare: number | null;
   game: { name: string; slug: string; headerUrl: string | null } | null;
 }
 
-const RARITY: Record<EditionKind, number> = { RELIEF: 0, VIVANTE: 1, MYTHIQUE: 2 };
+/** Une page de collection : de la plus rare à la plus courante, puis de la plus récente. */
+export const COLLECTION_PAGE = 48;
+
+const RANK = Prisma.sql`CASE e.kind WHEN 'MYTHIQUE' THEN 2 WHEN 'VIVANTE' THEN 1 ELSE 0 END`;
+
+/** Où reprendre la lecture : la dernière carte de la page précédente, encodée dans l'adresse. */
+interface Cursor {
+  rank: number;
+  obtainedAt: string;
+  editionId: string;
+}
+const encodeCursor = (cursor: Cursor) => Buffer.from(JSON.stringify(cursor)).toString('base64url');
+export function decodeCursor(value: string | null): Cursor | null {
+  if (!value) return null;
+  try {
+    const cursor = JSON.parse(Buffer.from(value, 'base64url').toString('utf8')) as Cursor;
+    if (
+      typeof cursor.rank === 'number' &&
+      typeof cursor.editionId === 'string' &&
+      !Number.isNaN(Date.parse(cursor.obtainedAt))
+    ) {
+      return cursor;
+    }
+  } catch {
+    // Une adresse abîmée repart du début.
+  }
+  return null;
+}
+
+/** Les collectionneurs du site, pour donner la rareté réelle d'une carte. Recompté par minute. */
+let collectorCache: { at: number; count: Promise<number> } | null = null;
+function collectorCount() {
+  if (!collectorCache || Date.now() - collectorCache.at > 60_000) {
+    collectorCache = {
+      at: Date.now(),
+      count: db.user.count({ where: { boostersOpened: { gt: 0 } } }),
+    };
+  }
+  return collectorCache.count;
+}
 
 /**
- * La collection du joueur : ses cartes, de la plus rare à la plus courante puis de la plus
- * récente à la plus ancienne, et combien il en reste à découvrir parmi celles qu'il peut tirer.
- * Une carte possédée compte toujours, même si son jeu a quitté le tirage depuis.
+ * Les compteurs de la collection, calculés en base sans charger les cartes : celles possédées
+ * par rareté, et celles qui restent à découvrir parmi les éditions que le joueur peut tirer.
  */
-export async function userCollection(userId: string) {
-  const [owned, pool] = await Promise.all([
-    db.userEdition.findMany({
-      where: { userId },
-      select: {
-        obtainedAt: true,
-        edition: {
-          select: {
-            id: true,
-            familyKey: true,
-            kind: true,
-            assetPath: true,
-            family: { select: { enabled: true } },
-          },
-        },
-      },
-    }),
-    editionPool(db, userId),
+export async function collectionSummary(userId: string) {
+  const [owned, missing] = await Promise.all([
+    db.$queryRaw<{ kind: EditionKind; count: number }[]>`
+      SELECT e.kind, count(*)::int AS count
+      FROM "UserEdition" ue JOIN "GameEdition" e ON e.id = ue."editionId"
+      WHERE ue."userId" = ${userId}
+      GROUP BY e.kind`,
+    db.$queryRaw<{ kind: EditionKind; count: number }[]>`
+      SELECT e.kind, count(DISTINCT e.id)::int AS count
+      FROM "GameEdition" e
+      JOIN "CardFamily" f ON f."familyKey" = e."familyKey" AND f.enabled
+      JOIN "Game" g ON g."familyKey" = e."familyKey" AND NOT g."adultOnly"
+      JOIN "UserGame" ug ON ug."gameId" = g.id AND ug."userId" = ${userId}
+        AND NOT ug.hidden AND ug."unlockedCount" > 0
+      WHERE NOT EXISTS (
+        SELECT 1 FROM "UserEdition" mine WHERE mine."userId" = ${userId} AND mine."editionId" = e.id
+      )
+      GROUP BY e.kind`,
   ]);
-  const art = await familyArt(owned.map((row) => row.edition.familyKey));
-  const cards: CollectionCard[] = owned
-    .map(({ obtainedAt, edition }) => ({
-      enabled: edition.family.enabled,
-      editionId: edition.id,
-      familyKey: edition.familyKey,
-      kind: edition.kind,
-      assetPath: edition.assetPath,
-      obtainedAt,
-      game: withEditionStill(art.get(edition.familyKey), edition.assetPath),
-    }))
-    .sort(
-      (a, b) => RARITY[b.kind] - RARITY[a.kind] || b.obtainedAt.getTime() - a.obtainedAt.getTime(),
-    );
-  const ownedIds = new Set(cards.map((card) => card.editionId));
-  const missing = Object.fromEntries(
-    EDITIONS.map((kind) => [kind, pool[kind].filter((row) => !ownedIds.has(row.editionId)).length]),
-  ) as Record<EditionKind, number>;
-  return { cards, missing };
+  const byKind = (rows: { kind: EditionKind; count: number }[]) =>
+    Object.fromEntries(
+      EDITIONS.map((kind) => [kind, rows.find((row) => row.kind === kind)?.count ?? 0]),
+    ) as Record<EditionKind, number>;
+  return { owned: byKind(owned), missing: byKind(missing) };
+}
+
+/**
+ * Une page de la collection, filtrée par rareté et par nom de jeu. La lecture reprend après la
+ * dernière carte vue : une page coûte le même prix au début et au bout d'une grande collection.
+ */
+export async function collectionPage(
+  userId: string,
+  options: {
+    kind?: EditionKind | null;
+    search?: string;
+    cursor?: Cursor | null;
+    limit?: number;
+  } = {},
+) {
+  const limit = options.limit ?? COLLECTION_PAGE;
+  const search = options.search?.trim();
+  const cursor = options.cursor;
+  const rows = await db.$queryRaw<
+    {
+      editionId: string;
+      obtainedAt: Date;
+      familyKey: string;
+      kind: EditionKind;
+      assetPath: string;
+      ownerCount: number;
+      enabled: boolean;
+      rank: number;
+    }[]
+  >`
+    SELECT ue."editionId", ue."obtainedAt", e."familyKey", e.kind, e."assetPath", e."ownerCount",
+      f.enabled, ${RANK} AS rank
+    FROM "UserEdition" ue
+    JOIN "GameEdition" e ON e.id = ue."editionId"
+    JOIN "CardFamily" f ON f."familyKey" = e."familyKey"
+    WHERE ue."userId" = ${userId}
+      ${options.kind ? Prisma.sql`AND e.kind = ${options.kind}::"EditionKind"` : Prisma.empty}
+      ${
+        search
+          ? Prisma.sql`AND EXISTS (
+              SELECT 1 FROM "Game" g WHERE g."familyKey" = e."familyKey" AND g.name ILIKE ${`%${search}%`}
+            )`
+          : Prisma.empty
+      }
+      ${
+        cursor
+          ? Prisma.sql`AND (${RANK}, ue."obtainedAt", ue."editionId")
+              < (${cursor.rank}, ${new Date(cursor.obtainedAt)}, ${cursor.editionId})`
+          : Prisma.empty
+      }
+    ORDER BY rank DESC, ue."obtainedAt" DESC, ue."editionId" DESC
+    LIMIT ${limit + 1}`;
+  const page = rows.slice(0, limit);
+  const [art, collectors] = await Promise.all([
+    familyArt(page.map((row) => row.familyKey)),
+    collectorCount(),
+  ]);
+  const cards: CollectionCard[] = page.map((row) => ({
+    enabled: row.enabled,
+    editionId: row.editionId,
+    familyKey: row.familyKey,
+    kind: row.kind,
+    assetPath: row.assetPath,
+    thumbUrl: editionThumb(row.assetPath, art.get(row.familyKey)?.headerUrl ?? null),
+    obtainedAt: row.obtainedAt,
+    ownerShare: collectors ? Math.min(1, row.ownerCount / collectors) : null,
+    game: withEditionStill(art.get(row.familyKey), row.assetPath),
+  }));
+  const last = page.at(-1);
+  return {
+    cards,
+    next:
+      rows.length > limit && last
+        ? encodeCursor({
+            rank: last.rank,
+            obtainedAt: last.obtainedAt.toISOString(),
+            editionId: last.editionId,
+          })
+        : null,
+  };
 }

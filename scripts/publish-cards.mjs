@@ -7,6 +7,9 @@
 //   CARDS_DIR=/chemin node scripts/publish-cards.mjs
 //   node scripts/publish-cards.mjs --force    → réécrit aussi les versions déjà publiées
 //
+// Chaque carte publiée reçoit aussi `thumb.webp`, sa miniature pour les grilles (460 px de large),
+// calculée à partir de `full.jpg` par le Chromium de Playwright.
+//
 // Sur le NAS, `scripts/nas-cards.sh` envoie ensuite le dossier ./cards.
 import {
   cpSync,
@@ -18,6 +21,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { chromium } from 'playwright';
 import { servedFiles, WORKSHOP_DIR } from './card-files.mjs';
 
 const root = join(dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1')), '..');
@@ -30,7 +34,35 @@ const SHARED = 'shared';
 const SHARED_IMPORT = /(['"`])\.\.\/shared\//g;
 const SHARED_FILE = /['"`]\.\.\/shared\/([\w.-]+\.js)['"`]/g;
 
-function publish(folder, version) {
+/** La largeur des miniatures : deux fois la tuile de la collection, nette sur un écran dense. */
+const THUMB_WIDTH = 460;
+let browser;
+async function thumbnail(source, out) {
+  browser ??= await chromium.launch();
+  const page = await browser.newPage();
+  const data = await page.evaluate(
+    async ({ src, width }) => {
+      const image = new Image();
+      image.src = src;
+      await image.decode();
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = Math.round((image.height * width) / image.width);
+      const context = canvas.getContext('2d');
+      context.imageSmoothingQuality = 'high';
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      return canvas.toDataURL('image/webp', 0.8);
+    },
+    {
+      src: `data:image/jpeg;base64,${readFileSync(source).toString('base64')}`,
+      width: THUMB_WIDTH,
+    },
+  );
+  await page.close();
+  writeFileSync(out, Buffer.from(data.split(',')[1], 'base64'));
+}
+
+async function publish(folder, version) {
   const source = join(root, WORKSHOP_DIR, folder);
   if (!existsSync(source)) throw new Error(`Dossier d'atelier introuvable : ${source}`);
   const dest = join(target, folder, String(version));
@@ -56,6 +88,9 @@ function publish(folder, version) {
       }
     }
   }
+  if (existsSync(join(staging, 'full.jpg'))) {
+    await thumbnail(join(staging, 'full.jpg'), join(staging, 'thumb.webp'));
+  }
   rmSync(dest, { recursive: true, force: true });
   mkdirSync(dirname(dest), { recursive: true });
   try {
@@ -71,9 +106,10 @@ function publish(folder, version) {
 let published = 0;
 for (const game of games) {
   for (const folder of new Set(Object.values(game.editions))) {
-    const result = publish(folder, game.version);
+    const result = await publish(folder, game.version);
     if (result === 'publiée') published++;
     console.log(`${game.name} · ${folder}/${game.version} : ${result}`);
   }
 }
 console.log(`${published} dossier(s) publié(s) dans ${target}`);
+await browser?.close();
