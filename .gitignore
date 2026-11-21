@@ -23,3 +23,17 @@ Thumbs.db
 # Client Prisma généré (npm install le recrée) ; seul le tsconfig qui le protège reste suivi.
 prisma/generated/*
 !prisma/generated/tsconfig.json
+
+# Fabrication des cartes animées : fichiers maîtres, images d'origine et essais restent en local.
+# Tout ce qui est sous static/ serait servi publiquement par le site.
+static/_proto/**/*.ora
+static/_proto/**/source.*
+static/_proto/**/kanji-source.*
+static/_proto/hades/qwen/
+static/_proto/hades/seethrough/
+static/_proto/**/work/
+# Sources de design et outils de travail, et leurs builds.
+design/
+sites/*/dist/
+sites/achievers-atelier/
+sites/hades-card-review/
