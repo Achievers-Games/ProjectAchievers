@@ -2,7 +2,7 @@ import type { Prisma, Platform, TrophyType } from '#prisma';
 import { db } from '../db';
 import { familyKey } from '../family';
 import { lockCardCatalog, refreshSharedTier, updateFamilyTiers } from '../card-rarity';
-import { creditCompletion, creditUnlocks, playtimeHidden } from '../shards';
+import { creditCompletion, creditUnlocks, playtimeHidden, revokeShards } from '../shards';
 import {
   filterSteamProgress,
   lockSteamAccount,
@@ -309,9 +309,9 @@ async function reviewRemovals(
       missing.map((row) => row.platformAchievementId),
     );
   } else {
-    await tx.userAchievement.deleteMany({
-      where: { userId, achievementId: { in: missing.map((row) => row.achievementId) } },
-    });
+    const ids = missing.map((row) => row.achievementId);
+    await tx.userAchievement.deleteMany({ where: { userId, achievementId: { in: ids } } });
+    await revokeShards(tx, userId, gameId, ids);
   }
   log.info('Succès retirés', { userId, gameId, count: missing.length });
   return { seenAt: null, removed: missing.length };
@@ -500,8 +500,9 @@ async function writeProgress(
     create: { ...data, userId, gameId },
   });
   // Les éclats suivent les succès dans la même transaction : jamais l'un sans l'autre. Rien
-  // pendant que le temps de jeu Steam reste privé.
-  if (!(await playtimeHidden(db, userId))) {
+  // pendant que le temps de jeu Steam reste privé ; rien à faire sans succès nouveau, ce qui évite
+  // trois requêtes par jeu à chaque relecture d'une bibliothèque.
+  if (newUnlocks.length && !(await playtimeHidden(db, userId))) {
     const { shardsFrom } = await db.user.findUniqueOrThrow({
       where: { id: userId },
       select: { shardsFrom: true },

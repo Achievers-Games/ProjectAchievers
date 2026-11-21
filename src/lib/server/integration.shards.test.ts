@@ -3,7 +3,8 @@ import 'dotenv/config';
 import { describe, expect, it } from 'vitest';
 import { GAME_SHARD_CAP, STARTER_CAP } from '#lib/shards';
 import { db } from './db';
-import { grantMissingStarters, grantStarter } from './shards';
+import { catchUpShards, grantMissingStarters, grantStarter } from './shards';
+import { withdrawSteamProgress } from './steam-integrity';
 import { saveAchievements, saveProgress, upsertGame } from './sync/store';
 import { PREFIX, setupIntegration } from './test-helpers';
 
@@ -82,12 +83,55 @@ describe('éclats gagnés à la synchro', () => {
     expect(await grantStarter(userId)).toBe(0);
     expect(await balance(userId)).toBe(0);
 
-    // Rendu public : le capital de départ arrive, les succès gagnés en privé restent sans éclats.
+    // Rendu public : le capital de départ arrive, et les succès gagnés en privé sont rattrapés.
     await db.linkedAccount.update({ where: { id: account.id }, data: { playtimeHidden: false } });
     expect(await grantStarter(userId)).toBeGreaterThan(0);
+    expect(await catchUpShards(userId)).toBe(2 + 30);
+    // Rejoué, le rattrapage ne paie rien de plus.
+    expect(await catchUpShards(userId)).toBe(0);
     await saveProgress(userId, gameId, unlocks([0, 1, 2], after));
     expect(await ledger(userId)).toBe(await balance(userId));
-    expect(await db.shardEntry.count({ where: { userId, reason: 'ACHIEVEMENT' } })).toBe(0);
+    expect(await db.shardEntry.count({ where: { userId, reason: 'ACHIEVEMENT' } })).toBe(2);
+  });
+
+  it('reprend les éclats de succès retirés, et les rend si le joueur les retrouve', async () => {
+    const { id: userId } = await player();
+    const { id: gameId } = await game([80, 0.5], 1);
+
+    await saveProgress(userId, gameId, unlocks([0, 1], after));
+    expect(await balance(userId)).toBe(1 + 30 + 20);
+
+    // L'anti-triche retire un succès : son crédit et le bonus du jeu fini sont repris.
+    await db.$transaction((tx) => withdrawSteamProgress(tx, userId, gameId, ['a1']));
+    expect(await balance(userId)).toBe(1);
+    expect(await ledger(userId)).toBe(1);
+
+    // Retiré une seconde fois (jeu suspendu, relu) : rien n'est repris deux fois.
+    await db.$transaction((tx) => withdrawSteamProgress(tx, userId, gameId));
+    expect(await balance(userId)).toBe(0);
+    await db.$transaction((tx) => withdrawSteamProgress(tx, userId, gameId));
+    expect(await balance(userId)).toBe(0);
+
+    // Retrouvés (validation par la modération, partie refaite) : tout revient, une seule fois.
+    await saveProgress(userId, gameId, unlocks([0, 1], after));
+    expect(await balance(userId)).toBe(51);
+    await saveProgress(userId, gameId, unlocks([0, 1], after));
+    expect(await balance(userId)).toBe(51);
+    expect(await ledger(userId)).toBe(51);
+  });
+
+  it('peut laisser un solde négatif quand les éclats repris étaient dépensés', async () => {
+    const { id: userId } = await player();
+    const { id: gameId } = await game([0.5, 90]);
+
+    await saveProgress(userId, gameId, unlocks([0], after));
+    await db.user.update({ where: { id: userId }, data: { shards: { decrement: 25 } } });
+    await db.shardEntry.create({
+      data: { userId, delta: -25, reason: 'BOOSTER', refId: `${PREFIX}-${Math.random()}` },
+    });
+    await db.$transaction((tx) => withdrawSteamProgress(tx, userId, gameId));
+    expect(await balance(userId)).toBe(-25);
+    expect(await ledger(userId)).toBe(-25);
   });
 
   it('laisse l’historique d’avant le départ au capital de départ', async () => {
@@ -174,6 +218,21 @@ describe('capital de départ', () => {
     expect(await grantStarter(userId)).toBe(STARTER_CAP - 14 * 30);
     expect(await balance(userId)).toBe(STARTER_CAP);
     expect(await ledger(userId)).toBe(STARTER_CAP);
+  });
+
+  it('ne recompte pas un succès vu en direct puis daté d’avant le départ', async () => {
+    const { id: userId } = await player();
+    const { id: gameId } = await game([0.5, 90]);
+    // Le suivi en direct date le succès à sa détection, Steam donne ensuite l'heure exacte.
+    await saveProgress(userId, gameId, unlocks([0], after));
+    await saveProgress(userId, gameId, unlocks([0], before));
+    expect(await balance(userId)).toBe(30);
+
+    expect(await grantStarter(userId)).toBe(0);
+    expect(await balance(userId)).toBe(30);
+    // Sans autre historique, l'entretien ne le reprend pas à chaque tournée : la boucle finit.
+    while ((await grantMissingStarters(50)) > 0);
+    expect(await db.shardEntry.count({ where: { userId, reason: 'STARTER' } })).toBe(0);
   });
 
   it('est versé par l’entretien aux joueurs inscrits avant les éclats', async () => {

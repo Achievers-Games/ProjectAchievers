@@ -2,6 +2,7 @@ import { baseLocale, type Locale } from '#lib/paraglide/runtime';
 import { applyAccountLook, identityLook } from '../accounts';
 import { db } from '../db';
 import { env } from '../env';
+import { catchUpShards } from '../shards';
 import { countSteamCall } from '../steam-quota';
 import { logger } from '#lib/logger';
 import { fetchPlayingGames, fetchSteamIdentity } from '../providers/steam';
@@ -741,6 +742,12 @@ async function notePlaytimePrivacy(
   }
   if (hidden !== account.playtimeHidden) {
     await db.linkedAccount.update({ where: { id: account.id }, data: { playtimeHidden: hidden } });
+    // Redevenu public : ce qui a été obtenu pendant ce temps rapporte enfin ses éclats.
+    if (!hidden) {
+      await catchUpShards(userId).catch((cause: unknown) =>
+        log.error('Rattrapage des éclats', cause),
+      );
+    }
   }
 }
 

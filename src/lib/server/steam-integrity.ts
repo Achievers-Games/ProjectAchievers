@@ -1,6 +1,7 @@
 import { Prisma, type SteamIntegrityReview } from '#prisma';
 import type { ProgressActivity, UnlockInput } from './sync/store';
 import { lureGameFor } from './lure-games';
+import { revokeShards } from './shards';
 
 const WINDOW = 2 * 60 * 60 * 1000;
 const THRESHOLD = 10;
@@ -478,10 +479,17 @@ export async function withdrawSteamProgress(
   gameId: string,
   platformIds?: string[],
 ) {
-  await tx.$executeRaw`
+  const removed = await tx.$queryRaw<{ achievementId: string }[]>`
     DELETE FROM "UserAchievement" ua USING "Achievement" a
     WHERE ua."achievementId" = a.id AND a."gameId" = ${gameId} AND ua."userId" = ${userId}
-      AND (${platformIds === undefined} OR a."platformAchievementId" = ANY(${platformIds ?? []}::text[]))`;
+      AND (${platformIds === undefined} OR a."platformAchievementId" = ANY(${platformIds ?? []}::text[]))
+    RETURNING ua."achievementId"`;
+  await revokeShards(
+    tx,
+    userId,
+    gameId,
+    removed.map((row) => row.achievementId),
+  );
   if (platformIds === undefined) {
     await tx.userGame.updateMany({
       where: { userId, gameId },

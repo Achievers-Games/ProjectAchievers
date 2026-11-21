@@ -1,6 +1,9 @@
 import type { ShardReason } from '#prisma';
 import { capGains, completionShards, GAME_SHARD_CAP, shardsFor, STARTER_CAP } from '#lib/shards';
+import { logger } from '#lib/logger';
 import { db } from './db';
+
+const log = logger('Éclats');
 
 export type Tx = Parameters<Parameters<typeof db.$transaction>[0]>[0];
 
@@ -49,6 +52,52 @@ export async function playtimeHidden(tx: Tx | typeof db, userId: string) {
   return Boolean(account?.playtimeHidden);
 }
 
+/** La référence d'une reprise : la raison et la référence du crédit repris. */
+const revokedRef = (reason: 'ACHIEVEMENT' | 'COMPLETION', refId: string) => `${reason}:${refId}`;
+
+/**
+ * Reprend les éclats de succès retirés au joueur (triche avérée, progression remise à zéro), et
+ * le bonus du jeu, qui n'est plus fini. Le crédit d'origine reste : le même succès retrouvé ne
+ * paie pas une seconde fois, il annule la reprise. Le solde peut passer sous zéro si les éclats
+ * sont déjà dépensés : les boosters payants attendent alors qu'il remonte.
+ */
+export async function revokeShards(
+  tx: Tx,
+  userId: string,
+  gameId: string,
+  achievementIds: string[],
+) {
+  if (!achievementIds.length) return 0;
+  const written = await tx.$queryRaw<{ delta: number }[]>`
+    INSERT INTO "ShardEntry" ("id", "userId", "delta", "reason", "refId", "gameId")
+    SELECT gen_random_uuid()::text, e."userId", -e.delta, 'REVOKED', e.reason::text || ':' || e."refId", e."gameId"
+    FROM "ShardEntry" e
+    WHERE e."userId" = ${userId} AND e."gameId" = ${gameId} AND e.delta > 0
+      AND (e.reason = 'COMPLETION'
+        OR (e.reason = 'ACHIEVEMENT' AND e."refId" = ANY(${achievementIds}::text[])))
+    ON CONFLICT ("userId", "reason", "refId") DO NOTHING
+    RETURNING delta`;
+  const taken = -written.reduce((sum, row) => sum + row.delta, 0);
+  if (taken > 0) {
+    await tx.user.update({ where: { id: userId }, data: { shards: { decrement: taken } } });
+  }
+  return taken;
+}
+
+/** Annule les reprises de ces crédits : le joueur a retrouvé ce qui lui avait été retiré. */
+async function restoreShards(tx: Tx, userId: string, refs: string[]) {
+  if (!refs.length) return 0;
+  const removed = await tx.$queryRaw<{ delta: number }[]>`
+    DELETE FROM "ShardEntry"
+    WHERE "userId" = ${userId} AND reason = 'REVOKED' AND "refId" = ANY(${refs}::text[])
+    RETURNING delta`;
+  const back = -removed.reduce((sum, row) => sum + row.delta, 0);
+  if (back > 0) {
+    await tx.user.update({ where: { id: userId }, data: { shards: { increment: back } } });
+  }
+  return back;
+}
+
 /** Les éclats déjà gagnés sur un jeu par ses succès, pour le plafond par jeu. */
 async function earnedOnGame(tx: Tx, userId: string, gameId: string) {
   const [row] = await tx.$queryRaw<{ total: number }[]>`
@@ -69,8 +118,13 @@ export async function creditUnlocks(
   unlocks: { achievementId: string; unlockedAt: Date }[],
   shardsFrom: Date,
 ) {
+  const restored = await restoreShards(
+    tx,
+    userId,
+    unlocks.map((unlock) => revokedRef('ACHIEVEMENT', unlock.achievementId)),
+  );
   const recent = unlocks.filter((unlock) => unlock.unlockedAt >= shardsFrom);
-  if (!recent.length) return 0;
+  if (!recent.length) return restored;
   const rarities = await tx.achievement.findMany({
     where: { id: { in: recent.map((unlock) => unlock.achievementId) } },
     select: { id: true, globalRarity: true },
@@ -83,7 +137,8 @@ export async function creditUnlocks(
       shards: shardsFor(row.globalRarity),
     }))
     .toSorted((a, b) => b.shards - a.shards);
-  return addEntries(tx, userId, capGains(gains, await earnedOnGame(tx, userId, gameId)));
+  const earned = await earnedOnGame(tx, userId, gameId);
+  return restored + (await addEntries(tx, userId, capGains(gains, earned)));
 }
 
 /**
@@ -97,7 +152,8 @@ export async function creditCompletion(
   finishedAt: Date | null,
   shardsFrom: Date,
 ) {
-  if (!finishedAt || finishedAt < shardsFrom) return 0;
+  const restored = await restoreShards(tx, userId, [revokedRef('COMPLETION', gameId)]);
+  if (restored || !finishedAt || finishedAt < shardsFrom) return restored;
   const game = await tx.game.findUnique({ where: { id: gameId }, select: { tier: true } });
   return addEntries(tx, userId, [
     { reason: 'COMPLETION', refId: gameId, gameId, shards: completionShards(game?.tier) },
@@ -114,10 +170,19 @@ async function historyValue(userId: string, shardsFrom: Date) {
     FROM "UserAchievement" ua
     JOIN "Achievement" a ON a.id = ua."achievementId"
     WHERE ua."userId" = ${userId} AND ua."unlockedAt" < ${shardsFrom}
+      -- Vu en direct après la mise en ligne, puis daté plus tôt par Steam : déjà payé à l'unité.
+      AND NOT EXISTS (
+        SELECT 1 FROM "ShardEntry" e
+        WHERE e."userId" = ${userId} AND e.reason = 'ACHIEVEMENT' AND e."refId" = ua."achievementId"
+      )
     GROUP BY a."gameId"`;
   const finished = await db.$queryRaw<{ tier: number | null }[]>`
     SELECT g.tier FROM "UserGame" ug JOIN "Game" g ON g.id = ug."gameId"
-    WHERE ug."userId" = ${userId} AND ug.completion >= 100 AND ug."lastUnlockedAt" < ${shardsFrom}`;
+    WHERE ug."userId" = ${userId} AND ug.completion >= 100 AND ug."lastUnlockedAt" < ${shardsFrom}
+      AND NOT EXISTS (
+        SELECT 1 FROM "ShardEntry" e
+        WHERE e."userId" = ${userId} AND e.reason = 'COMPLETION' AND e."refId" = ug."gameId"
+      )`;
   const achievements = games.reduce(
     (sum, game) =>
       sum +
@@ -144,13 +209,24 @@ export async function grantMissingStarters(limit: number) {
       AND EXISTS (
         SELECT 1 FROM "UserAchievement" ua
         WHERE ua."userId" = u.id AND ua."unlockedAt" < u."shardsFrom"
+          -- Comme dans historyValue : un succès déjà payé à l'unité ne fait pas un historique.
+          AND NOT EXISTS (
+            SELECT 1 FROM "ShardEntry" e
+            WHERE e."userId" = u.id AND e.reason = 'ACHIEVEMENT' AND e."refId" = ua."achievementId"
+          )
       )
       AND NOT EXISTS (
         SELECT 1 FROM "LinkedAccount" la
         WHERE la."userId" = u.id AND la.provider = 'STEAM' AND la."playtimeHidden"
       )
+    ORDER BY u.id
     LIMIT ${limit}`;
-  for (const user of users) await grantStarter(user.id);
+  // Un joueur en échec ne prive pas les suivants : il sera retenté à la tournée suivante.
+  for (const user of users) {
+    await grantStarter(user.id).catch((cause: unknown) =>
+      log.error("Capital d'éclats", { userId: user.id, cause }),
+    );
+  }
   return users.length;
 }
 
@@ -176,4 +252,59 @@ export async function grantStarter(userId: string) {
       { reason: 'STARTER', refId: `starter:${target}`, gameId: null, shards: missing },
     ]);
   });
+}
+
+/**
+ * Rattrape les éclats d'un joueur dont le temps de jeu Steam redevient public : les succès
+ * obtenus pendant qu'il était privé, ceux retrouvés pendant ce temps après une reprise, et les
+ * jeux finis entre-temps paient comme s'ils venaient d'être lus. Rejouable : rien ne paie deux fois.
+ */
+export async function catchUpShards(userId: string) {
+  const user = await db.user.findUnique({ where: { id: userId }, select: { shardsFrom: true } });
+  if (!user || (await playtimeHidden(db, userId))) return 0;
+  const unlocks = await db.$queryRaw<{ gameId: string; achievementId: string; unlockedAt: Date }[]>`
+    SELECT a."gameId", ua."achievementId", ua."unlockedAt"
+    FROM "UserAchievement" ua
+    JOIN "Achievement" a ON a.id = ua."achievementId"
+    WHERE ua."userId" = ${userId}
+      AND (
+        (ua."unlockedAt" >= ${user.shardsFrom} AND NOT EXISTS (
+          SELECT 1 FROM "ShardEntry" e
+          WHERE e."userId" = ${userId} AND e.reason = 'ACHIEVEMENT' AND e."refId" = ua."achievementId"
+        ))
+        OR EXISTS (
+          SELECT 1 FROM "ShardEntry" e
+          WHERE e."userId" = ${userId} AND e.reason = 'REVOKED'
+            AND e."refId" = 'ACHIEVEMENT:' || ua."achievementId"
+        )
+      )`;
+  const [games, entries] = await Promise.all([
+    db.userGame.findMany({
+      where: { userId, completion: { gte: 100 } },
+      select: { gameId: true, lastUnlockedAt: true },
+    }),
+    db.shardEntry.findMany({
+      where: { userId, reason: { in: ['COMPLETION', 'REVOKED'] } },
+      select: { reason: true, refId: true },
+    }),
+  ]);
+  const settled = new Set(
+    entries.filter((entry) => entry.reason === 'COMPLETION').map((entry) => entry.refId),
+  );
+  for (const entry of entries) {
+    if (entry.reason === 'REVOKED') settled.delete(entry.refId.replace(/^COMPLETION:/, ''));
+  }
+  const finished = games.filter((game) => !settled.has(game.gameId));
+  let gained = 0;
+  for (const [gameId, rows] of Map.groupBy(unlocks, (unlock) => unlock.gameId)) {
+    gained += await db.$transaction((tx) =>
+      creditUnlocks(tx, userId, gameId, rows, user.shardsFrom),
+    );
+  }
+  for (const game of finished) {
+    gained += await db.$transaction((tx) =>
+      creditCompletion(tx, userId, game.gameId, game.lastUnlockedAt, user.shardsFrom),
+    );
+  }
+  return gained;
 }

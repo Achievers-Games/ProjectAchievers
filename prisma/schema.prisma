@@ -24,6 +24,8 @@ enum ShardReason {
   BOOSTER
   /// Une édition déjà possédée, sortie d'un booster et recyclée.
   DUPLICATE
+  /// Un crédit repris (succès retiré, jeu plus fini) ; `refId` vaut « raison:référence » du crédit.
+  REVOKED
 }
 
 /// Les éditions visuelles d'une carte, de la plus courante à la plus rare.
