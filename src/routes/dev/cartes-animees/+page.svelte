@@ -101,7 +101,9 @@
         {/each}
       </div>
       {#if row.name === 'Portal 2'}
-        <a class="btn text-sm" href="/_proto/portal-2-portails/index.html">Tester le relais d’Atlas et P-body</a>
+        <a class="btn text-sm" href="/_proto/portal-2-portails/index.html"
+          >Tester le relais d’Atlas et P-body</a
+        >
       {/if}
     </section>
   {/each}

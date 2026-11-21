@@ -1,158 +1,76 @@
 {
   "source": "https://cdn.cloudflare.steamstatic.com/steam/apps/620/library_hero.jpg",
-  "crop": [
-    35,
-    0,
-    1326,
-    620
-  ],
+  "crop": [35, 0, 1326, 620],
   "mirror": true,
   "background": "bg.jpg",
   "layers": [
     {
       "id": "cable",
       "file": "cable.png",
-      "origin": [
-        456,
-        0
-      ],
-      "pivot": [
-        495,
-        0
-      ],
+      "origin": [456, 0],
+      "pivot": [495, 0],
       "depth": 0.37,
-      "peak": [
-        0,
-        0,
-        -0.021
-      ],
+      "peak": [0, 0, -0.021],
       "parent": null
     },
     {
       "id": "joints",
       "file": "joints.png",
-      "origin": [
-        263,
-        250
-      ],
-      "pivot": [
-        0,
-        0
-      ],
+      "origin": [263, 250],
+      "pivot": [0, 0],
       "depth": 0.66,
-      "peak": [
-        0,
-        0,
-        0
-      ],
+      "peak": [0, 0, 0],
       "parent": null
     },
     {
       "id": "legs",
       "file": "legs.png",
-      "origin": [
-        214,
-        336
-      ],
-      "pivot": [
-        286,
-        353
-      ],
+      "origin": [214, 336],
+      "pivot": [286, 353],
       "depth": 0.66,
-      "peak": [
-        0,
-        0,
-        0
-      ],
+      "peak": [0, 0, 0],
       "parent": null
     },
     {
       "id": "torso",
       "file": "torso.png",
-      "origin": [
-        262,
-        260
-      ],
-      "pivot": [
-        290,
-        344
-      ],
+      "origin": [262, 260],
+      "pivot": [290, 344],
       "depth": 0.66,
-      "peak": [
-        1,
-        -2,
-        0.044
-      ],
+      "peak": [1, -2, 0.044],
       "parent": null
     },
     {
       "id": "arm",
       "file": "arm.png",
-      "origin": [
-        246,
-        268
-      ],
-      "pivot": [
-        272,
-        278
-      ],
+      "origin": [246, 268],
+      "pivot": [272, 278],
       "depth": 0.66,
-      "peak": [
-        0,
-        0,
-        -0.076
-      ],
+      "peak": [0, 0, -0.076],
       "parent": "torso"
     },
     {
       "id": "head",
       "file": "head.png",
-      "origin": [
-        284,
-        229
-      ],
-      "pivot": [
-        300,
-        264
-      ],
+      "origin": [284, 229],
+      "pivot": [300, 264],
       "depth": 0.66,
-      "peak": [
-        3,
-        -2,
-        0.1
-      ],
+      "peak": [3, -2, 0.1],
       "parent": "torso"
     },
     {
       "id": "ledge",
       "file": "ledge.png",
-      "origin": [
-        0,
-        353
-      ],
-      "pivot": [
-        220,
-        435
-      ],
+      "origin": [0, 353],
+      "pivot": [220, 435],
       "depth": 0.66,
-      "peak": [
-        0,
-        0,
-        0
-      ],
+      "peak": [0, 0, 0],
       "parent": null
     }
   ],
   "effect": {
-    "center": [
-      895,
-      244
-    ],
-    "color": [
-      134,
-      225,
-      222
-    ],
+    "center": [895, 244],
+    "color": [134, 225, 222],
     "intensity": 0.16,
     "speed": 0.7,
     "motif": "dust"

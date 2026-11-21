@@ -1040,9 +1040,7 @@
                   class="lens"
                   use:watchCardIntro
                   data-card-quality="close-up"
-                  data-card-intro={phase === 'burst' && !reduced && revealInIntro
-                    ? ''
-                    : undefined}
+                  data-card-intro={phase === 'burst' && !reduced && revealInIntro ? '' : undefined}
                   style:transform-origin={view ? `${view.x * 100}% ${view.y * 100}%` : '50% 50%'}
                   style:transform={view ? `scale(${view.zoom})` : 'none'}
                   style:transition={moving

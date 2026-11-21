@@ -455,8 +455,9 @@
     // Une petite inclinaison vers le haut dans le repère de la scène, même
     // lorsque les autres articulations tournent pour lever la poignée.
     const bladeAngle = -0.055 * gesture;
-    const glance = smooth(0.25, 0.85, local) * (1 - smooth(1.45, 2.2, local)) * fx
-      + smooth(3.3, 3.8, intro) * (1 - smooth(4.4, 5.0, intro)) * 0.55;
+    const glance =
+      smooth(0.25, 0.85, local) * (1 - smooth(1.45, 2.2, local)) * fx +
+      smooth(3.3, 3.8, intro) * (1 - smooth(4.4, 5.0, intro)) * 0.55;
     const settle = smooth(2.65, 3.45, local) * (1 - smooth(3.65, 4.65, local)) * fx;
     const lift = smooth(3.55, 4.2, local) * (1 - smooth(4.4, 5.45, local)) * fx;
     const cycle = t % 4.8;
@@ -892,7 +893,10 @@
       gl.uniform2f(overlayPass.uniforms.eye, ...apply(world.head, [885, 326]));
       // The light settles on the painted iris at the end of the glance.
       const gaze = 1 - smooth(3.3, 3.8, intro);
-      gl.uniform2f(overlayPass.uniforms.introEye, ...apply(world.head, [885 - 7 * gaze, 326 + 10 * gaze]));
+      gl.uniform2f(
+        overlayPass.uniforms.introEye,
+        ...apply(world.head, [885 - 7 * gaze, 326 + 10 * gaze]),
+      );
       gl.uniform2f(overlayPass.uniforms.face, ...apply(world.head, [913, 331]));
       gl.uniform1f(overlayPass.uniforms.intro, intro);
       const [crownX, crownY] = apply(world.head, [920, 200]);

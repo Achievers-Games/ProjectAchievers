@@ -605,12 +605,14 @@
         if (alive && level >= 2) requestAnimationFrame(frame);
         return;
       }
-      const requested = level >= 3 && !motionQuery.matches && Boolean(canvas.closest('[data-card-intro]'));
+      const requested =
+        level >= 3 && !motionQuery.matches && Boolean(canvas.closest('[data-card-intro]'));
       if (requested && !introRequested) intro = elapsed = 0;
       introRequested = requested;
       if (motionQuery.matches) intro = -1;
       // data-card-intro-time fige l'intro à un instant donné pour la vérifier image par image.
-      const forcedIntro = level >= 3 && !motionQuery.matches ? canvas.dataset.cardIntroTime : undefined;
+      const forcedIntro =
+        level >= 3 && !motionQuery.matches ? canvas.dataset.cardIntroTime : undefined;
       if (forcedIntro !== undefined) {
         intro = Number(forcedIntro);
         elapsed = Math.max(0, intro);
@@ -670,7 +672,12 @@
           gl.blendFunc(gl.ONE, gl.ONE);
           gl.uniform1f(pass, 10);
           gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-          gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+          gl.blendFuncSeparate(
+            gl.SRC_ALPHA,
+            gl.ONE_MINUS_SRC_ALPHA,
+            gl.ONE,
+            gl.ONE_MINUS_SRC_ALPHA,
+          );
         }
         if (intro >= 0 && forcedIntro === undefined) {
           const previous = intro;

@@ -1,12 +1,7 @@
 <script lang="ts">
   import { onMount, type Snippet } from 'svelte';
   import { m } from '#lib/paraglide/messages';
-  import {
-    animatedCard,
-    levelFor,
-    loadManifest,
-    type EditionManifest,
-  } from '#lib/animated-card';
+  import { animatedCard, levelFor, loadManifest, type EditionManifest } from '#lib/animated-card';
   import { cardTilt } from '#lib/card-tilt';
   import CardBack from './CardBack.svelte';
   import ThemedCardFrame from './ThemedCardFrame.svelte';

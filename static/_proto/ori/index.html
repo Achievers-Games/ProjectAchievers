@@ -5,9 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#160c2b" />
     <title>Ori and the Will of the Wisps — cartes animées</title>
-    <meta name="description" content="Ori et Ku en carte originale, en parallaxe et entièrement animée." />
+    <meta
+      name="description"
+      content="Ori et Ku en carte originale, en parallaxe et entièrement animée."
+    />
     <link rel="stylesheet" href="../shared/site.css" />
-    <style>:root { --accent: #b6a4ff; --accent-strong: #c9b8ff; --glow: #3a2266; }</style>
+    <style>
+      :root {
+        --accent: #b6a4ff;
+        --accent-strong: #c9b8ff;
+        --glow: #3a2266;
+      }
+    </style>
   </head>
   <body>
     <main>
@@ -18,27 +27,63 @@
         <a href="../ori/index.html" aria-current="page">Ori</a>
       </nav>
       <h1>Ori and the Will of the Wisps</h1>
-      <p class="lead">Ori et la chouette Ku sur une branche, devant l’arbre aux racines lumineuses. Survole les cartes : la perspective suit la souris.</p>
+      <p class="lead">
+        Ori et la chouette Ku sur une branche, devant l’arbre aux racines lumineuses. Survole les
+        cartes : la perspective suit la souris.
+      </p>
       <section class="stack" aria-label="Les trois versions de la carte">
         <figure>
-          <figcaption><div><h2>Originale</h2><p>L’illustration Steam, telle quelle.</p></div><span class="level">×1</span></figcaption>
-          <div class="card" data-game="ori" data-level="1"><canvas aria-label="Ori and the Will of the Wisps, carte ×1"></canvas></div>
+          <figcaption>
+            <div>
+              <h2>Originale</h2>
+              <p>L’illustration Steam, telle quelle.</p>
+            </div>
+            <span class="level">×1</span>
+          </figcaption>
+          <div class="card" data-game="ori" data-level="1">
+            <canvas aria-label="Ori and the Will of the Wisps, carte ×1"></canvas>
+          </div>
         </figure>
         <figure>
-          <figcaption><div><h2>Parallaxe</h2><p>Les calques se décalent selon leur profondeur. Rien d’autre ne bouge.</p></div><span class="level">×2</span></figcaption>
-          <div class="card" data-game="ori" data-level="2"><canvas aria-label="Ori and the Will of the Wisps, carte ×2"></canvas></div>
+          <figcaption>
+            <div>
+              <h2>Parallaxe</h2>
+              <p>Les calques se décalent selon leur profondeur. Rien d’autre ne bouge.</p>
+            </div>
+            <span class="level">×2</span>
+          </figcaption>
+          <div class="card" data-game="ori" data-level="2">
+            <canvas aria-label="Ori and the Will of the Wisps, carte ×2"></canvas>
+          </div>
         </figure>
         <figure>
-          <figcaption><div><h2>Animée</h2><p>Ku tourne la tête et cligne de l’œil, Ori respire, lève la tête et cligne des yeux, ses oreilles flottent. Les lianes ondulent et s’illuminent par vagues, un vortex tourne autour de l’orbe, la neige tombe et les braises montent.</p></div><span class="level">×3</span></figcaption>
-          <div class="card" data-game="ori" data-level="3"><canvas aria-label="Ori and the Will of the Wisps, carte ×3"></canvas></div>
+          <figcaption>
+            <div>
+              <h2>Animée</h2>
+              <p>
+                Ku tourne la tête et cligne de l’œil, Ori respire, lève la tête et cligne des yeux,
+                ses oreilles flottent. Les lianes ondulent et s’illuminent par vagues, un vortex
+                tourne autour de l’orbe, la neige tombe et les braises montent.
+              </p>
+            </div>
+            <span class="level">×3</span>
+          </figcaption>
+          <div class="card" data-game="ori" data-level="3">
+            <canvas aria-label="Ori and the Will of the Wisps, carte ×3"></canvas>
+          </div>
         </figure>
       </section>
       <div class="controls">
         <button id="motion" type="button" aria-pressed="false">Mettre en pause</button>
-        <p class="hint">Les animations respectent la préférence système de réduction des mouvements.</p>
+        <p class="hint">
+          Les animations respectent la préférence système de réduction des mouvements.
+        </p>
         <p id="status" role="status"></p>
       </div>
-      <footer>Prototype de cartes pour Project Achievers. Illustration Ori and the Will of the Wisps — Moon Studios, Xbox Game Studios.</footer>
+      <footer>
+        Prototype de cartes pour Project Achievers. Illustration Ori and the Will of the Wisps —
+        Moon Studios, Xbox Game Studios.
+      </footer>
     </main>
     <script src="cards.js"></script>
   </body>

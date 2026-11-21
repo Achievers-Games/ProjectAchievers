@@ -19,7 +19,7 @@ function ellipse(x, y, rx, ry) {
 function chamber() {
   const wall = ctx.createLinearGradient(0, 0, 0, H);
   wall.addColorStop(0, '#111920');
-  wall.addColorStop(.7, '#32404b');
+  wall.addColorStop(0.7, '#32404b');
   wall.addColorStop(1, '#101720');
   ctx.fillStyle = wall;
   ctx.fillRect(0, 0, W, H);
@@ -36,7 +36,7 @@ function chamber() {
   ctx.strokeStyle = '#53657460';
   ctx.beginPath();
   for (let x = -340; x < 1300; x += 85) {
-    ctx.moveTo(460 + (x - 460) * .52, 356);
+    ctx.moveTo(460 + (x - 460) * 0.52, 356);
     ctx.lineTo(x, H);
   }
   for (const y of [356, 374, 400]) {
@@ -52,7 +52,7 @@ function portal(gate, time, pulse, rimOnly = false) {
   ctx.save();
   if (!rimOnly) {
     const glow = ctx.createRadialGradient(x, y, 15, x, y, 177);
-    glow.addColorStop(0, tint(.26 + pulse * .21));
+    glow.addColorStop(0, tint(0.26 + pulse * 0.21));
     glow.addColorStop(1, tint(0));
     ctx.fillStyle = glow;
     ctx.fillRect(x - 180, y - 180, 360, 360);
@@ -62,9 +62,9 @@ function portal(gate, time, pulse, rimOnly = false) {
     ctx.save();
     ctx.clip();
     for (let i = 0; i < 7; i++) {
-      const phase = ((time * .65 + i / 7) % 1);
+      const phase = (time * 0.65 + i / 7) % 1;
       ellipse(x, y, 7 + phase * 39, 15 + phase * 93);
-      ctx.strokeStyle = tint(Math.sin(phase * Math.PI) * .52);
+      ctx.strokeStyle = tint(Math.sin(phase * Math.PI) * 0.52);
       ctx.lineWidth = 2;
       ctx.stroke();
     }
@@ -74,7 +74,7 @@ function portal(gate, time, pulse, rimOnly = false) {
   ctx.scale(1, 2.45);
   ctx.shadowColor = tint(1);
   ctx.shadowBlur = 20 + pulse * 18;
-  ctx.strokeStyle = tint(rimOnly ? .83 : .98);
+  ctx.strokeStyle = tint(rimOnly ? 0.83 : 0.98);
   ctx.lineWidth = rimOnly ? 2 : 5;
   ctx.beginPath();
   const start = rimOnly ? (gate.dir > 0 ? Math.PI / 2 : -Math.PI / 2) : 0;
@@ -83,12 +83,12 @@ function portal(gate, time, pulse, rimOnly = false) {
   ctx.restore();
   if (rimOnly) return;
   for (let i = 0; i < 25; i++) {
-    const age = (time * (.43 + i % 4 * .04) + i * .618) % 1;
-    const angle = i * 2.399 + time * .36;
+    const age = (time * (0.43 + (i % 4) * 0.04) + i * 0.618) % 1;
+    const angle = i * 2.399 + time * 0.36;
     const px = x + Math.cos(angle) * (40 + age * 45);
     const py = y + Math.sin(angle) * (96 + age * 42);
     ellipse(px, py, 1 + (1 - age) * 1.6, 1 + (1 - age) * 1.6);
-    ctx.fillStyle = tint((1 - age) * (.66 + pulse * .3));
+    ctx.fillStyle = tint((1 - age) * (0.66 + pulse * 0.3));
     ctx.fill();
   }
 }
@@ -101,7 +101,7 @@ function robot(image, progress, reverse) {
   const x = entry.x - dir * 96 + (exit.x - entry.x + dir * 192) * progress;
   const y = entry.y + (exit.y - entry.y) * progress - jump * (reverse ? 31 : 94);
   const height = reverse ? 200 : 158;
-  const width = height * image.naturalWidth / image.naturalHeight;
+  const width = (height * image.naturalWidth) / image.naturalHeight;
 
   ctx.save();
   // The chamber and the two apertures form one visibility mask.
@@ -114,7 +114,7 @@ function robot(image, progress, reverse) {
   ctx.clip();
 
   ctx.translate(x, y);
-  ctx.rotate(dir * (Math.cos(Math.PI * progress) * .30 + jump * .10));
+  ctx.rotate(dir * (Math.cos(Math.PI * progress) * 0.3 + jump * 0.1));
   ctx.scale(reverse ? -1 : 1, 1);
   ctx.drawImage(image, -width / 2, -height / 2, width, height);
   ctx.restore();
@@ -131,12 +131,12 @@ try {
   const [atlas, pBody] = await Promise.all([load('./atlas.png'), load('./p-body.png')]);
   function draw(time) {
     const t = time % cycle;
-    const bluePulse = Math.max(0, 1 - Math.min(Math.abs(t - .67), Math.abs(t - 6.72)) * 3);
+    const bluePulse = Math.max(0, 1 - Math.min(Math.abs(t - 0.67), Math.abs(t - 6.72)) * 3);
     const orangePulse = Math.max(0, 1 - Math.min(Math.abs(t - 3.03), Math.abs(t - 4.25)) * 3);
     chamber();
     portal(portals[0], t, bluePulse);
     portal(portals[1], t, orangePulse);
-    if (t >= .30 && t < 3.40) robot(atlas, (t - .30) / 3.10, false);
+    if (t >= 0.3 && t < 3.4) robot(atlas, (t - 0.3) / 3.1, false);
     if (t >= 3.87 && t < 7.12) robot(pBody, (t - 3.87) / 3.25, true);
     portal(portals[0], t, bluePulse, true);
     portal(portals[1], t, orangePulse, true);
@@ -147,7 +147,7 @@ try {
   let frame = 0;
   let previous;
   function tick(now) {
-    if (previous !== undefined) time += Math.min((now - previous) / 1000, .05);
+    if (previous !== undefined) time += Math.min((now - previous) / 1000, 0.05);
     previous = now;
     draw(time);
     frame = requestAnimationFrame(tick);
@@ -175,6 +175,7 @@ try {
   });
   sync();
 } catch (error) {
-  document.querySelector('#status').textContent = 'Les illustrations du prototype n’ont pas pu être chargées.';
+  document.querySelector('#status').textContent =
+    'Les illustrations du prototype n’ont pas pu être chargées.';
   console.error(error);
 }

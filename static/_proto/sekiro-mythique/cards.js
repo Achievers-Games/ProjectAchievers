@@ -152,8 +152,10 @@
         };
       };
       const edgeRadius = (angle) =>
-        1 + 0.09 * Math.sin(5 * angle + 1.3) + 0.05 * Math.sin(11 * angle + 0.4)
-          + 0.025 * Math.sin(23 * angle + 2.1);
+        1 +
+        0.09 * Math.sin(5 * angle + 1.3) +
+        0.05 * Math.sin(11 * angle + 0.4) +
+        0.025 * Math.sin(23 * angle + 2.1);
       const revealRadius = (time) => 1750 * ease(CLASH, REVEAL_END, time) ** 0.8;
 
       function lightHole(px, py, radius, alpha) {
@@ -260,7 +262,14 @@
           const unit = context.getTransform().a;
           const glyph = layers['kanji-danger'];
           const size = 300;
-          const draw = () => context.drawImage(glyph, -size / 2, -size / 2, size, (size * glyph.height) / glyph.width);
+          const draw = () =>
+            context.drawImage(
+              glyph,
+              -size / 2,
+              -size / 2,
+              size,
+              (size * glyph.height) / glyph.width,
+            );
           for (const [color, blur, glowOnly] of [
             ['rgba(225, 18, 48, 1)', 70 + 24 * beat, true],
             ['rgba(255, 46, 70, 1)', 26, true],
@@ -371,16 +380,26 @@
             const depth = seed(i + 77);
             const size = (24 + 70 * depth ** 1.5) * (0.7 + 0.3 * (1 - a));
             const px = clash.x + Math.cos(angle) * travel + 160 * age;
-            const py = clash.y + Math.sin(angle) * travel * 0.75 + 60 * age * age
-              + 18 * Math.sin(age * 6 + i);
+            const py =
+              clash.y +
+              Math.sin(angle) * travel * 0.75 +
+              60 * age * age +
+              18 * Math.sin(age * 6 + i);
             context.save();
             context.translate(px, py);
             context.rotate(i + age * (3 + 6 * depth) * Math.exp(-age));
             context.scale(1, 0.4 + 0.6 * Math.abs(Math.cos(i + age * 4)));
             context.globalAlpha = Math.min(1, age * 12) * (1 - a) ** 1.5 * (0.6 + 0.4 * depth);
             context.drawImage(
-              layers['maple-leaves'], (i % 4) * 128, 0, 128, 128,
-              -size / 2, -size / 2, size, size,
+              layers['maple-leaves'],
+              (i % 4) * 128,
+              0,
+              128,
+              128,
+              -size / 2,
+              -size / 2,
+              size,
+              size,
             );
             context.restore();
           }

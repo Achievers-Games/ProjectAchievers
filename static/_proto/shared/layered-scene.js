@@ -33,7 +33,8 @@ function mount(canvas, level, scene, background, parts) {
   // « optic » : l'iris s'allume seul dans le noir. « portal » : deux portails s'ouvrent et le
   // bleu, ouvert sur la scène, s'agrandit jusqu'à la remplir.
   const introKind = scene.effect.intro ?? null;
-  const introTiming = introKind === 'portal' ? { reveal: 4.05, end: 4.6 } : { reveal: 2.92, end: 3.28 };
+  const introTiming =
+    introKind === 'portal' ? { reveal: 4.05, end: 4.6 } : { reveal: 2.92, end: 3.28 };
   const aperturePath = aperture ? new Path2D() : null;
   if (aperturePath) {
     aperturePath.moveTo(...aperture[0]);
@@ -162,8 +163,11 @@ function mount(canvas, level, scene, background, parts) {
     const [cx, cy] = scene.effect.center;
     const blink = ease(1.24, 1.33, time) * (1 - ease(1.37, 1.51, time));
     const flicker = ease(0.52, 0.61, time) * (1 - ease(0.65, 0.8, time));
-    const power = ease(0.28, 0.92, time) * (0.72 + 0.23 * Math.sin(time * 5.2))
-      * (1 - 0.78 * blink) * (1 - 0.37 * flicker);
+    const power =
+      ease(0.28, 0.92, time) *
+      (0.72 + 0.23 * Math.sin(time * 5.2)) *
+      (1 - 0.78 * blink) *
+      (1 - 0.37 * flicker);
     const flare = ease(2.57, 2.73, time) * (1 - ease(2.73, 3.28, time));
     ctx.save();
     apply(iris, 0, null, scan);
@@ -209,8 +213,10 @@ function mount(canvas, level, scene, background, parts) {
     const path = new Path2D();
     for (let i = 0; i <= 72; i++) {
       const a = (i / 72) * Math.PI * 2;
-      const wobble = 1 + 0.009 * Math.sin(5 * a + time * 9 + phase)
-        + 0.005 * Math.sin(11 * a - time * 13 + phase);
+      const wobble =
+        1 +
+        0.009 * Math.sin(5 * a + time * 9 + phase) +
+        0.005 * Math.sin(11 * a - time * 13 + phase);
       const px = cx + Math.cos(a) * rx * wobble;
       const py = cy + Math.sin(a) * ry * wobble;
       if (i) path.lineTo(px, py);
@@ -228,7 +234,10 @@ function mount(canvas, level, scene, background, parts) {
     ctx.lineJoin = 'round';
     ctx.save();
     ctx.clip(path);
-    for (const [width, a] of [[150, 0.14], [70, 0.22]]) {
+    for (const [width, a] of [
+      [150, 0.14],
+      [70, 0.22],
+    ]) {
       ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${a * alpha})`;
       ctx.lineWidth = width;
       ctx.stroke(path);
@@ -252,7 +261,13 @@ function mount(canvas, level, scene, background, parts) {
       const spread = 1 + 0.03 + out * (0.12 + 0.1 * seed);
       ctx.fillStyle = `rgba(${Math.min(255, r + 120)}, ${Math.min(255, g + 80)}, ${Math.min(255, b + 40)}, ${alpha * (1 - out) * 0.9})`;
       ctx.beginPath();
-      ctx.arc(cx + Math.cos(a) * rx * spread, cy + Math.sin(a) * ry * spread, 2.5 + 3 * (1 - out), 0, Math.PI * 2);
+      ctx.arc(
+        cx + Math.cos(a) * rx * spread,
+        cy + Math.sin(a) * ry * spread,
+        2.5 + 3 * (1 - out),
+        0,
+        Math.PI * 2,
+      );
       ctx.fill();
     }
     ctx.restore();
@@ -261,7 +276,13 @@ function mount(canvas, level, scene, background, parts) {
   /** Allumage de Wheatley : une ampoule qui hésite avant de tenir. */
   function bootPower(time) {
     let power = 0.04;
-    for (const [at, value] of [[1.75, 1], [1.83, 0.12], [1.9, 0.85], [1.96, 0.2], [2.06, 1]]) {
+    for (const [at, value] of [
+      [1.75, 1],
+      [1.83, 0.12],
+      [1.9, 0.85],
+      [1.96, 0.2],
+      [2.06, 1],
+    ]) {
       if (time >= at) power = value;
     }
     return power;
@@ -298,12 +319,21 @@ function mount(canvas, level, scene, background, parts) {
     const orangeOpen = opening(time, 0.4) * (1 - ease(3.45, 3.75, time));
     if (orangeOpen > 0 && blue) {
       const m = ctx.getTransform();
-      const sx = bx - 215, sy = by - 340;
-      portalView.getContext('2d').drawImage(
-        canvas,
-        m.a * sx + m.e, m.d * sy + m.f, m.a * 430, m.d * 680,
-        0, 0, portalView.width, portalView.height,
-      );
+      const sx = bx - 215,
+        sy = by - 340;
+      portalView
+        .getContext('2d')
+        .drawImage(
+          canvas,
+          m.a * sx + m.e,
+          m.d * sy + m.f,
+          m.a * 430,
+          m.d * 680,
+          0,
+          0,
+          portalView.width,
+          portalView.height,
+        );
     }
     const mask = new Path2D();
     mask.rect(left - 80, top - 80, width + 160, height + 160);
@@ -324,20 +354,39 @@ function mount(canvas, level, scene, background, parts) {
       if (blue) {
         // Même échelle que le bleu : on voit Wheatley de l'autre côté, un peu plus sombre.
         ctx.globalAlpha = 0.85;
-        ctx.drawImage(portalView, ox - 215 * orangeOpen, oy - 340 * orangeOpen, 430 * orangeOpen, 680 * orangeOpen);
+        ctx.drawImage(
+          portalView,
+          ox - 215 * orangeOpen,
+          oy - 340 * orangeOpen,
+          430 * orangeOpen,
+          680 * orangeOpen,
+        );
         ctx.globalAlpha = 1;
       }
       ctx.restore();
       portalRim(orange, ORANGE, ox, oy, orx, ory, time, Math.min(1, orangeOpen * 1.5), 0.37);
     }
     if (blue) {
-      portalRim(blue, BLUE, bx, by, brx, bry, time, Math.min(1, blueOpen * 1.5) * (1 - ease(3.85, 4.2, time)), 0);
+      portalRim(
+        blue,
+        BLUE,
+        bx,
+        by,
+        brx,
+        bry,
+        time,
+        Math.min(1, blueOpen * 1.5) * (1 - ease(3.85, 4.2, time)),
+        0,
+      );
     }
 
     // Éclat d'ouverture de chaque portail.
     ctx.save();
     ctx.globalCompositeOperation = 'screen';
-    for (const [[px, py], color, start] of [[PORTAL_ORANGE, ORANGE, 0.4], [PORTAL_BLUE, BLUE, 1.3]]) {
+    for (const [[px, py], color, start] of [
+      [PORTAL_ORANGE, ORANGE, 0.4],
+      [PORTAL_BLUE, BLUE, 1.3],
+    ]) {
       const pop = ease(start, start + 0.05, time) * (1 - ease(start + 0.05, start + 0.45, time));
       if (!pop) continue;
       const glow = ctx.createRadialGradient(px, py, 0, px, py, 420);
@@ -359,7 +408,8 @@ function mount(canvas, level, scene, background, parts) {
     if (still) intro = -1;
     if (still || document.hidden || canvas.closest('[data-card-suspended]')) return;
     const animated = level >= 3;
-    const requested = Boolean(introKind) && animated && Boolean(canvas.closest('[data-card-intro]'));
+    const requested =
+      Boolean(introKind) && animated && Boolean(canvas.closest('[data-card-intro]'));
     if (requested && !introRequested) intro = elapsed = 0;
     introRequested = requested;
     // data-card-intro-time fige l'intro à un instant donné pour la vérifier image par image.
@@ -397,7 +447,12 @@ function mount(canvas, level, scene, background, parts) {
     const lookAside = ease(0.79, 1.09, intro) * (1 - ease(1.49, 1.76, intro));
     const lookBack = ease(1.49, 1.76, intro) * (1 - ease(2.03, 2.33, intro));
     // Portail : regards paniqués, gauche, droite, gauche, puis retour face au joueur.
-    const darts = [ease(2.4, 2.48, intro), ease(2.75, 2.82, intro), ease(3.05, 3.12, intro), ease(3.3, 3.5, intro)];
+    const darts = [
+      ease(2.4, 2.48, intro),
+      ease(2.75, 2.82, intro),
+      ease(3.05, 3.12, intro),
+      ease(3.3, 3.5, intro),
+    ];
     const scan = !playingIntro
       ? scanInLoop
       : introKind === 'portal'
