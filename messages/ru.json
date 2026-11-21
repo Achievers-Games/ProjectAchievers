@@ -1847,6 +1847,47 @@
   "mod_join": "Сгруппировать",
   "mod_separate": "Разделить",
   "mod_groups_open": "Проверить сгруппированные игры",
+  "mod_cards": "Карты к созданию",
+  "mod_cards_intro": "Игры сайта, у которых ещё нет карт, и уже готовые изображения.",
+  "mod_cards_open": "Открыть карты к созданию",
+  "mod_boosters": "Тест бустеров",
+  "mod_boosters_intro": "Открывайте настоящие бустеры из настоящего каталога с бесконечными осколками: ничего не списывается и ничего не попадает в коллекцию.",
+  "mod_boosters_open": "Проверить бустеры",
+  "mod_boosters_normal": "Открыть обычный бустер",
+  "mod_boosters_golden": "Открыть золотой бустер",
+  "mod_boosters_force_mythique": "Включить гарантию Mythique",
+  "mod_boosters_simulation": "Симуляция",
+  "mod_boosters_simulation_count": "Число бустеров",
+  "mod_boosters_simulate": "Симулировать",
+  "mod_boosters_simulation_cards": "Выпавшие карты",
+  "mod_boosters_simulation_repeated": "Бустеры с одной картой дважды: {count} из {total}.",
+  "mod_boosters_simulation_forced": "Достигнуто гарантий Mythique: {count}.",
+  "mod_cards_text": "Каждой игре нужны три карты. Relief и Vivante делаются из изображения библиотеки Steam (library hero), Mythique — из официального арта, который выбирают и записывают здесь. Сначала самые популярные игры: их карты будут выпадать чаще всего.",
+  "mod_cards_games": "Игры сайта",
+  "mod_cards_made": "Из них с картами: {count}",
+  "mod_cards_left": "Осталось карт",
+  "mod_cards_relief_vivante": "Relief · Vivante",
+  "mod_cards_mythique": "Mythique",
+  "mod_cards_heroes_missing": "Изображение Steam есть · без него: {count}",
+  "mod_cards_artworks_missing": "Арт выбран · осталось выбрать: {count}",
+  "mod_cards_view_todo": "К созданию",
+  "mod_cards_view_no_hero": "Без изображения Steam",
+  "mod_cards_view_no_artwork": "Без арта Mythique",
+  "mod_cards_view_done": "Готовые",
+  "mod_cards_view_all": "Все",
+  "mod_cards_players": "Игроков: {count}",
+  "mod_cards_done": "В каталоге",
+  "mod_cards_hero_ready": "изображение Steam есть",
+  "mod_cards_hero_missing": "нет изображения Steam",
+  "mod_cards_artwork_ready": "арт выбран",
+  "mod_cards_artwork_missing": "арт не выбран",
+  "mod_cards_artwork": "Арт Mythique",
+  "mod_cards_artwork_open": "Открыть арт",
+  "mod_cards_note": "Заметка",
+  "mod_cards_save": "Сохранить",
+  "mod_cards_saved": "Сохранено",
+  "mod_cards_invalid_url": "Укажите адрес https:// или оставьте поле пустым.",
+  "mod_cards_empty": "В этом списке нет игр.",
   "mod_families_join_title": "Объединить две игры",
   "mod_families_pending": "На проверку ({count})",
   "mod_families_done": "Подтверждённые ({count})",
@@ -2399,5 +2440,147 @@
   "notifications_page_hint": "Уведомления за последние 30 дней.",
   "steam_ranking_hidden": "Ваше время в Steam скрыто: пока это так, вас нет в рейтингах.",
   "steam_trust_pace": "Выявлено по темпу, без пакета: слишком много достижений для сыгранного времени, получены по одному",
-  "steam_trust_playtime_reference": "Время в игре: {time}, при ожидаемых по Lure {expected} для такого прогресса"
+  "steam_trust_playtime_reference": "Время в игре: {time}, при ожидаемых по Lure {expected} для такого прогресса",
+  "boosters_title": "Бустеры",
+  "boosters_help": "Открывайте бустеры, чтобы собирать анимированные издания всех игр, даже тех, которых у вас нет. Издание видно в профиле, когда игра пройдена на 100 %.",
+  "boosters_shards": "Осколков: {count}",
+  "boosters_daily": "Бесплатные бустеры: {count}/{max}",
+  "boosters_next_golden": "Следующий бустер золотой: минимум одна Vivante.",
+  "boosters_pity": "Mythique гарантирована не позже чем через {count} бустеров.",
+  "boosters_open_daily": "Открыть бесплатный бустер",
+  "boosters_buy": "Открыть бустер ({price} осколков)",
+  "boosters_no_cards": "В каталоге пока нет карт: бустеры откроются, как только появится первая.",
+  "boosters_no_booster": "Бесплатных бустеров пока нет: следующий появится в полночь.",
+  "boosters_no_shards": "Недостаточно осколков для этого бустера.",
+  "boosters_eligible": "Карты в игре: {relief} в Relief, {vivante} в Vivante, {mythique} в Mythique.",
+  "boosters_golden": "Золотой бустер",
+  "boosters_opened": "Ваш бустер",
+  "boosters_rates": "Шансы на карту",
+  "boosters_rate_edition": "Издание",
+  "boosters_rate_chance": "Шанс",
+  "boosters_rates_help": "Пять карт в бустере. Каждый 10-й бустер золотой и содержит минимум одну Vivante; после {pity} бустеров без Mythique последняя карта будет ею.",
+  "boosters_history": "Последние бустеры",
+  "boosters_new": "Новая",
+  "boosters_duplicate": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "Дубликат: +{n} осколок",
+        "c=few": "Дубликат: +{n} осколка",
+        "c=*": "Дубликат: +{n} осколков"
+      }
+    }
+  ],
+  "edition_relief": "Relief",
+  "edition_vivante": "Vivante",
+  "edition_mythique": "Mythique",
+  "booster_dialog": "Открытие бустера",
+  "booster_sound_on": "Включить звук",
+  "booster_sound_off": "Выключить звук",
+  "booster_tap_open": "Нажмите на бустер, чтобы открыть его",
+  "booster_drag_open": "Потяните верхний правый язычок вниз или нажмите на бустер, чтобы открыть его.",
+  "booster_inspect": "Осмотреть {name}",
+  "booster_replay": "Повторить анимацию",
+  "booster_show_back": "Показать оборот",
+  "booster_show_front": "Показать лицевую сторону",
+  "booster_previous": "Предыдущая карта",
+  "booster_next": "Следующая карта",
+  "booster_reveal_again": "Повторить раскрытие",
+  "booster_tap_card": "Нажмите на карту, чтобы перевернуть её",
+  "booster_reveal_all": "Перевернуть все",
+  "booster_reveal_commons": "Открыть карты Relief",
+  "booster_close": "Закрыть",
+  "booster_recap_new": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "{n} новая карта",
+        "c=few": "{n} новые карты",
+        "c=*": "{n} новых карт"
+      }
+    }
+  ],
+  "booster_recap_duplicates": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "{n} дубликат",
+        "c=few": "{n} дубликата",
+        "c=*": "{n} дубликатов"
+      }
+    }
+  ],
+  "booster_recap_recycled": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "+{n} осколок",
+        "c=few": "+{n} осколка",
+        "c=*": "+{n} осколков"
+      }
+    }
+  ],
+  "booster_open_next": "Открыть следующий",
+  "booster_open_next_shards": "Открыть следующий ({price} осколков)",
+  "collection_link": "Моя коллекция",
+  "collection_title": "Моя коллекция",
+  "collection_help": "Карты, которые выпали тебе в бустерах. Нажми на карту, чтобы рассмотреть её.",
+  "collection_empty": "Пока нет карт: открой бустер, чтобы начать коллекцию.",
+  "collection_open": "Открыть бустер",
+  "collection_progress": "Прогресс по изданиям",
+  "collection_to_discover": "Ещё не открыто: {count}",
+  "collection_complete": "Все открыты",
+  "collection_filter": "Фильтр по изданию",
+  "collection_all": "Все · {count}",
+  "collection_search": "Найти игру",
+  "collection_no_match": "Подходящих карт нет.",
+  "collection_more": "Показать ещё",
+  "collection_owned_by": "есть у {share} коллекционеров",
+  "collection_obtained": "Получена {date}",
+  "booster_mythique_title": "Mythique!",
+  "booster_mythique_odds": "Шанс {odds} на карту",
+  "booster_continue": "Продолжить",
+  "booster_tap_flip": "Нажмите на карту, чтобы перевернуть её",
+  "booster_clue_genre": "Жанр: {genre}",
+  "booster_clue_achievements": "Достижений: {count}",
+  "booster_clue_time": "Медиана до 100 %: {hours} ч",
+  "collection_banner_equip": "Установить как баннер",
+  "collection_banner_equipped": "Баннер профиля установлен",
+  "collection_banner_remove": "Убрать анимированный баннер",
+  "collection_banner_removed": "Анимированный баннер убран",
+  "collection_banner_help": "Пройдите игру на 100 %, чтобы установить одну из её карт как баннер публичного профиля.",
+  "collection_banner_ineligible": "Эту карту нельзя использовать как баннер.",
+  "collection_banner_preview": "Просмотр баннера",
+  "collection_banner_mobile": "Вид на телефоне",
+  "collection_banner_progress": "Игра пройдена на {progress}. Чтобы установить карту, пройдите игру на 100 %.",
+  "collection_banner_game_page": "Открыть страницу игры",
+  "boosters_playtime_hidden": "Ваше время в Steam скрыто: пока это так, вы не получаете ни осколков, ни бустеров."
 }

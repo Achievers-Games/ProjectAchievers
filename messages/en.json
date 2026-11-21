@@ -1799,6 +1799,47 @@
   "mod_join": "Group",
   "mod_separate": "Separate",
   "mod_groups_open": "Review grouped games",
+  "mod_cards": "Cards to make",
+  "mod_cards_intro": "Site games that don’t have their cards yet, and the visuals already available.",
+  "mod_cards_open": "See cards to make",
+  "mod_boosters": "Booster test",
+  "mod_boosters_intro": "Open real boosters from the real catalogue with unlimited shards: nothing is paid, nothing is added to your collection.",
+  "mod_boosters_open": "Test boosters",
+  "mod_boosters_normal": "Open a normal booster",
+  "mod_boosters_golden": "Open a golden booster",
+  "mod_boosters_force_mythique": "Force the Mythique guarantee",
+  "mod_boosters_simulation": "Simulation",
+  "mod_boosters_simulation_count": "Number of boosters",
+  "mod_boosters_simulate": "Simulate",
+  "mod_boosters_simulation_cards": "Cards drawn",
+  "mod_boosters_simulation_repeated": "Boosters with the same card twice: {count} of {total}.",
+  "mod_boosters_simulation_forced": "Mythique guarantees reached: {count}.",
+  "mod_cards_text": "Each game needs three cards. Relief and Vivante start from the Steam library hero image; Mythique from an official artwork, chosen and noted here. Most played games first: their cards will come out most often.",
+  "mod_cards_games": "Site games",
+  "mod_cards_made": "{count} with cards",
+  "mod_cards_left": "Cards left",
+  "mod_cards_relief_vivante": "Relief · Vivante",
+  "mod_cards_mythique": "Mythique",
+  "mod_cards_heroes_missing": "Steam image ready · {count} without",
+  "mod_cards_artworks_missing": "Artwork chosen · {count} to choose",
+  "mod_cards_view_todo": "To do",
+  "mod_cards_view_no_hero": "No Steam image",
+  "mod_cards_view_no_artwork": "No Mythique artwork",
+  "mod_cards_view_done": "Done",
+  "mod_cards_view_all": "All",
+  "mod_cards_players": "Players: {count}",
+  "mod_cards_done": "In the catalogue",
+  "mod_cards_hero_ready": "Steam image ready",
+  "mod_cards_hero_missing": "no Steam image",
+  "mod_cards_artwork_ready": "artwork chosen",
+  "mod_cards_artwork_missing": "artwork to choose",
+  "mod_cards_artwork": "Mythique artwork",
+  "mod_cards_artwork_open": "Open artwork",
+  "mod_cards_note": "Note",
+  "mod_cards_save": "Save",
+  "mod_cards_saved": "Saved",
+  "mod_cards_invalid_url": "Enter an https:// address, or nothing.",
+  "mod_cards_empty": "No games in this list.",
   "mod_families_join_title": "Group two games",
   "mod_families_pending": "To review ({count})",
   "mod_families_done": "Approved ({count})",
@@ -2349,5 +2390,158 @@
   "notifications_page_hint": "Notifications from the last 30 days.",
   "steam_ranking_hidden": "Your Steam playtime is private: you do not appear in the rankings while it stays private.",
   "steam_trust_pace": "Caught by pace, without a batch: too many achievements for the time played, unlocked one by one",
-  "steam_trust_playtime_reference": "Playtime: {time}, against {expected} expected by Lure for this progress"
+  "steam_trust_playtime_reference": "Playtime: {time}, against {expected} expected by Lure for this progress",
+  "boosters_title": "Boosters",
+  "boosters_help": "Open boosters to collect the animated editions of every game, even ones you don't own. An edition shows on your profile once the game is 100 % complete.",
+  "boosters_shards": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "{n} shard",
+        "c=*": "{n} shards"
+      }
+    }
+  ],
+  "boosters_daily": "Free boosters: {count}/{max}",
+  "boosters_next_golden": "Your next booster is golden: at least one Vivante.",
+  "boosters_pity": "Mythique guaranteed within {count} boosters.",
+  "boosters_open_daily": "Open a free booster",
+  "boosters_buy": "Open a booster ({price} shards)",
+  "boosters_no_cards": "No card is in the catalogue yet: boosters open as soon as there is one.",
+  "boosters_no_booster": "No free booster left for now: the next one arrives at midnight.",
+  "boosters_no_shards": "Not enough shards for this booster.",
+  "boosters_eligible": "Cards in play: {relief} in Relief, {vivante} in Vivante, {mythique} in Mythique.",
+  "boosters_golden": "Golden booster",
+  "boosters_opened": "Your booster",
+  "boosters_rates": "Odds per card",
+  "boosters_rate_edition": "Edition",
+  "boosters_rate_chance": "Chance",
+  "boosters_rates_help": "Five cards per booster. Every 10th booster is golden with at least one Vivante; after {pity} boosters without a Mythique, the last card is one.",
+  "boosters_history": "Recent boosters",
+  "boosters_new": "New",
+  "boosters_duplicate": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "Duplicate: +{n} shard",
+        "c=*": "Duplicate: +{n} shards"
+      }
+    }
+  ],
+  "edition_relief": "Relief",
+  "edition_vivante": "Vivante",
+  "edition_mythique": "Mythique",
+  "booster_dialog": "Opening a booster",
+  "booster_sound_on": "Turn sound on",
+  "booster_sound_off": "Mute sound",
+  "booster_tap_open": "Tap the booster to open it",
+  "booster_drag_open": "Pull the top-right tab downward, or tap the booster to open it.",
+  "booster_inspect": "Inspect {name}",
+  "booster_replay": "Replay animation",
+  "booster_show_back": "Show back",
+  "booster_show_front": "Show front",
+  "booster_previous": "Previous card",
+  "booster_next": "Next card",
+  "booster_reveal_again": "Replay reveal",
+  "booster_tap_card": "Tap a card to flip it",
+  "booster_reveal_all": "Flip all",
+  "booster_reveal_commons": "Reveal the Relief cards",
+  "booster_close": "Close",
+  "booster_recap_new": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "{n} new card",
+        "c=*": "{n} new cards"
+      }
+    }
+  ],
+  "booster_recap_duplicates": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "{n} duplicate",
+        "c=*": "{n} duplicates"
+      }
+    }
+  ],
+  "booster_recap_recycled": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "+{n} shard recycled",
+        "c=*": "+{n} shards recycled"
+      }
+    }
+  ],
+  "booster_open_next": "Open the next one",
+  "booster_open_next_shards": "Open the next one ({price} shards)",
+  "collection_link": "View my collection",
+  "collection_title": "My collection",
+  "collection_help": "The cards you pulled from your boosters. Tap a card to admire it.",
+  "collection_empty": "No cards yet: open a booster to start your collection.",
+  "collection_open": "Open a booster",
+  "collection_progress": "Progress by edition",
+  "collection_to_discover": "{count} left to discover",
+  "collection_complete": "All discovered",
+  "collection_filter": "Filter by edition",
+  "collection_all": "All · {count}",
+  "collection_search": "Search a game",
+  "collection_no_match": "No card matches.",
+  "collection_more": "Show more",
+  "collection_owned_by": "owned by {share} of collectors",
+  "collection_obtained": "Obtained on {date}",
+  "booster_mythique_title": "Mythique!",
+  "booster_mythique_odds": "{odds} chance per card",
+  "booster_continue": "Continue",
+  "booster_tap_flip": "Tap the card to flip it",
+  "booster_clue_genre": "Genre: {genre}",
+  "booster_clue_achievements": "{count} achievements to unlock",
+  "booster_clue_time": "{hours} h median to 100 %",
+  "collection_banner_equip": "Set as banner",
+  "collection_banner_equipped": "Profile banner equipped",
+  "collection_banner_remove": "Remove animated banner",
+  "collection_banner_removed": "Animated banner removed",
+  "collection_banner_help": "Complete a game 100% to use one of its cards as your public profile banner.",
+  "collection_banner_ineligible": "This card cannot be used as a banner.",
+  "collection_banner_preview": "Banner preview",
+  "collection_banner_mobile": "Mobile view",
+  "collection_banner_progress": "Game completion: {progress}. Reach 100% to equip this card.",
+  "collection_banner_game_page": "View game page",
+  "boosters_playtime_hidden": "Your Steam playtime is private: you earn no shards or boosters while it stays private."
 }

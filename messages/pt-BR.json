@@ -1799,6 +1799,47 @@
   "mod_join": "Agrupar",
   "mod_separate": "Separar",
   "mod_groups_open": "Revisar jogos agrupados",
+  "mod_cards": "Cartas a criar",
+  "mod_cards_intro": "Os jogos do site que ainda não têm suas cartas, e as imagens já disponíveis.",
+  "mod_cards_open": "Ver as cartas a criar",
+  "mod_boosters": "Teste de pacotes",
+  "mod_boosters_intro": "Abra pacotes reais do catálogo real com fragmentos ilimitados: nada é pago e nada entra na sua coleção.",
+  "mod_boosters_open": "Testar os pacotes",
+  "mod_boosters_normal": "Abrir um pacote normal",
+  "mod_boosters_golden": "Abrir um pacote dourado",
+  "mod_boosters_force_mythique": "Forçar a garantia Mythique",
+  "mod_boosters_simulation": "Simulação",
+  "mod_boosters_simulation_count": "Número de pacotes",
+  "mod_boosters_simulate": "Simular",
+  "mod_boosters_simulation_cards": "Cartas tiradas",
+  "mod_boosters_simulation_repeated": "Pacotes com a mesma carta duas vezes: {count} de {total}.",
+  "mod_boosters_simulation_forced": "Garantias Mythique atingidas: {count}.",
+  "mod_cards_text": "Cada jogo precisa de três cartas. Relief e Vivante partem da imagem da biblioteca Steam (library hero); Mythique, de uma arte oficial, escolhida e anotada aqui. Os jogos mais jogados primeiro: suas cartas sairão com mais frequência.",
+  "mod_cards_games": "Jogos do site",
+  "mod_cards_made": "{count} com cartas",
+  "mod_cards_left": "Cartas restantes",
+  "mod_cards_relief_vivante": "Relief · Vivante",
+  "mod_cards_mythique": "Mythique",
+  "mod_cards_heroes_missing": "Imagem da Steam pronta · {count} sem",
+  "mod_cards_artworks_missing": "Arte escolhida · {count} a escolher",
+  "mod_cards_view_todo": "A fazer",
+  "mod_cards_view_no_hero": "Sem imagem da Steam",
+  "mod_cards_view_no_artwork": "Sem arte Mythique",
+  "mod_cards_view_done": "Feitos",
+  "mod_cards_view_all": "Todos",
+  "mod_cards_players": "Jogadores: {count}",
+  "mod_cards_done": "No catálogo",
+  "mod_cards_hero_ready": "imagem da Steam pronta",
+  "mod_cards_hero_missing": "sem imagem da Steam",
+  "mod_cards_artwork_ready": "arte escolhida",
+  "mod_cards_artwork_missing": "arte a escolher",
+  "mod_cards_artwork": "Arte Mythique",
+  "mod_cards_artwork_open": "Abrir a arte",
+  "mod_cards_note": "Nota",
+  "mod_cards_save": "Salvar",
+  "mod_cards_saved": "Salvo",
+  "mod_cards_invalid_url": "Informe um endereço https:// ou deixe em branco.",
+  "mod_cards_empty": "Nenhum jogo nesta lista.",
   "mod_families_join_title": "Agrupar dois jogos",
   "mod_families_pending": "A revisar ({count})",
   "mod_families_done": "Validadas ({count})",
@@ -2349,5 +2390,158 @@
   "notifications_page_hint": "Notificações dos últimos 30 dias.",
   "steam_ranking_hidden": "Seu tempo de jogo na Steam está privado: você não aparece nos rankings enquanto ele continuar assim.",
   "steam_trust_pace": "Detectado pelo ritmo, sem lote: conquistas demais para o tempo jogado, desbloqueadas uma a uma",
-  "steam_trust_playtime_reference": "Tempo de jogo: {time}, contra {expected} esperados pela Lure para este progresso"
+  "steam_trust_playtime_reference": "Tempo de jogo: {time}, contra {expected} esperados pela Lure para este progresso",
+  "boosters_title": "Pacotes",
+  "boosters_help": "Abra pacotes para colecionar as edições animadas de todos os jogos, mesmo os que você não tem. Uma edição aparece no seu perfil quando o jogo estiver 100 % completo.",
+  "boosters_shards": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "{n} fragmento",
+        "c=*": "{n} fragmentos"
+      }
+    }
+  ],
+  "boosters_daily": "Pacotes grátis: {count}/{max}",
+  "boosters_next_golden": "Seu próximo pacote é dourado: pelo menos uma Vivante.",
+  "boosters_pity": "Mythique garantida em no máximo {count} pacotes.",
+  "boosters_open_daily": "Abrir um pacote grátis",
+  "boosters_buy": "Abrir um pacote ({price} fragmentos)",
+  "boosters_no_cards": "Ainda não há cartas no catálogo: os pacotes abrem assim que houver uma.",
+  "boosters_no_booster": "Sem pacotes grátis por enquanto: o próximo chega à meia-noite.",
+  "boosters_no_shards": "Fragmentos insuficientes para este pacote.",
+  "boosters_eligible": "Cartas em jogo: {relief} em Relief, {vivante} em Vivante, {mythique} em Mythique.",
+  "boosters_golden": "Pacote dourado",
+  "boosters_opened": "Seu pacote",
+  "boosters_rates": "Chances por carta",
+  "boosters_rate_edition": "Edição",
+  "boosters_rate_chance": "Chance",
+  "boosters_rates_help": "Cinco cartas por pacote. Cada 10.º pacote é dourado e tem pelo menos uma Vivante; após {pity} pacotes sem Mythique, a última carta é uma.",
+  "boosters_history": "Últimos pacotes",
+  "boosters_new": "Nova",
+  "boosters_duplicate": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "Repetida: +{n} fragmento",
+        "c=*": "Repetida: +{n} fragmentos"
+      }
+    }
+  ],
+  "edition_relief": "Relief",
+  "edition_vivante": "Vivante",
+  "edition_mythique": "Mythique",
+  "booster_dialog": "Abrindo um pacote",
+  "booster_sound_on": "Ativar o som",
+  "booster_sound_off": "Silenciar",
+  "booster_tap_open": "Toque no pacote para abri-lo",
+  "booster_drag_open": "Puxe a aba do canto superior direito para baixo ou toque no pacote para abri-lo.",
+  "booster_inspect": "Inspecionar {name}",
+  "booster_replay": "Repetir animação",
+  "booster_show_back": "Ver verso",
+  "booster_show_front": "Ver frente",
+  "booster_previous": "Carta anterior",
+  "booster_next": "Próxima carta",
+  "booster_reveal_again": "Rever revelação",
+  "booster_tap_card": "Toque em uma carta para virá-la",
+  "booster_reveal_all": "Virar todas",
+  "booster_reveal_commons": "Revelar as Relief",
+  "booster_close": "Fechar",
+  "booster_recap_new": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "{n} carta nova",
+        "c=*": "{n} cartas novas"
+      }
+    }
+  ],
+  "booster_recap_duplicates": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "{n} repetida",
+        "c=*": "{n} repetidas"
+      }
+    }
+  ],
+  "booster_recap_recycled": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "+{n} fragmento reciclado",
+        "c=*": "+{n} fragmentos reciclados"
+      }
+    }
+  ],
+  "booster_open_next": "Abrir o próximo",
+  "booster_open_next_shards": "Abrir o próximo ({price} fragmentos)",
+  "collection_link": "Ver minha coleção",
+  "collection_title": "Minha coleção",
+  "collection_help": "As cartas que você tirou dos seus pacotes. Toque em uma carta para admirá-la.",
+  "collection_empty": "Nenhuma carta ainda: abra um pacote para começar sua coleção.",
+  "collection_open": "Abrir um pacote",
+  "collection_progress": "Progresso por edição",
+  "collection_to_discover": "{count} a descobrir",
+  "collection_complete": "Todas descobertas",
+  "collection_filter": "Filtrar por edição",
+  "collection_all": "Todas · {count}",
+  "collection_search": "Buscar um jogo",
+  "collection_no_match": "Nenhuma carta corresponde.",
+  "collection_more": "Mostrar mais",
+  "collection_owned_by": "possuída por {share} dos colecionadores",
+  "collection_obtained": "Obtida em {date}",
+  "booster_mythique_title": "Mythique!",
+  "booster_mythique_odds": "{odds} de chance por carta",
+  "booster_continue": "Continuar",
+  "booster_tap_flip": "Toque na carta para virá-la",
+  "booster_clue_genre": "Gênero: {genre}",
+  "booster_clue_achievements": "{count} conquistas para desbloquear",
+  "booster_clue_time": "{hours} h de mediana para os 100 %",
+  "collection_banner_equip": "Usar como banner",
+  "collection_banner_equipped": "Banner de perfil equipado",
+  "collection_banner_remove": "Remover banner animado",
+  "collection_banner_removed": "Banner animado removido",
+  "collection_banner_help": "Conclua um jogo em 100% para usar uma de suas cartas como banner do seu perfil público.",
+  "collection_banner_ineligible": "Esta carta não pode ser usada como banner.",
+  "collection_banner_preview": "Prévia do banner",
+  "collection_banner_mobile": "Visualização móvel",
+  "collection_banner_progress": "Jogo concluído em {progress}. Chegue a 100% para equipar esta carta.",
+  "collection_banner_game_page": "Ver página do jogo",
+  "boosters_playtime_hidden": "Seu tempo de jogo na Steam está privado: você não ganha fragmentos nem pacotes enquanto ele continuar assim."
 }

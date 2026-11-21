@@ -1,0 +1,115 @@
+{
+  "engine": 2,
+  "view": [260, 8, 1292, 604],
+  "period": 7.7,
+  "curves": {
+    "lift": [0.88, 1.7, 2.04, 3.38],
+    "gust": [1.12, 1.82, 2.18, 3.35]
+  },
+  "signals": {
+    "wind": { "base": 0.46, "waves": [[0.18, 0.84]], "curves": { "gust": 0.39 } }
+  },
+  "background": { "file": "bg.jpg", "parallax": [-27, -7], "size": [1920, 620] },
+  "layers": [
+    { "id": "figure", "parallax": [9, 4] },
+    {
+      "id": "body",
+      "file": "body.png",
+      "parent": "figure",
+      "pivot": [0, 617],
+      "motion": [{ "wave": 1.48, "shape": "breath", "sy": 0.021 }]
+    },
+    {
+      "id": "arms",
+      "parent": "body",
+      "pivot": [0, 327],
+      "motion": [{ "curve": "lift", "sy": -0.044 }]
+    },
+    { "id": "arm-left", "file": "arm-left.png", "parent": "arms" },
+    { "id": "arm-right", "file": "arm-right.png", "parent": "arms" },
+    { "id": "head", "file": "head.png", "parent": "body" },
+    {
+      "id": "topknot",
+      "file": "topknot.png",
+      "parent": "body",
+      "sway": {
+        "columns": [927, 73],
+        "rows": [166, 220],
+        "step": 2,
+        "reach": [167, 218],
+        "free": "top",
+        "push": { "signal": "wind", "amount": 8 },
+        "wave": { "amp": 3.2, "speed": 3.5, "freq": 0.08 }
+      }
+    },
+    {
+      "id": "scarf",
+      "file": "scarf.png",
+      "parent": "body",
+      "sway": {
+        "columns": [958, 74],
+        "rows": [275, 485],
+        "step": 3,
+        "reach": [289, 470],
+        "free": "bottom",
+        "push": { "signal": "wind", "amount": 30 },
+        "wave": { "amp": 6, "speed": 3.1, "freq": -0.054 }
+      }
+    },
+    { "id": "foreground", "file": "foreground.png", "parallax": [32, 5] }
+  ],
+  "effects": [
+    {
+      "type": "mist",
+      "blend": "source-over",
+      "before": "figure",
+      "center": [981, 545],
+      "inner": 35,
+      "radius": 415,
+      "alpha": 0.1,
+      "waves": [[0.07, 3.6]],
+      "boost": { "curve": "gust", "amount": 0.07 },
+      "color": [255, 143, 31],
+      "edge": [255, 99, 25],
+      "rect": [500, 100, 960, 520]
+    },
+    {
+      "type": "flames",
+      "before": "figure",
+      "roots": [704, 748, 778, 1150, 1200, 1243],
+      "y": 585,
+      "height": 145,
+      "blur": 3,
+      "wind": "wind",
+      "parallax": [15, 0]
+    },
+    {
+      "type": "embers",
+      "blend": "source-over",
+      "before": "figure",
+      "count": 33,
+      "depth": 6,
+      "advance": "gust",
+      "span": [480, 1030],
+      "y": 653
+    },
+    {
+      "type": "flames",
+      "before": "foreground",
+      "roots": [666, 747, 1181, 1280, 1360],
+      "y": 637,
+      "height": 80,
+      "blur": 4,
+      "wind": "wind",
+      "parallax": [15, 0]
+    },
+    {
+      "type": "cinders",
+      "sources": [680, 745, 807, 1140, 1210, 1285, 1360],
+      "count": 38,
+      "y": 628,
+      "wind": "wind",
+      "parallax": [22, 7]
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "portal-2-mythique",
+  "glow": "#58a9ff",
+  "atmosphere": "wisps",
+  "sound": null,
+  "frame": "laboratory",
+  "intro": { "revealAt": 4050 },
+  "shots": [
+    {
+      "from": { "x": 0, "y": 0.87, "zoom": 1.9 },
+      "to": { "x": 0.14, "y": 0.79, "zoom": 1.9 },
+      "duration": 1450
+    },
+    {
+      "from": { "x": 1, "y": 0.12, "zoom": 1.88 },
+      "to": { "x": 0.88, "y": 0.34, "zoom": 1.88 },
+      "duration": 1450
+    },
+    {
+      "from": { "x": 0.51, "y": 0.48, "zoom": 1.38 },
+      "to": { "x": 0.5, "y": 0.5, "zoom": 1 },
+      "duration": 1600
+    }
+  ]
+}

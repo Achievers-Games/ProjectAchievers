@@ -1799,6 +1799,47 @@
   "mod_join": "Regrouper",
   "mod_separate": "Séparer",
   "mod_groups_open": "Vérifier les jeux regroupés",
+  "mod_cards": "Cartes à créer",
+  "mod_cards_intro": "Les jeux du site qui n’ont pas encore leurs cartes, et les visuels déjà prêts.",
+  "mod_cards_open": "Voir les cartes à créer",
+  "mod_boosters": "Test des boosters",
+  "mod_boosters_intro": "Ouvre de vrais boosters dans le catalogue réel, avec des éclats illimités : rien n'est payé, rien n'est ajouté à ta collection.",
+  "mod_boosters_open": "Tester les boosters",
+  "mod_boosters_normal": "Ouvrir un booster normal",
+  "mod_boosters_golden": "Ouvrir un booster doré",
+  "mod_boosters_force_mythique": "Forcer la garantie Mythique",
+  "mod_boosters_simulation": "Simulation",
+  "mod_boosters_simulation_count": "Nombre de boosters",
+  "mod_boosters_simulate": "Simuler",
+  "mod_boosters_simulation_cards": "Cartes tirées",
+  "mod_boosters_simulation_repeated": "Boosters avec deux fois la même carte : {count} sur {total}.",
+  "mod_boosters_simulation_forced": "Garanties Mythique atteintes : {count}.",
+  "mod_cards_text": "Chaque jeu demande trois cartes. Relief et Vivante partent de l’image de bibliothèque Steam (library hero) ; la Mythique d’un artwork officiel, à choisir et noter ici. Les jeux les plus joués d’abord : leurs cartes sortiront le plus souvent.",
+  "mod_cards_games": "Jeux du site",
+  "mod_cards_made": "Dont {count} en cartes",
+  "mod_cards_left": "Cartes restantes",
+  "mod_cards_relief_vivante": "Relief · Vivante",
+  "mod_cards_mythique": "Mythique",
+  "mod_cards_heroes_missing": "Image Steam prête · {count} sans",
+  "mod_cards_artworks_missing": "Artwork choisi · {count} à choisir",
+  "mod_cards_view_todo": "À faire",
+  "mod_cards_view_no_hero": "Sans image Steam",
+  "mod_cards_view_no_artwork": "Sans artwork Mythique",
+  "mod_cards_view_done": "Faits",
+  "mod_cards_view_all": "Tous",
+  "mod_cards_players": "Joueurs : {count}",
+  "mod_cards_done": "Au catalogue",
+  "mod_cards_hero_ready": "image Steam prête",
+  "mod_cards_hero_missing": "pas d’image Steam",
+  "mod_cards_artwork_ready": "artwork choisi",
+  "mod_cards_artwork_missing": "artwork à choisir",
+  "mod_cards_artwork": "Artwork Mythique",
+  "mod_cards_artwork_open": "Ouvrir l’artwork",
+  "mod_cards_note": "Note",
+  "mod_cards_save": "Enregistrer",
+  "mod_cards_saved": "Enregistré",
+  "mod_cards_invalid_url": "Il faut une adresse en https://, ou rien.",
+  "mod_cards_empty": "Aucun jeu dans cette liste.",
   "mod_families_join_title": "Regrouper deux jeux",
   "mod_families_pending": "À vérifier ({count})",
   "mod_families_done": "Validées ({count})",
@@ -2349,5 +2390,158 @@
   "notifications_page_hint": "Les notifications des 30 derniers jours.",
   "steam_ranking_hidden": "Ton temps de jeu Steam est privé : tu n’apparais pas dans les classements tant qu’il le reste.",
   "steam_trust_pace": "Repéré au rythme, sans lot : trop de succès pour le temps joué, débloqués un par un",
-  "steam_trust_playtime_reference": "Temps de jeu : {time}, contre {expected} attendus d’après Lure pour cette progression"
+  "steam_trust_playtime_reference": "Temps de jeu : {time}, contre {expected} attendus d’après Lure pour cette progression",
+  "boosters_title": "Boosters",
+  "boosters_help": "Ouvre des boosters pour collectionner les éditions animées de tous les jeux, même ceux que tu n'as pas. Une édition se montre sur ton profil une fois le jeu fini à 100 %.",
+  "boosters_shards": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "{n} éclat",
+        "c=*": "{n} éclats"
+      }
+    }
+  ],
+  "boosters_daily": "Boosters offerts : {count}/{max}",
+  "boosters_next_golden": "Ton prochain booster est doré : une Vivante au moins.",
+  "boosters_pity": "Mythique garantie dans {count} boosters au plus.",
+  "boosters_open_daily": "Ouvrir un booster offert",
+  "boosters_buy": "Ouvrir un booster ({price} éclats)",
+  "boosters_no_cards": "Aucune carte n'est encore au catalogue : les boosters s'ouvriront dès qu'il y en aura une.",
+  "boosters_no_booster": "Plus de booster offert pour l'instant : le prochain arrive à minuit.",
+  "boosters_no_shards": "Pas assez d'éclats pour ce booster.",
+  "boosters_eligible": "Cartes en jeu : {relief} en Relief, {vivante} en Vivante, {mythique} en Mythique.",
+  "boosters_golden": "Booster doré",
+  "boosters_opened": "Ton booster",
+  "boosters_rates": "Taux par carte",
+  "boosters_rate_edition": "Édition",
+  "boosters_rate_chance": "Chance",
+  "boosters_rates_help": "Cinq cartes par booster. Chaque 10e booster est doré et contient au moins une Vivante ; au {pity}e booster sans Mythique, la dernière carte en est une.",
+  "boosters_history": "Derniers boosters",
+  "boosters_new": "Nouvelle",
+  "boosters_duplicate": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "Doublon : +{n} éclat",
+        "c=*": "Doublon : +{n} éclats"
+      }
+    }
+  ],
+  "edition_relief": "Relief",
+  "edition_vivante": "Vivante",
+  "edition_mythique": "Mythique",
+  "booster_dialog": "Ouverture d'un booster",
+  "booster_sound_on": "Activer le son",
+  "booster_sound_off": "Couper le son",
+  "booster_tap_open": "Touche le booster pour l’ouvrir",
+  "booster_drag_open": "Tire la languette du coin droit vers le bas, ou touche le booster pour l’ouvrir.",
+  "booster_inspect": "Inspecter {name}",
+  "booster_replay": "Rejouer l’animation",
+  "booster_show_back": "Voir le dos",
+  "booster_show_front": "Voir le recto",
+  "booster_previous": "Carte précédente",
+  "booster_next": "Carte suivante",
+  "booster_reveal_again": "Revoir la révélation",
+  "booster_tap_card": "Touche une carte pour la retourner",
+  "booster_reveal_all": "Tout retourner",
+  "booster_reveal_commons": "Révéler les Relief",
+  "booster_close": "Fermer",
+  "booster_recap_new": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "{n} nouvelle carte",
+        "c=*": "{n} nouvelles cartes"
+      }
+    }
+  ],
+  "booster_recap_duplicates": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "{n} doublon",
+        "c=*": "{n} doublons"
+      }
+    }
+  ],
+  "booster_recap_recycled": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "+{n} éclat recyclé",
+        "c=*": "+{n} éclats recyclés"
+      }
+    }
+  ],
+  "booster_open_next": "Ouvrir le suivant",
+  "booster_open_next_shards": "Ouvrir le suivant ({price} éclats)",
+  "collection_link": "Voir ma collection",
+  "collection_title": "Ma collection",
+  "collection_help": "Les cartes que tu as tirées dans tes boosters. Touche une carte pour l’admirer.",
+  "collection_empty": "Aucune carte pour l’instant : ouvre un booster pour commencer ta collection.",
+  "collection_open": "Ouvrir un booster",
+  "collection_progress": "Progression par édition",
+  "collection_to_discover": "{count} à découvrir",
+  "collection_complete": "Toutes découvertes",
+  "collection_filter": "Filtrer par édition",
+  "collection_all": "Toutes · {count}",
+  "collection_search": "Chercher un jeu",
+  "collection_no_match": "Aucune carte ne correspond.",
+  "collection_more": "Afficher plus",
+  "collection_owned_by": "possédée par {share} des collectionneurs",
+  "collection_obtained": "Obtenue le {date}",
+  "booster_mythique_title": "Mythique !",
+  "booster_mythique_odds": "{odds} de chance par carte",
+  "booster_continue": "Continuer",
+  "booster_tap_flip": "Touche la carte pour la retourner",
+  "booster_clue_genre": "Genre : {genre}",
+  "booster_clue_achievements": "{count} succès à débloquer",
+  "booster_clue_time": "{hours} h en médiane pour le 100 %",
+  "collection_banner_equip": "Équiper en bannière",
+  "collection_banner_equipped": "Bannière de profil équipée",
+  "collection_banner_remove": "Retirer la bannière animée",
+  "collection_banner_removed": "Bannière animée retirée",
+  "collection_banner_help": "Termine un jeu à 100 % pour équiper une de ses cartes en bannière publique.",
+  "collection_banner_ineligible": "Cette carte ne peut pas servir de bannière.",
+  "collection_banner_preview": "Aperçu de la bannière",
+  "collection_banner_mobile": "Format mobile",
+  "collection_banner_progress": "Jeu terminé à {progress}. Atteins 100 % pour équiper cette carte.",
+  "collection_banner_game_page": "Voir la fiche du jeu",
+  "boosters_playtime_hidden": "Ton temps de jeu Steam est privé : tu ne gagnes ni éclats ni boosters tant qu’il le reste."
 }

@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0b131d" />
+    <title>Hollow Knight — cartes animées</title>
+    <meta
+      name="description"
+      content="le Chevalier en carte originale, en parallaxe et entièrement animée."
+    />
+    <link rel="stylesheet" href="../shared/site.css" />
+    <style>
+      :root {
+        --accent: #94cbe3;
+        --accent-strong: #89c6e7;
+        --glow: #19384c;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <nav aria-label="Pages">
+        <a href="../index.html">Accueil</a>
+        <a href="../hades/index.html">Hades</a>
+        <a href="../hollow-knight/index.html" aria-current="page">Hollow Knight</a>
+        <a href="../ori/index.html">Ori</a>
+      </nav>
+      <h1>Hollow Knight</h1>
+      <p class="lead">
+        Le Chevalier sur son rocher, entre des épines au premier plan et des créatures dans la
+        brume. Survole les cartes : la perspective suit la souris.
+      </p>
+      <section class="stack" aria-label="Les trois versions de la carte">
+        <figure>
+          <figcaption>
+            <div>
+              <h2>Originale</h2>
+              <p>L’illustration Steam, telle quelle.</p>
+            </div>
+            <span class="level">×1</span>
+          </figcaption>
+          <div class="card" data-game="hollow-knight" data-level="1">
+            <canvas aria-label="Hollow Knight, carte ×1"></canvas>
+          </div>
+        </figure>
+        <figure>
+          <figcaption>
+            <div>
+              <h2>Parallaxe</h2>
+              <p>Les calques se décalent selon leur profondeur. Rien d’autre ne bouge.</p>
+            </div>
+            <span class="level">×2</span>
+          </figcaption>
+          <div class="card" data-game="hollow-knight" data-level="2">
+            <canvas aria-label="Hollow Knight, carte ×2"></canvas>
+          </div>
+        </figure>
+        <figure>
+          <figcaption>
+            <div>
+              <h2>Animée</h2>
+              <p>
+                Le Chevalier respire, son masque suit le pointeur, sa cape claque par rafales et son
+                aiguillon frappe. Les épines et les tentacules ondulent ; rayons de lumière, brume,
+                lucioles et poussières complètent la scène.
+              </p>
+            </div>
+            <span class="level">×3</span>
+          </figcaption>
+          <div class="card" data-game="hollow-knight" data-level="3">
+            <canvas aria-label="Hollow Knight, carte ×3"></canvas>
+          </div>
+        </figure>
+      </section>
+      <div class="controls">
+        <button id="motion" type="button" aria-pressed="false">Mettre en pause</button>
+        <p class="hint">
+          Les animations respectent la préférence système de réduction des mouvements.
+        </p>
+        <p id="status" role="status"></p>
+      </div>
+      <footer>
+        Prototype de cartes pour Project Achievers. Illustration Hollow Knight — Team Cherry.
+      </footer>
+    </main>
+    <script src="cards.js"></script>
+  </body>
+</html>

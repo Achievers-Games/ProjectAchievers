@@ -2,6 +2,8 @@ import type { Prisma, Platform, TrophyType } from '#prisma';
 import { db } from '../db';
 import { familyKey } from '../family';
 import { lockCardCatalog, refreshSharedTier, updateFamilyTiers } from '../card-rarity';
+import { shardsStart } from '../cards-launch';
+import { creditCompletion, creditUnlocks, playtimeHidden, revokeShards } from '../shards';
 import {
   filterSteamProgress,
   lockSteamAccount,
@@ -308,9 +310,9 @@ async function reviewRemovals(
       missing.map((row) => row.platformAchievementId),
     );
   } else {
-    await tx.userAchievement.deleteMany({
-      where: { userId, achievementId: { in: missing.map((row) => row.achievementId) } },
-    });
+    const ids = missing.map((row) => row.achievementId);
+    await tx.userAchievement.deleteMany({ where: { userId, achievementId: { in: ids } } });
+    await revokeShards(tx, userId, gameId, ids);
   }
   log.info('Succès retirés', { userId, gameId, count: missing.length });
   return { seenAt: null, removed: missing.length };
@@ -424,6 +426,8 @@ async function writeProgress(
 ): Promise<SaveResult> {
   let gained = 0;
   const freshIds: string[] = [];
+  // Les succès vraiment nouveaux, pour les éclats.
+  const newUnlocks: { achievementId: string; unlockedAt: Date }[] = [];
   // La taille du SQL et des résultats Prisma reste bornée, même pour 8 000 succès WoW.
   const batchSize = 250;
   for (let offset = 0; offset < unlocks.length; offset += batchSize) {
@@ -457,6 +461,7 @@ async function writeProgress(
           RETURNING "achievementId", "unlockedAt", (xmax = 0) AS inserted`;
     const inserted = written.filter((row) => row.inserted);
     gained += inserted.length;
+    for (const row of inserted) newUnlocks.push(row);
     for (const row of inserted.slice(0, 5 - freshIds.length)) freshIds.push(row.achievementId);
   }
 
@@ -495,6 +500,23 @@ async function writeProgress(
     update: data,
     create: { ...data, userId, gameId },
   });
+  // Les éclats suivent les succès dans la même transaction : jamais l'un sans l'autre. Rien
+  // pendant que le temps de jeu Steam reste privé ; rien à faire sans succès nouveau, ce qui évite
+  // trois requêtes par jeu à chaque relecture d'une bibliothèque.
+  if (newUnlocks.length && !(await playtimeHidden(db, userId))) {
+    const { shardsFrom } = await db.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { shardsFrom: true },
+    });
+    // Avant l'ouverture des éclats, rien ne se gagne.
+    const from = shardsStart(shardsFrom);
+    if (from) {
+      await creditUnlocks(db, userId, gameId, newUnlocks, from);
+      if (data.completion >= 100) {
+        await creditCompletion(db, userId, gameId, lastUnlockedAt, from);
+      }
+    }
+  }
   const fresh = freshIds.length
     ? await db.achievement.findMany({
         where: { id: { in: freshIds } },

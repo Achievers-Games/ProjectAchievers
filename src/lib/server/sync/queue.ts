@@ -26,6 +26,8 @@ import { SyncError } from './errors';
 import { publishCard, publishChat, publishHighlight, publishSync, publishUnlock } from './events';
 import { deliverPartnerWebhooks } from '../partner-webhooks';
 import { grantFramesThrottled } from '../frames';
+import { syncCardCatalogue } from '../card-catalogue';
+import { grantMissingStarters, grantStarter } from '../shards';
 import { checkSiteAchievements, reviewNewPlayers } from '../site-achievements';
 import { syncPsn } from './psn';
 import { syncRetro } from './retro';
@@ -554,6 +556,8 @@ async function runAccountSync(
         FROM "Achievement" a JOIN "Game" g ON g.id = a."gameId"
         WHERE ua."achievementId" = a.id AND ua."userId" = ${userId}
           AND g.platform = CAST(${provider} AS "Platform")`;
+      // Le passé de ce compte compte maintenant dans le capital de départ d'éclats, plafonné.
+      await grantStarter(userId).catch((cause) => log.error('Capital de départ', cause));
     }
     const rewards = await announceCards(user, userId, before);
     if (result.achievements > 0) await reviewSiteAchievements(userId);
@@ -692,7 +696,15 @@ const MAINTENANCE: { label: string; run: () => Promise<unknown>; budget?: false 
   { label: 'Sauvegarde', run: () => warnStaleBackup(), budget: false },
   { label: 'Chiffrement', run: () => rewrapSecrets(), budget: false },
   { label: 'Noms de clan', run: () => flagProfaneClans() },
+  // Le catalogue des cartes suit le code : un jeu ajouté au dépôt entre dans les boosters.
+  { label: 'Catalogue de cartes', run: () => syncCardCatalogue(), budget: false },
   { label: 'Succès de clan', run: () => checkAllClans() },
+  {
+    label: "Capital d'éclats",
+    // Les joueurs inscrits avant les éclats reçoivent leur capital de départ, 50 à la fois.
+    run: () => inSlices("Capital d'éclats", 5, 50, (limit) => grantMissingStarters(limit)),
+    budget: false,
+  },
   {
     label: 'Discord',
     run: () => inSlices('Discord', 5, 20, (limit) => refreshDiscordAccounts(undefined, limit)),

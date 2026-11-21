@@ -1799,6 +1799,47 @@
   "mod_join": "Gruppieren",
   "mod_separate": "Trennen",
   "mod_groups_open": "Gruppierte Spiele prüfen",
+  "mod_cards": "Zu erstellende Karten",
+  "mod_cards_intro": "Spiele der Seite, die ihre Karten noch nicht haben, und die bereits vorhandenen Bilder.",
+  "mod_cards_open": "Zu erstellende Karten ansehen",
+  "mod_boosters": "Booster-Test",
+  "mod_boosters_intro": "Öffne echte Booster aus dem echten Katalog mit unbegrenzten Splittern: Nichts wird bezahlt, nichts kommt in deine Sammlung.",
+  "mod_boosters_open": "Booster testen",
+  "mod_boosters_normal": "Normalen Booster öffnen",
+  "mod_boosters_golden": "Goldenen Booster öffnen",
+  "mod_boosters_force_mythique": "Mythique-Garantie erzwingen",
+  "mod_boosters_simulation": "Simulation",
+  "mod_boosters_simulation_count": "Anzahl der Booster",
+  "mod_boosters_simulate": "Simulieren",
+  "mod_boosters_simulation_cards": "Gezogene Karten",
+  "mod_boosters_simulation_repeated": "Booster mit derselben Karte doppelt: {count} von {total}.",
+  "mod_boosters_simulation_forced": "Erreichte Mythique-Garantien: {count}.",
+  "mod_cards_text": "Jedes Spiel braucht drei Karten. Relief und Vivante basieren auf dem Steam-Bibliotheksbild (Library Hero), Mythique auf einem offiziellen Artwork, das hier ausgewählt und notiert wird. Die meistgespielten Spiele zuerst: Ihre Karten kommen am häufigsten vor.",
+  "mod_cards_games": "Spiele der Seite",
+  "mod_cards_made": "Davon {count} mit Karten",
+  "mod_cards_left": "Verbleibende Karten",
+  "mod_cards_relief_vivante": "Relief · Vivante",
+  "mod_cards_mythique": "Mythique",
+  "mod_cards_heroes_missing": "Steam-Bild vorhanden · {count} ohne",
+  "mod_cards_artworks_missing": "Artwork gewählt · {count} offen",
+  "mod_cards_view_todo": "Offen",
+  "mod_cards_view_no_hero": "Ohne Steam-Bild",
+  "mod_cards_view_no_artwork": "Ohne Mythique-Artwork",
+  "mod_cards_view_done": "Erledigt",
+  "mod_cards_view_all": "Alle",
+  "mod_cards_players": "Spieler: {count}",
+  "mod_cards_done": "Im Katalog",
+  "mod_cards_hero_ready": "Steam-Bild vorhanden",
+  "mod_cards_hero_missing": "kein Steam-Bild",
+  "mod_cards_artwork_ready": "Artwork gewählt",
+  "mod_cards_artwork_missing": "Artwork offen",
+  "mod_cards_artwork": "Mythique-Artwork",
+  "mod_cards_artwork_open": "Artwork öffnen",
+  "mod_cards_note": "Notiz",
+  "mod_cards_save": "Speichern",
+  "mod_cards_saved": "Gespeichert",
+  "mod_cards_invalid_url": "Gib eine https://-Adresse ein oder lass das Feld leer.",
+  "mod_cards_empty": "Keine Spiele in dieser Liste.",
   "mod_families_join_title": "Zwei Spiele gruppieren",
   "mod_families_pending": "Zu prüfen ({count})",
   "mod_families_done": "Bestätigt ({count})",
@@ -2349,5 +2390,126 @@
   "notifications_page_hint": "Benachrichtigungen der letzten 30 Tage.",
   "steam_ranking_hidden": "Deine Steam-Spielzeit ist privat: Solange das so bleibt, erscheinst du in keiner Rangliste.",
   "steam_trust_pace": "Am Tempo erkannt, ohne Block: zu viele Erfolge für die Spielzeit, einzeln freigeschaltet",
-  "steam_trust_playtime_reference": "Spielzeit: {time}, gegenüber {expected}, die Lure für diesen Fortschritt erwartet"
+  "steam_trust_playtime_reference": "Spielzeit: {time}, gegenüber {expected}, die Lure für diesen Fortschritt erwartet",
+  "boosters_title": "Booster",
+  "boosters_help": "Öffne Booster, um die animierten Editionen aller Spiele zu sammeln, auch von Spielen, die du nicht besitzt. Eine Edition erscheint auf deinem Profil, sobald das Spiel zu 100 % abgeschlossen ist.",
+  "boosters_shards": "{count} Splitter",
+  "boosters_daily": "Gratis-Booster: {count}/{max}",
+  "boosters_next_golden": "Dein nächster Booster ist golden: mindestens eine Vivante.",
+  "boosters_pity": "Mythique garantiert in spätestens {count} Boostern.",
+  "boosters_open_daily": "Gratis-Booster öffnen",
+  "boosters_buy": "Booster öffnen ({price} Splitter)",
+  "boosters_no_cards": "Noch keine Karte im Katalog: Booster lassen sich öffnen, sobald es eine gibt.",
+  "boosters_no_booster": "Gerade kein Gratis-Booster mehr: der nächste kommt um Mitternacht.",
+  "boosters_no_shards": "Nicht genug Splitter für diesen Booster.",
+  "boosters_eligible": "Karten im Spiel: {relief} in Relief, {vivante} in Vivante, {mythique} in Mythique.",
+  "boosters_golden": "Goldener Booster",
+  "boosters_opened": "Dein Booster",
+  "boosters_rates": "Chancen pro Karte",
+  "boosters_rate_edition": "Edition",
+  "boosters_rate_chance": "Chance",
+  "boosters_rates_help": "Fünf Karten pro Booster. Jeder 10. Booster ist golden und enthält mindestens eine Vivante; nach {pity} Boostern ohne Mythique ist die letzte Karte eine.",
+  "boosters_history": "Letzte Booster",
+  "boosters_new": "Neu",
+  "boosters_duplicate": "Doppelt: +{count} Splitter",
+  "edition_relief": "Relief",
+  "edition_vivante": "Vivante",
+  "edition_mythique": "Mythique",
+  "booster_dialog": "Booster wird geöffnet",
+  "booster_sound_on": "Ton einschalten",
+  "booster_sound_off": "Ton ausschalten",
+  "booster_tap_open": "Tippe auf den Booster, um ihn zu öffnen",
+  "booster_drag_open": "Ziehe die Lasche oben rechts nach unten oder tippe auf den Booster, um ihn zu öffnen.",
+  "booster_inspect": "{name} ansehen",
+  "booster_replay": "Animation erneut abspielen",
+  "booster_show_back": "Rückseite zeigen",
+  "booster_show_front": "Vorderseite zeigen",
+  "booster_previous": "Vorherige Karte",
+  "booster_next": "Nächste Karte",
+  "booster_reveal_again": "Enthüllung erneut ansehen",
+  "booster_tap_card": "Tippe auf eine Karte, um sie umzudrehen",
+  "booster_reveal_all": "Alle umdrehen",
+  "booster_reveal_commons": "Relief-Karten aufdecken",
+  "booster_close": "Schließen",
+  "booster_recap_new": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "{n} neue Karte",
+        "c=*": "{n} neue Karten"
+      }
+    }
+  ],
+  "booster_recap_duplicates": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "{n} Doppelte"
+      }
+    }
+  ],
+  "booster_recap_recycled": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "+{n} Splitter recycelt"
+      }
+    }
+  ],
+  "booster_open_next": "Nächsten öffnen",
+  "booster_open_next_shards": "Nächsten öffnen ({price} Splitter)",
+  "collection_link": "Meine Sammlung ansehen",
+  "collection_title": "Meine Sammlung",
+  "collection_help": "Die Karten aus deinen Boostern. Tippe auf eine Karte, um sie zu bewundern.",
+  "collection_empty": "Noch keine Karten: Öffne einen Booster, um deine Sammlung zu beginnen.",
+  "collection_open": "Booster öffnen",
+  "collection_progress": "Fortschritt nach Edition",
+  "collection_to_discover": "Noch {count} zu entdecken",
+  "collection_complete": "Alle entdeckt",
+  "collection_filter": "Nach Edition filtern",
+  "collection_all": "Alle · {count}",
+  "collection_search": "Spiel suchen",
+  "collection_no_match": "Keine Karte passt.",
+  "collection_more": "Mehr anzeigen",
+  "collection_owned_by": "im Besitz von {share} der Sammler",
+  "collection_obtained": "Erhalten am {date}",
+  "booster_mythique_title": "Mythique!",
+  "booster_mythique_odds": "{odds} Chance pro Karte",
+  "booster_continue": "Weiter",
+  "booster_tap_flip": "Tippe auf die Karte, um sie umzudrehen",
+  "booster_clue_genre": "Genre: {genre}",
+  "booster_clue_achievements": "{count} Erfolge freizuschalten",
+  "booster_clue_time": "{hours} Std. im Median bis 100 %",
+  "collection_banner_equip": "Als Banner verwenden",
+  "collection_banner_equipped": "Profilbanner ausgewählt",
+  "collection_banner_remove": "Animiertes Banner entfernen",
+  "collection_banner_removed": "Animiertes Banner entfernt",
+  "collection_banner_help": "Schließe ein Spiel zu 100 % ab, um eine seiner Karten als öffentliches Profilbanner zu verwenden.",
+  "collection_banner_ineligible": "Diese Karte kann nicht als Banner verwendet werden.",
+  "collection_banner_preview": "Bannervorschau",
+  "collection_banner_mobile": "Mobilansicht",
+  "collection_banner_progress": "Spielfortschritt: {progress}. Erreiche 100 %, um diese Karte zu verwenden.",
+  "collection_banner_game_page": "Spielseite öffnen",
+  "boosters_playtime_hidden": "Deine Steam-Spielzeit ist privat: Solange das so bleibt, bekommst du weder Splitter noch Booster."
 }

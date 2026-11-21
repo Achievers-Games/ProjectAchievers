@@ -1,6 +1,7 @@
 import { Prisma, type SteamIntegrityReview } from '#prisma';
 import type { ProgressActivity, UnlockInput } from './sync/store';
 import { lureGameFor } from './lure-games';
+import { revokeShards } from './shards';
 
 const WINDOW = 2 * 60 * 60 * 1000;
 const THRESHOLD = 10;
@@ -433,7 +434,13 @@ async function steamPaceSuspects(
       count(ug."userId") AS peers
     FROM "UserGame" ug
     WHERE ug."gameId" = ${gameId} AND ug."userId" <> ${userId} AND ug."playtimeMinutes" > 0
-      AND ug."unlockedCount" >= ${Math.ceil(tracked.length * 0.8)}`;
+      AND ug."unlockedCount" >= ${Math.ceil(tracked.length * 0.8)}
+      -- Comme pour le score de confiance : un joueur lui-même en examen ne sert pas de repère.
+      AND NOT EXISTS (
+        SELECT 1 FROM "SteamIntegrityReview" r
+        WHERE r."gameId" = ug."gameId" AND r."userId" = ug."userId"
+          AND (r.status = 'PENDING' OR r."suspendedAt" IS NOT NULL)
+      )`;
   if (stats?.rarity != null && stats.rarity >= PACE_COMMON_RARITY) return [];
   // Assez de membres aussi avancés, qui n'ont pas joué tellement plus : le jeu est juste court.
   const suspects = tracked.map(steamUnlockKey);
@@ -478,10 +485,17 @@ export async function withdrawSteamProgress(
   gameId: string,
   platformIds?: string[],
 ) {
-  await tx.$executeRaw`
+  const removed = await tx.$queryRaw<{ achievementId: string }[]>`
     DELETE FROM "UserAchievement" ua USING "Achievement" a
     WHERE ua."achievementId" = a.id AND a."gameId" = ${gameId} AND ua."userId" = ${userId}
-      AND (${platformIds === undefined} OR a."platformAchievementId" = ANY(${platformIds ?? []}::text[]))`;
+      AND (${platformIds === undefined} OR a."platformAchievementId" = ANY(${platformIds ?? []}::text[]))
+    RETURNING ua."achievementId"`;
+  await revokeShards(
+    tx,
+    userId,
+    gameId,
+    removed.map((row) => row.achievementId),
+  );
   if (platformIds === undefined) {
     await tx.userGame.updateMany({
       where: { userId, gameId },
@@ -576,6 +590,10 @@ export async function filterSteamProgress(
     (fresh.some((key) => !previous?.flagged.includes(key)) || (!previous && flagged.length > 0));
   // Un score accablant suspend le jeu d'emblée ; la modération peut toujours tout rétablir.
   const caught = trust?.verdict === 'cheat' && flagged.length > 0 && !previous?.suspendedAt;
+  // Jeu marqué depuis comme reprenant une progression d'ailleurs : la suspension automatique, posée
+  // sur un temps Steam faible, ne tient plus. Le lot reste en attente, pour la modération.
+  const unsuspended =
+    game.crossProgress && Boolean(previous?.suspendedAt) && !moderatorSuspended && !autoApproved;
 
   const now = new Date();
   const trustData = trust ? { trust: trust as unknown as Prisma.InputJsonValue } : {};
@@ -617,6 +635,7 @@ export async function filterSteamProgress(
           reviewedBy: null,
         }),
       ...(caught && { suspendedAt: now, openedAt: now }),
+      ...(unsuspended && { suspendedAt: null }),
     },
   });
   const peers = flagged.length
@@ -643,11 +662,18 @@ export async function filterSteamProgress(
     unlocks: suspended
       ? []
       : unlocks.filter((unlock) => !excluded.has(unlock.platformAchievementId)),
-    withdrawn: suspended || excluded.size > 0 || newBlocks.length > 0 || released || reset.done,
+    withdrawn:
+      suspended ||
+      excluded.size > 0 ||
+      newBlocks.length > 0 ||
+      released ||
+      unsuspended ||
+      reset.done,
     reviewChanged:
       opened ||
       caught ||
       released ||
+      unsuspended ||
       reset.done ||
       newBlocks.length > 0 ||
       previous?.userId !== userId,

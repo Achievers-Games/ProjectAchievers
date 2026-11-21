@@ -1799,6 +1799,47 @@
   "mod_join": "Agrupar",
   "mod_separate": "Separar",
   "mod_groups_open": "Revisar los juegos agrupados",
+  "mod_cards": "Cartas por crear",
+  "mod_cards_intro": "Los juegos del sitio que aún no tienen sus cartas, y las imágenes ya disponibles.",
+  "mod_cards_open": "Ver las cartas por crear",
+  "mod_boosters": "Prueba de sobres",
+  "mod_boosters_intro": "Abre sobres reales del catálogo real con fragmentos ilimitados: no se paga nada y nada se añade a tu colección.",
+  "mod_boosters_open": "Probar los sobres",
+  "mod_boosters_normal": "Abrir un sobre normal",
+  "mod_boosters_golden": "Abrir un sobre dorado",
+  "mod_boosters_force_mythique": "Forzar la garantía Mythique",
+  "mod_boosters_simulation": "Simulación",
+  "mod_boosters_simulation_count": "Número de sobres",
+  "mod_boosters_simulate": "Simular",
+  "mod_boosters_simulation_cards": "Cartas obtenidas",
+  "mod_boosters_simulation_repeated": "Sobres con la misma carta dos veces: {count} de {total}.",
+  "mod_boosters_simulation_forced": "Garantías Mythique alcanzadas: {count}.",
+  "mod_cards_text": "Cada juego necesita tres cartas. Relief y Vivante parten de la imagen de biblioteca de Steam (library hero); Mythique, de un artwork oficial, elegido y anotado aquí. Primero los juegos más jugados: sus cartas saldrán más a menudo.",
+  "mod_cards_games": "Juegos del sitio",
+  "mod_cards_made": "{count} con cartas",
+  "mod_cards_left": "Cartas restantes",
+  "mod_cards_relief_vivante": "Relief · Vivante",
+  "mod_cards_mythique": "Mythique",
+  "mod_cards_heroes_missing": "Imagen de Steam lista · {count} sin ella",
+  "mod_cards_artworks_missing": "Artwork elegido · {count} por elegir",
+  "mod_cards_view_todo": "Por hacer",
+  "mod_cards_view_no_hero": "Sin imagen de Steam",
+  "mod_cards_view_no_artwork": "Sin artwork Mythique",
+  "mod_cards_view_done": "Hechos",
+  "mod_cards_view_all": "Todos",
+  "mod_cards_players": "Jugadores: {count}",
+  "mod_cards_done": "En el catálogo",
+  "mod_cards_hero_ready": "imagen de Steam lista",
+  "mod_cards_hero_missing": "sin imagen de Steam",
+  "mod_cards_artwork_ready": "artwork elegido",
+  "mod_cards_artwork_missing": "artwork por elegir",
+  "mod_cards_artwork": "Artwork Mythique",
+  "mod_cards_artwork_open": "Abrir el artwork",
+  "mod_cards_note": "Nota",
+  "mod_cards_save": "Guardar",
+  "mod_cards_saved": "Guardado",
+  "mod_cards_invalid_url": "Introduce una dirección https:// o deja el campo vacío.",
+  "mod_cards_empty": "No hay juegos en esta lista.",
   "mod_families_join_title": "Agrupar dos juegos",
   "mod_families_pending": "Por revisar ({count})",
   "mod_families_done": "Validadas ({count})",
@@ -2349,5 +2390,158 @@
   "notifications_page_hint": "Notificaciones de los últimos 30 días.",
   "steam_ranking_hidden": "Tu tiempo de juego de Steam es privado: no apareces en las clasificaciones mientras lo siga siendo.",
   "steam_trust_pace": "Detectado por el ritmo, sin lote: demasiados logros para el tiempo jugado, desbloqueados uno a uno",
-  "steam_trust_playtime_reference": "Tiempo de juego: {time}, frente a {expected} esperados según Lure para este progreso"
+  "steam_trust_playtime_reference": "Tiempo de juego: {time}, frente a {expected} esperados según Lure para este progreso",
+  "boosters_title": "Sobres",
+  "boosters_help": "Abre sobres para coleccionar las ediciones animadas de todos los juegos, incluso los que no tienes. Una edición se muestra en tu perfil cuando el juego está completado al 100 %.",
+  "boosters_shards": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "{n} fragmento",
+        "c=*": "{n} fragmentos"
+      }
+    }
+  ],
+  "boosters_daily": "Sobres gratis: {count}/{max}",
+  "boosters_next_golden": "Tu próximo sobre es dorado: al menos una Vivante.",
+  "boosters_pity": "Mythique garantizada en {count} sobres como máximo.",
+  "boosters_open_daily": "Abrir un sobre gratis",
+  "boosters_buy": "Abrir un sobre ({price} fragmentos)",
+  "boosters_no_cards": "Todavía no hay cartas en el catálogo: los sobres se abrirán en cuanto haya una.",
+  "boosters_no_booster": "No quedan sobres gratis por ahora: el siguiente llega a medianoche.",
+  "boosters_no_shards": "No tienes suficientes fragmentos para este sobre.",
+  "boosters_eligible": "Cartas en juego: {relief} en Relief, {vivante} en Vivante, {mythique} en Mythique.",
+  "boosters_golden": "Sobre dorado",
+  "boosters_opened": "Tu sobre",
+  "boosters_rates": "Probabilidad por carta",
+  "boosters_rate_edition": "Edición",
+  "boosters_rate_chance": "Probabilidad",
+  "boosters_rates_help": "Cinco cartas por sobre. Cada 10.º sobre es dorado y trae al menos una Vivante; tras {pity} sobres sin Mythique, la última carta lo es.",
+  "boosters_history": "Últimos sobres",
+  "boosters_new": "Nueva",
+  "boosters_duplicate": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "Repetida: +{n} fragmento",
+        "c=*": "Repetida: +{n} fragmentos"
+      }
+    }
+  ],
+  "edition_relief": "Relief",
+  "edition_vivante": "Vivante",
+  "edition_mythique": "Mythique",
+  "booster_dialog": "Apertura de un sobre",
+  "booster_sound_on": "Activar el sonido",
+  "booster_sound_off": "Silenciar",
+  "booster_tap_open": "Toca el sobre para abrirlo",
+  "booster_drag_open": "Tira hacia abajo de la pestaña superior derecha o toca el sobre para abrirlo.",
+  "booster_inspect": "Inspeccionar {name}",
+  "booster_replay": "Repetir animación",
+  "booster_show_back": "Ver reverso",
+  "booster_show_front": "Ver anverso",
+  "booster_previous": "Carta anterior",
+  "booster_next": "Carta siguiente",
+  "booster_reveal_again": "Repetir revelación",
+  "booster_tap_card": "Toca una carta para darle la vuelta",
+  "booster_reveal_all": "Voltear todas",
+  "booster_reveal_commons": "Revelar las Relief",
+  "booster_close": "Cerrar",
+  "booster_recap_new": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "{n} carta nueva",
+        "c=*": "{n} cartas nuevas"
+      }
+    }
+  ],
+  "booster_recap_duplicates": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "{n} repetida",
+        "c=*": "{n} repetidas"
+      }
+    }
+  ],
+  "booster_recap_recycled": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "+{n} fragmento reciclado",
+        "c=*": "+{n} fragmentos reciclados"
+      }
+    }
+  ],
+  "booster_open_next": "Abrir el siguiente",
+  "booster_open_next_shards": "Abrir el siguiente ({price} fragmentos)",
+  "collection_link": "Ver mi colección",
+  "collection_title": "Mi colección",
+  "collection_help": "Las cartas que sacaste de tus sobres. Toca una carta para admirarla.",
+  "collection_empty": "Aún no tienes cartas: abre un sobre para empezar tu colección.",
+  "collection_open": "Abrir un sobre",
+  "collection_progress": "Progreso por edición",
+  "collection_to_discover": "{count} por descubrir",
+  "collection_complete": "Todas descubiertas",
+  "collection_filter": "Filtrar por edición",
+  "collection_all": "Todas · {count}",
+  "collection_search": "Buscar un juego",
+  "collection_no_match": "Ninguna carta coincide.",
+  "collection_more": "Mostrar más",
+  "collection_owned_by": "la tiene el {share} de los coleccionistas",
+  "collection_obtained": "Obtenida el {date}",
+  "booster_mythique_title": "¡Mythique!",
+  "booster_mythique_odds": "{odds} de probabilidad por carta",
+  "booster_continue": "Continuar",
+  "booster_tap_flip": "Toca la carta para darle la vuelta",
+  "booster_clue_genre": "Género: {genre}",
+  "booster_clue_achievements": "{count} logros por desbloquear",
+  "booster_clue_time": "{hours} h de mediana para el 100 %",
+  "collection_banner_equip": "Usar como banner",
+  "collection_banner_equipped": "Banner de perfil equipado",
+  "collection_banner_remove": "Quitar banner animado",
+  "collection_banner_removed": "Banner animado eliminado",
+  "collection_banner_help": "Completa un juego al 100 % para usar una de sus cartas como banner de tu perfil público.",
+  "collection_banner_ineligible": "Esta carta no se puede usar como banner.",
+  "collection_banner_preview": "Vista previa del banner",
+  "collection_banner_mobile": "Vista móvil",
+  "collection_banner_progress": "Juego completado al {progress}. Alcanza el 100 % para equipar esta carta.",
+  "collection_banner_game_page": "Ver ficha del juego",
+  "boosters_playtime_hidden": "Tu tiempo de juego de Steam es privado: no ganas fragmentos ni sobres mientras lo siga siendo."
 }

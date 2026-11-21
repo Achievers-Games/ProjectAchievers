@@ -5,6 +5,7 @@ import { notifications, unseenNotices } from './notifications';
 import { excludedSteamUnlocks } from './steam-integrity';
 import { addSteamProof } from './steam-proof';
 import { auditSteamHistory, recheckBlockedSteam } from './sync/live';
+import { fetchUnlockList } from './sync/steam';
 import {
   resolveSteamReview,
   REMOVAL_CONFIRM,
@@ -609,4 +610,135 @@ it('repère une progression trop rapide sans lot, d’après le temps complétio
     },
   );
   expect(await progress(other.id, gameId)).toMatchObject({ unlockedCount: 21 });
+});
+
+it('lève la suspension automatique d’un jeu marqué ensuite comme progression partagée', async () => {
+  const user = await player();
+  const steamId = user.accounts[0]!.providerUserId;
+  const gameId = await game();
+  const at = Math.floor(Date.now() / 1000) * 1000;
+  const scope = { steamId_gameId: { steamId, gameId } };
+  await saveProgress(
+    user.id,
+    gameId,
+    full(at),
+    { playtimeMinutes: 8 },
+    { steamId, complete: true },
+  );
+  expect(await db.steamIntegrityReview.findUniqueOrThrow({ where: scope })).toMatchObject({
+    suspendedAt: expect.any(Date),
+  });
+
+  await db.game.update({ where: { id: gameId }, data: { crossProgress: true } });
+  await saveProgress(
+    user.id,
+    gameId,
+    full(at),
+    { playtimeMinutes: 8 },
+    { steamId, complete: true },
+  );
+  // Plus bloqué, mais le lot attend toujours la modération, hors score.
+  expect(await db.steamIntegrityReview.findUniqueOrThrow({ where: scope })).toMatchObject({
+    status: 'PENDING',
+    suspendedAt: null,
+  });
+  // Le rythme avait signalé les 21 succès au premier examen : ils attendent tous la modération.
+  expect(await progress(user.id, gameId)).toMatchObject({ unlockedCount: 0 });
+});
+
+it('garde la suspension d’un modérateur même sur un jeu à progression partagée', async () => {
+  const user = await player();
+  const moderator = await player('MODERATOR');
+  const steamId = user.accounts[0]!.providerUserId;
+  const gameId = await game();
+  const at = Math.floor(Date.now() / 1000) * 1000;
+  const scope = { steamId_gameId: { steamId, gameId } };
+  await saveProgress(
+    user.id,
+    gameId,
+    full(at),
+    { playtimeMinutes: 8 },
+    { steamId, complete: true },
+  );
+  const review = await db.steamIntegrityReview.findUniqueOrThrow({ where: scope });
+  await resolveSteamReview(review.id, review.openedAt, moderator.id, [], 'suspend', false);
+
+  await db.game.update({ where: { id: gameId }, data: { crossProgress: true } });
+  await saveProgress(
+    user.id,
+    gameId,
+    full(at),
+    { playtimeMinutes: 8 },
+    { steamId, complete: true },
+  );
+  expect(await db.steamIntegrityReview.findUniqueOrThrow({ where: scope })).toMatchObject({
+    suspendedAt: expect.any(Date),
+  });
+});
+
+it('fait tourner la relecture de fond des jeux bloqués au lieu de relire toujours les mêmes', async () => {
+  for (let i = 0; i < 2; i++) {
+    const user = await player();
+    const steamId = user.accounts[0]!.providerUserId;
+    const gameId = await game(false, String(800_000 + Math.floor(Math.random() * 99_999)));
+    const at = Math.floor(Date.now() / 1000) * 1000;
+    await saveProgress(
+      user.id,
+      gameId,
+      full(at),
+      { playtimeMinutes: 8 },
+      { steamId, complete: true },
+    );
+  }
+  const read: string[] = [];
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (input: string | URL) => {
+      const url = new URL(String(input));
+      if (url.pathname.includes('GetPlayerAchievements')) {
+        read.push(`${url.searchParams.get('steamid')}:${url.searchParams.get('appid')}`);
+      }
+      return Response.json({ response: { game_count: 0 }, playerstats: { success: false } });
+    }),
+  );
+  await recheckBlockedSteam(undefined, 1);
+  await recheckBlockedSteam(undefined, 1);
+  vi.unstubAllGlobals();
+  expect(read).toHaveLength(2);
+  expect(read[0]).not.toBe(read[1]);
+});
+
+it('fait passer derrière les autres un jeu du contrôle de rythme devenu illisible', async () => {
+  const user = await player();
+  const appId = String(700_000 + Math.floor(Math.random() * 99_999));
+  const gameId = await game(false, appId);
+  await db.userGame.create({
+    data: {
+      userId: user.id,
+      gameId,
+      unlockedCount: 15,
+      totalCount: 21,
+      playtimeMinutes: 5,
+      reportedUnlockedCount: 15,
+      achievementsCheckedAt: null,
+    },
+  });
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => new Response('', { status: 403 })),
+  );
+  await auditSteamHistory(5, user.id);
+  vi.unstubAllGlobals();
+  expect((await progress(user.id, gameId)).achievementsCheckedAt).toEqual(expect.any(Date));
+});
+
+it('accepte un jeu à statistiques sans aucun succès', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () =>
+      Response.json({ playerstats: { steamID: '1', gameName: 'Stats', success: true } }),
+    ),
+  );
+  await expect(fetchUnlockList('1', 10)).resolves.toEqual({ unlocks: [], cleared: false });
+  vi.unstubAllGlobals();
 });

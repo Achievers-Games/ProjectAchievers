@@ -545,4 +545,16 @@
     <p class="text-sm text-muted">{m.mod_groups_text()}</p>
     <a href="/moderation/familles" class="btn">{m.mod_groups_open()}</a>
   </section>
+
+  <section class="space-y-3 pt-4">
+    <h2>{m.mod_cards()}</h2>
+    <p class="text-sm text-muted">{m.mod_cards_intro()}</p>
+    <a href="/moderation/cartes" class="btn">{m.mod_cards_open()}</a>
+  </section>
+
+  <section class="space-y-3 pt-4">
+    <h2>{m.mod_boosters()}</h2>
+    <p class="text-sm text-muted">{m.mod_boosters_intro()}</p>
+    <a href="/moderation/boosters" class="btn">{m.mod_boosters_open()}</a>
+  </section>
 </div>

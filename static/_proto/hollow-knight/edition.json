@@ -1,0 +1,48 @@
+{
+  "id": "hollow-knight",
+  "glow": "#c5e9ee",
+  "atmosphere": "ash",
+  "sound": null,
+  "intro": { "revealAt": 3500 },
+  "shots": [
+    {
+      "from": {
+        "x": 0.02,
+        "y": 0.96,
+        "zoom": 1.85
+      },
+      "to": {
+        "x": 0.38,
+        "y": 0.96,
+        "zoom": 1.85
+      },
+      "duration": 1700
+    },
+    {
+      "from": {
+        "x": 0.96,
+        "y": 0.35,
+        "zoom": 1.65
+      },
+      "to": {
+        "x": 0.96,
+        "y": 0.7,
+        "zoom": 1.65
+      },
+      "duration": 1700
+    },
+    {
+      "from": {
+        "x": 0.44,
+        "y": 0.38,
+        "zoom": 1.5
+      },
+      "to": {
+        "x": 0.5,
+        "y": 0.5,
+        "zoom": 1
+      },
+      "duration": 1900
+    }
+  ]
+}

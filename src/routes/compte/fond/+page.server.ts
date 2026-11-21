@@ -107,17 +107,27 @@ export const actions: Actions = {
     const user = requireUser(locals);
     const form = await request.formData();
     const mode = form.get('mode');
-    const fields = TARGETS[targetOf(form.get('cible'))];
+    const target = targetOf(form.get('cible'));
+    const fields = TARGETS[target];
     if (mode === 'steam') {
       // Le jeu choisi reste en réserve : il revient si le joueur retire son fond sur Steam.
       await db.user.update({
         where: { id: user.id },
-        data: { [fields.steam]: true, [fields.off]: false },
+        data: {
+          [fields.steam]: true,
+          [fields.off]: false,
+          ...(target === 'banniere' && { bannerEditionId: null }),
+        },
       });
     } else {
       await db.user.update({
         where: { id: user.id },
-        data: { [fields.off]: mode === 'off', [fields.steam]: false, [fields.game]: null },
+        data: {
+          [fields.off]: mode === 'off',
+          [fields.steam]: false,
+          [fields.game]: null,
+          ...(target === 'banniere' && { bannerEditionId: null }),
+        },
       });
     }
     return { success: m.background_saved() };
@@ -136,7 +146,12 @@ export const actions: Actions = {
     if (!owned) return fail(403, { error: m.showcase_not_owned() });
     await db.user.update({
       where: { id: user.id },
-      data: { [fields.off]: false, [fields.steam]: false, [fields.game]: gameId },
+      data: {
+        [fields.off]: false,
+        [fields.steam]: false,
+        [fields.game]: gameId,
+        ...(target === 'banniere' && { bannerEditionId: null }),
+      },
     });
     return { success: m.background_saved() };
   },

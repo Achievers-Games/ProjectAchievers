@@ -1,0 +1,59 @@
+{
+  "games": [
+    {
+      "name": "Ori and the Will of the Wisps",
+      "steamAppId": "1057090",
+      "enabled": true,
+      "version": 1,
+      "editions": {
+        "RELIEF": "ori",
+        "VIVANTE": "ori",
+        "MYTHIQUE": "ori-mythique"
+      }
+    },
+    {
+      "name": "Hades",
+      "steamAppId": "1145360",
+      "enabled": true,
+      "version": 1,
+      "editions": {
+        "RELIEF": "hades",
+        "VIVANTE": "hades",
+        "MYTHIQUE": "hades-mythique"
+      }
+    },
+    {
+      "name": "Hollow Knight",
+      "steamAppId": "367520",
+      "enabled": true,
+      "version": 1,
+      "editions": {
+        "RELIEF": "hollow-knight-mythique",
+        "VIVANTE": "hollow-knight-mythique",
+        "MYTHIQUE": "hollow-knight"
+      }
+    },
+    {
+      "name": "Sekiro: Shadows Die Twice",
+      "steamAppId": "814380",
+      "enabled": true,
+      "version": 1,
+      "editions": {
+        "RELIEF": "sekiro",
+        "VIVANTE": "sekiro",
+        "MYTHIQUE": "sekiro-mythique"
+      }
+    },
+    {
+      "name": "Portal 2",
+      "steamAppId": "620",
+      "enabled": true,
+      "version": 1,
+      "editions": {
+        "RELIEF": "portal-2",
+        "VIVANTE": "portal-2",
+        "MYTHIQUE": "portal-2-mythique"
+      }
+    }
+  ]
+}

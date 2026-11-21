@@ -9,6 +9,8 @@
   import Palette from '@lucide/svelte/icons/palette';
   import Avatar from '#lib/components/Avatar.svelte';
   import ProfileShare from '#lib/components/ProfileShare.svelte';
+  import ProfileCardArt from '#lib/components/ProfileCardArt.svelte';
+  import CardInspection from '#lib/components/CardInspection.svelte';
   import PlaytimeBreakdown, { type PlaytimeLine } from '#lib/components/PlaytimeBreakdown.svelte';
   import PageBackdrop from '#lib/components/PageBackdrop.svelte';
   import { cssArt } from '#lib/art';
@@ -22,6 +24,7 @@
   import { SITE_TOTAL } from '#lib/site-achievements';
 
   let { data } = $props();
+  let inspectBanner = $state(false);
   const friendSubmit = submitWithToast();
 
   const profile = $derived(data.profile);
@@ -50,7 +53,13 @@
     };
   });
   /** La grande image d'abord, l'en-tête du jeu derrière si elle n'existe pas. */
-  const bannerArt = $derived(profile.banner ? cssArt(profile.banner.images) : undefined);
+  const bannerArt = $derived(
+    data.cardBanner?.game.headerUrl
+      ? cssArt([data.cardBanner.game.headerUrl])
+      : profile.banner
+        ? cssArt(profile.banner.images)
+        : undefined,
+  );
   const isMe = $derived(data.user?.id === profile.user.id);
   /** L'image de partage n'existe que pour un profil public : sinon, l'avatar seul. */
   const shareImage = $derived(
@@ -140,8 +149,24 @@
 {/if}
 
 <div class="profile-page space-y-8" data-backdrop={profile.background ? '' : undefined}>
-  <header class="profile-banner" style:--art={bannerArt} data-art={profile.banner ? '' : undefined}>
-    {#if profile.banner?.kind === 'game'}
+  <header
+    class="profile-banner isolate"
+    style:--art={bannerArt}
+    data-art={data.cardBanner || profile.banner ? '' : undefined}
+    data-card-banner={data.cardBanner ? '' : undefined}
+  >
+    {#if data.cardBanner}
+      {#key data.cardBanner.assetPath}
+        <ProfileCardArt assetPath={data.cardBanner.assetPath} kind={data.cardBanner.kind} />
+      {/key}
+      <button
+        type="button"
+        class="profile-banner-game"
+        aria-label={m.booster_inspect({ name: data.cardBanner.game.name })}
+        aria-haspopup="dialog"
+        onclick={() => (inspectBanner = true)}>{data.cardBanner.game.name}</button
+      >
+    {:else if profile.banner?.kind === 'game'}
       <a
         href={gameHref(profile.banner) ?? `/jeux/${profile.banner.slug}`}
         class="profile-banner-game"
@@ -248,6 +273,16 @@
       {/if}
     </div>
   </header>
+  {#if inspectBanner && data.cardBanner}
+    {@const banner = data.cardBanner}
+    <CardInspection card={banner} position={1} total={1} onclose={() => (inspectBanner = false)}>
+      {#snippet actions()}
+        <a class="btn" href={gameHref(banner.game) ?? `/jeux/${banner.game.slug}`}>
+          {m.collection_banner_game_page()}
+        </a>
+      {/snippet}
+    </CardInspection>
+  {/if}
 
   <StatGrid
     games={profile.stats.games}

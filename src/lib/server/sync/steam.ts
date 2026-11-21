@@ -2,6 +2,7 @@ import { baseLocale, type Locale } from '#lib/paraglide/runtime';
 import { applyAccountLook, identityLook } from '../accounts';
 import { db } from '../db';
 import { env } from '../env';
+import { catchUpShards } from '../shards';
 import { countSteamCall } from '../steam-quota';
 import { logger } from '#lib/logger';
 import { fetchPlayingGames, fetchSteamIdentity } from '../providers/steam';
@@ -586,10 +587,14 @@ export async function fetchUnlockList(steamId: string, appId: number) {
       achievements?: { apiname: string; achieved: number; unlocktime: number }[];
     };
   };
-  if (data.playerstats?.success === false || !Array.isArray(data.playerstats?.achievements)) {
+  if (!data.playerstats || data.playerstats.success === false) {
     throw new Error('GetPlayerAchievements : liste de succès indisponible');
   }
-  const { achievements } = data.playerstats;
+  // Un jeu à statistiques sans aucun succès répond sans liste : rien d'obtenu, rien d'effacé.
+  const achievements = data.playerstats.achievements ?? [];
+  if (!Array.isArray(achievements)) {
+    throw new Error('GetPlayerAchievements : liste de succès illisible');
+  }
   const unlocks = achievements
     .filter((a) => a.achieved === 1)
     .map((a) => ({
@@ -741,6 +746,12 @@ async function notePlaytimePrivacy(
   }
   if (hidden !== account.playtimeHidden) {
     await db.linkedAccount.update({ where: { id: account.id }, data: { playtimeHidden: hidden } });
+    // Redevenu public : ce qui a été obtenu pendant ce temps rapporte enfin ses éclats.
+    if (!hidden) {
+      await catchUpShards(userId).catch((cause: unknown) =>
+        log.error('Rattrapage des éclats', cause),
+      );
+    }
   }
 }
 

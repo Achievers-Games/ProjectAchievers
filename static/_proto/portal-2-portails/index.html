@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Portal 2 — Relais mythique</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        color: #e7eefb;
+        background: #10141b;
+        font: 16px system-ui;
+      }
+      main {
+        width: min(94vw, 1000px);
+        margin: 5vh auto;
+      }
+      a {
+        color: #98daff;
+      }
+      figure {
+        margin: 0;
+        border: 1px solid #6c8090;
+        padding: 5px;
+        background: #28323c;
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      canvas {
+        width: 100%;
+        height: auto;
+        display: block;
+        background: #111922;
+      }
+      button {
+        font: inherit;
+        margin: 1rem 0.5rem 0 0;
+        padding: 0.5rem 0.85rem;
+        color: inherit;
+        background: #263547;
+        border: 1px solid #71869b;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+      p {
+        color: #bdc9d6;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <a href="/dev/cartes-animees">Retour à la galerie</a>
+      <h1>Portal 2 — Relais mythique</h1>
+      <figure>
+        <canvas
+          width="920"
+          height="430"
+          role="img"
+          aria-label="Atlas traverse du portail bleu à l’orange, puis P-body fait le trajet inverse."
+        ></canvas>
+      </figure>
+      <button id="restart" type="button">Rejouer</button>
+      <button id="pause" type="button">Pause</button>
+      <p id="status" role="status"></p>
+    </main>
+    <script type="module" src="./preview.js"></script>
+  </body>
+</html>

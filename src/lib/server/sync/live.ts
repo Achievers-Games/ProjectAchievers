@@ -507,6 +507,8 @@ export async function checkLiveGames() {
 /** Un joueur présent voit ses jeux bloqués relus au plus toutes les 30 s. */
 const BLOCKED_EVERY = 30_000;
 const blockedReads = new Map<string, number>();
+/** La dernière revue relue par la tournée de fond : la suivante reprend juste après. */
+let blockedCursor: string | null = null;
 
 /**
  * Relit les jeux bloqués ou en attente, sans attendre que le joueur y rejoue : une remise à zéro
@@ -514,25 +516,44 @@ const blockedReads = new Map<string, number>();
  * refait le score de confiance. `userIds` : les joueurs présents, ou celui qui ouvre la page de
  * son jeu bloqué ; sans eux, tous les comptes, pour la tournée de fond.
  */
-export async function recheckBlockedSteam(userIds?: string[], limit = 50) {
+export async function recheckBlockedSteam(userIds?: string[], limit = 50, gameId?: string) {
   if (!availableProviders().STEAM) return;
   const now = Date.now();
   const due = userIds?.filter((id) => now - (blockedReads.get(id) ?? 0) >= BLOCKED_EVERY);
   if (due && !due.length) return;
-  const reviews = await db.steamIntegrityReview.findMany({
-    where: {
-      userId: due ? { in: due } : { not: null },
-      OR: [{ status: 'PENDING' }, { suspendedAt: { not: null } }, { rejected: { isEmpty: false } }],
-    },
-    orderBy: { openedAt: 'asc' },
-    take: limit,
-    select: {
-      userId: true,
-      steamId: true,
-      gameId: true,
-      game: { select: { platformGameId: true } },
-    },
-  });
+  // La tournée de fond avance d'une page à chaque passage ; sinon, les 50 plus anciens blocages
+  // (souvent des refus définitifs) seraient relus à chaque fois, et jamais les suivants.
+  const rotating = !due && !gameId;
+  const page = (after: string | null) =>
+    db.steamIntegrityReview.findMany({
+      where: {
+        userId: due ? { in: due } : { not: null },
+        ...(gameId && { gameId }),
+        ...(after && { id: { gt: after } }),
+        OR: [
+          { status: 'PENDING' },
+          { suspendedAt: { not: null } },
+          { rejected: { isEmpty: false } },
+        ],
+      },
+      orderBy: { id: 'asc' },
+      take: limit,
+      select: {
+        id: true,
+        userId: true,
+        steamId: true,
+        gameId: true,
+        game: { select: { platformGameId: true } },
+      },
+    });
+  let reviews = await page(rotating ? blockedCursor : null);
+  if (rotating && reviews.length < limit && blockedCursor) {
+    // Bout de la liste : la tournée repart du début pour compléter la page.
+    const seen = new Set(reviews.map((review) => review.id));
+    const restart = (await page(null)).filter((review) => !seen.has(review.id));
+    reviews = [...reviews, ...restart.slice(0, limit - reviews.length)];
+  }
+  if (rotating) blockedCursor = reviews.at(-1)?.id ?? null;
   for (const id of due ?? []) blockedReads.set(id, now);
   const byAccount = new Map<string, { userId: string; steamId: string; games: typeof reviews }>();
   for (const review of reviews) {
@@ -609,8 +630,15 @@ export async function auditSteamHistory(limit = 24, userId?: string) {
       ))
       -- Moins d'une minute de jeu par succès, sans lot : relu au plus une fois par semaine pour
       -- le contrôle du rythme (steamPaceSuspects), qui tranche avec la rareté et les pairs.
+      -- Ou moins d'un dixième du temps complétionniste de Lure pour cette progression.
       OR (ug."unlockedCount" >= 10 AND ug."playtimeMinutes" > 0
-        AND ug."playtimeMinutes" < ug."unlockedCount"
+        AND (ug."playtimeMinutes" < ug."unlockedCount" OR EXISTS (
+          SELECT 1 FROM "LureGame" lg
+          WHERE lg."steamAppId" = g."platformGameId" AND lg.found
+            AND lg."completionistMinutes" >= 60 AND g."totalAchievements" > 0
+            AND ug."playtimeMinutes" < 0.1 * lg."completionistMinutes"
+              * least(1, ug."unlockedCount"::float / g."totalAchievements")
+        ))
         AND NOT la."playtimeHidden" AND NOT g."allowSteamBatches" AND NOT g."crossProgress"
         AND g.name NOT ILIKE 'Zup!%' AND g."platformGameId" <> '1258080'
         AND (ug."achievementsCheckedAt" IS NULL
@@ -638,8 +666,10 @@ export async function auditSteamHistory(limit = 24, userId?: string) {
         },
       );
     } catch (cause) {
+      // Un jeu illisible (succès devenus privés) passe derrière les autres : sans cela, il resterait
+      // le plus ancien et reprendrait la tête de la liste à chaque passage.
       await db.userGame.updateMany({
-        where: { userId, gameId: game.gameId, reportedUnlockedCount: null },
+        where: { userId, gameId: game.gameId },
         data: { achievementsCheckedAt: checked },
       });
       if (!(cause instanceof SyncError)) log.error('Contrôle des anciens succès Steam :', cause);

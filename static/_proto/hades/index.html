@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#140b0a" />
+    <title>Hades — cartes animées</title>
+    <meta
+      name="description"
+      content="Zagreus en carte originale, en parallaxe et entièrement animée."
+    />
+    <link rel="stylesheet" href="../shared/site.css" />
+    <style>
+      :root {
+        --accent: #f59e0b;
+        --accent-strong: #f97316;
+        --glow: #3a1d14;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <nav aria-label="Pages">
+        <a href="../index.html">Accueil</a>
+        <a href="../hades/index.html" aria-current="page">Hades</a>
+        <a href="../hollow-knight/index.html">Hollow Knight</a>
+        <a href="../ori/index.html">Ori</a>
+      </nav>
+      <h1>Hades</h1>
+      <p class="lead">
+        Zagreus devant les flammes des Enfers, découpé en calques articulés depuis l’illustration
+        Steam. Survole les cartes : la perspective suit la souris.
+      </p>
+      <section class="stack" aria-label="Les trois versions de la carte">
+        <figure>
+          <figcaption>
+            <div>
+              <h2>Originale</h2>
+              <p>L’illustration Steam, telle quelle.</p>
+            </div>
+            <span class="level">×1</span>
+          </figcaption>
+          <div class="card" data-game="hades" data-level="1">
+            <canvas aria-label="Hades, carte ×1"></canvas>
+          </div>
+        </figure>
+        <figure>
+          <figcaption>
+            <div>
+              <h2>Parallaxe</h2>
+              <p>Les calques se décalent selon leur profondeur. Rien d’autre ne bouge.</p>
+            </div>
+            <span class="level">×2</span>
+          </figcaption>
+          <div class="card" data-game="hades" data-level="2">
+            <canvas aria-label="Hades, carte ×2"></canvas>
+          </div>
+        </figure>
+        <figure>
+          <figcaption>
+            <div>
+              <h2>Animée</h2>
+              <p>
+                Zagreus respire, relève son épée et détourne la tête. Un éclat parcourt la lame, son
+                regard rougeoie, des braises montent et la chaleur fait onduler le décor.
+              </p>
+            </div>
+            <span class="level">×3</span>
+          </figcaption>
+          <div class="card" data-game="hades" data-level="3">
+            <canvas aria-label="Hades, carte ×3"></canvas>
+          </div>
+        </figure>
+      </section>
+      <div class="controls">
+        <button id="motion" type="button" aria-pressed="false">Mettre en pause</button>
+        <p class="hint">
+          Les animations respectent la préférence système de réduction des mouvements.
+        </p>
+        <p id="status" role="status"></p>
+      </div>
+      <footer>
+        Prototype de cartes pour Project Achievers. Illustration Hades — Supergiant Games.
+      </footer>
+    </main>
+    <script src="cards.js"></script>
+  </body>
+</html>

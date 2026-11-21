@@ -1,0 +1,79 @@
+{
+  "engine": 2,
+  "source": "https://cdn.cloudflare.steamstatic.com/steam/apps/620/library_hero.jpg",
+  "view": [35, 0, 1326, 620],
+  "mirror": true,
+  "fill": "#141a21",
+  "period": 6.7,
+  "curves": { "accent": [0.45, 1.45, 1.76, 3.32] },
+  "background": { "file": "bg.jpg", "parallax": [-7, -4] },
+  "layers": [
+    {
+      "id": "cable",
+      "file": "cable.png",
+      "origin": [456, 0],
+      "pivot": [495, 0],
+      "parallax": [4.29, 2.2],
+      "motion": [{ "curve": "accent", "angle": -0.021 }]
+    },
+    { "id": "joints", "file": "joints.png", "origin": [263, 250], "parallax": [15.6, 8] },
+    {
+      "id": "legs",
+      "file": "legs.png",
+      "origin": [214, 336],
+      "pivot": [286, 353],
+      "parallax": [15.6, 8]
+    },
+    {
+      "id": "torso",
+      "file": "torso.png",
+      "origin": [262, 260],
+      "pivot": [290, 344],
+      "parallax": [15.6, 8],
+      "motion": [{ "curve": "accent", "dx": 1, "dy": -2, "angle": 0.044 }]
+    },
+    {
+      "id": "arm",
+      "file": "arm.png",
+      "origin": [246, 268],
+      "pivot": [272, 278],
+      "parent": "torso",
+      "motion": [{ "curve": "accent", "angle": -0.076 }]
+    },
+    {
+      "id": "head",
+      "file": "head.png",
+      "origin": [284, 229],
+      "pivot": [300, 264],
+      "parent": "torso",
+      "motion": [{ "curve": "accent", "dx": 3, "dy": -2, "angle": 0.1 }]
+    },
+    {
+      "id": "ledge",
+      "file": "ledge.png",
+      "origin": [0, 353],
+      "pivot": [220, 435],
+      "parallax": [15.6, 8]
+    }
+  ],
+  "effects": [
+    {
+      "type": "motes",
+      "before": "cable",
+      "center": [895, 244],
+      "color": [134, 225, 222],
+      "speed": 0.7,
+      "count": 27,
+      "size": 1
+    },
+    {
+      "type": "motes",
+      "center": [895, 244],
+      "color": [134, 225, 222],
+      "speed": 0.7,
+      "count": 12,
+      "offset": 31,
+      "size": 2
+    }
+  ]
+}

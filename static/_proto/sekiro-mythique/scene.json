@@ -1,0 +1,187 @@
+{
+  "engine": 2,
+  "view": [0, 46, 1920, 897],
+  "period": 7.6,
+  "curves": {
+    "leap": [0.5, 1.32, 1.8, 3.1],
+    "guard": [0.94, 1.72, 2.22, 3.5],
+    "burst": [1.37, 1.82, 2.03, 3.15]
+  },
+  "background": { "file": "bg.jpg", "parallax": [-19, -10] },
+  "sprites": {
+    "maple": { "file": "maple-leaves.png", "frame": 128, "frames": 4 },
+    "kanji": { "file": "kanji-danger.png" }
+  },
+  "layers": [
+    { "id": "monk-group", "pivot": [1445, 805], "parallax": [8, 5] },
+    {
+      "id": "shaft",
+      "file": "shaft.png",
+      "parent": "monk-group",
+      "pivot": [1355, 405],
+      "motion": [{ "curve": "guard", "dy": -3, "angle": -0.024 }]
+    },
+    { "id": "monk", "file": "monk.png", "parent": "monk-group" },
+    {
+      "id": "monk-robe",
+      "file": "monk-robe.png",
+      "parent": "monk-group",
+      "pivot": [1564, 619],
+      "motion": [
+        { "curve": "burst", "angle": -0.041 },
+        { "wave": 1.9, "angle": 0.012 }
+      ]
+    },
+    {
+      "id": "monk-head",
+      "file": "monk-head.png",
+      "parent": "monk-group",
+      "pivot": [1300, 387],
+      "motion": [{ "curve": "guard", "dy": 3, "angle": 0.057 }]
+    },
+    {
+      "id": "sleeve",
+      "file": "sleeve.png",
+      "parent": "monk-group",
+      "pivot": [1175, 473],
+      "motion": [
+        { "curve": "burst", "angle": 0.041 },
+        { "wave": 2, "angle": 0.012 }
+      ]
+    },
+    { "id": "monk-grips", "file": "monk-grips.png", "parent": "shaft" },
+    {
+      "id": "wolf-group",
+      "pivot": [725, 380],
+      "parallax": [15, 8],
+      "motion": [{ "curve": "leap", "dx": 5, "dy": -5, "angle": 0.01 }]
+    },
+    {
+      "id": "wolf-bent-leg",
+      "file": "wolf-bent-leg.png",
+      "parent": "wolf-group",
+      "pivot": [658, 448],
+      "motion": [{ "curve": "leap", "dy": -2, "angle": 0.076 }]
+    },
+    {
+      "id": "wolf-extended-leg",
+      "file": "wolf-extended-leg.png",
+      "parent": "wolf-group",
+      "pivot": [806, 430],
+      "motion": [{ "curve": "leap", "angle": -0.051 }]
+    },
+    { "id": "wolf", "file": "wolf.png", "parent": "wolf-group" },
+    {
+      "id": "wolf-head",
+      "file": "wolf-head.png",
+      "parent": "wolf-group",
+      "pivot": [728, 153],
+      "motion": [{ "curve": "leap", "angle": -0.053 }]
+    },
+    {
+      "id": "flap",
+      "file": "flap.png",
+      "parent": "wolf-group",
+      "pivot": [818, 353],
+      "motion": [
+        { "curve": "guard", "angle": -0.058 },
+        { "wave": 2.5, "angle": -0.015 }
+      ]
+    },
+    {
+      "id": "wolf-axe",
+      "file": "wolf-axe.png",
+      "parent": "wolf-group",
+      "pivot": [649, 244],
+      "motion": [{ "curve": "guard", "angle": -0.062 }]
+    },
+    {
+      "id": "wolf-katana",
+      "file": "wolf-katana.png",
+      "parent": "wolf-group",
+      "pivot": [792, 204],
+      "motion": [{ "curve": "leap", "angle": -0.046 }]
+    }
+  ],
+  "effects": [
+    {
+      "type": "mist",
+      "before": "monk-group",
+      "parallax": "background",
+      "center": [1020, 470],
+      "drift": { "curve": "burst", "dx": 115 },
+      "radius": 520,
+      "color": [235, 181, 147]
+    },
+    {
+      "type": "rays",
+      "before": "monk-group",
+      "parallax": "background",
+      "from": 1420,
+      "step": 111,
+      "lean": -420,
+      "color": [255, 222, 186],
+      "boost": { "curve": "burst", "amount": 0.13 }
+    },
+    {
+      "type": "leaves",
+      "before": "monk-group",
+      "sprite": "maple",
+      "count": 19,
+      "depth": 0.4,
+      "gust": "burst"
+    },
+    {
+      "type": "leaves",
+      "before": "wolf-group",
+      "sprite": "maple",
+      "count": 19,
+      "depth": 1,
+      "gust": "burst"
+    },
+    {
+      "type": "sparks",
+      "attach": "wolf-axe",
+      "origin": [417, 458],
+      "glow": [442, 455],
+      "curve": "burst"
+    },
+    {
+      "type": "glint",
+      "attach": "monk-grips",
+      "from": [1030, 483],
+      "to": [1455, 384],
+      "hideDuringIntro": true
+    },
+    {
+      "type": "glint",
+      "attach": "wolf-katana",
+      "from": [951, 230],
+      "to": [842, 309],
+      "hideDuringIntro": true
+    },
+    { "type": "leaves", "sprite": "maple", "count": 13, "depth": 1.8, "gust": "burst" }
+  ],
+  "intro": {
+    "type": "strike",
+    "revealAt": 3700,
+    "end": 6.2,
+    "loopAt": 1.55,
+    "symbol": {
+      "sprite": "kanji",
+      "at": [1290, 250],
+      "size": 300,
+      "in": 0.35,
+      "glow": [
+        [255, 40, 70],
+        [[225, 18, 48, 1], 70, true],
+        [[255, 46, 70, 1], 26, true],
+        [[255, 70, 92, 1], 10, true],
+        [[255, 120, 136, 0.9], 4, false]
+      ]
+    },
+    "thrust": { "from": [1455, 384], "to": [185, 658], "start": 2.05, "end": 2.62 },
+    "impact": { "at": [456, 460], "time": 2.75, "revealEnd": 3.95, "radius": 1750 },
+    "burst": { "sprite": "maple", "count": 120 }
+  }
+}

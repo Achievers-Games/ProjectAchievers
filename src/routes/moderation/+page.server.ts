@@ -13,7 +13,11 @@ import {
   steamUnlockKey,
   type SteamTrust,
 } from '#lib/server/steam-integrity';
+import { recheckBlockedSteam } from '#lib/server/sync/live';
 import { resolveSteamReview } from '#lib/server/sync/store';
+import { logger } from '#lib/logger';
+
+const log = logger('Modération');
 import type { Actions, PageServerLoad } from './$types';
 import { m } from '#lib/paraglide/messages';
 
@@ -300,10 +304,17 @@ export const actions: Actions = {
     const form = await request.formData();
     const id = z.string().min(1).max(100).safeParse(form.get('id'));
     if (!id.success) return fail(400, { error: m.action_failed() });
+    const marked = form.get('value') === '1';
     await db.game.updateMany({
       where: { id: id.data, platform: 'STEAM' },
-      data: { crossProgress: form.get('value') === '1' },
+      data: { crossProgress: marked },
     });
+    // Les joueurs suspendus d'office sur ce jeu sont relus tout de suite, sans attendre la tournée.
+    if (marked) {
+      void recheckBlockedSteam(undefined, 200, id.data).catch((cause: unknown) =>
+        log.error('Relecture après progression partagée :', cause),
+      );
+    }
   },
   /** Remplace le jeton du compte de service PSN, vérifié par Sony avant d'être enregistré. */
   psnToken: async ({ request, locals }) => {

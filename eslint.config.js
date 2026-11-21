@@ -15,6 +15,11 @@ export default [
       'node_modules/**',
       '.pgdata/**',
       'prisma/generated/**',
+      // Builds et outils de travail locaux, hors du dépôt.
+      'sites/*/dist/**',
+      'sites/achievers-atelier/**',
+      'sites/hades-card-review/**',
+      'design/**',
     ],
   },
   js.configs.recommended,

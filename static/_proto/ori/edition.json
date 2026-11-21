@@ -1,0 +1,48 @@
+{
+  "id": "ori",
+  "glow": "#85e4ff",
+  "atmosphere": "wisps",
+  "sound": null,
+  "frame": "forest",
+  "shots": [
+    {
+      "from": {
+        "x": 0.02,
+        "y": 0.96,
+        "zoom": 1.85
+      },
+      "to": {
+        "x": 0.38,
+        "y": 0.96,
+        "zoom": 1.85
+      },
+      "duration": 1700
+    },
+    {
+      "from": {
+        "x": 0.96,
+        "y": 0.2,
+        "zoom": 1.65
+      },
+      "to": {
+        "x": 0.96,
+        "y": 0.55,
+        "zoom": 1.65
+      },
+      "duration": 1700
+    },
+    {
+      "from": {
+        "x": 0.62,
+        "y": 0.38,
+        "zoom": 1.5
+      },
+      "to": {
+        "x": 0.5,
+        "y": 0.5,
+        "zoom": 1
+      },
+      "duration": 1900
+    }
+  ]
+}

@@ -1,5 +1,7 @@
 import { error } from '@sveltejs/kit';
 import { env } from '#lib/server/env';
+import { profileCardBanner } from '#lib/server/card-banner';
+import { isCardsOpen } from '#lib/server/cards-launch';
 import { userProfile } from '#lib/server/queries';
 import { siteAchievementCount } from '#lib/server/site-achievements';
 import { relationWith } from '#lib/server/social';
@@ -18,9 +20,11 @@ export const load: PageServerLoad = async ({ params, locals, depends }) => {
   );
   void artNow([], dressing).catch(() => 0);
   // Deux lectures indépendantes : les mener de front épargne un aller-retour à la base.
-  const [relation, siteAchievements] = await Promise.all([
+  const [relation, siteAchievements, cardBanner] = await Promise.all([
     locals.user ? relationWith(locals.user.id, profile.user.id) : null,
     siteAchievementCount(profile.user.id),
+    // Avant l'ouverture des boosters, aucune carte animée ne se montre sur un profil.
+    isCardsOpen() ? profileCardBanner(profile.user.id) : null,
   ]);
-  return { profile, relation, siteAchievements, origin: env().ORIGIN };
+  return { profile, relation, siteAchievements, cardBanner, origin: env().ORIGIN };
 };

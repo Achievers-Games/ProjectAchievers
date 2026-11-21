@@ -1,0 +1,26 @@
+{
+  "id": "ori-mythique",
+  "glow": "#ffc88a",
+  "atmosphere": "wisps",
+  "sound": null,
+  "frame": "forest",
+  "title": "fantasy",
+  "intro": { "revealAt": 4600 },
+  "shots": [
+    {
+      "from": { "x": 0.04, "y": 0.76, "zoom": 1.72 },
+      "to": { "x": 0.26, "y": 0.56, "zoom": 1.72 },
+      "duration": 1700
+    },
+    {
+      "from": { "x": 0.72, "y": 0.17, "zoom": 1.55 },
+      "to": { "x": 0.72, "y": 0.68, "zoom": 1.55 },
+      "duration": 1700
+    },
+    {
+      "from": { "x": 0.5, "y": 0.62, "zoom": 1.44 },
+      "to": { "x": 0.5, "y": 0.5, "zoom": 1 },
+      "duration": 1900
+    }
+  ]
+}

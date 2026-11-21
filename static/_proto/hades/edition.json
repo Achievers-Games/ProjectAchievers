@@ -1,0 +1,48 @@
+{
+  "id": "hades",
+  "glow": "#ff8152",
+  "atmosphere": "sparks",
+  "sound": null,
+  "frame": "underworld",
+  "shots": [
+    {
+      "from": {
+        "x": 0.02,
+        "y": 0.96,
+        "zoom": 1.85
+      },
+      "to": {
+        "x": 0.38,
+        "y": 0.96,
+        "zoom": 1.85
+      },
+      "duration": 1700
+    },
+    {
+      "from": {
+        "x": 0.96,
+        "y": 0.25,
+        "zoom": 1.65
+      },
+      "to": {
+        "x": 0.96,
+        "y": 0.6,
+        "zoom": 1.65
+      },
+      "duration": 1700
+    },
+    {
+      "from": {
+        "x": 0.55,
+        "y": 0.32,
+        "zoom": 1.5
+      },
+      "to": {
+        "x": 0.5,
+        "y": 0.5,
+        "zoom": 1
+      },
+      "duration": 1900
+    }
+  ]
+}

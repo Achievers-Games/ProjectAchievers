@@ -40,5 +40,8 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=180s --retries=3 \
   CMD wget -qO- http://127.0.0.1:3000/api/health > /dev/null || exit 1
 # Les flux d'événements restent ouverts : sans ce délai, l'arrêt dépasserait celui que Docker accorde.
 ENV SHUTDOWN_TIMEOUT=5
+# Une capture de preuve Steam pèse jusqu'à 1,5 Mo (steam-proof.ts) : les 512 Ko par défaut de
+# l'adaptateur Node la refuseraient avant même de la lire.
+ENV BODY_SIZE_LIMIT=2M
 # `exec` : Node remplace le shell et reçoit lui-même le SIGTERM de `docker stop`.
 CMD ["sh", "-c", "npx prisma migrate deploy && exec node build"]
