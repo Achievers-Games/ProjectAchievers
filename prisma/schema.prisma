@@ -463,6 +463,16 @@ model CardFamily {
   editions  GameEdition[]
 }
 
+/// La préparation des cartes d'un jeu, avant qu'il n'entre au catalogue. Relief et Vivante
+/// partent de l'image de bibliothèque Steam (`Game.heroUrl`) ; la Mythique d'un artwork officiel,
+/// choisi par la modération et noté ici.
+model CardPlan {
+  familyKey      String   @id
+  mythiqueArtUrl String?
+  note           String?
+  updatedAt      DateTime @updatedAt
+}
+
 /// Une édition qui existe pour une famille de jeu, toutes plateformes confondues.
 model GameEdition {
   id          String        @id @default(cuid())
