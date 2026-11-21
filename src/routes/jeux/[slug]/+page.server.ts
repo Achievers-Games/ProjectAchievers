@@ -17,6 +17,7 @@ import { excludedSteamUnlocks } from '#lib/server/steam-integrity';
 import { addSteamProof, type ProofFailure } from '#lib/server/steam-proof';
 import { rateLimit } from '#lib/server/rate-limit';
 import { completionTimes } from '#lib/server/completion-time';
+import { achievementPart } from '#lib/shards';
 import { artNow } from '#lib/server/sync/content';
 import type { Actions, PageServerLoad } from './$types';
 import { m } from '#lib/paraglide/messages';
@@ -75,6 +76,8 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
           hidden: true,
           trophyType: true,
           globalRarity: true,
+          groupId: true,
+          groupName: true,
           iconUrl: true,
           iconLockedUrl: true,
           missable: true,
@@ -120,6 +123,7 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
           select: {
             id: true,
             slug: true,
+            name: true,
             platform: true,
             console: true,
             tier: true,
@@ -253,6 +257,8 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
       masked,
       trophyType: a.trophyType,
       globalRarity: a.globalRarity,
+      groupId: a.groupId,
+      groupName: a.groupName,
       name: masked ? m.achievement_hidden() : (translation?.name ?? a.name),
       description: masked ? '' : translation?.description || a.description,
       iconUrl: masked ? null : unlocked || excludedAt ? a.iconUrl : (a.iconLockedUrl ?? a.iconUrl),
@@ -274,8 +280,32 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
   if (hasExcluded) filters.push('hors-score');
   const filter = filters.find((value) => value === requestedFilter) ?? 'tous';
   const sort = url.searchParams.get('tri') === 'nom' ? 'nom' : 'rarete';
+  const groups = [
+    ...new Map(
+      rows.flatMap((row) =>
+        row.groupId && row.groupName !== null ? [[row.groupId, row.groupName] as const] : [],
+      ),
+    ),
+  ]
+    .sort(([a], [b]) => Number(b === 'default') - Number(a === 'default') || a.localeCompare(b))
+    .map(([id, name]) => ({
+      id,
+      name: id.startsWith('dlc:') ? `DLC · ${name}` : name || m.achievement_group_base(),
+    }));
+  // La progression du joueur, jeu de base et DLC séparés : chaque partie se finit à 100 %.
+  const parts = [...Map.groupBy(rows, (row) => achievementPart(row.groupId))]
+    .map(([part, members]) => ({
+      id: part,
+      name: part ? (members[0]?.groupName ?? part) : m.achievement_group_base(),
+      total: members.length,
+      unlocked: members.filter((row) => row.unlockedAt !== null).length,
+    }))
+    .sort((a, b) => Number(Boolean(a.id)) - Number(Boolean(b.id)) || a.id.localeCompare(b.id));
+  const requestedGroup = url.searchParams.get('groupe');
+  const group = groups.find(({ id }) => id === requestedGroup)?.id ?? null;
   const theirUnlocks = new Set(rival?.unlocked);
   const visible = rows.filter((row) => {
+    if (group && row.groupId !== group) return false;
     if (filter === 'obtenus') return row.unlockedAt !== null;
     if (filter === 'restants') return row.unlockedAt === null && row.excludedAt === null;
     if (filter === 'hors-score') return row.excludedAt !== null;
@@ -319,6 +349,9 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
     hasMissables: rows.some((row) => row.missable),
     missingMissables: rows.filter((row) => row.missable && !row.unlockedAt).length,
     filter,
+    groups,
+    parts: parts.length > 1 ? parts : [],
+    group,
     sort,
     nextAchievements: shown < visible.length ? shown + pageSize : null,
     compare: rival
@@ -336,6 +369,11 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
         }
       : null,
     friends: friends.filter((friend) => owning.has(friend.id)),
+    unlockOwner: player
+      ? player.self || friends.some((friend) => friend.id === player.user.id)
+        ? player.user.handle
+        : null
+      : (locals.user?.handle ?? null),
     revealed,
     player: player && {
       user: player.user,
@@ -370,6 +408,7 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
     completionTime,
     versions: others.map((other) => ({
       slug: other.slug,
+      name: other.name,
       platform: other.platform,
       console: other.console,
       completion: other.players[0]?.completion ?? null,

@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  achievementPart,
+  DLC_MIN_SHARDS,
+  partShards,
   capGains,
   completionShards,
   GAME_SHARD_CAP,
@@ -46,5 +49,22 @@ describe('plafond par jeu', () => {
 
   it('ne donne plus rien une fois le plafond atteint', () => {
     expect(capGains([{ shards: 15 }], GAME_SHARD_CAP)).toEqual([]);
+  });
+});
+
+describe('jeu de base et DLC', () => {
+  it('range les groupes par défaut et les ensembles hors DLC dans le jeu de base', () => {
+    expect(achievementPart(null)).toBe('');
+    expect(achievementPart('default')).toBe('');
+    expect(achievementPart('set:3')).toBe('');
+    expect(achievementPart('dlc:7')).toBe('dlc:7');
+    expect(achievementPart('001')).toBe('001');
+  });
+
+  it('paie un DLC au prorata de ses succès, entre le plancher et le bonus du jeu', () => {
+    expect(partShards(4, '', 40, 40)).toBe(completionShards(4));
+    expect(partShards(4, 'dlc:7', 20, 40)).toBe(55);
+    expect(partShards(4, 'dlc:7', 1, 40)).toBe(DLC_MIN_SHARDS);
+    expect(partShards(4, 'dlc:7', 80, 40)).toBe(completionShards(4));
   });
 });

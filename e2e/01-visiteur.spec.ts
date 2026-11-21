@@ -77,6 +77,21 @@ test.describe('visiteur', () => {
     await expect(page.getByLabel('Filtrer par nom')).toHaveValue('hades');
   });
 
+  test('garde toute la saisie et accepte une inversion de lettres', async ({ page }) => {
+    await page.goto('/jeux');
+    await ready(page);
+    const search = page.getByLabel('Filtrer par nom');
+    await search.pressSequentially('hae');
+    await expect(page).toHaveURL(/q=hae/);
+    await search.pressSequentially('ds');
+    await expect(page).toHaveURL(/q=haeds/);
+    await expect(search).toHaveValue('haeds');
+    await expect(page.getByRole('link', { name: /Hades/ }).first()).toBeVisible();
+    await page.getByRole('link', { name: 'Trier par ordre décroissant' }).click();
+    await expect(page).toHaveURL(/ordre=desc/);
+    await expect(search).toHaveValue('haeds');
+  });
+
   test('charge la suite des jeux au défilement et la retrouve au retour', async ({ page }) => {
     await page.goto('/jeux');
     await ready(page);

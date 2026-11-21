@@ -6,6 +6,7 @@ import {
   SITE_CATEGORIES,
   SITE_CODES,
   THEMES,
+  challengeText,
   genreOf,
   seriesOf,
 } from '#lib/site-achievements';
@@ -79,15 +80,15 @@ const unlock = (gameId: string, at: number, extra: Partial<UnlockFact> = {}): Un
 const earned = (extra: Partial<SiteFacts>) => earnedCodes(facts(extra));
 
 describe('succès du site', () => {
-  it('compte 658 succès permanents, dont 30 secrets, tous traduits', () => {
-    expect(SITE_CODES.filter((code) => !EVENT_CODES.has(code))).toHaveLength(658);
+  it('compte 667 succès permanents, dont 30 secrets, tous traduits', () => {
+    expect(SITE_CODES.filter((code) => !EVENT_CODES.has(code))).toHaveLength(667);
     expect(new Set(SITE_CODES).size).toBe(SITE_CODES.length);
     expect(SITE_CATEGORIES.secret).toHaveLength(30);
     for (const locale of ['fr', 'en', 'de', 'es', 'pt-BR', 'ru', 'ja', 'zh-CN']) {
       const messages = JSON.parse(readFileSync(`messages/${locale}.json`, 'utf8'));
       for (const code of SITE_CODES) {
         // Les paliers d'une série partagent un titre et un texte.
-        const key = seriesOf(code)?.key ?? code;
+        const key = challengeText(code)?.key ?? seriesOf(code)?.key ?? code;
         expect(messages[`ach_${key}_title`], `${locale} ${code}`).toBeTruthy();
         // Le texte d'un genre vient d'un modèle commun.
         if (!genreOf(code)) expect(messages[`ach_${key}_text`], `${locale} ${code}`).toBeTruthy();
@@ -296,7 +297,14 @@ describe('succès du site', () => {
     expect(earned({ cards: [card(4, 0), ...bronze.slice(1)] })).not.toContain('reverse_gear');
 
     const unlocks = [unlock('a', NOW - 40 * DAY), unlock('a', NOW)];
-    expect(earned({ unlocks })).toContain('withdrawal');
+    expect(earned({ unlocks }).filter((code) => code.startsWith('withdrawal'))).toEqual([
+      'withdrawal_7',
+      'withdrawal_14',
+      'withdrawal',
+    ]);
+    expect(earned({ unlocks: [unlock('a', NOW - 365 * DAY), unlock('a', NOW)] })).toContain(
+      'withdrawal_365',
+    );
     expect(earned({ unlocks: [unlock('a', NOW)] })).not.toContain('withdrawal');
   });
 

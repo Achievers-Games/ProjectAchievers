@@ -187,6 +187,32 @@ export function genreOf(code: string) {
 }
 
 /** Les succès du site, par catégorie, plus ceux des événements. Les textes sont les messages `ach_<code>_title` et `_text`. */
+export const WITHDRAWAL_DAYS = {
+  withdrawal_7: 7,
+  withdrawal_14: 14,
+  withdrawal: 30,
+  withdrawal_90: 90,
+  withdrawal_180: 180,
+  withdrawal_365: 365,
+} as const;
+
+const WITHDRAWAL_STEPS = Object.keys(WITHDRAWAL_DAYS) as (keyof typeof WITHDRAWAL_DAYS)[];
+const ONE_LEFT_STEPS = ['one_left', 'one_left_30', 'one_left_90'] as const;
+const YET_ANOTHER_STEPS = ['yet_another', 'yet_another_10', 'yet_another_20'] as const;
+
+const CHALLENGE_TEXT = new Map<string, { key: string; count: number }>([
+  ...WITHDRAWAL_STEPS.map(
+    (code) => [code, { key: 'withdrawal', count: WITHDRAWAL_DAYS[code] }] as const,
+  ),
+  ...ONE_LEFT_STEPS.map(
+    (code, index) => [code, { key: 'one_left', count: [7, 30, 90][index]! }] as const,
+  ),
+  ...YET_ANOTHER_STEPS.map(
+    (code, index) => [code, { key: 'yet_another', count: [5, 10, 20][index]! }] as const,
+  ),
+]);
+export const challengeText = (code: string) => CHALLENGE_TEXT.get(code);
+
 const BASE_CATEGORIES = {
   start: [
     'first_account',
@@ -315,15 +341,15 @@ const BASE_CATEGORIES = {
     'barely_played_50',
     'sealed_100',
     'resurrection',
-    'one_left',
+    ...ONE_LEFT_STEPS,
     'one_more_10',
     'one_more_50',
     'one_more_100',
     'one_more_250',
     'one_more_1000',
     'one_more_2500',
-    'yet_another',
-    'withdrawal',
+    ...YET_ANOTHER_STEPS,
+    ...WITHDRAWAL_STEPS,
     'streak_7',
     'streak_100',
     'late_5',
@@ -487,6 +513,9 @@ const BASE_SERIES: readonly (readonly SiteCode[])[] = [
   ['reactions_1', 'reactions_5', 'reactions_10', 'reactions_25', 'reactions_50', 'reactions_100'],
   ['two_platforms', 'three_platforms'],
   ['streak_7', 'streak_100'],
+  ONE_LEFT_STEPS,
+  YET_ANOTHER_STEPS,
+  WITHDRAWAL_STEPS,
   ['late_5', 'late_10'],
   ['clan_join', 'clan_5'],
   ['season_tier2', 'season_tier3'],
@@ -520,12 +549,10 @@ export function groupSeries<T extends string>(codes: readonly T[]) {
 export const stepTier = (index: number, steps: number) =>
   steps <= 1 ? 0 : steps <= 6 ? index + 1 : 1 + Math.round((index * 5) / (steps - 1));
 
-/** Le niveau de chaque palier d'une série, calculé une fois : 0 pour un succès sans palier. */
+/** Le niveau de chaque succès, calculé une fois : Bronze pour les succès à un seul palier. */
 const TIER_OF = new Map(
   groupSeries(SITE_CODES).flatMap((steps) =>
-    steps.length > 1
-      ? steps.map((code, index) => [code, stepTier(index, steps.length)] as const)
-      : [],
+    steps.map((code, index) => [code, stepTier(index, steps.length) || 1] as const),
   ),
 );
 export const tierOf = (code: string) => TIER_OF.get(code as SiteCode) ?? 0;

@@ -38,6 +38,7 @@ const query = z.object({
     .catch(undefined),
   // Sans tri choisi, les jeux à finir se rangent par avancée, les autres par nom.
   tri: z.enum(['nom', 'recent', 'progression', 'succes', 'rarete']).optional().catch(undefined),
+  ordre: z.enum(['asc', 'desc']).optional().catch(undefined),
   page: z.coerce.number().int().min(1).max(10_000).catch(1),
   vue: z.enum(['grille', 'liste']).catch('grille'),
   // « platine » était l'ancien nom du niveau : les liens déjà partagés restent valables.
@@ -112,6 +113,7 @@ export async function gamesFromUrl(
       : (params.tri ?? (ongoing ? 'progression' : shopping ? 'rarete' : 'nom'));
   const chosen = params.plateforme ? CONSOLES[params.plateforme] : undefined;
   const platform = chosen?.platform ?? (params.plateforme as Platform | undefined);
+  const ordre = params.ordre ?? (tri === 'nom' ? 'asc' : 'desc');
 
   const { games, total } = await listGames(
     {
@@ -119,6 +121,7 @@ export async function gamesFromUrl(
       platform,
       consoles: chosen?.consoles,
       sort: tri,
+      direction: ordre,
       page: params.page,
       ownerId,
       status,
@@ -135,6 +138,7 @@ export async function gamesFromUrl(
     params: {
       ...params,
       tri,
+      ordre,
       mine,
       filtre: status,
     },

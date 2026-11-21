@@ -59,6 +59,8 @@ export const load: PageServerLoad = async ({ locals, depends, url }) => {
         achievementId: true,
         status: true,
         guide: { select: { id: true, game: { select: { slug: true } } } },
+        profile: { select: { handle: true } },
+        unlock: { select: { achievementId: true, user: { select: { handle: true } } } },
       },
     }),
     // Seul le message signalé est lu, jamais le reste de la discussion.
@@ -86,7 +88,11 @@ export const load: PageServerLoad = async ({ locals, depends, url }) => {
     }),
     // Un commentaire de guide mène au guide qu'il commente.
     ...comments.map((t) => {
-      const href = t.guide ? context({ ...t.guide, achievementId: null }) : context(t);
+      const href = t.unlock
+        ? unlockHref(t.unlock.user.handle, t.unlock.achievementId)
+        : t.profile
+          ? `/u/${t.profile.handle}#discussion`
+          : context(t.guide ? { ...t.guide, achievementId: null } : t);
       return [t.id, { contentMd: t.contentMd, href }] as const;
     }),
     ...messages.map((t) => [t.id, { contentMd: t.content, href: null }] as const),
@@ -583,3 +589,4 @@ export const actions: Actions = {
     });
   },
 };
+import { unlockHref } from '#lib/activity';

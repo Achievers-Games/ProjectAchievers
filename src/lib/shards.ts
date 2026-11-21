@@ -37,6 +37,34 @@ export function completionShards(tier: number | null | undefined) {
   return COMPLETION_SHARDS[index]!;
 }
 
+/** Plancher du bonus d'un DLC fini : même une petite extension se remarque. */
+export const DLC_MIN_SHARDS = 10;
+
+/**
+ * La partie d'un jeu à laquelle appartient un succès : `''` pour le jeu de base (sans groupe,
+ * groupe par défaut, ou ensemble Steam hors DLC), sinon l'identifiant du groupe de DLC.
+ */
+export function achievementPart(groupId: string | null | undefined) {
+  if (!groupId || groupId === 'default' || groupId.startsWith('set:')) return '';
+  return groupId;
+}
+
+/**
+ * Le bonus d'une partie finie. Le jeu de base vaut le bonus du niveau ; un DLC en vaut une part
+ * proportionnelle à son nombre de succès face au jeu de base, entre le plancher et ce bonus.
+ */
+export function partShards(
+  tier: number | null | undefined,
+  part: string,
+  total: number,
+  baseTotal: number,
+) {
+  const full = completionShards(tier);
+  if (!part) return full;
+  if (baseTotal <= 0) return full;
+  return Math.min(full, Math.max(DLC_MIN_SHARDS, Math.round((full * total) / baseTotal)));
+}
+
 /**
  * Applique le plafond d'un jeu à une liste de gains, dans l'ordre : chaque gain prend ce qui reste
  * sous le plafond, et un gain qui ne rapporte plus rien disparaît.

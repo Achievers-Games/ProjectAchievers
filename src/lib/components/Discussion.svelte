@@ -20,11 +20,13 @@
     signedIn,
     signInHref,
     canTranslate,
+    actionQuery = '',
   }: {
     comments: CommentView[];
     signedIn: boolean;
     signInHref: string;
     canTranslate: boolean;
+    actionQuery?: string;
   } = $props();
 
   type Item = CommentView | CommentView['replies'][number];
@@ -46,8 +48,9 @@
   ] as const;
 
   let replyTo = $state<string | null>(null);
+  const actionHref = (action: string) => `?/${action}${actionQuery ? `&${actionQuery}` : ''}`;
   const translations = new Translations<Item>((item) =>
-    postAction('translateComment', { id: item.id }),
+    postAction('translateComment', { id: item.id }, actionQuery),
   );
 
   const submit = submitWithToast({
@@ -79,7 +82,12 @@
             <TranslateButton {translations} item={comment} />
           {/if}
           {#if signedIn}
-            <form method="POST" action="?/react" use:enhance={submit} class="flex gap-2">
+            <form
+              method="POST"
+              action={actionHref('react')}
+              use:enhance={submit}
+              class="flex gap-2"
+            >
               <input type="hidden" name="commentId" value={comment.id} />
               {#each REACTIONS as reaction (reaction.type)}
                 <button
@@ -102,7 +110,7 @@
               </button>
             {/if}
             {#if comment.mine}
-              <form method="POST" action="?/deleteComment" use:enhance={submit}>
+              <form method="POST" action={actionHref('deleteComment')} use:enhance={submit}>
                 <input type="hidden" name="id" value={comment.id} />
                 <button class="hover:text-danger">{m.delete()}</button>
               </form>
@@ -110,7 +118,7 @@
               <button
                 type="button"
                 class="hover:text-ink"
-                onclick={() => reportContent('reportComment', { id: comment.id })}
+                onclick={() => reportContent('reportComment', { id: comment.id }, actionQuery)}
               >
                 {m.report()}
               </button>
@@ -124,7 +132,7 @@
   {#snippet commentForm(parentId: string | null)}
     <form
       method="POST"
-      action="?/comment"
+      action={actionHref('comment')}
       use:enhance={submit}
       data-closes={parentId ? '1' : undefined}
       class="space-y-2"

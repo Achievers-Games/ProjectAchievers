@@ -48,6 +48,8 @@ export interface AchievementInput {
   hidden: boolean;
   trophyType: TrophyType;
   globalRarity?: number | null;
+  groupId?: string;
+  groupName?: string;
   points?: number;
 }
 
@@ -172,6 +174,8 @@ export async function saveAchievements(gameId: string, achievements: Achievement
         hidden: a.hidden,
         trophyType: a.trophyType,
         globalRarity: a.globalRarity,
+        groupId: a.groupId,
+        groupName: a.groupName,
         points: a.points ?? POINTS[a.trophyType],
       };
       return db.achievement.upsert({
@@ -255,6 +259,7 @@ interface NewUnlock {
   id: string;
   name: string;
   iconUrl: string | null;
+  globalRarity: number | null;
 }
 
 interface SaveResult {
@@ -519,15 +524,14 @@ async function writeProgress(
     const from = shardsStart(shardsFrom);
     if (from) {
       await creditUnlocks(db, userId, gameId, newUnlocks, from);
-      if (data.completion >= 100) {
-        await creditCompletion(db, userId, gameId, lastUnlockedAt, from);
-      }
+      // Le jeu de base et chaque DLC paient leur bonus dès qu'ils sont finis, chacun de son côté.
+      await creditCompletion(db, userId, gameId, from);
     }
   }
   const fresh = freshIds.length
     ? await db.achievement.findMany({
         where: { id: { in: freshIds } },
-        select: { id: true, name: true, iconUrl: true },
+        select: { id: true, name: true, iconUrl: true, globalRarity: true },
       })
     : [];
   return { gained, fresh, removed: removal?.removed ?? 0 };
@@ -632,6 +636,7 @@ export async function recentUnlocks(userId: string, limit = 3) {
           id: true,
           name: true,
           iconUrl: true,
+          globalRarity: true,
           game: { select: { name: true, slug: true } },
         },
       },
@@ -641,6 +646,7 @@ export async function recentUnlocks(userId: string, limit = 3) {
     id: achievement.id,
     title: achievement.name,
     icon: achievement.iconUrl,
+    rarity: achievement.globalRarity,
     game: achievement.game.name,
     slug: achievement.game.slug,
   }));

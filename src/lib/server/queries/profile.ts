@@ -186,7 +186,7 @@ export async function userProfile(handle: string, viewerId: string | null, showA
             id: true,
             name: true,
             iconUrl: true,
-            trophyType: true,
+            globalRarity: true,
             game: { select: { name: true, slug: true } },
           },
         },

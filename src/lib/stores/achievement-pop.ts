@@ -14,6 +14,8 @@ export interface SitePop {
   image?: string | null;
   /** Le jeu d'où vient le succès, pour les plateformes. */
   game?: string;
+  /** La part de joueurs qui ont ce succès de plateforme, en %. */
+  rarity?: number | null;
   /** Où mène un clic : le succès, ou la page du jeu quand plusieurs se fêtent ensemble. */
   href?: string;
   /** Plusieurs succès d'un même jeu, réunis en une seule annonce. */
@@ -106,7 +108,13 @@ function gamePop(unlocks: UnlockPop[]): SitePop {
   const [first] = unlocks as [UnlockPop, ...UnlockPop[]];
   const base = { icon: '', category: 'platform', level: 0, image: first.icon, unlocks };
   if (unlocks.length === 1) {
-    return { ...base, title: first.title, game: first.game, href: `/succes/${first.id}` };
+    return {
+      ...base,
+      title: first.title,
+      game: first.game,
+      rarity: first.rarity,
+      href: `/succes/${first.id}`,
+    };
   }
   return { ...base, title: first.game, count: unlocks.length, href: `/jeux/${first.slug}` };
 }

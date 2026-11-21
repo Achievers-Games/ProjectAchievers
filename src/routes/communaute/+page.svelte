@@ -9,7 +9,7 @@
   import CompleteBadge from '#lib/components/CompleteBadge.svelte';
   import Empty from '#lib/components/Empty.svelte';
   import SocialNav from '#lib/components/SocialNav.svelte';
-  import TrophyBadge from '#lib/components/TrophyBadge.svelte';
+  import RarityBadge from '#lib/components/RarityBadge.svelte';
   import { formatNumber, formatRelative, tierLabel } from '#lib/labels';
   import { subscribeJson } from '#lib/sse';
 
@@ -203,7 +203,7 @@
                   <p class="truncate text-xs text-muted">{item.achievement.game.name}</p>
                 </div>
                 <div class="shrink-0 text-right">
-                  <TrophyBadge type={item.achievement.trophyType} />
+                  <RarityBadge rarity={item.achievement.globalRarity} />
                   <p class="text-xs text-muted">{formatRelative(item.at)}</p>
                 </div>
               </li>
@@ -229,7 +229,7 @@
               <p class="truncate text-xs text-muted">{item.achievement.game.name}</p>
             </div>
             <div class="shrink-0 text-right">
-              <TrophyBadge type={item.achievement.trophyType} />
+              <RarityBadge rarity={item.achievement.globalRarity} />
               <p class="text-xs text-muted">{formatRelative(item.unlockedAt)}</p>
             </div>
           </li>

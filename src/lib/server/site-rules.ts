@@ -3,6 +3,7 @@ import {
   FRIEND_SERIES,
   GENRES,
   SITE_CATEGORIES,
+  WITHDRAWAL_DAYS,
   genreOf,
   seriesOf,
   type BaseCode,
@@ -228,6 +229,8 @@ export function evaluateSite(facts: SiteFacts) {
     const [last, previous] = (byGame.get(game.gameId) ?? []).toReversed();
     return last && previous ? last.at - previous.at : 0;
   };
+  const leftFor = (days: number) =>
+    finishedByTime.find((g) => g.total >= 5 && gapBeforeLast(g) >= days * DAY);
 
   const dates = unlocks.map((u) => clock(u.at));
   const finishDates = finished.map((g) => clock(g.lastAt));
@@ -271,6 +274,7 @@ export function evaluateSite(facts: SiteFacts) {
     const first = firstAt(g);
     return g.completion < 80 && first !== undefined && facts.now - first <= WEEK;
   };
+  const newGame = games.find(isNewGame);
   const rarestLast = (g: GameFact) => {
     const group = byGame.get(g.gameId) ?? [];
     const last = group.at(-1)?.rarity;
@@ -283,9 +287,8 @@ export function evaluateSite(facts: SiteFacts) {
     );
   };
   const byTime = unlocks.toSorted((a, b) => a.at - b.at);
-  const returnIndex = byTime.findIndex(
-    (u, index) => index > 0 && u.at - byTime[index - 1]!.at >= 30 * DAY,
-  );
+  const returnIndex = (days: number) =>
+    byTime.findIndex((u, index) => index > 0 && u.at - byTime[index - 1]!.at >= days * DAY);
 
   const finishedByTime = finished.toSorted((a, b) => a.lastAt - b.lastAt);
   const tagged = (tags: readonly number[]) => (g: { gameId: string }) =>
@@ -510,9 +513,18 @@ export function evaluateSite(facts: SiteFacts) {
         (g) => g.platform === 'STEAM' && g.playtime === 0 && g.unlocked === 0 && !g.played,
       ).length >= 100,
     resurrection: finished.some((g) => gapBeforeLast(g) > YEAR),
-    one_left: finished.some((g) => g.total >= 5 && gapBeforeLast(g) >= WEEK),
-    withdrawal: returnIndex >= 0,
-    yet_another: stalled >= 5 && games.some(isNewGame),
+    one_left: Boolean(leftFor(7)),
+    one_left_30: Boolean(leftFor(30)),
+    one_left_90: Boolean(leftFor(90)),
+    withdrawal_7: returnIndex(WITHDRAWAL_DAYS.withdrawal_7) >= 0,
+    withdrawal_14: returnIndex(WITHDRAWAL_DAYS.withdrawal_14) >= 0,
+    withdrawal: returnIndex(WITHDRAWAL_DAYS.withdrawal) >= 0,
+    withdrawal_90: returnIndex(WITHDRAWAL_DAYS.withdrawal_90) >= 0,
+    withdrawal_180: returnIndex(WITHDRAWAL_DAYS.withdrawal_180) >= 0,
+    withdrawal_365: returnIndex(WITHDRAWAL_DAYS.withdrawal_365) >= 0,
+    yet_another: stalled >= 5 && Boolean(newGame),
+    yet_another_10: stalled >= 10 && Boolean(newGame),
+    yet_another_20: stalled >= 20 && Boolean(newGame),
     streak_7: streak >= 7,
     streak_100: streak >= 100,
     late_5: lateGame(5) !== undefined,
@@ -590,6 +602,10 @@ export function evaluateSite(facts: SiteFacts) {
   const unlockProof = (list: UnlockFact[]): SiteProof => ({
     achievements: list.slice(0, MAX_PROOF).map((u) => u.achievementId),
   });
+  const returnProof = (days: number) => () => {
+    const index = returnIndex(days);
+    return unlockProof(index < 0 ? [] : byTime.slice(index, index + 1));
+  };
   const gamesOf = (list: { gameId: string }[]) => gameProof(list.map((g) => g.gameId));
   const userProof = (ids: string[] | undefined): SiteProof => ({ users: ids ?? [] });
   const clanProof = (id: string | null | undefined): SiteProof => ({ clans: id ? [id] : [] });
@@ -827,10 +843,18 @@ export function evaluateSite(facts: SiteFacts) {
         ),
       ),
     resurrection: firstDeepGap(YEAR + 1),
-    one_left: () =>
-      gamesOf(finishedByTime.filter((g) => g.total >= 5 && gapBeforeLast(g) >= WEEK).slice(0, 1)),
-    withdrawal: () => unlockProof(byTime.slice(returnIndex, returnIndex + 1)),
-    yet_another: () => gamesOf(games.filter(isNewGame).slice(0, 1)),
+    one_left: () => gamesOf([leftFor(7)].flatMap((g) => g ?? [])),
+    one_left_30: () => gamesOf([leftFor(30)].flatMap((g) => g ?? [])),
+    one_left_90: () => gamesOf([leftFor(90)].flatMap((g) => g ?? [])),
+    withdrawal_7: returnProof(WITHDRAWAL_DAYS.withdrawal_7),
+    withdrawal_14: returnProof(WITHDRAWAL_DAYS.withdrawal_14),
+    withdrawal: returnProof(WITHDRAWAL_DAYS.withdrawal),
+    withdrawal_90: returnProof(WITHDRAWAL_DAYS.withdrawal_90),
+    withdrawal_180: returnProof(WITHDRAWAL_DAYS.withdrawal_180),
+    withdrawal_365: returnProof(WITHDRAWAL_DAYS.withdrawal_365),
+    yet_another: () => gamesOf(newGame ? [newGame] : []),
+    yet_another_10: () => gamesOf(newGame ? [newGame] : []),
+    yet_another_20: () => gamesOf(newGame ? [newGame] : []),
     streak_7: streakProof(7),
     streak_100: streakProof(100),
     late_5: () => gamesOf([lateGame(5)].flatMap((g) => g ?? [])),

@@ -4,6 +4,7 @@ import { publicCache } from '../public-cache';
 import { groupLibrary, type LibraryCard } from '../library';
 import { libraryPage } from './library-page';
 import { PAGE_SIZE, cardSelect, tierProgress, visibleGames } from './shared';
+import { matchesGameName } from './game-name';
 
 /**
  * - `termines` : au moins une version à 100 %, la carte est obtenue ;
@@ -50,6 +51,7 @@ interface GameFilters {
   /** Des consoles précises de la plateforme : PS4, ou One et Series pour Xbox. */
   consoles?: string[];
   sort: 'nom' | 'recent' | 'progression' | 'succes' | 'rarete';
+  direction?: 'asc' | 'desc';
   page: number;
   ownerId?: string;
   /** Avec `ownerId` : où en est le joueur sur le jeu. */
@@ -110,7 +112,11 @@ export async function listGames(
   if (filters.ownerId && !shopping) {
     return listLibrary(filters, filters.ownerId, where, viewerId, recordTiming);
   }
-  if (filters.q) where.name = { contains: filters.q, mode: 'insensitive' };
+  if (filters.q) {
+    const matches = await db.$queryRaw<{ id: string }[]>`
+      SELECT id FROM "Game" WHERE ${matchesGameName(Prisma.sql`name`, filters.q)}`;
+    where.id = { in: matches.map(({ id }) => id) };
+  }
   if (filters.platform) where.platform = filters.platform;
   const and: Prisma.GameWhereInput[] = shopping ? await notOwned(filters.ownerId as string) : [];
   // Un jeu pas encore classé compte comme Bronze, comme sur sa carte.
@@ -122,14 +128,15 @@ export async function listGames(
   if (and.length) where.AND = and;
 
   // L'identifiant départage les égalités : sans lui, un jeu pourrait passer d'une page à l'autre.
+  const direction = filters.direction ?? (filters.sort === 'nom' ? 'asc' : 'desc');
   const orderBy: Prisma.GameOrderByWithRelationInput[] = [
     filters.sort === 'succes'
-      ? { totalAchievements: 'desc' }
+      ? { totalAchievements: direction }
       : filters.sort === 'recent'
-        ? { updatedAt: 'desc' }
+        ? { updatedAt: direction }
         : filters.sort === 'rarete'
-          ? { tier: { sort: 'desc', nulls: 'last' } }
-          : { name: 'asc' },
+          ? { tier: { sort: direction, nulls: 'last' } }
+          : { name: filters.direction ?? 'asc' },
     { id: 'asc' },
   ];
 

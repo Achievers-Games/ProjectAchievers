@@ -9,15 +9,29 @@ import { getLocale } from '#lib/paraglide/runtime';
 import { requireLogin } from './auth';
 import { db } from './db';
 import { renderMarkdown } from './markdown';
-import { publicUser } from './queries';
+import { publicUser } from './queries/shared';
 import { rateLimit } from './rate-limit';
 import { canTranslate, translateContent, translationQuota } from './translate';
 
 /**
- * La discussion d'une page : sous un succès, ou sous un guide complet de jeu. Le chargement et
+ * La discussion d'une page : sous un succès, un guide de jeu ou un profil. Le chargement et
  * les actions sont les mêmes partout ; seule change la chose commentée.
  */
-export type CommentTarget = { achievementId: string } | { guideId: string };
+export type CommentTarget =
+  | { achievementId: string }
+  | { guideId: string }
+  | { profileId: string }
+  | { unlockOwnerId: string; unlockAchievementId: string };
+
+function visibleCommentAuthor(target: CommentTarget, viewerId: string | undefined) {
+  if ((!('profileId' in target) && !('unlockOwnerId' in target)) || !viewerId) return {};
+  return {
+    author: {
+      blocks: { none: { blockedId: viewerId } },
+      blockedBy: { none: { blockerId: viewerId } },
+    },
+  };
+}
 
 const log = logger('Discussion');
 
@@ -36,6 +50,7 @@ export async function loadComments(
   limit = COMMENTS_STEP,
 ) {
   const viewerId = user?.id;
+  const author = visibleCommentAuthor(target, viewerId);
   const clean = forViewer(user);
   const locale = getLocale();
   const translations = { where: { locale }, select: { contentMd: true }, take: 1 };
@@ -46,13 +61,13 @@ export async function loadComments(
   };
 
   const comments = await db.comment.findMany({
-    where: { ...target, parentId: null, status: { not: 'HIDDEN' } },
+    where: { ...target, ...author, parentId: null, status: { not: 'HIDDEN' } },
     orderBy: { createdAt: 'asc' },
     take: limit + 1,
     include: {
       ...entry,
       replies: {
-        where: { status: { not: 'HIDDEN' } },
+        where: { ...author, status: { not: 'HIDDEN' } },
         orderBy: { createdAt: 'asc' },
         include: entry,
       },
@@ -127,7 +142,13 @@ export function commentActions(target: (event: RequestEvent) => Promise<CommentT
       const parent =
         typeof parentId === 'string' && parentId
           ? await db.comment.findFirst({
-              where: { id: parentId, ...on, parentId: null, status: 'PUBLISHED' },
+              where: {
+                id: parentId,
+                ...on,
+                ...visibleCommentAuthor(on, user.id),
+                parentId: null,
+                status: 'PUBLISHED',
+              },
               select: { id: true },
             })
           : null;
@@ -149,8 +170,15 @@ export function commentActions(target: (event: RequestEvent) => Promise<CommentT
       const user = requireUser(event);
       const parsed = reactionSchema.safeParse(Object.fromEntries(await event.request.formData()));
       if (!parsed.success) return fail(400, { error: m.reaction_invalid() });
+      const on = await target(event);
+      if (!on) return fail(404, { error: m.gone() });
       const exists = await db.comment.count({
-        where: { id: parsed.data.commentId, status: 'PUBLISHED' },
+        where: {
+          id: parsed.data.commentId,
+          ...on,
+          ...visibleCommentAuthor(on, user.id),
+          status: 'PUBLISHED',
+        },
       });
       if (!exists) return fail(404, { error: m.gone() });
 
@@ -169,7 +197,9 @@ export function commentActions(target: (event: RequestEvent) => Promise<CommentT
     deleteComment: async (event: RequestEvent) => {
       const user = requireUser(event);
       const id = String((await event.request.formData()).get('id'));
-      const own = await db.comment.count({ where: { id, authorId: user.id } });
+      const on = await target(event);
+      if (!on) return fail(404, { error: m.gone() });
+      const own = await db.comment.count({ where: { id, ...on, authorId: user.id } });
       if (!own) return fail(404, { error: m.gone() });
 
       // Rien n'est gardé ; les réponses des autres survivent en remontant d'un niveau.
@@ -187,7 +217,12 @@ export function commentActions(target: (event: RequestEvent) => Promise<CommentT
       const on = await target(event);
       const source = on
         ? await db.comment.findFirst({
-            where: { id, ...on, status: 'PUBLISHED' },
+            where: {
+              id,
+              ...on,
+              ...visibleCommentAuthor(on, event.locals.user?.id),
+              status: 'PUBLISHED',
+            },
             select: { contentMd: true },
           })
         : null;
@@ -215,7 +250,12 @@ export function commentActions(target: (event: RequestEvent) => Promise<CommentT
       if (!reason.success) return fail(400, { error: m.report_reason_missing() });
       if (!rateLimit(`signalement:${user.id}`, 5, 60_000))
         return fail(429, { error: m.too_fast() });
-      if (!(await db.comment.count({ where: { id } }))) return fail(404, { error: m.gone() });
+      const on = await target(event);
+      if (!on) return fail(404, { error: m.gone() });
+      const exists = await db.comment.count({
+        where: { id, ...on, ...visibleCommentAuthor(on, user.id), status: 'PUBLISHED' },
+      });
+      if (!exists) return fail(404, { error: m.gone() });
 
       await db.report.upsert({
         where: {

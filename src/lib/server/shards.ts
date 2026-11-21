@@ -1,5 +1,5 @@
 import type { ShardReason } from '#prisma';
-import { capGains, completionShards, GAME_SHARD_CAP, shardsFor, STARTER_CAP } from '#lib/shards';
+import { capGains, GAME_SHARD_CAP, partShards, shardsFor, STARTER_CAP } from '#lib/shards';
 import { logger } from '#lib/logger';
 import { db } from './db';
 import { cardsOpenedAt, shardsStart } from './cards-launch';
@@ -142,23 +142,97 @@ export async function creditUnlocks(
   return restored + (await addEntries(tx, userId, capGains(gains, earned)));
 }
 
+/** Une partie finie d'un jeu : le jeu de base (`part` vide) ou un DLC. */
+interface FinishedPart {
+  gameId: string;
+  part: string;
+  total: number;
+  baseTotal: number;
+  finishedAt: Date;
+  tier: number | null;
+}
+
 /**
- * Le bonus d'un jeu fini depuis `User.shardsFrom`, une seule fois par jeu : un 100 % perdu
- * (une extension ajoute des succès) puis retrouvé ne paie pas deux fois.
+ * La référence du bonus d'une partie. Le jeu de base garde l'identifiant du jeu, celui des bonus
+ * versés avant le découpage par DLC : un jeu déjà payé ne paie pas une seconde fois.
  */
-export async function creditCompletion(
-  tx: Tx,
+const partRef = (gameId: string, part: string) => (part ? `${gameId}:${part}` : gameId);
+
+/**
+ * Les parties entièrement débloquées par le joueur, sur les jeux donnés ou sur toute sa
+ * bibliothèque. Le découpage suit `achievementPart`.
+ */
+async function finishedParts(
+  tx: Tx | typeof db,
   userId: string,
-  gameId: string,
-  finishedAt: Date | null,
-  shardsFrom: Date,
-) {
-  const restored = await restoreShards(tx, userId, [revokedRef('COMPLETION', gameId)]);
-  if (restored || !finishedAt || finishedAt < shardsFrom) return restored;
-  const game = await tx.game.findUnique({ where: { id: gameId }, select: { tier: true } });
-  return addEntries(tx, userId, [
-    { reason: 'COMPLETION', refId: gameId, gameId, shards: completionShards(game?.tier) },
-  ]);
+  gameIds?: string[],
+): Promise<FinishedPart[]> {
+  const rows = await tx.$queryRaw<
+    {
+      gameId: string;
+      part: string;
+      total: number;
+      unlocked: number;
+      finishedAt: Date | null;
+      tier: number | null;
+    }[]
+  >`
+    SELECT a."gameId",
+      CASE WHEN a."groupId" IS NULL OR a."groupId" = 'default' OR a."groupId" LIKE 'set:%'
+        THEN '' ELSE a."groupId" END AS part,
+      count(*)::int AS total, count(ua."achievementId")::int AS unlocked,
+      max(ua."unlockedAt") AS "finishedAt", g.tier
+    FROM "Achievement" a
+    JOIN "Game" g ON g.id = a."gameId"
+    JOIN "UserGame" ug ON ug."gameId" = a."gameId" AND ug."userId" = ${userId}
+    LEFT JOIN "UserAchievement" ua ON ua."achievementId" = a.id AND ua."userId" = ${userId}
+    WHERE ug."unlockedCount" > 0
+      AND (${gameIds ?? null}::text[] IS NULL OR a."gameId" = ANY(${gameIds ?? null}::text[]))
+    GROUP BY a."gameId", part, g.tier`;
+  const baseTotals = new Map(rows.filter((row) => !row.part).map((row) => [row.gameId, row.total]));
+  return rows
+    .filter((row) => row.total > 0 && row.unlocked === row.total && row.finishedAt)
+    .map((row) => ({
+      gameId: row.gameId,
+      part: row.part,
+      total: row.total,
+      baseTotal: baseTotals.get(row.gameId) ?? 0,
+      finishedAt: row.finishedAt!,
+      tier: row.tier,
+    }));
+}
+
+const partValue = (part: FinishedPart) =>
+  partShards(part.tier, part.part, part.total, part.baseTotal);
+
+/**
+ * Les bonus des parties d'un jeu finies depuis `User.shardsFrom` : le jeu de base et chaque DLC
+ * paient séparément, une seule fois chacun. Un 100 % perdu (une mise à jour ajoute des succès)
+ * puis retrouvé ne paie pas deux fois.
+ */
+export async function creditCompletion(tx: Tx, userId: string, gameId: string, shardsFrom: Date) {
+  const parts = await finishedParts(tx, userId, [gameId]);
+  if (!parts.length) return 0;
+  const restored = await restoreShards(
+    tx,
+    userId,
+    parts.map((part) => revokedRef('COMPLETION', partRef(gameId, part.part))),
+  );
+  return (
+    restored +
+    (await addEntries(
+      tx,
+      userId,
+      parts
+        .filter((part) => part.finishedAt >= shardsFrom)
+        .map((part) => ({
+          reason: 'COMPLETION' as const,
+          refId: partRef(gameId, part.part),
+          gameId,
+          shards: partValue(part),
+        })),
+    ))
+  );
 }
 
 /**
@@ -177,13 +251,17 @@ async function historyValue(userId: string, shardsFrom: Date) {
         WHERE e."userId" = ${userId} AND e.reason = 'ACHIEVEMENT' AND e."refId" = ua."achievementId"
       )
     GROUP BY a."gameId"`;
-  const finished = await db.$queryRaw<{ tier: number | null }[]>`
-    SELECT g.tier FROM "UserGame" ug JOIN "Game" g ON g.id = ug."gameId"
-    WHERE ug."userId" = ${userId} AND ug.completion >= 100 AND ug."lastUnlockedAt" < ${shardsFrom}
-      AND NOT EXISTS (
-        SELECT 1 FROM "ShardEntry" e
-        WHERE e."userId" = ${userId} AND e.reason = 'COMPLETION' AND e."refId" = ug."gameId"
-      )`;
+  const [parts, paid] = await Promise.all([
+    finishedParts(db, userId),
+    db.shardEntry.findMany({
+      where: { userId, reason: 'COMPLETION' },
+      select: { refId: true },
+    }),
+  ]);
+  const settled = new Set(paid.map((entry) => entry.refId));
+  const finished = parts.filter(
+    (part) => part.finishedAt < shardsFrom && !settled.has(partRef(part.gameId, part.part)),
+  );
   const achievements = games.reduce(
     (sum, game) =>
       sum +
@@ -193,7 +271,7 @@ async function historyValue(userId: string, shardsFrom: Date) {
       ),
     0,
   );
-  return achievements + finished.reduce((sum, game) => sum + completionShards(game.tier), 0);
+  return achievements + finished.reduce((sum, part) => sum + partValue(part), 0);
 }
 
 /**
@@ -284,11 +362,8 @@ export async function catchUpShards(userId: string) {
             AND e."refId" = 'ACHIEVEMENT:' || ua."achievementId"
         )
       )`;
-  const [games, entries] = await Promise.all([
-    db.userGame.findMany({
-      where: { userId, completion: { gte: 100 } },
-      select: { gameId: true, lastUnlockedAt: true },
-    }),
+  const [parts, entries] = await Promise.all([
+    finishedParts(db, userId),
     db.shardEntry.findMany({
       where: { userId, reason: { in: ['COMPLETION', 'REVOKED'] } },
       select: { reason: true, refId: true },
@@ -300,15 +375,17 @@ export async function catchUpShards(userId: string) {
   for (const entry of entries) {
     if (entry.reason === 'REVOKED') settled.delete(entry.refId.replace(/^COMPLETION:/, ''));
   }
-  const finished = games.filter((game) => !settled.has(game.gameId));
+  const finished = new Set(
+    parts
+      .filter((part) => !settled.has(partRef(part.gameId, part.part)))
+      .map((part) => part.gameId),
+  );
   let gained = 0;
   for (const [gameId, rows] of Map.groupBy(unlocks, (unlock) => unlock.gameId)) {
     gained += await db.$transaction((tx) => creditUnlocks(tx, userId, gameId, rows, from));
   }
-  for (const game of finished) {
-    gained += await db.$transaction((tx) =>
-      creditCompletion(tx, userId, game.gameId, game.lastUnlockedAt, from),
-    );
+  for (const gameId of finished) {
+    gained += await db.$transaction((tx) => creditCompletion(tx, userId, gameId, from));
   }
   return gained;
 }

@@ -1,6 +1,8 @@
 import { json } from '@sveltejs/kit';
+import { Prisma, type Platform } from '#prisma';
 import { db } from '#lib/server/db';
-import { publicUser, visibleGames } from '#lib/server/queries';
+import { publicUser } from '#lib/server/queries';
+import { exactGameName, matchesGameName } from '#lib/server/queries/game-name';
 import type { RequestHandler } from './$types';
 
 const GAMES_SHOWN = 8;
@@ -12,15 +14,13 @@ export const GET: RequestHandler = async ({ url, locals }) => {
   const viewer = locals.user?.id;
 
   const [games, players] = await Promise.all([
-    db.game.findMany({
-      where: {
-        ...visibleGames(locals.user?.showAdult),
-        name: { contains: q, mode: 'insensitive' },
-      },
-      orderBy: { name: 'asc' },
-      take: GAMES_SHOWN,
-      select: { name: true, slug: true, platform: true },
-    }),
+    db.$queryRaw<{ name: string; slug: string; platform: Platform }[]>`
+      SELECT name, slug, platform FROM "Game"
+      WHERE ${matchesGameName(Prisma.sql`name`, q)}
+        ${locals.user?.showAdult ? Prisma.empty : Prisma.sql`AND NOT "adultOnly"`}
+      ORDER BY ${exactGameName(Prisma.sql`name`, q)} DESC, name, id
+      LIMIT ${GAMES_SHOWN}
+    `,
     // Seuls les profils publics se trouvent, et jamais quelqu'un avec qui on s'est bloqué.
     db.user.findMany({
       where: {

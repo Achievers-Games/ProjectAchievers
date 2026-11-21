@@ -1,4 +1,5 @@
 import {
+  getTitleTrophyGroups,
   getTitleTrophies,
   getUserPlayedGames,
   getUserTrophiesForSpecificTitle,
@@ -218,9 +219,12 @@ export const syncPsn: ProviderSync = async ({ userId, account, report, onUnlocke
 
   const previous = await db.userGame.findMany({
     where: { userId, game: { platform: 'PSN' } },
-    select: { unlockedCount: true, game: { select: { platformGameId: true } } },
+    select: {
+      unlockedCount: true,
+      game: { select: { platformGameId: true, achievementGroupsSyncedAt: true } },
+    },
   });
-  const known = new Map(previous.map((p) => [p.game.platformGameId, p.unlockedCount]));
+  const known = new Map(previous.map((p) => [p.game.platformGameId, p]));
   await fillConsoles(
     'PSN',
     new Map(titles.map((t) => [t.npCommunicationId, psnConsole(t.trophyTitlePlatform)])),
@@ -241,7 +245,13 @@ export const syncPsn: ProviderSync = async ({ userId, account, report, onUnlocke
     async (title) => {
       // PSN donne le total obtenu par jeu : inutile de relire un jeu sans nouveauté.
       const earned = Object.values(title.earnedTrophies).reduce((sum, n) => sum + n, 0);
-      if (known.get(title.npCommunicationId) === earned) return;
+      const saved = known.get(title.npCommunicationId);
+      if (
+        saved &&
+        saved.unlockedCount === earned &&
+        (!title.hasTrophyGroups || saved.game.achievementGroupsSyncedAt)
+      )
+        return;
       reread = true;
 
       const authorization = await psnAuthorization();
@@ -257,25 +267,54 @@ export const syncPsn: ProviderSync = async ({ userId, account, report, onUnlocke
 
       // Dans la langue de base du site, comme Steam : sans elle, Sony répond dans celle du compte
       // de service, et les noms ne se comparent plus d'une plateforme à l'autre (familles, guides).
-      const catalog = await getTitleTrophies(authorization, title.npCommunicationId, 'all', {
+      const catalogOptions = {
         ...options,
         headerOverrides: { 'Accept-Language': PSN_LANGUAGES[baseLocale] },
-      });
-      const progress = await getUserTrophiesEarnedForTitle(
-        authorization,
-        accountId,
-        title.npCommunicationId,
-        'all',
-        options,
-      );
+      };
+      const [catalog, progress] = await Promise.all([
+        getTitleTrophies(authorization, title.npCommunicationId, 'all', catalogOptions),
+        getUserTrophiesEarnedForTitle(
+          authorization,
+          accountId,
+          title.npCommunicationId,
+          'all',
+          options,
+        ),
+      ]);
       assertPsnResponse(catalog);
       assertPsnResponse(progress);
 
+      const groups = catalog.hasTrophyGroups
+        ? await getTitleTrophyGroups(authorization, title.npCommunicationId, catalogOptions)
+            .then((response) => {
+              assertPsnResponse(response);
+              return new Map(
+                response.trophyGroups.map((group) => [group.trophyGroupId, group.trophyGroupName]),
+              );
+            })
+            .catch((cause) => {
+              log.warn('Groupes de trophées indisponibles :', cause);
+              return null;
+            })
+        : null;
       const rates = new Map(progress.trophies.map((t) => [t.trophyId, t.trophyEarnedRate]));
       await saveAchievements(
         game.id,
-        catalog.trophies.map((t) => mapTrophy({ ...t, trophyEarnedRate: rates.get(t.trophyId) })),
+        catalog.trophies.map((t) => ({
+          ...mapTrophy({ ...t, trophyEarnedRate: rates.get(t.trophyId) }),
+          groupId: t.trophyGroupId,
+          groupName: t.trophyGroupId ? groups?.get(t.trophyGroupId) : undefined,
+        })),
       );
+      if (
+        groups?.size &&
+        catalog.trophies.every((t) => t.trophyGroupId && groups.has(t.trophyGroupId))
+      ) {
+        await db.game.update({
+          where: { id: game.id },
+          data: { achievementGroupsSyncedAt: new Date() },
+        });
+      }
 
       const unlocks = progress.trophies
         .filter((t) => t.earned && t.earnedDateTime)

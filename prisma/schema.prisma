@@ -117,6 +117,17 @@ enum ReactionType {
   FUNNY
 }
 
+enum ActivityEmoji {
+  CLAP
+  FIRE
+  HEART
+  WOW
+  LAUGH
+  TROPHY
+  STRONG
+  SAD
+}
+
 enum FeedbackKind {
   BUG
   IDEA
@@ -190,24 +201,27 @@ model User {
   createdAt           DateTime     @default(now())
   updatedAt           DateTime     @updatedAt
 
-  accounts      LinkedAccount[]
-  partnerLinks  PartnerLink[]
-  oauthGrants   OAuthGrant[]
-  partnerEvents PartnerEvent[]
-  sessions      Session[]
-  games         UserGame[]
-  achievements  UserAchievement[]
-  steamReviews  SteamIntegrityReview[]
-  guides        Guide[]
-  guideVotes    GuideVote[]
-  guideChecks   GuideCheck[]
-  comments      Comment[]
-  reactions     CommentReaction[]
-  reports       Report[]
-  syncRuns      SyncRun[]
-  frames        UserFrame[]
-  siteUnlocks   SiteUnlock[]
-  pinned        PinnedGame[]
+  accounts        LinkedAccount[]
+  partnerLinks    PartnerLink[]
+  oauthGrants     OAuthGrant[]
+  partnerEvents   PartnerEvent[]
+  sessions        Session[]
+  games           UserGame[]
+  achievements    UserAchievement[]
+  steamReviews    SteamIntegrityReview[]
+  guides          Guide[]
+  guideVotes      GuideVote[]
+  guideChecks     GuideCheck[]
+  comments        Comment[]              @relation("CommentAuthor")
+  profileComments Comment[]              @relation("ProfileComments")
+  reactions       CommentReaction[]
+  liveReactions   LiveReaction[]
+  unlockReactions UnlockReaction[]
+  reports         Report[]
+  syncRuns        SyncRun[]
+  frames          UserFrame[]
+  siteUnlocks     SiteUnlock[]
+  pinned          PinnedGame[]
 
   friendRequests Friendship[]         @relation("FriendRequester")
   friendReceived Friendship[]         @relation("FriendAddressee")
@@ -620,45 +634,46 @@ model PsnVerification {
 
 model Game {
   /// Rareté commune à la famille, de 1 à 6 : moyenne du taux le plus rare par plateforme.
-  tier              Int?
-  id                String            @id @default(cuid())
-  platform          Platform
-  platformGameId    String
+  tier                      Int?
+  id                        String            @id @default(cuid())
+  platform                  Platform
+  platformGameId            String
   /// Les consoles d'une liste PSN (« PS4/PS5 ») : chacune compte pour un exemplaire à part.
-  console           String?
-  pinnedBy          PinnedGame[]
-  backgroundOf      User[]            @relation("ProfileBackground")
-  bannerOf          User[]            @relation("ProfileBanner")
-  translations      GameTranslation[]
-  name              String
-  slug              String            @unique
-  coverUrl          String?
-  headerUrl         String?
-  totalAchievements Int               @default(0)
-  schemaSyncedAt    DateTime?
+  console                   String?
+  pinnedBy                  PinnedGame[]
+  backgroundOf              User[]            @relation("ProfileBackground")
+  bannerOf                  User[]            @relation("ProfileBanner")
+  translations              GameTranslation[]
+  name                      String
+  slug                      String            @unique
+  coverUrl                  String?
+  headerUrl                 String?
+  totalAchievements         Int               @default(0)
+  schemaSyncedAt            DateTime?
+  achievementGroupsSyncedAt DateTime?
   /// Classification Steam : nudité fréquente ou contenu réservé aux adultes.
-  adultOnly         Boolean           @default(false)
-  contentCheckedAt  DateTime?
+  adultOnly                 Boolean           @default(false)
+  contentCheckedAt          DateTime?
   /// Étiquettes Steam les plus votées, par ordre de poids : les genres des succès du site.
-  tags              Int[]             @default([])
-  tagsCheckedAt     DateTime?
+  tags                      Int[]             @default([])
+  tagsCheckedAt             DateTime?
   /// Le fond de la page boutique Steam (ou, à défaut, une capture), pour un fond plein écran ; un
   /// jeu hors Steam prend celui de sa version Steam.
-  artUrl            String?
+  artUrl                    String?
   /// La grande image de bibliothèque Steam (1920 × 620), un bandeau sans logo fait pour une
   /// bannière, à sa vraie adresse : les jeux récents n'ont plus l'adresse classique.
-  heroUrl           String?
-  artCheckedAt      DateTime?
+  heroUrl                   String?
+  artCheckedAt              DateTime?
   /// Les succès manquables du jeu ont été relevés par un guide officiel.
-  guideReviewedAt   DateTime?
+  guideReviewedAt           DateTime?
   /// Clé commune aux versions d'un même jeu sur plusieurs plateformes.
-  familyKey         String?
+  familyKey                 String?
   /// Corrigée par la modération : la synchronisation n'y touche plus.
-  familyLocked      Boolean           @default(false)
+  familyLocked              Boolean           @default(false)
   /// Rattaché à sa famille par une liste de succès identique : le nom ne la recalcule plus.
-  familyMatched     Boolean           @default(false)
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
+  familyMatched             Boolean           @default(false)
+  createdAt                 DateTime          @default(now())
+  updatedAt                 DateTime          @updatedAt
 
   achievements      Achievement[]
   steamReviews      SteamIntegrityReview[]
@@ -710,6 +725,8 @@ model Achievement {
   hidden                Boolean    @default(false)
   trophyType            TrophyType @default(ACHIEVEMENT)
   globalRarity          Float?
+  groupId               String?
+  groupName             String?
   points                Int        @default(10)
   /// Peut être perdu pour la partie en cours : signalé par un guide officiel.
   missable              Boolean    @default(false)
@@ -729,30 +746,31 @@ model Achievement {
 
 model UserGame {
   userId                 String
-  user                   User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                   User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
   gameId                 String
-  game                   Game      @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  unlockedCount          Int       @default(0)
-  totalCount             Int       @default(0)
-  completion             Float     @default(0)
-  platinum               Boolean   @default(false)
-  playtimeMinutes        Int       @default(0)
-  ps4PlaytimeMinutes     Int       @default(0)
-  ps5PlaytimeMinutes     Int       @default(0)
+  game                   Game                   @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  unlockedCount          Int                    @default(0)
+  totalCount             Int                    @default(0)
+  completion             Float                  @default(0)
+  platinum               Boolean                @default(false)
+  playtimeMinutes        Int                    @default(0)
+  ps4PlaytimeMinutes     Int                    @default(0)
+  ps5PlaytimeMinutes     Int                    @default(0)
   /// Temps joué sans connexion à Steam : ses succès arrivent ensuite d'un seul coup.
-  offlinePlaytimeMinutes Int       @default(0)
+  offlinePlaytimeMinutes Int                    @default(0)
   lastPlayedAt           DateTime?
   /// Dernière lecture réussie des succès chez le fournisseur, distincte du temps de jeu.
   achievementsCheckedAt  DateTime?
   lastUnlockedAt         DateTime?
-  updatedAt              DateTime  @updatedAt
+  updatedAt              DateTime               @updatedAt
   /// Retiré de la bibliothèque par le joueur, sans toucher à sa progression.
-  hidden                 Boolean   @default(false)
+  hidden                 Boolean                @default(false)
   /// Une lecture complète n'a plus montré certains succès enregistrés : ils ne sont retirés que
   /// si une seconde lecture, au moins une heure plus tard, le confirme.
   removalSeenAt          DateTime?
   reportedUnlockedCount  Int?
   completionSamples      GameCompletionSample[]
+  liveReactions          LiveReaction[]
 
   @@id([userId, gameId])
   @@index([userId, lastUnlockedAt])
@@ -761,14 +779,14 @@ model UserGame {
 }
 
 model GameCompletionSample {
-  userId         String
-  gameId         String
-  progress       UserGame @relation(fields: [userId, gameId], references: [userId, gameId], onDelete: Cascade)
+  userId      String
+  gameId      String
+  progress    UserGame @relation(fields: [userId, gameId], references: [userId, gameId], onDelete: Cascade)
   /// Empreinte de la liste de succès de cette version du jeu.
-  scope          String
-  minutes        Int
-  completedAt    DateTime
-  observedAt     DateTime
+  scope       String
+  minutes     Int
+  completedAt DateTime
+  observedAt  DateTime
 
   @@id([userId, gameId, scope])
   @@index([gameId, scope])
@@ -835,15 +853,17 @@ model SteamReviewProof {
 
 model UserAchievement {
   userId        String
-  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   achievementId String
-  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  achievement   Achievement      @relation(fields: [achievementId], references: [id], onDelete: Cascade)
   unlockedAt    DateTime
   /// Arrivée sur le site : la synchronisation lit un succès des heures après son déblocage, et
   /// c'est elle qui dit s'il est nouveau pour les notifications.
-  createdAt     DateTime    @default(now())
+  createdAt     DateTime         @default(now())
   /// Déjà fêté sur une page du joueur : un autre appareil ne le rejoue pas à la connexion.
   celebratedAt  DateTime?
+  discussion    Comment[]
+  reactions     UnlockReaction[]
 
   @@id([userId, achievementId])
   @@index([unlockedAt])
@@ -925,29 +945,60 @@ model GuideVote {
 }
 
 model Comment {
-  id            String        @id @default(cuid())
-  /// Sous un succès, ou sous un guide complet de jeu : l'un ou l'autre, jamais les deux.
-  achievementId String?
-  achievement   Achievement?  @relation(fields: [achievementId], references: [id], onDelete: Cascade)
-  guideId       String?
-  guide         Guide?        @relation(fields: [guideId], references: [id], onDelete: Cascade)
-  authorId      String
-  author        User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  parentId      String?
-  parent        Comment?      @relation("Replies", fields: [parentId], references: [id], onDelete: Cascade)
-  replies       Comment[]     @relation("Replies")
-  contentMd     String
+  id                  String           @id @default(cuid())
+  /// La discussion cible un succès, un guide de jeu ou un profil.
+  achievementId       String?
+  achievement         Achievement?     @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  guideId             String?
+  guide               Guide?           @relation(fields: [guideId], references: [id], onDelete: Cascade)
+  profileId           String?
+  profile             User?            @relation("ProfileComments", fields: [profileId], references: [id], onDelete: Cascade)
+  unlockOwnerId       String?
+  unlockAchievementId String?
+  unlock              UserAchievement? @relation(fields: [unlockOwnerId, unlockAchievementId], references: [userId, achievementId], onDelete: Cascade)
+  authorId            String
+  author              User             @relation("CommentAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  parentId            String?
+  parent              Comment?         @relation("Replies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies             Comment[]        @relation("Replies")
+  contentMd           String
   /// Langue du site de l'auteur à la publication ; vide pour les textes plus anciens.
-  locale        String?
-  status        ContentStatus @default(PUBLISHED)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  locale              String?
+  status              ContentStatus    @default(PUBLISHED)
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
 
   reactions    CommentReaction[]
   translations ContentTranslation[]
 
   @@index([achievementId, createdAt])
   @@index([guideId, createdAt])
+  @@index([profileId, createdAt])
+  @@index([unlockOwnerId, unlockAchievementId, createdAt])
+}
+
+model LiveReaction {
+  ownerId String
+  gameId  String
+  card    UserGame      @relation(fields: [ownerId, gameId], references: [userId, gameId], onDelete: Cascade)
+  userId  String
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emoji   ActivityEmoji
+
+  @@id([ownerId, gameId, userId])
+  @@index([userId])
+}
+
+model UnlockReaction {
+  ownerId       String
+  achievementId String
+  unlock        UserAchievement @relation(fields: [ownerId, achievementId], references: [userId, achievementId], onDelete: Cascade)
+  userId        String
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emoji         ActivityEmoji
+
+  @@id([ownerId, achievementId, userId])
+  @@index([userId])
 }
 
 /// Traductions automatiques, supprimées avec le texte d'origine.

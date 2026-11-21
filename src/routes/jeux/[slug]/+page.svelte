@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { unlockHref } from '#lib/activity';
   import { m } from '#lib/paraglide/messages';
   import { enhance } from '$app/forms';
   import { goto } from '$app/navigation';
@@ -17,7 +18,6 @@
   import AchievementIcon from '#lib/components/AchievementIcon.svelte';
   import CompleteBadge from '#lib/components/CompleteBadge.svelte';
   import Progress from '#lib/components/Progress.svelte';
-  import TrophyBadge from '#lib/components/TrophyBadge.svelte';
   import { tilt } from '#lib/actions/tilt';
   import { submitWithToast } from '#lib/forms';
   import { HOLO_TIER } from '#lib/collection';
@@ -26,7 +26,7 @@
   import Seo from '#lib/components/Seo.svelte';
   import GameGuides from './GameGuides.svelte';
   import SteamProofForm from './SteamProofForm.svelte';
-  import { editionLabel, formatDate, formatPercent, formatRarity } from '#lib/labels';
+  import { editionLabel, formatDateTime, formatPercent, formatRarity } from '#lib/labels';
   import { getLocale } from '#lib/paraglide/runtime';
   import { isComplete } from '#lib/collection';
   import { compareBucket } from '#lib/compare';
@@ -280,7 +280,9 @@
               })}
               class="btn h-8"
             >
-              {m.version_of({ platform: editionLabel(version) })}
+              {version.name !== data.game.name
+                ? `${version.name} · ${editionLabel(version)}`
+                : m.version_of({ platform: editionLabel(version) })}
               {#if version.completion !== null}· {formatPercent(version.completion)}{/if}
             </a>
           {/each}
@@ -432,6 +434,19 @@
             >
           {/if}
         </p>
+        {#if data.parts.length}
+          <ul class="tabular space-y-0.5 text-sm" data-testid="game-player-parts">
+            {#each data.parts as part (part.id)}
+              <li class="flex gap-2">
+                <span class="truncate">{part.id ? `DLC · ${part.name}` : part.name}</span>
+                <span class="ml-auto text-muted">
+                  {part.unlocked} / {part.total}
+                  {#if part.unlocked === part.total}· {formatPercent(100)}{/if}
+                </span>
+              </li>
+            {/each}
+          </ul>
+        {/if}
       </div>
     </section>
   {/if}
@@ -555,9 +570,22 @@
           </button>
         {/each}
       </div>
+      {#if data.groups.length > 1}
+        <select
+          class="input w-auto max-w-full"
+          aria-label={m.achievement_group_all()}
+          value={data.group ?? ''}
+          onchange={(event) => changeAchievements({ groupe: event.currentTarget.value || null })}
+        >
+          <option value="">{m.achievement_group_all()}</option>
+          {#each data.groups as group (group.id)}
+            <option value={group.id}>{group.name}</option>
+          {/each}
+        </select>
+      {/if}
       {#if secrets}
         <a
-          href={gameHref(data.game.slug, { avec: withHandle, caches: !data.revealed })}
+          href={achievementHref({ caches: data.revealed ? null : '1' })}
           rel="nofollow"
           data-sveltekit-reset="false"
           class="btn h-9"
@@ -684,20 +712,30 @@
               </span>
             {/if}
             <div class="shrink-0 text-right">
-              <TrophyBadge type={achievement.trophyType} />
               <p class="tabular text-xs text-muted">
                 {#if achievement.unlockedAt}
                   <span class="font-semibold text-success"
-                    >{formatDate(achievement.unlockedAt)}</span
+                    >{formatDateTime(achievement.unlockedAt)}</span
                   >
                 {:else if achievement.excludedAt}
-                  {formatDate(achievement.excludedAt)}
-                {:else if achievement.globalRarity !== null}
-                  {m.percent({ value: formatRarity(achievement.globalRarity) })}
+                  {formatDateTime(achievement.excludedAt)}
                 {/if}
               </p>
+              {#if achievement.globalRarity !== null}
+                <p class="tabular text-xs text-muted">
+                  {m.achievement_rarity({ value: formatRarity(achievement.globalRarity) })}
+                </p>
+              {/if}
             </div>
           </a>
+          {#if data.unlockOwner && achievement.unlockedAt && !achievement.masked}
+            <a
+              href={unlockHref(data.unlockOwner, achievement.id)}
+              class="mb-2 ml-3 inline-block rounded px-2 py-1 text-xs text-muted hover:bg-raised hover:text-ink"
+            >
+              {m.unlock_discussion()}
+            </a>
+          {/if}
         </li>
       {/each}
     </ul>

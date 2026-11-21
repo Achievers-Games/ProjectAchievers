@@ -428,10 +428,11 @@ export async function runLiveGame(
   if (gained === 0) return 0;
   invalidatePublicCache();
 
-  const achievements = fresh.slice(0, MAX_POPS).map(({ id, name, iconUrl }) => ({
+  const achievements = fresh.slice(0, MAX_POPS).map(({ id, name, iconUrl, globalRarity }) => ({
     id,
     title: name,
     icon: iconUrl,
+    rarity: globalRarity,
     game: owned.game.name,
     slug: owned.game.slug,
   }));

@@ -20,6 +20,9 @@ test.describe('succès du site', () => {
       await expect(page.locator('main li details').first()).toBeVisible({ timeout: 1000 });
     }).toPass();
     await ready(page);
+    const withdrawal = page.locator('li[data-codes~="withdrawal"]');
+    await withdrawal.getByRole('button', { name: /après 30 jours/ }).click();
+    await expect(withdrawal.locator('[aria-live="polite"]')).toContainText('30 jours');
     // Un premier échec, comme pendant un redéploiement : « Réessayer » relance la demande.
     // Une réponse illisible plutôt qu'une coupure, qui journaliserait une erreur réseau.
     let failed = false;

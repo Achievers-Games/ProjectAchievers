@@ -185,6 +185,36 @@ describe('éclats gagnés à la synchro', () => {
     expect(await balance(userId)).toBe(113);
   });
 
+  it('paie le jeu de base et chaque DLC séparément, au prorata de leurs succès', async () => {
+    const { id: userId } = await player();
+    const { id: gameId } = await game([80, 80, 80, 80, 80, 80, 80], 4);
+    const grouped = [0, 1, 2, 3, 4, 5, 6].map((index) => ({
+      platformAchievementId: `a${index}`,
+      name: `S${index}`,
+      description: '',
+      hidden: false,
+      trophyType: 'ACHIEVEMENT' as const,
+      globalRarity: 80,
+      // Quatre succès de base, deux dans un DLC, un dans un ensemble Steam hors DLC.
+      ...(index >= 4 && index < 6 && { groupId: 'dlc:7', groupName: 'Extension' }),
+      ...(index === 6 && { groupId: 'set:3', groupName: 'Mise à jour' }),
+    }));
+    await saveAchievements(gameId, grouped);
+    await db.game.update({ where: { id: gameId }, data: { tier: 4 } });
+
+    // Le jeu de base fini sans le DLC paie son bonus entier.
+    await saveProgress(userId, gameId, unlocks([0, 1, 2, 3, 6], after));
+    expect(await balance(userId)).toBe(5 + 110);
+
+    // Le DLC fini paie la part de ses succès : 110 × 2 / 5.
+    await saveProgress(userId, gameId, unlocks([0, 1, 2, 3, 4, 5, 6], after));
+    expect(await balance(userId)).toBe(7 + 110 + 44);
+
+    // Une synchro rejouée ne paie rien de plus.
+    await saveProgress(userId, gameId, unlocks([0, 1, 2, 3, 4, 5, 6], after));
+    expect(await ledger(userId)).toBe(161);
+  });
+
   it('ne paie pas le bonus d’un jeu fini avant le départ', async () => {
     const { id: userId } = await player();
     const { id: gameId } = await game([80], 6);

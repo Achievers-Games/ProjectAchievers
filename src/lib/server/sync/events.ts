@@ -10,6 +10,8 @@ export interface UnlockPop {
   title: string;
   icon: string | null;
   game: string;
+  /** La part de joueurs qui l'ont, en %, quand la plateforme la donne. */
+  rarity?: number | null;
   /** L'adresse du jeu : plusieurs succès d'un même jeu se fêtent ensemble et mènent à lui. */
   slug: string;
 }

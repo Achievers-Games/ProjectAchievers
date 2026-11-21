@@ -96,6 +96,11 @@ function cached<T extends Intl.NumberFormat | Intl.DateTimeFormat | Intl.Relativ
 const numberFormat = () => cached('number', () => new Intl.NumberFormat(getLocale()));
 const dateFormat = () =>
   cached('date', () => new Intl.DateTimeFormat(getLocale(), { dateStyle: 'medium' }));
+const dateTimeFormat = () =>
+  cached(
+    'datetime',
+    () => new Intl.DateTimeFormat(getLocale(), { dateStyle: 'medium', timeStyle: 'medium' }),
+  );
 const decimalFormat = () =>
   cached(
     'decimal',
@@ -130,6 +135,8 @@ export const syncErrorText = (code: string | null | undefined) =>
 
 export const formatNumber = (value: number) => numberFormat().format(value);
 export const formatDate = (value: Date | string) => dateFormat().format(new Date(value));
+/** Le jour et l'heure à la seconde, pour dater un déblocage. */
+export const formatDateTime = (value: Date | string) => dateTimeFormat().format(new Date(value));
 export const formatPercent = (value: number) => m.percent({ value: Math.round(value) });
 export const formatRarity = (value: number) => decimalFormat().format(value);
 

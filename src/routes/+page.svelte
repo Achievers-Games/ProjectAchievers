@@ -4,6 +4,10 @@
   import { m } from '#lib/paraglide/messages';
   import Seo from '#lib/components/Seo.svelte';
   import { page } from '$app/state';
+  import { goto } from '$app/navigation';
+  import MessageCircle from '@lucide/svelte/icons/message-circle';
+  import { unlockHref } from '#lib/activity';
+  import AchievementIcon from '#lib/components/AchievementIcon.svelte';
   import Empty from '#lib/components/Empty.svelte';
   import Avatar from '#lib/components/Avatar.svelte';
   import GameCard from '#lib/components/GameCard.svelte';
@@ -17,6 +21,7 @@
   import ProviderIcon from '#lib/components/ProviderIcon.svelte';
   import StatGrid from '#lib/components/StatGrid.svelte';
   import SteamReviewBanner from '#lib/components/SteamReviewBanner.svelte';
+  import UnlockDiscussion from '#lib/components/UnlockDiscussion.svelte';
 
   let { data } = $props();
   /**
@@ -24,6 +29,25 @@
    * ne doit pas changer sous les yeux du joueur.
    */
   const backdrop = untrack(() => data.backdrop);
+  let unlockDialog = $state<HTMLDialogElement>();
+  const threadQuery = $derived(
+    data.thread ? unlockQuery(data.thread.user.handle, data.thread.achievementId) : '',
+  );
+
+  function unlockQuery(handle: string, id: string) {
+    return `ami=${encodeURIComponent(handle)}&deblocage=${encodeURIComponent(id)}`;
+  }
+
+  function openUnlock(event: MouseEvent, handle: string, id: string) {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
+      return;
+    event.preventDefault();
+    void goto(`/?${unlockQuery(handle, id)}`, { replace: true, reset: false });
+  }
+
+  $effect(() => {
+    if (data.thread && unlockDialog?.isConnected && !unlockDialog.open) unlockDialog.showModal();
+  });
 </script>
 
 <Seo
@@ -64,7 +88,7 @@
       <MissingPlatforms platforms={data.unlinked} />
     {/if}
 
-    <div class="home-panel"><LiveCards initial={data.cards} /></div>
+    <div class="home-panel"><LiveCards initial={data.cards} signedIn /></div>
 
     <section class="home-panel" aria-labelledby="amis-jouent">
       <div class="flex items-baseline justify-between gap-4">
@@ -99,6 +123,59 @@
         <p class="text-sm text-muted">{m.home_friends_playing_empty()}</p>
       {/if}
     </section>
+
+    <section class="home-panel space-y-3" aria-labelledby="amis-succes">
+      <h2 id="amis-succes">{m.home_friend_unlocks()}</h2>
+      {#if data.unlocks.length}
+        <ul class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {#each data.unlocks as row (`${row.user.handle}/${row.achievementId}`)}
+            <li class="card">
+              <a
+                href={unlockHref(row.user.handle, row.achievementId)}
+                onclick={(event) => openUnlock(event, row.user.handle, row.achievementId)}
+                class="flex items-center gap-2 p-2 transition-colors hover:bg-raised"
+              >
+                {#if row.iconUrl}<AchievementIcon src={row.iconUrl} size={36} />{/if}
+                <span class="min-w-0 flex-1">
+                  <span class="block truncate text-sm font-medium"
+                    >{row.name ?? m.achievement_hidden()}</span
+                  >
+                  <span class="block truncate text-xs text-muted"
+                    >{row.user.displayName} · {row.game.name}</span
+                  >
+                </span>
+                <span
+                  class="flex shrink-0 items-center gap-1 text-xs text-muted"
+                  role="img"
+                  aria-label={m.unlock_comments({ count: row.count })}
+                >
+                  <MessageCircle size={14} aria-hidden="true" />
+                  {row.count}
+                </span>
+              </a>
+            </li>
+          {/each}
+        </ul>
+      {:else}
+        <p class="text-sm text-muted">{m.home_friend_unlocks_empty()}</p>
+      {/if}
+    </section>
+
+    {#if data.thread}
+      <dialog
+        bind:this={unlockDialog}
+        aria-labelledby="unlock-dialog-title"
+        onclose={() => void goto('/', { replace: true, reset: false })}
+        class="card fixed inset-0 m-auto max-h-[85dvh] w-[min(42rem,calc(100%-1rem))] overflow-auto p-4 backdrop:bg-black/70"
+      >
+        <form method="dialog" class="mb-2 flex justify-end">
+          <button class="btn">{m.reveal_close()}</button>
+        </form>
+        {#key threadQuery}
+          <UnlockDiscussion thread={data.thread} actionQuery={threadQuery} modal />
+        {/key}
+      </dialog>
+    {/if}
 
     {#if data.home.almost.length}
       <section class="home-panel" aria-labelledby="presque">

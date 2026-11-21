@@ -1,21 +1,25 @@
 <script lang="ts">
   import { m } from '#lib/paraglide/messages';
   import Seo from '#lib/components/Seo.svelte';
-  import { goto, snapshot } from '$app/navigation';
+  import { afterNavigate, goto, snapshot } from '$app/navigation';
   import { page } from '$app/state';
+  import { onDestroy, untrack } from 'svelte';
+  import ArrowDown from '@lucide/svelte/icons/arrow-down';
+  import ArrowUp from '@lucide/svelte/icons/arrow-up';
   import LayoutGrid from '@lucide/svelte/icons/layout-grid';
   import List from '@lucide/svelte/icons/list';
   import ShoppingCart from '@lucide/svelte/icons/shopping-cart';
   import Empty from '#lib/components/Empty.svelte';
   import GameCard from '#lib/components/GameCard.svelte';
   import TierLegend from '#lib/components/TierLegend.svelte';
-  import { PLATFORM_LABELS, tierLabel, tierRule } from '#lib/labels';
+  import { editionLabel, PLATFORM_LABELS, tierLabel, tierRule } from '#lib/labels';
   import { TIERS, TIER_SLUGS } from '#lib/collection';
   import type { GameListItem } from '#lib/server/queries';
 
   let { data } = $props();
 
-  let timer: ReturnType<typeof setTimeout>;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let searchDraft = $state(untrack(() => data.params.q ?? ''));
 
   const heading = $derived.by(() => {
     if (data.player) return m.games_of({ name: data.player.displayName });
@@ -57,7 +61,9 @@
     try {
       const response = await fetch(`/api${hrefWith({ page: String(nextPage) })}`, { signal });
       if (!response.ok) throw new Error(`Réponse ${response.status}`);
-      extra = [...extra, ...((await response.json()) as GameListItem[])];
+      const results = (await response.json()) as GameListItem[];
+      if (signal.aborted) return;
+      extra = [...extra, ...results];
       loadedPages += 1;
       loading = false;
     } catch {
@@ -97,7 +103,11 @@
   function hrefWith(changes: Record<string, string | null>) {
     // eslint-disable-next-line svelte/prefer-svelte-reactivity -- copie locale, jamais observée
     const next = new URLSearchParams([...page.url.searchParams]);
-    if (!('page' in changes)) next.delete('page');
+    if (!('page' in changes)) {
+      next.delete('page');
+      if (searchDraft.trim()) next.set('q', searchDraft.trim());
+      else next.delete('q');
+    }
     for (const [key, value] of Object.entries(changes)) {
       if (value) next.set(key, value);
       else next.delete(key);
@@ -109,11 +119,25 @@
   const apply = (changes: Record<string, string | null>) =>
     goto(hrefWith(changes), { replace: true, reset: false });
 
-  function onSearch(event: Event) {
-    const value = (event.currentTarget as HTMLInputElement).value;
+  function onSearch(event: Event & { currentTarget: HTMLInputElement }) {
+    searchDraft = event.currentTarget.value;
     clearTimeout(timer);
-    timer = setTimeout(() => apply({ q: value || null }), 200);
+    if (event instanceof InputEvent && event.isComposing) return;
+    timer = setTimeout(() => {
+      const query = searchDraft.trim().slice(0, 80);
+      void apply({ q: query || null });
+    }, 300);
   }
+
+  afterNavigate(({ type }) => {
+    if (type === 'goto') return;
+    clearTimeout(timer);
+    searchDraft = data.params.q ?? '';
+  });
+  onDestroy(() => {
+    clearTimeout(timer);
+    request?.abort();
+  });
 
   const collections = [
     { value: null, label: m.games_all_mine() },
@@ -132,7 +156,9 @@
 
   /** Chaque groupe de filtres est indépendant : changer l'un garde les autres. */
   const filtered = $derived(
-    ['q', 'plateforme', 'filtre', 'niveau', 'tri'].some((key) => page.url.searchParams.has(key)),
+    ['q', 'plateforme', 'filtre', 'niveau', 'tri', 'ordre'].some((key) =>
+      page.url.searchParams.has(key),
+    ),
   );
   const clearHref = $derived.by(() => {
     const vue = page.url.searchParams.get('vue');
@@ -191,8 +217,9 @@
   <div class="flex flex-wrap items-center gap-2">
     <input
       type="search"
-      value={data.params.q ?? ''}
+      value={searchDraft}
       oninput={onSearch}
+      maxlength="80"
       placeholder={m.games_filter()}
       aria-label={m.games_filter_label()}
       class="input sm:w-64"
@@ -248,13 +275,11 @@
         <a
           href={hrefWith({ niveau: data.params.niveau === item.value ? null : item.value })}
           data-sveltekit-reset="false"
-          data-tier={item.tier}
           title={tierRule(item.tier)}
           aria-current={data.params.niveau === item.value ? 'true' : undefined}
-          class="stat-value px-3 py-1.5 !text-sm transition-colors"
-          class:bg-raised={data.params.niveau === item.value}
+          class="tier-filter px-3 py-1.5 transition-colors"
         >
-          {item.label}
+          <span class="stat-value !text-sm" data-tier={item.tier}>{item.label}</span>
         </a>
       {/each}
     </div>
@@ -269,7 +294,7 @@
         class="input w-auto"
         aria-label={m.games_sort()}
         value={data.params.tri}
-        onchange={(event) => apply({ tri: event.currentTarget.value })}
+        onchange={(event) => apply({ tri: event.currentTarget.value, ordre: null })}
       >
         <option value="nom">{m.sort_name()}</option>
         <option value="succes">{m.sort_achievements()}</option>
@@ -277,6 +302,19 @@
         <option value="rarete">{m.sort_tier()}</option>
         {#if data.params.mine}<option value="progression">{m.sort_progress()}</option>{/if}
       </select>
+      <a
+        href={hrefWith({ ordre: data.params.ordre === 'asc' ? 'desc' : 'asc' })}
+        rel="nofollow"
+        data-sveltekit-reset="false"
+        class="btn w-9 px-0"
+        aria-label={data.params.ordre === 'asc' ? m.sort_descending() : m.sort_ascending()}
+        title={data.params.ordre === 'asc' ? m.sort_descending() : m.sort_ascending()}
+      >
+        {#if data.params.ordre === 'asc'}<ArrowUp size={16} aria-hidden="true" />{:else}<ArrowDown
+            size={16}
+            aria-hidden="true"
+          />{/if}
+      </a>
       <a
         href={hrefWith({ vue: data.params.vue === 'grille' ? 'liste' : null })}
         rel="nofollow"
@@ -349,6 +387,22 @@
               </a>
             {/if}
           </div>
+        {:else if game.versions.length > 1}
+          <div class="space-y-1">
+            <GameCard {...card} />
+            <ul class="flex flex-wrap gap-1">
+              {#each game.versions as version (version.slug)}
+                <li class="min-w-0 max-w-full">
+                  <a
+                    class="block rounded border border-line px-2 py-1 text-xs text-muted hover:bg-raised hover:text-ink"
+                    href={`/jeux/${version.slug}${data.player ? `?joueur=${encodeURIComponent(data.player.handle)}` : ''}`}
+                  >
+                    {version.name} · {editionLabel(version)}
+                  </a>
+                </li>
+              {/each}
+            </ul>
+          </div>
         {:else}
           <GameCard {...card} />
         {/if}
@@ -375,3 +429,13 @@
     {/key}
   {/if}
 </div>
+
+<style>
+  .tier-filter:hover,
+  .tier-filter[aria-current='true'] {
+    background-color: rgb(var(--raised));
+  }
+  .tier-filter[aria-current='true'] {
+    box-shadow: inset 0 -2px rgb(var(--ink));
+  }
+</style>

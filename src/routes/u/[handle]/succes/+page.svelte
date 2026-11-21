@@ -1,7 +1,7 @@
 <script lang="ts">
   import SiteBadge from '#lib/components/SiteBadge.svelte';
   import StepDots from '#lib/components/StepDots.svelte';
-  import { formatDate, formatNumber } from '#lib/labels';
+  import { formatDateTime, formatNumber } from '#lib/labels';
   import { m } from '#lib/paraglide/messages';
   import { page } from '$app/state';
   import { tick } from 'svelte';
@@ -103,9 +103,6 @@
     <div class="min-w-0">
       <p class="site-card-title font-medium">{item.title ?? m.ach_secret_title()}</p>
       <p class="text-sm text-muted">{item.text ?? m.ach_secret_text()}</p>
-      {#if item.steps.length}
-        <StepDots steps={item.steps} />
-      {/if}
       {#if item.next}
         <p class="mt-1 text-xs text-muted">
           {m.ach_next_step({ text: item.next })}
@@ -113,7 +110,7 @@
       {/if}
       {#if item.unlockedAt || item.rarity !== null}
         <p class="mt-1 text-xs text-muted">
-          {#if item.unlockedAt}{formatDate(item.unlockedAt)}{/if}
+          {#if item.unlockedAt}{formatDateTime(item.unlockedAt)}{/if}
           {#if item.unlockedAt && item.rarity !== null}·{/if}
           {#if item.rarity !== null}
             {m.ach_rarity({
@@ -304,6 +301,9 @@
                 </details>
               {:else}
                 {@render line(item, category)}
+              {/if}
+              {#if item.steps.length}
+                <StepDots steps={item.steps} />
               {/if}
             </li>
           {/each}

@@ -82,6 +82,53 @@ test.describe('comparaison par jeu', () => {
     await expect(page.getByTestId('compare').getByRole('heading', { level: 2 })).toContainText(
       'Marco',
     );
+
+    await page.goto('/');
+    await ready(page);
+    const live = page.locator('section[aria-labelledby="direct"]');
+    // Le bouton emoji ouvre le menu ; la réaction choisie devient une pastille qui se retire au clic.
+    await live.getByRole('button', { name: 'Réagir' }).first().click();
+    await live.getByRole('menuitemradio', { name: 'Applaudir' }).click();
+    const reaction = live.getByRole('button', { name: /^Applaudir/ }).first();
+    await expect(reaction).toHaveAttribute('aria-pressed', 'true');
+    await reaction.click();
+    await expect(live.getByRole('button', { name: /^Applaudir/ })).toHaveCount(0);
+
+    const feed = page.locator('section[aria-labelledby="amis-succes"]');
+    const row = feed
+      .getByRole('link')
+      .filter({ hasText: 'Marco', hasNotText: 'Succès caché' })
+      .first();
+    const thread = await row.getAttribute('href');
+    await expect(row.locator('[aria-label="Commentaires : 0"]')).toBeVisible();
+    await row.click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+    const gameHref = await dialog.locator('a[href^="/jeux/"]').getAttribute('href');
+    await dialog.getByRole('button', { name: 'Réagir' }).click();
+    await dialog.getByRole('menuitemradio', { name: 'J’aime' }).click();
+    await expect(dialog.getByRole('button', { name: /^J’aime/ })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await dialog
+      .getByRole('textbox', { name: 'Ton commentaire' })
+      .fill('Bravo pour le déblocage !');
+    await dialog.getByRole('button', { name: 'Publier' }).click();
+    await expect(dialog.getByText('Bravo pour le déblocage !')).toBeVisible();
+    await dialog.getByRole('button', { name: 'Fermer' }).click();
+    await expect(dialog).toHaveCount(0);
+    await expect(row.locator('[aria-label="Commentaires : 1"]')).toBeVisible();
+
+    expect(thread).toBeTruthy();
+    await page.goto('/u/marco');
+    await page.getByRole('link', { name: /Voir les \d+ jeux/ }).click();
+    await page.locator(`main a[href="${gameHref}"]`).first().click();
+    await page.locator(`main a[href="${thread}"]`).click();
+    await expect(page.getByText('Bravo pour le déblocage !')).toBeVisible();
+    await page.getByRole('button', { name: /^J’aime/ }).click();
+    await page.getByRole('button', { name: 'Supprimer' }).click();
+    await expect(page.getByText('Bravo pour le déblocage !')).toHaveCount(0);
   });
 
   test('affiche le compte d’amis et sa limite', async ({ page }) => {

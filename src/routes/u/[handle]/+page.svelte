@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { unlockHref } from '#lib/activity';
   import { subscribeJson } from '#lib/sse';
   import { enhance } from '$app/forms';
   import { submitWithToast } from '#lib/forms';
@@ -8,6 +9,7 @@
   import Scale from '@lucide/svelte/icons/scale';
   import Palette from '@lucide/svelte/icons/palette';
   import Avatar from '#lib/components/Avatar.svelte';
+  import Discussion from '#lib/components/Discussion.svelte';
   import ProfileShare from '#lib/components/ProfileShare.svelte';
   import ProfileCardArt from '#lib/components/ProfileCardArt.svelte';
   import CardInspection from '#lib/components/CardInspection.svelte';
@@ -18,7 +20,7 @@
   import Seo from '#lib/components/Seo.svelte';
   import GameCard from '#lib/components/GameCard.svelte';
   import ProviderIcon from '#lib/components/ProviderIcon.svelte';
-  import TrophyBadge from '#lib/components/TrophyBadge.svelte';
+  import RarityBadge from '#lib/components/RarityBadge.svelte';
   import StatGrid from '#lib/components/StatGrid.svelte';
   import { formatDate, formatNumber, formatRelative, PROVIDER_LABELS } from '#lib/labels';
   import { SITE_TOTAL } from '#lib/site-achievements';
@@ -367,12 +369,30 @@
                   <span class="truncate">{item.achievement.game.name}</span>
                   <span class="shrink-0">{formatRelative(item.unlockedAt)}</span>
                 </p>
-                <TrophyBadge type={item.achievement.trophyType} />
+                <RarityBadge rarity={item.achievement.globalRarity} />
               </a>
+              {#if data.relation === 'friends' || data.relation === 'self'}
+                <a
+                  href={unlockHref(profile.user.handle, item.achievement.id)}
+                  class="mb-2 ml-3 inline-block rounded px-2 py-1 text-xs text-muted hover:bg-raised hover:text-ink"
+                >
+                  {m.unlock_discussion()}
+                </a>
+              {/if}
             </li>
           {/each}
         </ul>
       </section>
+    </div>
+  {/if}
+  {#if data.comments}
+    <div id="discussion" class="profile-panel scroll-mt-24">
+      <Discussion
+        comments={data.comments}
+        signedIn={Boolean(data.user)}
+        signInHref="/connexion?retour=/u/{profile.user.handle}"
+        canTranslate={data.canTranslate}
+      />
     </div>
   {/if}
 </div>

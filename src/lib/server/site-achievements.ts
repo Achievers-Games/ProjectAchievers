@@ -6,6 +6,7 @@ import {
   SECRET_CODES,
   SITE_CATEGORIES,
   SITE_CODES,
+  challengeText,
   genreOf,
   groupSeries,
   seriesOf,
@@ -110,11 +111,14 @@ const TEXTS = m as unknown as Record<string, Message | undefined>;
 /** Les clés sont construites à partir des codes : la table reste dynamique, mais sans assertion. */
 const message = (key: string, params?: Record<string, string | number>) =>
   TEXTS[key]?.(params) ?? key;
-/** Les paliers d'une série d'amis ou de clan partagent un titre. */
-const siteTitle = (code: string) => message(`ach_${seriesOf(code)?.key ?? code}_title`);
+/** Les paliers d'une même série partagent un titre. */
+const siteTitle = (code: string) =>
+  message(`ach_${challengeText(code)?.key ?? seriesOf(code)?.key ?? code}_title`);
 
 /** Les genres partagent un modèle de texte ; les autres succès ont le leur. */
 function siteText(code: string) {
+  const challenge = challengeText(code);
+  if (challenge) return message(`ach_${challenge.key}_text`, { count: challenge.count });
   const series = seriesOf(code);
   if (series) return message(`ach_${series.key}_text`, { count: series.count });
   const genre = genreOf(code);
@@ -234,7 +238,7 @@ export async function siteAchievementBoard(
     // Les paliers d'un même succès forment une carte : le dernier obtenu, puis le suivant à viser.
     items: groupSeries(codes as readonly string[]).map((steps) => {
       const reached = steps.findLastIndex((code) => dates.has(code));
-      const target = steps.find((code) => !dates.has(code)) ?? steps.at(-1)!;
+      const target = steps[reached + 1] ?? steps.at(-1)!;
       // La carte parle du palier obtenu ; tant qu'aucun ne l'est, de celui à viser.
       const shownCode = reached >= 0 ? steps[reached]! : target;
       const revealed = revealedCode(target);
@@ -255,7 +259,7 @@ export async function siteAchievementBoard(
         unlockedAt: reached >= 0 ? (dates.get(steps[reached]!) ?? null) : null,
         complete,
         icon,
-        tier: revealed && reached >= 0 ? stepTier(reached, steps.length) : 0,
+        tier: revealed && reached >= 0 ? tierOf(shownCode) : 0,
         proof: reached >= 0 ? proofOf(steps[reached]!) : null,
         // Comme la date : la part des joueurs qui ont le palier obtenu, pas celui à viser.
         rarity: revealed ? share(reached >= 0 ? steps[reached]! : target) : null,
@@ -264,7 +268,8 @@ export async function siteAchievementBoard(
         steps:
           steps.length > 1
             ? steps.map((code, at) => ({
-                title: siteTitle(code),
+                title: revealedCode(code) ? siteTitle(code) : m.ach_secret_title(),
+                text: revealedCode(code) ? siteText(code) : null,
                 earned: dates.has(code),
                 tier: stepTier(at, steps.length),
               }))

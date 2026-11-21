@@ -6,7 +6,7 @@
   import Progress from '#lib/components/Progress.svelte';
   import SiteBadge from '#lib/components/SiteBadge.svelte';
   import StepDots from '#lib/components/StepDots.svelte';
-  import { formatDate, formatNumber } from '#lib/labels';
+  import { formatDate, formatDateTime, formatNumber } from '#lib/labels';
 
   let { data } = $props();
   const clan = $derived(data.clan);
@@ -121,7 +121,7 @@
                 )}
               </p>
             {:else if item.unlockedAt}
-              <p class="mt-1 text-xs text-muted">{formatDate(item.unlockedAt)}</p>
+              <p class="mt-1 text-xs text-muted">{formatDateTime(item.unlockedAt)}</p>
             {/if}
           </div>
         </li>

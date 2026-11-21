@@ -23,6 +23,34 @@ const PER_USER_TABLES = [
 
 type Transaction = Prisma.TransactionClient;
 
+const ACTIVITY_TABLES = [
+  ['LiveReaction', 'UserGame', 'gameId'],
+  ['UnlockReaction', 'UserAchievement', 'achievementId'],
+] as const;
+
+async function moveOverlappingActivity(tx: Transaction, sourceId: string, targetId: string) {
+  await tx.$executeRaw`
+    UPDATE "Comment" c SET "unlockOwnerId" = ${targetId}
+    FROM "UserAchievement" a
+    WHERE c."unlockOwnerId" = ${sourceId} AND a."userId" = ${targetId}
+      AND c."unlockAchievementId" = a."achievementId"`;
+  for (const [table, parent, key] of ACTIVITY_TABLES) {
+    await tx.$executeRawUnsafe(
+      `DELETE FROM "${table}" s USING "${table}" t
+       WHERE s."ownerId" = $1 AND t."ownerId" = $2
+         AND s."userId" = t."userId" AND s."${key}" = t."${key}"`,
+      sourceId,
+      targetId,
+    );
+    await tx.$executeRawUnsafe(
+      `UPDATE "${table}" r SET "ownerId" = $2 FROM "${parent}" p
+       WHERE r."ownerId" = $1 AND p."userId" = $2 AND p."${key}" = r."${key}"`,
+      sourceId,
+      targetId,
+    );
+  }
+}
+
 async function mergeClans(
   tx: Transaction,
   sourceId: string,
@@ -204,6 +232,8 @@ export async function mergeUsers(
         ]);
         if (sourceClans && targetClans && !clanChoice) return 'clan_choice';
 
+        // Réunit les discussions avant que les déblocages en double soient supprimés.
+        await moveOverlappingActivity(tx, sourceId, targetId);
         // En cas de doublon, la ligne du profil conservé fait foi.
         for (const [table, key] of PER_USER_TABLES) {
           await tx.$executeRawUnsafe(
@@ -253,6 +283,17 @@ export async function mergeUsers(
         });
         await tx.userGame.updateMany(owner);
         await tx.userAchievement.updateMany(owner);
+        for (const [table, , key] of ACTIVITY_TABLES) {
+          await tx.$executeRawUnsafe(
+            `DELETE FROM "${table}" s USING "${table}" t
+             WHERE s."userId" = $1 AND t."userId" = $2
+               AND s."ownerId" = t."ownerId" AND s."${key}" = t."${key}"`,
+            sourceId,
+            targetId,
+          );
+        }
+        await tx.liveReaction.updateMany(owner);
+        await tx.unlockReaction.updateMany(owner);
         await tx.guideVote.updateMany(owner);
         await tx.feedback.updateMany(owner);
         await tx.guideCheck.updateMany(owner);
@@ -266,6 +307,10 @@ export async function mergeUsers(
         const author = { where: { authorId: sourceId }, data: { authorId: targetId } };
         await tx.guide.updateMany(author);
         await tx.comment.updateMany(author);
+        await tx.comment.updateMany({
+          where: { profileId: sourceId },
+          data: { profileId: targetId },
+        });
         await tx.report.updateMany({
           where: { reporterId: sourceId },
           data: { reporterId: targetId },

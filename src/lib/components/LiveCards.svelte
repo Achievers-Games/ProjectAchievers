@@ -3,19 +3,22 @@
   import { flip } from 'svelte/animate';
   import { fly } from 'svelte/transition';
   import Avatar from './Avatar.svelte';
+  import ActivityReactions from './ActivityReactions.svelte';
   import CardFx from './CardFx.svelte';
   import CompleteBadge from './CompleteBadge.svelte';
   import { dragScroll } from '#lib/actions/drag-scroll';
   import { pauseEffects } from '#lib/actions/pause-effects';
   import { subscribeJson } from '#lib/sse';
   import type { CardDrop } from '#lib/collection';
+  import type { ActivityReactions as ReactionSummary } from '#lib/activity';
   import { formatRelative } from '#lib/labels';
 
   const MAX_DROPS = 12;
 
-  let { initial }: { initial: CardDrop[] } = $props();
+  type LiveDrop = CardDrop & { reactions?: ReactionSummary };
+  let { initial, signedIn = false }: { initial: LiveDrop[]; signedIn?: boolean } = $props();
 
-  let live = $state<CardDrop[]>([]);
+  let live = $state<LiveDrop[]>([]);
 
   const keyOf = (drop: CardDrop) => `${drop.user.handle}-${drop.game.slug}`;
   /** Une carte diffusée sans niveau (ancien flux encore ouvert) reste une carte Bronze. */
@@ -75,6 +78,15 @@
               </span>
             </span>
           </a>
+          <div class="mt-1 px-1">
+            <ActivityReactions
+              kind="card"
+              handle={drop.user.handle}
+              id={drop.game.slug}
+              summary={drop.reactions}
+              {signedIn}
+            />
+          </div>
         </li>
       {/each}
     </ul>

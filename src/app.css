@@ -397,6 +397,28 @@
 .reaction-active {
   @apply border-accent bg-accent/15 text-ink;
 }
+.reaction-add {
+  @apply grid h-6 w-7 place-items-center border-line text-muted hover:text-ink;
+}
+/* Le menu de réactions, posé au-dessus du bouton comme sur une messagerie. */
+.reaction-menu {
+  @apply absolute bottom-full left-0 z-30 mb-1 flex gap-0.5 rounded-full border border-line bg-raised p-1 shadow-lg;
+  animation: reaction-menu-in 140ms ease-out;
+}
+.reaction-pick {
+  @apply grid h-9 w-9 place-items-center rounded-full border border-transparent text-xl transition-transform hover:scale-125;
+}
+@keyframes reaction-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.92);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reaction-menu {
+    animation: none;
+  }
+}
 .live-dot {
   width: 9px;
   height: 9px;

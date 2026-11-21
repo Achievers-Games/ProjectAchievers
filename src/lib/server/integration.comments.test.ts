@@ -2,6 +2,8 @@
 import 'dotenv/config';
 import type { RequestEvent } from '@sveltejs/kit';
 import { describe, expect, it } from 'vitest';
+import { actions as profileActions } from '../../routes/u/[handle]/+page.server';
+import { friendUnlocks, unlockThreadFor } from './activity';
 import { resolveIdentity } from './accounts';
 import { commentActions, loadComments, type CommentTarget } from './comments';
 import { db } from './db';
@@ -47,6 +49,71 @@ function event(user: { id: string } | null, fields: Record<string, string>) {
 }
 
 const actionsFor = (target: CommentTarget | null) => commentActions(async () => target);
+
+describe('discussion sous un profil', () => {
+  it('réserve les actions au bon profil et rejette les profils privés ou bloqués', async () => {
+    const owner = await player();
+    const author = await player();
+    const other = await player();
+    await db.user.update({ where: { id: owner.id }, data: { isPublic: true } });
+    await db.user.update({ where: { id: other.id }, data: { isPublic: true } });
+    const onProfile = (handle: string, fields: Record<string, string>) =>
+      ({ ...event(author, fields), params: { handle } }) as Parameters<
+        NonNullable<typeof profileActions.comment>
+      >[0];
+    const comment = profileActions.comment!;
+    const publish = () => comment(onProfile(owner.handle, { content: 'Salut ici !' }));
+    expect(await publish()).toMatchObject({ success: expect.any(String) });
+    const [post] = await loadComments({ profileId: owner.id }, null);
+    expect(post?.html).toContain('Salut ici !');
+    expect(
+      await profileActions.react!(onProfile(other.handle, { commentId: post!.id, type: 'THANKS' })),
+    ).toMatchObject({ status: 404 });
+    await db.user.update({ where: { id: owner.id }, data: { isPublic: false } });
+    expect(await publish()).toMatchObject({ status: 404 });
+    await db.user.update({ where: { id: owner.id }, data: { isPublic: true } });
+    await db.block.create({ data: { blockerId: owner.id, blockedId: author.id } });
+    expect(await publish()).toMatchObject({ status: 404 });
+    expect(await loadComments({ profileId: owner.id }, { ...owner, sessionId: 'test' })).toEqual(
+      [],
+    );
+  });
+});
+
+describe('discussion sous un déblocage', () => {
+  it('sépare le déblocage du succès global et respecte l’amitié et les jeux cachés', async () => {
+    const { game, achievement } = await gameWithGuide();
+    const owner = await player();
+    const friend = await player();
+    const outsider = await player();
+    await db.user.update({ where: { id: owner.id }, data: { isPublic: true } });
+    await db.game.update({ where: { id: game.id }, data: { contentCheckedAt: new Date() } });
+    const libraryKey = { userId: owner.id, gameId: game.id };
+    await db.userGame.create({ data: libraryKey });
+    await db.userAchievement.create({
+      data: { userId: owner.id, achievementId: achievement.id, unlockedAt: new Date() },
+    });
+    await db.friendship.create({
+      data: { requesterId: owner.id, addresseeId: friend.id, accepted: true },
+    });
+
+    expect(await unlockThreadFor(outsider, owner.handle, achievement.id)).toBeNull();
+    expect(await unlockThreadFor(friend, owner.handle, achievement.id)).toMatchObject({
+      userId: owner.id,
+    });
+    const target = { unlockOwnerId: owner.id, unlockAchievementId: achievement.id };
+    await actionsFor(target).comment(event(friend, { content: 'Bien joué !' }));
+    expect(await loadComments({ achievementId: achievement.id }, null)).toEqual([]);
+    expect(await friendUnlocks(friend)).toMatchObject([
+      { achievementId: achievement.id, count: 1 },
+    ]);
+
+    await db.userGame.update({ where: { userId_gameId: libraryKey }, data: { hidden: true } });
+    expect(await unlockThreadFor(friend, owner.handle, achievement.id)).toBeNull();
+    expect(await friendUnlocks(friend)).toEqual([]);
+    expect(await unlockThreadFor(owner, owner.handle, achievement.id)).not.toBeNull();
+  });
+});
 
 describe('discussion sous un guide complet', () => {
   it('publie un commentaire et une réponse sous le guide, et les relit', async () => {

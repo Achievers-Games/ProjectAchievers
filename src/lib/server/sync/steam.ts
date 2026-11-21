@@ -404,10 +404,10 @@ async function fetchSchema(appId: number): Promise<AchievementInput[] | null> {
   const achievements = await fetchSchemaAchievements(appId, 'french');
   if (!achievements?.length) return achievements && [];
 
-  const rarityResponse = await steamGet(
-    '/ISteamUserStats/GetGlobalAchievementPercentagesForApp/v2/',
-    { gameid: appId },
-  );
+  const [rarityResponse, community] = await Promise.all([
+    steamGet('/ISteamUserStats/GetGlobalAchievementPercentagesForApp/v2/', { gameid: appId }),
+    steamCommunitySchema(String(appId), 'french'),
+  ]);
   const rarity = new Map<string, number>();
   if (rarityResponse.ok) {
     const data = (await rarityResponse.json()) as {
@@ -417,7 +417,9 @@ async function fetchSchema(appId: number): Promise<AchievementInput[] | null> {
       rarity.set(a.name, Number(a.percent));
     }
   }
-  return mapSchema(await withHiddenDescriptions(achievements, String(appId), 'french'), rarity);
+  return mapSchema(withHiddenDescriptions(achievements, community?.descriptions), rarity).map(
+    (row) => ({ ...row, ...community?.groups.get(row.platformAchievementId) }),
+  );
 }
 
 const STEAM_LANGUAGES: Record<Locale, string> = {
@@ -455,7 +457,10 @@ export async function importSteamEdition(appId: number, name: string) {
 export async function fetchSteamTexts(appId: string, locale: Locale) {
   const achievements = await fetchSchemaAchievements(appId, STEAM_LANGUAGES[locale]);
   if (!achievements) throw new Error('GetSchemaForGame sans réponse');
-  const texts = await withHiddenDescriptions(achievements, appId, STEAM_LANGUAGES[locale]);
+  const community = achievements.some((entry) => entry.hidden && !entry.description?.trim())
+    ? await steamCommunitySchema(appId, STEAM_LANGUAGES[locale])
+    : null;
+  const texts = withHiddenDescriptions(achievements, community?.descriptions);
   return texts.map((a) => ({
     platformAchievementId: a.name,
     name: a.displayName || a.name,
@@ -466,8 +471,10 @@ export async function fetchSteamTexts(appId: string, locale: Locale) {
 /** Lit le schéma JSON intégré à la page publique des succès. */
 export function parseSteamPage(html: string, appId: string) {
   const descriptions = new Map<string, string>();
+  const memberships = new Map<string, { groupId: string; groupName: string }>();
+  const result = { descriptions, groups: memberships };
   const payload = /<script\b[^>]*\bid="valve-ssr-data"[^>]*>([\s\S]*?)<\/script>/i.exec(html)?.[1];
-  if (!payload) return descriptions;
+  if (!payload) return result;
 
   try {
     const { renderContext } = JSON.parse(payload);
@@ -485,10 +492,22 @@ export function parseSteamPage(html: string, appId: string) {
     });
     const groups = schema?.state?.data?.groups;
     for (const group of Array.isArray(groups) ? groups : []) {
+      if (group?.developeronly || group?.archived || group?.ispublic === false) continue;
+      const membership =
+        Number.isSafeInteger(group?.id) &&
+        typeof group?.name === 'string' &&
+        (group.id === 0 || group.name.trim())
+          ? {
+              groupId:
+                group.id === 0 ? 'default' : `${group.dlcappid > 0 ? 'dlc' : 'set'}:${group.id}`,
+              groupName: group.name,
+            }
+          : null;
       for (const entry of Array.isArray(group?.achievements) ? group.achievements : []) {
+        if (typeof entry?.api_name !== 'string') continue;
+        if (membership) memberships.set(entry.api_name, membership);
         if (
-          entry?.hidden === true &&
-          typeof entry.api_name === 'string' &&
+          entry.hidden === true &&
           typeof entry.description === 'string' &&
           entry.description.trim()
         ) {
@@ -499,17 +518,11 @@ export function parseSteamPage(html: string, appId: string) {
   } catch {
     // Steam peut modifier le format de la page. Les données de l'API restent utilisables.
   }
-  return descriptions;
+  return result;
 }
 
-async function withHiddenDescriptions(
-  achievements: SchemaAchievement[],
-  appId: string,
-  language: string,
-) {
-  if (!achievements.some((entry) => entry.hidden && !entry.description?.trim()))
-    return achievements;
-  const descriptions = await fetchRetry(
+function steamCommunitySchema(appId: string, language: string) {
+  return fetchRetry(
     `https://steamcommunity.com/stats/${encodeURIComponent(appId)}/achievements/`,
     {
       headers: { Cookie: `Steam_Language=${language}` },
@@ -519,9 +532,15 @@ async function withHiddenDescriptions(
   )
     .then(async (response) => (response.ok ? parseSteamPage(await response.text(), appId) : null))
     .catch(() => null);
+}
 
+function withHiddenDescriptions(
+  achievements: SchemaAchievement[],
+  descriptions?: Map<string, string>,
+) {
+  if (!descriptions?.size) return achievements;
   return achievements.map((entry) => {
-    const description = descriptions?.get(entry.name);
+    const description = descriptions.get(entry.name);
     return entry.hidden && !entry.description?.trim() && description
       ? { ...entry, description }
       : entry;

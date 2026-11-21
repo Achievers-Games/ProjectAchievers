@@ -1677,11 +1677,26 @@ describe('succès cachés Steam', () => {
           data: {
             groups: [
               {
+                id: 0,
+                name: '',
                 achievements: [
                   { api_name: 'BOSS', description: 'Éliminer le "Polyèdre"', hidden: true },
-                  { api_name: 'API', description: 'Description de la page', hidden: true },
                   { api_name: 'VIDE', description: '', hidden: true },
                 ],
+              },
+              {
+                id: 2,
+                name: 'Extension',
+                dlcappid: 72,
+                achievements: [
+                  { api_name: 'API', description: 'Description de la page', hidden: true },
+                ],
+              },
+              {
+                id: 3,
+                name: 'Développement',
+                developeronly: true,
+                achievements: [{ api_name: 'TEST' }],
               },
             ],
           },
@@ -1694,11 +1709,17 @@ describe('succès cachés Steam', () => {
     JSON.stringify({ renderContext: { queryData: JSON.stringify(queryData) } }) +
     '</script>';
 
-  it('lit le JSON de la page publique par identifiant de jeu et de succès', () => {
-    expect(parseSteamPage(page, '42').get('BOSS')).toBe('Éliminer le "Polyèdre"');
-    expect(parseSteamPage(page, '42').has('VIDE')).toBe(false);
-    expect(parseSteamPage(page, '43').size).toBe(0);
-    expect(parseSteamPage('<script id="valve-ssr-data">{</script>', '42').size).toBe(0);
+  it('lit les groupes publics et les descriptions cachées par identifiant de jeu et de succès', () => {
+    const schema = parseSteamPage(page, '42');
+    expect(schema.descriptions.get('BOSS')).toBe('Éliminer le "Polyèdre"');
+    expect(schema.descriptions.has('VIDE')).toBe(false);
+    expect(schema.groups.get('BOSS')).toEqual({ groupId: 'default', groupName: '' });
+    expect(schema.groups.get('API')).toEqual({ groupId: 'dlc:2', groupName: 'Extension' });
+    expect(schema.groups.has('TEST')).toBe(false);
+    expect(parseSteamPage(page, '43').groups.size).toBe(0);
+    expect(parseSteamPage('<script id="valve-ssr-data">{</script>', '42').descriptions.size).toBe(
+      0,
+    );
   });
 
   it('garde le texte de l’API et complète seulement les succès cachés sans description', async () => {

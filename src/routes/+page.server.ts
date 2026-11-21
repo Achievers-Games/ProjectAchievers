@@ -11,28 +11,53 @@ import {
 } from '#lib/server/queries';
 import { unlinkedPlatforms } from '#lib/server/accounts';
 import { db } from '#lib/server/db';
+import { friendUnlocks, loadUnlockDiscussion, unlockThreadFor } from '#lib/server/activity';
+import { commentActions } from '#lib/server/comments';
 import { homeGuides } from '#lib/server/guides';
 import { randomTagline } from '#lib/taglines';
-import type { PageServerLoad } from './$types';
+import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ locals, depends }) => {
+const selected = (viewer: App.Locals['user'], url: URL) => {
+  const handle = url.searchParams.get('ami');
+  const id = url.searchParams.get('deblocage');
+  return handle && id ? unlockThreadFor(viewer, handle, id) : null;
+};
+
+export const load: PageServerLoad = async ({ locals, depends, setHeaders, url }) => {
   depends('app:sync');
   const podiumTask = homePodium();
   // Un jeu au hasard derrière l'accueil, tiré à chaque visite parmi les plus joués.
   const backdropTask = homeBackdrop();
   if (locals.user) {
-    const [podium, home, accounts, cards, banners, barelyPlayed, unlinked, friends, guides] =
-      await Promise.all([
-        podiumTask,
-        dashboard(locals.user.id, locals.user.showAdult),
-        db.linkedAccount.count({ where: { userId: locals.user.id } }),
-        cardFeed(locals.user.showAdult),
-        podiumTask.then((podium) => homeBanners(podium[0], locals.user!.id)),
-        barelyPlayedGame(locals.user.id, locals.user.showAdult),
-        unlinkedPlatforms(locals.user.id),
-        friendsPlaying(locals.user.id, locals.user.showAdult),
-        homeGuides(locals.user.showAdult),
-      ]);
+    setHeaders({ 'cache-control': 'private, no-store' });
+    const viewer = locals.user;
+    const [
+      podium,
+      home,
+      accounts,
+      cards,
+      banners,
+      barelyPlayed,
+      unlinked,
+      friends,
+      guides,
+      unlocks,
+      thread,
+    ] = await Promise.all([
+      podiumTask,
+      dashboard(locals.user.id, locals.user.showAdult),
+      db.linkedAccount.count({ where: { userId: locals.user.id } }),
+      cardFeed(viewer.showAdult, 12, viewer.id),
+      podiumTask.then((podium) => homeBanners(podium[0], locals.user!.id)),
+      barelyPlayedGame(locals.user.id, locals.user.showAdult),
+      unlinkedPlatforms(locals.user.id),
+      friendsPlaying(locals.user.id, locals.user.showAdult),
+      homeGuides(locals.user.showAdult),
+      friendUnlocks(viewer),
+      Promise.resolve(selected(viewer, url)).then((row) =>
+        row ? loadUnlockDiscussion(viewer, row, url) : null,
+      ),
+    ]);
     const { games, tiers } = home.stats;
     const { text: tagline, barelyPlayed: aboutBarelyPlayed } = randomTagline({
       games,
@@ -50,6 +75,8 @@ export const load: PageServerLoad = async ({ locals, depends }) => {
       podium,
       banners,
       friends,
+      unlocks,
+      thread,
       guides,
       popular: null,
       tagline,
@@ -68,6 +95,8 @@ export const load: PageServerLoad = async ({ locals, depends }) => {
     accounts: 0,
     unlinked: [],
     friends: [],
+    unlocks: [],
+    thread: null,
     guides,
     cards,
     podium,
@@ -77,3 +106,8 @@ export const load: PageServerLoad = async ({ locals, depends }) => {
     backdrop: await backdropTask,
   };
 };
+
+export const actions: Actions = commentActions(async ({ locals, url }) => {
+  const row = await selected(locals.user, url);
+  return row ? { unlockOwnerId: row.userId, unlockAchievementId: row.achievement.id } : null;
+});

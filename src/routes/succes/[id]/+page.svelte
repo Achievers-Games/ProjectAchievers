@@ -15,8 +15,7 @@
   import Empty from '#lib/components/Empty.svelte';
   import Seo from '#lib/components/Seo.svelte';
   import TranslateButton from '#lib/components/TranslateButton.svelte';
-  import TrophyBadge from '#lib/components/TrophyBadge.svelte';
-  import { formatDate, formatRarity, formatRelative } from '#lib/labels';
+  import { formatDateTime, formatRarity, formatRelative } from '#lib/labels';
   import { guideChecks } from '#lib/actions/guide-checks';
   import { postAction, reportContent, submitWithToast } from '#lib/forms';
   import { Translations } from '#lib/translations.svelte';
@@ -109,14 +108,13 @@
       <h1>{data.achievement.name}</h1>
       <p class="text-sm text-muted">{data.achievement.description}</p>
       <p class="tabular flex flex-wrap items-center gap-x-3 text-xs text-muted">
-        <TrophyBadge type={data.achievement.trophyType} />
         {#if data.achievement.globalRarity !== null}
           <span>{m.achievement_rarity({ value: formatRarity(data.achievement.globalRarity) })}</span
           >
         {/if}
         {#if data.unlockedAt}
           <span class="text-success"
-            >{m.achievement_unlocked_on({ date: formatDate(data.unlockedAt) })}</span
+            >{m.achievement_unlocked_on({ date: formatDateTime(data.unlockedAt) })}</span
           >
         {/if}
       </p>

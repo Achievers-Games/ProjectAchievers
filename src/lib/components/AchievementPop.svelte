@@ -1,6 +1,7 @@
 <script lang="ts">
   import SiteBadge from '#lib/components/SiteBadge.svelte';
   import { m } from '#lib/paraglide/messages';
+  import { formatRarity } from '#lib/labels';
   import { closeAllPops, dismissPop, popQueue, present } from '#lib/stores/achievement-pop';
   import X from '@lucide/svelte/icons/x';
 
@@ -110,7 +111,11 @@
           </span>
           <span class="title">{pop.title}</span>
           {#if pop.game}
-            <span class="game">{pop.game}</span>
+            <span class="game"
+              >{pop.rarity != null
+                ? `${pop.game} · ${m.achievement_rarity({ value: formatRarity(pop.rarity) })}`
+                : pop.game}</span
+            >
           {/if}
           {#if waiting > 0}
             <span class="more">{m.ach_pop_more({ count: waiting })}</span>

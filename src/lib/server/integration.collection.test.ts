@@ -461,6 +461,26 @@ describe('filtres par niveau', () => {
     expect(games[0]?.copies).toBe(2);
   });
 
+  it('retrouve les éditions malgré une inversion et trie les noms dans les deux sens', async () => {
+    const { ownerId } = await library();
+    const prefix = `${PREFIX}-${Math.random().toString(36).slice(2)}`;
+    const names = [`${prefix} Skyrim Alpha`, `${prefix} Skyrim Zulu`];
+    for (const [index, name] of names.entries()) {
+      const game = await upsertGame({
+        platform: 'STEAM',
+        platformGameId: `${prefix}-${index}`,
+        name,
+      });
+      await db.userGame.create({ data: { userId: ownerId, gameId: game.id } });
+    }
+
+    const filters = { sort: 'nom', page: 1, ownerId, q: 'skryim' } as const;
+    const ascending = await listGames({ ...filters, direction: 'asc' }, ownerId);
+    const descending = await listGames({ ...filters, direction: 'desc' }, ownerId);
+    expect(ascending.games.map((game) => game.name)).toEqual(names);
+    expect(descending.games.map((game) => game.name)).toEqual(names.toReversed());
+  });
+
   it('garde les jeux cachés et non classés hors des fils publics', async () => {
     const { ownerId } = await library();
     await db.user.update({ where: { id: ownerId }, data: { isPublic: true } });

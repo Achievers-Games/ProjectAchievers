@@ -1,5 +1,6 @@
 import { Prisma, type TrophyType } from '#prisma';
 import { copiesFor } from '#lib/collection';
+import { liveReactions } from '../activity';
 import { db } from '../db';
 import { publicGames, publicUser } from './shared';
 
@@ -41,7 +42,7 @@ async function copiesInFeed(
 }
 
 /** Dernières cartes obtenues par les profils publics, à la date du dernier succès. */
-export async function cardFeed(showAdult = false, limit = 12) {
+export async function cardFeed(showAdult = false, limit = 12, viewerId?: string) {
   const rows = await db.userGame.findMany({
     where: {
       ...RARE_CARD,
@@ -59,16 +60,23 @@ export async function cardFeed(showAdult = false, limit = 12) {
         select: publicUser,
       },
       game: {
-        select: { name: true, slug: true, headerUrl: true, tier: true, familyKey: true },
+        select: { id: true, name: true, slug: true, headerUrl: true, tier: true, familyKey: true },
       },
     },
   });
-  const copies = await copiesInFeed(rows);
-  return rows.map(({ lastUnlockedAt, userId, user, game: { familyKey, ...game } }) => ({
+  const [copies, reactions] = await Promise.all([
+    copiesInFeed(rows),
+    liveReactions(
+      rows.map((row) => ({ ownerId: row.userId, gameId: row.game.id })),
+      viewerId,
+    ),
+  ]);
+  return rows.map(({ lastUnlockedAt, userId, user, game: { id, familyKey, ...game } }) => ({
     user,
     game: { ...game, tier: game.tier ?? 1 },
     copies: copies.get(`${userId}|${familyKey ?? game.slug}`) ?? 1,
     unlockedAt: lastUnlockedAt as Date,
+    reactions: reactions.get(`${userId}/${id}`) ?? { counts: {}, mine: null },
   }));
 }
 
