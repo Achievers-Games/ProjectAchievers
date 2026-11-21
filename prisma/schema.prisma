@@ -485,6 +485,8 @@ model GameEdition {
   variant     String        @default("base")
   /// Dossier des calques et du script de la carte, versionné pour vider les caches.
   assetPath   String
+  /// Une variante retirée du catalogue : elle ne sort plus des boosters, ses propriétaires la gardent.
+  retired     Boolean       @default(false)
   /// Joueurs qui possèdent l'édition, tenu à jour à l'ouverture : sa rareté réelle sans compter.
   ownerCount  Int           @default(0)
   createdAt   DateTime      @default(now())

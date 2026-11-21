@@ -2,6 +2,7 @@ import type { Prisma, Platform, TrophyType } from '#prisma';
 import { db } from '../db';
 import { familyKey } from '../family';
 import { lockCardCatalog, refreshSharedTier, updateFamilyTiers } from '../card-rarity';
+import { shardsStart } from '../cards-launch';
 import { creditCompletion, creditUnlocks, playtimeHidden, revokeShards } from '../shards';
 import {
   filterSteamProgress,
@@ -507,9 +508,13 @@ async function writeProgress(
       where: { id: userId },
       select: { shardsFrom: true },
     });
-    await creditUnlocks(db, userId, gameId, newUnlocks, shardsFrom);
-    if (data.completion >= 100) {
-      await creditCompletion(db, userId, gameId, lastUnlockedAt, shardsFrom);
+    // Avant l'ouverture des éclats, rien ne se gagne.
+    const from = shardsStart(shardsFrom);
+    if (from) {
+      await creditUnlocks(db, userId, gameId, newUnlocks, from);
+      if (data.completion >= 100) {
+        await creditCompletion(db, userId, gameId, lastUnlockedAt, from);
+      }
     }
   }
   const fresh = freshIds.length

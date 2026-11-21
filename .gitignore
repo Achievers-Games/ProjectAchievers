@@ -39,3 +39,5 @@ sites/achievers-atelier/
 sites/hades-card-review/
 # Les cartes publiées localement (scripts/publish-cards.mjs) : elles vivent sur le NAS.
 /cards
+# Planches de vérification des cartes (scripts/card-sheet.mjs).
+cards-review/

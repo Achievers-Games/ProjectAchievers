@@ -1802,6 +1802,18 @@
   "mod_cards": "Cards to make",
   "mod_cards_intro": "Site games that don’t have their cards yet, and the visuals already available.",
   "mod_cards_open": "See cards to make",
+  "mod_boosters": "Booster test",
+  "mod_boosters_intro": "Open real boosters from the real catalogue with unlimited shards: nothing is paid, nothing is added to your collection.",
+  "mod_boosters_open": "Test boosters",
+  "mod_boosters_normal": "Open a normal booster",
+  "mod_boosters_golden": "Open a golden booster",
+  "mod_boosters_force_mythique": "Force the Mythique guarantee",
+  "mod_boosters_simulation": "Simulation",
+  "mod_boosters_simulation_count": "Number of boosters",
+  "mod_boosters_simulate": "Simulate",
+  "mod_boosters_simulation_cards": "Cards drawn",
+  "mod_boosters_simulation_repeated": "Boosters with the same card twice: {count} of {total}.",
+  "mod_boosters_simulation_forced": "Mythique guarantees reached: {count}.",
   "mod_cards_text": "Each game needs three cards. Relief and Vivante start from the Steam library hero image; Mythique from an official artwork, chosen and noted here. Most played games first: their cards will come out most often.",
   "mod_cards_games": "Site games",
   "mod_cards_made": "{count} with cards",
@@ -2380,7 +2392,7 @@
   "steam_trust_pace": "Caught by pace, without a batch: too many achievements for the time played, unlocked one by one",
   "steam_trust_playtime_reference": "Playtime: {time}, against {expected} expected by Lure for this progress",
   "boosters_title": "Boosters",
-  "boosters_help": "Open boosters to get animated editions of the cards in your library. An edition shows on your profile once the game is 100 % complete.",
+  "boosters_help": "Open boosters to collect the animated editions of every game, even ones you don't own. An edition shows on your profile once the game is 100 % complete.",
   "boosters_shards": [
     {
       "declarations": [
@@ -2402,10 +2414,10 @@
   "boosters_pity": "Mythique guaranteed within {count} boosters.",
   "boosters_open_daily": "Open a free booster",
   "boosters_buy": "Open a booster ({price} shards)",
-  "boosters_no_cards": "No game in your library has an edition yet: boosters open as soon as one does.",
+  "boosters_no_cards": "No card is in the catalogue yet: boosters open as soon as there is one.",
   "boosters_no_booster": "No free booster left for now: the next one arrives at midnight.",
   "boosters_no_shards": "Not enough shards for this booster.",
-  "boosters_eligible": "Possible games: {relief} in Relief, {vivante} in Vivante, {mythique} in Mythique.",
+  "boosters_eligible": "Cards in play: {relief} in Relief, {vivante} in Vivante, {mythique} in Mythique.",
   "boosters_golden": "Golden booster",
   "boosters_opened": "Your booster",
   "boosters_rates": "Odds per card",
@@ -2447,6 +2459,7 @@
   "booster_reveal_again": "Replay reveal",
   "booster_tap_card": "Tap a card to flip it",
   "booster_reveal_all": "Flip all",
+  "booster_reveal_commons": "Reveal the Relief cards",
   "booster_close": "Close",
   "booster_recap_new": [
     {

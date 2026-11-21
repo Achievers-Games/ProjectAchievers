@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import type { EditionManifest } from './animated-card';
 import { EDITIONS } from './boosters';
 import { servedFiles, WORKSHOP_DIR } from '../../scripts/card-files.mjs';
-import { CARD_CATALOGUE } from './card-catalogue';
+import { CARD_CATALOGUE, catalogueFolders } from './card-catalogue';
 import { EFFECT_TYPES, INTRO_TYPES } from '../../static/_proto/shared/card-engine.js';
 
 interface DataScene {
@@ -32,9 +32,7 @@ const FRAMES = ['forest', 'underworld', 'maple', 'laboratory'];
 /** Le poids publié d'un dossier de carte. Cible : 3 Mo pour Relief et Vivante, 6 Mo en Mythique. */
 const MAX_FOLDER_BYTES = 6 * 1024 * 1024;
 
-const folders = [
-  ...new Set(CARD_CATALOGUE.flatMap((game) => EDITIONS.map((kind) => game.editions[kind]))),
-];
+const folders = [...new Set(CARD_CATALOGUE.flatMap(catalogueFolders))];
 const folderOf = (folder: string) => join(process.cwd(), WORKSHOP_DIR, folder);
 /** Une scène pour le moteur commun (`shared/card-engine.js`), et non un rendu fait à la main. */
 const isDataScene = (folder: string) => {
@@ -55,6 +53,14 @@ describe('le catalogue de cartes', () => {
       expect(Number.isInteger(game.version) && game.version > 0, game.name).toBe(true);
       for (const kind of EDITIONS)
         expect(game.editions[kind], `${game.name} ${kind}`).toMatch(/^[a-z0-9-]+$/);
+      const variants = (game.variants ?? []).map((variant) => `${variant.kind}:${variant.id}`);
+      expect(new Set(variants).size, `${game.name} : variantes uniques`).toBe(variants.length);
+      for (const variant of game.variants ?? []) {
+        expect(variant.id, game.name).toMatch(/^[a-z0-9-]+$/);
+        expect(variant.id, game.name).not.toBe('base');
+        expect(EDITIONS).toContain(variant.kind);
+        expect(variant.folder, game.name).toMatch(/^[a-z0-9-]+$/);
+      }
     }
   });
 

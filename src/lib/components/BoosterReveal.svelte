@@ -134,6 +134,11 @@
   let spotlight = $state<number | null>(null);
   let pending = $state<number | null>(null);
   let autoReveal = $state(false);
+  /**
+   * « Tout retourner » va vite : ni montée des Vivantes, ni scène de la Mythique. Le joueur qui
+   * veut le grand moment retourne la carte lui-même.
+   */
+  let quick = $state(false);
   let autoQueue: number[] = [];
   const timers: ReturnType<typeof setTimeout>[] = [];
   const later = (run: () => void, delay: number) => timers.push(setTimeout(run, delay));
@@ -441,6 +446,7 @@
   function selectCard(index: number) {
     if (dealing || charging[index] || settling[index] || pending === index) return;
     autoReveal = false;
+    quick = false;
     autoIndex = null;
     autoQueue = [];
     spotlight = null;
@@ -479,6 +485,7 @@
     if (
       automatic &&
       !reduced &&
+      !quick &&
       cards[index]!.kind !== 'RELIEF' &&
       revealed.filter(Boolean).length === cards.length - 1
     ) {
@@ -497,6 +504,10 @@
   function beginFlip(index: number) {
     const card = cards[index]!;
     autoTurned[index] = autoReveal;
+    if (autoReveal && quick) {
+      turn(index);
+      return;
+    }
     if (card.kind === 'MYTHIQUE') {
       stopGameSound();
       mythiqueIndex = index;
@@ -569,6 +580,7 @@
       pending === null
     ) {
       autoReveal = false;
+      quick = false;
       autoIndex = null;
       stage = 'done';
     }
@@ -672,15 +684,25 @@
     if (autoReveal && autoIndex === null) nextAuto();
   }
 
-  /** Retourne le reste dans l'ordre de rareté : la meilleure carte arrive toujours en dernier. */
-  function revealAll() {
+  const hidden = (index: number) =>
+    !revealed[index] && !charging[index] && !settling[index] && pending !== index;
+  /** Des Relief et des cartes rares restent face cachée : on peut retourner les Relief seules. */
+  const canRevealCommons = $derived(
+    cards.some((card, index) => card.kind === 'RELIEF' && hidden(index)) &&
+      cards.some((card, index) => card.kind !== 'RELIEF' && hidden(index)),
+  );
+
+  /**
+   * Retourne vite le reste dans l'ordre de rareté, la meilleure carte en dernier. Avec `upTo`,
+   * seulement les cartes de cette rareté ou en dessous : les rares restent à ouvrir à la main.
+   */
+  function revealAll(upTo: EditionKind = 'MYTHIQUE') {
     if (autoReveal) return;
     autoReveal = true;
+    quick = true;
     autoQueue = cards
       .map((_, index) => index)
-      .filter(
-        (index) => !revealed[index] && !charging[index] && !settling[index] && pending !== index,
-      )
+      .filter((index) => hidden(index) && RANK[cards[index]!.kind] <= RANK[upTo])
       .toSorted((a, b) => RANK[cards[a]!.kind] - RANK[cards[b]!.kind]);
     if (!dealing) nextAuto();
   }
@@ -698,6 +720,7 @@
       flip(index, true);
     } else {
       autoReveal = false;
+      quick = false;
       maybeFinish();
     }
   }
@@ -904,13 +927,24 @@
 
       {#if stage === 'cards' || stage === 'unpacking'}
         <p class="hint" class:waiting={stage === 'unpacking'}>{m.booster_tap_card()}</p>
-        <button
-          type="button"
-          class="btn"
-          class:waiting={stage === 'unpacking'}
-          disabled={stage === 'unpacking' || autoReveal}
-          onclick={revealAll}>{m.booster_reveal_all()}</button
-        >
+        <span class="reveal-actions">
+          {#if canRevealCommons}
+            <button
+              type="button"
+              class="btn"
+              class:waiting={stage === 'unpacking'}
+              disabled={stage === 'unpacking' || autoReveal}
+              onclick={() => revealAll('RELIEF')}>{m.booster_reveal_commons()}</button
+            >
+          {/if}
+          <button
+            type="button"
+            class="btn"
+            class:waiting={stage === 'unpacking'}
+            disabled={stage === 'unpacking' || autoReveal}
+            onclick={() => revealAll()}>{m.booster_reveal_all()}</button
+          >
+        </span>
       {:else if stage === 'done'}
         <!-- Les nouvelles cartes rejoignent la collection ; les doublons fondent en éclats. -->
         <section class="collection-recap" aria-live="polite">
@@ -1212,6 +1246,13 @@
     margin: 0;
     font-size: 0.9rem;
     color: rgb(255 255 255 / 0.75);
+  }
+  .reveal-actions {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
   }
 
   /* Le sachet. Sa lueur annonce la meilleure carte, comme une étoile filante. */

@@ -1,5 +1,5 @@
 import { randomInt, randomUUID } from 'node:crypto';
-import { Prisma, type BoosterSource, type EditionKind } from '#prisma';
+import { Prisma, type BoosterKind, type BoosterSource, type EditionKind } from '#prisma';
 import { editionThumb, withEditionStill } from '#lib/animated-card';
 import {
   BOOSTER_PRICE,
@@ -8,12 +8,14 @@ import {
   drawBooster,
   DUPLICATE_SHARDS,
   EDITIONS,
+  MYTHIQUE_PITY,
   normalKind,
   type Pool,
 } from '#lib/boosters';
 import { GENRES } from '#lib/site-achievements';
 import { completionTimes } from './completion-time';
 import { db } from './db';
+import { cardsOpenedAt } from './cards-launch';
 import { addEntries, playtimeHidden, type Tx } from './shards';
 
 /** Une carte sortie d'un booster, telle qu'enregistrée dans `BoosterOpening.results`. */
@@ -32,25 +34,28 @@ export class BoosterError extends Error {
   }
 }
 
+/** Les boosters offerts ne s'accumulent qu'à partir de l'ouverture des éclats. */
+const dailyFrom = (dailyAt: Date) => {
+  const opening = cardsOpenedAt();
+  return opening && opening > dailyAt ? opening : dailyAt;
+};
+
 /** Un nombre dans [0, 1[, tiré par le serveur : le navigateur n'a aucune prise sur le tirage. */
 const secureRandom = () => randomInt(0, 2 ** 47) / 2 ** 47;
 
 /**
- * Les éditions que ce joueur peut tirer : celles des jeux de sa bibliothèque où il a au moins un
- * succès, hors jeux cachés et jeux réservés aux adultes. L'avancement retenu est le meilleur de
- * ses versions du jeu.
+ * Les éditions qui sortent des boosters, les mêmes pour tous : tout le catalogue actif, hors
+ * variantes retirées et jeux réservés aux adultes. Posséder le jeu n'est pas nécessaire pour
+ * tirer sa carte ; c'est le 100 % qui permet de l'afficher en bannière.
  */
-export async function editionPool(tx: Tx | typeof db, userId: string): Promise<Pool> {
-  const rows = await tx.$queryRaw<
-    { editionId: string; familyKey: string; kind: EditionKind; completion: number }[]
-  >`
-    SELECT e.id AS "editionId", e."familyKey", e.kind, max(ug.completion)::float AS completion
+export async function editionPool(tx: Tx | typeof db): Promise<Pool> {
+  const rows = await tx.$queryRaw<{ editionId: string; familyKey: string; kind: EditionKind }[]>`
+    SELECT e.id AS "editionId", e."familyKey", e.kind
     FROM "GameEdition" e
-    JOIN "CardFamily" f ON f."familyKey" = e."familyKey" AND f.enabled
-    JOIN "Game" g ON g."familyKey" = e."familyKey" AND NOT g."adultOnly"
-    JOIN "UserGame" ug ON ug."gameId" = g.id AND ug."userId" = ${userId}
-      AND NOT ug.hidden AND ug."unlockedCount" > 0
-    GROUP BY e.id`;
+    JOIN "CardFamily" f ON f."familyKey" = e."familyKey" AND f.enabled AND NOT e.retired
+      AND EXISTS (SELECT 1 FROM "Game" g WHERE g."familyKey" = e."familyKey")
+      AND NOT EXISTS (SELECT 1 FROM "Game" g WHERE g."familyKey" = e."familyKey" AND g."adultOnly")
+    ORDER BY e.id`;
   const pool = Object.fromEntries(EDITIONS.map((kind) => [kind, []])) as unknown as Pool;
   for (const row of rows) pool[row.kind].push(row);
   return pool;
@@ -69,13 +74,13 @@ export async function boosterState(userId: string) {
         pityMythique: true,
       },
     }),
-    editionPool(db, userId),
+    editionPool(db),
     playtimeHidden(db, userId),
   ]);
   return {
     playtimeHidden: hidden,
     shards: user.shards,
-    daily: dailyStock(user.dailyBoosters, user.dailyAt),
+    daily: dailyStock(user.dailyBoosters, dailyFrom(user.dailyAt)),
     nextGolden: normalKind(user.boostersOpened) === 'GOLDEN',
     pityMythique: user.pityMythique,
     eligible: Object.fromEntries(EDITIONS.map((kind) => [kind, pool[kind].length])) as Record<
@@ -99,12 +104,12 @@ export async function openBooster(userId: string, source: Exclude<BoosterSource,
       select: { dailyBoosters: true, dailyAt: true, boostersOpened: true, pityMythique: true },
     });
     if (await playtimeHidden(tx, userId)) throw new BoosterError('playtime_hidden');
-    const pool = await editionPool(tx, userId);
+    const pool = await editionPool(tx);
     if (!canDraw(pool)) throw new BoosterError('no_cards');
 
     const id = randomUUID();
     const now = new Date();
-    let daily = dailyStock(user.dailyBoosters, user.dailyAt, now);
+    let daily = dailyStock(user.dailyBoosters, dailyFrom(user.dailyAt), now);
     if (source === 'DAILY') {
       if (daily < 1) throw new BoosterError('no_booster');
       daily -= 1;
@@ -173,6 +178,62 @@ export async function openBooster(userId: string, source: Exclude<BoosterSource,
     });
     return { id, kind, cards };
   });
+}
+
+/**
+ * Un booster d'essai, pour la page de test de la modération : le vrai tirage dans le vrai
+ * catalogue, sans rien payer ni rien enregistrer. Les doublons sont comptés contre la collection
+ * du joueur, comme à une vraie ouverture.
+ */
+export async function trialBooster(userId: string, kind: BoosterKind, pityMythique: number) {
+  const pool = await editionPool(db);
+  if (!canDraw(pool)) throw new BoosterError('no_cards');
+  const drawn = drawBooster(kind, pool, pityMythique, secureRandom);
+  const owned = new Set(
+    (
+      await db.userEdition.findMany({
+        where: { userId, editionId: { in: drawn.cards.map((card) => card.editionId) } },
+        select: { editionId: true },
+      })
+    ).map((row) => row.editionId),
+  );
+  const cards: BoosterCard[] = drawn.cards.map((card) => {
+    const duplicate = owned.has(card.editionId);
+    owned.add(card.editionId);
+    return { ...card, duplicate, shards: duplicate ? DUPLICATE_SHARDS[card.kind] : 0 };
+  });
+  return { id: randomUUID(), kind, cards, pityMythique: drawn.pityMythique };
+}
+
+/**
+ * Ouvre `count` boosters à blanc, un doré tous les dix et la garantie de Mythique comprise, pour
+ * vérifier que les pourcentages tombent juste sur le catalogue réel.
+ */
+export async function simulateBoosters(count: number) {
+  const pool = await editionPool(db);
+  if (!canDraw(pool)) throw new BoosterError('no_cards');
+  const cards: Record<EditionKind, number> = { RELIEF: 0, VIVANTE: 0, MYTHIQUE: 0 };
+  let pity = 0;
+  let repeated = 0;
+  let forced = 0;
+  for (let opened = 0; opened < count; opened++) {
+    const before = pity;
+    const drawn = drawBooster(normalKind(opened), pool, pity, Math.random);
+    pity = drawn.pityMythique;
+    for (const card of drawn.cards) cards[card.kind]++;
+    if (new Set(drawn.cards.map((card) => card.editionId)).size < drawn.cards.length) repeated++;
+    if (before + 1 >= MYTHIQUE_PITY && pool.MYTHIQUE.length) forced++;
+  }
+  return {
+    count,
+    cards,
+    repeated,
+    forced,
+    pool: Object.fromEntries(EDITIONS.map((kind) => [kind, pool[kind].length])) as Record<
+      EditionKind,
+      number
+    >,
+  };
 }
 
 /** Les dernières ouvertures du joueur, la plus récente d'abord. */
@@ -310,7 +371,7 @@ function collectorCount() {
 
 /**
  * Les compteurs de la collection, calculés en base sans charger les cartes : celles possédées
- * par rareté, et celles qui restent à découvrir parmi les éditions que le joueur peut tirer.
+ * par rareté, et celles qui restent à découvrir parmi tout ce qui sort des boosters.
  */
 export async function collectionSummary(userId: string) {
   const [owned, missing] = await Promise.all([
@@ -320,12 +381,11 @@ export async function collectionSummary(userId: string) {
       WHERE ue."userId" = ${userId}
       GROUP BY e.kind`,
     db.$queryRaw<{ kind: EditionKind; count: number }[]>`
-      SELECT e.kind, count(DISTINCT e.id)::int AS count
+      SELECT e.kind, count(*)::int AS count
       FROM "GameEdition" e
-      JOIN "CardFamily" f ON f."familyKey" = e."familyKey" AND f.enabled
-      JOIN "Game" g ON g."familyKey" = e."familyKey" AND NOT g."adultOnly"
-      JOIN "UserGame" ug ON ug."gameId" = g.id AND ug."userId" = ${userId}
-        AND NOT ug.hidden AND ug."unlockedCount" > 0
+      JOIN "CardFamily" f ON f."familyKey" = e."familyKey" AND f.enabled AND NOT e.retired
+        AND EXISTS (SELECT 1 FROM "Game" g WHERE g."familyKey" = e."familyKey")
+        AND NOT EXISTS (SELECT 1 FROM "Game" g WHERE g."familyKey" = e."familyKey" AND g."adultOnly")
       WHERE NOT EXISTS (
         SELECT 1 FROM "UserEdition" mine WHERE mine."userId" = ${userId} AND mine."editionId" = e.id
       )

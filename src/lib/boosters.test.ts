@@ -9,7 +9,7 @@ import {
   type Pool,
 } from './boosters';
 
-const entry = (id: string, completion = 0) => ({ editionId: id, familyKey: id, completion });
+const entry = (id: string) => ({ editionId: id, familyKey: id });
 const pool = (relief: string[], vivante: string[] = [], mythique: string[] = []): Pool => ({
   RELIEF: relief.map((id) => entry(id)),
   VIVANTE: vivante.map((id) => entry(id)),
@@ -67,16 +67,39 @@ describe('tirage d’un booster', () => {
     expect(() => drawBooster('NORMAL', pool([]), 0, rolls(0.5))).toThrow();
   });
 
-  it('ne répète pas une édition dans un booster tant qu’il en reste d’autres', () => {
-    const { cards } = drawBooster('NORMAL', pool(['a', 'b', 'c']), 0, rolls(0.5));
-    expect(new Set(cards.map((card) => card.editionId)).size).toBe(3);
+  it('peut donner deux fois la même carte dans un booster', () => {
+    const { cards } = drawBooster(
+      'NORMAL',
+      pool(['a', 'b', 'c']),
+      0,
+      rolls(0.5, 0.5, 0.5, 0.5, 0.5, 0.1, 0.1, 0.1, 0.1, 0.1),
+    );
+    expect(cards.map((card) => card.editionId)).toEqual(['a', 'a', 'a', 'a', 'a']);
   });
 
-  it('tire plus souvent un jeu avancé', () => {
-    const weighted: Pool = { RELIEF: [entry('a', 0), entry('b', 100)], VIVANTE: [], MYTHIQUE: [] };
-    // Poids 1 contre 5 : un tirage à 0,5 du total tombe sur le jeu fini.
-    const { cards } = drawBooster('NORMAL', weighted, 0, rolls(0.5));
-    expect(cards[0]!.editionId).toBe('b');
+  it('prend la carte à chances égales parmi toutes celles de sa rareté', () => {
+    const relief = pool(['a', 'b', 'c', 'd']);
+    const at = (roll: number) =>
+      drawBooster('NORMAL', relief, 0, rolls(0.5, 0.5, 0.5, 0.5, 0.5, roll)).cards[0]!.editionId;
+    expect([0, 0.26, 0.51, 0.99].map(at)).toEqual(['a', 'b', 'c', 'd']);
+  });
+});
+
+describe('variantes d’un jeu', () => {
+  it('compte chaque variante comme une carte de plus de sa rareté', () => {
+    const mythiques: Pool = {
+      RELIEF: [],
+      VIVANTE: [],
+      MYTHIQUE: [
+        { editionId: 'a-base', familyKey: 'a' },
+        { editionId: 'a-noel', familyKey: 'a' },
+        { editionId: 'b-base', familyKey: 'b' },
+      ],
+    };
+    // Les cinq premiers tirages donnent la rareté, les suivants la carte : 0,5 tombe sur le
+    // deuxième tiers, la variante de Noël du jeu a.
+    const { cards } = drawBooster('NORMAL', mythiques, 0, rolls(0.5, 0.5, 0.5, 0.5, 0.5, 0.5));
+    expect(cards[0]).toMatchObject({ kind: 'MYTHIQUE', editionId: 'a-noel' });
   });
 });
 

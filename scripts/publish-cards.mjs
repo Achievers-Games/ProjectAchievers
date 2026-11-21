@@ -105,7 +105,8 @@ async function publish(folder, version) {
 
 let published = 0;
 for (const game of games) {
-  for (const folder of new Set(Object.values(game.editions))) {
+  const folders = [...Object.values(game.editions), ...(game.variants ?? []).map((v) => v.folder)];
+  for (const folder of new Set(folders)) {
     const result = await publish(folder, game.version);
     if (result === 'publiée') published++;
     console.log(`${game.name} · ${folder}/${game.version} : ${result}`);

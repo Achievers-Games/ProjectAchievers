@@ -44,8 +44,6 @@ export const DUPLICATE_SHARDS: Record<EditionKind, number> = {
 export interface PoolEntry {
   editionId: string;
   familyKey: string;
-  /** Avancement du joueur sur le jeu, en % : un jeu presque fini sort plus souvent. */
-  completion: number;
 }
 export type Pool = Record<EditionKind, PoolEntry[]>;
 
@@ -72,22 +70,17 @@ function available(pool: Pool, wanted: EditionKind): EditionKind {
   throw new Error('Pool vide');
 }
 
-/** Un jeu tiré au hasard, pondéré par l'avancement : poids = 1 + avancement / 25. */
-function pick(entries: PoolEntry[], random: () => number) {
-  const weights = entries.map((entry) => 1 + Math.min(Math.max(entry.completion, 0), 100) / 25);
-  let roll = random() * weights.reduce((sum, weight) => sum + weight, 0);
-  for (let i = 0; i < entries.length; i++) {
-    roll -= weights[i]!;
-    if (roll < 0) return entries[i]!;
-  }
-  return entries.at(-1)!;
-}
+/** Une carte de la rareté tirée, à chances égales : aucun jeu n'est favorisé. */
+const pick = (entries: PoolEntry[], random: () => number) =>
+  entries[Math.min(Math.floor(random() * entries.length), entries.length - 1)]!;
 
 /**
  * Tire un booster. `random` rend un nombre dans [0, 1[ : le serveur passe un tirage
  * cryptographique, les tests une suite fixe. Renvoie les cartes et le compteur de garantie
  * suivant : il repart à zéro après une Mythique, et ne bouge pas tant qu'aucune Mythique
- * n'est possible pour ce joueur.
+ * n'existe au catalogue. Le tirage est un pur hasard : la rareté suit `RATES`, puis la carte est
+ * prise au hasard parmi toutes celles de cette rareté. Une même carte peut sortir deux fois dans
+ * un booster : le doublon part au recyclage.
  */
 export function drawBooster(
   kind: BoosterKind,
@@ -116,13 +109,9 @@ export function drawBooster(
     wanted[CARDS_PER_BOOSTER - 1] = 'MYTHIQUE';
   }
 
-  // Une même édition ne revient dans un booster que s'il n'en reste aucune autre de sa rareté.
-  const taken = new Set<string>();
   const cards = wanted.map((rarity) => {
     const kindGiven = available(pool, rarity);
-    const fresh = pool[kindGiven].filter((entry) => !taken.has(entry.editionId));
-    const entry = pick(fresh.length ? fresh : pool[kindGiven], random);
-    taken.add(entry.editionId);
+    const entry = pick(pool[kindGiven], random);
     return { editionId: entry.editionId, familyKey: entry.familyKey, kind: kindGiven };
   });
   const gotMythique = cards.some((card) => card.kind === 'MYTHIQUE');

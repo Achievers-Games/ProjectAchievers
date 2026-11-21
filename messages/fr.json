@@ -1802,6 +1802,18 @@
   "mod_cards": "Cartes à créer",
   "mod_cards_intro": "Les jeux du site qui n’ont pas encore leurs cartes, et les visuels déjà prêts.",
   "mod_cards_open": "Voir les cartes à créer",
+  "mod_boosters": "Test des boosters",
+  "mod_boosters_intro": "Ouvre de vrais boosters dans le catalogue réel, avec des éclats illimités : rien n'est payé, rien n'est ajouté à ta collection.",
+  "mod_boosters_open": "Tester les boosters",
+  "mod_boosters_normal": "Ouvrir un booster normal",
+  "mod_boosters_golden": "Ouvrir un booster doré",
+  "mod_boosters_force_mythique": "Forcer la garantie Mythique",
+  "mod_boosters_simulation": "Simulation",
+  "mod_boosters_simulation_count": "Nombre de boosters",
+  "mod_boosters_simulate": "Simuler",
+  "mod_boosters_simulation_cards": "Cartes tirées",
+  "mod_boosters_simulation_repeated": "Boosters avec deux fois la même carte : {count} sur {total}.",
+  "mod_boosters_simulation_forced": "Garanties Mythique atteintes : {count}.",
   "mod_cards_text": "Chaque jeu demande trois cartes. Relief et Vivante partent de l’image de bibliothèque Steam (library hero) ; la Mythique d’un artwork officiel, à choisir et noter ici. Les jeux les plus joués d’abord : leurs cartes sortiront le plus souvent.",
   "mod_cards_games": "Jeux du site",
   "mod_cards_made": "Dont {count} en cartes",
@@ -2380,7 +2392,7 @@
   "steam_trust_pace": "Repéré au rythme, sans lot : trop de succès pour le temps joué, débloqués un par un",
   "steam_trust_playtime_reference": "Temps de jeu : {time}, contre {expected} attendus d’après Lure pour cette progression",
   "boosters_title": "Boosters",
-  "boosters_help": "Ouvre des boosters pour obtenir des éditions animées des cartes de ta bibliothèque. Une édition se montre sur ton profil une fois le jeu fini à 100 %.",
+  "boosters_help": "Ouvre des boosters pour collectionner les éditions animées de tous les jeux, même ceux que tu n'as pas. Une édition se montre sur ton profil une fois le jeu fini à 100 %.",
   "boosters_shards": [
     {
       "declarations": [
@@ -2402,10 +2414,10 @@
   "boosters_pity": "Mythique garantie dans {count} boosters au plus.",
   "boosters_open_daily": "Ouvrir un booster offert",
   "boosters_buy": "Ouvrir un booster ({price} éclats)",
-  "boosters_no_cards": "Aucun jeu de ta bibliothèque n'a encore d'édition : les boosters s'ouvriront dès qu'il y en aura une.",
+  "boosters_no_cards": "Aucune carte n'est encore au catalogue : les boosters s'ouvriront dès qu'il y en aura une.",
   "boosters_no_booster": "Plus de booster offert pour l'instant : le prochain arrive à minuit.",
   "boosters_no_shards": "Pas assez d'éclats pour ce booster.",
-  "boosters_eligible": "Jeux possibles : {relief} en Relief, {vivante} en Vivante, {mythique} en Mythique.",
+  "boosters_eligible": "Cartes en jeu : {relief} en Relief, {vivante} en Vivante, {mythique} en Mythique.",
   "boosters_golden": "Booster doré",
   "boosters_opened": "Ton booster",
   "boosters_rates": "Taux par carte",
@@ -2447,6 +2459,7 @@
   "booster_reveal_again": "Revoir la révélation",
   "booster_tap_card": "Touche une carte pour la retourner",
   "booster_reveal_all": "Tout retourner",
+  "booster_reveal_commons": "Révéler les Relief",
   "booster_close": "Fermer",
   "booster_recap_new": [
     {

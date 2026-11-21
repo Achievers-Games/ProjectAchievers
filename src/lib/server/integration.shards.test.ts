@@ -1,7 +1,8 @@
 // Tests sur un vrai PostgreSQL : `npm run dev:db` ou le service de la CI.
 import 'dotenv/config';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { GAME_SHARD_CAP, STARTER_CAP } from '#lib/shards';
+import { setCardsOpeningForTests } from './cards-launch';
 import { db } from './db';
 import { catchUpShards, grantMissingStarters, grantStarter } from './shards';
 import { withdrawSteamProgress } from './steam-integrity';
@@ -190,6 +191,33 @@ describe('éclats gagnés à la synchro', () => {
 
     await saveProgress(userId, gameId, unlocks([0], before));
     expect(await balance(userId)).toBe(0);
+  });
+});
+
+describe('avant l’ouverture des éclats', () => {
+  afterEach(() => setCardsOpeningForTests(new Date(0)));
+
+  it('ne verse rien, puis part de zéro à l’ouverture', async () => {
+    const { id: userId } = await player();
+    const { id: gameId } = await game([0.5, 0.5, 0.5, 90]);
+    setCardsOpeningForTests(null);
+
+    await saveProgress(userId, gameId, unlocks([0], before));
+    await saveProgress(userId, gameId, unlocks([0, 1], after));
+    expect(await grantStarter(userId)).toBe(0);
+    expect(await catchUpShards(userId)).toBe(0);
+    expect(await grantMissingStarters(1000)).toBe(0);
+    expect(await balance(userId)).toBe(0);
+
+    // L'ouverture, après les deux succès : ils deviennent l'historique du capital de départ,
+    // et seuls les succès d'après l'ouverture paient au barème.
+    const opening = new Date(after.getTime() + DAY);
+    setCardsOpeningForTests(opening);
+    expect(await catchUpShards(userId)).toBe(0);
+    expect(await grantStarter(userId)).toBe(30 + 30);
+    await saveProgress(userId, gameId, unlocks([0, 1, 2], new Date(opening.getTime() + DAY)));
+    expect(await balance(userId)).toBe(30 + 30 + 30);
+    expect(await ledger(userId)).toBe(await balance(userId));
   });
 });
 

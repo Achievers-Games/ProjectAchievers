@@ -21,9 +21,22 @@ export interface CatalogueGame {
   version: number;
   /** Le dossier d'atelier de chaque édition, sous `static/_proto/`. */
   editions: Record<EditionKind, string>;
+  /**
+   * Des cartes de plus pour une rareté : une autre illustration, une carte d'événement. Le tirage
+   * choisit d'abord le jeu, puis l'une de ses cartes de cette rareté. Retirer une variante du
+   * catalogue la sort des boosters ; ses propriétaires la gardent.
+   */
+  variants?: readonly CatalogueVariant[];
 }
 
-export const CARD_CATALOGUE: readonly CatalogueGame[] = data.games;
+export interface CatalogueVariant {
+  /** Identifiant stable de la variante pour ce jeu et cette rareté (jamais `base`). */
+  id: string;
+  kind: EditionKind;
+  folder: string;
+}
+
+export const CARD_CATALOGUE: readonly CatalogueGame[] = data.games as readonly CatalogueGame[];
 
 /** Le préfixe public des cartes publiées. */
 export const CARDS_URL = '/cartes';
@@ -31,6 +44,15 @@ export const CARDS_URL = '/cartes';
 /** L'adresse publiée d'une édition, celle que la base enregistre. */
 export const publishedCardPath = (game: CatalogueGame, kind: EditionKind) =>
   `${CARDS_URL}/${game.editions[kind]}/${game.version}/`;
+
+/** L'adresse publiée d'une variante : son dossier, à la version du jeu. */
+export const publishedVariantPath = (game: CatalogueGame, variant: CatalogueVariant) =>
+  `${CARDS_URL}/${variant.folder}/${game.version}/`;
+
+/** Tous les dossiers d'atelier d'un jeu : ses trois éditions et ses variantes. */
+export const catalogueFolders = (game: CatalogueGame) => [
+  ...new Set([...Object.values(game.editions), ...(game.variants ?? []).map((v) => v.folder)]),
+];
 
 /** L'adresse d'atelier d'une édition, servie en développement seulement. */
 export const workshopCardPath = (game: CatalogueGame, kind: EditionKind) =>

@@ -1,6 +1,6 @@
 // Tests sur un vrai PostgreSQL : `npm run dev:db` ou le service de la CI.
 import 'dotenv/config';
-import { afterAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { BOOSTER_PRICE } from '#lib/boosters';
 import { db } from './db';
 import {
@@ -20,6 +20,12 @@ setupIntegration();
 // Les éditions ne dépendent d'aucun jeu : le nettoyage commun ne les voit pas.
 // Supprimer la famille supprime ses éditions.
 afterAll(() => db.cardFamily.deleteMany({ where: { familyKey: { startsWith: PREFIX } } }));
+// Tous les joueurs tirent dans le même catalogue : chaque test part d'un catalogue vide, pour
+// savoir exactement ce qui peut sortir.
+beforeEach(async () => {
+  await db.cardFamily.deleteMany({ where: { familyKey: { startsWith: PREFIX } } });
+  await db.cardFamily.updateMany({ where: { enabled: true }, data: { enabled: false } });
+});
 
 async function player(shards = 0) {
   return db.user.create({
@@ -27,8 +33,8 @@ async function player(shards = 0) {
   });
 }
 
-/** Un jeu joué par le joueur, avec une édition Relief. */
-async function playedGameWithRelief(userId: string, options: { adultOnly?: boolean } = {}) {
+/** Un jeu au catalogue, avec une édition Relief ; le joueur n'y a encore jamais joué. */
+async function catalogueGameWithRelief(options: { adultOnly?: boolean } = {}) {
   const familyKey = `${PREFIX}-${Math.random()}`;
   const game = await upsertGame({
     platform: 'STEAM',
@@ -39,6 +45,19 @@ async function playedGameWithRelief(userId: string, options: { adultOnly?: boole
     where: { id: game.id },
     data: { familyKey, familyLocked: true, adultOnly: options.adultOnly ?? false },
   });
+  const edition = await db.gameEdition.create({
+    data: {
+      kind: 'RELIEF',
+      assetPath: `/cartes/${familyKey}/1`,
+      family: { create: { familyKey, enabled: true } },
+    },
+  });
+  return { game, edition };
+}
+
+/** Un jeu joué par le joueur, avec une édition Relief. */
+async function playedGameWithRelief(userId: string) {
+  const { game, edition } = await catalogueGameWithRelief();
   await saveAchievements(game.id, [
     {
       platformAchievementId: 'a',
@@ -59,13 +78,6 @@ async function playedGameWithRelief(userId: string, options: { adultOnly?: boole
   await saveProgress(userId, game.id, [
     { platformAchievementId: 'a', unlockedAt: new Date('2020-01-01') },
   ]);
-  const edition = await db.gameEdition.create({
-    data: {
-      kind: 'RELIEF',
-      assetPath: `/cartes/${familyKey}/1`,
-      family: { create: { familyKey, enabled: true } },
-    },
-  });
   return { game, edition };
 }
 
@@ -134,11 +146,22 @@ describe('ouverture d’un booster', () => {
 
   it('ne s’ouvre pas sans édition possible, et écarte les jeux réservés aux adultes', async () => {
     const user = await player(100);
-    await playedGameWithRelief(user.id, { adultOnly: true });
+    await catalogueGameWithRelief({ adultOnly: true });
 
     expect((await boosterState(user.id)).canDraw).toBe(false);
     await expect(openBooster(user.id, 'SHARDS')).rejects.toMatchObject({ code: 'no_cards' });
     expect((await db.user.findUniqueOrThrow({ where: { id: user.id } })).shards).toBe(100);
+  });
+
+  it('tire aussi les cartes des jeux que le joueur n’a pas', async () => {
+    const user = await player();
+    const { edition } = await catalogueGameWithRelief();
+
+    const opened = await openBooster(user.id, 'DAILY');
+    expect(opened.cards.every((card) => card.editionId === edition.id)).toBe(true);
+    expect(await collectionSummary(user.id)).toMatchObject({ owned: { RELIEF: 1 } });
+    // Sans le jeu fini à 100 %, la carte reste dans la collection, pas en bannière.
+    expect(await resolveCardBanner(user.id, edition.id)).toBeNull();
   });
 
   it('ne débite jamais deux fois sous des ouvertures simultanées', async () => {
@@ -254,6 +277,47 @@ describe('la collection', () => {
 });
 
 describe('le catalogue de cartes', () => {
+  it('ajoute une variante, puis la retire des boosters sans l’enlever à ses propriétaires', async () => {
+    const appId = `${PREFIX}-${Math.random()}`;
+    const familyKey = `${PREFIX}-variante-${Math.random()}`;
+    const game = await upsertGame({
+      platform: 'STEAM',
+      platformGameId: appId,
+      name: `${PREFIX} jeu`,
+    });
+    await db.game.update({ where: { id: game.id }, data: { familyKey, familyLocked: true } });
+    const entry = {
+      name: 'Jeu',
+      steamAppId: appId,
+      enabled: true,
+      version: 3,
+      editions: { RELIEF: 'a', VIVANTE: 'a', MYTHIQUE: 'b' },
+      variants: [{ id: 'noel', kind: 'MYTHIQUE' as const, folder: 'b-noel' }],
+    };
+    await syncCardCatalogue([entry]);
+    const noel = await db.gameEdition.findUniqueOrThrow({
+      where: { familyKey_kind_variant: { familyKey, kind: 'MYTHIQUE', variant: 'noel' } },
+    });
+    expect(noel).toMatchObject({ assetPath: '/cartes/b-noel/3/', retired: false });
+
+    await syncCardCatalogue([{ ...entry, variants: [] }]);
+    const editions = await db.gameEdition.findMany({
+      where: { familyKey },
+      orderBy: { variant: 'asc' },
+    });
+    expect(editions.map((edition) => [edition.variant, edition.retired])).toEqual([
+      ['base', false],
+      ['base', false],
+      ['base', false],
+      ['noel', true],
+    ]);
+    // Remise au catalogue, elle revient dans les boosters.
+    await syncCardCatalogue([entry]);
+    expect((await db.gameEdition.findUniqueOrThrow({ where: { id: noel.id } })).retired).toBe(
+      false,
+    );
+  });
+
   it('crée la famille et ses trois éditions, les met à jour, et retire un jeu disparu', async () => {
     const appId = `${PREFIX}-${Math.random()}`;
     const familyKey = `${PREFIX}-famille-${Math.random()}`;

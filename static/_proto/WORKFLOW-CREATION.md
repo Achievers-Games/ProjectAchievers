@@ -14,6 +14,19 @@ rtk proxy node scripts/check-dev-card-set.mjs "Portal 2" portal-2 portal-2-mythi
 
 Une illustration fixe donne une scène composée de plans, un personnage qui réagit brièvement, puis revient au repos, et des VFX liés au décor ou au geste. Le geste est choisi d’après les pixels disponibles. Le même processus fonctionne pour un personnage entier, un animal, un portrait ou un fragment de silhouette, avec un geste différent pour chacun. Une image n’établit pas ce que cache une épaule ni ce que montre un visage de profil. Une pose qui dévoile ces zones demande de les peindre, ou de choisir une action qui reste dans le plan de l’image.
 
+### La chaîne de fabrication, de bout en bout
+
+1. **Préparer l'atelier.** `node scripts/new-card.mjs <dossier> <appid Steam>` crée `<dossier>` (Relief et Vivante) et `<dossier>-mythique`, chacun avec `cards.js` (chargeur du moteur commun), `scene.json`, `edition.json` et un dossier `work/`. Le hero Steam est téléchargé en `source.jpg`. L'artwork de la Mythique se choisit dans la page « Cartes à créer » de la modération.
+2. **Découper et animer.** Le master `.ora`, les sources et les essais restent dans l'atelier ; git les ignore.
+3. **Vérifier sur planche.** Avec `npm run dev`, `node scripts/card-sheet.mjs "<jeu>" <Relief|Vivante|Mythique>` assemble des images de la boucle à des instants donnés dans `cards-review/`. `--no-vfx` valide le rig sans effets, `--joint <calque>` isole un pivot, `--intro` fige l'intro de la Mythique et `--times` choisit les instants.
+4. **Contrôler.** Lancer `check-dev-card-set.mjs` et les tests du catalogue, puis ouvrir de vrais boosters dans `/moderation/boosters`. Cette page tire dans le catalogue réel avec des éclats illimités, sans rien enregistrer. Elle peut forcer la garantie Mythique et simuler des milliers de boosters pour vérifier les pourcentages.
+5. **Publier.** Ajouter le jeu à `src/lib/card-catalogue.json`. Une autre illustration ou une carte d'événement s'ajoute dans `variants` (`id`, `kind`, `folder`). Lancer ensuite `node scripts/publish-cards.mjs` puis `bash scripts/nas-cards.sh`, et commiter le catalogue.
+6. **Sauvegarder les sources.** `bash scripts/nas-card-sources.sh push` copie les fichiers de fabrication ignorés par git vers `cartes-sources` sur le NAS. `pull` les récupère sur un autre poste sans écraser un fichier local plus récent, et `list` montre ce qui est sauvegardé.
+
+**Avant l'ouverture.** Tant que `CARDS_OPENED_AT` vaut `null` dans `src/lib/server/cards-launch.ts`, les boosters, la collection et les bannières de cartes n'existent que pour la modération, et aucun éclat n'est crédité. Pour ouvrir, y mettre la date de l'ouverture et déployer. Tout le monde part alors de zéro : l'historique d'avant devient le capital de départ.
+
+**Tirage.** Le tirage est un pur hasard. La rareté de chaque carte suit seulement les pourcentages, puis la carte est tirée à chances égales parmi toutes celles de cette rareté, dans tout le catalogue, y compris les jeux que le joueur ne possède pas. Une même carte peut sortir deux fois dans un booster : le doublon part au recyclage. Chaque variante compte comme une carte de plus de sa rareté. Retirer une variante du catalogue la sort des boosters, et ses propriétaires la gardent. Le 100 % du jeu ne sert qu'à mettre la carte en bannière.
+
 ## 1. Cadrer et repérer les contraintes
 
 Identifier d’abord le hero Steam en service et consigner l’URL résolue, les dimensions et la date de récupération. L’URL historique `steam/apps/<id>/library_hero.jpg` peut encore servir une ancienne illustration. Vérifier visuellement la version référencée par Steam avant d’attribuer les éditions. Pour une source de travail plus haute issue de la même composition, noter la différence de cadrage et vérifier qu’elle conserve les détails utiles, comme des cornes ou un socle.
@@ -215,14 +228,14 @@ static/_proto/<jeu>-mythique/
 
 ## 7. Valider sur des cartes différentes
 
-| Test                     | Résultat attendu                                                                                                                                                                                                           |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Source et première image | Même cadrage et mêmes repères. Le recto fixe apparaît dès le retournement. Le canvas prend le relais sans saut une fois prêt.                                                                                              |
-| Personnage seul          | Le geste se lit à la taille d’une carte. L’appui, le cou et les contacts restent cohérents. Vérifier repos, anticipation, accent, retour et intermédiaires en lecture normale et à vitesse réduite.                        |
-| Occlusions               | Balayer le clip aux extrêmes de parallaxe et au zoom maximum. Rechercher un trou dans la lame, une fente au cou, une ombre du sujet dans le fond ou un élément qui sort du cadre. Vérifier le miroir et le cadrage mobile. |
-| VFX                      | Les effets suivent leurs points d’émission et laissent les détails clés lisibles. Désactiver chaque passe individuellement pour isoler un défaut.                                                                          |
-| Interface                | Contrôler ouverture manuelle, « Tout retourner », travelling Mythique, cadre à la fin, inspection, rejeu et bannière. Les flashs de révélation passent derrière la carte.                                                  |
-| Rendu et repli           | Vérifier les chargements d’assets, plusieurs cartes visibles, les ressources libérées à la fermeture et le repli fixe avec WebGL indisponible ou en mouvement réduit.                                                      |
+| Test                     | Résultat attendu                                                                                                                                                                                                                |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Source et première image | Même cadrage et mêmes repères. Le recto fixe apparaît dès le retournement. Le canvas prend le relais sans saut une fois prêt.                                                                                                   |
+| Personnage seul          | Le geste se lit à la taille d’une carte. L’appui, le cou et les contacts restent cohérents. Vérifier repos, anticipation, accent, retour et intermédiaires en lecture normale et à vitesse réduite.                             |
+| Occlusions               | Balayer le clip aux extrêmes de parallaxe et au zoom maximum. Rechercher un trou dans la lame, une fente au cou, une ombre du sujet dans le fond ou un élément qui sort du cadre. Vérifier le miroir et le cadrage mobile.      |
+| VFX                      | Les effets suivent leurs points d’émission et laissent les détails clés lisibles. Désactiver chaque passe individuellement pour isoler un défaut.                                                                               |
+| Interface                | Contrôler ouverture manuelle, « Révéler les Relief », « Tout retourner » (rapide, sans scène Mythique), travelling Mythique, cadre à la fin, inspection, rejeu et bannière. Les flashs de révélation passent derrière la carte. |
+| Rendu et repli           | Vérifier les chargements d’assets, plusieurs cartes visibles, les ressources libérées à la fermeture et le repli fixe avec WebGL indisponible ou en mouvement réduit.                                                           |
 
 Pour éprouver la méthode, reprendre **Zagreus** pour les raccords rigides et le cou, **Ku** pour la morphologie non humaine et les occultations du fond, puis un **portrait serré** avec un idle break du visage. Pour chaque essai, conserver la source et le fichier de travail, les trois poses, une courte capture avec et sans VFX, et les assets exportés. Le résultat doit fonctionner dans le booster. Un défaut qui n’apparaît qu’en lecture normale compte autant qu’un défaut sur une pose arrêtée.
 

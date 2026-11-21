@@ -2,6 +2,7 @@ import type { ShardReason } from '#prisma';
 import { capGains, completionShards, GAME_SHARD_CAP, shardsFor, STARTER_CAP } from '#lib/shards';
 import { logger } from '#lib/logger';
 import { db } from './db';
+import { cardsOpenedAt, shardsStart } from './cards-launch';
 
 const log = logger('Éclats');
 
@@ -201,6 +202,8 @@ async function historyValue(userId: string, shardsFrom: Date) {
  * Renvoie le nombre de joueurs traités, pour l'entretien par lots.
  */
 export async function grantMissingStarters(limit: number) {
+  const opening = cardsOpenedAt();
+  if (!opening) return 0;
   const users = await db.$queryRaw<{ id: string }[]>`
     SELECT u.id FROM "User" u
     WHERE NOT EXISTS (
@@ -208,7 +211,7 @@ export async function grantMissingStarters(limit: number) {
       )
       AND EXISTS (
         SELECT 1 FROM "UserAchievement" ua
-        WHERE ua."userId" = u.id AND ua."unlockedAt" < u."shardsFrom"
+        WHERE ua."userId" = u.id AND ua."unlockedAt" < GREATEST(u."shardsFrom", ${opening})
           -- Comme dans historyValue : un succès déjà payé à l'unité ne fait pas un historique.
           AND NOT EXISTS (
             SELECT 1 FROM "ShardEntry" e
@@ -237,9 +240,11 @@ export async function grantMissingStarters(limit: number) {
  */
 export async function grantStarter(userId: string) {
   const user = await db.user.findUnique({ where: { id: userId }, select: { shardsFrom: true } });
-  // Le capital attend que le temps de jeu soit public : la tournée d'entretien le versera alors.
-  if (!user || (await playtimeHidden(db, userId))) return 0;
-  const target = Math.min(STARTER_CAP, await historyValue(userId, user.shardsFrom));
+  const from = user && shardsStart(user.shardsFrom);
+  // Le capital attend l'ouverture des éclats et un temps de jeu public : la tournée d'entretien
+  // le versera alors.
+  if (!from || (await playtimeHidden(db, userId))) return 0;
+  const target = Math.min(STARTER_CAP, await historyValue(userId, from));
   return db.$transaction(async (tx) => {
     // Sérialise deux comptes qui finissent leur premier import en même temps.
     await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`starter:${userId}`}, 0))::text`;
@@ -261,14 +266,15 @@ export async function grantStarter(userId: string) {
  */
 export async function catchUpShards(userId: string) {
   const user = await db.user.findUnique({ where: { id: userId }, select: { shardsFrom: true } });
-  if (!user || (await playtimeHidden(db, userId))) return 0;
+  const from = user && shardsStart(user.shardsFrom);
+  if (!from || (await playtimeHidden(db, userId))) return 0;
   const unlocks = await db.$queryRaw<{ gameId: string; achievementId: string; unlockedAt: Date }[]>`
     SELECT a."gameId", ua."achievementId", ua."unlockedAt"
     FROM "UserAchievement" ua
     JOIN "Achievement" a ON a.id = ua."achievementId"
     WHERE ua."userId" = ${userId}
       AND (
-        (ua."unlockedAt" >= ${user.shardsFrom} AND NOT EXISTS (
+        (ua."unlockedAt" >= ${from} AND NOT EXISTS (
           SELECT 1 FROM "ShardEntry" e
           WHERE e."userId" = ${userId} AND e.reason = 'ACHIEVEMENT' AND e."refId" = ua."achievementId"
         ))
@@ -297,13 +303,11 @@ export async function catchUpShards(userId: string) {
   const finished = games.filter((game) => !settled.has(game.gameId));
   let gained = 0;
   for (const [gameId, rows] of Map.groupBy(unlocks, (unlock) => unlock.gameId)) {
-    gained += await db.$transaction((tx) =>
-      creditUnlocks(tx, userId, gameId, rows, user.shardsFrom),
-    );
+    gained += await db.$transaction((tx) => creditUnlocks(tx, userId, gameId, rows, from));
   }
   for (const game of finished) {
     gained += await db.$transaction((tx) =>
-      creditCompletion(tx, userId, game.gameId, game.lastUnlockedAt, user.shardsFrom),
+      creditCompletion(tx, userId, game.gameId, game.lastUnlockedAt, from),
     );
   }
   return gained;

@@ -1802,6 +1802,18 @@
   "mod_cards": "Cartas a criar",
   "mod_cards_intro": "Os jogos do site que ainda não têm suas cartas, e as imagens já disponíveis.",
   "mod_cards_open": "Ver as cartas a criar",
+  "mod_boosters": "Teste de pacotes",
+  "mod_boosters_intro": "Abra pacotes reais do catálogo real com fragmentos ilimitados: nada é pago e nada entra na sua coleção.",
+  "mod_boosters_open": "Testar os pacotes",
+  "mod_boosters_normal": "Abrir um pacote normal",
+  "mod_boosters_golden": "Abrir um pacote dourado",
+  "mod_boosters_force_mythique": "Forçar a garantia Mythique",
+  "mod_boosters_simulation": "Simulação",
+  "mod_boosters_simulation_count": "Número de pacotes",
+  "mod_boosters_simulate": "Simular",
+  "mod_boosters_simulation_cards": "Cartas tiradas",
+  "mod_boosters_simulation_repeated": "Pacotes com a mesma carta duas vezes: {count} de {total}.",
+  "mod_boosters_simulation_forced": "Garantias Mythique atingidas: {count}.",
   "mod_cards_text": "Cada jogo precisa de três cartas. Relief e Vivante partem da imagem da biblioteca Steam (library hero); Mythique, de uma arte oficial, escolhida e anotada aqui. Os jogos mais jogados primeiro: suas cartas sairão com mais frequência.",
   "mod_cards_games": "Jogos do site",
   "mod_cards_made": "{count} com cartas",
@@ -2380,7 +2392,7 @@
   "steam_trust_pace": "Detectado pelo ritmo, sem lote: conquistas demais para o tempo jogado, desbloqueadas uma a uma",
   "steam_trust_playtime_reference": "Tempo de jogo: {time}, contra {expected} esperados pela Lure para este progresso",
   "boosters_title": "Pacotes",
-  "boosters_help": "Abra pacotes para conseguir edições animadas das cartas da sua biblioteca. Uma edição aparece no seu perfil quando o jogo estiver 100 % completo.",
+  "boosters_help": "Abra pacotes para colecionar as edições animadas de todos os jogos, mesmo os que você não tem. Uma edição aparece no seu perfil quando o jogo estiver 100 % completo.",
   "boosters_shards": [
     {
       "declarations": [
@@ -2402,10 +2414,10 @@
   "boosters_pity": "Mythique garantida em no máximo {count} pacotes.",
   "boosters_open_daily": "Abrir um pacote grátis",
   "boosters_buy": "Abrir um pacote ({price} fragmentos)",
-  "boosters_no_cards": "Nenhum jogo da sua biblioteca tem edição ainda: os pacotes abrem assim que houver uma.",
+  "boosters_no_cards": "Ainda não há cartas no catálogo: os pacotes abrem assim que houver uma.",
   "boosters_no_booster": "Sem pacotes grátis por enquanto: o próximo chega à meia-noite.",
   "boosters_no_shards": "Fragmentos insuficientes para este pacote.",
-  "boosters_eligible": "Jogos possíveis: {relief} em Relief, {vivante} em Vivante, {mythique} em Mythique.",
+  "boosters_eligible": "Cartas em jogo: {relief} em Relief, {vivante} em Vivante, {mythique} em Mythique.",
   "boosters_golden": "Pacote dourado",
   "boosters_opened": "Seu pacote",
   "boosters_rates": "Chances por carta",
@@ -2447,6 +2459,7 @@
   "booster_reveal_again": "Rever revelação",
   "booster_tap_card": "Toque em uma carta para virá-la",
   "booster_reveal_all": "Virar todas",
+  "booster_reveal_commons": "Revelar as Relief",
   "booster_close": "Fechar",
   "booster_recap_new": [
     {

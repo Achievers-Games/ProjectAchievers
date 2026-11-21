@@ -1,13 +1,13 @@
 import { fail } from '@sveltejs/kit';
 import { m } from '#lib/paraglide/messages';
-import { requireLogin } from '#lib/server/auth';
+import { requireCards } from '#lib/server/cards-launch';
 import { collectionSummary } from '#lib/server/boosters';
 import { resolveCardBanner } from '#lib/server/card-banner';
 import { db } from '#lib/server/db';
 import { collectionCards, collectionFilters } from './collection.server';
 import type { Actions, PageServerLoad } from './$types';
 
-const requireUser = (locals: App.Locals) => requireLogin(locals, '/boosters/collection');
+const requireUser = (locals: App.Locals) => requireCards(locals, '/boosters/collection');
 
 /**
  * La collection reste privée : chacun ne voit que ses propres cartes. Les compteurs viennent de la

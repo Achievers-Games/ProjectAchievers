@@ -1,5 +1,10 @@
 import { EDITIONS } from '#lib/boosters';
-import { CARD_CATALOGUE, publishedCardPath, type CatalogueGame } from '#lib/card-catalogue';
+import {
+  CARD_CATALOGUE,
+  publishedCardPath,
+  publishedVariantPath,
+  type CatalogueGame,
+} from '#lib/card-catalogue';
 import { logger } from '#lib/logger';
 import { db } from './db';
 
@@ -39,6 +44,27 @@ export async function syncCardCatalogue(catalogue: readonly CatalogueGame[] = CA
           update: { assetPath: publishedCardPath(entry, kind) },
         }),
       ),
+      ...(entry.variants ?? []).map((variant) =>
+        db.gameEdition.upsert({
+          where: { familyKey_kind_variant: { familyKey, kind: variant.kind, variant: variant.id } },
+          create: {
+            familyKey,
+            kind: variant.kind,
+            variant: variant.id,
+            assetPath: publishedVariantPath(entry, variant),
+          },
+          update: { assetPath: publishedVariantPath(entry, variant), retired: false },
+        }),
+      ),
+      // Une variante qui n'est plus au catalogue sort des boosters ; les éditions de base, jamais.
+      db.gameEdition.updateMany({
+        where: {
+          familyKey,
+          variant: { notIn: ['base', ...(entry.variants ?? []).map((variant) => variant.id)] },
+          retired: false,
+        },
+        data: { retired: true },
+      }),
     ]);
   }
   const retired = await db.cardFamily.updateMany({
