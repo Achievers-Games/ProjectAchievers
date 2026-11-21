@@ -13,8 +13,14 @@ interface DataScene {
   background: { file: string };
   curves?: Record<string, number[]>;
   sprites?: Record<string, { file: string }>;
-  layers: { id: string; file?: string; parent?: string; motion?: { curve?: string }[] }[];
-  effects?: { type: string; before?: string; attach?: string; sprite?: string }[];
+  layers: {
+    id: string;
+    file?: string;
+    parent?: string;
+    clip?: { frame: string };
+    motion?: { curve?: string }[];
+  }[];
+  effects?: { type: string; before?: string; attach?: string; frame?: string; sprite?: string }[];
   intro?: { type: string; revealAt: number };
 }
 
@@ -91,6 +97,7 @@ describe('le catalogue de cartes', () => {
       for (const layer of scene.layers) {
         if (layer.file) expect(existsSync(join(dir, layer.file)), layer.file).toBe(true);
         if (layer.parent) expect(ids, `parent de ${layer.id}`).toContain(layer.parent);
+        if (layer.clip) expect(ids, `découpage de ${layer.id}`).toContain(layer.clip.frame);
         for (const term of layer.motion ?? []) {
           if (term.curve) expect(curves, `courbe de ${layer.id}`).toContain(term.curve);
         }
@@ -100,7 +107,7 @@ describe('le catalogue de cartes', () => {
       }
       for (const fx of scene.effects ?? []) {
         expect(EFFECT_TYPES).toContain(fx.type);
-        for (const id of [fx.before, fx.attach])
+        for (const id of [fx.before, fx.attach, fx.frame])
           if (id) expect(ids, `${fx.type} → ${id}`).toContain(id);
         if (fx.sprite) expect(Object.keys(scene.sprites ?? {})).toContain(fx.sprite);
       }

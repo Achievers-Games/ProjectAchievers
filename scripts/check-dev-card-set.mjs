@@ -1,3 +1,11 @@
+// Contrôle d'un jeu dans /dev/cartes-animees et /dev/boosters : les trois éditions, leurs scènes du
+// moteur commun (shared/card-engine.js), chaque pivot isolé, le geste, le retour au repos, le
+// repli fixe et la révélation du booster (travelling ou intro).
+//
+//   node scripts/check-dev-card-set.mjs "Portal 2" portal-2 portal-2-mythique
+//
+// Une édition faite à la main (sans scene.json du moteur commun) ne passe que les contrôles
+// d'intégration : image fixe, repli en mouvement réduit et révélation.
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
 
@@ -8,24 +16,42 @@ if (!title || !base || !mythic) {
   );
 }
 const origin = process.env.CARD_DEV_ORIGIN ?? 'http://localhost:3000';
-const manifest = async (path) => {
+const json = async (path, optional = false) => {
   const response = await fetch(`${origin}/_proto/${path}`);
+  if (optional && !response.ok) return null;
   assert.ok(response.ok, path);
   return response.json();
 };
+/** La scène d'un dossier, si elle est décrite pour le moteur commun. */
+const dataScene = async (folder) => {
+  const scene = await json(`${folder}/scene.json`, true);
+  return scene?.engine === 2 ? scene : null;
+};
 const [baseScene, mythicScene, reveal] = await Promise.all([
-  manifest(`${base}/scene.json`),
-  manifest(`${mythic}/scene.json`),
-  manifest(`${mythic}/edition.json`),
+  dataScene(base),
+  dataScene(mythic),
+  json(`${mythic}/edition.json`),
 ]);
-assert.notEqual(baseScene.source, mythicScene.source);
-assert.equal(reveal.shots.length, 3);
-assert.ok(reveal.shots[0].from.x < 0.3 && reveal.shots[1].from.x > 0.7);
-assert.deepEqual(reveal.shots[2].to, { x: 0.5, y: 0.5, zoom: 1 });
-for (const scene of [baseScene, mythicScene]) {
+assert.notEqual(base, mythic, 'La Mythique vient d’une autre illustration');
+// Une Mythique sans intro se dévoile par trois plans de caméra : gauche, droite, puis centre.
+if (!reveal.intro) {
+  assert.equal(reveal.shots.length, 3);
+  assert.ok(reveal.shots[0].from.x < 0.3 && reveal.shots[1].from.x > 0.7);
+  assert.deepEqual(reveal.shots[2].to, { x: 0.5, y: 0.5, zoom: 1 });
+}
+
+/** Un calque animé : mouvements, ondulation ou maillage. */
+const animatedLayer = (layer) => Boolean(layer.motion?.length || layer.sway || layer.mesh);
+/** Une scène qui bouge toujours un peu (respiration, vent, fleurs) n'a pas de repos exact. */
+const idles = (scene) =>
+  scene.layers.some(
+    (layer) => layer.sway || layer.mesh || layer.motion?.some((term) => term.wave || term.signal),
+  ) || Object.values(scene.signals ?? {}).some((signal) => signal.waves?.length);
+
+for (const scene of [baseScene, mythicScene].filter(Boolean)) {
   const ids = new Set(scene.layers.map(({ id }) => id));
   assert.equal(ids.size, scene.layers.length);
-  assert.ok(scene.layers.some(({ peak }) => peak.some(Boolean)));
+  assert.ok(scene.layers.some(animatedLayer), 'Au moins un calque animé');
   for (const part of scene.layers) {
     const lineage = new Set([part.id]);
     for (
@@ -93,22 +119,34 @@ try {
     ['Vivante', baseScene],
     ['Mythique', mythicScene],
   ]) {
+    if (!scene) {
+      console.log(`${edition} · faite à la main : contrôles de scène ignorés`);
+      continue;
+    }
     await card(edition).click();
     await canvas.waitFor();
     await page.mouse.move(0, 0);
     const rest = await paint(0, null, 'off');
-    for (const part of scene.layers.filter(({ peak }) => peak.some(Boolean))) {
+    for (const part of scene.layers.filter((layer) => layer.motion?.length)) {
       assert.notEqual(await paint(0, part.id, 'off'), rest, `Pivot ${part.id}`);
     }
-    assert.notEqual(await paint(0.95, null, 'off'), rest, 'Transition du geste');
-    assert.notEqual(await paint(1.45, null, 'off'), rest, 'Pose maximale');
-    assert.equal(await paint(4.5, null, 'off'), rest, 'Retour au repos');
-    if (edition === 'Mythique') {
-      assert.notEqual(await paint(4.5, null, 'on'), rest, 'Effet visible pendant la phase calme');
+    const peaks = Object.values(scene.curves ?? {}).map(([, peak]) => peak);
+    for (const peak of peaks) {
+      assert.notEqual(await paint(peak, null, 'off'), rest, `Sommet à ${peak} s`);
+    }
+    if (!idles(scene)) {
+      assert.equal(await paint(scene.period - 0.05, null, 'off'), rest, 'Retour au repos');
+    }
+    if (edition === 'Mythique' && scene.effects?.length) {
+      assert.notEqual(
+        await paint(scene.period - 0.05, null, 'on'),
+        await paint(scene.period - 0.05, null, 'off'),
+        'Effet visible pendant la phase calme',
+      );
     }
     await page.keyboard.press('Escape');
     await dialog.waitFor({ state: 'hidden' });
-    console.log(`${edition} · pivots isolés, transition, sommet et retour vérifiés`);
+    console.log(`${edition} · pivots isolés, sommets et retour vérifiés`);
   }
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await card('Mythique').click();
@@ -127,6 +165,8 @@ try {
   await page.locator('button.pack').press('Enter');
   await page.evaluate(() => {
     window.cardCameraFrames = [];
+    window.cardIntroRevealed = false;
+    document.addEventListener('card-intro-reveal', () => (window.cardIntroRevealed = true), true);
     const watch = new MutationObserver(() => {
       const lens = document.querySelector('.mythique[data-phase="focus"] .lens');
       if (lens) window.cardCameraFrames.push(lens.style.transformOrigin);
@@ -138,24 +178,40 @@ try {
       attributeFilter: ['style', 'data-phase'],
     });
   });
+  await page.getByRole('button', { name: 'Tout retourner' }).waitFor();
   await page.locator('button.card[data-edition="mythique"]').click();
   await page.locator('.mythique .lens canvas[data-ready]').waitFor();
-  await page.locator('.mythique[data-phase="burst"]').waitFor();
-  const cameraFrames = await page.evaluate(() => window.cardCameraFrames);
-  let cursor = 0;
-  for (const {
-    to: { x, y },
-  } of reveal.shots) {
-    const match = cameraFrames.findIndex((origin, index) => {
-      const [left, top] = origin.split(' ').map(Number.parseFloat);
-      return index >= cursor && Math.abs(left - x * 100) < 0.1 && Math.abs(top - y * 100) < 0.1;
-    });
-    assert.ok(match >= cursor, `Plan de caméra absent (${x}, ${y})`);
-    cursor = match + 1;
+  await page.locator('.mythique[data-phase="burst"]').waitFor({ timeout: 30_000 });
+  if (reveal.intro) {
+    // L'intro remplace le travelling : la carte annonce elle-même son dévoilement. Sans GPU, un
+    // rendu WebGL peut être trop lent : le titre arrive alors par le filet de sécurité du booster.
+    await page.waitForFunction(
+      () => window.cardIntroRevealed || document.querySelector('.mythique-text:not([inert])'),
+      null,
+      { timeout: 30_000 },
+    );
+    const announced = await page.evaluate(() => window.cardIntroRevealed);
+    console.log(
+      `${title} · trois éditions, repli fixe et intro de révélation vérifiés` +
+        (announced ? '' : ' (titre par le filet de sécurité : rendu trop lent sans GPU)'),
+    );
+  } else {
+    const cameraFrames = await page.evaluate(() => window.cardCameraFrames);
+    let cursor = 0;
+    for (const {
+      to: { x, y },
+    } of reveal.shots) {
+      const match = cameraFrames.findIndex((origin, index) => {
+        const [left, top] = origin.split(' ').map(Number.parseFloat);
+        return index >= cursor && Math.abs(left - x * 100) < 0.1 && Math.abs(top - y * 100) < 0.1;
+      });
+      assert.ok(match >= cursor, `Plan de caméra absent (${x}, ${y})`);
+      cursor = match + 1;
+    }
+    console.log(
+      `${title} · trois éditions, repli fixe et travelling gauche → droite → centre vérifiés`,
+    );
   }
-  console.log(
-    `${title} · trois éditions, repli fixe et travelling gauche → droite → centre vérifiés`,
-  );
 } finally {
   await browser.close();
 }

@@ -3,8 +3,8 @@
   let scene;
   (window.AchieversCards ??= {})['portal-2'] = {
     async mount(canvas, level = 3) {
-      const render = await (scene ??= import(new URL('../shared/layered-scene.js', folder)).then(
-        ({ loadLayeredScene }) => loadLayeredScene(folder),
+      const render = await (scene ??= import(new URL('../shared/card-engine.js', folder)).then(
+        ({ loadCardScene }) => loadCardScene(folder),
       ));
       return render(canvas, level);
     },

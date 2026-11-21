@@ -1,0 +1,148 @@
+{
+  "engine": 2,
+  "view": [-73, 14, 1446, 676],
+  "period": 7.8,
+  "curves": {
+    "alert": [0.35, 0.95, 1.45, 2.7],
+    "brace": [0.85, 1.55, 2.05, 3.35],
+    "lift": [1.25, 1.95, 2.24, 3.5],
+    "follow": [1.4, 2.15, 2.45, 3.8]
+  },
+  "background": {
+    "file": "bg.jpg",
+    "offset": [-111, -13],
+    "grow": [56, 26],
+    "parallax": [-22, -11],
+    "drift": [[5, 0.48]]
+  },
+  "layers": [
+    {
+      "id": "flower-back",
+      "file": "flowers.png",
+      "crop": [115, 98, 153, 100],
+      "pivot": [205, 115],
+      "parallax": [-16, -7],
+      "motion": [{ "wave": 1.9, "angle": 0.048 }]
+    },
+    { "id": "knight", "parallax": [10, 7], "motion": [{ "curve": "brace", "dx": -9 }] },
+    {
+      "id": "body",
+      "file": "body.png",
+      "parent": "knight",
+      "pivot": [621, 658],
+      "motion": [
+        { "curve": "brace", "angle": 0.018, "sy": -0.072 },
+        { "wave": 1.45, "shape": "breath", "sy": 0.024 }
+      ]
+    },
+    {
+      "id": "upper",
+      "parent": "knight",
+      "motion": [
+        { "curve": "brace", "dy": 14 },
+        { "wave": 1.45, "shape": "breath", "dy": -5 }
+      ]
+    },
+    {
+      "id": "nail",
+      "file": "nail.png",
+      "parent": "upper",
+      "pivot": [466, 452],
+      "motion": [{ "curve": "lift", "angle": 0.17 }]
+    },
+    {
+      "id": "cloak",
+      "file": "cloak.png",
+      "parent": "upper",
+      "pivot": [683, 395],
+      "motion": [{ "curve": "follow", "angle": -0.023 }],
+      "sway": {
+        "axis": "y",
+        "columns": [168, 320],
+        "rows": [300, 930],
+        "step": 5,
+        "sampleOffset": 2.5,
+        "around": { "center": 683, "from": 55, "before": 362, "after": 220 },
+        "waves": [
+          [14, 2.8, -0.025],
+          [4, 4.1, -0.049]
+        ],
+        "push": { "curve": "follow", "amount": 6 }
+      }
+    },
+    {
+      "id": "head",
+      "file": "head.png",
+      "parent": "upper",
+      "pivot": [680, 399],
+      "motion": [
+        { "curve": "alert", "angle": -0.075 },
+        { "curve": "follow", "angle": 0.033 }
+      ]
+    },
+    { "id": "platform", "file": "platform.png", "parallax": [10, 7] },
+    {
+      "id": "flower-mid",
+      "file": "flowers.png",
+      "crop": [786, 594, 75, 98],
+      "pivot": [801, 673],
+      "parallax": [10, 7],
+      "motion": [{ "wave": 2.05, "phase": 1.4, "shape": "settle", "angle": 0.075 }]
+    },
+    {
+      "id": "flower-front",
+      "file": "flowers.png",
+      "crop": [0, 601, 150, 119],
+      "pivot": [9, 688],
+      "parallax": [17, 9],
+      "motion": [{ "wave": 1.5, "angle": 0.055 }]
+    }
+  ],
+  "effects": [
+    {
+      "type": "mist",
+      "blend": "source-over",
+      "before": "flower-back",
+      "parallax": "background",
+      "center": [937, 255],
+      "inner": 25,
+      "radius": 260,
+      "alpha": 0.08,
+      "waves": [[0.035, 0.8]],
+      "color": [170, 225, 255],
+      "rect": [640, 0, 600, 600]
+    },
+    {
+      "type": "beamDust",
+      "blend": "source-over",
+      "before": "flower-back",
+      "parallax": "background",
+      "top": [1030, 55],
+      "length": 595,
+      "slope": -0.42,
+      "spread": 174,
+      "count": 29,
+      "color": [217, 245, 255]
+    },
+    {
+      "type": "rising",
+      "blend": "source-over",
+      "span": [-20, 1350],
+      "y": 725,
+      "rise": 730,
+      "count": 21,
+      "color": [153, 230, 255]
+    },
+    {
+      "type": "glint",
+      "blend": "source-over",
+      "frame": "nail",
+      "from": [240, 531],
+      "radius": 41,
+      "alpha": 0.68,
+      "window": [1.72, 1.96, 2.01, 2.26],
+      "color": [197, 244, 255],
+      "edge": [120, 209, 255]
+    }
+  ]
+}
