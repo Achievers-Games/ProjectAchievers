@@ -125,8 +125,11 @@ export const levelFor = (kind: EditionKind) => (kind === 'RELIEF' ? 2 : 3);
  */
 export const animatedCard: Action<
   HTMLCanvasElement,
-  /** `onready` part une fois la carte montée et visible : pour lancer son intro aussitôt. */
-  { assetPath: string | null; level: number; onready?: () => void }
+  /**
+   * `onready` part une fois la carte montée et visible, avec son canvas : pour lancer son intro
+   * aussitôt. Une carte déjà chargée est prête avant que le composant ait relié son canvas.
+   */
+  { assetPath: string | null; level: number; onready?: (canvas: HTMLCanvasElement) => void }
 > = (canvas, params) => {
   let stop: (() => void) | undefined;
   let cancelled = false;
@@ -144,7 +147,7 @@ export const animatedCard: Action<
     if (cancelled) stop();
     else {
       canvas.dataset.ready = 'true';
-      params.onready?.();
+      params.onready?.(canvas);
     }
   })().catch((error: unknown) => {
     // L'image fixe reste : une carte animée manquante ne casse pas la révélation. Le journal du

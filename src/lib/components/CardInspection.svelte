@@ -173,7 +173,15 @@
                     use:animatedCard={{
                       assetPath: card.assetPath,
                       level: levelFor(card.kind),
-                      onready: introOnOpen && card.kind === 'MYTHIQUE' ? replay : undefined,
+                      onready:
+                        introOnOpen && card.kind === 'MYTHIQUE'
+                          ? (node: HTMLCanvasElement) => {
+                              canvas = node;
+                              // Deux images plus tard : l'inspection est ouverte et la carte a
+                              // dessiné sa première image, sans quoi l'intro ne part pas.
+                              requestAnimationFrame(() => requestAnimationFrame(replay));
+                            }
+                          : undefined,
                     }}
                   ></canvas>{/if}
               {/key}

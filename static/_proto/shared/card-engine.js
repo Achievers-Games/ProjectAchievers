@@ -187,6 +187,19 @@ function drawSway(ctx, image, sway, state) {
   }
 }
 
+/**
+ * Une zone qui ne flotte pas dans un tissu qui ondule : `hold: [x, y, largeur, hauteur, fondu]`,
+ * dans le repère du calque. Dedans, l'onde vaut zéro ; elle revient sur `fondu` pixels autour.
+ * Sert à un bras ou une main qui tient un objet rigide, dessinés sur le même calque que la cape.
+ */
+function holdWeight(hold, x, y) {
+  if (!hold) return 1;
+  const [hx, hy, hw, hh, feather] = hold;
+  const dx = Math.max(hx - x, 0, x - (hx + hw));
+  const dy = Math.max(hy - y, 0, y - (hy + hh));
+  return ease(0, feather, Math.hypot(dx, dy));
+}
+
 /** Les déformations d'un maillage, appliquées à un point de la source. */
 function deformPoint(x, y, deformers, state, layer) {
   let px = x,
@@ -196,7 +209,7 @@ function deformPoint(x, y, deformers, state, layer) {
       // La même onde qu'un `sway`, mais lissée sur les sommets du maillage.
       const vertical = deform.axis === 'y';
       const position = vertical ? x : y;
-      const shift = swayShift(deform, position, state);
+      const shift = swayShift(deform, position, state) * holdWeight(deform.hold, x, y);
       if (vertical) py += shift;
       else px += shift;
     } else if (deform.type === 'bend') {

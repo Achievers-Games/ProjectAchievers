@@ -110,6 +110,8 @@
   let packRect = $state<{ x: number; y: number; width: number; height: number } | null>(null);
   let phase = $state<Phase>('charge');
   let introPending = $state(false);
+  /** Le moment où la Mythique animée est prête : son intro, et son filet, partent de là. */
+  let mythiqueReadyAt: number | null = null;
   let teased = $state(0);
   /** Ce que montre la caméra (point visé et zoom), et la durée du mouvement en cours. */
   let view = $state<Focus | null>(null);
@@ -511,6 +513,7 @@
     if (card.kind === 'MYTHIQUE') {
       stopGameSound();
       mythiqueIndex = index;
+      mythiqueReadyAt = null;
       settling[index] = true;
       const scene = ++sceneId;
       manifest = null;
@@ -662,14 +665,20 @@
     if (revealInIntro) {
       introPending = true;
       const scene = sceneId;
-      // The title still appears if the canvas falls back to the static illustration.
-      // L'intro déclare quand elle dévoile la carte : ce filet passe deux secondes après.
-      later(
-        () => {
-          if (scene === sceneId) finishCardIntro();
-        },
-        (manifest?.intro?.revealAt ?? 4000) + 2000,
-      );
+      const startedAt = performance.now();
+      const revealAt = manifest?.intro?.revealAt ?? 4000;
+      // L'intro déclare quand elle dévoile la carte. Ce filet passe deux secondes après, compté
+      // depuis le moment où la carte animée tourne vraiment : une carte longue à charger garde
+      // son intro. Si elle ne charge pas du tout, le titre arrive quand même avec l'image fixe.
+      const watch = () => {
+        if (scene !== sceneId || !introPending) return;
+        const now = performance.now();
+        const from = mythiqueReadyAt === null ? null : Math.max(startedAt, mythiqueReadyAt);
+        if ((from !== null && now - from >= revealAt + 2000) || now - startedAt >= revealAt + 8000)
+          finishCardIntro();
+        else later(watch, 250);
+      };
+      later(watch, 250);
     }
     phase = 'burst';
   }
@@ -745,10 +754,11 @@
   }
 </script>
 
-{#snippet art(card: RevealCard, show: boolean)}
+{#snippet art(card: RevealCard, show: boolean, onready?: () => void)}
   {#if card.game?.headerUrl}<img src={card.game.headerUrl} alt="" />{/if}
   {#if show && card.assetPath}
-    <canvas use:animatedCard={{ assetPath: card.assetPath, level: levelFor(card.kind) }}></canvas>
+    <canvas use:animatedCard={{ assetPath: card.assetPath, level: levelFor(card.kind), onready }}
+    ></canvas>
   {/if}
 {/snippet}
 
@@ -1081,7 +1091,9 @@
                     ? `transform ${moving}ms ${EASE}, transform-origin ${moving}ms ${EASE}`
                     : 'none'}
                 >
-                  {@render art(mythique, phase !== 'charge')}
+                  <!-- Montée dès les indices, face cachée : ses textures et son rendu sont prêts
+                       quand elle se retourne, même chargés de loin. -->
+                  {@render art(mythique, true, () => (mythiqueReadyAt = performance.now()))}
                 </span>
                 {#if phase === 'focus'}<span class="holo" aria-hidden="true"></span>{/if}
                 <span class="frame-light" aria-hidden="true"></span>
@@ -1154,6 +1166,7 @@
         status={cards[inspectedIndex]!.duplicate
           ? m.boosters_duplicate({ count: cards[inspectedIndex]!.shards })
           : m.boosters_new()}
+        introOnOpen
         onclose={() => (inspectedIndex = null)}
         onprevious={() => moveInspection(-1)}
         onnext={() => moveInspection(1)}

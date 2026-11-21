@@ -93,6 +93,7 @@
     position={inspected + 1}
     total={cards.length}
     status={status(cards[inspected])}
+    introOnOpen
     onclose={() => (inspected = null)}
     onprevious={() => move(-1)}
     onnext={() => move(1)}

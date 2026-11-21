@@ -56,18 +56,22 @@
       "parent": "upper",
       "pivot": [683, 395],
       "motion": [{ "curve": "follow", "angle": -0.023 }],
-      "sway": {
-        "axis": "y",
-        "columns": [168, 320],
-        "rows": [300, 930],
-        "step": 5,
-        "sampleOffset": 2.5,
-        "around": { "center": 683, "from": 55, "before": 362, "after": 220 },
-        "waves": [
-          [14, 2.8, -0.025],
-          [4, 4.1, -0.049]
-        ],
-        "push": { "curve": "follow", "amount": 6 }
+      "mesh": {
+        "rect": [300, 168, 630, 320],
+        "grid": [21, 10],
+        "deform": [
+          {
+            "type": "wave",
+            "axis": "y",
+            "around": { "center": 683, "from": 55, "before": 362, "after": 220 },
+            "waves": [
+              [14, 2.8, -0.025],
+              [4, 4.1, -0.049]
+            ],
+            "push": { "curve": "follow", "amount": 6 },
+            "hold": [430, 405, 125, 70, 32]
+          }
+        ]
       }
     },
     {
