@@ -611,9 +611,11 @@ export async function filterSteamProgress(
   const candidates = [...new Set([...(wasPending ? previous.flagged : []), ...fresh])];
   if (!previous && !candidates.length) return { unlocks, withdrawn: false, reviewChanged: false };
 
-  // Une lecture partielle peut manquer le reste d'un lot déjà constaté.
+  // Une lecture partielle peut manquer le reste d'un lot déjà constaté. Un lot déjà accepté puis
+  // rouvert pour un nouvel examen continue de compter : personne ne perd ses points en attendant.
+  const accepted = new Set(previous?.approved);
   const held = new Set([
-    ...structural,
+    ...structural.filter((key) => !accepted.has(key)),
     ...(!complete && wasPending ? heldSteamUnlocks(previous) : []),
   ]);
   const reviewOnlyCandidates = candidates.filter((key) => !held.has(key));

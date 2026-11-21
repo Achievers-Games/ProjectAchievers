@@ -853,3 +853,47 @@ it('ne suspend pas d’office une partie hors ligne synchronisée d’un coup ap
     signals: expect.arrayContaining([expect.objectContaining({ kind: 'history', count: 4 })]),
   });
 });
+
+it('garde les points d’un lot accepté puis rouvert pour un nouvel examen', async () => {
+  const user = await player();
+  const steamId = user.accounts[0]!.providerUserId;
+  const gameId = await game();
+  const at = Math.floor(Date.now() / 1000) * 1000;
+  const scope = { steamId_gameId: { steamId, gameId } };
+  await saveProgress(
+    user.id,
+    gameId,
+    full(at),
+    { playtimeMinutes: 4200, offlinePlaytimeMinutes: 600 },
+    { steamId, complete: true },
+  );
+  const accepted = await db.steamIntegrityReview.findUniqueOrThrow({ where: scope });
+  expect(accepted).toMatchObject({ status: 'APPROVED' });
+
+  // Un modérateur rouvre le dossier ; Steam ne montre plus de jeu hors ligne.
+  await db.steamIntegrityReview.update({
+    where: scope,
+    data: {
+      status: 'PENDING',
+      flagged: accepted.approved,
+      reviewOnly: accepted.approved,
+      reviewedAt: null,
+      openedAt: new Date(),
+    },
+  });
+  await db.userGame.update({
+    where: { userId_gameId: { userId: user.id, gameId } },
+    data: { offlinePlaytimeMinutes: 0 },
+  });
+  await saveProgress(
+    user.id,
+    gameId,
+    full(at),
+    { playtimeMinutes: 4200, offlinePlaytimeMinutes: 0 },
+    { steamId, complete: true },
+  );
+  const reopened = await db.steamIntegrityReview.findUniqueOrThrow({ where: scope });
+  expect(reopened.status).toBe('PENDING');
+  expect(reopened.reviewOnly).toHaveLength(accepted.approved.length);
+  expect(await progress(user.id, gameId)).toMatchObject({ unlockedCount: 21, completion: 100 });
+});
