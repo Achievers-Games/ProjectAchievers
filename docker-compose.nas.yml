@@ -54,6 +54,8 @@ services:
     # En lecture seule : le site vérifie seulement que la sauvegarde du jour existe.
     volumes:
       - ${BACKUP_DIR:-./backups}:/backups:ro
+      # Les cartes publiées (scripts/nas-cards.sh), servies sous /cartes sans passer par l'image.
+      - ${CARDS_DIR:-./cartes}:/cartes:ro
     environment:
       DATABASE_URL: postgresql://achievers:${POSTGRES_PASSWORD}@db:5432/achievers
       ORIGIN: ${ORIGIN:?URL publique du site}
@@ -61,6 +63,7 @@ services:
       # Pendant un changement de clé seulement : l'ancienne, le temps que tout soit rechiffré.
       ENCRYPTION_KEY_PREVIOUS: ${ENCRYPTION_KEY_PREVIOUS:-}
       BACKUP_DIR: /backups
+      CARDS_DIR: /cartes
       ADDRESS_HEADER: CF-Connecting-IP
       NODE_OPTIONS: --max-old-space-size=320
       # Chaque import rend son créneau tous les vingt jeux : personne n'attend derrière une

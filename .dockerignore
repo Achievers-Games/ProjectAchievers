@@ -9,3 +9,5 @@ build
 .pgdata
 test-results
 e2e
+# L'atelier des cartes : les cartes publiées vivent sur le NAS, servies sous /cartes.
+static/_proto

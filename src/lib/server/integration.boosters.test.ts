@@ -214,7 +214,8 @@ describe('le catalogue de cartes', () => {
       name: 'Jeu',
       steamAppId: appId,
       enabled: true,
-      editions: { RELIEF: '/cartes/a/', VIVANTE: '/cartes/a/', MYTHIQUE: '/cartes/b/' },
+      version: 1,
+      editions: { RELIEF: 'a', VIVANTE: 'a', MYTHIQUE: 'b' },
     };
     // Un jeu que personne n'a importé attend sans erreur.
     expect(await syncCardCatalogue([{ ...entry, steamAppId: `${PREFIX}-absent` }])).toBe(0);
@@ -222,7 +223,7 @@ describe('le catalogue de cartes', () => {
     expect(await syncCardCatalogue([entry])).toBe(1);
     expect(
       await syncCardCatalogue([
-        { ...entry, editions: { ...entry.editions, MYTHIQUE: '/cartes/c/' } },
+        { ...entry, version: 2, editions: { ...entry.editions, MYTHIQUE: 'c' } },
       ]),
     ).toBe(1);
     const family = await db.cardFamily.findUniqueOrThrow({
@@ -231,9 +232,10 @@ describe('le catalogue de cartes', () => {
     });
     expect(family.enabled).toBe(true);
     expect(family.editions.map((edition) => [edition.kind, edition.assetPath])).toEqual([
-      ['RELIEF', '/cartes/a/'],
-      ['VIVANTE', '/cartes/a/'],
-      ['MYTHIQUE', '/cartes/c/'],
+      // Une retouche publie la version suivante : l'adresse change, le cache ne ment jamais.
+      ['RELIEF', '/cartes/a/2/'],
+      ['VIVANTE', '/cartes/a/2/'],
+      ['MYTHIQUE', '/cartes/c/2/'],
     ]);
 
     await syncCardCatalogue([]);

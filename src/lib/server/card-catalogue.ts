@@ -1,5 +1,5 @@
 import { EDITIONS } from '#lib/boosters';
-import { CARD_CATALOGUE, type CatalogueGame } from '#lib/card-catalogue';
+import { CARD_CATALOGUE, publishedCardPath, type CatalogueGame } from '#lib/card-catalogue';
 import { logger } from '#lib/logger';
 import { db } from './db';
 
@@ -35,8 +35,8 @@ export async function syncCardCatalogue(catalogue: readonly CatalogueGame[] = CA
       ...EDITIONS.map((kind) =>
         db.gameEdition.upsert({
           where: { familyKey_kind_variant: { familyKey, kind, variant: 'base' } },
-          create: { familyKey, kind, assetPath: entry.editions[kind] },
-          update: { assetPath: entry.editions[kind] },
+          create: { familyKey, kind, assetPath: publishedCardPath(entry, kind) },
+          update: { assetPath: publishedCardPath(entry, kind) },
         }),
       ),
     ]);

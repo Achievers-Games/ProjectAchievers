@@ -41,6 +41,8 @@ const schema = z.object({
   CLOUDFLARE_ACCOUNT_ID: z.string().optional(),
   CLOUDFLARE_AI_TOKEN: z.string().optional(),
   DEV_LOGIN: z.string().optional(),
+  /** Le dossier des cartes publiées, servi sous /cartes. Sur le NAS, un volume monté. */
+  CARDS_DIR: z.string().default('cards'),
   SYNC_CONCURRENCY: z.coerce.number().int().min(1).default(2),
   SYNC_GAME_CONCURRENCY: z.coerce.number().int().min(1).max(8).default(2),
   STEAM_CONCURRENCY: z.coerce.number().int().min(1).max(8).default(2),

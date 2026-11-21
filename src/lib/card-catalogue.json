@@ -4,50 +4,55 @@
       "name": "Ori and the Will of the Wisps",
       "steamAppId": "1057090",
       "enabled": true,
+      "version": 1,
       "editions": {
-        "RELIEF": "/_proto/ori/",
-        "VIVANTE": "/_proto/ori/",
-        "MYTHIQUE": "/_proto/ori-mythique/"
+        "RELIEF": "ori",
+        "VIVANTE": "ori",
+        "MYTHIQUE": "ori-mythique"
       }
     },
     {
       "name": "Hades",
       "steamAppId": "1145360",
       "enabled": true,
+      "version": 1,
       "editions": {
-        "RELIEF": "/_proto/hades/",
-        "VIVANTE": "/_proto/hades/",
-        "MYTHIQUE": "/_proto/hades-mythique/"
+        "RELIEF": "hades",
+        "VIVANTE": "hades",
+        "MYTHIQUE": "hades-mythique"
       }
     },
     {
       "name": "Hollow Knight",
       "steamAppId": "367520",
       "enabled": true,
+      "version": 1,
       "editions": {
-        "RELIEF": "/_proto/hollow-knight-mythique/",
-        "VIVANTE": "/_proto/hollow-knight-mythique/",
-        "MYTHIQUE": "/_proto/hollow-knight/"
+        "RELIEF": "hollow-knight-mythique",
+        "VIVANTE": "hollow-knight-mythique",
+        "MYTHIQUE": "hollow-knight"
       }
     },
     {
       "name": "Sekiro: Shadows Die Twice",
       "steamAppId": "814380",
       "enabled": true,
+      "version": 1,
       "editions": {
-        "RELIEF": "/_proto/sekiro/",
-        "VIVANTE": "/_proto/sekiro/",
-        "MYTHIQUE": "/_proto/sekiro-mythique/"
+        "RELIEF": "sekiro",
+        "VIVANTE": "sekiro",
+        "MYTHIQUE": "sekiro-mythique"
       }
     },
     {
       "name": "Portal 2",
       "steamAppId": "620",
       "enabled": true,
+      "version": 1,
       "editions": {
-        "RELIEF": "/_proto/portal-2/",
-        "VIVANTE": "/_proto/portal-2/",
-        "MYTHIQUE": "/_proto/portal-2-mythique/"
+        "RELIEF": "portal-2",
+        "VIVANTE": "portal-2",
+        "MYTHIQUE": "portal-2-mythique"
       }
     }
   ]

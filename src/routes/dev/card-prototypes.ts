@@ -1,4 +1,4 @@
-import { CARD_CATALOGUE } from '#lib/card-catalogue';
+import { CARD_CATALOGUE, workshopCardPath } from '#lib/card-catalogue';
 
 /** Les indices de révélation de la démo, en attendant ceux calculés depuis la base. */
 const CLUES: Record<
@@ -15,7 +15,8 @@ const CLUES: Record<
 /** Les jeux du catalogue de cartes, pour la galerie et le simulateur de boosters. */
 export const PROTOTYPES = CARD_CATALOGUE.map((game) => ({
   name: game.name,
-  assetPath: game.editions.RELIEF,
-  mythiqueAssetPath: game.editions.MYTHIQUE,
+  // La galerie montre l'atelier : une retouche s'y voit avant d'être publiée.
+  assetPath: workshopCardPath(game, 'RELIEF'),
+  mythiqueAssetPath: workshopCardPath(game, 'MYTHIQUE'),
   clues: CLUES[game.steamAppId] ?? { genres: [], achievements: 0, medianMinutes: null },
 }));

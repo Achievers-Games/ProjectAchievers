@@ -221,9 +221,13 @@ export const handleError: HandleServerError = ({ kind, error, event }) => {
 
 // Tout le reste s'exécute dans la langue du visiteur, messages d'erreur compris.
 export const handle: Handle = ({ event, resolve }) =>
-  paraglideMiddleware(event.request, ({ request }) => {
-    // `event.request` n'est plus modifiable : on transmet une copie portant la requête localisée.
-    // Une copie par prototype perdrait tout le reste : le kit recopie lui-même l'événement (`{ ...event }`)
-    // avant de le résoudre, et n'en garderait que les propriétés propres.
-    return secured({ event: { ...event, request }, resolve });
-  });
+  // Les fichiers des cartes : ni langue, ni session, ni contrôle de page. Cloudflare les garde en
+  // cache, le serveur ne les sert qu'une fois par version.
+  event.url.pathname.startsWith('/cartes/')
+    ? resolve(event)
+    : paraglideMiddleware(event.request, ({ request }) => {
+        // `event.request` n'est plus modifiable : on transmet une copie portant la requête localisée.
+        // Une copie par prototype perdrait tout le reste : le kit recopie lui-même l'événement (`{ ...event }`)
+        // avant de le résoudre, et n'en garderait que les propriétés propres.
+        return secured({ event: { ...event, request }, resolve });
+      });
