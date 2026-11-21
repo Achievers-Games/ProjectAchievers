@@ -131,6 +131,19 @@ Partir de la lumière peinte dans l’image pour orienter les godrays. Faire osc
 3. Composer le fond, ses VFX, le personnage et ses accessoires dans l’ordre d’occlusion, puis les effets proches. Masquer ou réduire leur opacité autour des yeux et des contours qui doivent rester lisibles. Sur Ori, le vent et les feuilles suivent le sens du miroir. Les rochers prennent chacun une phase et un axe de flottement distincts.
 4. Vérifier une fois avec uniquement le corps, une fois avec caméra et parallaxe, puis avec les VFX et le cadre. Un défaut qui réapparaît dans une seule passe se corrige dans le calque ou le repère concerné.
 
+### Moteur commun : une carte décrite par des données
+
+Une nouvelle carte se décrit dans `scene.json` (`"engine": 2`) et se rend avec `shared/card-engine.js`. Son `cards.js` ne fait que charger ce moteur, comme celui de Sekiro Mythique. Le code sur mesure reste une exception, réservée à une Mythique qui demande un effet que le moteur n’a pas encore. Dans ce cas, ajouter l’effet ou l’intro au catalogue du moteur plutôt qu’à la carte.
+
+- **Fenêtre et boucle.** `view` donne la fenêtre visible en pixels de la source. `period` donne la durée de la boucle, et `curves` nomme les accents `[début, sommet, maintien, fin]`.
+- **Calques.** Ils sont listés dans l’ordre de dessin, avec `file`, `pivot`, `parent`, `parallax` et des mouvements `{ "curve", "dx", "dy", "angle" }` ou `{ "wave": vitesse, ... }`. Un calque sans `file` est un groupe : ses enfants héritent de son pivot, de sa parallaxe et de ses mouvements.
+- **Effets** (`EFFECTS`). Le catalogue contient `mist`, `rays`, `leaves` (planche de sprites), `sparks` et `glint`. Un effet se dessine avant un calque (`before`), dans le repère d’un calque (`attach`) ou au premier plan. `parallax: "background"` le colle au décor, et `hideDuringIntro` le garde éteint pendant le dévoilement.
+- **Intros** (`INTROS`). L’intro `strike` enchaîne un symbole du jeu, une poussée le long d’une arme, un impact, puis une déchirure depuis l’impact et une gerbe de sprites. `loopAt` fait tomber l’accent de la boucle sur l’impact. `revealAt` doit être identique dans `scene.json` et dans `edition.json`.
+- **Contrôles.** Le test du catalogue vérifie chaque scène en données : fichiers présents, parents, courbes, sprites, effets et intro connus, dévoilement cohérent avec le manifeste. Le lecteur accepte `data-card-time`, `data-card-intro-time`, `data-card-joint` et `data-card-effects="off"`. `check-dev-card-set.mjs` ne lit encore que les scènes de `layered-scene.js`.
+- **Publication.** Le module de moteur importé par `../shared/` est recopié dans la carte publiée. Les pages et polices de l’atelier n’en font pas partie.
+
+Le portage de Sekiro Mythique sert de référence : rendu en données, sa planche d’intro ne diffère de la version sur mesure que du bruit de compression. Restent à porter les autres cartes et à ajouter au moteur la déformation de maillage (cape, ailes) et les intros `portal`, `slash`, `dawn` et `drain`.
+
 ## 6. Appliquer les éditions et intégrer
 
 - **Relief**. Utiliser le visuel héro de la bibliothèque Steam du jeu (`library_hero.jpg`), partagé avec Vivante. Seuls les plans répondent au pointeur. L’illustration se stabilise quand le pointeur s’arrête.

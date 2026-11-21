@@ -28,6 +28,7 @@ const { games } = JSON.parse(readFileSync(join(root, 'src/lib/card-catalogue.jso
 /** Le moteur partagé, importé par `../shared/…` depuis l'atelier : copié dans la carte publiée. */
 const SHARED = 'shared';
 const SHARED_IMPORT = /(['"`])\.\.\/shared\//g;
+const SHARED_FILE = /['"`]\.\.\/shared\/([\w.-]+\.js)['"`]/g;
 
 function publish(folder, version) {
   const source = join(root, WORKSHOP_DIR, folder);
@@ -45,12 +46,13 @@ function publish(folder, version) {
   const script = join(staging, 'cards.js');
   if (existsSync(script)) {
     const code = readFileSync(script, 'utf8');
-    if (code.search(SHARED_IMPORT) !== -1) {
+    // Seuls les modules du moteur que la carte importe la suivent, pas les pages de l'atelier.
+    const imported = [...new Set([...code.matchAll(SHARED_FILE)].map((match) => match[1]))];
+    if (imported.length) {
       writeFileSync(script, code.replace(SHARED_IMPORT, '$1./shared/'));
-      const shared = join(root, WORKSHOP_DIR, SHARED);
-      for (const file of servedFiles(shared)) {
-        mkdirSync(dirname(join(staging, SHARED, file)), { recursive: true });
-        cpSync(join(shared, file), join(staging, SHARED, file));
+      mkdirSync(join(staging, SHARED), { recursive: true });
+      for (const file of imported) {
+        cpSync(join(root, WORKSHOP_DIR, SHARED, file), join(staging, SHARED, file));
       }
     }
   }
