@@ -40,7 +40,7 @@ export const canSeeCards = (user: App.Locals['user']) =>
 
 /** Un membre connecté qui peut voir les boosters ; sinon la page n'existe pas. */
 export function requireCards(locals: App.Locals, returnTo: string) {
-  const user = requireLogin(locals, returnTo);
-  if (!canSeeCards(user)) error(404, m.not_found());
-  return user;
+  // Fermé, la page n'existe pas, même pour un visiteur : pas de détour par la connexion.
+  if (!canSeeCards(locals.user)) error(404, m.not_found());
+  return requireLogin(locals, returnTo);
 }

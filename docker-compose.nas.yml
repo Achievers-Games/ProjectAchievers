@@ -55,6 +55,8 @@ services:
     volumes:
       - ${BACKUP_DIR:-./backups}:/backups:ro
       # Les cartes publiées (scripts/nas-cards.sh), servies sous /cartes sans passer par l'image.
+      # CARDS_DIR doit être un chemin absolu dans le .env du NAS : le déployeur lance Compose
+      # depuis /app, où « ./cartes » désignerait un dossier vide.
       - ${CARDS_DIR:-./cartes}:/cartes:ro
     environment:
       DATABASE_URL: postgresql://achievers:${POSTGRES_PASSWORD}@db:5432/achievers
