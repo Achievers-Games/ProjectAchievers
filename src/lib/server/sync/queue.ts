@@ -28,6 +28,7 @@ import { deliverPartnerWebhooks } from '../partner-webhooks';
 import { grantFramesThrottled } from '../frames';
 import { syncCardCatalogue } from '../card-catalogue';
 import { grantMissingStarters, grantStarter } from '../shards';
+import { backfillCompletionTimes } from '../completion-time';
 import { checkSiteAchievements, reviewNewPlayers } from '../site-achievements';
 import { syncPsn } from './psn';
 import { syncRetro } from './retro';
@@ -700,6 +701,8 @@ const MAINTENANCE: { label: string; run: () => Promise<unknown>; budget?: false 
   // Le catalogue des cartes suit le code : un jeu ajouté au dépôt entre dans les boosters.
   { label: 'Catalogue de cartes', run: () => syncCardCatalogue(), budget: false },
   { label: 'Succès de clan', run: () => checkAllClans() },
+  // Les 100 % d'avant la collecte des mesures, et ceux d'une lecture sans relevé de temps.
+  { label: 'Temps du 100 %', run: () => backfillCompletionTimes() },
   {
     label: "Capital d'éclats",
     // Les joueurs inscrits avant les éclats reçoivent leur capital de départ, 50 à la fois.

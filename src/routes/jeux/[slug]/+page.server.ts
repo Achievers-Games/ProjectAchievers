@@ -16,7 +16,7 @@ import { lureGameFor } from '#lib/server/lure-games';
 import { excludedSteamUnlocks } from '#lib/server/steam-integrity';
 import { addSteamProof, type ProofFailure } from '#lib/server/steam-proof';
 import { rateLimit } from '#lib/server/rate-limit';
-import { completionTimes } from '#lib/server/completion-time';
+import { COMPLETION_TIME_DISPLAY_SAMPLE, completionTimes } from '#lib/server/completion-time';
 import { achievementPart } from '#lib/shards';
 import { artNow } from '#lib/server/sync/content';
 import type { Actions, PageServerLoad } from './$types';
@@ -159,7 +159,7 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
     }),
     // La fiche Lure du jeu et son temps pour le 100 %, si Lure le connaît : jamais attendu.
     lureGameFor(game).catch(() => null),
-    completionTimes([game.id]),
+    completionTimes([game.id], undefined, undefined, COMPLETION_TIME_DISPLAY_SAMPLE),
     achievementQuery(),
     ofHandle ? gamePlayer({ viewerId: viewerId ?? null, gameId: game.id, handle: ofHandle }) : null,
     viewerId && game.platform === 'STEAM'

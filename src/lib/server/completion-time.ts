@@ -1,7 +1,12 @@
 import { Prisma, type Platform } from '#prisma';
 import { db } from './db';
 
+/** Pour l'API partenaires et la modération : une médiane qui engage, sur vingt mesures. */
 export const COMPLETION_TIME_MIN_SAMPLE = 20;
+/** Sur la fiche du jeu, la médiane s'affiche dès cinq mesures, avec le nombre de joueurs. */
+export const COMPLETION_TIME_DISPLAY_SAMPLE = 5;
+/** Un joueur qui a relancé le jeu plus tard a ajouté des heures après son 100 % : écarté. */
+const BACKFILL_GRACE = '2 days';
 const COMPLETION_OBSERVATION_WINDOW = 24 * 60 * 60 * 1000;
 
 // L'ordre et le catalogue de la plateforme définissent le périmètre, pas le titre ni le nombre
@@ -54,6 +59,7 @@ export async function completionTimes(
   gameIds: string[],
   tx: Prisma.TransactionClient = db,
   excludeUserId?: string,
+  minSample = COMPLETION_TIME_MIN_SAMPLE,
 ) {
   const result = new Map<string, { median: number; sample: number }>();
   if (gameIds.length === 0) return result;
@@ -89,9 +95,39 @@ export async function completionTimes(
       )
       ${exclude}
     GROUP BY s."gameId"
-    HAVING count(*) >= ${COMPLETION_TIME_MIN_SAMPLE}`;
+    HAVING count(*) >= ${minSample}`;
   for (const row of rows) {
     result.set(row.gameId, { median: Number(row.median), sample: Number(row.sample) });
   }
   return result;
+}
+
+/**
+ * Rattrape les 100 % atteints avant la collecte des mesures. Le temps actuel vaut la mesure quand
+ * le joueur n'a plus joué au-delà de quelques jours après son dernier succès ; sinon il compte
+ * des heures postérieures et le relevé est écarté. Rejouable : une mesure existante est gardée.
+ * Renvoie le nombre de mesures ajoutées.
+ */
+export async function backfillCompletionTimes(now = new Date()) {
+  return db.$executeRaw`
+    INSERT INTO "GameCompletionSample" ("userId", "gameId", scope, minutes, "completedAt", "observedAt")
+    SELECT ug."userId", g.id, catalog.scope, ug."playtimeMinutes", ug."lastUnlockedAt", ${now}
+    FROM "UserGame" ug
+    JOIN "Game" g ON g.id = ug."gameId"
+    CROSS JOIN LATERAL (
+      SELECT ${achievementScope} AS scope, count(*) AS total
+      FROM "Achievement" a WHERE a."gameId" = g.id
+    ) catalog
+    WHERE ug.completion >= 100 AND ug."playtimeMinutes" > 0
+      AND ug."lastUnlockedAt" IS NOT NULL AND ug."lastPlayedAt" IS NOT NULL
+      AND ug."lastPlayedAt" <= ug."lastUnlockedAt" + ${BACKFILL_GRACE}::interval
+      AND catalog.total > 0 AND ug."unlockedCount" = catalog.total
+      AND NOT ug.hidden AND NOT g."crossProgress"
+      AND NOT EXISTS (
+        SELECT 1 FROM "LinkedAccount" la
+        WHERE la."userId" = ug."userId" AND g.platform = 'STEAM'
+          AND la.provider = 'STEAM' AND la."playtimeHidden"
+      )
+    ON CONFLICT ("userId", "gameId", scope) DO NOTHING
+  `;
 }
