@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0d0b14" />
+    <title>Cartes animées — prototype Project Achievers</title>
+    <meta name="description" content="Prototype de cartes animées à partir des illustrations Steam : parallaxe en ×2, animations complètes en ×3." />
+    <link rel="stylesheet" href="shared/site.css" />
+  </head>
+  <body>
+    <main>
+      <nav aria-label="Pages">
+        <a href="index.html" aria-current="page">Accueil</a>
+        <a href="hades/index.html">Hades</a>
+        <a href="hollow-knight/index.html">Hollow Knight</a>
+        <a href="ori/index.html">Ori</a>
+      </nav>
+      <h1>Cartes animées</h1>
+      <p class="lead">
+        Chaque carte part de l’illustration Steam du jeu. Les personnages et les éléments proches sont
+        détourés en calques depuis les pixels d’origine, le décor caché derrière eux est reconstruit, puis
+        un shader WebGL compose et anime le tout dans le navigateur. Plus le niveau de la carte monte,
+        plus elle prend vie.
+      </p>
+      <p class="lead">Survole les cartes : la perspective suit la souris.</p>
+
+      <section class="levels" aria-label="Niveaux de carte, sur Hades">
+        <figure>
+          <div class="card" data-game="hades" data-level="0"><canvas aria-label="Hades sans carte, en niveaux de gris"></canvas></div>
+          <figcaption><b>Pas de carte</b><span>Niveaux de gris</span></figcaption>
+        </figure>
+        <figure>
+          <div class="card" data-game="hades" data-level="1"><canvas aria-label="Hades, carte ×1"></canvas></div>
+          <figcaption><b>×1</b><span>La couleur : l’illustration d’origine</span></figcaption>
+        </figure>
+        <figure>
+          <div class="card" data-game="hades" data-level="2"><canvas aria-label="Hades, carte ×2"></canvas></div>
+          <figcaption><b>×2</b><span>La parallaxe : chaque plan se décale selon sa profondeur</span></figcaption>
+        </figure>
+        <figure>
+          <div class="card" data-game="hades" data-level="3"><canvas aria-label="Hades, carte ×3"></canvas></div>
+          <figcaption><b>×3</b><span>Tout s’anime : personnage, décor et lumières</span></figcaption>
+        </figure>
+      </section>
+      <figure class="big">
+        <div class="card" data-game="hades" data-level="3"><canvas aria-label="Hades, carte ×3 en grand"></canvas></div>
+        <figcaption>×3 en grand, pour juger le détail.</figcaption>
+      </figure>
+
+      <h2>Les jeux</h2>
+      <section class="games" aria-label="Pages des jeux">
+        <a href="hades/index.html">
+          <div class="card"><img src="hades/full.jpg" alt="" loading="lazy" /></div>
+          <b>Hades</b><span>Zagreus relève son épée, braises et chaleur</span>
+        </a>
+        <a href="hollow-knight/index.html">
+          <div class="card"><img src="hollow-knight/full.jpg" alt="" loading="lazy" /></div>
+          <b>Hollow Knight</b><span>Cape au vent, aiguillon, épines et tentacules qui ondulent</span>
+        </a>
+        <a href="ori/index.html">
+          <div class="card"><img src="ori/full.jpg" alt="" loading="lazy" /></div>
+          <b>Ori and the Will of the Wisps</b><span>Ori et Ku, lianes lumineuses et vortex</span>
+        </a>
+      </section>
+      <p class="lead" style="margin-top: 28px">
+        Chaque page de jeu montre l’original, la version parallaxe et la version entièrement animée.
+      </p>
+
+      <footer>
+        Prototype de cartes pour Project Achievers. Illustrations : Hades — Supergiant Games ;
+        Hollow Knight — Team Cherry ; Ori and the Will of the Wisps — Moon Studios, Xbox Game Studios.
+      </footer>
+    </main>
+    <script src="hades/cards.js"></script>
+  </body>
+</html>

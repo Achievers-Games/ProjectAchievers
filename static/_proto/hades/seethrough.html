@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Hades — essai See-through et StretchyStudio</title>
+    <style>
+      :root { color-scheme: dark; font-family: Inter, system-ui, sans-serif; }
+      body { margin: 0; background: #100e18; color: #eeeaf6; }
+      main { max-width: 1180px; margin: auto; padding: 32px 20px 64px; }
+      a { color: #efac6d; }
+      h1 { font-size: 26px; }
+      p { color: #b8b0c6; line-height: 1.6; max-width: 900px; }
+      .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+      figure { margin: 0; }
+      figcaption { margin: 9px 0 16px; }
+      .card { display: block; width: 100%; aspect-ratio: 920 / 430; border-radius: 10px; }
+      .large { margin-top: 24px; }
+      .actions { display: flex; flex-wrap: wrap; gap: 12px 22px; align-items: center; margin: 20px 0; }
+      button { font: inherit; padding: 9px 14px; border: 1px solid #6b5879; border-radius: 6px; color: inherit; background: #2b2135; cursor: pointer; }
+      button:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px solid #efac6d; outline-offset: 4px; }
+      details { margin-top: 32px; }
+      summary { cursor: pointer; margin-bottom: 20px; }
+      .layers { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .layers img {
+        display: block; box-sizing: border-box; width: 100%; height: 180px; padding: 12px; object-fit: contain;
+        background-color: #27232f;
+        background-image: conic-gradient(#39333f 25%, transparent 0 50%, #39333f 0 75%, transparent 0);
+        background-size: 20px 20px; border-radius: 8px;
+      }
+      @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } .layers { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <a href="index.html">Revenir aux cartes</a>
+      <h1>See-through et StretchyStudio sur Zagreus</h1>
+      <p>Le corps utilise les calques See-through. La tête et les cheveux proviennent de l’illustration originale, avec un léger mouvement autour du cou. Les courbes de cette boucle de six secondes ont été réglées pour le test.</p>
+      <div class="grid">
+        <figure><img class="card" src="full.jpg" alt="Illustration originale de Zagreus" /><figcaption>Illustration originale</figcaption></figure>
+        <figure><img class="card animation" src="seethrough/recomposed.png?v=original-head" alt="Zagreus animé avec sa tête originale" /><figcaption>Corps See-through et tête originale</figcaption></figure>
+      </div>
+      <div class="actions">
+        <button type="button" id="playback">Lancer l’animation</button>
+        <a href="seethrough/zagreus.psd" download>Télécharger le PSD brut See-through</a>
+        <a href="seethrough/zagreus.stretch" download>Télécharger le projet StretchyStudio</a>
+        <a href="qwen.html">Comparer avec Qwen</a>
+      </div>
+      <p>La garde de l’épée et le vêtement générés restent approximatifs. Les deux bras sont réunis dans le même calque principal. Le projet StretchyStudio contient la tête originale réintégrée.</p>
+      <figure class="large">
+        <img class="card animation" src="seethrough/recomposed.png?v=original-head" alt="Animation corrigée en grand pour inspecter la tête originale et les raccords" />
+        <figcaption>Le résultat en grand</figcaption>
+      </figure>
+      <details>
+        <summary>Inspecter les 21 calques bruts See-through</summary>
+        <div class="grid layers" id="layers"></div>
+      </details>
+    </main>
+    <script>
+      const images = [...document.querySelectorAll('.animation')];
+      const button = document.getElementById('playback');
+      let playing = false;
+      function setPlaying(value) {
+        playing = value;
+        for (const image of images) image.src = playing ? 'seethrough/idle.webp?v=original-head' : 'seethrough/recomposed.png?v=original-head';
+        button.textContent = playing ? 'Arrêter l’animation' : 'Lancer l’animation';
+        button.setAttribute('aria-pressed', String(playing));
+      }
+      button.addEventListener('click', () => setPlaying(!playing));
+      setPlaying(!window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+      fetch('seethrough/layers/layers.json')
+        .then(response => {
+          if (!response.ok) throw new Error('Chargement des calques impossible');
+          return response.json();
+        })
+        .then(layers => {
+          for (const layer of layers) {
+            const figure = document.createElement('figure');
+            const image = new Image();
+            image.src = 'seethrough/layers/' + layer.file;
+            image.alt = layer.name;
+            image.loading = 'lazy';
+            const caption = document.createElement('figcaption');
+            caption.textContent = layer.name;
+            figure.append(image, caption);
+            document.getElementById('layers').append(figure);
+          }
+        })
+        .catch(error => {
+          document.getElementById('layers').textContent = error.message;
+        });
+    </script>
+  </body>
+</html>

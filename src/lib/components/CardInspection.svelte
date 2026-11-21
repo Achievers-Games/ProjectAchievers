@@ -107,7 +107,7 @@
     showBack = false;
     replayKey++;
     restartArt();
-    canvas?.dispatchEvent(new Event('achievers:card-replay'));
+    canvas?.dispatchEvent(new CustomEvent('achievers:card-replay', { detail: { intro: true } }));
     onreplay?.();
   }
 </script>
@@ -163,7 +163,9 @@
               {/key}
               {#key replayKey}
                 {#if card.kind === 'VIVANTE'}<span class="inspection-wake"></span>
-                {:else if card.kind === 'MYTHIQUE'}<span class="inspection-sheen"></span>{/if}
+                {:else if card.kind === 'MYTHIQUE' && (replayKey === 0 || (card.assetPath !== '/_proto/hades-mythique/' && card.assetPath !== '/_proto/ori-mythique/' && card.assetPath !== '/_proto/sekiro-mythique/' && card.assetPath !== '/_proto/portal-2-mythique/' && card.assetPath !== '/_proto/hollow-knight/'))}
+                  <span class="inspection-sheen"></span>
+                {/if}
               {/key}
             </div>
             {#if frameTheme === 'forest'}

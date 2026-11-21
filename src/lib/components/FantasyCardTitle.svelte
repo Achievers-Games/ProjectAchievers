@@ -42,6 +42,8 @@
   class="fantasy-title"
   data-tier={kind.toLowerCase()}
   class:underworld={theme === 'underworld'}
+  class:maple={theme === 'maple'}
+  class:laboratory={theme === 'laboratory'}
   class:compact
   use:unfoldOnReveal={reveal}
 >
@@ -50,7 +52,7 @@
     {#if theme === 'forest'}
       {@render sprig(false)}
       {@render sprig(true)}
-    {:else}
+    {:else if theme === 'underworld'}
       {#each [false, true] as right (right)}
         <svg class="engraving" class:right viewBox="0 0 72 42" aria-hidden="true">
           <path class="stem" pathLength="1" d="M5 30H24V11H43V30H58V17H49V23" />
@@ -125,6 +127,21 @@
   }
   .underworld .stem {
     stroke: #f0ad77;
+  }
+  .maple .plate {
+    background: linear-gradient(168deg, #ffc584, #672129 36%, #c17b51 53%, #26181d 79%, #ae5f43);
+  }
+  .maple .inlay {
+    background: linear-gradient(165deg, #3d171e, #181319 70%, #2a181e);
+  }
+  .laboratory {
+    --plate-cut: polygon(4% 0, 96% 0, 100% 28%, 100% 72%, 96% 100%, 4% 100%, 0 72%, 0 28%);
+  }
+  .laboratory .plate {
+    background: linear-gradient(175deg, #dcefff, #526a81 38%, #83b9fa 50%, #1c344f 74%, #98bfd5);
+  }
+  .laboratory .inlay {
+    background: linear-gradient(165deg, #23374b, #10171f 78%);
   }
   .inset-line {
     fill: none;

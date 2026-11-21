@@ -110,6 +110,7 @@
   let packNode = $state<HTMLButtonElement>();
   let packRect = $state<{ x: number; y: number; width: number; height: number } | null>(null);
   let phase = $state<Phase>('charge');
+  let introPending = $state(false);
   let teased = $state(0);
   /** Ce que montre la caméra (point visé et zoom), et la durée du mouvement en cours. */
   let view = $state<Focus | null>(null);
@@ -160,6 +161,25 @@
   const mythique = $derived(
     mythiqueIndex === null ? cards.find((card) => card.kind === 'MYTHIQUE') : cards[mythiqueIndex],
   );
+  const revealInIntro = $derived(
+    !reduced &&
+      (mythique?.assetPath === '/_proto/ori-mythique/' ||
+        mythique?.assetPath === '/_proto/hades-mythique/' ||
+        mythique?.assetPath === '/_proto/sekiro-mythique/' ||
+        mythique?.assetPath === '/_proto/portal-2-mythique/' ||
+        mythique?.assetPath === '/_proto/hollow-knight/'),
+  );
+
+  function finishCardIntro() {
+    if (!introPending || mythiqueIndex === null) return;
+    revealed[mythiqueIndex] = true;
+    introPending = false;
+  }
+
+  function watchCardIntro(node: HTMLElement) {
+    node.addEventListener('card-intro-reveal', finishCardIntro);
+    return { destroy: () => node.removeEventListener('card-intro-reveal', finishCardIntro) };
+  }
   const gained = $derived(cards.reduce((sum, card) => sum + card.shards, 0));
   const fresh = $derived(cards.filter((card) => !card.duplicate).length);
   const duplicates = $derived(cards.filter((card) => card.duplicate));
@@ -487,6 +507,7 @@
         });
       stage = 'mythique';
       phase = 'charge';
+      introPending = false;
       teased = 0;
       play('charge');
       // Les indices tombent seuls pendant que la carte grandit, puis elle se retourne.
@@ -571,7 +592,7 @@
    */
   function revealMythique() {
     if (phase !== 'charge') return;
-    if (reduced) {
+    if (reduced || revealInIntro) {
       finishMythique();
       return;
     }
@@ -618,12 +639,21 @@
     if (phase === 'burst') return;
     if (phase === 'charge') {
       const index = mythiqueIndex!;
-      revealed[index] = true;
+      if (!revealInIntro) revealed[index] = true;
       playReveal(false);
     }
     moving = 0;
     view = null;
     blackout = false;
+    if (revealInIntro) {
+      introPending = true;
+      const scene = sceneId;
+      // The title still appears if the canvas falls back to the static illustration.
+      // Les intros teasent le jeu 3,5 à 4 s avant le dévoilement : ce filet passe après.
+      later(() => {
+        if (scene === sceneId) finishCardIntro();
+      }, 6000);
+    }
     phase = 'burst';
   }
 
@@ -681,7 +711,7 @@
     if (stage === 'pack') tear();
     else if (stage === 'cards') revealAll();
     else if (stage === 'mythique') {
-      if (phase === 'burst') leaveMythique();
+      if (phase === 'burst' && !introPending) leaveMythique();
       else advanceMythique();
     } else if (stage === 'done') close();
   }
@@ -951,6 +981,7 @@
     {#if stage === 'mythique' && mythique}
       <div
         class="mythique"
+        class:intro-pending={introPending}
         data-phase={phase}
         data-atmosphere={manifest?.atmosphere ?? 'sparks'}
         style:--game-glow={manifest?.glow ?? '#fbbf24'}
@@ -958,7 +989,7 @@
       >
         <div class="rays" aria-hidden="true"></div>
         <div class="flash" aria-hidden="true"></div>
-        {#if phase === 'burst'}
+        {#if phase === 'burst' && !introPending}
           <div class="burst big" aria-hidden="true">
             {#each bigBurst as p, i (i)}
               <i
@@ -1002,7 +1033,11 @@
               <span class="front mythique-front" data-frame-theme={revealFrame ?? undefined}>
                 <span
                   class="lens"
+                  use:watchCardIntro
                   data-card-quality="close-up"
+                  data-card-intro={phase === 'burst' && !reduced && revealInIntro
+                    ? ''
+                    : undefined}
                   style:transform-origin={view ? `${view.x * 100}% ${view.y * 100}%` : '50% 50%'}
                   style:transform={view ? `scale(${view.zoom})` : 'none'}
                   style:transition={moving
@@ -1016,7 +1051,7 @@
                 {#if !revealFrame}
                   <span class="front-ornament" aria-hidden="true">✦</span>
                 {/if}
-                {#if phase === 'burst'}
+                {#if phase === 'burst' && !introPending}
                   {#if revealFrame}
                     <FantasyCardTitle
                       name={mythique.game?.name ?? '—'}
@@ -1039,7 +1074,7 @@
                   aria-hidden="true"
                 ></span>
               </span>
-              {#if phase === 'burst' && revealFrame}
+              {#if phase === 'burst' && revealFrame && !introPending}
                 <span class="hero-themed-frame"
                   ><ThemedCardFrame theme={revealFrame} kind="MYTHIQUE" reveal /></span
                 >
@@ -1055,7 +1090,7 @@
         {/if}
 
         {#if phase === 'burst'}
-          <div class="mythique-text" aria-live="assertive">
+          <div class="mythique-text" inert={introPending} aria-live="assertive">
             <p class="title">
               {#each m.booster_mythique_title().split('') as letter, i (i)}
                 <!-- Une lettre animée faite d'un seul espace s'écraserait : espace insécable. -->
@@ -2254,6 +2289,16 @@
     z-index: 2;
     text-align: center;
     animation: rise-in 0.6s ease-out 0.4s both;
+  }
+  .intro-pending .mythique-text {
+    animation: none;
+    visibility: hidden;
+  }
+  .intro-pending :is(.rays, .flash) {
+    display: none;
+  }
+  .intro-pending .lens img {
+    visibility: hidden;
   }
   .title {
     margin: 0;

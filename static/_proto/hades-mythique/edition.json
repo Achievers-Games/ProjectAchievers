@@ -1,0 +1,23 @@
+{
+  "id": "hades-mythique",
+  "glow": "#ff6a3d",
+  "atmosphere": "sparks",
+  "sound": null,
+  "shots": [
+    {
+      "from": { "x": 0.27, "y": 0.68, "zoom": 1.8 },
+      "to": { "x": 0.56, "y": 0.56, "zoom": 1.8 },
+      "duration": 1700
+    },
+    {
+      "from": { "x": 0.92, "y": 0.02, "zoom": 1.7 },
+      "to": { "x": 0.92, "y": 0.7, "zoom": 1.7 },
+      "duration": 1700
+    },
+    {
+      "from": { "x": 0.5, "y": 0.4, "zoom": 1.45 },
+      "to": { "x": 0.5, "y": 0.5, "zoom": 1 },
+      "duration": 1900
+    }
+  ]
+}

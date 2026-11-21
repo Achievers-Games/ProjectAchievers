@@ -1,0 +1,23 @@
+{
+  "id": "sekiro-mythique",
+  "glow": "#ff9e57",
+  "atmosphere": "sparks",
+  "sound": null,
+  "shots": [
+    {
+      "from": { "x": 0, "y": 0.53, "zoom": 1.83 },
+      "to": { "x": 0.14, "y": 0.32, "zoom": 1.83 },
+      "duration": 1550
+    },
+    {
+      "from": { "x": 1, "y": 0.72, "zoom": 1.82 },
+      "to": { "x": 0.82, "y": 0.34, "zoom": 1.82 },
+      "duration": 1550
+    },
+    {
+      "from": { "x": 0.51, "y": 0.61, "zoom": 1.32 },
+      "to": { "x": 0.5, "y": 0.5, "zoom": 1 },
+      "duration": 1750
+    }
+  ]
+}

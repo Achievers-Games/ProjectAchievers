@@ -1,6 +1,6 @@
 import type { Action } from 'svelte/action';
 
-export type CardFrameTheme = 'forest' | 'underworld';
+export type CardFrameTheme = 'forest' | 'underworld' | 'maple' | 'laboratory';
 
 /** Affectations explicites, indépendantes du genre et de la rareté. */
 export function cardFrameTheme(assetPath?: string | null): CardFrameTheme | null {
@@ -11,6 +11,11 @@ export function cardFrameTheme(assetPath?: string | null): CardFrameTheme | null
     case '/_proto/hades':
     case '/_proto/hades-mythique':
       return 'underworld';
+    case '/_proto/sekiro-mythique':
+      return 'maple';
+    case '/_proto/portal-2':
+    case '/_proto/portal-2-mythique':
+      return 'laboratory';
     default:
       return null;
   }

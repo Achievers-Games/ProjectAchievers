@@ -1,45 +1,11 @@
 <script lang="ts">
+  import { resolve } from '$app/paths';
   import { m } from '#lib/paraglide/messages';
   import BoosterReveal from '#lib/components/BoosterReveal.svelte';
   import { DUPLICATE_SHARDS } from '#lib/boosters';
   import type { BoosterKind, EditionKind } from '#prisma';
 
-  /**
-   * Rejoue l'ouverture avec les cartes animées des prototypes (`static/_proto`) et des indices
-   * d'exemple, sans rien tirer ni dépenser.
-   */
-  const PROTOTYPES = [
-    {
-      name: 'Ori and the Will of the Wisps',
-      assetPath: '/_proto/ori/',
-      mythiqueAssetPath: '/_proto/ori-mythique/',
-      clues: {
-        genres: ['platformer', 'metroidvania'],
-        achievements: 39,
-        medianMinutes: 1500,
-      },
-    },
-    {
-      name: 'Hades',
-      assetPath: '/_proto/hades/',
-      mythiqueAssetPath: '/_proto/hades-mythique/',
-      clues: {
-        genres: ['roguelike'],
-        achievements: 49,
-        medianMinutes: 5400,
-      },
-    },
-    {
-      name: 'Hollow Knight',
-      assetPath: '/_proto/hollow-knight/',
-      mythiqueAssetPath: null,
-      clues: {
-        genres: ['metroidvania', 'soulslike'],
-        achievements: 63,
-        medianMinutes: 3600,
-      },
-    },
-  ];
+  import { PROTOTYPES } from '../card-prototypes';
 
   const SCENARIOS: { label: string; kind: BoosterKind; editions: EditionKind[] }[] = [
     {
@@ -68,7 +34,7 @@
     id: number;
     kind: BoosterKind;
     editions: EditionKind[];
-    compare?: 0 | 1;
+    compare?: number;
   } | null>(null);
   let count = 0;
   /** Le prototype qui joue la carte la plus rare du booster. */
@@ -85,10 +51,8 @@
               (star + index + 1 + PROTOTYPES.length * 2 - (shown?.editions.length ?? 0)) %
                 PROTOTYPES.length
             ]!;
-      // Les comparaisons montrent la Mythique sur son propre artwork quand il existe.
-      const assetPath =
-        (compare !== undefined && kind === 'MYTHIQUE' && prototype.mythiqueAssetPath) ||
-        prototype.assetPath;
+      // Chaque Mythique utilise son propre artwork quand il existe.
+      const assetPath = (kind === 'MYTHIQUE' && prototype.mythiqueAssetPath) || prototype.assetPath;
       return {
         kind,
         // La deuxième carte joue le doublon, pour voir les éclats rendus.
@@ -112,6 +76,7 @@
 
 <div class="mx-auto max-w-xl space-y-4">
   <h1>Tester l'ouverture d'un booster</h1>
+  <a class="btn" href={resolve('/dev/cartes-animees')}>Galerie des cartes animées</a>
   <p class="text-sm text-muted">
     Rejoue la scène avec les cartes animées des prototypes, sans rien tirer ni dépenser. La Mythique
     est la dernière carte du booster.
@@ -134,25 +99,28 @@
       <button
         type="button"
         class="btn"
+        disabled={scenario.editions.includes('MYTHIQUE') && !PROTOTYPES[star]?.mythiqueAssetPath}
         onclick={() => (shown = { id: ++count, kind: scenario.kind, editions: scenario.editions })}
       >
         {scenario.label}
       </button>
     {/each}
-    {#each [0, 1] as compare (compare)}
-      <button
-        type="button"
-        class="btn"
-        onclick={() =>
-          (shown = {
-            id: ++count,
-            kind: 'NORMAL',
-            editions: ['RELIEF', 'RELIEF', 'RELIEF', 'VIVANTE', 'MYTHIQUE'],
-            compare: compare === 0 ? 0 : 1,
-          })}
-      >
-        {compare === 0 ? 'Ori' : 'Hades'} : Relief, Vivante et Mythique
-      </button>
+    {#each PROTOTYPES as prototype, compare (prototype.name)}
+      {#if prototype.mythiqueAssetPath}
+        <button
+          type="button"
+          class="btn"
+          onclick={() =>
+            (shown = {
+              id: ++count,
+              kind: 'NORMAL',
+              editions: ['RELIEF', 'RELIEF', 'RELIEF', 'VIVANTE', 'MYTHIQUE'],
+              compare,
+            })}
+        >
+          {compare === 0 ? 'Ori' : prototype.name} : Relief, Vivante et Mythique
+        </button>
+      {/if}
     {/each}
   </div>
 </div>

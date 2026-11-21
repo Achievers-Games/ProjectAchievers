@@ -1,0 +1,23 @@
+{
+  "id": "hollow-knight-mythique",
+  "glow": "#a8e9ff",
+  "atmosphere": "ash",
+  "sound": null,
+  "shots": [
+    {
+      "from": { "x": 0, "y": 1, "zoom": 2.16 },
+      "to": { "x": 0.08, "y": 0.99, "zoom": 2.16 },
+      "duration": 1500
+    },
+    {
+      "from": { "x": 1, "y": 1, "zoom": 2.22 },
+      "to": { "x": 0.94, "y": 0.99, "zoom": 2.22 },
+      "duration": 1500
+    },
+    {
+      "from": { "x": 0.5, "y": 0.76, "zoom": 1.4 },
+      "to": { "x": 0.5, "y": 0.5, "zoom": 1 },
+      "duration": 1600
+    }
+  ]
+}
