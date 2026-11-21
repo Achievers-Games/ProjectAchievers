@@ -117,7 +117,15 @@ export const load: PageServerLoad = async ({ locals, depends }) => {
     take: 50,
     include: {
       game: {
-        select: { id: true, name: true, slug: true, platformGameId: true, allowSteamBatches: true },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          platformGameId: true,
+          allowSteamBatches: true,
+          crossProgress: true,
+          totalAchievements: true,
+        },
       },
       user: { select: { handle: true, displayName: true } },
       proofs: {
@@ -165,6 +173,7 @@ export const load: PageServerLoad = async ({ locals, depends }) => {
         game: review.game,
         player: review.user,
         openedAt: review.openedAt,
+        proofAt: review.proofAt,
         status: review.status,
         suspended: Boolean(review.suspendedAt),
         trust: review.trust as SteamTrust | null,

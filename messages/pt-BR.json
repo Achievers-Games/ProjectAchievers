@@ -2367,9 +2367,9 @@
   "steam_reset_open_console": "abrir o console",
   "steam_reset_step_command": "Digite este comando e pressione Enter. Ele redefine todas as conquistas deste jogo:",
   "steam_reset_step_replay": "Volte a esta página: o bloqueio é removido em poucos segundos. Depois, jogue de novo normalmente.",
-  "steam_proof_title": "Jogou este jogo em outra plataforma?",
-  "steam_proof_detail": "Envie uma captura do seu tempo de jogo ou progresso lá (Battle.net, Xbox, Epic…), com uma mensagem se precisar: um moderador vai analisar. Se essa plataforma puder ser vinculada ao site, prefira vincular: a verificação é automática.",
-  "steam_proof_placeholder": "Por exemplo: 300 h na Battle.net antes de ir para a Steam",
+  "steam_proof_title": "Suas conquistas são legítimas? Envie uma prova",
+  "steam_proof_detail": "Uma captura do seu progresso (no jogo, no seu perfil Steam ou em outra plataforma) e uma mensagem explicando: conquistas sincronizadas com atraso, partida em outro cliente… Um moderador analisa e pode desbloquear o jogo, sem passar pelos comentários. Se essa plataforma puder ser vinculada ao site, prefira vincular: a verificação é automática.",
+  "steam_proof_placeholder": "Por exemplo: conquistas sincronizadas de uma vez em novembro de 2023, 400 h de jogo",
   "steam_proof_send": "Enviar",
   "steam_proof_last": "Último envio em {date}",
   "steam_proof_sent": "Prova enviada: um moderador vai analisar.",
@@ -2543,5 +2543,62 @@
   "collection_banner_mobile": "Visualização móvel",
   "collection_banner_progress": "Jogo concluído em {progress}. Chegue a 100% para equipar esta carta.",
   "collection_banner_game_page": "Ver página do jogo",
-  "boosters_playtime_hidden": "Seu tempo de jogo na Steam está privado: você não ganha fragmentos nem pacotes enquanto ele continuar assim."
+  "boosters_playtime_hidden": "Seu tempo de jogo na Steam está privado: você não ganha fragmentos nem pacotes enquanto ele continuar assim.",
+  "steam_proof_hint": "Conquistas legítimas? Envie uma prova pela página do jogo: ela vai direto para os moderadores.",
+  "steam_check_title": "Verificação das conquistas Steam",
+  "steam_check_intro": "Os jogos que o antitrapaça analisou e o que isso muda nos seus pontos.",
+  "steam_check_blocked_detail": "Estes jogos não contam: as conquistas foram retiradas da sua pontuação.",
+  "steam_check_pending_detail": "Estas conquistas aguardam um moderador e ainda não contam. Uma prova acelera a decisão.",
+  "steam_check_unblocked_title": "Jogos validados",
+  "steam_check_unblocked_detail": "Estas conquistas voltam a contar nos seus pontos.",
+  "steam_check_empty": "Nenhum jogo analisado: todas as suas conquistas Steam contam.",
+  "steam_check_since": "Desde {date}",
+  "steam_check_proof_sent": "prova enviada em {date}",
+  "steam_check_send_proof": "Enviar uma prova",
+  "steam_check_reset": "Ver como desbloquear",
+  "steam_check_link": "Ver o estado dos meus jogos Steam",
+  "steam_check_open": "Ver detalhes",
+  "feedback_steam_title": "Um jogo Steam bloqueado ou aguardando validação?",
+  "feedback_steam_detail": "Não precisa escrever aqui: envie uma prova pela página do jogo (captura e explicação). Ela vai direto para os moderadores, com todos os detalhes do lote.",
+  "steam_check_account": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "{n} jogo analisado pelo antitrapaça.",
+        "c=*": "{n} jogos analisados pelo antitrapaça."
+      }
+    }
+  ],
+  "steam_mod_filter_all": "Todos ({count})",
+  "steam_mod_filter_proof": "Com prova ({count})",
+  "steam_mod_filter_pending": "A analisar ({count})",
+  "steam_mod_filter_blocked": "Bloqueados ({count})",
+  "steam_mod_status_pending": "A analisar",
+  "steam_mod_status_suspended": "Suspenso automaticamente",
+  "steam_mod_status_rejected": "Bloqueado pela moderação",
+  "steam_mod_proof_badge": "Prova recebida",
+  "steam_mod_opened": "sinalizado {when}",
+  "steam_mod_batches_title": "O que foi sinalizado",
+  "steam_mod_batch": "{count} conquistas em {date}",
+  "steam_mod_batches_more": "… e mais {count} momentos",
+  "steam_mod_flagged_of": "{count} de {total} conquistas sinalizadas",
+  "steam_mod_verdict_trusted": "Provavelmente uma partida real",
+  "steam_mod_verdict_review": "A julgar",
+  "steam_mod_verdict_cheat": "Provavelmente uma ferramenta de desbloqueio",
+  "steam_mod_unblock": "Suspender o bloqueio",
+  "steam_mod_block": "Bloquear o jogo",
+  "steam_mod_block_confirm": "Bloquear {game} para {player}? As conquistas deixarão de contar e só um reset na Steam vai desbloquear.",
+  "steam_mod_help": "Validar: as conquistas sinalizadas voltam a contar. Bloquear: o jogo deixa de contar até o jogador resetá-lo.",
+  "steam_mod_help_blocked": "Suspender o bloqueio restaura todas as conquistas que a Steam mostra como obtidas, nunca uma bloqueada.",
+  "steam_mod_pick": "Escolher conquista por conquista ({count})",
+  "steam_mod_pick_all": "Marcar todas",
+  "steam_mod_pick_none": "Desmarcar todas",
+  "steam_mod_cross_mark": "Marcar este jogo como progresso compartilhado (conquistas dadas pelo servidor do jogo ou outro cliente)"
 }

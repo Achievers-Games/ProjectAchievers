@@ -1,4 +1,5 @@
 <script lang="ts">
+  import FileCheck from '@lucide/svelte/icons/file-check';
   import { enhance } from '$app/forms';
   import { m } from '#lib/paraglide/messages';
   import { submitWithToast } from '#lib/forms';
@@ -37,8 +38,16 @@
   }
 </script>
 
-<details class="rounded-md border border-line bg-surface p-3 text-sm">
-  <summary class="cursor-pointer font-semibold">{m.steam_proof_title()}</summary>
+<!-- Toujours ouvert : c'est le chemin prévu pour un lot légitime, plutôt qu'un retour au site. -->
+<section
+  id="preuve"
+  class="scroll-mt-20 rounded-md border border-accent/60 bg-surface p-3 text-sm"
+  aria-labelledby="steam-proof-heading"
+>
+  <h2 id="steam-proof-heading" class="flex items-center gap-2 text-sm font-semibold">
+    <FileCheck size={16} class="text-accent" aria-hidden="true" />
+    {m.steam_proof_title()}
+  </h2>
   <form
     method="POST"
     action="?/steamProof"
@@ -67,4 +76,4 @@
       <button class="btn btn-secondary" type="submit">{m.steam_proof_send()}</button>
     </div>
   </form>
-</details>
+</section>

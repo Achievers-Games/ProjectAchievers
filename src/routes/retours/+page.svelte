@@ -21,6 +21,14 @@
   <h1>{m.feedback_title()}</h1>
   <SocialNav />
   <p class="text-sm text-muted">{m.feedback_intro()}</p>
+  <!-- Un lot Steam se défend sur la page du jeu : la preuve y arrive tout droit aux modérateurs. -->
+  {#if data.steamReviews.some((review) => review.state !== 'unblocked')}
+    <aside class="card space-y-1 border-accent/60 p-4 text-sm" data-testid="feedback-steam-hint">
+      <p class="font-semibold">{m.feedback_steam_title()}</p>
+      <p class="text-muted">{m.feedback_steam_detail()}</p>
+      <a class="inline-block underline" href="/compte/verification-steam">{m.steam_check_link()}</a>
+    </aside>
+  {/if}
 
   <form method="POST" action="?/send" use:enhance={submit} class="card space-y-3 p-4">
     <fieldset class="flex gap-4">

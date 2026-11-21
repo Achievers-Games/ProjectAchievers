@@ -8,7 +8,8 @@
   import { m } from '#lib/paraglide/messages';
   import { enhance } from '$app/forms';
   import Empty from '#lib/components/Empty.svelte';
-  import { formatDate, formatRelative, PLATFORM_LABELS } from '#lib/labels';
+  import SteamReviewCard from './SteamReviewCard.svelte';
+  import { formatDate, formatRelative } from '#lib/labels';
 
   let { data, form } = $props();
 
@@ -22,49 +23,32 @@
   };
   const authReason = (reason: string) => AUTH_REASONS[reason]?.() ?? reason;
 
-  type TrustSignal = NonNullable<(typeof data.steamReviews)[number]['trust']>['signals'][number];
-  const hours = (minutes: number) => `${Math.round(minutes / 6) / 10} h`;
-  const signed = (value: number) => (value > 0 ? `+${value}` : String(value));
-  /** Un signal du score de confiance Steam, en mots. */
-  function trustLabel(signal: TrustSignal) {
-    switch (signal.kind) {
-      case 'playtime_peers':
-        return m.steam_trust_playtime_peers({
-          time: hours(signal.minutes),
-          median: hours(signal.median),
-          peers: String(signal.peers),
-        });
-      case 'playtime_rate':
-        return m.steam_trust_playtime_rate({
-          time: hours(signal.minutes),
-          rate: String(signal.perAchievement),
-        });
-      case 'playtime_unknown':
-        return m.steam_trust_playtime_unknown();
-      case 'offline':
-        return m.steam_trust_offline({ time: hours(signal.minutes) });
-      case 'history':
-        return m.steam_trust_history({ count: String(signal.count) });
-      case 'near_impossible':
-        return m.steam_trust_near_impossible({ count: String(signal.count) });
-      case 'cross_progress':
-        return m.steam_trust_cross_progress();
-      case 'pace':
-        return m.steam_trust_pace();
-      case 'playtime_reference':
-        return m.steam_trust_playtime_reference({
-          time: hours(signal.minutes),
-          expected: hours(signal.expected),
-        });
-      case 'other_platform':
-        return m.steam_trust_other_platform({
-          platform:
-            PLATFORM_LABELS[signal.platform as keyof typeof PLATFORM_LABELS] ?? signal.platform,
-          completion: String(Math.round(signal.completion)),
-          time: hours(signal.minutes),
-        });
-    }
-  }
+  type SteamReview = (typeof data.steamReviews)[number];
+  /** Les dossiers avec une preuve d'abord : un joueur attend une réponse. */
+  const FILTERS: {
+    key: string;
+    label: (p: { count: string }) => string;
+    test: (r: SteamReview) => boolean;
+  }[] = [
+    { key: 'all', label: m.steam_mod_filter_all, test: () => true },
+    { key: 'proof', label: m.steam_mod_filter_proof, test: (r) => r.proofs.length > 0 },
+    {
+      key: 'pending',
+      label: m.steam_mod_filter_pending,
+      test: (r) => r.status === 'PENDING' && !r.suspended,
+    },
+    {
+      key: 'blocked',
+      label: m.steam_mod_filter_blocked,
+      test: (r) => r.suspended || r.status === 'REJECTED',
+    },
+  ];
+  let filter = $state('all');
+  const shownReviews = $derived(
+    data.steamReviews
+      .filter(FILTERS.find((item) => item.key === filter)!.test)
+      .toSorted((a, b) => Number(b.proofs.length > 0) - Number(a.proofs.length > 0)),
+  );
 </script>
 
 <svelte:head>
@@ -81,104 +65,21 @@
     {#if !data.steamReviews.length}
       <p class="text-sm text-muted">{m.steam_review_empty()}</p>
     {/if}
-    {#each data.steamReviews as review (review.id)}
-      <details class="rounded-md border border-line p-3" id={`steam-review-${review.id}`}>
-        <summary class="cursor-pointer font-medium">
-          {review.game.name} · {review.player?.displayName ?? m.steam_review_deleted_player()}
-          <span class="text-sm text-muted">
-            · {review.status === 'REJECTED'
-              ? m.steam_review_rejected()
-              : review.suspended
-                ? m.steam_review_suspended()
-                : m.steam_review_pending()}
-          </span>
-        </summary>
-        <form method="POST" action="?/steamReview" use:enhance class="mt-3 space-y-3 text-sm">
-          <input type="hidden" name="id" value={review.id} />
-          <input type="hidden" name="version" value={review.openedAt.getTime()} />
-          <div class="flex gap-3">
-            <a class="underline" href="/jeux/{review.game.slug}">{review.game.name}</a>
-            {#if review.player}
-              <a class="underline" href="/u/{review.player.handle}">{review.player.displayName}</a>
-            {/if}
-          </div>
-          {#if review.trust}
-            <div>
-              <p class="font-medium">
-                {m.steam_trust_score({ score: signed(review.trust.score) })}
-              </p>
-              <ul class="list-disc pl-5 text-muted">
-                {#each review.trust.signals as signal (signal.kind)}
-                  <li>
-                    {trustLabel(signal)}{#if signal.weight}
-                      ({signed(signal.weight)}){/if}
-                  </li>
-                {/each}
-              </ul>
-            </div>
-          {:else}
-            <p class="text-muted">{m.steam_trust_none()}</p>
-          {/if}
-          {#if review.proofs.length}
-            <div class="space-y-2">
-              <p class="font-medium">{m.steam_proof_mod_title()}</p>
-              {#each review.proofs as proof (proof.id)}
-                <div class="space-y-1 rounded-md border border-line p-2">
-                  <p class="text-xs text-muted">{formatRelative(proof.createdAt)}</p>
-                  {#if proof.message}<p class="whitespace-pre-line">{proof.message}</p>{/if}
-                  {#if proof.image}
-                    <a href={proof.image} target="_blank" rel="noopener">
-                      <img
-                        src={proof.image}
-                        alt={m.steam_proof_mod_image()}
-                        class="max-h-64 rounded border border-line"
-                        loading="lazy"
-                      />
-                    </a>
-                  {/if}
-                </div>
-              {/each}
-            </div>
-          {/if}
-          {#if review.status === 'PENDING'}
-            <fieldset class="space-y-1">
-              <legend class="font-medium">{m.steam_review_selection()}</legend>
-              {#each review.unlocks as unlock (unlock.key)}
-                <label class="flex items-start gap-2">
-                  <input
-                    type="checkbox"
-                    name="accepted"
-                    value={unlock.key}
-                    disabled={!unlock.available}
-                  />
-                  <span
-                    >{unlock.name} · {unlock.at.toISOString().replace('T', ' ').slice(0, 19)} UTC</span
-                  >
-                </label>
-              {/each}
-            </fieldset>
-          {/if}
-          {#if !review.game.allowSteamBatches}
-            <label class="flex items-center gap-2">
-              <input type="checkbox" name="allowBatches" value="1" />
-              {m.steam_review_exception()}
-            </label>
-          {/if}
-          <div class="flex flex-wrap gap-2">
-            {#if review.status === 'PENDING'}
-              <button class="btn btn-secondary" name="decision" value="selected">
-                {m.steam_review_validate_selection()}
-              </button>
-              <button class="btn btn-secondary" name="decision" value="suspend">
-                {m.steam_review_suspend_game()}
-              </button>
-            {/if}
-            <button class="btn btn-secondary" name="decision" value="approve">
-              {m.steam_review_validate_all()}
-            </button>
-          </div>
-        </form>
-      </details>
+    {#if data.steamReviews.length}
+      <div class="flex flex-wrap gap-1.5" role="group" aria-label={m.steam_review_title()}>
+        {#each FILTERS as item (item.key)}
+          <button
+            type="button"
+            class="btn h-8 text-xs {filter === item.key ? 'btn-primary' : ''}"
+            aria-pressed={filter === item.key}
+            onclick={() => (filter = item.key)}
+            >{item.label({ count: String(data.steamReviews.filter(item.test).length) })}</button
+          >
+        {/each}
+      </div>
+    {/if}
+    {#each shownReviews as review (review.id)}
+      <SteamReviewCard {review} />
     {/each}
     {#if data.importSuggestions.length || data.crossProgressGames.length}
       <div class="space-y-2 border-t border-line pt-3 text-sm">

@@ -66,6 +66,18 @@
     <p role="alert" class="card px-3 py-2 text-sm text-danger">{data.notice}</p>
   {/if}
 
+  {#if data.steamReviews.length}
+    <section class="card flex flex-wrap items-center justify-between gap-3 p-4">
+      <div class="space-y-1">
+        <h2>{m.steam_check_title()}</h2>
+        <p class="text-sm text-muted">
+          {m.steam_check_account({ count: data.steamReviews.length })}
+        </p>
+      </div>
+      <a class="btn" href="/compte/verification-steam">{m.steam_check_open()}</a>
+    </section>
+  {/if}
+
   {#if data.merge}
     <section class="card space-y-3 p-4" data-testid="fusion">
       <div class="space-y-1">

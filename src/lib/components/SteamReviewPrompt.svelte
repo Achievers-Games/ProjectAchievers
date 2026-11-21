@@ -97,10 +97,15 @@
         </ul>
         {#if group.state === 'blocked'}
           <p class="text-xs text-muted">{m.steam_reset_hint()}</p>
+        {:else if group.state === 'pending'}
+          <p class="text-xs text-muted">{m.steam_proof_hint()}</p>
         {/if}
       </section>
     {/each}
-    <div class="flex justify-end">
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <a class="text-sm underline" href="/compte/verification-steam" onclick={acknowledge}
+        >{m.steam_check_link()}</a
+      >
       <button class="btn btn-primary" type="button" onclick={acknowledge}
         >{m.steam_review_popup_ok()}</button
       >

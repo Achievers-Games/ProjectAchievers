@@ -2367,9 +2367,9 @@
   "steam_reset_open_console": "ouvrir la console",
   "steam_reset_step_command": "Tape cette commande puis Entrée. Elle remet à zéro tous les succès de ce jeu :",
   "steam_reset_step_replay": "Reviens sur cette page : le blocage est levé dans les secondes qui suivent. Tu peux ensuite rejouer normalement.",
-  "steam_proof_title": "Tu as joué à ce jeu sur une autre plateforme ?",
-  "steam_proof_detail": "Envoie une capture de ton temps de jeu ou de ta progression là-bas (Battle.net, Xbox, Epic…), avec un mot si besoin : un modérateur la regardera. Si la plateforme peut être reliée au site, relie-la plutôt : c’est vérifié automatiquement.",
-  "steam_proof_placeholder": "Par exemple : 300 h sur Battle.net avant de passer sur Steam",
+  "steam_proof_title": "Tes succès sont légitimes ? Envoie une preuve",
+  "steam_proof_detail": "Une capture de ta progression (dans le jeu, sur ton profil Steam ou sur une autre plateforme) et un mot pour expliquer : succès synchronisés en retard, partie sur un autre client… Un modérateur la regarde et peut débloquer le jeu, sans passer par les retours. Si la plateforme peut être reliée au site, relie-la plutôt : c’est vérifié automatiquement.",
+  "steam_proof_placeholder": "Par exemple : succès synchronisés d’un coup en novembre 2023, 400 h de jeu",
   "steam_proof_send": "Envoyer",
   "steam_proof_last": "Dernier envoi le {date}",
   "steam_proof_sent": "Preuve envoyée : un modérateur va la regarder.",
@@ -2543,5 +2543,62 @@
   "collection_banner_mobile": "Format mobile",
   "collection_banner_progress": "Jeu terminé à {progress}. Atteins 100 % pour équiper cette carte.",
   "collection_banner_game_page": "Voir la fiche du jeu",
-  "boosters_playtime_hidden": "Ton temps de jeu Steam est privé : tu ne gagnes ni éclats ni boosters tant qu’il le reste."
+  "boosters_playtime_hidden": "Ton temps de jeu Steam est privé : tu ne gagnes ni éclats ni boosters tant qu’il le reste.",
+  "steam_proof_hint": "Des succès légitimes ? Envoie une preuve depuis la page du jeu : elle arrive directement aux modérateurs.",
+  "steam_check_title": "Vérification des succès Steam",
+  "steam_check_intro": "Les jeux que l’anti-triche a examinés, et ce que ça change pour tes points.",
+  "steam_check_blocked_detail": "Ces jeux ne comptent pas : leurs succès sont retirés du score.",
+  "steam_check_pending_detail": "Ces succès attendent un modérateur et ne comptent pas encore. Une preuve accélère la décision.",
+  "steam_check_unblocked_title": "Jeux validés",
+  "steam_check_unblocked_detail": "Ces succès comptent de nouveau dans tes points.",
+  "steam_check_empty": "Aucun jeu examiné : tous tes succès Steam comptent.",
+  "steam_check_since": "Depuis le {date}",
+  "steam_check_proof_sent": "preuve envoyée le {date}",
+  "steam_check_send_proof": "Envoyer une preuve",
+  "steam_check_reset": "Voir comment le débloquer",
+  "steam_check_link": "Voir l’état de mes jeux Steam",
+  "steam_check_open": "Voir le détail",
+  "feedback_steam_title": "Un jeu Steam bloqué ou en attente de validation ?",
+  "feedback_steam_detail": "Inutile d’écrire ici : envoie une preuve depuis la page du jeu (capture et explication). Elle arrive directement aux modérateurs, avec tout le détail du lot.",
+  "steam_check_account": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "{n} jeu examiné par l’anti-triche.",
+        "c=*": "{n} jeux examinés par l’anti-triche."
+      }
+    }
+  ],
+  "steam_mod_filter_all": "Tous ({count})",
+  "steam_mod_filter_proof": "Avec preuve ({count})",
+  "steam_mod_filter_pending": "À examiner ({count})",
+  "steam_mod_filter_blocked": "Bloqués ({count})",
+  "steam_mod_status_pending": "À examiner",
+  "steam_mod_status_suspended": "Suspendu d’office",
+  "steam_mod_status_rejected": "Bloqué par la modération",
+  "steam_mod_proof_badge": "Preuve reçue",
+  "steam_mod_opened": "signalé {when}",
+  "steam_mod_batches_title": "Ce qui a été signalé",
+  "steam_mod_batch": "{count} succès le {date}",
+  "steam_mod_batches_more": "… et {count} autres moments",
+  "steam_mod_flagged_of": "{count} succès signalés sur {total}",
+  "steam_mod_verdict_trusted": "Plutôt une vraie partie",
+  "steam_mod_verdict_review": "À juger",
+  "steam_mod_verdict_cheat": "Plutôt un outil de déblocage",
+  "steam_mod_unblock": "Lever le blocage",
+  "steam_mod_block": "Bloquer le jeu",
+  "steam_mod_block_confirm": "Bloquer {game} pour {player} ? Ses succès ne compteront plus, et seule une remise à zéro sur Steam le débloquera.",
+  "steam_mod_help": "Valider : les succès signalés comptent de nouveau. Bloquer : le jeu ne compte plus, jusqu’à une remise à zéro par le joueur.",
+  "steam_mod_help_blocked": "Lever le blocage rétablit tous les succès que Steam montre comme obtenus, jamais un succès verrouillé.",
+  "steam_mod_pick": "Choisir succès par succès ({count})",
+  "steam_mod_pick_all": "Tout cocher",
+  "steam_mod_pick_none": "Tout décocher",
+  "steam_mod_cross_mark": "Marquer ce jeu comme progression partagée (succès rendus par le serveur du jeu ou un autre client)"
 }

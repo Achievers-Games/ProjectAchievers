@@ -2367,9 +2367,9 @@
   "steam_reset_open_console": "Konsole öffnen",
   "steam_reset_step_command": "Gib diesen Befehl ein und drücke Enter. Er setzt alle Erfolge dieses Spiels zurück:",
   "steam_reset_step_replay": "Kehre auf diese Seite zurück: Die Sperre wird innerhalb von Sekunden aufgehoben. Danach kannst du normal weiterspielen.",
-  "steam_proof_title": "Dieses Spiel auf einer anderen Plattform gespielt?",
-  "steam_proof_detail": "Sende einen Screenshot deiner Spielzeit oder deines Fortschritts dort (Battle.net, Xbox, Epic…), bei Bedarf mit einer Notiz: Die Moderation sieht ihn sich an. Lässt sich die Plattform mit der Seite verknüpfen, verknüpfe sie lieber: Das wird automatisch geprüft.",
-  "steam_proof_placeholder": "Zum Beispiel: 300 Std. auf Battle.net vor dem Wechsel zu Steam",
+  "steam_proof_title": "Deine Erfolge sind echt? Sende einen Nachweis",
+  "steam_proof_detail": "Ein Screenshot deines Fortschritts (im Spiel, in deinem Steam-Profil oder auf einer anderen Plattform) und eine kurze Erklärung: verspätet synchronisierte Erfolge, auf einem anderen Client gespielt… Die Moderation prüft ihn und kann das Spiel freigeben, ganz ohne Feedback. Lässt sich die Plattform mit der Seite verknüpfen, verknüpfe sie lieber: Das wird automatisch geprüft.",
+  "steam_proof_placeholder": "Zum Beispiel: Erfolge im November 2023 auf einmal synchronisiert, 400 Std. gespielt",
   "steam_proof_send": "Senden",
   "steam_proof_last": "Zuletzt gesendet am {date}",
   "steam_proof_sent": "Nachweis gesendet: Die Moderation sieht ihn sich an.",
@@ -2511,5 +2511,62 @@
   "collection_banner_mobile": "Mobilansicht",
   "collection_banner_progress": "Spielfortschritt: {progress}. Erreiche 100 %, um diese Karte zu verwenden.",
   "collection_banner_game_page": "Spielseite öffnen",
-  "boosters_playtime_hidden": "Deine Steam-Spielzeit ist privat: Solange das so bleibt, bekommst du weder Splitter noch Booster."
+  "boosters_playtime_hidden": "Deine Steam-Spielzeit ist privat: Solange das so bleibt, bekommst du weder Splitter noch Booster.",
+  "steam_proof_hint": "Echte Erfolge? Sende einen Nachweis über die Spielseite: Er geht direkt an die Moderation.",
+  "steam_check_title": "Prüfung der Steam-Erfolge",
+  "steam_check_intro": "Die Spiele, die der Anti-Cheat geprüft hat, und was das für deine Punkte bedeutet.",
+  "steam_check_blocked_detail": "Diese Spiele zählen nicht: Ihre Erfolge sind aus deiner Wertung entfernt.",
+  "steam_check_pending_detail": "Diese Erfolge warten auf die Moderation und zählen noch nicht. Ein Nachweis beschleunigt die Entscheidung.",
+  "steam_check_unblocked_title": "Freigegebene Spiele",
+  "steam_check_unblocked_detail": "Diese Erfolge zählen wieder für deine Punkte.",
+  "steam_check_empty": "Kein Spiel geprüft: Alle deine Steam-Erfolge zählen.",
+  "steam_check_since": "Seit {date}",
+  "steam_check_proof_sent": "Nachweis gesendet am {date}",
+  "steam_check_send_proof": "Nachweis senden",
+  "steam_check_reset": "So gibst du es frei",
+  "steam_check_link": "Status meiner Steam-Spiele ansehen",
+  "steam_check_open": "Details ansehen",
+  "feedback_steam_title": "Ein Steam-Spiel gesperrt oder in Prüfung?",
+  "feedback_steam_detail": "Du musst hier nicht schreiben: Sende einen Nachweis über die Spielseite (Screenshot und Erklärung). Er geht direkt an die Moderation, mit allen Details.",
+  "steam_check_account": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "{n} Spiel vom Anti-Cheat geprüft.",
+        "c=*": "{n} Spiele vom Anti-Cheat geprüft."
+      }
+    }
+  ],
+  "steam_mod_filter_all": "Alle ({count})",
+  "steam_mod_filter_proof": "Mit Nachweis ({count})",
+  "steam_mod_filter_pending": "Zu prüfen ({count})",
+  "steam_mod_filter_blocked": "Gesperrt ({count})",
+  "steam_mod_status_pending": "Zu prüfen",
+  "steam_mod_status_suspended": "Automatisch gesperrt",
+  "steam_mod_status_rejected": "Von der Moderation gesperrt",
+  "steam_mod_proof_badge": "Nachweis erhalten",
+  "steam_mod_opened": "gemeldet {when}",
+  "steam_mod_batches_title": "Was gemeldet wurde",
+  "steam_mod_batch": "{count} Erfolge am {date}",
+  "steam_mod_batches_more": "… und {count} weitere Zeitpunkte",
+  "steam_mod_flagged_of": "{count} von {total} Erfolgen gemeldet",
+  "steam_mod_verdict_trusted": "Eher echtes Spielen",
+  "steam_mod_verdict_review": "Abzuwägen",
+  "steam_mod_verdict_cheat": "Eher ein Freischalt-Tool",
+  "steam_mod_unblock": "Sperre aufheben",
+  "steam_mod_block": "Spiel sperren",
+  "steam_mod_block_confirm": "{game} für {player} sperren? Die Erfolge zählen dann nicht mehr, nur ein Zurücksetzen auf Steam hebt die Sperre auf.",
+  "steam_mod_help": "Freigeben: Die gemeldeten Erfolge zählen wieder. Sperren: Das Spiel zählt nicht mehr, bis der Spieler es zurücksetzt.",
+  "steam_mod_help_blocked": "Das Aufheben der Sperre stellt alle Erfolge wieder her, die Steam als erhalten zeigt, nie einen gesperrten.",
+  "steam_mod_pick": "Erfolg für Erfolg auswählen ({count})",
+  "steam_mod_pick_all": "Alle auswählen",
+  "steam_mod_pick_none": "Alle abwählen",
+  "steam_mod_cross_mark": "Dieses Spiel als geteilten Fortschritt markieren (Erfolge vom Spielserver oder einem anderen Client vergeben)"
 }

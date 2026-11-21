@@ -349,8 +349,10 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
       steamReview?.suspendedAt && (!player || player.self) ? steamReview.status : null,
     hasExcluded,
     // Jeu bloqué : la page donne la commande Steam qui le remet à zéro pour repartir proprement.
+    // Pas sur un jeu à progression partagée : son serveur rendrait tous les succès d'un coup.
     steamResetAppId:
       steamReview &&
+      !game.crossProgress &&
       (!player || player.self) &&
       (steamReview.suspendedAt || steamReview.status === 'REJECTED')
         ? game.platformGameId

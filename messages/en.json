@@ -2367,9 +2367,9 @@
   "steam_reset_open_console": "open the console",
   "steam_reset_step_command": "Type this command and press Enter. It resets every achievement in this game:",
   "steam_reset_step_replay": "Come back to this page: the block is lifted within seconds. You can then play again normally.",
-  "steam_proof_title": "Played this game on another platform?",
-  "steam_proof_detail": "Send a screenshot of your playtime or progress there (Battle.net, Xbox, Epic…), with a note if needed: a moderator will review it. If that platform can be linked to the site, link it instead: it is checked automatically.",
-  "steam_proof_placeholder": "For example: 300 h on Battle.net before moving to Steam",
+  "steam_proof_title": "Are your achievements legitimate? Send proof",
+  "steam_proof_detail": "A screenshot of your progress (in the game, on your Steam profile or on another platform) and a note to explain: achievements synced late, played on another client… A moderator reviews it and can unblock the game, no need to use feedback. If that platform can be linked to the site, link it instead: it is checked automatically.",
+  "steam_proof_placeholder": "For example: achievements all synced at once in November 2023, 400 h played",
   "steam_proof_send": "Send",
   "steam_proof_last": "Last sent on {date}",
   "steam_proof_sent": "Proof sent: a moderator will review it.",
@@ -2543,5 +2543,62 @@
   "collection_banner_mobile": "Mobile view",
   "collection_banner_progress": "Game completion: {progress}. Reach 100% to equip this card.",
   "collection_banner_game_page": "View game page",
-  "boosters_playtime_hidden": "Your Steam playtime is private: you earn no shards or boosters while it stays private."
+  "boosters_playtime_hidden": "Your Steam playtime is private: you earn no shards or boosters while it stays private.",
+  "steam_proof_hint": "Legitimate achievements? Send proof from the game page: it goes straight to the moderators.",
+  "steam_check_title": "Steam achievement checks",
+  "steam_check_intro": "The games the anti-cheat has reviewed, and what it changes for your points.",
+  "steam_check_blocked_detail": "These games do not count: their achievements are removed from your score.",
+  "steam_check_pending_detail": "These achievements are waiting for a moderator and do not count yet. Proof speeds up the decision.",
+  "steam_check_unblocked_title": "Approved games",
+  "steam_check_unblocked_detail": "These achievements count towards your points again.",
+  "steam_check_empty": "No game reviewed: all your Steam achievements count.",
+  "steam_check_since": "Since {date}",
+  "steam_check_proof_sent": "proof sent on {date}",
+  "steam_check_send_proof": "Send proof",
+  "steam_check_reset": "See how to unblock it",
+  "steam_check_link": "See the status of my Steam games",
+  "steam_check_open": "See details",
+  "feedback_steam_title": "A Steam game blocked or awaiting review?",
+  "feedback_steam_detail": "No need to write here: send proof from the game page (screenshot and explanation). It goes straight to the moderators, with every detail of the batch.",
+  "steam_check_account": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=one": "{n} game reviewed by the anti-cheat.",
+        "c=*": "{n} games reviewed by the anti-cheat."
+      }
+    }
+  ],
+  "steam_mod_filter_all": "All ({count})",
+  "steam_mod_filter_proof": "With proof ({count})",
+  "steam_mod_filter_pending": "To review ({count})",
+  "steam_mod_filter_blocked": "Blocked ({count})",
+  "steam_mod_status_pending": "To review",
+  "steam_mod_status_suspended": "Suspended automatically",
+  "steam_mod_status_rejected": "Blocked by moderation",
+  "steam_mod_proof_badge": "Proof received",
+  "steam_mod_opened": "flagged {when}",
+  "steam_mod_batches_title": "What was flagged",
+  "steam_mod_batch": "{count} achievements on {date}",
+  "steam_mod_batches_more": "… and {count} other moments",
+  "steam_mod_flagged_of": "{count} of {total} achievements flagged",
+  "steam_mod_verdict_trusted": "Likely a real playthrough",
+  "steam_mod_verdict_review": "Needs judgement",
+  "steam_mod_verdict_cheat": "Likely an unlock tool",
+  "steam_mod_unblock": "Lift the block",
+  "steam_mod_block": "Block the game",
+  "steam_mod_block_confirm": "Block {game} for {player}? Its achievements will no longer count, and only a reset on Steam will unblock it.",
+  "steam_mod_help": "Approve: the flagged achievements count again. Block: the game no longer counts until the player resets it.",
+  "steam_mod_help_blocked": "Lifting the block restores every achievement Steam shows as earned, never a locked one.",
+  "steam_mod_pick": "Choose achievement by achievement ({count})",
+  "steam_mod_pick_all": "Check all",
+  "steam_mod_pick_none": "Uncheck all",
+  "steam_mod_cross_mark": "Mark this game as shared progress (achievements granted by the game server or another client)"
 }

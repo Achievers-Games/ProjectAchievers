@@ -2330,9 +2330,9 @@
   "steam_reset_open_console": "コンソールを開く",
   "steam_reset_step_command": "このコマンドを入力してEnterを押します。このゲームの実績がすべてリセットされます：",
   "steam_reset_step_replay": "このページに戻ってください。数秒でブロックが解除されます。その後は普通にプレイし直せます。",
-  "steam_proof_title": "このゲームを別のプラットフォームでプレイしましたか？",
-  "steam_proof_detail": "そちらでのプレイ時間や進行状況のスクリーンショット（Battle.net、Xbox、Epicなど）を、必要ならメモを添えて送ってください。モデレーターが確認します。そのプラットフォームをサイトに連携できる場合は、連携するほうが確実です。自動で確認されます。",
-  "steam_proof_placeholder": "例：Steamに移る前にBattle.netで300時間",
+  "steam_proof_title": "実績は正当ですか？証拠を送ってください",
+  "steam_proof_detail": "進行状況のスクリーンショット（ゲーム内、Steamプロフィール、または別のプラットフォーム）と説明を添えてください。実績の同期が遅れた、別のクライアントでプレイした、など。モデレーターが確認し、ゲームのブロックを解除できます。フィードバックを送る必要はありません。そのプラットフォームをサイトに連携できる場合は、連携するほうが確実です。自動で確認されます。",
+  "steam_proof_placeholder": "例：2023年11月に実績がまとめて同期された、プレイ時間400時間",
   "steam_proof_send": "送信",
   "steam_proof_last": "最終送信：{date}",
   "steam_proof_sent": "証拠を送信しました。モデレーターが確認します。",
@@ -2431,5 +2431,61 @@
   "collection_banner_mobile": "モバイル表示",
   "collection_banner_progress": "ゲームの達成率は{progress}です。100%でこのカードを設定できます。",
   "collection_banner_game_page": "ゲームページを見る",
-  "boosters_playtime_hidden": "Steamのプレイ時間が非公開のため、公開するまで欠片もブースターも獲得できません。"
+  "boosters_playtime_hidden": "Steamのプレイ時間が非公開のため、公開するまで欠片もブースターも獲得できません。",
+  "steam_proof_hint": "正当な実績ですか？ゲームのページから証拠を送ってください。モデレーターに直接届きます。",
+  "steam_check_title": "Steam実績の確認",
+  "steam_check_intro": "チート対策が確認したゲームと、ポイントへの影響です。",
+  "steam_check_blocked_detail": "これらのゲームはカウントされません。実績はスコアから除外されています。",
+  "steam_check_pending_detail": "これらの実績はモデレーターの確認待ちで、まだカウントされません。証拠を送ると判断が早くなります。",
+  "steam_check_unblocked_title": "承認されたゲーム",
+  "steam_check_unblocked_detail": "これらの実績は再びポイントにカウントされます。",
+  "steam_check_empty": "確認されたゲームはありません。Steamの実績はすべてカウントされます。",
+  "steam_check_since": "{date}から",
+  "steam_check_proof_sent": "証拠送信：{date}",
+  "steam_check_send_proof": "証拠を送る",
+  "steam_check_reset": "ブロック解除の方法",
+  "steam_check_link": "Steamゲームの状態を見る",
+  "steam_check_open": "詳細を見る",
+  "feedback_steam_title": "Steamのゲームがブロックまたは確認待ちですか？",
+  "feedback_steam_detail": "ここに書く必要はありません。ゲームのページから証拠（スクリーンショットと説明）を送ってください。詳細とともにモデレーターに直接届きます。",
+  "steam_check_account": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "チート対策が確認したゲーム：{n}本"
+      }
+    }
+  ],
+  "steam_mod_filter_all": "すべて（{count}）",
+  "steam_mod_filter_proof": "証拠あり（{count}）",
+  "steam_mod_filter_pending": "要確認（{count}）",
+  "steam_mod_filter_blocked": "ブロック中（{count}）",
+  "steam_mod_status_pending": "要確認",
+  "steam_mod_status_suspended": "自動で停止",
+  "steam_mod_status_rejected": "モデレーターがブロック",
+  "steam_mod_proof_badge": "証拠を受信",
+  "steam_mod_opened": "{when}に報告",
+  "steam_mod_batches_title": "報告された内容",
+  "steam_mod_batch": "{date}に{count}件の実績",
+  "steam_mod_batches_more": "…ほか{count}件のタイミング",
+  "steam_mod_flagged_of": "{total}件中{count}件の実績が報告されました",
+  "steam_mod_verdict_trusted": "本物のプレイの可能性が高い",
+  "steam_mod_verdict_review": "判断が必要",
+  "steam_mod_verdict_cheat": "解除ツールの可能性が高い",
+  "steam_mod_unblock": "ブロックを解除",
+  "steam_mod_block": "ゲームをブロック",
+  "steam_mod_block_confirm": "{player}の{game}をブロックしますか？実績はカウントされなくなり、Steamでリセットしない限り解除されません。",
+  "steam_mod_help": "承認：報告された実績が再びカウントされます。ブロック：プレイヤーがリセットするまでゲームはカウントされません。",
+  "steam_mod_help_blocked": "ブロックを解除すると、Steamで取得済みと表示される実績がすべて戻ります。未取得の実績は戻りません。",
+  "steam_mod_pick": "実績ごとに選ぶ（{count}）",
+  "steam_mod_pick_all": "すべて選択",
+  "steam_mod_pick_none": "すべて解除",
+  "steam_mod_cross_mark": "このゲームを進行状況共有としてマーク（ゲームサーバーや別クライアントが実績を付与）"
 }

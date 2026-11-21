@@ -2330,9 +2330,9 @@
   "steam_reset_open_console": "打开控制台",
   "steam_reset_step_command": "输入此命令并按回车。它会重置该游戏的全部成就：",
   "steam_reset_step_replay": "回到此页面：封锁会在几秒内解除。之后即可正常重新游玩。",
-  "steam_proof_title": "你在其他平台玩过这款游戏吗？",
-  "steam_proof_detail": "请发送你在那里的游戏时长或进度截图（Battle.net、Xbox、Epic 等），需要的话附上说明：管理员会查看。如果该平台可以关联到本站，请直接关联：会自动验证。",
-  "steam_proof_placeholder": "例如：转到 Steam 之前在 Battle.net 上玩了 300 小时",
+  "steam_proof_title": "你的成就是正当获得的吗？请发送证明",
+  "steam_proof_detail": "发送一张进度截图（游戏内、Steam 个人资料或其他平台），并附上说明：成就同步延迟、在其他客户端游玩……管理员会查看，并可以解除游戏的封锁，无需通过反馈。如果该平台可以关联到本站，请直接关联：会自动验证。",
+  "steam_proof_placeholder": "例如：成就在 2023 年 11 月一次性同步，游戏时长 400 小时",
   "steam_proof_send": "发送",
   "steam_proof_last": "上次发送：{date}",
   "steam_proof_sent": "证明已发送：管理员会查看。",
@@ -2431,5 +2431,61 @@
   "collection_banner_mobile": "移动端视图",
   "collection_banner_progress": "游戏已完成 {progress}。达到 100% 即可使用这张卡片。",
   "collection_banner_game_page": "查看游戏页面",
-  "boosters_playtime_hidden": "你的 Steam 游戏时长为私密：在公开之前，你无法获得碎片或卡包。"
+  "boosters_playtime_hidden": "你的 Steam 游戏时长为私密：在公开之前，你无法获得碎片或卡包。",
+  "steam_proof_hint": "成就是正当获得的？请在游戏页面发送证明：会直接送达管理员。",
+  "steam_check_title": "Steam 成就审核",
+  "steam_check_intro": "反作弊审核过的游戏，以及对你积分的影响。",
+  "steam_check_blocked_detail": "这些游戏不计分：其成就已从分数中移除。",
+  "steam_check_pending_detail": "这些成就正在等待管理员审核，暂不计分。发送证明可以加快决定。",
+  "steam_check_unblocked_title": "已通过的游戏",
+  "steam_check_unblocked_detail": "这些成就重新计入你的积分。",
+  "steam_check_empty": "没有被审核的游戏：你所有的 Steam 成就都计分。",
+  "steam_check_since": "自 {date} 起",
+  "steam_check_proof_sent": "已于 {date} 发送证明",
+  "steam_check_send_proof": "发送证明",
+  "steam_check_reset": "查看如何解除封锁",
+  "steam_check_link": "查看我的 Steam 游戏状态",
+  "steam_check_open": "查看详情",
+  "feedback_steam_title": "Steam 游戏被封锁或等待审核？",
+  "feedback_steam_detail": "无需在这里留言：请在游戏页面发送证明（截图和说明）。它会连同所有细节直接送达管理员。",
+  "steam_check_account": [
+    {
+      "declarations": [
+        "input count",
+        "local c = count: plural",
+        "local n = count: number"
+      ],
+      "selectors": [
+        "c"
+      ],
+      "match": {
+        "c=*": "反作弊审核过的游戏：{n} 款"
+      }
+    }
+  ],
+  "steam_mod_filter_all": "全部（{count}）",
+  "steam_mod_filter_proof": "有证明（{count}）",
+  "steam_mod_filter_pending": "待审核（{count}）",
+  "steam_mod_filter_blocked": "已封锁（{count}）",
+  "steam_mod_status_pending": "待审核",
+  "steam_mod_status_suspended": "自动暂停",
+  "steam_mod_status_rejected": "管理员封锁",
+  "steam_mod_proof_badge": "已收到证明",
+  "steam_mod_opened": "{when}被标记",
+  "steam_mod_batches_title": "被标记的内容",
+  "steam_mod_batch": "{date} 解锁 {count} 个成就",
+  "steam_mod_batches_more": "…以及另外 {count} 个时间点",
+  "steam_mod_flagged_of": "已标记 {count} / {total} 个成就",
+  "steam_mod_verdict_trusted": "较可能是真实游玩",
+  "steam_mod_verdict_review": "需要判断",
+  "steam_mod_verdict_cheat": "较可能是解锁工具",
+  "steam_mod_unblock": "解除封锁",
+  "steam_mod_block": "封锁游戏",
+  "steam_mod_block_confirm": "要为 {player} 封锁 {game} 吗？其成就将不再计分，只有在 Steam 上重置才能解除。",
+  "steam_mod_help": "通过：被标记的成就重新计分。封锁：在玩家重置之前，该游戏不计分。",
+  "steam_mod_help_blocked": "解除封锁会恢复 Steam 显示为已获得的所有成就，绝不会加入未获得的成就。",
+  "steam_mod_pick": "逐个选择成就（{count}）",
+  "steam_mod_pick_all": "全选",
+  "steam_mod_pick_none": "全不选",
+  "steam_mod_cross_mark": "将此游戏标记为共享进度（成就由游戏服务器或其他客户端授予）"
 }

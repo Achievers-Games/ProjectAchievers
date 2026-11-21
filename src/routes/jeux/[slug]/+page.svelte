@@ -218,8 +218,14 @@
               : m.steam_review_unscored_detail()}
         </p>
       {/if}
+      {#if data.steamProof}
+        <SteamProofForm sentAt={data.steamProof.sentAt} />
+      {/if}
       {#if data.steamResetAppId}
-        <div class="space-y-2 rounded-md border border-line bg-surface p-3 text-sm">
+        <div
+          id="remise-a-zero"
+          class="scroll-mt-20 space-y-2 rounded-md border border-line bg-surface p-3 text-sm"
+        >
           <h2 class="text-sm font-semibold">{m.steam_reset_title()}</h2>
           <ol class="list-decimal space-y-1.5 pl-5">
             <li>{m.steam_reset_step_close()}</li>
@@ -237,8 +243,10 @@
           </ol>
         </div>
       {/if}
-      {#if data.steamProof}
-        <SteamProofForm sentAt={data.steamProof.sentAt} />
+      {#if data.steamSuspended || data.hasExcluded}
+        <a class="inline-block text-sm underline" href="/compte/verification-steam"
+          >{m.steam_check_link()}</a
+        >
       {/if}
       <p class="text-sm text-muted">
         {editionLabel(data.game)} · {m.count_achievements({
