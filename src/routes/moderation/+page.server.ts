@@ -8,6 +8,8 @@ import { isRedirectUri, issueOAuthClient, rotateOAuthSecret } from '#lib/server/
 import { psnTokenState, savePsnNpsso } from '#lib/server/service-token';
 import { requireModerator } from '#lib/server/moderator';
 import {
+  corroboratedGames,
+  heldSteamUnlocks,
   steamAchievementId,
   steamReviewUnlocks,
   steamUnlockKey,
@@ -21,7 +23,9 @@ const log = logger('Modération');
 import type { Actions, PageServerLoad } from './$types';
 import { m } from '#lib/paraglide/messages';
 
-export const load: PageServerLoad = async ({ locals, depends }) => {
+const STEAM_PAGE_SIZE = 50;
+
+export const load: PageServerLoad = async ({ locals, depends, url }) => {
   const moderator = requireModerator(locals);
   depends('app:steam-review');
 
@@ -111,10 +115,79 @@ export const load: PageServerLoad = async ({ locals, depends }) => {
     select: { id: true, name: true, slug: true, imageAt: true },
   });
 
-  const reviews = await db.steamIntegrityReview.findMany({
+  const queueRows = await db.steamIntegrityReview.findMany({
     where: { OR: [{ status: 'PENDING' }, { status: 'REJECTED', suspendedAt: { not: null } }] },
-    orderBy: [{ status: 'asc' }, { openedAt: 'desc' }],
-    take: 50,
+    select: {
+      id: true,
+      gameId: true,
+      steamId: true,
+      status: true,
+      suspendedAt: true,
+      openedAt: true,
+      proofAt: true,
+      flagged: true,
+      reviewOnly: true,
+      game: {
+        select: {
+          name: true,
+          platformGameId: true,
+          totalAchievements: true,
+          allowSteamBatches: true,
+          crossProgress: true,
+        },
+      },
+    },
+  });
+  const pending = queueRows.filter((review) => review.status === 'PENDING');
+  const byPlayer = Map.groupBy(
+    pending.map((review) => ({ ...review, flagged: heldSteamUnlocks(review) })),
+    (review) => review.steamId,
+  );
+  const related = new Map(
+    pending.map((review) => [
+      review.id,
+      corroboratedGames(byPlayer.get(review.steamId) ?? [], review.gameId).filter(
+        (gameId) => gameId !== review.gameId,
+      ).length,
+    ]),
+  );
+  const queues = {
+    pending,
+    proof: pending.filter((review) => review.proofAt),
+    automatic: pending.filter((review) => review.suspendedAt),
+    blocked: queueRows.filter((review) => review.status === 'REJECTED'),
+  };
+  const requestedQueue = url.searchParams.get('steamQueue');
+  const requestedReview = url.searchParams.get('steamReview');
+  const focus = requestedReview ? queueRows.find((review) => review.id === requestedReview) : null;
+  const steamQueue: keyof typeof queues =
+    requestedQueue === 'proof' || requestedQueue === 'automatic' || requestedQueue === 'blocked'
+      ? requestedQueue
+      : focus?.status === 'REJECTED'
+        ? 'blocked'
+        : 'pending';
+  const selected = queues[steamQueue].toSorted(
+    (a, b) =>
+      Number(Boolean(b.proofAt)) - Number(Boolean(a.proofAt)) ||
+      Number(Boolean(b.suspendedAt)) - Number(Boolean(a.suspendedAt)) ||
+      (related.get(b.id) ?? 0) - (related.get(a.id) ?? 0) ||
+      a.openedAt.getTime() - b.openedAt.getTime() ||
+      a.id.localeCompare(b.id),
+  );
+  const steamPageCount = Math.max(1, Math.ceil(selected.length / STEAM_PAGE_SIZE));
+  const focusIndex = focus ? selected.findIndex((review) => review.id === focus.id) : -1;
+  const requestedPage = Number(url.searchParams.get('steamPage'));
+  const steamPage =
+    focusIndex >= 0
+      ? Math.floor(focusIndex / STEAM_PAGE_SIZE) + 1
+      : Number.isSafeInteger(requestedPage)
+        ? Math.max(1, Math.min(steamPageCount, requestedPage))
+        : 1;
+  const offset = (steamPage - 1) * STEAM_PAGE_SIZE;
+  const pageIds = selected.slice(offset, offset + STEAM_PAGE_SIZE).map((review) => review.id);
+  const positionById = new Map(pageIds.map((id, index) => [id, index]));
+  const reviews = await db.steamIntegrityReview.findMany({
+    where: { id: { in: pageIds } },
     include: {
       game: {
         select: {
@@ -134,15 +207,31 @@ export const load: PageServerLoad = async ({ locals, depends }) => {
       },
     },
   });
-  // Plusieurs joueurs pris sur le même jeu : sans doute un jeu qui reprend une progression
-  // d'ailleurs. Le modérateur le marque d'un clic, plutôt que de laisser chacun en revue.
+  reviews.sort((a, b) => positionById.get(a.id)! - positionById.get(b.id)!);
+  // Cherche des lots groupés récurrents dont au moins un a été validé par un modérateur.
   const importSuggestions = await db.$queryRaw<
-    { id: string; name: string; slug: string; players: number }[]
+    {
+      id: string;
+      name: string;
+      slug: string;
+      players: number;
+      approved: number;
+      rejected: number;
+    }[]
   >`
-    SELECT g.id, g.name, g.slug, count(DISTINCT r."userId")::int AS players
+    SELECT g.id, g.name, g.slug, count(DISTINCT r."steamId")::int AS players,
+      (count(*) FILTER (WHERE r.status = 'APPROVED' AND r."reviewedBy" IS NOT NULL))::int AS approved,
+      (count(*) FILTER (WHERE r.status = 'REJECTED'))::int AS rejected
     FROM "SteamIntegrityReview" r JOIN "Game" g ON g.id = r."gameId"
-    WHERE NOT g."crossProgress" AND NOT g."allowSteamBatches" AND r."userId" IS NOT NULL
-    GROUP BY g.id HAVING count(DISTINCT r."userId") >= 3
+    WHERE NOT g."crossProgress" AND NOT g."allowSteamBatches" AND EXISTS (
+      SELECT 1 FROM unnest(r.flagged) AS flags(unlock_key)
+      WHERE NOT (unlock_key = ANY(r."reviewOnly"))
+      GROUP BY split_part(unlock_key, ':', 1)
+      HAVING count(*) >= 8
+    )
+    GROUP BY g.id
+    HAVING count(DISTINCT r."steamId") >= 3
+      AND count(*) FILTER (WHERE r.status = 'APPROVED' AND r."reviewedBy" IS NOT NULL) > 0
     ORDER BY players DESC, g.name LIMIT 20`;
   const crossProgressGames = await db.game.findMany({
     where: { crossProgress: true },
@@ -151,6 +240,7 @@ export const load: PageServerLoad = async ({ locals, depends }) => {
   });
   const reviewAchievements = await db.achievement.findMany({
     where: {
+      gameId: { in: reviews.map((review) => review.gameId) },
       OR: reviews.map((review) => ({
         gameId: review.gameId,
         platformAchievementId: { in: [...new Set(review.flagged.map(steamAchievementId))] },
@@ -166,8 +256,19 @@ export const load: PageServerLoad = async ({ locals, depends }) => {
   );
 
   return {
+    steamQueue,
+    steamPage,
+    steamPageCount,
+    steamFocus: focusIndex >= 0 && focus ? focus.id : null,
+    steamCounts: {
+      pending: queues.pending.length,
+      proof: queues.proof.length,
+      automatic: queues.automatic.length,
+      blocked: queues.blocked.length,
+    },
     steamReviews: reviews.map((review) => {
       const available = new Set(steamReviewUnlocks(review).map(steamUnlockKey));
+      const held = new Set(heldSteamUnlocks(review));
       return {
         id: review.id,
         game: review.game,
@@ -176,6 +277,8 @@ export const load: PageServerLoad = async ({ locals, depends }) => {
         proofAt: review.proofAt,
         status: review.status,
         suspended: Boolean(review.suspendedAt),
+        relatedGames: related.get(review.id) ?? 0,
+        heldCount: review.flagged.filter((key) => held.has(key) && available.has(key)).length,
         trust: review.trust as SteamTrust | null,
         proofs: review.proofs.map(({ imageType, ...proof }) => ({
           ...proof,
@@ -189,6 +292,7 @@ export const load: PageServerLoad = async ({ locals, depends }) => {
               at: new Date(Number(key.slice(0, key.indexOf(':')))),
               name: names.get(`${review.gameId}:${achievementId}`) ?? achievementId,
               available: available.has(key),
+              held: held.has(key),
             };
           })
           .sort((a, b) => a.at.getTime() - b.at.getTime()),

@@ -1,26 +1,94 @@
-import { Prisma } from '#prisma';
+import { Prisma, type Platform } from '#prisma';
 import { db } from './db';
 
-/** Sous ce nombre de joueurs, une médiane trahirait le temps de jeu d'un joueur précis. */
-export const COMPLETION_TIME_MIN_SAMPLE = 5;
+export const COMPLETION_TIME_MIN_SAMPLE = 20;
+const COMPLETION_OBSERVATION_WINDOW = 24 * 60 * 60 * 1000;
 
-/**
- * Le temps médian qu'il a fallu aux joueurs publics pour finir chaque jeu à 100 %, en minutes.
- * Jamais le temps d'un joueur seul : un jeu fini par moins de 5 joueurs n'a pas de médiane.
- */
-export async function completionTimes(gameIds: string[]) {
+// L'ordre et le catalogue de la plateforme définissent le périmètre, pas le titre ni le nombre
+// de succès. Une extension (ou une liste remplacée à taille égale) produit une autre empreinte.
+const achievementScope = Prisma.sql`md5(jsonb_agg(a."platformAchievementId" ORDER BY a."platformAchievementId")::text)`;
+
+/** Fige le compteur lu près du dernier succès. Une relecture ne change pas cette mesure. */
+export async function recordCompletionTimes(
+  tx: Prisma.TransactionClient,
+  userId: string,
+  readings: { id: string; minutes: number }[],
+  platform?: Platform,
+  observedAt = new Date(),
+) {
+  const measured = readings.filter(
+    ({ minutes }) => Number.isInteger(minutes) && minutes > 0 && minutes <= 2_147_483_647,
+  );
+  if (!measured.length) return;
+  const since = new Date(observedAt.getTime() - COMPLETION_OBSERVATION_WINDOW);
+  const matchGame = platform
+    ? Prisma.sql`g.platform = ${platform}::"Platform" AND g."platformGameId" = reading.id`
+    : Prisma.sql`g.id = reading.id`;
+  await tx.$executeRaw`
+    INSERT INTO "GameCompletionSample" ("userId", "gameId", scope, minutes, "completedAt", "observedAt")
+    SELECT ug."userId", g.id, catalog.scope, reading.minutes, ug."lastUnlockedAt", ${observedAt}
+    FROM unnest(${measured.map(({ id }) => id)}::text[], ${measured.map(({ minutes }) => minutes)}::int[])
+      AS reading(id, minutes)
+    JOIN "Game" g ON ${matchGame}
+    JOIN "UserGame" ug ON ug."gameId" = g.id AND ug."userId" = ${userId}
+    CROSS JOIN LATERAL (
+      SELECT ${achievementScope} AS scope, count(*) AS total
+      FROM "Achievement" a WHERE a."gameId" = g.id
+    ) catalog
+    WHERE ug.completion >= 100 AND catalog.total > 0 AND ug."unlockedCount" = catalog.total
+      AND ug."lastUnlockedAt" BETWEEN ${since} AND ${observedAt}
+      AND NOT ug.hidden AND NOT g."crossProgress"
+      AND NOT EXISTS (
+        SELECT 1 FROM "LinkedAccount" la
+        WHERE la."userId" = ug."userId" AND g.platform = 'STEAM'
+          AND la.provider = 'STEAM' AND la."playtimeHidden"
+      )
+    ON CONFLICT ("userId", "gameId", scope) DO UPDATE SET
+      minutes = EXCLUDED.minutes, "completedAt" = EXCLUDED."completedAt", "observedAt" = EXCLUDED."observedAt"
+    WHERE "GameCompletionSample"."completedAt" < EXCLUDED."completedAt"
+  `;
+}
+
+/** Médiane des premiers relevés admissibles, pour le catalogue de succès actuellement affiché. */
+export async function completionTimes(
+  gameIds: string[],
+  tx: Prisma.TransactionClient = db,
+  excludeUserId?: string,
+) {
   const result = new Map<string, { median: number; sample: number }>();
   if (gameIds.length === 0) return result;
-  const rows = await db.$queryRaw<{ gameId: string; median: number; sample: bigint }[]>`
-    SELECT ug."gameId",
-           percentile_cont(0.5) WITHIN GROUP (ORDER BY ug."playtimeMinutes") AS median,
+  const exclude = excludeUserId ? Prisma.sql`AND s."userId" <> ${excludeUserId}` : Prisma.empty;
+  const rows = await tx.$queryRaw<{ gameId: string; median: number; sample: bigint }[]>`
+    WITH scopes AS (
+      SELECT a."gameId", ${achievementScope} AS scope
+      FROM "Achievement" a
+      WHERE a."gameId" IN (${Prisma.join(gameIds)})
+      GROUP BY a."gameId"
+    )
+    SELECT s."gameId",
+           percentile_cont(0.5) WITHIN GROUP (ORDER BY s.minutes) AS median,
            count(*) AS sample
-    FROM "UserGame" ug
-    JOIN "User" u ON u.id = ug."userId"
-    WHERE ug."gameId" IN (${Prisma.join(gameIds)})
-      AND ug.completion >= 100 AND ug."playtimeMinutes" > 0
+    FROM scopes
+    JOIN "GameCompletionSample" s USING ("gameId", scope)
+    JOIN "UserGame" ug USING ("userId", "gameId")
+    JOIN "Game" g ON g.id = s."gameId"
+    JOIN "User" u ON u.id = s."userId"
+    WHERE ug.completion >= 100 AND ug."lastUnlockedAt" = s."completedAt"
       AND NOT ug.hidden AND u."isPublic"
-    GROUP BY ug."gameId"
+      AND NOT g."crossProgress"
+      AND NOT EXISTS (
+        SELECT 1 FROM "LinkedAccount" la
+        WHERE la."userId" = s."userId" AND g.platform = 'STEAM'
+          AND la.provider = 'STEAM' AND la."playtimeHidden"
+      )
+      AND NOT EXISTS (
+        SELECT 1 FROM "SteamIntegrityReview" r
+        WHERE r."gameId" = s."gameId" AND r."userId" = s."userId"
+          AND (r.status <> 'APPROVED' OR r."suspendedAt" IS NOT NULL OR r."resetAt" > s."observedAt"
+            OR r.trust @> '{"signals":[{"kind":"other_platform","weight":3}]}')
+      )
+      ${exclude}
+    GROUP BY s."gameId"
     HAVING count(*) >= ${COMPLETION_TIME_MIN_SAMPLE}`;
   for (const row of rows) {
     result.set(row.gameId, { median: Number(row.median), sample: Number(row.sample) });

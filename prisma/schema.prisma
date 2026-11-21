@@ -752,11 +752,26 @@ model UserGame {
   /// si une seconde lecture, au moins une heure plus tard, le confirme.
   removalSeenAt          DateTime?
   reportedUnlockedCount  Int?
+  completionSamples      GameCompletionSample[]
 
   @@id([userId, gameId])
   @@index([userId, lastUnlockedAt])
   @@index([gameId])
   @@index([lastUnlockedAt])
+}
+
+model GameCompletionSample {
+  userId         String
+  gameId         String
+  progress       UserGame @relation(fields: [userId, gameId], references: [userId, gameId], onDelete: Cascade)
+  /// Empreinte de la liste de succès de cette version du jeu.
+  scope          String
+  minutes        Int
+  completedAt    DateTime
+  observedAt     DateTime
+
+  @@id([userId, gameId, scope])
+  @@index([gameId, scope])
 }
 
 enum SteamReviewStatus {
@@ -776,6 +791,8 @@ model SteamIntegrityReview {
   status          SteamReviewStatus @default(PENDING)
   suspendedAt     DateTime?
   flagged         String[]
+  /// Succès à examiner pour leur rythme, qui continuent de compter pendant la revue.
+  reviewOnly      String[]          @default([])
   approved        String[]
   rejected        String[]
   snapshot        Json
@@ -1085,8 +1102,7 @@ model OAuthToken {
   @@index([grantId])
 }
 
-/// Ce que Lure sait d'un jeu Steam, relu au plus une fois par semaine : sa fiche et le temps qu'il
-/// faut pour le finir. `found` faux : Lure ne connaît pas le jeu (ou sa route n'existe pas encore).
+/// Lien et durées publiés par Lure, mis en cache par appid Steam.
 model LureGame {
   steamAppId           String   @id
   found                Boolean

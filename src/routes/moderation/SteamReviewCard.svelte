@@ -72,18 +72,16 @@
           }
         : { label: m.steam_mod_status_pending(), tone: 'text-gold border-gold/50', icon: Clock },
   );
-  const verdict = $derived.by(() => {
-    if (!review.trust) return null;
-    const { verdict } = review.trust;
-    if (verdict === 'trusted')
-      return { label: m.steam_mod_verdict_trusted(), tone: 'bg-success/15 text-success' };
-    if (verdict === 'cheat')
-      return { label: m.steam_mod_verdict_cheat(), tone: 'bg-danger/15 text-danger' };
-    return { label: m.steam_mod_verdict_review(), tone: 'bg-gold/15 text-gold' };
-  });
-  /** Les succès signalés, regroupés par seconde de déblocage : un lot se lit en une ligne. */
+  const pace = $derived(review.trust?.signals.some((signal) => signal.kind === 'pace'));
+  const offlineKnown = $derived(review.trust?.signals.some((signal) => signal.kind === 'offline'));
+  /** Les succès retenus, regroupés par seconde de déblocage. */
   const batches = $derived(
-    [...Map.groupBy(review.unlocks, (unlock) => unlock.at.getTime()).entries()]
+    [
+      ...Map.groupBy(
+        review.unlocks.filter((unlock) => unlock.held),
+        (unlock) => unlock.at.getTime(),
+      ).entries(),
+    ]
       .map(([at, unlocks]) => ({ at: new Date(at), count: unlocks.length }))
       .sort((a, b) => b.count - a.count || a.at.getTime() - b.at.getTime()),
   );
@@ -101,6 +99,9 @@
       player: review.player?.displayName ?? m.steam_review_deleted_player(),
     });
     if (!confirm(message)) event.preventDefault();
+  }
+  function confirmCrossProgress(event: MouseEvent) {
+    if (!confirm(m.steam_mod_cross_confirm())) event.preventDefault();
   }
 </script>
 
@@ -145,6 +146,9 @@
   <div class="grid gap-3 sm:grid-cols-2">
     <div class="space-y-1.5">
       <p class="font-medium">{m.steam_mod_batches_title()}</p>
+      {#if pace}
+        <p class="text-muted">{m.steam_mod_reason_pace()}</p>
+      {/if}
       <ul class="space-y-0.5 text-muted">
         {#each batches.slice(0, 4) as batch (batch.at.getTime())}
           <li>{m.steam_mod_batch({ count: String(batch.count), date: stamp(batch.at) })}</li>
@@ -161,19 +165,31 @@
           })}
         </p>
       {/if}
+      {#if review.relatedGames}
+        <p class="text-muted">
+          {m.steam_mod_related_cases({ count: String(review.relatedGames) })}
+        </p>
+      {/if}
+      {#if pending && !review.suspended}
+        <p class="font-medium">
+          {review.heldCount
+            ? m.steam_mod_effect_held({ count: String(review.heldCount) })
+            : m.steam_mod_effect_preserved()}
+        </p>
+      {/if}
     </div>
     <div class="space-y-1.5">
       <p class="flex flex-wrap items-center gap-2 font-medium">
         {#if review.trust}
           {m.steam_trust_score({ score: signed(review.trust.score) })}
-          {#if verdict}
-            <span class="rounded-full px-2 py-0.5 text-xs {verdict.tone}">{verdict.label}</span>
-          {/if}
         {:else}
           <span class="text-muted">{m.steam_trust_none()}</span>
         {/if}
       </p>
       {#if review.trust}
+        {#if !offlineKnown}
+          <p class="text-xs text-muted">{m.steam_mod_offline_unverified()}</p>
+        {/if}
         <ul class="space-y-0.5">
           {#each review.trust.signals as signal (signal.kind)}
             <li class="flex gap-2">
@@ -236,7 +252,9 @@
         {/if}
       </label>
     </div>
-    <p class="text-xs text-muted">{pending ? m.steam_mod_help() : m.steam_mod_help_blocked()}</p>
+    {#if !pending || review.heldCount || review.suspended}
+      <p class="text-xs text-muted">{pending ? m.steam_mod_help() : m.steam_mod_help_blocked()}</p>
+    {/if}
 
     {#if pending}
       <details class="rounded-md border border-line p-3">
@@ -266,6 +284,9 @@
                   <span>
                     {unlock.name}
                     <span class="text-xs text-muted">· {stamp(unlock.at)}</span>
+                    {#if !unlock.held && !review.suspended}
+                      <span class="text-xs text-muted">· {m.steam_mod_unlock_counted()}</span>
+                    {/if}
                   </span>
                 </label>
               </li>
@@ -283,7 +304,8 @@
     <form method="POST" action="?/crossProgress" use:enhance class="border-t border-line pt-2">
       <input type="hidden" name="id" value={review.game.id} />
       <input type="hidden" name="value" value="1" />
-      <button class="text-xs text-muted underline hover:text-ink">{m.steam_mod_cross_mark()}</button
+      <button class="text-xs text-muted underline hover:text-ink" onclick={confirmCrossProgress}
+        >{m.steam_mod_cross_mark()}</button
       >
     </form>
   {/if}

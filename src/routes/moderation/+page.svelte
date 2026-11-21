@@ -24,51 +24,55 @@
   };
   const authReason = (reason: string) => AUTH_REASONS[reason]?.() ?? reason;
 
-  type SteamReview = (typeof data.steamReviews)[number];
-  /**
-   * Les dossiers Steam se traitent un par un, comme une pile de cartes : une décision range la
-   * carte, la suivante prend sa place. Trois piles : à traiter, avec preuve, bloqués.
-   */
   const DECKS: {
-    key: string;
+    key: keyof typeof data.steamCounts;
     label: (p: { count: string }) => string;
-    test: (r: SteamReview) => boolean;
   }[] = [
-    { key: 'pending', label: m.steam_mod_filter_pending, test: (r) => r.status === 'PENDING' },
-    {
-      key: 'proof',
-      label: m.steam_mod_filter_proof,
-      test: (r) => r.status === 'PENDING' && r.proofs.length > 0,
-    },
-    { key: 'blocked', label: m.steam_mod_filter_blocked, test: (r) => r.status === 'REJECTED' },
+    { key: 'pending', label: m.steam_mod_filter_pending },
+    { key: 'proof', label: m.steam_mod_filter_proof },
+    { key: 'automatic', label: m.steam_mod_filter_automatic },
+    { key: 'blocked', label: m.steam_mod_filter_blocked },
   ];
-  let deckKey = $state('pending');
-  let position = $state(0);
-  /** Un joueur qui a envoyé une preuve attend une réponse : il passe d'abord, puis le plus ancien. */
-  const deck = $derived(
-    data.steamReviews
-      .filter(DECKS.find((item) => item.key === deckKey)!.test)
-      .toSorted(
-        (a, b) =>
-          Number(b.proofs.length > 0) - Number(a.proofs.length > 0) ||
-          a.openedAt.getTime() - b.openedAt.getTime(),
-      ),
-  );
+  const queueUrl = (queue: keyof typeof data.steamCounts, page = 1) =>
+    `?steamQueue=${queue}&steamPage=${page}#steam-reviews`;
+  let position = $state<{
+    queue: string;
+    page: number;
+    focus: string | null;
+    index: number;
+  } | null>(null);
+  const deck = $derived(data.steamReviews);
   // Après une décision, la carte traitée quitte la pile : la même place montre la suivante.
-  const current = $derived(deck[Math.min(position, deck.length - 1)] ?? null);
+  const index = $derived(
+    position?.queue === data.steamQueue &&
+      position.page === data.steamPage &&
+      position.focus === data.steamFocus
+      ? position.index
+      : Math.max(
+          0,
+          deck.findIndex((review) => review.id === data.steamFocus),
+        ),
+  );
+  const current = $derived(deck[Math.min(index, deck.length - 1)] ?? null);
   const shown = $derived(current ? deck.indexOf(current) : 0);
-  function pickDeck(key: string) {
-    deckKey = key;
-    position = 0;
-  }
   function move(step: number) {
-    if (deck.length) position = (shown + step + deck.length) % deck.length;
+    if (deck.length) {
+      position = {
+        queue: data.steamQueue,
+        page: data.steamPage,
+        focus: data.steamFocus,
+        index: (shown + step + deck.length) % deck.length,
+      };
+    }
   }
   function onkeydown(event: KeyboardEvent) {
     const target = event.target as HTMLElement | null;
     if (target?.closest('input, textarea, select, [contenteditable]')) return;
     if (event.key === 'ArrowRight') move(1);
     else if (event.key === 'ArrowLeft') move(-1);
+  }
+  function confirmCrossProgress(event: MouseEvent) {
+    if (!confirm(m.steam_mod_cross_confirm())) event.preventDefault();
   }
 </script>
 
@@ -85,18 +89,17 @@
   <section id="steam-reviews" class="card space-y-3 p-4">
     <h2 class="text-base">{m.steam_review_title()}</h2>
     {#if form?.error}<p class="text-sm text-danger" role="alert">{form.error}</p>{/if}
-    {#if !data.steamReviews.length}
+    {#if !data.steamCounts.pending && !data.steamCounts.blocked}
       <p class="text-sm text-muted">{m.steam_review_empty()}</p>
     {/if}
-    {#if data.steamReviews.length}
+    {#if data.steamCounts.pending || data.steamCounts.blocked}
       <div class="flex flex-wrap gap-1.5" role="group" aria-label={m.steam_review_title()}>
         {#each DECKS as item (item.key)}
-          <button
-            type="button"
-            class="btn h-8 text-xs {deckKey === item.key ? 'btn-primary' : ''}"
-            aria-pressed={deckKey === item.key}
-            onclick={() => pickDeck(item.key)}
-            >{item.label({ count: String(data.steamReviews.filter(item.test).length) })}</button
+          <a
+            href={queueUrl(item.key)}
+            class="btn h-8 text-xs {data.steamQueue === item.key ? 'btn-primary' : ''}"
+            aria-current={data.steamQueue === item.key ? 'page' : undefined}
+            >{item.label({ count: String(data.steamCounts[item.key]) })}</a
           >
         {/each}
       </div>
@@ -132,6 +135,29 @@
           {m.steam_mod_done()}
         </p>
       {/if}
+      {#if data.steamPageCount > 1}
+        <nav
+          class="flex items-center justify-between gap-2 text-sm"
+          aria-label={m.steam_review_title()}
+        >
+          {#if data.steamPage > 1}
+            <a class="btn h-8" href={queueUrl(data.steamQueue, data.steamPage - 1)}>
+              {m.steam_mod_previous_page()}
+            </a>
+          {/if}
+          <span class="text-muted">
+            {m.steam_mod_queue_page({
+              page: String(data.steamPage),
+              total: String(data.steamPageCount),
+            })}
+          </span>
+          {#if data.steamPage < data.steamPageCount}
+            <a class="btn h-8" href={queueUrl(data.steamQueue, data.steamPage + 1)}>
+              {m.steam_mod_next_page()}
+            </a>
+          {/if}
+        </nav>
+      {/if}
     {/if}
     {#if data.importSuggestions.length || data.crossProgressGames.length}
       <div class="space-y-2 border-t border-line pt-3 text-sm">
@@ -143,12 +169,18 @@
               <a class="underline" href="/jeux/{game.slug}">{game.name}</a>
               <span class="flex items-center gap-2">
                 <span class="text-muted"
-                  >{m.steam_cross_players({ count: String(game.players) })}</span
+                  >{m.steam_mod_similar_cases({
+                    count: String(game.players),
+                    approved: String(game.approved),
+                    rejected: String(game.rejected),
+                  })}</span
                 >
                 <form method="POST" action="?/crossProgress" use:enhance>
                   <input type="hidden" name="id" value={game.id} />
                   <input type="hidden" name="value" value="1" />
-                  <button class="btn btn-secondary">{m.steam_cross_mark()}</button>
+                  <button class="btn btn-secondary" onclick={confirmCrossProgress}
+                    >{m.steam_cross_mark()}</button
+                  >
                 </form>
               </span>
             </li>

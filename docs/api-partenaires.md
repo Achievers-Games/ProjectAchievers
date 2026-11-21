@@ -245,7 +245,7 @@ est dans la route « un jeu, succès par succès ».
     "gameGuides": 0,
     "bestGameGuideUrl": null
   },
-  "completionTime": { "medianMinutes": 840, "sample": 12 }
+  "completionTime": { "medianMinutes": 840, "sample": 24 }
 }
 ```
 
@@ -257,8 +257,9 @@ est dans la route « un jeu, succès par succès ».
 - `rarestAchievement` : pourcentage de joueurs qui ont le succès le plus rare.
 - `guides` : succès couverts par au moins un guide, guides complets du jeu, et le lien du
   meilleur (l'officiel d'abord, sinon le mieux noté par la communauté).
-- `completionTime` : temps de jeu Steam **médian** des joueurs publics à 100 %, et sur combien de
-  joueurs. `null` sous cinq joueurs, et pour les jeux hors Steam. À afficher comme « environ ».
+- `completionTime` désigne le temps de jeu Steam **médian** relevé près du 100 % de la liste de
+  succès actuelle, et le nombre de joueurs publics dont la mesure a été retenue. La valeur est
+  `null` en dessous de 20 mesures admissibles et pour les jeux hors Steam.
 
 De quoi annoncer, par exemple : « 100 % accessible : aucun succès manquable, guide disponible,
 environ 14 h ».

@@ -133,6 +133,9 @@
         : m.game_seo_title({ game: data.game.name, achievements: seoAchievements }),
   );
   // Les vraies informations de la fiche, pas une formule creuse : manquables, temps, guides.
+  const completionMinutes = $derived(
+    data.completionTime?.median ?? data.lure?.completionistMinutes,
+  );
   const seoDescription = $derived(
     [
       m.game_seo_description({ game: data.game.name, achievements: seoAchievements }),
@@ -141,11 +144,7 @@
           ? m.game_seo_missables({ count: data.missables.count })
           : m.game_seo_no_missables()
         : null,
-      data.completionTime
-        ? m.game_seo_time({ hours: hours(data.completionTime.median) })
-        : data.lure?.completionistMinutes
-          ? m.game_seo_time({ hours: hours(data.lure.completionistMinutes) })
-          : null,
+      completionMinutes ? m.game_seo_time({ hours: hours(completionMinutes) }) : null,
       data.guides.length ? m.game_seo_guides({ count: data.guides.length }) : null,
     ]
       .filter(Boolean)
@@ -265,7 +264,9 @@
       {#if data.lure}
         <LureCard
           url={data.lure.url}
-          hours={data.lure.completionistMinutes ? hours(data.lure.completionistMinutes) : null}
+          hours={!data.completionTime && data.lure.completionistMinutes
+            ? hours(data.lure.completionistMinutes)
+            : null}
         />
       {/if}
       {#if data.versions.length}

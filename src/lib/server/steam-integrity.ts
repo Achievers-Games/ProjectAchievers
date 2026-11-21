@@ -1,6 +1,7 @@
 import { Prisma, type SteamIntegrityReview } from '#prisma';
 import type { ProgressActivity, UnlockInput } from './sync/store';
 import { lureGameFor } from './lure-games';
+import { completionTimes } from './completion-time';
 import { revokeShards } from './shards';
 
 const WINDOW = 2 * 60 * 60 * 1000;
@@ -156,7 +157,7 @@ export type TrustEvidence = {
   /** Temps médian des autres membres arrivés au moins aussi loin, et leur nombre. */
   peerMedian: number | null;
   peers: number;
-  /** Temps attendu pour cette progression d'après Lure, quand les membres sont trop peu. */
+  /** Référence de durée pour un 100 %, si elle est disponible. */
   expected?: number | null;
   /** Moments de déblocage distincts avant le premier lot douteux. */
   history: number;
@@ -226,8 +227,12 @@ export function steamTrust(evidence: TrustEvidence): SteamTrust {
     // Vérifié par le site lui-même : une vraie partie ailleurs vaut une validation.
     signals.push({ kind: 'other_platform', weight: playedElsewhere ? 3 : 1, ...other });
   }
-  if (evidence.offline >= OFFLINE_MINUTES) {
-    signals.push({ kind: 'offline', weight: 2, minutes: evidence.offline });
+  if (evidence.offline > 0) {
+    signals.push({
+      kind: 'offline',
+      weight: evidence.offline >= OFFLINE_MINUTES ? 2 : 0,
+      minutes: evidence.offline,
+    });
   }
   if (evidence.history >= 3) {
     signals.push({ kind: 'history', weight: 1, count: evidence.history });
@@ -312,27 +317,37 @@ async function assessSteamTrust(
       AND g."familyKey" = (SELECT "familyKey" FROM "Game" WHERE id = ${gameId})
     ORDER BY ug.completion DESC, ug."playtimeMinutes" DESC
     LIMIT 1`;
-  const firstFlagged = Math.min(...flagged.map(stampOf));
-  const flaggedIds = new Set(flagged.map(steamAchievementId));
+  // L'historique se compte avant le premier lot à la même seconde. Le contrôle du rythme signale
+  // tous les succès du jeu : sans lot, il n'y a pas d'avant, et l'historique reste vide. Avec un
+  // lot, les succès espacés qui le précèdent sont la trace d'une vraie partie, synchronisée
+  // ensuite d'un coup (Lies of P joué hors ligne : Steam ne montre que le temps connecté).
+  const stamps = flagged.map(stampOf);
+  const seen = new Set<number>();
+  const batchStamps = stamps.filter((at) => seen.has(at) || !seen.add(at));
+  const firstBatch = batchStamps.length ? Math.min(...batchStamps) : Math.min(...stamps);
+  const batchSet = new Set(batchStamps);
+  const batchKeys = new Set(flagged.filter((key) => batchSet.has(stampOf(key))));
   const history = new Set(
     unlocks
-      .map((unlock) => unlock.unlockedAt.getTime())
       .filter(
-        (at, index) =>
-          at >= MIN_DATE &&
-          at < firstFlagged &&
-          !flaggedIds.has(unlocks[index]!.platformAchievementId),
-      ),
+        (unlock) =>
+          unlock.unlockedAt.getTime() >= MIN_DATE &&
+          unlock.unlockedAt.getTime() < firstBatch &&
+          !batchKeys.has(steamUnlockKey(unlock)),
+      )
+      .map((unlock) => unlock.unlockedAt.getTime()),
   ).size;
+  const expected = await expectedMinutes(tx, userId, gameId, game, unlocks.length);
+  const finished = game.totalAchievements > 0 && unlocks.length >= game.totalAchievements;
   const trust = steamTrust({
     unlocked: unlocks.length,
     playtime,
     offline,
     crossProgress,
     pace,
-    expected: await expectedMinutes(tx, game, unlocks.length),
+    expected,
     otherPlatform: other ?? null,
-    peerMedian: peers?.median ?? null,
+    peerMedian: finished ? null : (peers?.median ?? null),
     peers: Number(peers?.count ?? 0),
     history,
     nearImpossible: rarities.filter(
@@ -346,30 +361,34 @@ async function assessSteamTrust(
 const MIN_REFERENCE = 60;
 
 /**
- * Le temps qu'il faut d'ordinaire pour cette progression, d'après le temps complétionniste de Lure
- * (100 % du jeu) au prorata des succès obtenus. Un jeu pas encore demandé à Lure l'est en
- * arrière-plan : la référence servira à la lecture suivante.
+ * La référence de complétion ne s'applique qu'à une liste terminée. Pour une progression
+ * partielle, seuls les joueurs arrivés aussi loin et le rythme observé peuvent servir de repères.
  */
 async function expectedMinutes(
   tx: Prisma.TransactionClient,
+  userId: string,
+  gameId: string,
   game: { platformGameId: string; totalAchievements: number },
   unlocked: number,
 ) {
+  if (!game.totalAchievements || unlocked < game.totalAchievements) return null;
+  const observed = (await completionTimes([gameId], tx, userId)).get(gameId);
+  if (observed) return observed.median >= MIN_REFERENCE ? observed.median : null;
+  const steamGame = {
+    platform: 'STEAM' as const,
+    platformGameId: game.platformGameId,
+    familyKey: null,
+  };
   const lure = await tx.lureGame.findUnique({
     where: { steamAppId: game.platformGameId },
     select: { found: true, completionistMinutes: true },
   });
   if (!lure) {
-    void lureGameFor({
-      platform: 'STEAM',
-      platformGameId: game.platformGameId,
-      familyKey: null,
-    }).catch(() => undefined);
+    void lureGameFor(steamGame).catch(() => undefined);
     return null;
   }
   const full = lure.found ? lure.completionistMinutes : null;
-  if (!full || full < MIN_REFERENCE || !game.totalAchievements) return null;
-  return Math.round(full * Math.min(1, unlocked / game.totalAchievements));
+  return full && full >= MIN_REFERENCE ? full : null;
 }
 
 /** Steam ne compte le temps de jeu que depuis 2009 : un succès plus ancien ne dit rien du rythme. */
@@ -418,7 +437,7 @@ async function steamPaceSuspects(
   ]);
   const minutes = Math.max(activity.playtimeMinutes ?? 0, row?.playtimeMinutes ?? 0);
   if (account?.playtimeHidden || !minutes) return [];
-  const expected = await expectedMinutes(tx, game, tracked.length);
+  const expected = await expectedMinutes(tx, userId, gameId, game, tracked.length);
   // Au moins une minute par succès, et au moins un dixième du temps attendu : rien à voir.
   if (minutes >= tracked.length && (expected === null || minutes >= expected * 0.1)) return [];
   const ids = tracked.map((unlock) => unlock.platformAchievementId);
@@ -444,8 +463,9 @@ async function steamPaceSuspects(
   if (stats?.rarity != null && stats.rarity >= PACE_COMMON_RARITY) return [];
   // Assez de membres aussi avancés, qui n'ont pas joué tellement plus : le jeu est juste court.
   const suspects = tracked.map(steamUnlockKey);
-  // Les autres membres d'abord, puis le temps complétionniste de Lure, puis une minute par succès.
-  if (Number(stats?.peers ?? 0) >= 3 && stats?.median) {
+  // Compare une progression partielle aux pairs et un 100 % à son repère de complétion.
+  const finished = game.totalAchievements > 0 && tracked.length >= game.totalAchievements;
+  if (!finished && Number(stats?.peers ?? 0) >= 3 && stats?.median) {
     return minutes >= stats.median * 0.1 ? [] : suspects;
   }
   if (expected !== null) return minutes >= expected * 0.1 ? [] : suspects;
@@ -460,18 +480,23 @@ export function steamReviewUnlocks(review: Pick<SteamIntegrityReview, 'snapshot'
 export function excludedSteamUnlocks(
   review: Pick<
     SteamIntegrityReview,
-    'snapshot' | 'status' | 'suspendedAt' | 'flagged' | 'rejected'
+    'snapshot' | 'status' | 'suspendedAt' | 'flagged' | 'reviewOnly' | 'rejected'
   >,
 ) {
   const excluded = new Set([
     ...review.rejected,
-    ...(review.status === 'PENDING' ? review.flagged.map(steamAchievementId) : []),
+    ...(review.status === 'PENDING' ? heldSteamUnlocks(review).map(steamAchievementId) : []),
   ]);
   return new Map(
     steamReviewUnlocks(review)
       .filter((unlock) => review.suspendedAt || excluded.has(unlock.platformAchievementId))
       .map((unlock) => [unlock.platformAchievementId, unlock.unlockedAt]),
   );
+}
+
+export function heldSteamUnlocks(review: Pick<SteamIntegrityReview, 'flagged' | 'reviewOnly'>) {
+  const reviewOnly = new Set(review.reviewOnly);
+  return review.flagged.filter((key) => !reviewOnly.has(key));
 }
 
 export async function lockSteamAccount(tx: Prisma.TransactionClient, steamId: string) {
@@ -541,15 +566,11 @@ export async function filterSteamProgress(
   // Les lots à la même seconde, et la progression trop rapide pour le temps joué : un outil qui
   // débloque les succès un par un, espacés, ne forme jamais de lot.
   const paced =
-    complete && !steamBatchException(game) && !game.crossProgress
+    complete && !game.crossProgress
       ? await steamPaceSuspects(tx, { userId, gameId, steamId, unlocks, activity, game })
       : [];
-  const detected = [
-    ...new Set([
-      ...steamSuspects(unlocks, game.totalAchievements, steamBatchException(game)),
-      ...paced,
-    ]),
-  ];
+  const structural = steamSuspects(unlocks, game.totalAchievements, steamBatchException(game));
+  const detected = [...new Set([...structural, ...paced])];
   const fresh = detected.filter(
     (key) => !previous?.approved.includes(key) && !rejected.includes(steamAchievementId(key)),
   );
@@ -557,6 +578,12 @@ export async function filterSteamProgress(
   const candidates = [...new Set([...(wasPending ? previous.flagged : []), ...fresh])];
   if (!previous && !candidates.length) return { unlocks, withdrawn: false, reviewChanged: false };
 
+  // Une lecture partielle peut manquer le reste d'un lot déjà constaté.
+  const held = new Set([
+    ...structural,
+    ...(!complete && wasPending ? heldSteamUnlocks(previous) : []),
+  ]);
+  const reviewOnlyCandidates = candidates.filter((key) => !held.has(key));
   // Le temps connecté se fige au premier examen d'un lot, et le reste tant qu'il est en attente :
   // un nouveau lot ajouté après des heures à laisser tourner le jeu ne le relève pas.
   const frozen = wasPending ? (previous.flaggedPlaytime ?? null) : null;
@@ -570,50 +597,32 @@ export async function filterSteamProgress(
         activity,
         onlineCap: frozen,
         crossProgress: game.crossProgress,
-        pace: paced.some((key) => candidates.includes(key)),
+        pace: reviewOnlyCandidates.length > 0 || paced.some((key) => candidates.includes(key)),
         game,
       })
     : null;
   const trust = assessed?.trust ?? null;
-  // Une suspension automatique tombe si les traces du joueur la démentent ensuite (temps hors ligne
-  // arrivé plus tard). Celle qu'un modérateur a confirmée, avec ses succès refusés, reste.
   const moderatorSuspended =
     Boolean(previous?.suspendedAt) &&
     (previous?.status !== 'PENDING' || (previous?.rejected.length ?? 0) > 0);
-  const autoApproved = trust?.verdict === 'trusted' && !moderatorSuspended;
+  const autoApproved = complete && trust?.verdict === 'trusted' && !moderatorSuspended;
   const flagged = autoApproved ? [] : candidates;
+  const reviewOnly = autoApproved ? [] : reviewOnlyCandidates;
   const approved = [
     ...new Set([...(previous?.approved ?? []), ...(autoApproved ? candidates : [])]),
   ];
   const opened =
-    !autoApproved &&
-    (fresh.some((key) => !previous?.flagged.includes(key)) || (!previous && flagged.length > 0));
-  // Un score accablant suspend le jeu d'emblée ; la modération peut toujours tout rétablir.
-  const caught = trust?.verdict === 'cheat' && flagged.length > 0 && !previous?.suspendedAt;
-  // La suspension automatique ne tient que tant que le score accuse : jeu marqué depuis comme
-  // reprenant une progression d'ailleurs, ou temps de jeu complet arrivé ensuite (hors ligne
-  // compris). Le lot reste en attente, pour la modération.
-  // Un jeu suspendu par recoupement de lots sur d'autres jeux le reste : sinon il tomberait puis
-  // reviendrait à chaque lecture.
-  const liftable =
-    Boolean(previous?.suspendedAt) &&
     !moderatorSuspended &&
     !autoApproved &&
-    (game.crossProgress ||
-      // Seule une liste complète rejuge : une lecture partielle ou vide n'en dit pas assez.
-      (complete && unlocks.length > 0 && trust !== null && trust.verdict !== 'cheat'));
+    (fresh.some((key) => !previous?.flagged.includes(key)) ||
+      Boolean(previous?.reviewOnly.some((key) => flagged.includes(key) && held.has(key))));
+  // Les anciennes suspensions automatiques redeviennent des revues après une lecture complète.
   const unsuspended =
-    liftable &&
-    !corroboratedGames(
-      [
-        ...(await tx.steamIntegrityReview.findMany({
-          where: { steamId, userId, status: 'PENDING', gameId: { not: gameId } },
-          include: { game: { select: gameSelect } },
-        })),
-        { gameId, flagged, game },
-      ],
-      gameId,
-    ).includes(gameId);
+    Boolean(previous?.suspendedAt) && !moderatorSuspended && complete && unlocks.length > 0;
+  const reclassified =
+    wasPending &&
+    (previous.reviewOnly.length !== reviewOnly.length ||
+      previous.reviewOnly.some((key) => !reviewOnly.includes(key)));
 
   const now = new Date();
   const trustData = trust ? { trust: trust as unknown as Prisma.InputJsonValue } : {};
@@ -628,24 +637,26 @@ export async function filterSteamProgress(
       gameId,
       snapshot,
       flagged,
+      reviewOnly,
       approved,
       rejected,
       ...trustData,
       flaggedPlaytime,
       // Validé d'office sans jamais avoir été ouvert : aucune notification à envoyer.
       ...(autoApproved && { status: 'APPROVED', openedAt: new Date(0), reviewedAt: now }),
-      ...(caught && { suspendedAt: now }),
     },
     update: {
       userId,
       snapshot,
       flagged,
+      reviewOnly,
       approved,
       ...trustData,
       flaggedPlaytime,
       // Des succès revenus : la lecture vide précédente était un raté.
       ...(unlocks.length > 0 && { emptySeenAt: null }),
       ...(opened && { status: 'PENDING', openedAt: now, reviewedAt: null, reviewedBy: null }),
+      ...(reclassified && !autoApproved && { openedAt: now }),
       ...(autoApproved &&
         wasPending && {
           status: 'APPROVED',
@@ -654,27 +665,11 @@ export async function filterSteamProgress(
           reviewedAt: now,
           reviewedBy: null,
         }),
-      ...(caught && { suspendedAt: now, openedAt: now }),
       ...(unsuspended && { suspendedAt: null }),
     },
   });
-  const peers = flagged.length
-    ? await tx.steamIntegrityReview.findMany({
-        where: { steamId, userId, status: 'PENDING' },
-        include: { game: { select: gameSelect } },
-      })
-    : [];
-  const severe = corroboratedGames(peers, gameId, now.getTime());
-  const newBlocks = peers.filter((row) => severe.includes(row.gameId) && !row.suspendedAt);
-  for (const row of newBlocks) {
-    await tx.steamIntegrityReview.update({
-      where: { id: row.id },
-      data: { suspendedAt: now, openedAt: now },
-    });
-    if (row.gameId !== gameId) await withdrawSteamProgress(tx, userId, row.gameId);
-  }
-  const suspended = Boolean(current.suspendedAt) || severe.includes(gameId);
-  const excluded = new Set([...rejected, ...flagged.map(steamAchievementId)]);
+  const suspended = Boolean(current.suspendedAt);
+  const excluded = new Set([...rejected, ...heldSteamUnlocks(current).map(steamAchievementId)]);
   if (suspended) await withdrawSteamProgress(tx, userId, gameId);
   else if (excluded.size) await withdrawSteamProgress(tx, userId, gameId, [...excluded]);
   const released = autoApproved && wasPending;
@@ -683,19 +678,13 @@ export async function filterSteamProgress(
       ? []
       : unlocks.filter((unlock) => !excluded.has(unlock.platformAchievementId)),
     withdrawn:
-      suspended ||
-      excluded.size > 0 ||
-      newBlocks.length > 0 ||
-      released ||
-      unsuspended ||
-      reset.done,
+      suspended || excluded.size > 0 || reclassified || released || unsuspended || reset.done,
     reviewChanged:
       opened ||
-      caught ||
+      reclassified ||
       released ||
       unsuspended ||
       reset.done ||
-      newBlocks.length > 0 ||
       previous?.userId !== userId,
   };
 }
@@ -749,6 +738,7 @@ async function steamReset(
       status: 'APPROVED',
       suspendedAt: null,
       flagged: [],
+      reviewOnly: [],
       approved: [],
       rejected: [],
       snapshot: [],

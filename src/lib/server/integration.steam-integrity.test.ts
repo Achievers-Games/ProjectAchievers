@@ -14,6 +14,7 @@ import {
   upsertGame,
 } from './sync/store';
 import { PREFIX, setupIntegration } from './test-helpers';
+import { load as loadModeration } from '../../routes/moderation/+page.server';
 
 setupIntegration();
 
@@ -64,7 +65,7 @@ const progress = (userId: string, gameId: string) =>
     where: { userId_gameId: { userId, gameId } },
   });
 
-it('isole un lot ambigu, puis suspend les deux jeux après corroboration et rétablit les succès approuvés', async () => {
+it('retient seulement les lots, même après corroboration entre deux jeux', async () => {
   const user = await player();
   const moderator = await player('MODERATOR');
   const steamId = user.accounts[0]!.providerUserId;
@@ -85,8 +86,26 @@ it('isole un lot ambigu, puis suspend les deux jeux après corroboration et rét
 
   await saveProgress(user.id, second, full(at + 1000), {}, { steamId, complete: true });
   for (const gameId of [first, second]) {
-    expect(await progress(user.id, gameId)).toMatchObject({ unlockedCount: 0, completion: 0 });
+    expect(await progress(user.id, gameId)).toMatchObject({ unlockedCount: 1 });
+    expect(
+      await db.steamIntegrityReview.findUniqueOrThrow({
+        where: { steamId_gameId: { steamId, gameId } },
+      }),
+    ).toMatchObject({ status: 'PENDING', suspendedAt: null });
   }
+  const moderation = await loadModeration({
+    locals: { user: moderator },
+    depends: vi.fn(),
+    url: new URL('http://localhost/moderation?steamQueue=pending'),
+  } as unknown as Parameters<typeof loadModeration>[0]);
+  expect(moderation).toMatchObject({
+    steamCounts: { pending: 2, automatic: 0 },
+    steamReviews: expect.arrayContaining(
+      [first, second].map((id) =>
+        expect.objectContaining({ game: expect.objectContaining({ id }), relatedGames: 1 }),
+      ),
+    ),
+  });
   expect((await notifications(user.id)).filter((item) => item.kind === 'integrity')).toHaveLength(
     2,
   );
@@ -98,7 +117,7 @@ it('isole un lot ambigu, puis suspend les deux jeux après corroboration et rét
     await resolveSteamReview(review.id, review.openedAt, moderator.id, [], 'approve', false),
   ).toBe(true);
   expect(await progress(user.id, first)).toMatchObject({ unlockedCount: 21, completion: 100 });
-  expect(await progress(user.id, second)).toMatchObject({ unlockedCount: 0, completion: 0 });
+  expect(await progress(user.id, second)).toMatchObject({ unlockedCount: 1 });
   await saveProgress(user.id, first, full(at), {}, { steamId, complete: true });
   expect(await progress(user.id, first)).toMatchObject({ completion: 100 });
 
@@ -246,7 +265,7 @@ it('valide d’office un lot joué pour de vrai, sans alerte ni revue', async ()
   expect(await progress(user.id, gameId)).toMatchObject({ unlockedCount: 21 });
 });
 
-it('suspend d’emblée une liste complète obtenue en quelques minutes', async () => {
+it('retient le lot et conserve le succès isolé quand Steam communique peu de temps de jeu', async () => {
   const user = await player();
   const steamId = user.accounts[0]!.providerUserId;
   const gameId = await game();
@@ -258,14 +277,15 @@ it('suspend d’emblée une liste complète obtenue en quelques minutes', async 
     { playtimeMinutes: 8 },
     { steamId, complete: true },
   );
-  expect(await progress(user.id, gameId)).toMatchObject({ unlockedCount: 0, completion: 0 });
+  expect(await progress(user.id, gameId)).toMatchObject({ unlockedCount: 1 });
   expect(
     await db.steamIntegrityReview.findUniqueOrThrow({
       where: { steamId_gameId: { steamId, gameId } },
     }),
   ).toMatchObject({
     status: 'PENDING',
-    suspendedAt: expect.any(Date),
+    suspendedAt: null,
+    reviewOnly: [expect.stringContaining(':a20')],
     trust: { verdict: 'cheat' },
   });
 });
@@ -294,12 +314,15 @@ it('libère une revue en attente quand le temps de jeu arrive', async () => {
 
 it('débloque un jeu remis à zéro sur Steam, puis compte la nouvelle partie', async () => {
   const user = await player();
+  const moderator = await player('MODERATOR');
   const steamId = user.accounts[0]!.providerUserId;
   const gameId = await game();
   const at = Math.floor(Date.now() / 1000) * 1000;
   const read = { steamId, complete: true };
   await saveProgress(user.id, gameId, full(at), { playtimeMinutes: 8 }, read);
   const scope = { steamId_gameId: { steamId, gameId } };
+  const blocked = await db.steamIntegrityReview.findUniqueOrThrow({ where: scope });
+  await resolveSteamReview(blocked.id, blocked.openedAt, moderator.id, [], 'suspend', false);
   expect(await db.steamIntegrityReview.findUniqueOrThrow({ where: scope })).toMatchObject({
     suspendedAt: expect.any(Date),
   });
@@ -339,12 +362,15 @@ it('débloque un jeu remis à zéro sur Steam, puis compte la nouvelle partie', 
 
 it('lève le blocage dès que la nouvelle partie remplace les anciens succès, sans laisser retricher', async () => {
   const user = await player();
+  const moderator = await player('MODERATOR');
   const steamId = user.accounts[0]!.providerUserId;
   const gameId = await game();
   const at = Math.floor(Date.now() / 1000) * 1000 - 86_400_000;
   const read = { steamId, complete: true };
   const scope = { steamId_gameId: { steamId, gameId } };
   await saveProgress(user.id, gameId, full(at), { playtimeMinutes: 8 }, read);
+  const blocked = await db.steamIntegrityReview.findUniqueOrThrow({ where: scope });
+  await resolveSteamReview(blocked.id, blocked.openedAt, moderator.id, [], 'suspend', false);
   expect(await progress(user.id, gameId)).toMatchObject({ unlockedCount: 0 });
 
   // Remis à zéro puis rejoué avant le passage du site : aucune lecture vide, mais plus aucun
@@ -378,7 +404,7 @@ it('lève le blocage dès que la nouvelle partie remplace les anciens succès, s
     await db.steamIntegrityReview.findUniqueOrThrow({
       where: { steamId_gameId: { steamId, gameId: second } },
     }),
-  ).toMatchObject({ suspendedAt: expect.any(Date), resetAt: expect.any(Date) });
+  ).toMatchObject({ status: 'PENDING', suspendedAt: null, resetAt: expect.any(Date) });
 });
 
 it('compte le temps hors ligne et libère un lot légitime à la relecture des jeux bloqués', async () => {
@@ -567,11 +593,11 @@ it('joint les preuves du joueur à sa revue en attente, trois au plus', async ()
   ).toBe(true);
 });
 
-it('repère une progression trop rapide sans lot, d’après le temps complétionniste de Lure', async () => {
+it('signale le rythme sans retirer de succès, y compris si le jeu autorise les lots', async () => {
   const user = await player();
   const steamId = user.accounts[0]!.providerUserId;
   const appId = `${PREFIX}-${crypto.randomUUID()}`;
-  const gameId = await game(false, appId);
+  const gameId = await game(true, appId);
   await db.game.update({ where: { id: gameId }, data: { totalAchievements: 21 } });
   // 100 % en 40 h d'ordinaire : 21 succès espacés d'une heure, en 3 h de jeu.
   await db.lureGame.create({
@@ -589,12 +615,13 @@ it('repère une progression trop rapide sans lot, d’après le temps complétio
     { playtimeMinutes: 180 },
     { steamId, complete: true },
   );
-  expect(await progress(user.id, gameId)).toMatchObject({ unlockedCount: 0 });
-  expect(
-    await db.steamIntegrityReview.findUniqueOrThrow({
-      where: { steamId_gameId: { steamId, gameId } },
-    }),
-  ).toMatchObject({ trust: { verdict: 'cheat' } });
+  expect(await progress(user.id, gameId)).toMatchObject({ unlockedCount: 21 });
+  const review = await db.steamIntegrityReview.findUniqueOrThrow({
+    where: { steamId_gameId: { steamId, gameId } },
+  });
+  expect(review).toMatchObject({ status: 'PENDING', suspendedAt: null });
+  expect(review.reviewOnly).toHaveLength(21);
+  expect(excludedSteamUnlocks(review).size).toBe(0);
 
   // Le même rythme avec 30 h de jeu : rien à signaler.
   const other = await player();
@@ -625,8 +652,10 @@ it('lève la suspension automatique d’un jeu marqué ensuite comme progression
     { playtimeMinutes: 8 },
     { steamId, complete: true },
   );
-  expect(await db.steamIntegrityReview.findUniqueOrThrow({ where: scope })).toMatchObject({
-    suspendedAt: expect.any(Date),
+  // État laissé par l'ancienne règle de suspension automatique.
+  await db.steamIntegrityReview.update({
+    where: scope,
+    data: { suspendedAt: new Date(), reviewOnly: [] },
   });
 
   await db.game.update({ where: { id: gameId }, data: { crossProgress: true } });
@@ -642,8 +671,7 @@ it('lève la suspension automatique d’un jeu marqué ensuite comme progression
     status: 'PENDING',
     suspendedAt: null,
   });
-  // Le rythme avait signalé les 21 succès au premier examen : ils attendent tous la modération.
-  expect(await progress(user.id, gameId)).toMatchObject({ unlockedCount: 0 });
+  expect(await progress(user.id, gameId)).toMatchObject({ unlockedCount: 1 });
 });
 
 it('garde la suspension d’un modérateur même sur un jeu à progression partagée', async () => {
@@ -743,7 +771,7 @@ it('accepte un jeu à statistiques sans aucun succès', async () => {
   vi.unstubAllGlobals();
 });
 
-it('lève la suspension d’office quand le temps hors ligne arrive, sans valider le lot', async () => {
+it('reclasse une ancienne suspension de rythme après une lecture complète et rétablit les succès', async () => {
   const user = await player();
   const steamId = user.accounts[0]!.providerUserId;
   const appId = String(600_000 + Math.floor(Math.random() * 99_999));
@@ -761,6 +789,10 @@ it('lève la suspension d’office quand le temps hors ligne arrive, sans valide
   const scope = { steamId_gameId: { steamId, gameId } };
   // Lies of P : seul le temps connecté était connu, le rythme a l'air impossible.
   await saveProgress(user.id, gameId, spread, { playtimeMinutes: 190 }, read);
+  await db.steamIntegrityReview.update({
+    where: scope,
+    data: { suspendedAt: new Date(), reviewOnly: [] },
+  });
   expect(await db.steamIntegrityReview.findUniqueOrThrow({ where: scope })).toMatchObject({
     suspendedAt: expect.any(Date),
     trust: { verdict: 'cheat' },
@@ -782,5 +814,42 @@ it('lève la suspension d’office quand le temps hors ligne arrive, sans valide
   );
   const review = await db.steamIntegrityReview.findUniqueOrThrow({ where: scope });
   expect(review).toMatchObject({ status: 'PENDING', suspendedAt: null });
+  expect(review.reviewOnly).toHaveLength(21);
+  expect(await progress(user.id, gameId)).toMatchObject({ unlockedCount: 21 });
   expect(review.trust).not.toMatchObject({ verdict: 'cheat' });
+});
+
+it('ne suspend pas d’office une partie hors ligne synchronisée d’un coup après des succès espacés', async () => {
+  const user = await player();
+  const steamId = user.accounts[0]!.providerUserId;
+  const appId = String(500_000 + Math.floor(Math.random() * 99_999));
+  const gameId = await game(false, appId);
+  await db.game.update({ where: { id: gameId }, data: { totalAchievements: 21 } });
+  await db.lureGame.create({
+    data: { steamAppId: appId, found: true, completionistMinutes: 2400, fetchedAt: new Date() },
+  });
+  // Lies of P : quatre succès espacés, puis le reste d'un coup au retour en ligne. Steam ne montre
+  // que les 3 h jouées connecté.
+  const start = Math.floor(Date.now() / 1000) * 1000 - 60 * 86_400_000;
+  const batch = start + 10 * 86_400_000;
+  const unlocks = Array.from({ length: 21 }, (_, i) => ({
+    platformAchievementId: `a${i}`,
+    unlockedAt: new Date(i < 4 ? start + i * 7_200_000 : batch),
+  }));
+  await saveProgress(
+    user.id,
+    gameId,
+    unlocks,
+    { playtimeMinutes: 190 },
+    { steamId, complete: true },
+  );
+  const review = await db.steamIntegrityReview.findUniqueOrThrow({
+    where: { steamId_gameId: { steamId, gameId } },
+  });
+  expect(review).toMatchObject({ status: 'PENDING', suspendedAt: null });
+  expect(await progress(user.id, gameId)).toMatchObject({ unlockedCount: 4 });
+  expect(review.trust).toMatchObject({
+    verdict: 'review',
+    signals: expect.arrayContaining([expect.objectContaining({ kind: 'history', count: 4 })]),
+  });
 });

@@ -750,8 +750,8 @@ export function partnerOpenApi(origin: string) {
                 completionTime: {
                   type: ['object', 'null'],
                   description:
-                    'Median playtime of public players at 100 % (Steam playtime). Null under ' +
-                    '5 such players: too few to mean anything, and never one player’s time.',
+                    'Median recorded Steam playtime near completion for the current achievement set. ' +
+                    'Null until 20 eligible public players have a measurement.',
                   properties: {
                     medianMinutes: { type: 'integer' },
                     sample: { type: 'integer', description: 'Players the median is based on.' },

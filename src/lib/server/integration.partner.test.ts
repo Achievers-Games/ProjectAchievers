@@ -26,6 +26,7 @@ import {
   partnerUsersLookup,
 } from './partner-queries';
 import { PREFIX, identity, setupIntegration } from './test-helpers';
+import { saveProgress } from './sync/store';
 import { POST as LOOKUP } from '../../routes/api/v1/games/lookup/+server';
 
 setupIntegration();
@@ -277,26 +278,64 @@ describe('difficulté du 100 %', () => {
     expect(weak.id).not.toBe(best.id);
   });
 
-  it('ne donne le temps médian qu’à partir de cinq joueurs publics à 100 %', async () => {
+  it('publie la médiane des relevés au 100 % à partir de vingt mesures publiques admissibles', async () => {
     const g = await game();
-    const finish = async (minutes: number, isPublic = true) => {
+    await db.achievement.createMany({
+      data: ['FIRST', 'LAST'].map((id) => ({
+        gameId: g.id,
+        platformAchievementId: id,
+        name: id,
+      })),
+    });
+    const finishedAt = Date.now() - 3_600_000;
+    const unlocks = (at: number) => [
+      { platformAchievementId: 'FIRST', unlockedAt: new Date(at - 60_000) },
+      { platformAchievementId: 'LAST', unlockedAt: new Date(at) },
+    ];
+    const finish = async (minutes: number, isPublic = true, at = finishedAt) => {
       const p = await player(isPublic);
-      await owns(p.id, g.id, { completion: 100 });
-      await db.userGame.update({
-        where: { userId_gameId: { userId: p.id, gameId: g.id } },
-        data: { playtimeMinutes: minutes },
-      });
+      await saveProgress(p.id, g.id, unlocks(at), { playtimeMinutes: minutes }, { complete: true });
+      return p;
     };
-    for (const minutes of [600, 700, 800, 900]) await finish(minutes);
-    // Un profil privé ne compte pas, même avec un temps.
+    const first = await finish(600);
+    for (let i = 1; i < 19; i++) await finish(600 + i * 20);
+    // Les heures postérieures, un profil privé et une complétion déjà ancienne ne changent rien.
+    await saveProgress(
+      first.id,
+      g.id,
+      unlocks(finishedAt),
+      { playtimeMinutes: 6000 },
+      { complete: true },
+    );
     await finish(5, false);
+    await finish(10, true, finishedAt - 2 * 86_400_000);
     expect((await partnerGame('STEAM', g.platformGameId))?.completionTime).toBeNull();
 
-    await finish(1000);
+    await finish(980);
     expect((await partnerGame('STEAM', g.platformGameId))?.completionTime).toEqual({
-      medianMinutes: 800,
-      sample: 5,
+      medianMinutes: 790,
+      sample: 20,
     });
+
+    const review = await db.steamIntegrityReview.create({
+      data: {
+        userId: first.id,
+        gameId: g.id,
+        steamId: `${PREFIX}-completion-review`,
+        flagged: [],
+        approved: [],
+        rejected: [],
+        snapshot: [],
+      },
+    });
+    expect((await partnerGame('STEAM', g.platformGameId))?.completionTime).toBeNull();
+    await db.steamIntegrityReview.delete({ where: { id: review.id } });
+
+    await db.achievement.update({
+      where: { gameId_platformAchievementId: { gameId: g.id, platformAchievementId: 'LAST' } },
+      data: { platformAchievementId: 'REPLACEMENT' },
+    });
+    expect((await partnerGame('STEAM', g.platformGameId))?.completionTime).toBeNull();
   });
 });
 

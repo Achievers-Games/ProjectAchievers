@@ -11,6 +11,7 @@ import { psnConsole } from '#lib/collection';
 import { logger } from '#lib/logger';
 import { baseLocale, type Locale } from '#lib/paraglide/runtime';
 import { db } from '../db';
+import { recordCompletionTimes } from '../completion-time';
 import { env } from '../env';
 import { psnAuthorization } from '../providers/psn';
 import { rateLimit } from '../rate-limit';
@@ -97,11 +98,13 @@ async function syncPsnPlaytime(userId: string, accountId: string, titles: Trophy
     }
   }
 
+  const readings: { id: string; minutes: number }[] = [];
   for (const [platformGameId, seconds] of totals) {
     const ps4PlaytimeMinutes = Math.floor(seconds.ps4 / 60);
     const ps5PlaytimeMinutes = Math.floor(seconds.ps5 / 60);
     const playtimeMinutes = ps4PlaytimeMinutes + ps5PlaytimeMinutes;
     if (playtimeMinutes > 2_147_483_647) continue;
+    readings.push({ id: platformGameId, minutes: playtimeMinutes });
     await db.userGame.updateMany({
       where: {
         userId,
@@ -115,6 +118,7 @@ async function syncPsnPlaytime(userId: string, accountId: string, titles: Trophy
       data: { playtimeMinutes, ps4PlaytimeMinutes, ps5PlaytimeMinutes },
     });
   }
+  await recordCompletionTimes(db, userId, readings, 'PSN');
 
   // Une date connue plus récente (un trophée gagné depuis) reste en place.
   for (const [platformGameId, at] of lastPlayed) {

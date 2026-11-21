@@ -148,6 +148,8 @@ export async function notifications(userId: string, limit = PANEL_NOTICES): Prom
         proofAt: true,
         status: true,
         resetAt: true,
+        flagged: true,
+        reviewOnly: true,
         game: { select: { name: true, slug: true } },
       },
     }),
@@ -156,6 +158,10 @@ export async function notifications(userId: string, limit = PANEL_NOTICES): Prom
   const notices: Notice[] = [];
   for (const review of reviews) {
     const own = review.userId === userId;
+    const informational =
+      review.status === 'PENDING' &&
+      !review.suspendedAt &&
+      review.flagged.length === review.reviewOnly.length;
     const at =
       !own && review.proofAt && review.proofAt > review.openedAt ? review.proofAt : review.openedAt;
     notices.push({
@@ -163,14 +169,16 @@ export async function notifications(userId: string, limit = PANEL_NOTICES): Prom
       kind: 'integrity',
       at: at.toISOString(),
       href: own
-        ? `/jeux/${review.game.slug}?succes=hors-score`
-        : `/moderation#steam-review-${review.id}`,
+        ? `/jeux/${review.game.slug}${informational ? '' : '?succes=hors-score'}`
+        : `/moderation?steamReview=${encodeURIComponent(review.id)}#steam-reviews`,
       title: own
         ? review.status === 'APPROVED'
           ? review.resetAt
             ? m.steam_status_player_unblocked({ game: review.game.name })
             : m.steam_review_player_approved({ game: review.game.name })
-          : m.steam_review_player_notice({ game: review.game.name })
+          : informational
+            ? m.steam_review_player_info_notice({ game: review.game.name })
+            : m.steam_review_player_notice({ game: review.game.name })
         : m.steam_review_mod_notice({ game: review.game.name }),
       detail: own
         ? review.status === 'APPROVED'
@@ -179,7 +187,9 @@ export async function notifications(userId: string, limit = PANEL_NOTICES): Prom
             ? review.status === 'REJECTED'
               ? m.steam_review_player_rejected()
               : m.steam_review_player_detail()
-            : m.steam_review_unscored_detail()
+            : informational
+              ? m.steam_mod_effect_preserved()
+              : m.steam_review_unscored_detail()
         : null,
       unread: at > seen.notices,
     });

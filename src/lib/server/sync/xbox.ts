@@ -1,4 +1,5 @@
 import { db } from '../db';
+import { recordCompletionTimes } from '../completion-time';
 import { env } from '../env';
 import { decrypt, encrypt } from '../crypto';
 import { logger } from '#lib/logger';
@@ -181,6 +182,12 @@ async function syncXboxPlaytime(userId: string, session: XboxSession, titles: Xb
         data: { playtimeMinutes },
       });
     }
+    await recordCompletionTimes(
+      db,
+      userId,
+      [...minutes].map(([id, minutes]) => ({ id, minutes })),
+      'XBOX',
+    );
   }
 }
 

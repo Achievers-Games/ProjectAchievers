@@ -168,11 +168,13 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
             snapshot: true,
             proofAt: true,
             flagged: true,
+            reviewOnly: true,
             rejected: true,
           },
         })
       : null,
   ]);
+  const completionTime = times.get(game.id) ?? null;
 
   // Seuls les amis qui possèdent cette version ont quelque chose à comparer.
   mark('game_related');
@@ -365,7 +367,7 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
     season,
     players,
     lure,
-    completionTime: times.get(game.id) ?? null,
+    completionTime,
     versions: others.map((other) => ({
       slug: other.slug,
       platform: other.platform,

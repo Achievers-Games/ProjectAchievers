@@ -635,17 +635,19 @@ export async function auditSteamHistory(limit = 24, userId?: string) {
       ))
       -- Moins d'une minute de jeu par succès, sans lot : relu au plus une fois par semaine pour
       -- le contrôle du rythme (steamPaceSuspects), qui tranche avec la rareté et les pairs.
-      -- Ou moins d'un dixième du temps complétionniste de Lure pour cette progression.
+      -- Ou un 100 % obtenu en moins d'un dixième du temps complétionniste de Lure.
       OR (ug."unlockedCount" >= 10 AND ug."playtimeMinutes" > 0
-        AND (ug."playtimeMinutes" < ug."unlockedCount" OR EXISTS (
-          SELECT 1 FROM "LureGame" lg
-          WHERE lg."steamAppId" = g."platformGameId" AND lg.found
-            AND lg."completionistMinutes" >= 60 AND g."totalAchievements" > 0
-            AND ug."playtimeMinutes" < 0.1 * lg."completionistMinutes"
-              * least(1, ug."unlockedCount"::float / g."totalAchievements")
+        AND (ug."playtimeMinutes" < ug."unlockedCount" OR (
+          g."totalAchievements" > 0 AND ug."unlockedCount" >= g."totalAchievements"
+          AND EXISTS (
+            SELECT 1
+            FROM "LureGame" lg
+            WHERE lg."steamAppId" = g."platformGameId" AND lg.found
+              AND lg."completionistMinutes" >= 60
+              AND ug."playtimeMinutes" < 0.1 * lg."completionistMinutes"
+          )
         ))
-        AND NOT la."playtimeHidden" AND NOT g."allowSteamBatches" AND NOT g."crossProgress"
-        AND g.name NOT ILIKE 'Zup!%' AND g."platformGameId" <> '1258080'
+        AND NOT la."playtimeHidden" AND NOT g."crossProgress"
         AND (ug."achievementsCheckedAt" IS NULL
           OR ug."achievementsCheckedAt" < now() - interval '7 days')
         AND NOT EXISTS (

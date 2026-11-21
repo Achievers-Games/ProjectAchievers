@@ -1,5 +1,6 @@
 import type { Prisma, Platform, TrophyType } from '#prisma';
 import { db } from '../db';
+import { recordCompletionTimes } from '../completion-time';
 import { familyKey } from '../family';
 import { lockCardCatalog, refreshSharedTier, updateFamilyTiers } from '../card-rarity';
 import { shardsStart } from '../cards-launch';
@@ -381,6 +382,7 @@ export async function saveProgress(
       return {
         ...(await writeProgress(tx, userId, gameId, filtered.unlocks, activity, {
           removal,
+          captureCompletion: complete,
           reportedUnlockedCount: steamId ? unlocks.length : undefined,
         })),
         withdrawn: filtered.withdrawn || Boolean(removal?.removed),
@@ -419,9 +421,11 @@ async function writeProgress(
   {
     removal,
     reportedUnlockedCount,
+    captureCompletion = false,
   }: {
     removal?: { seenAt: Date | null; removed: number };
     reportedUnlockedCount?: number;
+    captureCompletion?: boolean;
   } = {},
 ): Promise<SaveResult> {
   let gained = 0;
@@ -500,6 +504,9 @@ async function writeProgress(
     update: data,
     create: { ...data, userId, gameId },
   });
+  if (captureCompletion && data.completion >= 100 && activity.playtimeMinutes) {
+    await recordCompletionTimes(db, userId, [{ id: gameId, minutes: activity.playtimeMinutes }]);
+  }
   // Les éclats suivent les succès dans la même transaction : jamais l'un sans l'autre. Rien
   // pendant que le temps de jeu Steam reste privé ; rien à faire sans succès nouveau, ce qui évite
   // trois requêtes par jeu à chaque relecture d'une bibliothèque.
