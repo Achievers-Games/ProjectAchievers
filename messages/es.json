@@ -2369,6 +2369,7 @@
   "steam_trust_playtime_unknown": "Tiempo de juego desconocido (privado o cero)",
   "steam_trust_offline": "{time} jugadas sin conexión",
   "steam_trust_history": "{count} desbloqueos espaciados antes del lote",
+  "steam_trust_large_batch": "{count} logros en el mismo segundo: el tiempo de juego no basta",
   "steam_trust_near_impossible": "{count} logros del lote que tiene menos del 0,1 % de los jugadores",
   "steam_status_popup_title": "Tus logros de Steam",
   "steam_status_blocked": "Juegos bloqueados por trampas",

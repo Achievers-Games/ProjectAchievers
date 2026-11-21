@@ -2369,6 +2369,7 @@
   "steam_trust_playtime_unknown": "Temps de jeu inconnu (privé ou nul)",
   "steam_trust_offline": "{time} jouées hors ligne",
   "steam_trust_history": "{count} déblocages étalés avant le lot",
+  "steam_trust_large_batch": "{count} succès à la même seconde : le temps de jeu ne suffit pas",
   "steam_trust_near_impossible": "{count} succès du lot détenus par moins de 0,1 % des joueurs",
   "steam_status_popup_title": "Tes succès Steam",
   "steam_status_blocked": "Jeux bloqués pour triche",

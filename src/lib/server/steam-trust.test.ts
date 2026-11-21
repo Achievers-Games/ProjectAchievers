@@ -77,4 +77,27 @@ describe('steamTrust', () => {
         .score,
     ).toBe(1);
   });
+
+  it('ne valide pas un gros lot sur le temps de jeu et l’historique seuls', () => {
+    // Bongo Cat : 99 h, quelques succès étalés avant, puis 18 succès sur 28 à la même seconde.
+    const bongo = {
+      ...base,
+      unlocked: 28,
+      playtime: 5940,
+      history: 3,
+      largestBatch: 18,
+      total: 28,
+    };
+    expect(steamTrust(bongo)).toMatchObject({
+      score: 3,
+      verdict: 'review',
+      signals: expect.arrayContaining([
+        expect.objectContaining({ kind: 'large_batch', count: 18 }),
+      ]),
+    });
+    // Du jeu hors ligne compté par Steam explique le lot : il passe.
+    expect(steamTrust({ ...bongo, offline: 600 }).verdict).toBe('trusted');
+    // Un petit lot reste jugé sur le score, comme avant.
+    expect(steamTrust({ ...bongo, largestBatch: 4 }).verdict).toBe('trusted');
+  });
 });

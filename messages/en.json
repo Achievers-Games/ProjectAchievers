@@ -2369,6 +2369,7 @@
   "steam_trust_playtime_unknown": "Playtime unknown (private or zero)",
   "steam_trust_offline": "{time} played offline",
   "steam_trust_history": "{count} spread-out unlocks before the batch",
+  "steam_trust_large_batch": "{count} achievements in the same second: playtime alone is not enough",
   "steam_trust_near_impossible": "{count} achievements in the batch held by under 0.1% of players",
   "steam_status_popup_title": "Your Steam achievements",
   "steam_status_blocked": "Games blocked for cheating",

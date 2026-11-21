@@ -2332,6 +2332,7 @@
   "steam_trust_playtime_unknown": "游戏时长未知（私密或为零）",
   "steam_trust_offline": "离线游玩 {time}",
   "steam_trust_history": "批量解锁前有 {count} 次分散解锁",
+  "steam_trust_large_batch": "同一秒解锁 {count} 个成就：仅凭游戏时长不足以判断",
   "steam_trust_near_impossible": "批次中有 {count} 个成就仅不到 0.1% 的玩家拥有",
   "steam_status_popup_title": "你的 Steam 成就",
   "steam_status_blocked": "因作弊被封锁的游戏",

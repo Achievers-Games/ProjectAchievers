@@ -6,13 +6,16 @@
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import MessageCircle from '@lucide/svelte/icons/message-circle';
+  import Lock from '@lucide/svelte/icons/lock';
+  import ActivityReactions from '#lib/components/ActivityReactions.svelte';
+  import { dragScroll } from '#lib/actions/drag-scroll';
   import { unlockHref } from '#lib/activity';
   import AchievementIcon from '#lib/components/AchievementIcon.svelte';
   import Empty from '#lib/components/Empty.svelte';
   import Avatar from '#lib/components/Avatar.svelte';
   import GameCard from '#lib/components/GameCard.svelte';
   import GameRail from '#lib/components/GameRail.svelte';
-  import { formatRelative } from '#lib/labels';
+  import { formatRarity, formatRelative } from '#lib/labels';
   import HomeCarousel from '#lib/components/HomeCarousel.svelte';
   import HomeGuides from '#lib/components/HomeGuides.svelte';
   import LiveCards from '#lib/components/LiveCards.svelte';
@@ -127,32 +130,58 @@
     <section class="home-panel space-y-3" aria-labelledby="amis-succes">
       <h2 id="amis-succes">{m.home_friend_unlocks()}</h2>
       {#if data.unlocks.length}
-        <ul class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        <ul class="live-rail" use:dragScroll>
           {#each data.unlocks as row (`${row.user.handle}/${row.achievementId}`)}
-            <li class="card">
+            <li class="unlock-item">
               <a
                 href={unlockHref(row.user.handle, row.achievementId)}
                 onclick={(event) => openUnlock(event, row.user.handle, row.achievementId)}
-                class="flex items-center gap-2 p-2 transition-colors hover:bg-raised"
+                class="unlock-tile"
               >
-                {#if row.iconUrl}<AchievementIcon src={row.iconUrl} size={36} />{/if}
-                <span class="min-w-0 flex-1">
-                  <span class="block truncate text-sm font-medium"
-                    >{row.name ?? m.achievement_hidden()}</span
-                  >
-                  <span class="block truncate text-xs text-muted"
-                    >{row.user.displayName} · {row.game.name}</span
+                <span class="flex items-center gap-1.5">
+                  <Avatar person={row.user} size={18} />
+                  <span class="truncate text-xs font-semibold">{row.user.displayName}</span>
+                  <span class="ml-auto shrink-0 text-xs text-muted"
+                    >{formatRelative(row.unlockedAt)}</span
                   >
                 </span>
-                <span
-                  class="flex shrink-0 items-center gap-1 text-xs text-muted"
-                  role="img"
+                <span class="flex items-center gap-2">
+                  {#if row.iconUrl}
+                    <AchievementIcon src={row.iconUrl} size={40} />
+                  {:else}
+                    <span class="unlock-secret" aria-hidden="true"><Lock size={16} /></span>
+                  {/if}
+                  <span class="min-w-0">
+                    <span class="block truncate text-sm font-semibold"
+                      >{row.name ?? m.achievement_hidden()}</span
+                    >
+                    <span class="block truncate text-xs text-muted">{row.game.name}</span>
+                  </span>
+                </span>
+                {#if row.rarity != null}
+                  <span class="tabular text-xs text-muted"
+                    >{m.achievement_rarity({ value: formatRarity(row.rarity) })}</span
+                  >
+                {/if}
+              </a>
+              <div class="mt-1 flex items-center gap-2 px-1">
+                <ActivityReactions
+                  kind="unlock"
+                  handle={row.user.handle}
+                  id={row.achievementId}
+                  summary={row.reactions}
+                  signedIn
+                />
+                <a
+                  href={unlockHref(row.user.handle, row.achievementId)}
+                  onclick={(event) => openUnlock(event, row.user.handle, row.achievementId)}
+                  class="ml-auto flex shrink-0 items-center gap-1 rounded px-1.5 py-0.5 text-xs text-muted hover:bg-raised hover:text-ink"
                   aria-label={m.unlock_comments({ count: row.count })}
                 >
                   <MessageCircle size={14} aria-hidden="true" />
                   {row.count}
-                </span>
-              </a>
+                </a>
+              </div>
             </li>
           {/each}
         </ul>

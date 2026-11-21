@@ -42,7 +42,7 @@ export async function friendUnlocks(viewer: Viewer) {
            OR (b."blockedId" = ua."userId" AND b."blockerId" = ${viewer.id})
       )
     ORDER BY ua."unlockedAt" DESC, ua."userId", ua."achievementId"
-    LIMIT 12
+    LIMIT 20
   `;
   if (!keys.length) return [];
   const rows = await db.userAchievement.findMany({
@@ -53,6 +53,7 @@ export async function friendUnlocks(viewer: Viewer) {
     },
     orderBy: [{ unlockedAt: 'desc' }, { userId: 'asc' }, { achievementId: 'asc' }],
     select: {
+      userId: true,
       unlockedAt: true,
       user: { select: publicUser },
       achievement: { select: achievement },
@@ -74,7 +75,12 @@ export async function friendUnlocks(viewer: Viewer) {
     select: { achievementId: true },
   });
   const visibleAchievements = new Set(known.map(({ achievementId }) => achievementId));
-  return rows.map(({ achievement: item, user, unlockedAt, _count }) => {
+  // Les réactions de toute la rangée en une requête, regroupées par déblocage.
+  const reactions = await db.unlockReaction.findMany({
+    where: { OR: rows.map((row) => ({ ownerId: row.userId, achievementId: row.achievement.id })) },
+  });
+  const byUnlock = Map.groupBy(reactions, (row) => `${row.ownerId}/${row.achievementId}`);
+  return rows.map(({ achievement: item, user, userId, unlockedAt, _count }) => {
     const masked = item.hidden && !visibleAchievements.has(item.id);
     return {
       user,
@@ -84,6 +90,8 @@ export async function friendUnlocks(viewer: Viewer) {
       achievementId: item.id,
       name: masked ? null : item.name,
       iconUrl: masked ? null : item.iconUrl,
+      rarity: item.globalRarity,
+      reactions: summarize(byUnlock.get(`${userId}/${item.id}`) ?? [], viewer.id),
     };
   });
 }

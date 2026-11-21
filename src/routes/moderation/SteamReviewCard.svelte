@@ -37,6 +37,8 @@
         return m.steam_trust_history({ count: String(signal.count) });
       case 'near_impossible':
         return m.steam_trust_near_impossible({ count: String(signal.count) });
+      case 'large_batch':
+        return m.steam_trust_large_batch({ count: String(signal.count) });
       case 'cross_progress':
         return m.steam_trust_cross_progress();
       case 'pace':

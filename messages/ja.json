@@ -2332,6 +2332,7 @@
   "steam_trust_playtime_unknown": "プレイ時間不明（非公開またはゼロ）",
   "steam_trust_offline": "オフラインで{time}プレイ",
   "steam_trust_history": "まとめて解除される前に{count}回の個別解除",
+  "steam_trust_large_batch": "{count}件の実績が同じ秒に解除：プレイ時間だけでは不十分",
   "steam_trust_near_impossible": "プレイヤーの0.1%未満しか持っていない実績が{count}件含まれています",
   "steam_status_popup_title": "あなたのSteam実績",
   "steam_status_blocked": "不正によりブロックされたゲーム",

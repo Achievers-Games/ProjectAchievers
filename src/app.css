@@ -463,6 +463,16 @@
     scroll-snap-type: none;
   }
 }
+/* Un déblocage d'ami : une tuile du rail, réactions et commentaires dessous, comme le direct. */
+.unlock-item {
+  @apply flex w-60 shrink-0 flex-col;
+}
+.unlock-tile {
+  @apply flex flex-1 flex-col gap-2 rounded-md border border-line bg-surface p-3 transition-colors hover:border-accent/60 hover:bg-raised;
+}
+.unlock-secret {
+  @apply grid h-10 w-10 shrink-0 place-items-center rounded-md bg-raised text-muted;
+}
 .drop-tile {
   @apply relative block w-56 shrink-0 overflow-hidden rounded-md;
   /* Les effets d'exemplaires reprennent la couleur du niveau, comme le cadre et le halo. */

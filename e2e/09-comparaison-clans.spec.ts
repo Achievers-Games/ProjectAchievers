@@ -96,12 +96,13 @@ test.describe('comparaison par jeu', () => {
 
     const feed = page.locator('section[aria-labelledby="amis-succes"]');
     const row = feed
-      .getByRole('link')
+      .getByRole('listitem')
       .filter({ hasText: 'Marco', hasNotText: 'Succès caché' })
       .first();
-    const thread = await row.getAttribute('href');
+    const tile = row.locator('a.unlock-tile');
+    const thread = await tile.getAttribute('href');
     await expect(row.locator('[aria-label="Commentaires : 0"]')).toBeVisible();
-    await row.click();
+    await tile.click();
     const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible();
     const gameHref = await dialog.locator('a[href^="/jeux/"]').getAttribute('href');

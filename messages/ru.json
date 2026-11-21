@@ -2419,6 +2419,7 @@
   "steam_trust_playtime_unknown": "Время в игре неизвестно (скрыто или равно нулю)",
   "steam_trust_offline": "Сыграно офлайн: {time}",
   "steam_trust_history": "Разблокировок, разнесённых во времени, до пакета: {count}",
+  "steam_trust_large_batch": "Достижений в одну секунду: {count} — одного игрового времени недостаточно",
   "steam_trust_near_impossible": "Достижений в пакете, которые есть менее чем у 0,1 % игроков: {count}",
   "steam_status_popup_title": "Ваши достижения Steam",
   "steam_status_blocked": "Игры, заблокированные за читерство",

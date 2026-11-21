@@ -2369,6 +2369,7 @@
   "steam_trust_playtime_unknown": "Spielzeit unbekannt (privat oder null)",
   "steam_trust_offline": "{time} offline gespielt",
   "steam_trust_history": "{count} verteilte Freischaltungen vor dem Block",
+  "steam_trust_large_batch": "{count} Erfolge in derselben Sekunde: Spielzeit allein genügt nicht",
   "steam_trust_near_impossible": "{count} Erfolge im Block, die weniger als 0,1 % der Spieler haben",
   "steam_status_popup_title": "Deine Steam-Erfolge",
   "steam_status_blocked": "Wegen Schummelns gesperrte Spiele",

@@ -132,6 +132,7 @@ export type TrustSignal =
   | { kind: 'offline'; weight: number; minutes: number }
   | { kind: 'history'; weight: number; count: number }
   | { kind: 'near_impossible'; weight: number; count: number }
+  | { kind: 'large_batch'; weight: 0; count: number }
   | { kind: 'cross_progress'; weight: 0 }
   | { kind: 'pace'; weight: 0 }
   | {
@@ -159,8 +160,11 @@ export type TrustEvidence = {
   peers: number;
   /** Référence de durée pour un 100 %, si elle est disponible. */
   expected?: number | null;
-  /** Moments de déblocage distincts avant le premier lot douteux. */
+  /** Moments de déblocage distincts, plus d'une heure avant le premier lot douteux. */
   history: number;
+  /** Taille du plus gros lot à la même seconde, et nombre de succès du jeu. */
+  largestBatch?: number;
+  total?: number;
   /** Succès du lot que presque personne n'a sur Steam (moins de 0,1 %). */
   nearImpossible: number;
   /** Le jeu reprend une progression d'ailleurs : peu de temps sur Steam ne dit rien. */
@@ -181,6 +185,11 @@ export const CHEAT_SCORE = -3;
 const MIN_PEERS = 3;
 const OFFLINE_MINUTES = 30;
 const RARE_PERCENT = 0.1;
+/**
+ * Au-delà, un lot à la même seconde ressemble trop à un outil de déblocage pour que le temps de
+ * jeu et l'historique suffisent : il faut une trace indépendante (jeu hors ligne, autre compte).
+ */
+const LARGE_BATCH = 10;
 
 export function steamTrust(evidence: TrustEvidence): SteamTrust {
   const signals: TrustSignal[] = [];
@@ -240,9 +249,25 @@ export function steamTrust(evidence: TrustEvidence): SteamTrust {
   if (evidence.nearImpossible >= 2) {
     signals.push({ kind: 'near_impossible', weight: -2, count: evidence.nearImpossible });
   }
+  const batch = evidence.largestBatch ?? 0;
+  const large =
+    batch >= LARGE_BATCH ||
+    (Boolean(evidence.total) && batch * 2 >= (evidence.total ?? 0) && batch >= 3);
+  if (large) signals.push({ kind: 'large_batch', weight: 0, count: batch });
+  // Un gros lot ne passe qu'avec une trace que l'outil ne fabrique pas : du jeu hors ligne
+  // compté par Steam, ou une vraie partie sur un autre compte lié.
+  const independent = signals.some(
+    (signal) =>
+      (signal.kind === 'offline' && signal.weight > 0) ||
+      (signal.kind === 'other_platform' && signal.weight >= 3),
+  );
   const score = signals.reduce((sum, signal) => sum + signal.weight, 0);
   const verdict =
-    score >= TRUSTED_SCORE ? 'trusted' : score <= CHEAT_SCORE && !imported ? 'cheat' : 'review';
+    score >= TRUSTED_SCORE && (!large || independent)
+      ? 'trusted'
+      : score <= CHEAT_SCORE && !imported
+        ? 'cheat'
+        : 'review';
   return { score, verdict, signals };
 }
 
@@ -327,16 +352,22 @@ async function assessSteamTrust(
   const firstBatch = batchStamps.length ? Math.min(...batchStamps) : Math.min(...stamps);
   const batchSet = new Set(batchStamps);
   const batchKeys = new Set(flagged.filter((key) => batchSet.has(stampOf(key))));
+  // Les déblocages de l'heure qui précède le lot comptent avec lui : quelques succès juste avant,
+  // le même soir, ne font pas une vraie partie (Bongo Cat : trois émotes, puis dix-huit succès).
+  const historyEnd = firstBatch - 60 * 60 * 1000;
   const history = new Set(
     unlocks
       .filter(
         (unlock) =>
           unlock.unlockedAt.getTime() >= MIN_DATE &&
-          unlock.unlockedAt.getTime() < firstBatch &&
+          unlock.unlockedAt.getTime() < historyEnd &&
           !batchKeys.has(steamUnlockKey(unlock)),
       )
       .map((unlock) => unlock.unlockedAt.getTime()),
   ).size;
+  const sizes = new Map<number, number>();
+  for (const at of stamps) sizes.set(at, (sizes.get(at) ?? 0) + 1);
+  const largestBatch = Math.max(0, ...[...sizes.values()].filter((size) => size > 1));
   const expected = await expectedMinutes(tx, userId, gameId, game, unlocks.length);
   const finished = game.totalAchievements > 0 && unlocks.length >= game.totalAchievements;
   const trust = steamTrust({
@@ -350,6 +381,8 @@ async function assessSteamTrust(
     peerMedian: finished ? null : (peers?.median ?? null),
     peers: Number(peers?.count ?? 0),
     history,
+    largestBatch,
+    total: game.totalAchievements,
     nearImpossible: rarities.filter(
       (achievement) => achievement.globalRarity !== null && achievement.globalRarity < RARE_PERCENT,
     ).length,
