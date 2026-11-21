@@ -8,6 +8,7 @@
   import { m } from '#lib/paraglide/messages';
   import { enhance } from '$app/forms';
   import Empty from '#lib/components/Empty.svelte';
+  import { fly } from 'svelte/transition';
   import SteamReviewCard from './SteamReviewCard.svelte';
   import { formatDate, formatRelative } from '#lib/labels';
 
@@ -24,32 +25,54 @@
   const authReason = (reason: string) => AUTH_REASONS[reason]?.() ?? reason;
 
   type SteamReview = (typeof data.steamReviews)[number];
-  /** Les dossiers avec une preuve d'abord : un joueur attend une réponse. */
-  const FILTERS: {
+  /**
+   * Les dossiers Steam se traitent un par un, comme une pile de cartes : une décision range la
+   * carte, la suivante prend sa place. Trois piles : à traiter, avec preuve, bloqués.
+   */
+  const DECKS: {
     key: string;
     label: (p: { count: string }) => string;
     test: (r: SteamReview) => boolean;
   }[] = [
-    { key: 'all', label: m.steam_mod_filter_all, test: () => true },
-    { key: 'proof', label: m.steam_mod_filter_proof, test: (r) => r.proofs.length > 0 },
+    { key: 'pending', label: m.steam_mod_filter_pending, test: (r) => r.status === 'PENDING' },
     {
-      key: 'pending',
-      label: m.steam_mod_filter_pending,
-      test: (r) => r.status === 'PENDING' && !r.suspended,
+      key: 'proof',
+      label: m.steam_mod_filter_proof,
+      test: (r) => r.status === 'PENDING' && r.proofs.length > 0,
     },
-    {
-      key: 'blocked',
-      label: m.steam_mod_filter_blocked,
-      test: (r) => r.suspended || r.status === 'REJECTED',
-    },
+    { key: 'blocked', label: m.steam_mod_filter_blocked, test: (r) => r.status === 'REJECTED' },
   ];
-  let filter = $state('all');
-  const shownReviews = $derived(
+  let deckKey = $state('pending');
+  let position = $state(0);
+  /** Un joueur qui a envoyé une preuve attend une réponse : il passe d'abord, puis le plus ancien. */
+  const deck = $derived(
     data.steamReviews
-      .filter(FILTERS.find((item) => item.key === filter)!.test)
-      .toSorted((a, b) => Number(b.proofs.length > 0) - Number(a.proofs.length > 0)),
+      .filter(DECKS.find((item) => item.key === deckKey)!.test)
+      .toSorted(
+        (a, b) =>
+          Number(b.proofs.length > 0) - Number(a.proofs.length > 0) ||
+          a.openedAt.getTime() - b.openedAt.getTime(),
+      ),
   );
+  // Après une décision, la carte traitée quitte la pile : la même place montre la suivante.
+  const current = $derived(deck[Math.min(position, deck.length - 1)] ?? null);
+  const shown = $derived(current ? deck.indexOf(current) : 0);
+  function pickDeck(key: string) {
+    deckKey = key;
+    position = 0;
+  }
+  function move(step: number) {
+    if (deck.length) position = (shown + step + deck.length) % deck.length;
+  }
+  function onkeydown(event: KeyboardEvent) {
+    const target = event.target as HTMLElement | null;
+    if (target?.closest('input, textarea, select, [contenteditable]')) return;
+    if (event.key === 'ArrowRight') move(1);
+    else if (event.key === 'ArrowLeft') move(-1);
+  }
 </script>
+
+<svelte:window {onkeydown} />
 
 <svelte:head>
   <title>{m.moderation()} — Project Achievers</title>
@@ -67,20 +90,49 @@
     {/if}
     {#if data.steamReviews.length}
       <div class="flex flex-wrap gap-1.5" role="group" aria-label={m.steam_review_title()}>
-        {#each FILTERS as item (item.key)}
+        {#each DECKS as item (item.key)}
           <button
             type="button"
-            class="btn h-8 text-xs {filter === item.key ? 'btn-primary' : ''}"
-            aria-pressed={filter === item.key}
-            onclick={() => (filter = item.key)}
+            class="btn h-8 text-xs {deckKey === item.key ? 'btn-primary' : ''}"
+            aria-pressed={deckKey === item.key}
+            onclick={() => pickDeck(item.key)}
             >{item.label({ count: String(data.steamReviews.filter(item.test).length) })}</button
           >
         {/each}
       </div>
+      {#if current}
+        <div class="flex flex-wrap items-center justify-between gap-2 text-sm">
+          <button type="button" class="btn h-8" onclick={() => move(-1)} disabled={deck.length < 2}
+            >← {m.steam_mod_previous()}</button
+          >
+          <span class="text-muted" aria-live="polite"
+            >{m.steam_mod_position({
+              position: String(shown + 1),
+              total: String(deck.length),
+            })}</span
+          >
+          <button type="button" class="btn h-8" onclick={() => move(1)} disabled={deck.length < 2}
+            >{m.steam_mod_skip()} →</button
+          >
+        </div>
+        <div class="grid overflow-hidden" data-testid="steam-review-deck">
+          {#key current.id}
+            <div
+              class="[grid-area:1/1]"
+              in:fly={{ x: 60, duration: 220, delay: 120 }}
+              out:fly={{ x: -60, duration: 180 }}
+            >
+              <SteamReviewCard review={current} />
+            </div>
+          {/key}
+        </div>
+        <p class="text-xs text-muted">{m.steam_mod_keys()}</p>
+      {:else}
+        <p class="rounded-md border border-line px-4 py-6 text-center text-sm text-muted">
+          {m.steam_mod_done()}
+        </p>
+      {/if}
     {/if}
-    {#each shownReviews as review (review.id)}
-      <SteamReviewCard {review} />
-    {/each}
     {#if data.importSuggestions.length || data.crossProgressGames.length}
       <div class="space-y-2 border-t border-line pt-3 text-sm">
         <h3 class="font-medium">{m.steam_cross_title()}</h3>

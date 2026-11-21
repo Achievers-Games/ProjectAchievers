@@ -2544,10 +2544,9 @@
       }
     }
   ],
-  "steam_mod_filter_all": "Alle ({count})",
   "steam_mod_filter_proof": "Mit Nachweis ({count})",
-  "steam_mod_filter_pending": "Zu prüfen ({count})",
-  "steam_mod_filter_blocked": "Gesperrt ({count})",
+  "steam_mod_filter_pending": "Zu bearbeiten ({count})",
+  "steam_mod_filter_blocked": "Von der Moderation gesperrt ({count})",
   "steam_mod_status_pending": "Zu prüfen",
   "steam_mod_status_suspended": "Automatisch gesperrt",
   "steam_mod_status_rejected": "Von der Moderation gesperrt",
@@ -2568,5 +2567,10 @@
   "steam_mod_pick": "Erfolg für Erfolg auswählen ({count})",
   "steam_mod_pick_all": "Alle auswählen",
   "steam_mod_pick_none": "Alle abwählen",
-  "steam_mod_cross_mark": "Dieses Spiel als geteilten Fortschritt markieren (Erfolge vom Spielserver oder einem anderen Client vergeben)"
+  "steam_mod_cross_mark": "Dieses Spiel als geteilten Fortschritt markieren (Erfolge vom Spielserver oder einem anderen Client vergeben)",
+  "steam_mod_previous": "Zurück",
+  "steam_mod_skip": "Überspringen",
+  "steam_mod_position": "Fall {position} von {total}",
+  "steam_mod_done": "Nichts mehr in diesem Stapel.",
+  "steam_mod_keys": "Eine Entscheidung legt den Fall ab und zeigt den nächsten. Pfeiltasten ← →: zwischen Fällen wechseln."
 }

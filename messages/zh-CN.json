@@ -2463,10 +2463,9 @@
       }
     }
   ],
-  "steam_mod_filter_all": "全部（{count}）",
   "steam_mod_filter_proof": "有证明（{count}）",
-  "steam_mod_filter_pending": "待审核（{count}）",
-  "steam_mod_filter_blocked": "已封锁（{count}）",
+  "steam_mod_filter_pending": "待处理（{count}）",
+  "steam_mod_filter_blocked": "管理员已封锁（{count}）",
   "steam_mod_status_pending": "待审核",
   "steam_mod_status_suspended": "自动暂停",
   "steam_mod_status_rejected": "管理员封锁",
@@ -2487,5 +2486,10 @@
   "steam_mod_pick": "逐个选择成就（{count}）",
   "steam_mod_pick_all": "全选",
   "steam_mod_pick_none": "全不选",
-  "steam_mod_cross_mark": "将此游戏标记为共享进度（成就由游戏服务器或其他客户端授予）"
+  "steam_mod_cross_mark": "将此游戏标记为共享进度（成就由游戏服务器或其他客户端授予）",
+  "steam_mod_previous": "上一个",
+  "steam_mod_skip": "跳过",
+  "steam_mod_position": "第 {position} 个，共 {total} 个",
+  "steam_mod_done": "这一叠里没有待处理的案例了。",
+  "steam_mod_keys": "做出决定后案例会被归档并显示下一个。方向键 ← →：在案例之间切换。"
 }

@@ -2576,10 +2576,9 @@
       }
     }
   ],
-  "steam_mod_filter_all": "Todos ({count})",
   "steam_mod_filter_proof": "Con prueba ({count})",
-  "steam_mod_filter_pending": "Por revisar ({count})",
-  "steam_mod_filter_blocked": "Bloqueados ({count})",
+  "steam_mod_filter_pending": "Por tratar ({count})",
+  "steam_mod_filter_blocked": "Bloqueados por la moderación ({count})",
   "steam_mod_status_pending": "Por revisar",
   "steam_mod_status_suspended": "Suspendido automáticamente",
   "steam_mod_status_rejected": "Bloqueado por la moderación",
@@ -2600,5 +2599,10 @@
   "steam_mod_pick": "Elegir logro por logro ({count})",
   "steam_mod_pick_all": "Marcar todos",
   "steam_mod_pick_none": "Desmarcar todos",
-  "steam_mod_cross_mark": "Marcar este juego como progreso compartido (logros otorgados por el servidor del juego u otro cliente)"
+  "steam_mod_cross_mark": "Marcar este juego como progreso compartido (logros otorgados por el servidor del juego u otro cliente)",
+  "steam_mod_previous": "Anterior",
+  "steam_mod_skip": "Saltar",
+  "steam_mod_position": "Caso {position} de {total}",
+  "steam_mod_done": "No queda nada en esta pila.",
+  "steam_mod_keys": "Una decisión archiva el caso y muestra el siguiente. Flechas ← →: pasar de un caso a otro."
 }

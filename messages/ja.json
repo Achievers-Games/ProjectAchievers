@@ -2463,10 +2463,9 @@
       }
     }
   ],
-  "steam_mod_filter_all": "すべて（{count}）",
   "steam_mod_filter_proof": "証拠あり（{count}）",
-  "steam_mod_filter_pending": "要確認（{count}）",
-  "steam_mod_filter_blocked": "ブロック中（{count}）",
+  "steam_mod_filter_pending": "対応待ち（{count}）",
+  "steam_mod_filter_blocked": "モデレーターがブロック（{count}）",
   "steam_mod_status_pending": "要確認",
   "steam_mod_status_suspended": "自動で停止",
   "steam_mod_status_rejected": "モデレーターがブロック",
@@ -2487,5 +2486,10 @@
   "steam_mod_pick": "実績ごとに選ぶ（{count}）",
   "steam_mod_pick_all": "すべて選択",
   "steam_mod_pick_none": "すべて解除",
-  "steam_mod_cross_mark": "このゲームを進行状況共有としてマーク（ゲームサーバーや別クライアントが実績を付与）"
+  "steam_mod_cross_mark": "このゲームを進行状況共有としてマーク（ゲームサーバーや別クライアントが実績を付与）",
+  "steam_mod_previous": "前へ",
+  "steam_mod_skip": "スキップ",
+  "steam_mod_position": "{total}件中{position}件目",
+  "steam_mod_done": "この山に残っている案件はありません。",
+  "steam_mod_keys": "判断すると案件が片付き、次の案件が表示されます。矢印キー ← →：案件を移動。"
 }

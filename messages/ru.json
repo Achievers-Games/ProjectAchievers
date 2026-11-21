@@ -2617,10 +2617,9 @@
       }
     }
   ],
-  "steam_mod_filter_all": "Все ({count})",
   "steam_mod_filter_proof": "С доказательством ({count})",
-  "steam_mod_filter_pending": "На проверке ({count})",
-  "steam_mod_filter_blocked": "Заблокированы ({count})",
+  "steam_mod_filter_pending": "К обработке ({count})",
+  "steam_mod_filter_blocked": "Заблокированы модерацией ({count})",
   "steam_mod_status_pending": "На проверке",
   "steam_mod_status_suspended": "Приостановлено автоматически",
   "steam_mod_status_rejected": "Заблокировано модерацией",
@@ -2641,5 +2640,10 @@
   "steam_mod_pick": "Выбрать по одному ({count})",
   "steam_mod_pick_all": "Отметить все",
   "steam_mod_pick_none": "Снять все",
-  "steam_mod_cross_mark": "Отметить игру как общий прогресс (достижения выдаёт сервер игры или другой клиент)"
+  "steam_mod_cross_mark": "Отметить игру как общий прогресс (достижения выдаёт сервер игры или другой клиент)",
+  "steam_mod_previous": "Назад",
+  "steam_mod_skip": "Пропустить",
+  "steam_mod_position": "Дело {position} из {total}",
+  "steam_mod_done": "В этой стопке ничего не осталось.",
+  "steam_mod_keys": "Решение убирает дело и показывает следующее. Стрелки ← →: переход между делами."
 }

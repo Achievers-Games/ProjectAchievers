@@ -2576,10 +2576,9 @@
       }
     }
   ],
-  "steam_mod_filter_all": "Tous ({count})",
   "steam_mod_filter_proof": "Avec preuve ({count})",
-  "steam_mod_filter_pending": "À examiner ({count})",
-  "steam_mod_filter_blocked": "Bloqués ({count})",
+  "steam_mod_filter_pending": "À traiter ({count})",
+  "steam_mod_filter_blocked": "Bloqués par la modération ({count})",
   "steam_mod_status_pending": "À examiner",
   "steam_mod_status_suspended": "Suspendu d’office",
   "steam_mod_status_rejected": "Bloqué par la modération",
@@ -2600,5 +2599,10 @@
   "steam_mod_pick": "Choisir succès par succès ({count})",
   "steam_mod_pick_all": "Tout cocher",
   "steam_mod_pick_none": "Tout décocher",
-  "steam_mod_cross_mark": "Marquer ce jeu comme progression partagée (succès rendus par le serveur du jeu ou un autre client)"
+  "steam_mod_cross_mark": "Marquer ce jeu comme progression partagée (succès rendus par le serveur du jeu ou un autre client)",
+  "steam_mod_previous": "Précédent",
+  "steam_mod_skip": "Passer",
+  "steam_mod_position": "Dossier {position} sur {total}",
+  "steam_mod_done": "Rien à traiter dans cette pile.",
+  "steam_mod_keys": "Une décision range le dossier et affiche le suivant. Flèches ← → : passer d’un dossier à l’autre."
 }
