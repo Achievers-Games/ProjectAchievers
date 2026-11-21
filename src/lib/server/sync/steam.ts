@@ -587,10 +587,14 @@ export async function fetchUnlockList(steamId: string, appId: number) {
       achievements?: { apiname: string; achieved: number; unlocktime: number }[];
     };
   };
-  if (data.playerstats?.success === false || !Array.isArray(data.playerstats?.achievements)) {
+  if (!data.playerstats || data.playerstats.success === false) {
     throw new Error('GetPlayerAchievements : liste de succès indisponible');
   }
-  const { achievements } = data.playerstats;
+  // Un jeu à statistiques sans aucun succès répond sans liste : rien d'obtenu, rien d'effacé.
+  const achievements = data.playerstats.achievements ?? [];
+  if (!Array.isArray(achievements)) {
+    throw new Error('GetPlayerAchievements : liste de succès illisible');
+  }
   const unlocks = achievements
     .filter((a) => a.achieved === 1)
     .map((a) => ({

@@ -16,8 +16,14 @@
     canvas.width = Math.round(bitmap.width * scale);
     canvas.height = Math.round(bitmap.height * scale);
     canvas.getContext('2d')?.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-    const blob = await new Promise<Blob | null>((done) => canvas.toBlob(done, 'image/webp', 0.85));
-    return blob ? new File([blob], 'preuve.webp', { type: blob.type }) : file;
+    const encode = (type: string) =>
+      new Promise<Blob | null>((done) => canvas.toBlob(done, type, 0.85));
+    // Safari n'encode pas le WebP et rend un PNG bien plus lourd : le JPEG prend alors le relais.
+    let blob = await encode('image/webp');
+    if (blob?.type !== 'image/webp') blob = await encode('image/jpeg');
+    if (!blob) return file;
+    const extension = blob.type === 'image/webp' ? 'webp' : 'jpg';
+    return new File([blob], `preuve.${extension}`, { type: blob.type });
   }
 
   async function pick(event: Event & { currentTarget: HTMLInputElement }) {
