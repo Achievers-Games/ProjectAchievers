@@ -776,6 +776,7 @@ export const syncSteam: ProviderSync = async ({
       reportedUnlockedCount: true,
       lastPlayedAt: true,
       playtimeMinutes: true,
+      offlinePlaytimeMinutes: true,
       achievementsCheckedAt: true,
       game: {
         select: {
@@ -858,7 +859,11 @@ export const syncSteam: ProviderSync = async ({
         } else if (!unchangedSince(known, playedAt ?? known.lastPlayedAt, minutes)) {
           await db.userGame.update({
             where: { userId_gameId: { userId, gameId: known.game.id } },
-            data: { playtimeMinutes: minutes, lastPlayedAt: lastPlayed },
+            data: {
+              playtimeMinutes: minutes,
+              offlinePlaytimeMinutes: ownedGame.playtime_disconnected ?? 0,
+              lastPlayedAt: lastPlayed,
+            },
           });
         }
         return;
@@ -873,10 +878,20 @@ export const syncSteam: ProviderSync = async ({
           Date.now() - (known.game.schemaSyncedAt?.getTime() ?? 0) > ACHIEVEMENT_RECHECK;
         if (count.unlocked === known.reportedUnlockedCount && !refreshSchema) {
           const played = borrowed ? ownedGame.playtime_forever : minutes;
-          if (played !== undefined && played !== known.playtimeMinutes) {
+          // Le temps hors ligne se retient aussi : sans lui, le contrôle anti-triche ne voit que le
+          // temps connecté d'un jeu dont rien d'autre n'a bougé.
+          const offline = borrowed ? undefined : (ownedGame.playtime_disconnected ?? 0);
+          if (
+            (played !== undefined && played !== known.playtimeMinutes) ||
+            (offline !== undefined && offline !== known.offlinePlaytimeMinutes)
+          ) {
             await db.userGame.update({
               where: { userId_gameId: { userId, gameId: known.game.id } },
-              data: { playtimeMinutes: played, lastPlayedAt: lastPlayed },
+              data: {
+                ...(played !== undefined && { playtimeMinutes: played }),
+                ...(offline !== undefined && { offlinePlaytimeMinutes: offline }),
+                lastPlayedAt: lastPlayed,
+              },
             });
           }
           return;

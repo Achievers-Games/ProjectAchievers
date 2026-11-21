@@ -190,6 +190,7 @@ async function catchUpRecent(userId: string, steamId: string, checkedAppId?: str
       reportedUnlockedCount: true,
       removalSeenAt: true,
       playtimeMinutes: true,
+      offlinePlaytimeMinutes: true,
       lastPlayedAt: true,
       game: { select: { platformGameId: true } },
     },
@@ -214,7 +215,11 @@ async function catchUpRecent(userId: string, steamId: string, checkedAppId?: str
 
   for (const game of known) {
     const row = stored.get(String(game.appid))!;
-    const minutes = game.playtime_forever ?? 0;
+    // Les jeux récents de Steam ne donnent que le temps connecté : le temps hors ligne connu de la
+    // bibliothèque s'y ajoute, sinon le total retomberait (Lies of P : 3,2 h au lieu de 10,7 h).
+    const minutes =
+      (game.playtime_forever ?? 0) +
+      (game.playtime_disconnected === undefined ? row.offlinePlaytimeMinutes : 0);
     const count = counts?.get(game.appid);
     // Seul un succès en plus compte : la relecture ne retire rien. Un jeu absent de la réponse
     // retombe sur le temps de jeu.
@@ -231,7 +236,7 @@ async function catchUpRecent(userId: string, steamId: string, checkedAppId?: str
       recentlyPlayedAt(row.lastPlayedAt, recent.indexOf(game), now);
     if (changed) {
       const appId = String(game.appid);
-      await runLiveGame(userId, steamId, appId, game.playtime_forever, tops.get(game.appid));
+      await runLiveGame(userId, steamId, appId, minutes, tops.get(game.appid));
     }
     if (lastPlayedAt) {
       // Le temps de jeu se met à jour sans rien demander à Steam ; la relecture l'a déjà fait.

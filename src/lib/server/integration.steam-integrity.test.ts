@@ -742,3 +742,45 @@ it('accepte un jeu à statistiques sans aucun succès', async () => {
   await expect(fetchUnlockList('1', 10)).resolves.toEqual({ unlocks: [], cleared: false });
   vi.unstubAllGlobals();
 });
+
+it('lève la suspension d’office quand le temps hors ligne arrive, sans valider le lot', async () => {
+  const user = await player();
+  const steamId = user.accounts[0]!.providerUserId;
+  const appId = String(600_000 + Math.floor(Math.random() * 99_999));
+  const gameId = await game(false, appId);
+  await db.game.update({ where: { id: gameId }, data: { totalAchievements: 21 } });
+  await db.lureGame.create({
+    data: { steamAppId: appId, found: true, completionistMinutes: 2400, fetchedAt: new Date() },
+  });
+  const at = Math.floor(Date.now() / 1000) * 1000 - 30 * 86_400_000;
+  const spread = Array.from({ length: 21 }, (_, i) => ({
+    platformAchievementId: `a${i}`,
+    unlockedAt: new Date(at + i * 3_600_000),
+  }));
+  const read = { steamId, complete: true };
+  const scope = { steamId_gameId: { steamId, gameId } };
+  // Lies of P : seul le temps connecté était connu, le rythme a l'air impossible.
+  await saveProgress(user.id, gameId, spread, { playtimeMinutes: 190 }, read);
+  expect(await db.steamIntegrityReview.findUniqueOrThrow({ where: scope })).toMatchObject({
+    suspendedAt: expect.any(Date),
+    trust: { verdict: 'cheat' },
+  });
+
+  // Une lecture partielle ne rejuge rien.
+  await saveProgress(user.id, gameId, [], {}, { steamId });
+  expect(await db.steamIntegrityReview.findUniqueOrThrow({ where: scope })).toMatchObject({
+    suspendedAt: expect.any(Date),
+  });
+
+  // Le temps hors ligne arrive avec la bibliothèque : plus de suspension, la modération tranche.
+  await saveProgress(
+    user.id,
+    gameId,
+    spread,
+    { playtimeMinutes: 642, offlinePlaytimeMinutes: 450 },
+    read,
+  );
+  const review = await db.steamIntegrityReview.findUniqueOrThrow({ where: scope });
+  expect(review).toMatchObject({ status: 'PENDING', suspendedAt: null });
+  expect(review.trust).not.toMatchObject({ verdict: 'cheat' });
+});

@@ -590,10 +590,30 @@ export async function filterSteamProgress(
     (fresh.some((key) => !previous?.flagged.includes(key)) || (!previous && flagged.length > 0));
   // Un score accablant suspend le jeu d'emblée ; la modération peut toujours tout rétablir.
   const caught = trust?.verdict === 'cheat' && flagged.length > 0 && !previous?.suspendedAt;
-  // Jeu marqué depuis comme reprenant une progression d'ailleurs : la suspension automatique, posée
-  // sur un temps Steam faible, ne tient plus. Le lot reste en attente, pour la modération.
+  // La suspension automatique ne tient que tant que le score accuse : jeu marqué depuis comme
+  // reprenant une progression d'ailleurs, ou temps de jeu complet arrivé ensuite (hors ligne
+  // compris). Le lot reste en attente, pour la modération.
+  // Un jeu suspendu par recoupement de lots sur d'autres jeux le reste : sinon il tomberait puis
+  // reviendrait à chaque lecture.
+  const liftable =
+    Boolean(previous?.suspendedAt) &&
+    !moderatorSuspended &&
+    !autoApproved &&
+    (game.crossProgress ||
+      // Seule une liste complète rejuge : une lecture partielle ou vide n'en dit pas assez.
+      (complete && unlocks.length > 0 && trust !== null && trust.verdict !== 'cheat'));
   const unsuspended =
-    game.crossProgress && Boolean(previous?.suspendedAt) && !moderatorSuspended && !autoApproved;
+    liftable &&
+    !corroboratedGames(
+      [
+        ...(await tx.steamIntegrityReview.findMany({
+          where: { steamId, userId, status: 'PENDING', gameId: { not: gameId } },
+          include: { game: { select: gameSelect } },
+        })),
+        { gameId, flagged, game },
+      ],
+      gameId,
+    ).includes(gameId);
 
   const now = new Date();
   const trustData = trust ? { trust: trust as unknown as Prisma.InputJsonValue } : {};
