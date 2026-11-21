@@ -3,6 +3,8 @@
   "glow": "#ff9e57",
   "atmosphere": "sparks",
   "sound": null,
+  "frame": "maple",
+  "intro": { "revealAt": 3700 },
   "shots": [
     {
       "from": { "x": 0, "y": 0.53, "zoom": 1.83 },

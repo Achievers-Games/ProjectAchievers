@@ -3,6 +3,7 @@
   "glow": "#c5e9ee",
   "atmosphere": "ash",
   "sound": null,
+  "intro": { "revealAt": 3500 },
   "shots": [
     {
       "from": {

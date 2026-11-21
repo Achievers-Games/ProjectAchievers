@@ -3,6 +3,8 @@
   "glow": "#58a9ff",
   "atmosphere": "wisps",
   "sound": null,
+  "frame": "laboratory",
+  "intro": { "revealAt": 4050 },
   "shots": [
     {
       "from": { "x": 0, "y": 0.87, "zoom": 1.9 },

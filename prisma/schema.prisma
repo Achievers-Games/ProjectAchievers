@@ -454,19 +454,30 @@ model ShardEntry {
   @@index([userId, gameId])
 }
 
+/// Un jeu du catalogue de cartes. Ses éditions s'activent ensemble : un jeu tirable a toujours
+/// ses trois raretés. Recopié depuis `src/lib/card-catalogue.json` par l'entretien.
+model CardFamily {
+  familyKey String        @id
+  enabled   Boolean       @default(false)
+  createdAt DateTime      @default(now())
+  editions  GameEdition[]
+}
+
 /// Une édition qui existe pour une famille de jeu, toutes plateformes confondues.
 model GameEdition {
   id          String        @id @default(cuid())
   familyKey   String
+  family      CardFamily    @relation(fields: [familyKey], references: [familyKey], onDelete: Cascade)
   kind        EditionKind
+  /// Plusieurs cartes d'une même rareté pour un jeu (autre illustration, événement) ; `base` sinon.
+  variant     String        @default("base")
   /// Dossier des calques et du script de la carte, versionné pour vider les caches.
   assetPath   String
-  enabled     Boolean       @default(true)
   createdAt   DateTime      @default(now())
   owners      UserEdition[]
   bannerUsers User[]
 
-  @@unique([familyKey, kind])
+  @@unique([familyKey, kind, variant])
 }
 
 /// Une édition possédée. Elle ne se montre aux autres que si le jeu est fini à 100 %.
@@ -481,6 +492,7 @@ model UserEdition {
   equipped   Boolean     @default(false)
 
   @@id([userId, editionId])
+  @@index([editionId])
 }
 
 model BoosterOpening {

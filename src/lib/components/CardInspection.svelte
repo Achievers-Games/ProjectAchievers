@@ -1,11 +1,15 @@
 <script lang="ts">
   import { onMount, type Snippet } from 'svelte';
   import { m } from '#lib/paraglide/messages';
-  import { animatedCard, levelFor } from '#lib/animated-card';
+  import {
+    animatedCard,
+    levelFor,
+    loadManifest,
+    type EditionManifest,
+  } from '#lib/animated-card';
   import { cardTilt } from '#lib/card-tilt';
   import CardBack from './CardBack.svelte';
   import ThemedCardFrame from './ThemedCardFrame.svelte';
-  import { cardFrameTheme } from '#lib/card-frame';
   import FantasyCardTitle from './FantasyCardTitle.svelte';
   import type { EditionKind } from '#prisma';
 
@@ -55,7 +59,17 @@
   let showBack = $state(false);
   let replayKey = $state(0);
   const edition = $derived(card.kind.toLowerCase());
-  const frameTheme = $derived(cardFrameTheme(card.assetPath));
+  /** Le manifeste de la carte : son cadre, et son intro (rejouée sans le reflet par-dessus). */
+  let manifest = $state<EditionManifest | null>(null);
+  $effect(() => {
+    const path = card.assetPath;
+    manifest = null;
+    if (path)
+      void loadManifest(path).then((loaded) => {
+        if (card.assetPath === path) manifest = loaded;
+      });
+  });
+  const frameTheme = $derived(manifest?.frame ?? null);
   const leafCount = $derived(card.kind === 'MYTHIQUE' ? 6 : card.kind === 'VIVANTE' ? 3 : 0);
   const editionName = $derived(
     card.kind === 'MYTHIQUE'
@@ -163,7 +177,7 @@
               {/key}
               {#key replayKey}
                 {#if card.kind === 'VIVANTE'}<span class="inspection-wake"></span>
-                {:else if card.kind === 'MYTHIQUE' && (replayKey === 0 || (card.assetPath !== '/_proto/hades-mythique/' && card.assetPath !== '/_proto/ori-mythique/' && card.assetPath !== '/_proto/sekiro-mythique/' && card.assetPath !== '/_proto/portal-2-mythique/' && card.assetPath !== '/_proto/hollow-knight/'))}
+                {:else if card.kind === 'MYTHIQUE' && (replayKey === 0 || !manifest?.intro)}
                   <span class="inspection-sheen"></span>
                 {/if}
               {/key}

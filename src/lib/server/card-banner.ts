@@ -1,3 +1,4 @@
+import { editionStill } from '#lib/animated-card';
 import { db } from './db';
 
 export async function bannerProgress(userId: string, familyKeys: string[]) {
@@ -33,13 +34,22 @@ export async function resolveCardBanner(userId: string, editionId: string) {
   const owned = await db.userEdition.findUnique({
     where: { userId_editionId: { userId, editionId } },
     select: {
-      edition: { select: { kind: true, assetPath: true, familyKey: true, enabled: true } },
+      edition: {
+        select: {
+          kind: true,
+          assetPath: true,
+          familyKey: true,
+          family: { select: { enabled: true } },
+        },
+      },
     },
   });
-  if (!owned?.edition.enabled) return null;
+  if (!owned?.edition.family.enabled) return null;
   const { kind, assetPath, familyKey } = owned.edition;
   const [game] = await completedBannerGames(userId, [familyKey]);
-  return game ? { kind, assetPath, game } : null;
+  return game
+    ? { kind, assetPath, game: { ...game, headerUrl: editionStill(assetPath, game.headerUrl) } }
+    : null;
 }
 
 export async function profileCardBanner(userId: string) {

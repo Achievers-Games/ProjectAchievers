@@ -1,1 +1,8 @@
-{ "id": "portal-2", "glow": "#8ce9e7", "atmosphere": "wisps", "sound": null, "shots": [] }
+{
+  "id": "portal-2",
+  "glow": "#8ce9e7",
+  "atmosphere": "wisps",
+  "sound": null,
+  "frame": "laboratory",
+  "shots": []
+}

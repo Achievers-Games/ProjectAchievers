@@ -3,6 +3,8 @@
   "glow": "#ff6a3d",
   "atmosphere": "sparks",
   "sound": null,
+  "frame": "underworld",
+  "intro": { "revealAt": 3950 },
   "shots": [
     {
       "from": { "x": 0.27, "y": 0.68, "zoom": 1.8 },

@@ -131,7 +131,8 @@
     opacity: 0;
     transition: opacity 550ms ease-out;
   }
-  .frame-layer[data-frame-open] .reveal {
+  /* `data-frame-open` est posé par `unfoldOnReveal` : invisible pour Svelte, qui retirerait la règle. */
+  .frame-layer:global([data-frame-open]) .reveal {
     opacity: 1;
   }
   @media (prefers-reduced-motion: reduce) {

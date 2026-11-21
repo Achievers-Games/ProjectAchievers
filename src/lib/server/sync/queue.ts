@@ -26,6 +26,7 @@ import { SyncError } from './errors';
 import { publishCard, publishChat, publishHighlight, publishSync, publishUnlock } from './events';
 import { deliverPartnerWebhooks } from '../partner-webhooks';
 import { grantFramesThrottled } from '../frames';
+import { syncCardCatalogue } from '../card-catalogue';
 import { grantMissingStarters, grantStarter } from '../shards';
 import { checkSiteAchievements, reviewNewPlayers } from '../site-achievements';
 import { syncPsn } from './psn';
@@ -695,6 +696,8 @@ const MAINTENANCE: { label: string; run: () => Promise<unknown>; budget?: false 
   { label: 'Sauvegarde', run: () => warnStaleBackup(), budget: false },
   { label: 'Chiffrement', run: () => rewrapSecrets(), budget: false },
   { label: 'Noms de clan', run: () => flagProfaneClans() },
+  // Le catalogue des cartes suit le code : un jeu ajouté au dépôt entre dans les boosters.
+  { label: 'Catalogue de cartes', run: () => syncCardCatalogue(), budget: false },
   { label: 'Succès de clan', run: () => checkAllClans() },
   {
     label: "Capital d'éclats",

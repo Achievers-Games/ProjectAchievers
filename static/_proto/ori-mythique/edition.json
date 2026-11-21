@@ -3,6 +3,9 @@
   "glow": "#ffc88a",
   "atmosphere": "wisps",
   "sound": null,
+  "frame": "forest",
+  "title": "fantasy",
+  "intro": { "revealAt": 4600 },
   "shots": [
     {
       "from": { "x": 0.04, "y": 0.76, "zoom": 1.72 },

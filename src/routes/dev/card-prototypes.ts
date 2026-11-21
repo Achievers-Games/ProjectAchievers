@@ -1,44 +1,21 @@
-export const PROTOTYPES = [
-  {
-    name: 'Ori and the Will of the Wisps',
-    assetPath: '/_proto/ori/',
-    mythiqueAssetPath: '/_proto/ori-mythique/',
-    clues: {
-      genres: ['platformer', 'metroidvania'],
-      achievements: 39,
-      medianMinutes: 1500,
-    },
-  },
-  {
-    name: 'Hades',
-    assetPath: '/_proto/hades/',
-    mythiqueAssetPath: '/_proto/hades-mythique/',
-    clues: {
-      genres: ['roguelike'],
-      achievements: 49,
-      medianMinutes: 5400,
-    },
-  },
-  {
-    name: 'Hollow Knight',
-    assetPath: '/_proto/hollow-knight-mythique/',
-    mythiqueAssetPath: '/_proto/hollow-knight/',
-    clues: {
-      genres: ['metroidvania', 'soulslike'],
-      achievements: 63,
-      medianMinutes: 3600,
-    },
-  },
-  {
-    name: 'Sekiro: Shadows Die Twice',
-    assetPath: '/_proto/sekiro/',
-    mythiqueAssetPath: '/_proto/sekiro-mythique/',
-    clues: { genres: ['action', 'soulslike'], achievements: 34, medianMinutes: null },
-  },
-  {
-    name: 'Portal 2',
-    assetPath: '/_proto/portal-2/',
-    mythiqueAssetPath: '/_proto/portal-2-mythique/',
-    clues: { genres: ['puzzle', 'science-fiction'], achievements: 51, medianMinutes: null },
-  },
-];
+import { CARD_CATALOGUE } from '#lib/card-catalogue';
+
+/** Les indices de révélation de la démo, en attendant ceux calculés depuis la base. */
+const CLUES: Record<
+  string,
+  { genres: string[]; achievements: number; medianMinutes: number | null }
+> = {
+  '1057090': { genres: ['platformer', 'metroidvania'], achievements: 39, medianMinutes: 1500 },
+  '1145360': { genres: ['roguelike'], achievements: 49, medianMinutes: 5400 },
+  '367520': { genres: ['metroidvania', 'soulslike'], achievements: 63, medianMinutes: 3600 },
+  '814380': { genres: ['action', 'soulslike'], achievements: 34, medianMinutes: null },
+  '620': { genres: ['puzzle', 'science-fiction'], achievements: 51, medianMinutes: null },
+};
+
+/** Les jeux du catalogue de cartes, pour la galerie et le simulateur de boosters. */
+export const PROTOTYPES = CARD_CATALOGUE.map((game) => ({
+  name: game.name,
+  assetPath: game.editions.RELIEF,
+  mythiqueAssetPath: game.editions.MYTHIQUE,
+  clues: CLUES[game.steamAppId] ?? { genres: [], achievements: 0, medianMinutes: null },
+}));

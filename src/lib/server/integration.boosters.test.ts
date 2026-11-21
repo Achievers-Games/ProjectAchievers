@@ -5,12 +5,14 @@ import { BOOSTER_PRICE } from '#lib/boosters';
 import { db } from './db';
 import { BoosterError, boosterState, openBooster, userCollection } from './boosters';
 import { profileCardBanner, resolveCardBanner } from './card-banner';
+import { syncCardCatalogue } from './card-catalogue';
 import { saveAchievements, saveProgress, upsertGame } from './sync/store';
 import { PREFIX, setupIntegration } from './test-helpers';
 
 setupIntegration();
 // Les éditions ne dépendent d'aucun jeu : le nettoyage commun ne les voit pas.
-afterAll(() => db.gameEdition.deleteMany({ where: { familyKey: { startsWith: PREFIX } } }));
+// Supprimer la famille supprime ses éditions.
+afterAll(() => db.cardFamily.deleteMany({ where: { familyKey: { startsWith: PREFIX } } }));
 
 async function player(shards = 0) {
   return db.user.create({
@@ -51,7 +53,11 @@ async function playedGameWithRelief(userId: string, options: { adultOnly?: boole
     { platformAchievementId: 'a', unlockedAt: new Date('2020-01-01') },
   ]);
   const edition = await db.gameEdition.create({
-    data: { familyKey, kind: 'RELIEF', assetPath: `/cartes/${familyKey}/1` },
+    data: {
+      kind: 'RELIEF',
+      assetPath: `/cartes/${familyKey}/1`,
+      family: { create: { familyKey, enabled: true } },
+    },
   });
   return { game, edition };
 }
@@ -160,9 +166,10 @@ describe('la collection', () => {
       where: { id: user.id },
       data: { bannerEditionId: edition.id },
     });
+    // L'image fixe est celle de l'édition, pas le visuel Steam du jeu.
     expect(await profileCardBanner(user.id)).toMatchObject({
       kind: 'RELIEF',
-      game: { slug: game.slug },
+      game: { slug: game.slug, headerUrl: `${edition.assetPath}/full.jpg` },
     });
 
     await db.userGame.updateMany({
@@ -187,8 +194,50 @@ describe('la collection', () => {
     expect(after.cards[0]).toMatchObject({
       editionId: edition.id,
       kind: 'RELIEF',
-      game: { slug: game.slug },
+      game: { slug: game.slug, headerUrl: `${edition.assetPath}/full.jpg` },
     });
     expect(after.missing.RELIEF).toBe(0);
+  });
+});
+
+describe('le catalogue de cartes', () => {
+  it('crée la famille et ses trois éditions, les met à jour, et retire un jeu disparu', async () => {
+    const appId = `${PREFIX}-${Math.random()}`;
+    const familyKey = `${PREFIX}-famille-${Math.random()}`;
+    const game = await upsertGame({
+      platform: 'STEAM',
+      platformGameId: appId,
+      name: `${PREFIX} jeu`,
+    });
+    await db.game.update({ where: { id: game.id }, data: { familyKey, familyLocked: true } });
+    const entry = {
+      name: 'Jeu',
+      steamAppId: appId,
+      enabled: true,
+      editions: { RELIEF: '/cartes/a/', VIVANTE: '/cartes/a/', MYTHIQUE: '/cartes/b/' },
+    };
+    // Un jeu que personne n'a importé attend sans erreur.
+    expect(await syncCardCatalogue([{ ...entry, steamAppId: `${PREFIX}-absent` }])).toBe(0);
+
+    expect(await syncCardCatalogue([entry])).toBe(1);
+    expect(
+      await syncCardCatalogue([
+        { ...entry, editions: { ...entry.editions, MYTHIQUE: '/cartes/c/' } },
+      ]),
+    ).toBe(1);
+    const family = await db.cardFamily.findUniqueOrThrow({
+      where: { familyKey },
+      include: { editions: { orderBy: { kind: 'asc' } } },
+    });
+    expect(family.enabled).toBe(true);
+    expect(family.editions.map((edition) => [edition.kind, edition.assetPath])).toEqual([
+      ['RELIEF', '/cartes/a/'],
+      ['VIVANTE', '/cartes/a/'],
+      ['MYTHIQUE', '/cartes/c/'],
+    ]);
+
+    await syncCardCatalogue([]);
+    expect((await db.cardFamily.findUniqueOrThrow({ where: { familyKey } })).enabled).toBe(false);
+    expect(await db.gameEdition.count({ where: { familyKey } })).toBe(3);
   });
 });

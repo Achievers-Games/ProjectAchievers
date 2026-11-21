@@ -1,5 +1,6 @@
 import { randomInt, randomUUID } from 'node:crypto';
 import type { BoosterSource, EditionKind } from '#prisma';
+import { withEditionStill } from '#lib/animated-card';
 import {
   BOOSTER_PRICE,
   canDraw,
@@ -45,10 +46,10 @@ export async function editionPool(tx: Tx | typeof db, userId: string): Promise<P
   >`
     SELECT e.id AS "editionId", e."familyKey", e.kind, max(ug.completion)::float AS completion
     FROM "GameEdition" e
+    JOIN "CardFamily" f ON f."familyKey" = e."familyKey" AND f.enabled
     JOIN "Game" g ON g."familyKey" = e."familyKey" AND NOT g."adultOnly"
     JOIN "UserGame" ug ON ug."gameId" = g.id AND ug."userId" = ${userId}
       AND NOT ug.hidden AND ug."unlockedCount" > 0
-    WHERE e.enabled
     GROUP BY e.id`;
   const pool = Object.fromEntries(EDITIONS.map((kind) => [kind, []])) as unknown as Pool;
   for (const row of rows) pool[row.kind].push(row);
@@ -270,7 +271,13 @@ export async function userCollection(userId: string) {
       select: {
         obtainedAt: true,
         edition: {
-          select: { id: true, familyKey: true, kind: true, assetPath: true, enabled: true },
+          select: {
+            id: true,
+            familyKey: true,
+            kind: true,
+            assetPath: true,
+            family: { select: { enabled: true } },
+          },
         },
       },
     }),
@@ -279,13 +286,13 @@ export async function userCollection(userId: string) {
   const art = await familyArt(owned.map((row) => row.edition.familyKey));
   const cards: CollectionCard[] = owned
     .map(({ obtainedAt, edition }) => ({
-      enabled: edition.enabled,
+      enabled: edition.family.enabled,
       editionId: edition.id,
       familyKey: edition.familyKey,
       kind: edition.kind,
       assetPath: edition.assetPath,
       obtainedAt,
-      game: art.get(edition.familyKey) ?? null,
+      game: withEditionStill(art.get(edition.familyKey), edition.assetPath),
     }))
     .sort(
       (a, b) => RARITY[b.kind] - RARITY[a.kind] || b.obtainedAt.getTime() - a.obtainedAt.getTime(),

@@ -3,6 +3,7 @@
   "glow": "#ff8152",
   "atmosphere": "sparks",
   "sound": null,
+  "frame": "underworld",
   "shots": [
     {
       "from": {

@@ -1,4 +1,5 @@
 import type { Action } from 'svelte/action';
+import type { CardFrameTheme } from '#lib/card-frame';
 import type { EditionKind } from '#prisma';
 
 /**
@@ -30,6 +31,15 @@ export interface EditionManifest {
    * exemple un travelling horizontal, un vertical, puis un dézoom jusqu'à la carte entière.
    */
   shots: Shot[];
+  /**
+   * Une intro de Mythique : elle remplace les plans de caméra, et la carte envoie
+   * `card-intro-reveal` à `revealAt` millisecondes pour faire entrer le titre et le cadre.
+   */
+  intro?: { revealAt: number };
+  /** Le cadre thématique de la carte ; sans cadre, le cadre standard. */
+  frame?: CardFrameTheme;
+  /** `fantasy` : le titre calligraphié dans la grille du booster ; sinon la plaque standard. */
+  title?: 'fantasy' | 'plaque';
 }
 
 interface CardApi {
@@ -80,6 +90,20 @@ function loadScript(assetPath: string) {
 }
 
 export const soundUrl = (assetPath: string, sound: string) => inFolder(assetPath, sound);
+
+/**
+ * L'image fixe d'une édition : le `full.jpg` de son dossier, cadré comme la carte animée. Une
+ * Mythique vient d'une autre illustration que le visuel Steam : la montrer sous son canvas, au
+ * chargement ou en mouvement réduit, évite un changement d'image. Sans dossier, le visuel du jeu.
+ */
+export const editionStill = (assetPath: string | null | undefined, fallback: string | null) =>
+  assetPath ? inFolder(assetPath, 'full.jpg') : fallback;
+
+/** Le jeu d'une carte, avec l'image fixe de son édition à la place du visuel Steam. */
+export const withEditionStill = <Game extends { headerUrl: string | null }>(
+  game: Game | null | undefined,
+  assetPath: string | null | undefined,
+) => (game ? { ...game, headerUrl: editionStill(assetPath, game.headerUrl) } : null);
 
 /** Relief : la parallaxe seule. Vivante et Mythique : toutes les animations. */
 export const levelFor = (kind: EditionKind) => (kind === 'RELIEF' ? 2 : 3);

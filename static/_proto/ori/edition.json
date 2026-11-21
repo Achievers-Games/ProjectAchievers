@@ -3,6 +3,7 @@
   "glow": "#85e4ff",
   "atmosphere": "wisps",
   "sound": null,
+  "frame": "forest",
   "shots": [
     {
       "from": {

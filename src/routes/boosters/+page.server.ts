@@ -1,4 +1,5 @@
 import { error, fail } from '@sveltejs/kit';
+import { withEditionStill } from '#lib/animated-card';
 import { m } from '#lib/paraglide/messages';
 import { requireLogin } from '#lib/server/auth';
 import { bannerProgress } from '#lib/server/card-banner';
@@ -36,7 +37,7 @@ async function withArt(userId: string, cards: BoosterCard[]) {
   ]);
   return cards.map((card) => ({
     ...card,
-    game: art.get(card.familyKey) ?? null,
+    game: withEditionStill(art.get(card.familyKey), assets.get(card.editionId)),
     assetPath: assets.get(card.editionId) ?? null,
     bannerCompletion: progress.get(card.familyKey) ?? null,
     clues: card.kind === 'RELIEF' ? null : (clues.get(card.familyKey) ?? null),
@@ -51,7 +52,11 @@ export const load: PageServerLoad = async ({ locals, depends }) => {
     recentOpenings(user.id),
     db.user.findUniqueOrThrow({ where: { id: user.id }, select: { bannerEditionId: true } }),
   ]);
-  const art = await familyArt(openings.flatMap((opening) => opening.cards.map((c) => c.familyKey)));
+  const drawn = openings.flatMap((opening) => opening.cards);
+  const [art, assets] = await Promise.all([
+    familyArt(drawn.map((card) => card.familyKey)),
+    editionAssets(drawn.map((card) => card.editionId)),
+  ]);
   return {
     state,
     bannerEditionId: profile.bannerEditionId,
@@ -59,7 +64,10 @@ export const load: PageServerLoad = async ({ locals, depends }) => {
       id: opening.id,
       kind: opening.kind,
       createdAt: opening.createdAt,
-      cards: opening.cards.map((card) => ({ ...card, game: art.get(card.familyKey) ?? null })),
+      cards: opening.cards.map((card) => ({
+        ...card,
+        game: withEditionStill(art.get(card.familyKey), assets.get(card.editionId)),
+      })),
     })),
   };
 };

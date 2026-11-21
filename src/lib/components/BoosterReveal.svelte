@@ -6,7 +6,6 @@
   import CardInspection from '#lib/components/CardInspection.svelte';
   import ThemedCardFrame from '#lib/components/ThemedCardFrame.svelte';
   import FantasyCardTitle from '#lib/components/FantasyCardTitle.svelte';
-  import { cardFrameTheme } from '#lib/card-frame';
   import { cardTilt } from '#lib/card-tilt';
   import { packTear } from '#lib/pack-tear';
   import { dealFromPack, DEAL_DURATION, DEAL_STAGGER } from '#lib/deal-from-pack';
@@ -161,14 +160,17 @@
   const mythique = $derived(
     mythiqueIndex === null ? cards.find((card) => card.kind === 'MYTHIQUE') : cards[mythiqueIndex],
   );
-  const revealInIntro = $derived(
-    !reduced &&
-      (mythique?.assetPath === '/_proto/ori-mythique/' ||
-        mythique?.assetPath === '/_proto/hades-mythique/' ||
-        mythique?.assetPath === '/_proto/sekiro-mythique/' ||
-        mythique?.assetPath === '/_proto/portal-2-mythique/' ||
-        mythique?.assetPath === '/_proto/hollow-knight/'),
-  );
+  /** Une carte qui déclare une intro la joue à la place des plans de caméra. */
+  const revealInIntro = $derived(!reduced && Boolean(manifest?.intro));
+  /** Le manifeste de chaque carte du booster : style du titre, cadre. */
+  let cardManifests = $state<(EditionManifest | null)[]>([]);
+  $effect(() => {
+    const paths = cards.map((card) => card.assetPath ?? null);
+    void Promise.all(paths.map((path) => (path ? loadManifest(path) : null))).then((loaded) => {
+      if (paths.every((path, index) => path === (cards[index]?.assetPath ?? null)))
+        cardManifests = loaded;
+    });
+  });
 
   function finishCardIntro() {
     if (!introPending || mythiqueIndex === null) return;
@@ -221,7 +223,7 @@
   const fadeIn = $derived(autoReveal ? 390 : FADE_IN);
   const fadeOut = $derived(autoReveal ? 240 : FADE_OUT);
   const shots = $derived(manifest?.shots?.length ? manifest.shots : DEFAULT_SHOTS);
-  const revealFrame = $derived(cardFrameTheme(mythique?.assetPath));
+  const revealFrame = $derived(manifest?.frame ?? null);
 
   // Particules fixes : la même gerbe à chaque fois, calculée une seule fois.
   const burst = (count: number, reach: number) =>
@@ -649,10 +651,13 @@
       introPending = true;
       const scene = sceneId;
       // The title still appears if the canvas falls back to the static illustration.
-      // Les intros teasent le jeu 3,5 à 4 s avant le dévoilement : ce filet passe après.
-      later(() => {
-        if (scene === sceneId) finishCardIntro();
-      }, 6000);
+      // L'intro déclare quand elle dévoile la carte : ce filet passe deux secondes après.
+      later(
+        () => {
+          if (scene === sceneId) finishCardIntro();
+        },
+        (manifest?.intro?.revealAt ?? 4000) + 2000,
+      );
     }
     phase = 'burst';
   }
@@ -848,7 +853,7 @@
                   {#if revealed[index] && card.kind === 'RELIEF'}
                     {#key animationKey[index]}<span class="glint" aria-hidden="true"></span>{/key}
                   {/if}
-                  {#if card.assetPath === '/_proto/ori-mythique/'}
+                  {#if cardManifests[index]?.title === 'fantasy'}
                     <FantasyCardTitle name={card.game?.name ?? '—'} compact />
                   {:else}
                     <span class="front-ornament" aria-hidden="true">✦</span>
