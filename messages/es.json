@@ -2604,5 +2604,7 @@
   "steam_mod_skip": "Saltar",
   "steam_mod_position": "Caso {position} de {total}",
   "steam_mod_done": "No queda nada en esta pila.",
-  "steam_mod_keys": "Una decisión archiva el caso y muestra el siguiente. Flechas ← →: pasar de un caso a otro."
+  "steam_mod_keys": "Una decisión archiva el caso y muestra el siguiente. Flechas ← →: pasar de un caso a otro.",
+  "home_steam_title": "Algunos de tus juegos de Steam están en revisión",
+  "home_steam_detail": "Sus logros no cuentan por ahora. Una prueba, o un reinicio para un juego bloqueado, puede desbloquearlo todo."
 }

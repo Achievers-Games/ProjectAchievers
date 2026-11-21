@@ -2604,5 +2604,7 @@
   "steam_mod_skip": "Skip",
   "steam_mod_position": "Case {position} of {total}",
   "steam_mod_done": "Nothing left in this pile.",
-  "steam_mod_keys": "A decision files the case and shows the next one. Arrow keys ← →: move between cases."
+  "steam_mod_keys": "A decision files the case and shows the next one. Arrow keys ← →: move between cases.",
+  "home_steam_title": "Some of your Steam games are under review",
+  "home_steam_detail": "Their achievements do not count for now. Proof, or a reset for a blocked game, can unblock everything."
 }

@@ -2491,5 +2491,7 @@
   "steam_mod_skip": "跳过",
   "steam_mod_position": "第 {position} 个，共 {total} 个",
   "steam_mod_done": "这一叠里没有待处理的案例了。",
-  "steam_mod_keys": "做出决定后案例会被归档并显示下一个。方向键 ← →：在案例之间切换。"
+  "steam_mod_keys": "做出决定后案例会被归档并显示下一个。方向键 ← →：在案例之间切换。",
+  "home_steam_title": "你的部分 Steam 游戏正在审核",
+  "home_steam_detail": "它们的成就暂时不计分。发送证明，或对被封锁的游戏进行重置，即可解除。"
 }

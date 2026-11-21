@@ -2604,5 +2604,7 @@
   "steam_mod_skip": "Passer",
   "steam_mod_position": "Dossier {position} sur {total}",
   "steam_mod_done": "Rien à traiter dans cette pile.",
-  "steam_mod_keys": "Une décision range le dossier et affiche le suivant. Flèches ← → : passer d’un dossier à l’autre."
+  "steam_mod_keys": "Une décision range le dossier et affiche le suivant. Flèches ← → : passer d’un dossier à l’autre.",
+  "home_steam_title": "Certains de tes jeux Steam sont en vérification",
+  "home_steam_detail": "Leurs succès ne comptent pas pour le moment. Une preuve, ou une remise à zéro pour un jeu bloqué, peut tout débloquer."
 }

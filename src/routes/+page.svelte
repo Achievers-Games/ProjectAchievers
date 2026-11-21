@@ -16,6 +16,7 @@
   import Podium from '#lib/components/Podium.svelte';
   import ProviderIcon from '#lib/components/ProviderIcon.svelte';
   import StatGrid from '#lib/components/StatGrid.svelte';
+  import SteamReviewBanner from '#lib/components/SteamReviewBanner.svelte';
 
   let { data } = $props();
   /**
@@ -42,6 +43,8 @@
 {#if data.home && data.user}
   <div class="space-y-8">
     <h1>{m.home_hello({ name: data.user.displayName })}</h1>
+
+    <SteamReviewBanner reviews={data.steamReviews} />
 
     <HomeCarousel
       tagline={data.tagline}

@@ -2491,5 +2491,7 @@
   "steam_mod_skip": "スキップ",
   "steam_mod_position": "{total}件中{position}件目",
   "steam_mod_done": "この山に残っている案件はありません。",
-  "steam_mod_keys": "判断すると案件が片付き、次の案件が表示されます。矢印キー ← →：案件を移動。"
+  "steam_mod_keys": "判断すると案件が片付き、次の案件が表示されます。矢印キー ← →：案件を移動。",
+  "home_steam_title": "一部のSteamゲームが確認中です",
+  "home_steam_detail": "現在、それらの実績はカウントされません。証拠を送るか、ブロックされたゲームならリセットすることで解除できます。"
 }

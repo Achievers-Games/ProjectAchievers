@@ -2572,5 +2572,7 @@
   "steam_mod_skip": "Überspringen",
   "steam_mod_position": "Fall {position} von {total}",
   "steam_mod_done": "Nichts mehr in diesem Stapel.",
-  "steam_mod_keys": "Eine Entscheidung legt den Fall ab und zeigt den nächsten. Pfeiltasten ← →: zwischen Fällen wechseln."
+  "steam_mod_keys": "Eine Entscheidung legt den Fall ab und zeigt den nächsten. Pfeiltasten ← →: zwischen Fällen wechseln.",
+  "home_steam_title": "Einige deiner Steam-Spiele werden geprüft",
+  "home_steam_detail": "Ihre Erfolge zählen im Moment nicht. Ein Nachweis oder bei einem gesperrten Spiel ein Zurücksetzen kann alles freigeben."
 }

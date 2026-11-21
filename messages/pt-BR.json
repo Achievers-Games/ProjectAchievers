@@ -2604,5 +2604,7 @@
   "steam_mod_skip": "Pular",
   "steam_mod_position": "Caso {position} de {total}",
   "steam_mod_done": "Nada mais nesta pilha.",
-  "steam_mod_keys": "Uma decisão arquiva o caso e mostra o próximo. Setas ← →: passar de um caso a outro."
+  "steam_mod_keys": "Uma decisão arquiva o caso e mostra o próximo. Setas ← →: passar de um caso a outro.",
+  "home_steam_title": "Alguns dos seus jogos Steam estão em verificação",
+  "home_steam_detail": "As conquistas deles não contam por enquanto. Uma prova, ou um reset para um jogo bloqueado, pode desbloquear tudo."
 }
