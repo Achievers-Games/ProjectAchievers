@@ -41,7 +41,7 @@ const out = await page.evaluate(async ({ bgUrl, maskUrl }) => {
       }
     };
     if (horizontal) { pass(a, b, true); [a, b] = [b, a]; }
-    if (vertical) { pass(a, b, false); [a, b] = [b, a]; }
+    if (vertical) { pass(a, b, false); a = b; }
     return a;
   };
   const channel = (data, k) => { const c = new Float32Array(N); for (let i = 0; i < N; i++) c[i] = data[i * 4 + k]; return c; };

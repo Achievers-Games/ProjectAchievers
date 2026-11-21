@@ -223,7 +223,7 @@
         context.drawImage(shade, -30, 16, 1980, 957);
       }
 
-      function introLights(time, scale) {
+      function introLights(time, _scale) {
         context.save();
         // Bord du dévoilement : un front de braises qui s'éteint en s'éloignant.
         if (time >= CLASH && time < REVEAL_END) {

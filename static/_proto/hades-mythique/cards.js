@@ -11,7 +11,6 @@
   // Repère des calques : source réduite (voir prepare-art.py), 1840 × 1034 px.
   // La carte montre la fenêtre de 1840 × 860 px qui débute à (0, 57.5).
   const SIZE = [1840, 1034];
-  const CENTER = [920, 487.5];
   const PERIOD = 7.6;
   // Intro : Zagreus remonte du bassin du Styx ; le titre arrive quand le sang s'est retiré.
   const INTRO_REVEAL = 3.95;
