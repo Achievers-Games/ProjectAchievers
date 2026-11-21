@@ -1,5 +1,7 @@
-import { Prisma } from '#prisma';
-import { CARD_CATALOGUE } from '#lib/card-catalogue';
+import { Prisma, type EditionKind } from '#prisma';
+import { EDITIONS } from '#lib/boosters';
+import { CARD_CATALOGUE, publishedCardPath } from '#lib/card-catalogue';
+import artworkData from '#lib/card-artworks.json';
 import { db } from './db';
 
 /**
@@ -29,9 +31,33 @@ export interface CardPlanRow {
   made: boolean;
   mythiqueArtUrl: string | null;
   note: string | null;
+  /** L'adresse publiée de chaque carte d'un jeu fait, pour la voir animée ; `null` sinon. */
+  editions: Record<EditionKind, string> | null;
+}
+
+type PlanRow = Omit<CardPlanRow, 'editions'> & { catalogueAppId: string | null };
+
+/** Les cartes publiées d'un jeu du catalogue, par rareté. */
+function publishedEditions(appId: string | null) {
+  const entry = appId ? CARD_CATALOGUE.find((game) => game.steamAppId === appId) : undefined;
+  return entry
+    ? (Object.fromEntries(EDITIONS.map((kind) => [kind, publishedCardPath(entry, kind)])) as Record<
+        EditionKind,
+        string
+      >)
+    : null;
 }
 
 const catalogueAppIds = () => CARD_CATALOGUE.map((game) => game.steamAppId);
+
+/**
+ * Les artworks Mythique retenus, versionnés avec le site (`src/lib/card-artworks.json`, par
+ * identifiant Steam) : on les choisit hors du site, et un commit suffit à les montrer.
+ */
+export const CARD_ARTWORKS: Readonly<Record<string, { name: string; url: string }>> =
+  artworkData.artworks;
+const artworkIds = () => Object.keys(CARD_ARTWORKS);
+const artworkUrls = () => Object.values(CARD_ARTWORKS).map((artwork) => artwork.url);
 
 /** Une ligne par famille de jeu, avec sa popularité, son image Steam et l'état de ses cartes. */
 const families = () => Prisma.sql`
@@ -44,16 +70,26 @@ const families = () => Prisma.sql`
       coalesce(sum(p.players), 0)::int AS players,
       (array_agg(g."platformGameId" ORDER BY coalesce(p.players, 0) DESC)
         FILTER (WHERE g.platform = 'STEAM'))[1] AS "steamAppId",
+      array_agg(g."platformGameId") FILTER (WHERE g.platform = 'STEAM') AS "steamAppIds",
       (array_agg(g."heroUrl" ORDER BY g.platform <> 'STEAM', coalesce(p.players, 0) DESC)
         FILTER (WHERE g."heroUrl" IS NOT NULL))[1] AS "heroUrl",
-      bool_or(g.platform = 'STEAM' AND g."platformGameId" = ANY(${catalogueAppIds()}::text[])) AS made
+      bool_or(g.platform = 'STEAM' AND g."platformGameId" = ANY(${catalogueAppIds()}::text[])) AS made,
+      (array_agg(g."platformGameId") FILTER (
+        WHERE g.platform = 'STEAM' AND g."platformGameId" = ANY(${catalogueAppIds()}::text[])
+      ))[1] AS "catalogueAppId"
     FROM "Game" g
     LEFT JOIN played p ON p."gameId" = g.id
     WHERE g."familyKey" IS NOT NULL
     GROUP BY g."familyKey"
     HAVING NOT bool_or(g."adultOnly")
   ), plan AS (
-    SELECT f.*, c."mythiqueArtUrl", c.note
+    SELECT f."familyKey", f.name, f.slug, f.players, f."steamAppId", f."heroUrl", f.made,
+      f."catalogueAppId", c.note,
+      coalesce(
+        c."mythiqueArtUrl",
+        (SELECT a.url FROM unnest(${artworkIds()}::text[], ${artworkUrls()}::text[]) AS a(id, url)
+          WHERE a.id = ANY(f."steamAppIds") LIMIT 1)
+      ) AS "mythiqueArtUrl"
     FROM family f LEFT JOIN "CardPlan" c ON c."familyKey" = f."familyKey"
   )`;
 
@@ -95,7 +131,7 @@ export async function cardPlan(view: CardPlanView, search: string, page: number)
       FROM plan`,
     db.$queryRaw<{ count: number }[]>`${families()}
       SELECT count(*)::int AS count FROM plan WHERE ${where}`,
-    db.$queryRaw<CardPlanRow[]>`${families()}
+    db.$queryRaw<PlanRow[]>`${families()}
       SELECT * FROM plan WHERE ${where}
       ORDER BY players DESC, name ASC
       LIMIT ${CARD_PLAN_PER_PAGE} OFFSET ${(page - 1) * CARD_PLAN_PER_PAGE}`,
@@ -117,11 +153,18 @@ export async function cardPlan(view: CardPlanView, search: string, page: number)
       artworksMissing: remaining - (totals?.artworks ?? 0),
     },
     pages: Math.max(1, Math.ceil((matching?.count ?? 0) / CARD_PLAN_PER_PAGE)),
-    rows,
+    rows: rows.map(({ catalogueAppId, ...row }): CardPlanRow => ({
+      ...row,
+      editions: publishedEditions(catalogueAppId),
+    })),
   };
 }
 
-/** Note l'artwork officiel retenu pour la Mythique d'un jeu ; une adresse vide l'efface. */
+/**
+ * Note l'artwork officiel retenu pour la Mythique d'un jeu ; une adresse vide l'efface. Les
+ * artworks se choisissent hors du site et s'enregistrent par script : la page ne fait que les
+ * montrer.
+ */
 export async function saveCardPlan(
   familyKey: string,
   mythiqueArtUrl: string | null,

@@ -1,7 +1,7 @@
 // Tests sur un vrai PostgreSQL : `npm run dev:db` ou le service de la CI.
 import 'dotenv/config';
 import { afterAll, describe, expect, it } from 'vitest';
-import { CARD_CATALOGUE } from '#lib/card-catalogue';
+import { CARD_CATALOGUE, publishedCardPath } from '#lib/card-catalogue';
 import { cardPlan, saveCardPlan } from './card-plan';
 import { db } from './db';
 import { upsertGame } from './sync/store';
@@ -69,6 +69,7 @@ describe('les cartes à créer', () => {
       steamAppId: `${PREFIX}-a-${tag}`,
       made: false,
       mythiqueArtUrl: null,
+      editions: null,
     });
     expect(all.totals.cardsLeft).toBe((all.totals.games - all.totals.made) * 3);
 
@@ -94,6 +95,12 @@ describe('les cartes à créer', () => {
     const key = await family(`plan-${tag}-done`, [{ platform: 'STEAM', appId }]);
     const done = await cardPlan('faites', `plan-${tag}`, 1);
     expect(done.rows.map((row) => row.familyKey)).toEqual([key]);
+    // Les trois cartes publiées du jeu, pour les voir animées depuis la page.
+    expect(done.rows[0]!.editions).toEqual({
+      RELIEF: publishedCardPath(CARD_CATALOGUE[0]!, 'RELIEF'),
+      VIVANTE: publishedCardPath(CARD_CATALOGUE[0]!, 'VIVANTE'),
+      MYTHIQUE: publishedCardPath(CARD_CATALOGUE[0]!, 'MYTHIQUE'),
+    });
     expect((await cardPlan('a-faire', `plan-${tag}`, 1)).rows).toEqual([]);
   });
 });

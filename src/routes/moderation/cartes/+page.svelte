@@ -1,11 +1,15 @@
 <script lang="ts">
-  import { enhance } from '$app/forms';
   import { page } from '$app/state';
   import { m } from '#lib/paraglide/messages';
   import { getLocale } from '#lib/paraglide/runtime';
+  import CardInspection from '#lib/components/CardInspection.svelte';
   import Empty from '#lib/components/Empty.svelte';
+  import { editionStill, editionThumb } from '#lib/animated-card';
+  import { EDITIONS } from '#lib/boosters';
+  import type { EditionKind } from '#prisma';
 
-  let { data, form } = $props();
+  let { data } = $props();
+  type CardPlanRow = (typeof data.rows)[number];
 
   const number = (value: number) => new Intl.NumberFormat(getLocale()).format(value);
   const views: { key: typeof data.view; label: () => string }[] = [
@@ -15,6 +19,11 @@
     { key: 'faites', label: () => m.mod_cards_view_done() },
     { key: 'toutes', label: () => m.mod_cards_view_all() },
   ];
+  const editionName: Record<EditionKind, () => string> = {
+    RELIEF: () => m.edition_relief(),
+    VIVANTE: () => m.edition_vivante(),
+    MYTHIQUE: () => m.edition_mythique(),
+  };
 
   /** L'adresse de la liste avec d'autres réglages, la recherche en cours gardée. */
   function listUrl(change: { vue?: typeof data.view; page?: number }) {
@@ -26,6 +35,51 @@
     if (change.page) url.searchParams.set('page', String(change.page));
     return `${url.pathname}${url.search}`;
   }
+
+  /**
+   * Ce que montre une case : la carte faite (miniature, puis la carte animée en gros plan), ou
+   * l'image de départ à vérifier (le hero Steam pour Relief et Vivante, l'artwork pour la
+   * Mythique), ou rien quand elle manque.
+   */
+  function tile(row: CardPlanRow, kind: EditionKind) {
+    const assetPath = row.editions?.[kind] ?? null;
+    if (assetPath)
+      return { status: 'done' as const, image: editionThumb(assetPath, row.heroUrl), assetPath };
+    const image = kind === 'MYTHIQUE' ? row.mythiqueArtUrl : row.heroUrl;
+    return { status: image ? ('ready' as const) : ('missing' as const), image, assetPath: null };
+  }
+
+  /** La carte animée inspectée : les trois éditions du jeu, en commençant par celle cliquée. */
+  let inspected = $state<{ row: CardPlanRow; index: number } | null>(null);
+  const inspectedCards = $derived(
+    inspected?.row.editions
+      ? EDITIONS.map((kind) => {
+          const assetPath = inspected!.row.editions![kind];
+          return {
+            kind,
+            assetPath,
+            game: {
+              name: inspected!.row.name,
+              headerUrl: editionStill(assetPath, inspected!.row.heroUrl),
+            },
+          };
+        })
+      : [],
+  );
+
+  /** L'image de départ agrandie, pour juger son cadrage et sa qualité. */
+  let zoomed = $state<{ src: string; label: string } | null>(null);
+  let zoomDialog = $state<HTMLDialogElement>();
+  $effect(() => {
+    if (zoomed && zoomDialog && !zoomDialog.open) zoomDialog.showModal();
+  });
+
+  function open(row: CardPlanRow, kind: EditionKind) {
+    const shown = tile(row, kind);
+    if (shown.status === 'done') inspected = { row, index: EDITIONS.indexOf(kind) };
+    else if (shown.image)
+      zoomed = { src: shown.image, label: `${row.name} — ${editionName[kind]()}` };
+  }
 </script>
 
 <svelte:head>
@@ -33,7 +87,33 @@
   <meta name="robots" content="noindex" />
 </svelte:head>
 
-<div class="mx-auto max-w-4xl space-y-4">
+{#if inspected && inspectedCards.length}
+  {@const total = inspectedCards.length}
+  <CardInspection
+    card={inspectedCards[inspected.index]!}
+    position={inspected.index + 1}
+    {total}
+    introOnOpen
+    onclose={() => (inspected = null)}
+    onprevious={() => inspected && (inspected.index = (inspected.index + total - 1) % total)}
+    onnext={() => inspected && (inspected.index = (inspected.index + 1) % total)}
+  />
+{/if}
+
+{#if zoomed}
+  <dialog
+    bind:this={zoomDialog}
+    class="zoom"
+    aria-label={zoomed.label}
+    onclose={() => (zoomed = null)}
+    onclick={() => zoomDialog?.close()}
+  >
+    <img src={zoomed.src} alt={zoomed.label} />
+    <p>{zoomed.label}</p>
+  </dialog>
+{/if}
+
+<div class="mx-auto max-w-5xl space-y-4">
   <a href="/moderation" class="text-sm text-muted">← {m.moderation()}</a>
   <h1>{m.mod_cards()}</h1>
   <p class="text-sm text-muted">{m.mod_cards_text()}</p>
@@ -88,21 +168,13 @@
       />
     </form>
   </div>
-  {#if form?.error}<p class="text-sm text-danger" role="alert">{form.error}</p>{/if}
 
   <ul class="space-y-3">
     {#each data.rows as row (row.familyKey)}
-      <li class="card flex flex-wrap items-start gap-3 p-3" data-testid="card-plan">
-        {#if row.heroUrl}
-          <a href={row.heroUrl} target="_blank" rel="noreferrer" class="shrink-0">
-            <img src={row.heroUrl} alt="" loading="lazy" class="h-12 w-36 rounded object-cover" />
-          </a>
-        {:else}
-          <span class="h-12 w-36 shrink-0 rounded bg-line"></span>
-        {/if}
-        <div class="min-w-0 flex-1 space-y-1">
-          <a href="/jeux/{row.slug}" class="block truncate font-semibold">{row.name}</a>
-          <p class="text-xs text-muted">
+      <li class="card space-y-2 p-3" data-testid="card-plan">
+        <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <a href="/jeux/{row.slug}" class="truncate font-semibold">{row.name}</a>
+          <span class="text-xs text-muted">
             {m.mod_cards_players({ count: number(row.players) })}
             {#if row.steamAppId}
               · <a
@@ -111,63 +183,41 @@
                 rel="noreferrer">Steam {row.steamAppId}</a
               >
             {/if}
-          </p>
-          <div class="flex flex-wrap gap-1 text-xs">
-            {#if row.made}
-              <span class="chip done">{m.mod_cards_done()}</span>
-            {:else}
-              <span class="chip {row.heroUrl ? 'ready' : 'missing'}">
-                {m.mod_cards_relief_vivante()} · {row.heroUrl
-                  ? m.mod_cards_hero_ready()
-                  : m.mod_cards_hero_missing()}
-              </span>
-              <span class="chip {row.mythiqueArtUrl ? 'ready' : 'missing'}">
-                {m.mod_cards_mythique()} · {row.mythiqueArtUrl
-                  ? m.mod_cards_artwork_ready()
-                  : m.mod_cards_artwork_missing()}
-              </span>
-            {/if}
-          </div>
+          </span>
+          {#if row.note}<span class="text-xs text-muted">· {row.note}</span>{/if}
         </div>
-        <form
-          method="POST"
-          action="?/plan"
-          use:enhance={() =>
-            async ({ update }) =>
-              update({ reset: false })}
-          class="flex w-full flex-wrap items-end gap-2 sm:w-auto"
-        >
-          <input type="hidden" name="familyKey" value={row.familyKey} />
-          <label class="flex flex-col text-xs">
-            {m.mod_cards_artwork()}
-            <input
-              type="url"
-              name="mythiqueArtUrl"
-              value={row.mythiqueArtUrl ?? ''}
-              placeholder="https://"
-              class="input h-8 w-56"
-            />
-          </label>
-          <label class="flex flex-col text-xs">
-            {m.mod_cards_note()}
-            <input
-              type="text"
-              name="note"
-              value={row.note ?? ''}
-              maxlength="500"
-              class="input h-8 w-40"
-            />
-          </label>
-          <button class="btn h-8">{m.mod_cards_save()}</button>
-          {#if form?.saved === row.familyKey}<span class="text-xs text-muted"
-              >{m.mod_cards_saved()}</span
-            >{/if}
-          {#if row.mythiqueArtUrl}
-            <a href={row.mythiqueArtUrl} target="_blank" rel="noreferrer" class="text-xs">
-              {m.mod_cards_artwork_open()}
-            </a>
-          {/if}
-        </form>
+        <div class="grid grid-cols-3 gap-2">
+          {#each EDITIONS as kind (kind)}
+            {@const shown = tile(row, kind)}
+            <button
+              type="button"
+              class="tile"
+              data-edition={kind.toLowerCase()}
+              data-status={shown.status}
+              disabled={shown.status === 'missing'}
+              onclick={() => open(row, kind)}
+              aria-label={`${m.mod_cards_zoom()} ${row.name} — ${editionName[kind]()}`}
+            >
+              {#if shown.image}
+                <img src={shown.image} alt="" loading="lazy" />
+              {/if}
+              <span class="label">
+                <span class="kind">{editionName[kind]()}</span>
+                <span class="state">
+                  {shown.status === 'done'
+                    ? m.mod_cards_card_done()
+                    : shown.status === 'ready'
+                      ? kind === 'MYTHIQUE'
+                        ? m.mod_cards_artwork_ready()
+                        : m.mod_cards_hero_ready()
+                      : kind === 'MYTHIQUE'
+                        ? m.mod_cards_artwork_missing()
+                        : m.mod_cards_hero_missing()}
+                </span>
+              </span>
+            </button>
+          {/each}
+        </div>
       </li>
     {:else}
       <Empty title={m.mod_cards_empty()} />
@@ -206,22 +256,89 @@
   .stat strong {
     font-size: 1.5rem;
   }
-  .chip {
-    white-space: nowrap;
-    border-radius: 999px;
-    padding: 0.1rem 0.55rem;
-    border: 1px solid var(--color-line, #334155);
+  [data-edition='relief'] {
+    --edition: #60a5fa;
   }
-  .chip.done {
+  [data-edition='vivante'] {
+    --edition: #a78bfa;
+  }
+  [data-edition='mythique'] {
+    --edition: #fbbf24;
+  }
+  .tile {
+    position: relative;
+    display: block;
+    aspect-ratio: 460 / 215;
+    overflow: hidden;
+    border-radius: 0.5rem;
+    border: 1px solid color-mix(in srgb, var(--edition) 45%, transparent);
+    background: color-mix(in srgb, var(--edition) 8%, transparent);
+    padding: 0;
+    cursor: zoom-in;
+  }
+  .tile[data-status='done'] {
+    border-color: var(--edition);
+    box-shadow: 0 0 14px color-mix(in srgb, var(--edition) 35%, transparent);
+  }
+  .tile[data-status='ready'] img {
+    /* Pas encore une carte : l'image de départ, un peu éteinte. */
+    filter: saturate(0.7) brightness(0.8);
+  }
+  .tile[data-status='missing'] {
+    border-style: dashed;
+    cursor: default;
+  }
+  .tile img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .tile:not(:disabled):hover {
+    outline: 2px solid var(--edition);
+  }
+  .label {
+    position: absolute;
+    inset: auto 0 0 0;
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.2rem 0.45rem;
+    font-size: 0.7rem;
+    line-height: 1.3;
+    color: white;
+    background: linear-gradient(transparent, rgb(0 0 0 / 0.8));
+    text-align: left;
+  }
+  .kind {
+    font-weight: 600;
+    color: var(--edition);
+  }
+  .tile[data-status='done'] .state {
     color: #86efac;
-    border-color: #16a34a80;
   }
-  .chip.ready {
-    color: #93c5fd;
-    border-color: #2563eb80;
-  }
-  .chip.missing {
+  .tile[data-status='missing'] .state {
     color: #fca5a5;
-    border-color: #dc262680;
+  }
+  .zoom {
+    margin: auto;
+    max-width: min(96vw, 1600px);
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: zoom-out;
+  }
+  .zoom::backdrop {
+    background: rgb(0 0 0 / 0.85);
+  }
+  .zoom img {
+    display: block;
+    max-width: 100%;
+    max-height: 88vh;
+    margin: auto;
+  }
+  .zoom p {
+    margin: 0.5rem 0 0;
+    text-align: center;
+    color: white;
   }
 </style>

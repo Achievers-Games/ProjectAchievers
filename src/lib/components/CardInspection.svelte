@@ -24,6 +24,7 @@
     onreplay,
     onreveal,
     actions,
+    introOnOpen = false,
   }: {
     card: InspectionCard;
     position: number;
@@ -37,6 +38,8 @@
     /** Rejoue la scène de la Mythique ; sans elle, le bouton n'apparaît pas. */
     onreveal?: () => void;
     actions?: Snippet;
+    /** Joue l'intro d'une Mythique dès qu'elle est prête, puis sa boucle : pour la vérifier. */
+    introOnOpen?: boolean;
   } = $props();
   let dialog = $state<HTMLDialogElement>();
   const inspectionId = $props.id();
@@ -167,7 +170,11 @@
                   />{:else}<span class="empty-art">✦</span>{/if}
                 {#if card.assetPath}<canvas
                     bind:this={canvas}
-                    use:animatedCard={{ assetPath: card.assetPath, level: levelFor(card.kind) }}
+                    use:animatedCard={{
+                      assetPath: card.assetPath,
+                      level: levelFor(card.kind),
+                      onready: introOnOpen && card.kind === 'MYTHIQUE' ? replay : undefined,
+                    }}
                   ></canvas>{/if}
               {/key}
               {#key replayKey}

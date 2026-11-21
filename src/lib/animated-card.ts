@@ -125,7 +125,8 @@ export const levelFor = (kind: EditionKind) => (kind === 'RELIEF' ? 2 : 3);
  */
 export const animatedCard: Action<
   HTMLCanvasElement,
-  { assetPath: string | null; level: number }
+  /** `onready` part une fois la carte montée et visible : pour lancer son intro aussitôt. */
+  { assetPath: string | null; level: number; onready?: () => void }
 > = (canvas, params) => {
   let stop: (() => void) | undefined;
   let cancelled = false;
@@ -141,7 +142,10 @@ export const animatedCard: Action<
     if (!api) throw new Error(`cards.js n'enregistre pas « ${manifest.id} »`);
     stop = await api.mount(canvas, params.level);
     if (cancelled) stop();
-    else canvas.dataset.ready = 'true';
+    else {
+      canvas.dataset.ready = 'true';
+      params.onready?.();
+    }
   })().catch((error: unknown) => {
     // L'image fixe reste : une carte animée manquante ne casse pas la révélation. Le journal du
     // serveur la signale, une fois par visite, pour qu'elle ne reste pas cassée sans que personne

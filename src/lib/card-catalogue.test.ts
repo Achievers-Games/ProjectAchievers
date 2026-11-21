@@ -5,7 +5,11 @@ import type { EditionManifest } from './animated-card';
 import { EDITIONS } from './boosters';
 import { servedFiles, WORKSHOP_DIR } from '../../scripts/card-files.mjs';
 import { CARD_CATALOGUE, catalogueFolders } from './card-catalogue';
+import artworkData from './card-artworks.json';
+
 import { EFFECT_TYPES, INTRO_TYPES } from '../../static/_proto/shared/card-engine.js';
+
+const CARD_ARTWORKS: Record<string, { name: string; url: string }> = artworkData.artworks;
 
 interface DataScene {
   engine: number;
@@ -140,5 +144,15 @@ describe('le catalogue de cartes', () => {
         ).id,
     );
     expect(new Set(ids).size).toBe(ids.length);
+  });
+});
+
+describe('artworks Mythique', () => {
+  it('note chaque artwork par identifiant Steam, avec une adresse https', () => {
+    for (const [appId, artwork] of Object.entries(CARD_ARTWORKS)) {
+      expect(appId, artwork.name).toMatch(/^\d+$/);
+      expect(artwork.name.trim(), appId).not.toBe('');
+      expect(artwork.url, artwork.name).toMatch(/^https:\/\/\S+$/);
+    }
   });
 });
