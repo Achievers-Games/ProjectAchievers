@@ -61,7 +61,7 @@ suites, Cathedral (Isaac) et Sheol (Satan). À la 10e, **???** et le **Blue Womb
 
 ## Étape 4 : les secrets de Repentance
 
-1. **Battre Hush 3 fois** (A Secret Exit) : le chemin alternatif s'ouvre (Downpour, Mines,
+1. **Battre Hush 3 fois** (**A Secret Exit**) : le chemin alternatif s'ouvre (Downpour, Mines,
    Mausoleum).
 2. **Mother** : Knife Piece 1 au Downpour II (feu blanc, puis le miroir), Knife Piece 2 aux Mines II
    (3 boutons, le wagonnet), puis le couteau sur la porte de chair du Mausoleum II. Mother, au
@@ -95,8 +95,8 @@ les objets qui les protègent (Holy Mantle…) sont débloqués.
 
 - [ ] Les **45 défis** (menu Challenges) : chacun rapporte son succès. Plusieurs s'ouvrent par un
       succès du même nom.
-- [ ] **31 participations** aux Daily Challenges (Dedication), **7 victoires** (Broken Modem) et
-      **5 victoires d'affilée** (The Marathon)
+- [ ] **31 participations** aux Daily Challenges (**Dedication**), **7 victoires** (**Broken Modem**) et
+      **5 victoires d'affilée** (**The Marathon**)
 - [ ] Les séries : **3 victoires d'affilée**, puis **5 avec des personnages différents**
 
 ## Étape 7 : Dead God

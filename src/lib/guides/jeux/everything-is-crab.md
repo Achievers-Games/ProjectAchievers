@@ -15,8 +15,8 @@ Everything is Crab compte **40 succès** sur Steam. Aucun n'est manquable : chaq
 
 ## Étape 1 : apprendre le jeu en Pression 1
 
-1. **Termine le didacticiel** : Weeeee back!.
-2. **Gagne ta première partie** en Pression 1 avec un build de vitesse et d'esquive : Pression de sélection 1, et la génétique Chosen.
+1. **Termine le didacticiel** : **Weeeee back!**.
+2. **Gagne ta première partie** en Pression 1 avec un build de vitesse et d'esquive : **Pression de sélection 1**, et la génétique Chosen.
 3. Pendant ces premières parties, coche les succès de rencontre au fil de l'eau :
    - **Olé !** : frappe le Crabtaur pendant sa charge.
    - **Opportunisme** : finis le Crabtaur en le faisant foncer dans un arbre ou un cactus.

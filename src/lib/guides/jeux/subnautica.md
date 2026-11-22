@@ -13,17 +13,18 @@ Les **17 succès Steam** suivent presque tous l’histoire et les véhicules que
 
 ## La piste Degasi et les véhicules profonds
 
-1. Avec un Seamoth équipé du module de profondeur MK1, descends dans la **grotte des méduses** près de la capsule. Ramasse le PDA **Bart Torgal’s Log #2 – Stalker Teeth** dans l’habitat pour **Follow the Degasi**. Le magnétite de la grotte sert au module MK2.
+1. Avec un Seamoth équipé du module de profondeur MK1, descends dans la **grotte des méduses** (180 à 300 m), dont une entrée est au pied de la falaise où la forêt de varech donne sur les plateaux herbeux, côté moteurs de l’Aurora. Ramasse le PDA **Bart Torgal’s Log #2 – Stalker Teeth** dans l’habitat pour **Follow the Degasi**. Le magnétite de la grotte sert au module MK2.
 2. Améliore le Seamoth jusqu’à 500 m (MK2) puis explore l’habitat Degasi du **Grand Récif profond**, au sud-ouest. Ramasse ses PDA : l’un déclenche **Seamonsters**. Prends l’œuf de poisson câlin posé dans l’habitat, la tablette orange et scanne l’aquarium alien.
 3. Dans une salle polyvalente, construis un aquarium alien et fais éclore l’œuf. Sors le poisson câlin de l’aquarium et relâche-le dans l’océan pour **Man’s Best Friend**. C’est le plus simple des cinq œufs cachés ; si tu le perds, il en reste dans d’autres biomes. [Vidéo des cinq emplacements](https://www.youtube.com/watch?v=X1hUZrAmLfY).
 4. Scanne les neuf fragments du Cyclops (coque, passerelle et moteur), puis construis-le pour **40-foot Sub for One**. Construis également le Prawn avec les fragments du hangar de l’Aurora pour **Ordered the Prawn**. Le Prawn est essentiel pour les grandes profondeurs ; récupère les plans de ses modules dans les épaves.
 
 ## Du Lost River à la guérison
 
-1. Entre dans le **Lost River** et trouve la base de recherche sur la maladie Kharaa pour **Follow the Lost River**. Une tablette violette ouvre la zone intérieure. Évite la rivière de saumure verte à pied et garde un véhicule adapté à la profondeur.
-2. Descends dans la **zone de lave inactive** jusqu’à l’usine thermique alien, à environ 1 200 m : **Thermal Activity**. Prends deux tablettes violettes. Dans l’usine, récupère la tablette bleue et scanne les terminaux qui donnent les plans de batterie et cellule d’énergie ioniques, utiles à la fusée.
-3. Améliore le Prawn à **1 300 m** (MK1) et le Cyclops à **1 300 m** (MK2) pour l’usine ; passe le Prawn au MK2 (1 700 m) ou le Cyclops au MK3 (1 700 m) pour atteindre les **Lacs de lave**, au-delà de 1 300 m. La tablette bleue ouvre la principale installation de confinement : **Fourteen Thousand Leagues Under the Sea**. À l’intérieur, parle au Léviathan Empereur des mers, place un cube ionique dans l’incubateur et récupère la recette de l’enzyme d’éclosion. Elle demande une **graine d’Œil-tige**, une **graine de Couronne marine**, un **échantillon fongique**, une **graine d’Herbe fantôme** et un **échantillon de Buisson bulbeux**. Les arches de téléportation de l’installation conduisent aux quatre biomes où trouver les plantes ; la Couronne marine pousse dans l’aquarium. Active l’incubateur avec l’enzyme, puis touche l’enzyme libérée par les petits pour **Optimal Health**.
-4. Retourne à la plateforme de quarantaine et désactive son arme depuis le terminal. La guérison est nécessaire pour partir.
+1. Entre dans le **Lost River** par le point le plus bas du Grand Récif profond, sous l’habitat Degasi, et trouve la base de recherche sur la maladie Kharaa pour **Follow the Lost River**. Une tablette violette ouvre la zone intérieure. Évite la rivière de saumure verte à pied et garde un véhicule adapté à la profondeur.
+2. Descends dans la **zone de lave inactive** jusqu’à l’usine thermique alien, dans le château de lave, à environ 1 200 m : **Thermal Activity**. Prends deux tablettes violettes. Dans l’usine, récupère la tablette bleue et scanne les terminaux qui donnent les plans de batterie et cellule d’énergie ioniques, utiles à la fusée.
+3. Améliore le Prawn à **1 300 m** (MK1) et le Cyclops à **1 300 m** (MK2) pour l’usine. Profite de cette sortie pour récolter du kyanite, puis passe le Prawn au MK2 ou le Cyclops au MK3 pour atteindre 1 700 m. Emporte **deux tablettes bleues** dans les Lacs de lave, une pour l’entrée de l’installation de confinement et une pour l’accès à l’aquarium. Fabrique la deuxième avec deux kyanites et un cube ionique après avoir scanné la première. Entrer dans l’installation valide **Fourteen Thousand Leagues Under the Sea**.
+4. Dans l’aquarium, parle à l’Empereur des mers. Emporte des cubes ioniques pour l’incubateur et les arches. Active le portail de l’aquarium pour recevoir la recette de l’enzyme d’éclosion. Prélève la **Couronne marine** dans l’aquarium et utilise les quatre arches de la salle principale pour récupérer l’**Œil-tige**, l’**échantillon fongique**, l’**Herbe fantôme** et le **Buisson bulbeux**. Fabrique l’enzyme au fabricateur, ramène-la à l’incubateur et touche l’enzyme libérée par les petits pour **Optimal Health**.
+5. Emprunte le portail de l’aquarium jusqu’à l’île montagneuse et retourne à la plateforme de quarantaine. Après la guérison, le terminal te laisse désactiver son arme.
 
 ## Préparer le départ sans perdre les deux derniers succès
 
@@ -35,11 +36,11 @@ Les **17 succès Steam** suivent presque tous l’histoire et les véhicules que
 
 Les noms ci-dessous sont ceux de Steam. La plupart se valident au fil du parcours :
 
-**Premiers pas et îles :** Getting Your Feet Wet, Settling in for the Long Haul, Personal Propulsion, Ancient Technologies, Seaside Living with an Ocean View, Extinction Event Avoided.
+**Premiers pas et îles :** **Getting Your Feet Wet**, **Settling in for the Long Haul**, **Personal Propulsion**, **Ancient Technologies**, **Seaside Living with an Ocean View**, **Extinction Event Avoided**.
 
-**Véhicules et Degasi :** 40-foot Sub for One, Ordered the Prawn, Follow the Degasi, Seamonsters, Man’s Best Friend.
+**Véhicules et Degasi :** 40-foot Sub for One, **Ordered the Prawn**, **Follow the Degasi**, **Seamonsters**, Man’s Best Friend.
 
-**Installations profondes et fin :** Follow the Lost River, Thermal Activity, Fourteen Thousand Leagues Under the Sea, Optimal Health, Leave Only Time Capsules, Go Among the Stars.
+**Installations profondes et fin :** **Follow the Lost River**, **Thermal Activity**, **Fourteen Thousand Leagues Under the Sea**, **Optimal Health**, **Leave Only Time Capsules**, **Go Among the Stars**.
 
 ## Sources
 

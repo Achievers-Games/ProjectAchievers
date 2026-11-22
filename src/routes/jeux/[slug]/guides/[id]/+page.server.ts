@@ -4,6 +4,7 @@ import { requireLogin } from '#lib/server/auth';
 import { commentLimit } from '#lib/comments';
 import { db } from '#lib/server/db';
 import { censor } from '#lib/profanity';
+import { guideLinks } from '#lib/server/guide-links';
 import { renderGuide } from '#lib/server/markdown';
 import { publicUser } from '#lib/server/queries';
 import {
@@ -33,8 +34,20 @@ const log = logger('Traduction');
 const forViewer = (user: App.Locals['user']) => (text: string, locale: string | null) =>
   user?.allowProfanity ? text : censor(text, locale);
 
-/** Le sommaire s'appuie sur les parties numérotées : l'original et la traduction les gardent. */
-const render = (source: string) => anchorHeadings(renderGuide(source));
+/**
+ * Le rendu d'un texte du guide. Le sommaire s'appuie sur les parties numérotées : l'original et la
+ * traduction les gardent. Un guide officiel mène aussi à la page de chaque succès qu'il nomme.
+ */
+async function renderer(
+  game: Awaited<ReturnType<typeof guideGame>>,
+  guide: { curatedKey: string | null; contentMd: string },
+) {
+  const link = guide.curatedKey === null ? null : await guideLinks(game, getLocale());
+  return (text: string) => {
+    const html = renderGuide(text);
+    return anchorHeadings(link ? link(html, guide.contentMd) : html);
+  };
+}
 
 /** Le guide doit appartenir à une version de ce jeu : une autre adresse ne l'ouvre pas. */
 async function findGuide(slug: string, id: string, locals: App.Locals) {
@@ -72,7 +85,10 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
   // robots qui exécutent le JS épuisaient le quota de traduction.
   const autoTranslate = foreign && Boolean(viewerId);
 
-  const comments = await loadComments({ guideId: guide.id }, locals.user, commentLimit(url));
+  const [render, comments] = await Promise.all([
+    renderer(game, guide),
+    loadComments({ guideId: guide.id }, locals.user, commentLimit(url)),
+  ]);
 
   return {
     game: { name: game.name, slug: game.slug },
@@ -161,7 +177,7 @@ export const actions: Actions = {
     const game = await guideGame(params.slug, locals.user);
     const source = await db.guide.findFirst({
       where: { id: params.id, ...gameGuidesWhere(game) },
-      select: { contentMd: true },
+      select: { contentMd: true, curatedKey: true },
     });
     if (!source) return fail(404, { error: m.gone() });
     try {
@@ -172,6 +188,7 @@ export const actions: Actions = {
         translationQuota({ locals, getClientAddress }),
       );
       if (translated === null) return fail(429, { error: m.translate_failed() });
+      const render = await renderer(game, source);
       return { html: render(forViewer(locals.user)(translated, getLocale())) };
     } catch (cause) {
       log.error('Traduction :', cause);

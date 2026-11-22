@@ -108,8 +108,9 @@ Dans l'ordre où on les croise le plus souvent :
 
 - [ ] **Hollow Knight** : sans le Cœur du Vide, vaincs Hollow Knight dans le Temple de l'Œuf noir.
 - [ ] **Vide** : réunis les deux moitiés du Souverain des âmes (Kingsoul), auprès de la Dame Blanche
-      dans les Jardins de la Reine et au fond du Palais blanc, puis descends au fond de l'Abîme
-      chercher le Cœur du Vide.
+      dans les Jardins de la Reine et au fond du Palais blanc (frappe de l'Aiguillon des rêves éveillé
+      le cadavre du Kingsmould, aux Palace Grounds, à l'est du Bassin ancien). Puis passe la porte
+      tout en bas du Bassin ancien et descends au fond de l'Abîme chercher le Cœur du Vide.
 - [ ] **Frères et soeurs scellés** : avec le Cœur du Vide, vaincs Hollow Knight sans utiliser
       l'Aiguillon des rêves quand Hornet le retient.
 - [ ] **Fin des rêves** : refais le combat, et quand Hornet retient Hollow Knight, frappe-le de
@@ -119,7 +120,8 @@ Dans l'ordre où on les croise le plus souvent :
 ### Le Dieu-maître
 
 Le cocon de la Chercheuse de dieux (Godseeker) est au fond du Gouffre des débris (Junk Pit),
-dans les Égouts royaux. Ouvre-le avec une Clé simple, puis frappe-la de l'Aiguillon des rêves pour
+dans les Égouts royaux : sous le banc des Égouts, brise le sol d'une attaque plongeante (Desolate
+Dive). Ouvre-le avec une Clé simple, puis frappe-la de l'Aiguillon des rêves pour
 entrer dans Maison des dieux (Godhome).
 
 - [ ] **Fraternité**, **Inspiration**, **Concentration** et **Âme et Ombre** : les panthéons du

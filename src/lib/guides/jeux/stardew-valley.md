@@ -31,12 +31,12 @@ Les objets saisonniers ne sont jamais définitivement perdus : si tu rates un po
 - **Master Angler** : attrape chaque poisson de la collection par toi-même. Les poissons achetés ou reçus en cadeau ne comptent pas. Utilise le [tableau officiel des poissons](https://stardewvalleywiki.com/Fish) pour filtrer par saison, météo, heure et zone.
 - **A Complete Collection** et **Treasure Trove** : complète le musée, soit 95 objets différents, et assure-toi d’en avoir donné au moins 40 avant le dernier don.
 - **Mystery Of The Stardrops** : obtiens les sept fruits étoilés. Ils viennent notamment des niveaux de mine, du musée, de la Fête de Stardew Valley, des relations et de la pêche.
-- **Polyculture / Monoculture** : expédie 15 de chacune des 28 cultures admissibles, puis 300 unités d’une seule culture. Les entrées de la collection de cultures dans le jeu permettent de vérifier les quantités.
+- **Polyculture** / **Monoculture** : expédie 15 de chacune des 28 cultures admissibles, puis 300 unités d’une seule culture. Les entrées de la collection de cultures dans le jeu permettent de vérifier les quantités.
 - **Well-Read** : lis les **19 livres de pouvoir**. Vérifie les marchands saisonniers et les récompenses de quêtes ; les livres perdus de la bibliothèque ne remplacent pas les livres de pouvoir.
 
 ## Combat, festivals et contenu 1.6
 
-- **Protector Of The Valley** : termine toutes les demandes d’éradication de monstres de la Guilde des aventuriers. Le panneau de Gil suit les quotas ; certaines espèces n’apparaissent que dans les mines dangereuses, sur Ginger Island ou dans les étages profonds.
+- **Protector Of The Valley** : termine les quotas d’éradication du panneau de la Guilde des aventuriers. Consulte-le entre les expéditions pour choisir l’étage ou la caverne à cibler.
 - **Danger In The Deep** : accepte la commande de Qi « Danger dans les profondeurs », active le sanctuaire du défi au fond des mines, puis redescends jusqu’à l’étage 120 pendant que les mines sont renforcées.
 - **Infinite Power** : forge une arme Galaxy avec **trois Galaxy Souls** à la forge du volcan de Ginger Island pour obtenir une arme Infinity.
 - **Good Neighbors** : après l’événement de vent fort, répare la souche de la forêt avec **100 bois dur**. Termine les demandes de la famille raton laveur dès qu’elles apparaissent ; chacune requiert ensuite plusieurs jours d’attente.
@@ -45,6 +45,14 @@ Les objets saisonniers ne sont jamais définitivement perdus : si tu rates un po
 - **Two Thumbs Up** : débloque le cinéma après la route du Centre ou de Joja, puis regarde un film avec un billet.
 - **Full House** : épouse un personnage, améliore la maison pour obtenir la chambre d’enfant, puis accueille deux enfants.
 - **A Distant Shore** : répare le bateau de Willy après la restauration du Centre ou les projets Joja, puis débarque sur Ginger Island.
+
+### Boucles pour les quotas de la Guilde
+
+1. **Commence par les 500 Sprites de poussière.** Prends l’ascenseur vers les étages 45, 55 et 65 des Mines. Traverse les salles jusqu’aux groupes visibles, tue-les et passe à l’étage suivant. Remonte au niveau 0 entre deux tournées pour renouveler les étages. Réclame ensuite à Gil l’**Anneau du cambrioleur**, qui augmente le butin pendant les autres quotas.
+2. **Complète les 1 000 slimes à la fin.** Les Mines et la Caverne du Crâne te font avancer sur ce compteur pendant les autres chasses. S’il en manque, prends l’ascenseur aux étages 5, 15 et 25 des Mines et élimine les petits slimes verts. Avec une arme de fin de jeu, ils tombent en un coup. Remonte à l’entrée pour recommencer. Les gros slimes et ceux élevés dans le clapier ne comptent pas.
+3. **Regroupe les quotas par zone.** Dans la Caverne du Crâne, tue les serpents en cherchant les étages préhistoriques des 50 Pepper Rex. Pour les momies, mets-les au sol puis fais exploser une bombe à côté avant qu’elles ne se relèvent. Dans le volcan de l’Île Gingembre, fais quelques salles pour les Magma Sprites et reviens avec de la nourriture si tu manques de vie.
+
+[Wiki officiel — quotas et récompenses de la Guilde](https://stardewvalleywiki.com/Adventurer%27s_Guild)
 
 ## Les deux routes incompatibles
 
@@ -65,17 +73,17 @@ La [vidéo dédiée à Fector’s Challenge](https://www.youtube.com/watch?v=das
 
 ## Vérification finale des 49 succès
 
-**Argent :** Greenhorn, Cowpoke, Homesteader, Millionaire, Legend.
+**Argent :** **Greenhorn**, **Cowpoke**, **Homesteader**, **Millionaire**, **Legend**.
 
-**Relations et famille :** A New Friend, Best Friends, The Beloved Farmer, Cliques, Networking, Popular, Full House.
+**Relations et famille :** **A New Friend**, **Best Friends**, **The Beloved Farmer**, **Cliques**, **Networking**, **Popular**, **Full House**.
 
-**Maison, cuisine et fabrication :** Moving Up, Living Large, Cook, Sous Chef, Gourmet Chef, D.I.Y., Artisan, Craft Master.
+**Maison, cuisine et fabrication :** **Moving Up**, **Living Large**, **Cook**, **Sous Chef**, **Gourmet Chef**, D.I.Y., **Artisan**, **Craft Master**.
 
-**Pêche, musée et expédition :** Fisherman, Ol’ Mariner, Master Angler, Mother Catch, Treasure Trove, A Complete Collection, Polyculture, Monoculture, Full Shipment, Mystery Of The Stardrops.
+**Pêche, musée et expédition :** **Fisherman**, **Ol’ Mariner**, **Master Angler**, **Mother Catch**, **Treasure Trove**, **A Complete Collection**, **Polyculture**, **Monoculture**, **Full Shipment**, **Mystery Of The Stardrops**.
 
-**Quêtes, compétences et mines :** Gofer, A Big Help, Singular Talent, Master Of The Five Ways, The Bottom, Danger In The Deep, Protector Of The Valley, Infinite Power, Well-Read.
+**Quêtes, compétences et mines :** **Gofer**, **A Big Help**, **Singular Talent**, **Master Of The Five Ways**, **The Bottom**, **Danger In The Deep**, **Protector Of The Valley**, **Infinite Power**, **Well-Read**.
 
-**Routes, festivals, île et arcade :** Local Legend, Joja Co. Member Of The Year, Blue Ribbon, An Unforgettable Soup, Good Neighbors, Two Thumbs Up, A Distant Shore, Perfection, Prairie King, Fector’s Challenge.
+**Routes, festivals, île et arcade :** **Local Legend**, **Joja Co. Member Of The Year**, **Blue Ribbon**, **An Unforgettable Soup**, **Good Neighbors**, **Two Thumbs Up**, **A Distant Shore**, **Perfection**, **Prairie King**, **Fector’s Challenge**.
 
 Pour **Perfection**, ouvre le suivi de la salle de M. Qi et complète chaque ligne : amitiés, compétences, recettes, expéditions, poissons, les 130 noix dorées, les sept fruits étoilés, les obélisques, l’horloge dorée et les objectifs de monstres. Quand le compteur atteint 100 %, visite le sommet au nord du chemin de fer.
 

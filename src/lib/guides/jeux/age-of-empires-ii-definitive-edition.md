@@ -67,23 +67,23 @@ civilisations de tous les DLC et celles de Chronicles : sans les DLC, il reste h
 
 Joue-les dans l'ordre que tu veux, en Standard. Les défis à viser en chemin :
 
-- [ ] **Saladin** : Losing Your Religion (mission 3), Offense Is the Best Defense (6)
-- [ ] **Genghis Khan** : The Kushluk Assassination (2), I Was in China Before (3), The Go-Getter (6)
-- [ ] **Barbarossa** : Furor Teutonicus (1), A Truly Holy Emperor (3)
-- [ ] **Attila the Hun** : Diplomacy is for the Meek (1), Truly Countless Bodies (5), No Wonder on
-      my Watch (6)
-- [ ] **El Cid** : The Missionary (1) ; **Montezuma** : Hot & Spicy (3)
-- [ ] **Alaric** : Numerous As the Grains of Sand (2), Rome Was Destroyed in One Day (4), l'un des
+- [ ] **Saladin** : **Losing Your Religion** (mission 3), **Offense Is the Best Defense** (6)
+- [ ] **Genghis Khan** : **The Kushluk Assassination** (2), **I Was in China Before** (3), **The Go-Getter** (6)
+- [ ] **Barbarossa** : **Furor Teutonicus** (1), **A Truly Holy Emperor** (3)
+- [ ] **Attila the Hun** : **Diplomacy is for the Meek** (1), **Truly Countless Bodies** (5), **No Wonder on
+      my Watch** (6)
+- [ ] **El Cid** : **The Missionary** (1) ; **Montezuma** : **Hot & Spicy** (3)
+- [ ] **Alaric** : **Numerous As the Grains of Sand** (2), **Rome Was Destroyed in One Day** (4), l'un des
       défis les plus durs du jeu
-- [ ] **Vlad Dracula** : Fire with Fire (5) ; **Pachacuti** : Pitched Battle (2)
-- [ ] **Prithviraj** : Raja of the People (1, Difficile), Hopeless Romantic (3), Inspiring Poet (5,
+- [ ] **Vlad Dracula** : **Fire with Fire** (5) ; **Pachacuti** : **Pitched Battle** (2)
+- [ ] **Prithviraj** : **Raja of the People** (1, Difficile), **Hopeless Romantic** (3), **Inspiring Poet** (5,
       Difficile) ; les missions 4 et 5 sont parmi les plus dures du jeu
-- [ ] **Sundjata** : With the Help of My Sisters (4), Roar like a Lion (5, Difficile)
-- [ ] **Francisco de Almeida** : Friends, Countrymen, Lend Me Your Ears (5) ; **Yodit** : An Army
-      Marches on Its Stomach (3)
-- [ ] **Gajah Mada** : No Royal Hair Touched (2) ; **Suryavarman I** : Relic Hoarder (5)
-- [ ] **Bayinnaung** : Chasing the Crown (1) ; **Le Loi** : Not a Greek Tragedy (5)
-- [ ] **Tamerlane** : Raging Wildfire (4) ; **Kotyan Khan** : Cuman Flush (2), He Won't Be Back (5)
+- [ ] **Sundjata** : **With the Help of My Sisters** (4), **Roar like a Lion** (5, Difficile)
+- [ ] **Francisco de Almeida** : **Friends, Countrymen, Lend Me Your Ears** (5) ; **Yodit** : **An Army
+      Marches on Its Stomach** (3)
+- [ ] **Gajah Mada** : **No Royal Hair Touched** (2) ; **Suryavarman I** : **Relic Hoarder** (5)
+- [ ] **Bayinnaung** : **Chasing the Crown** (1) ; **Le Loi** : **Not a Greek Tragedy** (5)
+- [ ] **Tamerlane** : **Raging Wildfire** (4) ; **Kotyan Khan** : **Cuman Flush** (2), **He Won't Be Back** (5)
 - [ ] Les campagnes sans défi propre : Joan of Arc, Bari, Sforza, Tariq ibn Ziyad, Ivaylo
 
 Les victoires de civilisation tombent en même temps : chaque mission gagnée compte pour la
@@ -126,6 +126,14 @@ départ post-impérial, carte révélée. Tous les villageois sur la Merveille d
       Peasant**, **Relic Hunter**, **Wololo**, **Unexpected**, **Kaboom**
 - [ ] **Masterpiece** : seul contre trois joueurs humains ; trois amis dans un salon privé, en
       Regicide, qui amènent leur roi dans ton château
+
+### Finir les compteurs d’escarmouche
+
+- **Mango Shots — 500 éliminations.** Lance une escarmouche terrestre avec ressources infinies en âge post-impérial. Construis plusieurs ateliers de siège, regroupe les mangonneaux et vise la zone au centre des groupes d’archers ou d’infanterie. Garde tes troupes de mêlée hors de la zone d’impact. Laisse l’IA produire des renforts pendant que tu tiens le passage.
+- **Knocking On Your Door — 200 bâtiments.** Dans les dernières missions et les escarmouches, fais détruire les bâtiments par tes béliers. Rassemble-les sous un raccourci et ordonne-leur d’attaquer successivement les maisons et bâtiments de production. Utilise le reste de l’armée pour dégager le chemin et laisse les béliers porter le dernier coup.
+- **Relic Hunter — 100 reliques.** Lors des victoires de civilisation, joue sur une carte terrestre révélée. Monte un monastère, entraîne plusieurs moines et envoie un moine par relique visible. Fais-les rentrer avec leur relique avant de terminer la partie.
+
+[Conditions des compteurs Steam](https://steamcommunity.com/profiles/76561199366839936/achievements/813780)
 
 ## Étape 5 : les DLC
 

@@ -38,13 +38,13 @@ Pour _Time Heals All_, commence par ramasser le parchemin dans Northri Stronghol
 ### Les neuf Valkyries
 
 - [ ] Vaincs les huit Valkyries des chambres cachées : quatre à Midgard (River Pass, Foothills, The Mountain, Thamur’s Corpse), puis une en Alfheim, Helheim, Muspelheim et Niflheim.
-- [ ] Rapporte leurs casques au **Conseil des Valkyries**, place-les sur les huit trônes et affronte **Sigrún** au centre.
+- [ ] Rapporte leurs casques au **Conseil des Valkyries**, au nord du Lac des Neuf (petite plage à droite des deux statues géantes de Mason’s Channel), place-les sur les huit trônes et affronte **Sigrún** au centre.
 
 Sigrún reprend les attaques des autres Valkyries. Apprends à esquiver les signaux visuels plutôt qu’à enchaîner sans pause ; change l’équipement ou baisse la difficulté si le duel bloque ta progression. [Vidéo PowerPyx du combat contre Sigrún](https://www.youtube.com/watch?v=4ULhnKPLPmw).
 
 ## Muspelheim : six épreuves
 
-- [ ] Débloque le royaume avec **quatre fragments de langue**.
+- [ ] Débloque le royaume avec **quatre fragments de langue**, puis choisis-le dans la salle du voyage entre les royaumes, au temple de Týr.
 - [ ] Réussis les épreuves normales et difficiles des arènes pour ouvrir les suivantes et atteindre la Valkyrie de Muspelheim.
 - [ ] Après l’avoir vaincue, récupère **trois clés** en terminant trois des cinq épreuves en Impossible. Tu n’as pas à réussir les cinq.
 - [ ] Utilise les clés sur l’épée au sommet et termine l’épreuve finale : vaincs **50 ennemis en moins de 8 minutes**.
@@ -53,12 +53,17 @@ Les épreuves impossibles 2, 3 et 5 sont de bons choix pour obtenir les trois cl
 
 ## Niflheim : atelier, coffres et déchirures
 
-- [ ] Débloque Niflheim avec **quatre fragments de langue** et accomplis la première faveur de Sindri pour ouvrir la chambre centrale.
+- [ ] Débloque Niflheim avec **quatre fragments de langue**, voyage depuis la même salle du temple de Týr et accomplis la première faveur de Sindri pour ouvrir la chambre centrale.
 - [ ] Dans le labyrinthe, ouvre des coffres puis reviens régulièrement à l’entrée pour déposer tes **Échos de brume** auprès de Sindri : si tu meurs dans le brouillard, tu perds les échos non déposés.
 - [ ] Achète les **cinq coffres légendaires** de la chambre centrale.
 - [ ] Récupère **trois Ancres de brouillard** dans les coffres légendaires des zones profondes, puis utilise-les avec les échos requis pour vaincre les ennemis des **trois déchirures de royaume** centrales.
 
-Le coffre de droite demande plus d’échos que les deux autres ; ouvre les coffres du labyrinthe avant d’essayer de payer les déchirures. La [table des coûts de l’atelier](https://primagames.com/eguides/god-of-war-eguide/favors/niflheim) donne le détail des cinq coffres et des trois combats. Le guide des succès existant dans le jeu estime le total à environ **68 500 échos**.
+### Boucle des Échos de brume et des Ancres
+
+1. Au début, vide la première arène du labyrinthe et ouvre ses coffres. Ressors vers Sindri pour sécuriser le butin. Répète ces sorties courtes jusqu’à acheter la pierre d’entrée de l’atelier, puis fabrique une pièce d’armure d’Ivaldi pour mieux résister au brouillard.
+2. Mets de côté **5 000 échos** pour le coffre contenant les Brumes glacées de Niflheim. Échange ensuite cet objet contre la dernière Flamme gelée pour la hache.
+3. Quand ta jauge le permet, fais le tour des salles principales en ouvrant les coffres rencontrés. Passe ensuite dans les salles latérales les plus profondes pour leurs coffres légendaires et les Ancres. Fais demi-tour dès que tu risques de manquer de temps pour franchir les pièges du retour.
+4. Répète jusqu’à avoir **trois Ancres** et le solde d’échos pour les cinq coffres et les trois déchirures de la chambre centrale. Leurs coûts cumulés atteignent **68 500 échos**. [Coûts des coffres et déchirures](https://primagames.com/eguides/god-of-war-eguide/favors/niflheim)
 
 ## Améliorations et armures
 

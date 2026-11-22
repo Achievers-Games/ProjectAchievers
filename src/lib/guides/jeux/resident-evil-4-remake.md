@@ -10,7 +10,7 @@ Ne cherche pas à tout combiner d’emblée. Une première partie de collecte, d
 
 1. **Première partie — Assisted ou Standard, collecte à 100 % :** trouve les 16 Castellans mécaniques, les 104 trésors, les 19 requêtes du Marchand et toutes les armes. Fais les succès ponctuels de chapitre et conserve une sauvegarde manuelle chez le Marchand du chapitre 16.
 2. Après avoir terminé l’histoire, achète le **Couteau primitif** dans le magasin de contenu bonus. Recharge ta sauvegarde du chapitre 16, améliore-le jusqu’à le rendre incassable, puis termine à nouveau la fin pour créer une sauvegarde NG+ avec ce couteau et tes armes améliorées.
-3. **NG+ Assisted — restrictions :** termine sans parler au Marchand, sans utiliser d’objet de soin et en n’utilisant que des couteaux et des armes de poing. Utilise la tenue Poulet débloquée après le S+ Hardcore et une arme de poing améliorée. Consulte les compteurs de défis après chaque chapitre.
+3. **NG+ Assisted — restrictions :** termine sans parler au Marchand, sans utiliser d’objet de soin et en n’utilisant que des couteaux et des armes de poing. Emporte une arme de poing améliorée et consulte les compteurs de défis après chaque chapitre. Si tu veux la réduction de dégâts du Chapeau de poulet, reporte cette étape après le S+ Hardcore.
 4. **Professionnel en NG+ — rang A :** achète le Lance-roquettes infini au premier Marchand et termine en moins de 7 heures. Cela débloque le Chicago Sweeper. Si tu n’as pas le Handcannon, obtiens-le plus facilement en faisant un rang S sur chacune des trois cartes du mode Mercenaires.
 5. **Nouvelle partie Standard — rang S+ :** termine en moins de 5 heures. Le NG+ ne compte pas pour le S+.
 6. **Nouvelle partie Hardcore — rang S+ :** termine en moins de 5 h 30. Ce S+ ne valide pas le succès Standard S+ ; ce sont deux parties distinctes. Les armes bonus comme le Chicago Sweeper et le Couteau primitif restent utilisables en nouvelle partie.
@@ -37,12 +37,12 @@ Le guide de collectibles inclut les actions ponctuelles : sauve Ashley lorsqu’
 
 Autres succès simples à valider pendant la collecte :
 
-- **Jet d’harpon :** vaincre Del Lago ; succès d’histoire.
+- **Baignade interdite :** vaincre Del Lago ; succès d’histoire.
 - **Lancer d’œuf :** touche Ramon Salazar avec un œuf.
-- **Bouclier humain :** utilise une grenade aveuglante pour éliminer trois ennemis à la fois. Les corbeaux du début du chapitre 3 fournissent un groupe facile.
-- **Jamais entendu venir :** élimine un Garrador uniquement au couteau. Le premier, dans le donjon du chapitre 7, est aveugle : marche accroupi derrière lui et frappe son dos, puis éloigne-toi quand il cherche l’origine du bruit.
-- **Deux insectes, une pierre :** élimine deux Novistadors avec une seule balle. Aligne-les dans un couloir ou attends qu’ils se posent près l’un de l’autre.
-- **Course au stand de tir :** termine une partie du stand de tir. Les rangs S sur les trois cartes du mode Mercenaires sont une méthode séparée et plus facile pour obtenir le Handcannon.
+- **Plein les mirettes :** utilise une grenade aveuglante pour éliminer trois ennemis à la fois. Les corbeaux du début du chapitre 3 fournissent un groupe facile.
+- **Rien vu, rien entendu :** élimine un Garrador uniquement au couteau. Le premier, dans le donjon du chapitre 7, est aveugle : marche accroupi derrière lui et frappe son dos, puis éloigne-toi quand il cherche l’origine du bruit.
+- **Deux en un :** élimine deux Novistadors avec une seule balle. Aligne-les dans un couloir ou attends qu’ils se posent près l’un de l’autre.
+- **Tir aux pirates :** termine une partie du stand de tir. Les rangs S sur les trois cartes du mode Mercenaires sont une méthode séparée et plus facile pour obtenir le Handcannon.
 
 Pour les puzzles du château, les requêtes spécifiques et le scooter, ouvre la [roadmap complète](https://www.powerpyx.com/resident-evil-4-remake-trophy-guide-roadmap/) et les chapitres de la [vidéo de collecte](https://www.youtube.com/watch?v=MoIu3DL-M_Y) au bon horodatage.
 
@@ -50,10 +50,10 @@ Pour les puzzles du château, les requêtes spécifiques et le scooter, ouvre la
 
 ### Nouvelle partie NG+ sans Marchand, soin, ni arme interdite
 
-Ces trois succès peuvent être cumulés, mais prépare la sauvegarde avant de lancer le run : améliore un pistolet et le Couteau primitif, achète des sprays de premiers secours et des ressources, puis termine le chapitre 16 et crée une nouvelle sauvegarde terminée. En NG+, choisis Assisted et ne parle jamais au Marchand.
+Ces trois succès peuvent être cumulés. Avant de lancer le run, améliore un pistolet et le Couteau primitif, fais le plein de munitions et conserve de la poudre pour en fabriquer en cours de partie. Termine le chapitre 16, puis charge cette sauvegarde de fin en Assisted. Consulte les compteurs du menu Défis après chaque séquence où tu as un doute.
 
-- **Sans marchand :** n’interagis avec lui à aucun moment. Tu ne pourras ni acheter, ni réparer, ni améliorer pendant le run.
-- **Sans soin :** n’utilise aucun soin, y compris herbe, spray, œuf ou poisson. En cas de coup important, recharge ta sauvegarde.
+- **Asocial** (sans Marchand) : n’interagis avec lui à aucun moment. Tu ne pourras ni acheter, ni réparer, ni améliorer pendant le run.
+- **Frugaliste** (sans soin) : n’utilise aucun soin, y compris herbe, spray, œuf ou poisson. En cas de coup important, recharge ta sauvegarde.
 - **Minimaliste :** utilise uniquement couteaux et armes de poing. N’utilise ni grenade, ni œuf, ni autre arme. Les harpons contre Del Lago, canons du château, boule de démolition, mitrailleuses fixes et lance-roquettes final scénarisé sont des exceptions. Le Handcannon est un magnum, donc ne l’utilise pas.
 
 Le Couteau primitif entièrement amélioré ne se casse plus : tu peux ainsi éviter le Marchand pour le réparer. Le compteur **Minimalist** dans les défis doit rester à zéro faute. Fais une sauvegarde manuelle à chaque chapitre dans un nouvel emplacement : en cas d’erreur, tu pourras reprendre avant la faute.
@@ -69,6 +69,15 @@ Pour le **Handcannon**, la méthode la plus accessible est le mode Mercenaires g
 Une partie S+ doit commencer avec **Nouvelle partie**, et non NG+. Pour le Standard S+, vise moins de 5 heures ; pour le Hardcore S+, moins de 5 h 30. Seul le S+ Professionnel permet de valider les deux succès à la fois ; le S+ Hardcore ne donne pas le succès Standard.
 
 Après avoir débloqué le Chicago Sweeper ou le Handcannon, tu peux les sortir du stockage même en nouvelle partie. Termine les requêtes du village pour obtenir au moins 30 spinelles et acheter un ticket d’amélioration exclusive au chapitre 7 ; l’arme bonus obtient alors ses munitions infinies. Garde les lance-roquettes pour Salazar et Saddler si tu as assez de pesetas. En S+ Professionnel, limite-toi à 15 sauvegardes au maximum et termine en moins de 5 h 30.
+
+| Quand | Détours à faire pour le ticket |
+| --- | --- |
+| Chapitres 1 à 3 | Détruis les médaillons de la ferme, tue les rats de l’usine, vends trois vipères, détruis les emblèmes des tombes jumelles au cimetière et trouve les médaillons de la carrière et de la pisciculture. |
+| Chapitre 4 | Prends l’œuf doré sur la petite île à l’est du lac et harponne le gros poisson près du hangar à bateaux. Vends les deux prises. |
+| Chapitre 5 | Prends la requête du chien enragé, passe avec Ashley au manoir du chef pour faire apparaître la cible, puis affronte-la sur la place du village. |
+| Début du chapitre 7 | Récupère les récompenses restantes auprès du Marchand. Les huit requêtes valent 31 spinelles au total. Échange-en 30 contre le ticket et applique-le immédiatement à l’arme bonus choisie. |
+
+[Emplacements des requêtes du Marchand](https://www.powerpyx.com/resident-evil-4-remake-all-merchant-requests/)
 
 En cas de mort, ne choisis pas Continuer : quitte au menu principal et recharge ta sauvegarde. Le chronomètre continue après « Continuer », alors que recharger depuis le menu restaure le temps de la sauvegarde. Mets le jeu en pause pour arrêter le chronomètre si tu dois interrompre ta session.
 

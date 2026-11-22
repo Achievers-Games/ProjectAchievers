@@ -16,8 +16,8 @@ guide détaillé sur sa page.
   score, ou se trouvent dans certains niveaux.
 - **Les lettres du puzzle** sont de petits carrés violets, presque invisibles. Le masque **Rasmus**
   (hibou) les fait briller : on les ramasse au second passage, avec lui.
-- **Plusieurs succès ne s'affichent qu'au prochain ennemi tué** (Get A Life, That's It?,
-  This Is It, Batman) : si l'un d'eux tarde, lance un chapitre et tue quelqu'un.
+- **Plusieurs succès ne s'affichent qu'au prochain ennemi tué** (**Get A Life**, **That's It?**,
+  **This Is It**, **Batman**) : si l'un d'eux tarde, lance un chapitre et tue quelqu'un.
 - **Ceux qui viennent tout seuls en jouant** : **Combo Beginner**, **Combo Intermediate**, **Combo Pro**,
   **1989**, **Dog Lover**, **60 To Car**. Inutile de les chasser au début.
 
@@ -151,8 +151,8 @@ Les 16 lettres donnent **Eye For Details**. Pendant ce passage, fais aussi :
 
 Vérifie les compteurs qui ne seraient pas encore tombés :
 
-- [ ] **1989** : 1 989 ennemis tués.
-- [ ] **Dog Lover** : 99 chiens tués ; le 3e étage de Vengeance en a deux près du départ.
+- [ ] **1989** : 1 989 ennemis tués. Termine d’abord les A+ et les exécutions, qui alimentent déjà le compteur. S’il manque des éliminations, lance **Assault** avec Tony, vide le premier étage en ramassant une arme à feu si elle t’accélère, puis relance le chapitre depuis la sélection. Cet étage concentre les cibles près du départ.
+- [ ] **Dog Lover** : 99 chiens tués. Dans **Vengeance**, avance jusqu’au troisième étage avec une arme de mêlée. Depuis l’escalier, tue le mafieux dans la pièce de gauche puis les deux chiens tout proches. Laisse ensuite un ennemi te tuer pour reprendre à l’entrée de l’étage et répéter la boucle.
 - [ ] **Let In Some Air** : 200 vitres, voir Prank Call à l'étape 2.
 - [ ] **Karma** : 1 000 morts, voir Deadline à l'étape 3.
 - [ ] **60 To Car** : 60 chapitres de Jacket finis en rejoignant la voiture (Trauma et Showdown ne

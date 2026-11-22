@@ -452,7 +452,7 @@ Tuer **1 989 ennemis** au total.
 
 ## Comment faire
 
-Le compteur monte tout seul pendant la course aux A+ et aux armes.
+Fais d’abord les A+ et la collection d’armes. Si le succès manque encore, relance **Assault** (chapitre 13) avec **Tony**. Élimine les ennemis du premier étage, où les cibles sont concentrées près du départ, puis relance le chapitre depuis la sélection. Recommence cette boucle jusqu’au succès.
 
 ## Sources
 
@@ -466,7 +466,7 @@ Tuer **99 chiens** au total.
 
 ## Comment faire
 
-Le compteur monte tout seul pendant la course aux A+. Le 3e étage de « Vengeance » (chapitre 14) en compte deux près du départ.
+Dans **Vengeance** (chapitre 14), monte au troisième étage avec une arme de mêlée. Depuis l’escalier, tue le mafieux dans la pièce de gauche puis les deux chiens. Laisse un ennemi te tuer pour reprendre à l’entrée de l’étage, puis répète la boucle.
 
 ## Sources
 

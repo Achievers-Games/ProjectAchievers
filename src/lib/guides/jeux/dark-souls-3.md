@@ -9,8 +9,8 @@ Les succès de collecte sont les vrais pièges : plusieurs objets dépendent de 
 ## Parcours des trois cycles
 
 1. **NG — fin Usurpation du feu :** dès le début, fais les cinq niveaux gratuits de Yoel avant de vaincre les Veilleurs des Abysses. Cela ouvre la quête de Londor et sa fin. Termine aussi les quêtes de Siegward, Sirris, Anri et Orbeck, récupère les sorts, gestes et anneaux de quête, et découvre tous les serments.
-2. **NG+ — fin Lier le feu :** ramasse les anneaux +1 et les objets manqués. Fais une partie normale et touche la Première Flamme après le boss final.
-3. **NG++ — fin La fin du feu :** ramasse les anneaux +2 et l’Anneau de vie +3, puis donne les Yeux de gardienne du feu à la Gardienne et invoque-la après le boss final.
+2. **NG+ — fin Lier le feu :** ramasse les anneaux +1 et les objets manqués. Fais une partie normale et touche la Première Flamme après le boss final (**Entretenir la Première Flamme**).
+3. **NG++ — fin La fin du feu :** ramasse les anneaux +2 et l’Anneau de vie +3, puis donne les Yeux de gardienne du feu à la Gardienne et invoque-la après le boss final (**La Fin du Feu**).
 
 Tu peux obtenir plusieurs fins sur un même cycle en copiant ta sauvegarde avant le boss final, puis en la restaurant après chaque succès. Cela ne raccourcit pas les trois cycles requis pour les anneaux. Dans tous les cas, avant de lancer un nouveau cycle au Sanctuaire, termine les boss optionnels, les quêtes et les objets de la région : l’accès au monde courant disparaît dès le passage en NG+.
 
@@ -20,7 +20,7 @@ Tu peux obtenir plusieurs fins sur un même cycle en copiant ta sauvegarde avant
 
 Recrute Yoel de Londor sur le pont menant au Campement de morts-vivants. Avant de vaincre les Veilleurs des Abysses, demande-lui **cinq niveaux gratuits** en accumulant les marques creuses après des morts. Yuria apparaît ensuite au Sanctuaire. Ne soigne pas les Sceaux obscurs et ne tue pas le pèlerin caché dans l’église d’Irithyll.
 
-Continue la quête d’Anri dans le Campement, les Catacombes et l’église d’Irithyll. Dans l’église, laisse le pèlerin déguisé en statue vivant. Après le boss Aldrich, retrouve Anri au Tombeau de Sombrelune et accomplis le rituel. Les huit Sceaux obscurs obtenus par Yoel et le rituel permettent la fin **Usurpation du feu** : après le boss final, touche le feu de la Première Flamme.
+Continue la quête d’Anri dans le Campement, les Catacombes et l’église d’Irithyll. Dans l’église, laisse le pèlerin déguisé en statue vivant. Après le boss Aldrich, retrouve Anri au Tombeau de Sombrelune et accomplis le rituel : à Anor Londo, l’ascenseur descend à une salle ronde, où frapper la grande statue ouvre un mur illusoire vers l’escalier du tombeau. Les huit Sceaux obscurs obtenus par Yoel et le rituel permettent la fin **L'Usurpation du Feu** : après le boss final, touche le feu de la Première Flamme.
 
 Pour les autres fins, ne donne pas les Yeux à la Gardienne avant d’avoir fait ta sauvegarde de fin : tu peux obtenir la fin classique en touchant le feu, ou la fin alternative en invoquant la Gardienne après le boss.
 
@@ -42,7 +42,7 @@ Parle à chaque PNJ jusqu’à épuiser ses dialogues et rejoins les huit sermen
 
 ## Collecter les 107 anneaux
 
-Le succès exige d’avoir les 107 anneaux du jeu de base **sur le personnage en même temps**. Les anneaux des extensions ne comptent pas. Pense à ramasser le cadeau de départ si tu as choisi une classe qui commence avec un anneau : l’avoir équipé depuis la création du personnage peut ne pas enregistrer sa collecte pour le succès.
+Le succès **Maîtrise des anneaux** exige d’avoir les 107 anneaux du jeu de base **sur le personnage en même temps**. Les anneaux des extensions ne comptent pas. Pense à ramasser le cadeau de départ si tu as choisi une classe qui commence avec un anneau : l’avoir équipé depuis la création du personnage peut ne pas enregistrer sa collecte pour le succès.
 
 - **NG :** ramasse les 70 anneaux de base. Fais les quêtes de Sirris et de Yuria pour leurs récompenses ; prends les cendres et objets nécessaires aux anneaux vendus par la Servante.
 - **NG+ :** récupère tous les anneaux marqués **+1** dans les zones.
@@ -52,11 +52,24 @@ Ne vends aucun anneau et ne compte pas seulement sur les variantes trouvées : l
 
 ## Sorts et serments
 
-Les succès demandent les **34 sorcelleries**, **27 pyromancies** et **35 miracles** du jeu de base. Il faut explorer les zones cachées, remettre les tomes aux marchands concernés, acheter tous leurs sorts et transposer plusieurs âmes de boss. Ne consomme pas une âme de boss avant d’avoir vérifié si Ludleth peut la transposer en sort.
+Les succès demandent les **34 sorcelleries** (**Maîtrise de la sorcellerie**), **27 pyromancies** (**Maîtrise de la pyromancie**) et **35 miracles** (**Maîtrise des miracles**) du jeu de base. Il faut explorer les zones cachées, remettre les tomes aux marchands concernés, acheter tous leurs sorts et transposer plusieurs âmes de boss. Ne consomme pas une âme de boss avant d’avoir vérifié si Ludleth peut la transposer en sort.
 
 Plusieurs sorts ne s’achètent qu’en échange de rangs de serment. Rejoins les serments concernés et remets les objets de covenant avant la fin du cycle. Les rangs importants demandent souvent **10 ou 30 offrandes** ; cela concerne notamment les Lames de Sombrelune, les Veilleurs de Farron, les Aldrich Fidèles, les Guerriers de la Lumière solaire et les Faiseurs de Mound. Le [guide des succès et récompenses de serment](https://steamcommunity.com/sharedfiles/filedetails/?id=921815530) détaille pour chacun le sort, le rang et l’offrande.
 
-Les objets de serment se gagnent en multijoueur ou en farmant certains ennemis hors ligne. Pour farmer, équipe le serment avant les éliminations et augmente la Découverte d’objets avec le Symbole d’avarice, la Rapière de sage de cristal, l’Anneau du serpent d’or convoiteux et des pièces rouillées. Les Chevaliers d’argent près d’Anor Londo sont la source classique des Preuves de concorde ; les squelettes des Catacombes donnent des Vertèbres ; les chevaliers de Lothric des Médailles solaires. Ce farm peut être long : garde-le pour la fin, quand les objets de Découverte sont réunis.
+### Boucles de farm hors ligne
+
+Fais ces boucles en fin de cycle, avec une arme capable de tuer chaque cible en quelques coups. Compte d’abord les offrandes déjà ramassées ou remises au chef du serment. Équipe l’Anneau du serpent d’or convoiteux et, si tu les as, le Symbole d’avarice et la Rapière de sage de cristal en main secondaire. Utilise une pièce rouillée au départ et renouvelle-la quand son effet expire. Au retour, repose-toi au feu pour faire réapparaître les ennemis. Le Symbole d’avarice draine ta vie pendant le trajet.
+
+| Offrande et total requis | Feu de départ | Boucle |
+| --- | --- | --- |
+| 30 Preuves de concorde | Anor Londo | Monte les grandes marches, tue les deux Chevaliers d’argent qui descendent à ta rencontre et retourne au feu. Tu obtiens l’Anneau de Sombrelune à 10 et la Lame de Sombrelune à 30. |
+| 30 Lames d’herbe de sang du loup | Ruines du Donjon de Farron | Tue les trois Ghrus postés sur le pont juste à côté du feu. La récompense à 30 est l’Anneau du Loup. |
+| 10 Langues pâles | Périmètre du Donjon de Farron | Avance vers l’arène des Veilleurs des Abysses et tue les deux Spectres sombres qui patrouillent vers les Ghrus. À 10, Rosaria donne l’Anneau obscur. Termine Sirris avant de remettre ces offrandes. |
+| 10 Résidus humains | Grand pontife Sulyvahn | Sors par l’arrière de l’arène et remonte jusqu’aux diacres des galeries. Tue le groupe et reviens au feu. À 10, tu obtiens Grandes profondeurs. |
+| 30 Vertèbres-carcan | Catacombes de Carthus | Repars du feu vers le couloir de la boule de squelettes, puis tue les deux grands squelettes épéistes. À 30, tu obtiens la pyromancie Chaleur. |
+| 30 Médailles solaires | Château de Lothric | Tue le Chevalier de Lothric juste à côté du feu et repose-toi immédiatement. À 10, tu obtiens Serment sacré et à 30, Lance de foudre majeure. |
+
+[Démonstration en jeu des boucles hors ligne](https://www.youtube.com/watch?v=n5Cakzw8HAw)
 
 ### Objets de sorts à surveiller
 
@@ -71,15 +84,15 @@ Utilise les listes de [sorcelleries](https://www.neoseeker.com/dark-souls-iii/Us
 
 ### Boss et zones secrètes
 
-Bats les **19 boss du jeu de base**, y compris les optionnels : le Roi sans nom, Oceiros et le Champion Gundyr. Les zones secrètes nécessaires sont le Jardin du Roi illuminé et les Tombes oubliées ; elles ouvrent aussi des anneaux et objets. Fais le Roi sans nom avant de lancer un nouveau cycle. Le [guide PowerPyx des boss et succès](https://www.powerpyx.com/dark-souls-3-trophy-guide/) contient les accès aux zones cachées et les vidéos de combats.
+Bats les **19 boss du jeu de base**, y compris les optionnels : le Roi sans nom, Oceiros et le Champion Gundyr. Les zones secrètes nécessaires sont le Jardin du Roi illuminé (depuis le feu de la Danseuse, monte l’échelle, prends à gauche, bats le chevalier et descends par l’ascenseur) et les **Sépultures oubliées** (après Oceiros, la porte de pierre derrière son feu, puis le mur illusoire derrière le coffre) ; elles ouvrent aussi des anneaux et objets. Le tombeau derrière Oceiros donne aussi le geste Voie du dragon : fais-le près de la statue de la Dragon Torso Stone, au Cachot d’Irithyll, pour rejoindre le **Pic du Dragon ancien** et le Roi sans nom. Fais le Roi sans nom avant de lancer un nouveau cycle. Le [guide PowerPyx des boss et succès](https://www.powerpyx.com/dark-souls-3-trophy-guide/) contient les accès aux zones cachées et les vidéos de combats.
 
 ### Infusions
 
-Pour « Maître des infusions », réalise les **15 types d’infusion** chez André. Il te faut les charbons cachés dans les différentes régions et les gemmes correspondantes. Chaque type est validé une fois ; tu peux ensuite reprendre l’arme et la réinfuser sans conserver quinze armes différentes. Fais-le dès que tu as trouvé tous les charbons, et vérifie le succès après la dernière infusion.
+Pour **Maîtrise des imprégnations**, réalise les **15 types d’infusion** chez André. Il te faut les charbons cachés dans les différentes régions et les gemmes correspondantes. Chaque type est validé une fois ; tu peux ensuite reprendre l’arme et la réinfuser sans conserver quinze armes différentes. Fais-le dès que tu as trouvé tous les charbons, et vérifie le succès après la dernière infusion.
 
 ### Estus et feu de camp
 
-Trouve les **10 fragments d’os de mort-vivant** et brûle-les au feu du Sanctuaire pour renforcer l’Estus. Récupère les fragments d’Estus pour augmenter le nombre de fioles, puis répartis-les auprès d’André. Les fragments d’os sont nécessaires au succès d’amélioration maximale du feu ; la [vidéo des 10 emplacements](https://www.youtube.com/watch?v=MF_A0qlQjK0) aide à vérifier les alcôves et chemins secondaires.
+Trouve les **10 fragments d’os de mort-vivant** et brûle-les au feu du Sanctuaire pour renforcer l’Estus. Récupère les fragments d’Estus pour augmenter le nombre de fioles, puis répartis-les auprès d’André. Les fragments d’os sont nécessaires au succès **Feu ultime** ; la [vidéo des 10 emplacements](https://www.youtube.com/watch?v=MF_A0qlQjK0) aide à vérifier les alcôves et chemins secondaires.
 
 ## Contrôle avant de passer en NG+
 

@@ -17,7 +17,8 @@ const ENTITIES: Record<string, string> = {
   '&nbsp;': ' ',
 };
 
-const plain = (html: string) =>
+/** Le texte affiché d'un fragment déjà assaini, sans balises ni entités. */
+export const plainText = (html: string) =>
   html
     .replace(/<[^>]*>/g, '')
     .replace(/&(?:amp|lt|gt|quot|nbsp|#39|#x27);/g, (entity) => ENTITIES[entity] ?? entity)
@@ -41,6 +42,6 @@ export function outlineOf(html: string): OutlineEntry[] {
   return [...html.matchAll(ANCHORED)].map(([, level, id, inner]) => ({
     id: id as string,
     level: Number(level) as 2 | 3,
-    text: plain(inner as string),
+    text: plainText(inner as string),
   }));
 }

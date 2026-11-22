@@ -24,7 +24,15 @@ Ces succès peuvent être nettoyés après avoir terminé l’histoire. La boucl
 - [ ] **Hotshot** : pilote manuellement jusqu’à la Station solaire et entre par son sas extérieur sans utiliser la tour de téléportation. C’est le défi de pilotage le plus exigeant ; [voici une vidéo de la manœuvre](https://www.youtube.com/watch?v=LypQFjOPczM).
 - [ ] **It belongs in a museum!** : apporte au musée de Timber Hearth un noyau de distorsion ou un artefact du laboratoire à haute énergie. Les noyaux noir et blanc récupérés dans ce laboratoire conviennent ; pas besoin d’aller jusqu’au Projet Ash Twin. [Démonstration vidéo](https://www.youtube.com/watch?v=AoU7zLdaVYw).
 - [ ] **Archaeologist** : complète les entrées requises du journal de bord du vaisseau. Ouvre chaque planète en mode **Rumeurs**, vérifie les entrées avec une étoile orange et collecte aussi les dialogues utiles, notamment ceux de Chert à différents moments de la boucle. Compare les nœuds manquants avec [Outer Wilds Ventures](https://outerwilds.ventures/) ou suis cette [vidéo planète par planète](https://www.youtube.com/watch?v=YrztcxOECOc). Le journal requis est celui du jeu de base ; le contenu du DLC ne compte pas.
-- [ ] **Beginner’s Luck** : depuis une **nouvelle expédition**, atteins l’Œil de l’Univers dans la toute première boucle, sans mourir ni déclencher de boucle suivante. Il faut connaître la route complète à l’avance ; suis ce [guide vidéo intégral](https://www.youtube.com/watch?v=rOtybLMSASg). Si tu échoues, retourne au menu et recommence une nouvelle expédition.
+- [ ] **Beginner’s Luck** : depuis une nouvelle expédition, atteins l’Œil de l’Univers dans la toute première boucle. Prépare le trajet ci-dessous sur ta sauvegarde principale.
+
+### Beginner’s Luck : le trajet en une seule boucle
+
+1. Sur ta sauvegarde principale, apprends d’abord les coordonnées de l’Œil dans le module de suivi de la sonde, sous l’océan de Giant’s Deep. Note les trois symboles dans l’ordre. Entraîne-toi à entrer dans le Projet Ash Twin, puis à atteindre le Vaisseau de Dark Bramble.
+2. Lance une **nouvelle expédition**, prends les codes auprès de Hornfels au musée et décolle. Sur Ash Twin, attends que le sable dégage le sol de la tour jumelle au toit ouvert. Reste sous l’abri à côté de la plateforme de téléportation et avance dessus au moment où la colonne de sable passe au-dessus.
+3. Ouvre le cœur du Projet, désactive la gravité artificielle et retire le noyau de distorsion avancé. Reprends le téléporteur et regagne ton vaisseau.
+4. Sur Dark Bramble, suis le signal de détresse jusqu’à la capsule de sauvetage 3. Suis les lumières jusqu’à la petite graine et tire ton scout à travers pour obtenir le repère du Vaisseau. Retourne au vaisseau, puis suis le repère en double à travers la graine rouge. Franchis cette entrée avec un peu d’élan et laisse-toi dériver sans propulseurs devant les trois baudroies.
+5. Installe le noyau dans le Vaisseau, fais apparaître la console et saisis les trois coordonnées. Active le saut et atteins l’Œil. Si tu meurs, relance une nouvelle expédition pour refaire la première boucle. [Démonstration du trajet complet](https://www.youtube.com/watch?v=7gFKuk27ZOU)
 
 ## _Echoes of the Eye_ : exploration et monde simulé
 
@@ -47,9 +55,9 @@ Commence par trouver l’Étranger grâce à la nouvelle exposition du musée et
 
 ## Vérification des 31 succès
 
-**Jeu de base (17)** : Gone In 60 Seconds, Cutting it Close, Harmonic Convergence, Pchooooooo!, From the Hearth to the Moon, Die Hard, Archaeologist, You’ve met a terrible fate., Hey, what’s this button do?, Hotshot, Beginner’s Luck, It was worth a shot., Rigidbody, Deep Impact, Mmmm, Carcinogens…, Mica’s Wrath, It belongs in a museum!.
+**Jeu de base (17)** : **Gone In 60 Seconds**, **Cutting it Close**, **Harmonic Convergence**, **Pchooooooo!**, **From the Hearth to the Moon**, **Die Hard**, **Archaeologist**, **You’ve met a terrible fate.**, **Hey, what’s this button do?**, **Hotshot**, **Beginner’s Luck**, **It was worth a shot.**, **Rigidbody**, **Deep Impact**, **Mmmm, Carcinogens…**, **Mica’s Wrath**, **It belongs in a museum!**.
 
-**DLC (14)** : Around the world in 90 seconds, The Silenced Cartographer, Tubular!, Early Adopter, The Grate Filter, Flat Hearther, Simulation Hypothesis, Fire Arrows, 1 / 900, Sleep. Wake. Repeat., Ghosts in the Machine, Celsius 232.78, You’ll Never Take Me Alive!, Oof Ouch, My Bones.
+**DLC (14)** : **Around the world in 90 seconds**, **The Silenced Cartographer**, **Tubular!**, **Early Adopter**, **The Grate Filter**, **Flat Hearther**, **Simulation Hypothesis**, **Fire Arrows**, 1 / 900, **Sleep. Wake. Repeat.**, **Ghosts in the Machine**, **Celsius 232.78**, **You’ll Never Take Me Alive!**, **Oof Ouch, My Bones**.
 
 ## Sources et vidéos
 

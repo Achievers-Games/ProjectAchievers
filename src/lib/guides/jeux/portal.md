@@ -12,7 +12,7 @@ Les **15 succès Steam** se font en solo. Termine l’histoire, récupère les *
 4. **Camera Shy** : détache les 33 caméras murales avec un portail pendant cette même partie. Elles se trouvent dans les salles **2 à 5, 10, 11, 13, 15 à 19**. Une caméra fixée à une surface où aucun portail ne peut être posé ne compte pas. Vérifie le compteur avant de quitter chaque salle ; si tu en rates une, recommence une partie complète.
 5. **Friendly Fire** : dans la salle 16, prends une tourelle et fais-la tomber en la heurtant contre une autre.
 6. **Terminal Velocity** : après avoir obtenu le pistolet complet, crée une boucle avec un portail au plafond et un au sol, puis reste immobile jusqu’au succès (30 000 pieds de chute cumulée).
-7. **Long Jump** : crée une longue boucle de portails pour parcourir 300 pieds en un saut. La grande salle avec les surfaces inclinées, vers la fin de l’histoire, convient bien.
+7. **Long Jump** : après la salle 11, choisis une grande surface blanche au sol et un mur portalisable en hauteur. Place un portail au mur et un au sol, puis saute dans celui du sol. À chaque sortie du portail mural, tire sous tes pieds le portail de la couleur du sol pour retomber dedans sans toucher le sol. Répète jusqu’à atteindre 300 pieds dans le même saut.
 
 | Salle | Caméras à détacher |
 | ----- | -----------------: |
@@ -52,6 +52,10 @@ Les succès se débloquent aux paliers : faire les six d’affilée donne les tr
 Les salles 13 à 18 proposent chacune trois défis : **Least Portals**, **Least Steps** et **Least Time**, soit 18 médailles. Obtiens l’or partout : une médaille d’or valide aussi l’argent et le bronze correspondants. Cela débloque ensemble **Basic Science**, **Rocket Science** et **Aperture Science**.
 
 Les seuils sont stricts : compare le résultat à l’objectif affiché avant de quitter la salle. Les défis de pas se gagnent en privilégiant les portails plutôt que la marche ; pour le temps, prépare les tirs et les déplacements avant de lancer la tentative. Les parcours optimaux des défis les plus serrés sont plus simples à reproduire en vidéo : [guide vidéo des 18 défis, à partir des cartes de challenge](https://www.youtube.com/watch?v=x2dpYaiSvhM&t=1261s). Une vidéo complète par salle est également disponible dans le [guide Steam 100 %](https://steamcommunity.com/sharedfiles/filedetails/?id=2008271826).
+
+1. Pour chaque salle, commence par **Least Portals**. Place un portail là où il peut resservir et déplace seulement l’autre couleur pour changer de destination. Vérifie depuis quel côté tu devras revenir chercher le cube.
+2. En **Least Steps**, prépare les deux portails avant chaque déplacement. Traverse en sautant quand tu peux et utilise l’élan d’une chute pour rejoindre les rebords éloignés.
+3. En **Least Time**, recycle les tirs appris aux deux essais précédents. Repère où viser avant chaque sortie de portail et ne relance la salle que lorsque tu sais quel déplacement te fait dépasser l’or. Coche les trois résultats depuis le menu des défis avant de changer de salle.
 
 ## Contrôle final
 

@@ -24,7 +24,7 @@ Ramasser l'épée. Sur un parcours 100 %, elle se prend sous le pont du West Gar
 
 ## Comment faire
 
-- [ ] Avoir d'abord le fusil de la Quarry (succès Bring it to the wrong fight)
+- [ ] Avoir d'abord le fusil de la Quarry (succès **Bring it to the wrong fight**)
 - [ ] Au West Garden, continue à l'ouest sur les ponts de planches et arrête-toi sous le pont
 - [ ] Devant la porte dorée, tape `↓ ← ↑ → ↑ ←` et ouvre le coffre
 
@@ -134,7 +134,7 @@ Prendre la **clé rouge** au boss de l'Eastern Vault, le Siege Engine.
 
 ## Comment faire
 
-- [ ] Traverse l'East Forest, puis l'Eastern Vault et Beneath the Earth en activant chaque obélisque
+- [ ] Traverse l'East Forest jusqu'au diapason, descends la corde et coupe les buissons du mur éclairé : c'est l'Eastern Vault. Traverse-le avec Beneath the Earth en activant chaque obélisque
 - [ ] Active les deux derniers piliers devant les portes dorées et entre
 - [ ] Frappe le point faible lumineux du Siege Engine. Le feu ne lui fait rien
 - [ ] Ramasse la tige qu'il lâche, utilise-la sur la plaque brillante et prends la clé rouge
@@ -152,7 +152,7 @@ Prendre la **clé verte** au bibliothécaire, en haut de la Great Library.
 
 ## Comment faire
 
-- [ ] Ruined Atoll : avec l'orbe (grappin), active les quatre obélisques
+- [ ] Ruined Atoll (monde bleu, téléporteur en bas à gauche) : avec l'orbe (grappin), active les quatre obélisques
 - [ ] Prie la statue du centre de l'Atoll et entre quand elle se lève
 - [ ] Dans la bibliothèque, active l'obélisque de la salle haute, puis monte l'échelle de droite
 - [ ] Le boss se téléporte : frappe-le chaque fois qu'il se pose sur la plateforme, puis ramasse la clé
@@ -170,8 +170,8 @@ Prendre la **clé bleue** à la Scavenger Boss, au fond de la Rooted Ziggurat.
 
 ## Comment faire
 
-- [ ] Quarry : active l'obélisque près du tuyau violet pour ouvrir la porte géante
-- [ ] Descends jusqu'aux rails, suis-les vers l'est jusqu'à la porte, puis l'ascenseur carré
+- [ ] Quarry, par l'entrée de l'Overworld (grappin un niveau plus bas, puis échelle) : active l'obélisque de la première zone, puis celui près du tuyau violet pour ouvrir la porte géante
+- [ ] Côté ouest, descends tout au sud jusqu'aux rails, prends l'échelle et suis ceux d'en bas vers l'est jusqu'à la porte, puis l'ascenseur carré
 - [ ] Traverse la Ziggurat (seules les araignées craignent le feu), active le pilier et repose-toi à l'autel avant le boss
 - [ ] Bats la Scavenger Boss et prends la clé
 
@@ -192,7 +192,7 @@ Poser les trois clés dans le Sealed Temple.
 
 ## Comment faire
 
-- [ ] Avoir fait sonner les deux diapasons (Ding et Dong) : la porte dorée au nord de l'autel de l'Overworld s'ouvre
+- [ ] Avoir fait sonner les deux diapasons (**Ding** et **Dong**) : la porte dorée au nord de l'autel de l'Overworld s'ouvre
 - [ ] Avoir les clés rouge, verte et bleue
 - [ ] Entre dans le Sealed Temple et pose les trois clés dans les anneaux qui tournent
 
@@ -214,7 +214,7 @@ Gagner les **Laurels** (le dash) au défi de la Cathedral, dans le Swamp, de nui
 ## Comment faire
 
 - [ ] Perdre le premier combat contre le renard du téléporteur central : le monde passe à la nuit
-- [ ] Traverse le Swamp en activant ses obélisques jusqu'à la Cathedral
+- [ ] Dans l'Overworld, va au nord puis à l'est jusqu'au pont spectral devant la salle de la Fire Sword : le Swamp est de l'autre côté. Traverse-le en activant ses obélisques jusqu'à la Cathedral
 - [ ] Active l'obélisque de l'étage, puis descends par l'ascenseur et l'échelle devant l'autel
 - [ ] Bats les **six vagues** d'ennemis : le coffre final contient les Laurels
 
@@ -235,12 +235,12 @@ Prier aux **six tombes du héros** pour récupérer toutes tes améliorations.
 
 ## Comment faire
 
-- [ ] Swamp : sous la Cathedral, après le défi
-- [ ] West Garden : en haut du grand escalier, de nuit
-- [ ] East Forest : derrière la grille du Path to the Hero's Grave
-- [ ] Great Library : grande salle, après avoir tué les deux gardiens
-- [ ] Eastern Vault : tout à l'est de la cour
-- [ ] Quarry : au fond du monastère, après le monstre qui surgit
+- [ ] Swamp : sous la Cathedral, en sortant du défi par le sud en dash, puis l'échelle proche
+- [ ] West Garden de nuit, par le pont cassé du sud de la plage ouest, en dash : en haut du grand escalier, à l'est de l'autel
+- [ ] East Forest, par le téléporteur caché du monde bleu (en dash au-delà de celui en bas à droite) : à l'est, derrière la grille du Path to the Hero's Grave
+- [ ] Great Library, téléporteur en bas à droite du monde bleu : en bas des échelles, après avoir tué les deux gardiens
+- [ ] Eastern Vault, téléporteur en haut à droite du monde bleu : sors au sud, puis tout à l'est de la cour
+- [ ] Quarry, par le passage caché de la montagne : escalier en spirale à l'ouest, dash jusqu'à l'autel, puis au nord, au fond du monastère, après le monstre qui surgit
 - [ ] Sur chaque tombe, tiens le bouton d'action, puis prends l'objet du pilier en dash
 
 ## Sources
@@ -309,7 +309,7 @@ Ramasser **toutes les pages** du manuel : la couverture et les pages 1 à 55, en
 
 ## Astuce
 
-Garde une page pour **après** le dernier boss (Game Over). Le parcours du jeu laisse les pages 4 et 5 pour la fin.
+Garde une page pour **après** le dernier boss (**Game Over**). Le parcours du jeu laisse les pages 4 et 5 pour la fin.
 
 ## Sources
 
@@ -331,7 +331,7 @@ Libérer une fée : taper le bon code à la croix directionnelle pour faire appa
 
 ## Astuce
 
-Toutes les fées et leurs codes sont dans Spring Falls. Active Auto-Open Sequence Assistance pour voir tes entrées.
+Toutes les fées et leurs codes sont dans **Spring Falls**. Active Auto-Open Sequence Assistance pour voir tes entrées.
 
 ## Sources
 
@@ -431,7 +431,7 @@ Trésor secret n° 5 : pousser **4 crânes rouges** dans une flaque du Swamp, de
 
 ## Comment faire
 
-- [ ] Swamp de nuit : monte l'échelle le long du mur sud, pousse le crâne rouge du bord de la falaise
+- [ ] Swamp de nuit, derrière les grandes portes devant l'autel : monte l'échelle le long du mur sud, pousse le crâne rouge du bord de la falaise
 - [ ] Descends dans la zone du bas et bats les squelettes et le squelette géant (sans Fire Sword)
 - [ ] Trouve les trois autres crânes : un sur la tombe, un caché derrière une pierre tombale, un un peu plus loin
 - [ ] Pousse les quatre dans la petite flaque sous la tombe au crâne, en marchant contre eux
@@ -562,9 +562,9 @@ Trésor secret n° 10, sur une île de la Ruined Atoll qu'on n'atteint qu'en das
 
 ## Comment faire
 
-- [ ] Avoir les Laurels (succès You feel a tingling...)
+- [ ] Avoir les Laurels (succès **You feel a tingling...**)
 - [ ] S'il fait nuit, dors dans le lit de l'Old House pour repasser au jour
-- [ ] Ruined Atoll : au sud, grappin jusqu'à la plage ouest, puis un peu au nord
+- [ ] Ruined Atoll (monde bleu, téléporteur en bas à gauche) : au sud, grappin jusqu'à la plage ouest, puis un peu au nord
 - [ ] Dash vers l'île à côté de la flèche bleue tournée vers la gauche, et ouvre le coffre de l'autre côté
 
 ## Sources
@@ -583,7 +583,7 @@ Trésor secret n° 11 : frapper **4 tas de feuilles** dans une salle cachée de 
 ## Comment faire
 
 - [ ] Avoir les Laurels
-- [ ] Eastern Vault : tout à l'est de la grande cour, va à la tombe du héros
+- [ ] Eastern Vault (monde bleu, téléporteur en haut à droite) : sors au sud, puis tout à l'est de la grande cour, va à la tombe du héros
 - [ ] Juste au nord de la tombe, dash vers la plateforme et entre dans la salle au balai
 - [ ] Frappe les quatre tas de feuilles à l'épée : l'un est caché derrière un arbre
 
@@ -640,7 +640,7 @@ Avoir **10 tirelires** (« Effigy » dans les guides anglais) dans l'inventaire 
 ## Comment faire
 
 - [ ] **N'équipe et n'utilise aucune tirelire** avant le succès
-- [ ] 1 : Overworld, en haut de l'échelle après la salle de Mr Mayor, chemin caché entre les arbres
+- [ ] 1 : Overworld, en haut de l'échelle après la salle de **Mr Mayor**, chemin caché entre les arbres
 - [ ] 2 : Quarry, au pied du grand pont, après le fusil
 - [ ] 3 : Beneath the Well, passage caché autour des gravats au nord-est
 - [ ] 4 : Dark Tomb, coffre au centre de la salle aux lasers

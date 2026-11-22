@@ -348,14 +348,15 @@
     aspect-ratio: 16 / 9;
   }
   /* Une ligne de texte ordinaire, la case posée dans sa marge : en flex, chaque passage en gras
-     ou en lien devenait une colonne à part et la phrase se coupait en morceaux. */
-  .prose-user li:has(> input[data-check]) {
+     ou en lien devenait une colonne à part et la phrase se coupait en morceaux. Une liste aérée
+     (elle contient un bloc de code) range chaque ligne dans un paragraphe, la case avec. */
+  .prose-user li:has(> input[data-check], > p > input[data-check]) {
     @apply relative -ml-5 list-none pl-6;
   }
   .prose-user input[data-check] {
     @apply absolute left-0 top-1 h-4 w-4 accent-accent;
   }
-  .prose-user li:has(> input[data-check]:checked) {
+  .prose-user li:has(> input[data-check]:checked, > p > input[data-check]:checked) {
     @apply text-muted line-through;
   }
 }

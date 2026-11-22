@@ -457,18 +457,19 @@ Il faut acquérir **toutes les compétences** des arbres de compétences.
 
 ## Comment faire
 
-- [ ] Obtenir les cinq styles de combat : Shinobi, Ashina, Prosthetic, Temple et Mushin
-- [ ] Farmer les points de compétence en tuant des ennemis
-- [ ] Le spot le plus rapide est l'escalier d'Ashina Outskirts, près du château, en fin de partie
-- [ ] Acheter les compétences une par une chez les idols
+1. Obtiens les textes des cinq arbres Shinobi, Ashina, Prothèse, Temple et Mushin. Achète toutes leurs compétences à une idole du Sculpteur.
+2. Termine les fins et les boss sur ta sauvegarde principale. Garde tous tes points pour les arbres et reporte les dépenses du Masque du dragon dansant après le succès.
+3. Après le Dragon divin, pendant l’invasion finale, pars de l’idole **Faubourgs d’Ashina — Escaliers**. Agrippe la tour, élimine le soldat au sommet, celui à son pied puis le garde près du portail.
+4. Si tu peux rester discret, continue au-delà du portail pour deux soldats de plus. Retourne te reposer à l’idole pour les faire réapparaître. Répète les trois premières éliminations seules si elles s’enchaînent plus vite.
 
 ## Attention
 
-Le farm est long : compte plusieurs heures. Les compétences sont conservées en New Game+, donc tu peux répartir le grind sur deux parties.
+Les compétences et les points acquis sont conservés en New Game+. Tu peux donc finir la boucle sur ton cycle le plus avancé, où les mêmes ennemis donnent davantage d’expérience.
 
 ## Sources
 
 - [Guide des compétences, PowerPyx](https://www.powerpyx.com/sekiro-shadows-die-twice-all-combat-styles-skills-locations/)
+- [Démonstration de la boucle des Escaliers](https://www.youtube.com/watch?v=M1WSnGLMUm0)
 - [Guide des succès, XboxAchievements](https://www.xboxachievements.com/game/sekiro-shadows-die-twice/guide/)
 
 @@ ACH06

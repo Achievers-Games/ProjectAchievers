@@ -11,7 +11,7 @@ Les **44 succès Steam** couvrent les campagnes de Leon et Claire, leurs scénar
 3. **Rangs S** : obtiens un S avec chaque personnage en Standard ou Hardcore. La limite est le temps de jeu, pas le nombre de sauvegardes : **3 h 30 en A et 3 h en bis en Standard**. Mettre le jeu en pause arrête le chronomètre. La difficulté Assistée ne donne pas de rang S.
 4. **Hardcore** : termine une campagne avec Leon et une avec Claire. Pour seulement les succès de fin Hardcore, un rang quelconque suffit ; ne tente le S Hardcore que si tu veux le défi. Ses limites sont **2 h 30 en A et 2 h en bis**. Les sauvegardes nécessitent des rubans encreurs.
 5. **Succès de défi** : garde une partie Assistée pour les objectifs sans soin, sans coffre et sous 14 000 pas. Le compteur de pas se trouve dans le menu des Records. Évite les détours et recharge une sauvegarde après une mort plutôt que de choisir « Continuer », qui peut ajouter du temps et des pas.
-6. **Modes bonus** : termine **The 4th Survivor**, puis les scénarios Ghost Survivors. Pour **Hell of a Sheriff**, termine _No Way Out_ sans tirer plus de **60 balles de pistolet**. Pour **Got ’Em**, détruis les dix Mr. Raccoons cachés dans Ghost Survivors ; certains scénarios, dont _No Time to Mourn_, demandent plusieurs parcours pour tous les trouver.
+6. **Modes bonus** : termine **The 4th Survivor**, puis les scénarios Ghost Survivors. Pour **Got ’Em**, détruis les dix Mr. Raccoons. Rejoue _No Time to Mourn_ par l’autre embranchement pour atteindre les figurines propres à chaque route. Termine ensuite _No Way Out_ en mode normal pour **Hell of a Sheriff**.
 
 Tu peux combiner plusieurs objectifs quand tu connais déjà les lieux. Les six sacoches doivent toutefois être obtenues **dans une seule partie** pour **A Waist of Space** ; trois n’apparaissent pas en Hardcore. Un rang **S+ n’est requis pour aucun succès Steam**. Le S+ impose des conditions supplémentaires (dont trois sauvegardes maximum en Hardcore) : ne le vise que pour débloquer les armes bonus.
 
@@ -36,6 +36,13 @@ Tu peux combiner plusieurs objectifs quand tu connais déjà les lieux. Les six 
 - **A Small Carbon Footprint** : termine avec moins de 14 000 pas. Une campagne bis est plus courte ; ignore les salles facultatives et consulte le compteur des Records. Les rotations et déplacements inutiles comptent, alors garde une sauvegarde proche de la fin pour corriger une tentative qui dépasse le seuil.
 
 Ces trois objectifs peuvent être répartis sur plusieurs parties. Pour réduire les reprises, combine **Frugalist** et **A Small Carbon Footprint** en Assisté, puis fais **Minimalist** à part : cette dernière demande une gestion d’inventaire plus stricte.
+
+## Ghost Survivors : passer les 100 zombies de No Way Out
+
+1. Termine _No Time to Mourn_, _Runaway_ et _Forgotten Soldier_ pour ouvrir le scénario. Tu peux te familiariser avec la station-service en entraînement, puis lancer la version normale pour valider le succès.
+2. Utilise le pistolet à munitions illimitées sur les premiers zombies isolés. Laisse venir les porteurs de sac à dos à l’intérieur et ramasse leur équipement dès que tu as une ouverture.
+3. Surveille les portes entre les vagues et garde un passage libre autour des rayonnages. Quand un zombie porte une bonbonne, laisse d’autres ennemis se rapprocher avant de tirer dessus. Garde tes armes de zone et explosifs pour les groupes et les ennemis blindés.
+4. Tiens jusqu’à **100 éliminations**. Le seuil de 60 balles de pistolet correspond au record interne **Gunslinger**, qui débloque des oreilles de chat. Tu peux l’ignorer pour le succès Steam. [Conditions de Hell of a Sheriff sur Steam](https://steamcommunity.com/id/alanisttoll/stats/883710/achievements/)
 
 ## Vidéos utiles
 

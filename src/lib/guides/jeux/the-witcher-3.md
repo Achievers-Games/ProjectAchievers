@@ -27,7 +27,7 @@ Le jeu prévient que tu t’approches d’un point de non-retour. Avant de parti
 - **Kingmaker** — accomplis les quêtes de Cerys et Hjalmar (**Possession**, **The Lord of Undvik**, puis **King’s Gambit**) et aide l’un des deux à prendre le trône.
 - **Woodland Spirit** — dans le contrat **In the Heart of the Woods**, choisis le camp de Sven et tue l’esprit de la forêt. Accepter la proposition d’Harald verrouille le succès.
 - **The Doppler Effect** — pendant **An Elusive Thief**, suis l’enquête jusqu’au doppler et épargne-le à la fin.
-- **Fist of the South Star / Brawl Master / Fast and Furious** — gagne les bagarres de chaque région, le championnat de boxe et les onze courses de chevaux. Fais-les avant de quitter leur région et sauvegarde avant chaque compétition.
+- **Fist of the South Star** / **Brawl Master** / **Fast and Furious** — gagne les bagarres de chaque région, le championnat de boxe et les onze courses de chevaux. Fais-les avant de quitter leur région et sauvegarde avant chaque compétition.
 
 ## Marche de la mort et succès de combat
 
@@ -37,13 +37,21 @@ Ne baisse jamais la difficulté avant le générique final si tu vises **Walked 
 - **The Enemy of My Enemy** — utilise Axii amélioré pour faire combattre un ennemi contre ses alliés.
 - **What Was That?** — en moins de quatre secondes, contre, lance un Signe, utilise une bombe et porte une attaque.
 - **Triple Threat** — pendant un même combat, tue trois adversaires avec trois méthodes distinctes, par exemple épée, bombe et Signe.
-- **Humpty Dumpty / Kaer Morhen Trained / Can’t Touch This!** — tue dix ennemis en les faisant tomber d’une hauteur avec Aard ; réussis dix contres consécutifs sans être touché ni parer ; puis tue cinq ennemis dans un même combat sans subir de dégâts et sans lancer Quen.
-- **Butcher of Blaviken / Overkill / That Is the Evilest Thing…** — tue cinq adversaires en moins de dix secondes ; applique saignement, poison et brûlure en même temps à dix adversaires ; puis fais exploser dix nuages de gaz Dragon’s Dream avec un ennemi en feu. Les bombes et huiles aident à appliquer les effets.
-- **Master Marksman / Environmentally Unfriendly** — élimine 50 humains ou non-humains avec un tir d’arbalète dans la tête, et tue 50 ennemis en utilisant l’environnement (gaz, ruches ou autres pièges du décor).
+- **Humpty Dumpty** / **Kaer Morhen Trained** / **Can’t Touch This!** — tue dix ennemis en les faisant tomber d’une hauteur avec Aard ; réussis dix contres consécutifs sans être touché ni parer ; puis tue cinq ennemis dans un même combat sans subir de dégâts et sans lancer Quen.
+- **Butcher of Blaviken** / **Overkill** / **That Is the Evilest Thing…** — tue cinq adversaires en moins de dix secondes ; applique saignement, poison et brûlure en même temps à dix adversaires ; puis fais exploser dix nuages de gaz Dragon’s Dream avec un ennemi en feu. Les bombes et huiles aident à appliquer les effets.
+- **Master Marksman** / **Environmentally Unfriendly** — élimine 50 humains ou non-humains avec un tir d’arbalète dans la tête, et tue 50 ennemis en utilisant l’environnement (gaz, ruches ou autres pièges du décor).
 - **Geralt: The Professional** — termine les 26 contrats de sorceleur du jeu de base. Lis les panneaux d’affichage dans chaque région et vérifie le journal avant la fin.
-- **Pest Control** — détruis tous les nids de monstres des régions principales. Les points d’interrogation sur la carte et les contrats indiquent les zones restantes.
+- **Pest Control** — détruis tous les nids de **Skellige** ou tous ceux de **Velen et Novigrad**. Choisis Skellige pour le trajet court. Pour **Fire in the Hole**, qui demande dix nids, complète avec ceux croisés à Blanchefleur et à Velen. [Itinéraire des nids de Skellige](https://www.youtube.com/watch?v=jEs0Q6g978M) · [Conditions Steam](https://steamcommunity.com/profiles/76561198140396435/achievements/292030)
 
 Les autres succès principaux arrivent avec l’histoire, les niveaux, l’exploration, l’artisanat et les combats. Pour les derniers compteurs, atteins le niveau 35, découvre 100 panneaux de déplacement rapide, récupère toutes les formules de bombes, apprends 12 formules d’alchimie et active simultanément les cinq bonus de signes des lieux de pouvoir. Termine aussi tous les contrats, récupère les schémas d’un ensemble d’équipement de sorceleur, joue trois cartes héros dans une manche de Gwynt gagnée (**All In**) et gagne une manche avec des cartes neutres uniquement (**Geralt and Friends**).
+
+### Terminer les tirs à la tête
+
+1. Après **Walked the Path**, baisse la difficulté si tu veux simplifier le nettoyage. Va à **Trottheim**, sur l’île de Faroe à Skellige, puis suis le sentier côtier vers le nord jusqu’aux deux pirates près de la falaise.
+2. Affaiblis-les à l’épée. Utilise Axii pour immobiliser ta cible, vise la tête manuellement et achève-la d’un carreau. Fais la même chose sur le second pirate. Le coup fatal doit venir de l’arbalète.
+3. Éloigne-toi en remontant le sentier, puis reviens quand les pirates ont réapparu. Si tu fais aussi **Humpty Dumpty**, utilise la falaise sur des passages séparés pour réserver les deux cibles au compteur de ton choix.
+
+[Démonstration de la boucle de Trottheim](https://www.youtube.com/watch?v=MCVtkc9yET4)
 
 ## Hearts of Stone — 13 succès
 
@@ -71,7 +79,7 @@ Arrive à Toussaint, puis utilise le journal et les cartes de l’extension pour
 - **Embodiment of the Five Virtues** — commence **There Can Be Only One** tôt et prouve chaque vertu avant de finir les quêtes qui peuvent la valider : **compassion**, épargne le Shaelmaar dans **The Beast of Toussaint** ; **générosité**, donne cinq couronnes au messager après **Blood Run** ; **honneur**, participe au tournoi de **The Warble of a Smitten Knight** sous ton vrai nom puis accepte et gagne le duel monté contre le prince ; **bravoure**, continue le tournoi après avoir découvert le secret de Vivienne et remporte les épreuves ; **sagesse**, réponds « It’s a greenhouse! » à l’énigme de la duchesse. Retourne ensuite au lac et bats l’ermite pour recevoir Aerondight.
 - **Hasta la Vista™** — ralentis un ennemi avec une bombe Vent du Nord, puis tue-le à l’arbalète pendant qu’il est gelé.
 - **The Grapes of Wrath Stomped** — termine la chaîne des deux vignobles et unis leurs propriétaires contre le problème commun.
-- **Kling of the Clink / Last Action Hero** — ces succès sont mutuellement exclusifs dans une même branche. Pendant **The Night of Long Fangs**, choisis de chercher Syanna. Dans **Beyond Hill and Dale**, sauvegarde avant la Petite Marchande d’allumettes : pour **Kling of the Clink**, ignore-la et ne prends pas le ruban ; pour **Last Action Hero**, récupère le ruban en le payant 500 couronnes ou en gagnant au Gwynt, puis poursuis l’histoire jusqu’à la décoration de Geralt. Recharge la sauvegarde pour faire l’autre branche.
+- **Kling of the Clink** / **Last Action Hero** — ces succès sont mutuellement exclusifs dans une même branche. Pendant **The Night of Long Fangs**, choisis de chercher Syanna. Dans **Beyond Hill and Dale**, sauvegarde avant la Petite Marchande d’allumettes : pour **Kling of the Clink**, ignore-la et ne prends pas le ruban ; pour **Last Action Hero**, récupère le ruban en le payant 500 couronnes ou en gagnant au Gwynt, puis poursuis l’histoire jusqu’à la décoration de Geralt. Recharge la sauvegarde pour faire l’autre branche.
 - **David and Golyat** — tue Golyat d’un seul carreau d’arbalète dans l’œil pendant l’affrontement d’ouverture à Toussaint.
 - **Weapon “W”** — débloque une mutation dans le laboratoire du professeur Moreau après avoir reçu sa lettre de Yennefer.
 

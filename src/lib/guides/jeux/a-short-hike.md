@@ -6,9 +6,11 @@ Les **12 succès Steam** se débloquent en explorant toute l’île. Récupère 
 
 ## Monter au sommet et compléter les plumes
 
-Commence par explorer le Visitor Center et le sud de l’île. Achète les premières plumes au garde-chèvre, récupère celles des coffres et quêtes, et vise environ sept plumes avant l’ascension de Hawk Peak. **Feather Finder** se débloque à dix ; **Feathers Forever** demande les **20 dorées et les deux argentées**.
+1. **Du chalet au Visitor Center.** Parle à Jen sur la plage et commence à ramasser ses 15 coquillages. Fouille les coffres en remontant le sentier et dépense tes premières pièces chez Jon au Visitor Center. Ses deux plumes dorées coûtent **40 pièces chacune**.
+2. **De la côte aux premières hauteurs.** Remets les coquillages à Jen puis rapporte son collier à tante May pour une plume. Fais aussi un détour par le Beachstickball au nord-ouest. Une série de 10 rapporte une plume et une série de 30 valide le succès associé.
+3. **Ascension de Hawk Peak.** Vise environ sept plumes, puis suis les panneaux du sentier. Quand le froid bloque la récupération des plumes, utilise les sources chaudes avant d’attaquer la montée suivante. **Feather Finder** se débloque à dix plumes et **Feathers Forever** demande les 20 dorées et les deux argentées.
 
-Les plumes dorées viennent notamment des coffres de Royal Ridge, du phare, d’Outlook Point, des falaises près du cimetière et de Meteor Lake, du mini-jeu de Beachstickball, de la quête du collier de coquillages, des cartes au trésor et du raton laveur artiste. Certaines s’achètent : vérifie aussi le stock du garde-chèvre et du Tough Bird, qui revend quatre plumes. Les plumes argentées sont sur l’île au large d’Outlook Point et dans la grotte de Pat’s Point.
+Pour les dorées restantes, passe par Royal Ridge, le phare, Outlook Point, les falaises près du cimetière et Meteor Lake. Termine les rencontres du peintre et vérifie aussi les quatre plumes du Tough Bird. Pour les deux argentées, grimpe sur la petite île au large d’Outlook Point, puis rends la montre trouvée avec la carte au trésor du pêcheur à son propriétaire près du Visitor Center. [Parcours vidéo des plumes, montre comprise](https://www.youtube.com/watch?v=hRCexgObAIQ&t=574s)
 
 Une fois au sommet, **Hawk Peak** est validé. Redescends voir le renard près du sentier : prête-lui des plumes, puis retrouve-le au sommet et pose pour **Photo Friends**. Retourne enfin chez tante May, accepte la sieste et laisse les crédits défiler pour **The End**.
 
@@ -18,7 +20,7 @@ Une fois au sommet, **Hawk Peak** est validé. Redescends voir le renard près d
 - **Not A Scratch** — répare d’abord le bateau en panne, puis termine la course nautique du nord en moins de **45 secondes**.
 - **Remember This Day Forever** — sur la plage du nord-ouest, joue au Beachstickball et réussis une série de **30 échanges** sans laisser tomber la balle. Les retours de l’adversaire comptent dans la série.
 - **Crispy** — lis le panneau au Visitor Center, puis parle à Jon à **17 h** pour recevoir le toast. Ouvre l’inventaire et mange-le ; le garder ne suffit pas.
-- **Green Thumb** — arrose les **27 pousses** réparties sur l’île avec l’arrosoir. Fais le tour des sentiers de montagne et des zones basses avant la fin.
+- **Green Thumb** — arrose les **27 pousses** avec le seau. Remplis-le dans un point d’eau, arrose une pousse et recharge-le avant la suivante. Profite de cette tournée pour éteindre les feux de camp ci-dessous. [Tournée filmée des pousses](https://www.youtube.com/watch?v=8DwXezD5jFw)
 - **Only You Can Prevent Campfires** — récupère le seau près de l’étang au-dessus de Meteor Lake, remplis-le et éteins quatre feux de camp distincts.
 - **The Fish Are Biting Today** — attrape les **14 espèces ordinaires** et remets-les au pêcheur pour qu’elles soient inscrites au journal. Les variantes rares ne sont pas requises.
 

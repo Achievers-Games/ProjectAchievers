@@ -1,6 +1,7 @@
 import type { Platform, Prisma } from '#prisma';
 import { logger } from '#lib/logger';
 import { db } from './db';
+import { sameName } from './same-name';
 
 const log = logger('Guides');
 
@@ -150,9 +151,6 @@ interface GuideEntry {
   content: string;
   missable: boolean;
 }
-
-/** Le nom d'un succès sans casse ni ponctuation, comme pour reconnaître les familles. */
-const sameName = (name: string) => name.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
 
 /** Publie les guides des succès d'un jeu et son relevé des manquables ; rend leurs clés. */
 async function publishGuides(

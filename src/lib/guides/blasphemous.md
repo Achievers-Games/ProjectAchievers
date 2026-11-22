@@ -28,7 +28,7 @@ Vaincre **Ten Piedad**, le boss de Mercy Dreams, à gauche de la salle où atten
 
 ## Comment faire
 
-- [ ] Avoir donné au moins **une herbe à Tirso** (Albero) avant le combat, sinon un Kisser of Wounds meurt (succès Mediterranean Diet)
+- [ ] Avoir donné au moins **une herbe à Tirso** (Albero) avant le combat, sinon un Kisser of Wounds meurt (succès **Mediterranean Diet**)
 - [ ] Vaincre Ten Piedad en gardant une distance moyenne et en sautant pour frapper après chacune de ses attaques
 - [ ] Prier devant le corps géant, à gauche, pour obtenir le premier objet principal de l'histoire
 
@@ -72,7 +72,7 @@ Vaincre les **Tres Angustias**, au fond de Grievance Ascends, en grimpant au-des
 ## Comment faire
 
 - [ ] Ouvrir le fond de Jondo (détruire les deux statues à chaînes, puis frapper la cloche au-dessus de la grande statue) et descendre dans Grievance Ascends
-- [ ] Faire éclore les Altasgracias dans la grotte juste avant (succès Warm and Soft)
+- [ ] Faire éclore les Altasgracias dans la grotte juste avant (succès **Warm and Soft**)
 - [ ] Rester dans la moitié haute de l'écran et frapper plusieurs sœurs à la fois
 
 ## Astuce
@@ -337,7 +337,7 @@ Obtenir les **13 prières** d'origine. Deux peuvent être perdues : **Tiento to 
 - [ ] Debla of the Lights : les trois restes de Tentudia à Lvdovico
 - [ ] Romance to the Crimson Mist : énigme des trois livres de Library of the Negated Words
 - [ ] Campanillero to the Sons of the Aurora : les 38 chérubins
-- [ ] Tiento to Your Thorned Hairs : finir la quête de Cleofas (succès Rebirth)
+- [ ] Tiento to Your Thorned Hairs : finir la quête de Cleofas (succès **Rebirth**)
 
 ## Astuce
 
@@ -869,13 +869,15 @@ Acheter **toutes les capacités** des autels de Mea Culpa : cinq capacités à t
 
 ## Comment faire
 
-- [ ] Débloquer les 7 autels (succès Mea Culpa)
+- [ ] Débloquer les 7 autels (succès **Mea Culpa**)
 - [ ] Acheter en priorité le premier niveau de Fervourous Blood, de Sword Combo et de Lunge Strike
 - [ ] Tout acheter à la fin, après les autres dépenses
 
 ## Astuce
 
-Pour farmer : Prie Dieu sous l'ascenseur d'Archcathedral Rooftops, salle de gauche avec deux gargouilles en cage. Avec Cante Jondo of the Three Sisters et Heart of the Holy Purge, une boucle rapporte environ 600 larmes.
+1. Rejoins le Prie Dieu sous l’ascenseur d’**Archcathedral Rooftops** avec **Cante Jondo of the Three Sisters**. Équipe **Heart of the Holy Purge** si tu l’as pour augmenter les gains.
+2. Entre dans la salle à gauche et lance la prière sur les deux gargouilles en cage. Termine à l’épée si nécessaire.
+3. Retourne te reposer au Prie Dieu et recommence. Au dernier autel, vérifie le prix des capacités restantes pour savoir quand arrêter la boucle.
 
 ## Sources
 

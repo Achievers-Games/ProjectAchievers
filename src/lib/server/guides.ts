@@ -136,7 +136,15 @@ export const countChecklist = (contentMd: string) =>
 export async function guideGame(slug: string, user: App.Locals['user']) {
   const game = await db.game.findUnique({
     where: { slug },
-    select: { id: true, name: true, slug: true, familyKey: true, adultOnly: true },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      familyKey: true,
+      adultOnly: true,
+      platform: true,
+      platformGameId: true,
+    },
   });
   if (!game || (game.adultOnly && !user?.showAdult)) error(404, m.game_not_found());
   return game;

@@ -5,6 +5,7 @@ import { commentLimit } from '#lib/comments';
 import { db } from '#lib/server/db';
 import { serverTiming } from '#lib/server/server-timing';
 import { censor } from '#lib/profanity';
+import { guideLinks } from '#lib/server/guide-links';
 import { renderGuide, renderMarkdown } from '#lib/server/markdown';
 import { publicUser, visibleGames } from '#lib/server/queries';
 import { ensureGameTexts, localizeAchievements } from '#lib/server/achievement-texts';
@@ -49,6 +50,7 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
           adultOnly: true,
           platform: true,
           platformGameId: true,
+          familyKey: true,
         },
       },
       unlocks: viewerId ? { where: { userId: viewerId }, select: { unlockedAt: true } } : false,
@@ -107,6 +109,15 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
   const unlock = achievement.unlocks?.[0]?.unlockedAt ?? null;
   const secret = achievement.hidden && !unlock;
   const masked = secret && !revealed;
+  // Un guide officiel mène aux autres succès qu'il nomme, pas à la page déjà ouverte.
+  const link =
+    !masked && guides.some((guide) => guide.curatedKey !== null)
+      ? await guideLinks(achievement.game, locale, achievement.id)
+      : null;
+  const renderWith = (guide: { curatedKey: string | null; contentMd: string }) => (text: string) =>
+    link && guide.curatedKey !== null
+      ? link(renderGuide(text), guide.contentMd)
+      : renderGuide(text);
 
   setHeaders(headers());
   return {
@@ -130,8 +141,8 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
     masked,
     guides: (masked ? [] : guides).map((guide) => ({
       id: guide.id,
-      html: renderGuide(clean(guide.contentMd, guide.locale)),
-      ...translation(guide, renderGuide),
+      html: renderWith(guide)(clean(guide.contentMd, guide.locale)),
+      ...translation(guide, renderWith(guide)),
       official: guide.curatedKey !== null,
       checked: guide.checks?.map((check) => check.item) ?? [],
       score: guide.score,
@@ -263,11 +274,28 @@ export const actions: Actions = {
       status: 'PUBLISHED' as const,
       achievement: { game: visibleGames(locals.user?.showAdult) },
     };
-    const select = { contentMd: true };
-    const source =
+    const guide =
       targetType === 'GUIDE'
-        ? await db.guide.findFirst({ where, select })
-        : await db.comment.findFirst({ where, select });
+        ? await db.guide.findFirst({
+            where,
+            select: {
+              contentMd: true,
+              curatedKey: true,
+              achievement: {
+                select: {
+                  game: {
+                    select: { id: true, platform: true, platformGameId: true, familyKey: true },
+                  },
+                },
+              },
+            },
+          })
+        : null;
+    const source =
+      guide ??
+      (targetType === 'COMMENT'
+        ? await db.comment.findFirst({ where, select: { contentMd: true } })
+        : null);
     if (!source) return fail(404, { error: m.gone() });
 
     const target = targetType === 'GUIDE' ? { guideId: targetId } : { commentId: targetId };
@@ -279,8 +307,12 @@ export const actions: Actions = {
         translationQuota({ locals, getClientAddress }),
       );
       if (translated === null) return fail(429, { error: m.translate_failed() });
-      const html = targetType === 'GUIDE' ? renderGuide : renderMarkdown;
-      return { html: html(forViewer(locals.user)(translated, getLocale())) };
+      const text = forViewer(locals.user)(translated, getLocale());
+      if (!guide) return { html: renderMarkdown(text) };
+      const html = renderGuide(text);
+      if (guide.curatedKey === null || !guide.achievement) return { html };
+      const link = await guideLinks(guide.achievement.game, getLocale(), params.id);
+      return { html: link(html, guide.contentMd) };
     } catch (cause) {
       log.error('Traduction :', cause);
       return fail(503, { error: m.translate_failed() });

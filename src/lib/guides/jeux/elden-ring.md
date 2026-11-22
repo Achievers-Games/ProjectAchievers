@@ -24,7 +24,7 @@ emplacements et les vidéos.
 
 ## Étape 1 : Nécrolimbe et la Péninsule larmoyante
 
-- [ ] **Margit le Déchu** : devant le Château de Voilorage. Appelle Rogier ou un esprit, et garde
+- [ ] **Margit le Déchu** : devant le Château de Voilorage, au nord-ouest de Nécrolimbe. Appelle Rogier ou un esprit, et garde
       tes distances avec sa dague.
 - [ ] **Chimère léonine** : au bout du Château Morne, sur la Péninsule larmoyante. Elle laisse le
       Grafted Blade Greatsword, première **arme légendaire**.
@@ -32,6 +32,8 @@ emplacements et les vidéos.
 - [ ] **Rune majeure** : emporte la rune de Godrick à la Tour divine de Nécrolimbe et active-la.
 - [ ] **Bastion de la Table ronde** : il tombe dès que Melina t'y emmène.
 - [ ] Lhutel the Headless (cendre légendaire) : Tombsward Catacombs, sur la Péninsule larmoyante.
+      Va plein sud depuis l'Église du pèlerinage (Church of Pilgrimage) : les portes sont dans la
+      paroi, derrière un pilier.
 
 ## Étape 2 : Liurnia des Lacs
 
@@ -42,53 +44,67 @@ emplacements et les vidéos.
 - [ ] **Loretta, chevaleresse royale** : en haut du Manoir de Caria. Le coffre du manoir garde la
       Sword of Night and Flame (**arme légendaire**).
 - [ ] Monte à la Tour de Ranni, accepte de la servir et parle à ses trois serviteurs : la quête de
-      Ranni commence. **Elle est indispensable** à la fin **Âge des étoiles** et à **Fortissax**.
+      Ranni commence. **Elle est indispensable** à la fin **Âge des étoiles** et à
+      **Fortissax la Liche draconique**.
 - [ ] **Makar le Dragon du magma** : au fond du Ruin-Strewn Precipice, au nord du lac, vers le
-      Plateau Altus.
-- [ ] Flame of the Fell God (sort légendaire) : sur Adan, Thief of Fire, à Malefactor's Evergaol.
+      Plateau Altus. Monte par les escaliers et plateformes au-dessus de Ravine-Veiled Village.
+- [ ] Flame of the Fell God (sort légendaire) : sur Adan, Thief of Fire, à Malefactor's Evergaol,
+      sur la falaise ouest de Liurnia.
 
 ## Étape 3 : Caelid et Radahn
 
 - [ ] **Radahn, le porteur de fragment** : festival du Château de Redmane. Appelle tous les alliés
       proposés autour de l'arène. La Ruins Greatsword (**arme légendaire**) se trouve au château,
       sur le Misbegotten Warrior et le Crucible Knight.
-- [ ] Redmane Knight Ogha (cendre légendaire) : War-Dead Catacombs, après Radahn.
-- [ ] Stars of Ruin (sort légendaire) : Master Lusat, au fond de Sellia Hideaway.
+- [ ] Redmane Knight Ogha (cendre légendaire) : War-Dead Catacombs, après Radahn. Depuis la
+      grâce de son arène, va au nord jusqu'au bout de la zone : petite porte dans la falaise.
+- [ ] Stars of Ruin (sort légendaire) : Master Lusat, au fond de Sellia Hideaway. Depuis Church of
+      the Plague, monte au nord sous l'arche de bois ; au cimetière au nord-est, mur illusoire
+      derrière la grande stèle.
 - [ ] Greyoll's Roar (sort légendaire) : tue le dragon Greyoll, puis échange trois cœurs de dragon
       à la Cathédrale de la Communion draconique.
 - [ ] Radagon's Soreseal (talisman légendaire) : sur un cadavre de Fort Faroth, au nord de Caelid.
-- [ ] Black Knife Tiche (cendre légendaire) : Ringleader's Evergaol, sur Alecto, à Liurnia.
+- [ ] Black Knife Tiche (cendre légendaire) : Ringleader's Evergaol, sur Alecto, à Liurnia. Il est
+      sur le plateau de l'autel du Clair de lune, ouvert après Astel : fais-la à l'étape 4.
 
 ## Étape 4 : sous la terre, Siofra, Nokron et Ainsel
 
-La chute de l'étoile, après Radahn, ouvre Nokron. Cette étape avance aussi la quête de Ranni.
+La chute de l'étoile, après Radahn, ouvre Nokron : descends par les plateformes à l'est de Starfall
+Crater, au sud de Mistwood (Nécrolimbe), à l'ouest de Fort Haight. Cette étape avance aussi la quête
+de Ranni.
 
-- [ ] **Esprit ancestral** : Hallowhorn Grounds, au fleuve Siofra. Allume d'abord les braseros.
+- [ ] **Esprit ancestral** : Hallowhorn Grounds, au fleuve Siofra, par l'ascenseur de Siofra River Well
+      à Mistwood. Allume d'abord les huit braseros.
 - [ ] **Larme imitatrice** et **Esprit ancestral royal** : Nokron, cité éternelle.
 - [ ] Mimic Tear (cendre légendaire) : coffre de Night's Sacred Ground, derrière une porte à statue.
 - [ ] **Gargouilles vaillantes** : au bout de l'aqueduc de Siofra. Ramasse le Fingerslayer Blade
       à Night's Sacred Ground et rapporte-le à Ranni.
-- [ ] **Soldat draconide de Nokstella** : fleuve Ainsel, près des ruines du palais d'Uhl.
-- [ ] Moon of Nokstella (talisman légendaire) : coffre sous le trône géant de Nokstella.
+- [ ] **Soldat draconide de Nokstella** : fleuve Ainsel, près des ruines du palais d'Uhl. Descends par
+      l'ascenseur d'Ainsel River Well, à l'est de Liurnia.
+- [ ] Moon of Nokstella (talisman légendaire) : coffre sous le trône géant de Nokstella, par le
+      portail de Renna's Rise (une fois la lame remise à Ranni), puis le cours principal de l'Ainsel.
 - [ ] **Astel le Rejeton du vide** : Grand Cloister, au bout du Lac de la Pourriture.
-- [ ] Ranni's Dark Moon (sort légendaire) : coffre en haut de Chelona's Rise, à Liurnia.
+- [ ] Ranni's Dark Moon (sort légendaire) : coffre en haut de Chelona's Rise, à Liurnia. Après Astel,
+      l'ascenseur du Deep Ainsel Well monte au plateau de l'autel du Clair de lune : va au sud de
+      Ringleader's Evergaol.
 - [ ] Termine la quête de Ranni jusqu'à la Dark Moon Greatsword (**arme légendaire**), à l'autel
       du Clair de lune. Récupère aussi la Cursemark of Death, en haut de la Tour divine de Liurnia :
-      elle sert à **Fortissax**.
+      elle sert à **Fortissax la Liche draconique**.
 
 ![Quête de Ranni, de la rivière Ainsel au Grand Cloister, PowerPyx](https://youtu.be/L8-uHaH7TSg?t=873)
 
 ## Étape 5 : Plateau Altus et Mont Gelmir
 
 - [ ] Godfrey Icon (talisman légendaire) : Golden Lineage Evergaol, sur Godefroy the Grafted.
-- [ ] Ancient Dragon Knight Kristoff (cendre légendaire) : Sainted Hero's Grave, sur l'Ancient
-      Hero of Zamor.
+- [ ] Ancient Dragon Knight Kristoff (cendre légendaire) : Sainted Hero's Grave (à l'ouest
+      de Rampartside Path), sur l'Ancient Hero of Zamor.
 - [ ] Comet Azur (sort légendaire) : Primeval Sorcerer Azur, au nord-est de Hermit Village, sur le
       Mont Gelmir.
 - [ ] **Elemer du Roncier** : au fond du Château ombragé. Il laisse la Marais Executioner's Sword
       (**arme légendaire**).
 - [ ] **Noble sanctechair** puis **Rykard, le porteur de fragment** : Manoir du volcan, sur le Mont
-      Gelmir. Le temple d'Eiglay mène au Noble sanctechair, puis à Rykard.
+      Gelmir. Rends son collier à Rya (à l'est de Scenic Isle, à Liurnia), puis reparle-lui en haut du
+      Grand Lift of Dectus : elle t'y téléporte. Le temple d'Eiglay mène au Noble sanctechair, puis à Rykard.
 
 ## Étape 6 : Leyndell, Capitale royale
 
@@ -107,24 +123,32 @@ Prends **tout de suite** le Bolt of Gransax : la ville sera détruite à l'étap
 
 ## Étape 7 : les Cimes des Géants et l'Arbre-Sacré
 
-- [ ] **Commandant Niall** : Château Sol. Il garde la moitié droite du Secret Medallion. L'Eclipse
+- [ ] **Commandant Niall** : Château Sol. Après lui, la moitié gauche du Secret Medallion est sur
+      le toit de la tour nord-est. L'Eclipse
       Shotel (**arme légendaire**) est dans un coffre du château.
-- [ ] Founding Rain of Stars (sort légendaire) : coffre de Heretical Rise.
-- [ ] La moitié gauche du Medallion est dans le Village des Albinauriques, à Liurnia. Les deux
-      moitiés réunies ouvrent la route de l'Arbre-Sacré au Grand Lift of Rold.
+- [ ] Founding Rain of Stars (sort légendaire) : coffre de Heretical Rise, sur les falaises du nord,
+      au-dessus du ravin du lac gelé.
+- [ ] La moitié droite du Medallion est dans le Village des Albinauriques, à Liurnia. Les deux
+      moitiés réunies ouvrent la route de l'Arbre-Sacré au Grand Lift of Rold :
+      change l'action pour brandir le Secret Medallion. L'ascenseur mène aux Champs de neige
+      consacrés.
 - [ ] **Loretta, chevaleresse de l'Arbre-Sacré** puis **Malenia, la porteuse de fragment** :
-      Arbre-Sacré de Miquella. Marika's Soreseal et le Dragoncrest Greatshield Talisman (talismans
+      Arbre-Sacré de Miquella, par l'énigme des braseros d'Ordina,
+      dans les Champs de neige. Marika's Soreseal et le Dragoncrest Greatshield Talisman (talismans
       légendaires), puis Cleanrot Knight Finlay (cendre légendaire), sont à Elphael.
 - [ ] **Mohg, le porteur de fragment** : Palais de Mohgwyn. On y accède par la quête de Varré, ou
-      par le téléporteur des Champs de neige consacrés.
+      par le téléporteur à l'ouest des Champs de neige consacrés, au nord-ouest de Yelough Anix Ruins
+      (inactif tant que le Sanguine Noble qui t'envahit à côté est en vie).
 - [ ] Golden Order Greatsword (**arme légendaire**) : Cave of the Forlorn, sur le Misbegotten
-      Crusader.
+      Crusader. Entrée dans le ravin gelé des Champs de neige, au sud de l'Arbre-Monde mineur (deux
+      Stonesword Keys).
 
 ## Étape 8 : le feu, Farum Azula et la Capitale cendrée
 
 - [ ] **Géant de feu**, puis **Embraser l'Arbre-Monde** : à la Forge des Géants, accepte que
       Melina embrase l'Arbre.
-- [ ] **Fortissax la Liche draconique** : rêve de Fia, dans les Deeproot Depths. Suis la quête de
+- [ ] **Fortissax la Liche draconique** : rêve de Fia, dans les Deeproot Depths. On y descend par le
+      cercueil près de la cascade, derrière les gargouilles de l'aqueduc de Siofra. Suis la quête de
       Fia jusqu'au bout, Cursemark of Death en main (voir la page du succès).
 - [ ] Elden Stars (sort légendaire) : Deeproot Depths, près du site Great Waterfall Crest.
 - [ ] **Duo sanctechair**, **Placidusax, seigneur draconique** et **Maliketh la Lame d'ébène** :

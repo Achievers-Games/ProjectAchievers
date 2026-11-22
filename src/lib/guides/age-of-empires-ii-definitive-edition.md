@@ -2391,11 +2391,14 @@ Tuer **500 unités** avec des **mangonneaux** (et leurs améliorations), au tota
 
 ## Comment faire
 
-- [ ] Utiliser les mangonneaux contre les groupes d’archers et d’infanterie en escarmouche
+1. Lance une escarmouche terrestre en âge post-impérial avec ressources infinies.
+2. Construis plusieurs ateliers de siège et regroupe les mangonneaux ou leurs améliorations.
+3. Garde une armée devant tes machines pour bloquer les charges. Quand un groupe d’archers ou d’infanterie se rassemble, utilise **Attaquer la zone** au centre du groupe. Place tes unités de mêlée hors de l’impact.
+4. Laisse les bâtiments de production ennemis debout tant qu’ils t’envoient des renforts. Les éliminations faites en campagne s’ajoutent au même total.
 
 ## Astuce
 
-Le compteur avance tout au long des campagnes.
+Si les unités ennemies arrivent au compte-gouttes, attends qu’elles se regroupent avant de tirer pour faire progresser le compteur plus vite.
 
 ## Sources
 

@@ -8,28 +8,48 @@ Le jeu de base compte **40 succès**. **The Pale Reach** en ajoute 8 et **The Ir
 
 1. **Explore chaque région avant de passer à la suivante** : The Marrows, Gale Cliffs, Stellar Basin, Twisted Strand puis Devil’s Spine. Visite tous les quais, récupère les reliques du Collectionneur et améliore progressivement coque, moteur, cannes, filets et casiers à crabes. Les recherches et améliorations alimentent plusieurs succès.
 2. **Accepte toutes les poursuites** auprès des habitants, des marchands et des silhouettes encapuchonnées. Termine-les dès que possible, surtout les quatre silhouettes : leurs demandes de poissons sont liées à une région. Les mises à jour ont supprimé les anciens délais stricts, mais les faire au fil du parcours évite de devoir retrouver leur donneur.
-3. **Fouille les eaux au sonar et à la drague**. Les matériaux permettent les améliorations et certains objets enfouis complètent des quêtes. Livre les reliques au Collectionneur, mais conserve les objets demandés par une quête active dans la cale jusqu’à leur remise.
-4. **Résous les cinq autels de poissons** : chacun demande les espèces indiquées sur l’autel. Dépose les prises dans la grille et vérifie les tailles avant de partir pêcher ; les emplacements sont indiqués sur la [page des autels](https://dredge.wiki.gg/wiki/Stone_Tablets).
+3. **Drague les remous** dès que le Collectionneur a équipé ton bateau. Stocke le bois, le tissu et la ferraille pour la coque. Garde des emplacements libres pour les objets de quête et effectue les livraisons à chaque passage à quai.
+4. **Résous les quatre autels de pêche facultatifs.** Mets de côté cinq morues pour The Marrows, deux crabes des rochers et un crabe décorateur pour Gale Cliffs, quatre requins différents pour Stellar Basin et une aberration pour Twisted Strand. Les trois dalles de Devil’s Spine font avancer la quête du Fanatique. [Emplacements et prises demandées](https://dredge.wiki/guide/rock-slab/)
 5. **Finis toute l’Encyclopédie** : capture chaque espèce au moins une fois, puis chaque aberration. Consulte la [liste des poissons](https://dredge.wiki.gg/wiki/Fish) et la [liste des aberrations](https://dredge.wiki.gg/wiki/Aberrations) ; l’Encyclopédie en jeu est la checklist de référence. Utilise les livres qui augmentent les chances d’aberration et l’aptitude **Atrophy** pour accélérer le nettoyage.
+
+### Les cinq reliques, dans l’ordre du voyage
+
+| Région | Trajet à suivre avant de repartir |
+| --- | --- |
+| The Marrows | Récupère la clé à la drague dans les eaux de Greater Marrow et remets-la au Collectionneur. Garde cinq morues pour l’autel au nord de la ville si tu veux l’équipement dès le début. |
+| Gale Cliffs | Parle à l’Ermite aux Ruines. Drague le blason familial dans la crique et montre-le au baleinier retraité à Ingfell. Après avoir dégagé le passage et ramené l’Ermite à son frère, utilise les explosifs pour ouvrir l’accès au site de la boîte à musique. |
+| Stellar Basin | Au Vieux Fort, prends la demande de la Chercheuse. Pêche les trois premiers spécimens, dont la méduse au chalut de nuit, puis récupère les pièces de prototype à l’avant-poste. Installe le dispositif de répulsion sur son générateur et drague la bague au centre du bassin pendant qu’il fonctionne. |
+| Twisted Strand | Parle à l’Aviateur, ramène-lui les deux pièces du mortier et prépare les appâts demandés. Pose-les dans ses pièges, rapporte les restes des trois créatures et récupère le collier en récompense. |
+| Devil’s Spine | Parle au Fanatique au Temple ancien et visite les trois dalles marquées. Prépare deux aberrations, la raie pâle et le requin fantôme, puis l’araignée de mer et la galathée obtenues au casier. Rapporte les trois flammes au temple pour la montre. |
+
+[Parcours filmé des cinq régions](https://www.youtube.com/watch?v=aYbatOy3g7Y)
 
 ## Succès à nettoyer pendant l’exploration
 
 - **Safe Havens** — visite tous les quais, y compris les campements abandonnés. Compare ta carte avec la [liste des docks](https://dredge.wiki.gg/wiki/Dock).
-- **Lifted From the Deep / Tangled in This Web / Trapped by These Walls** — capture respectivement 250 poissons à la canne, 150 au filet de chalut et 100 crabes dans des casiers. Laisse le filet équipé pendant tes trajets et relève plusieurs casiers à chaque tournée.
-- **Lives for Profit / Cash for Gold** — vends 2 500 $ de poissons et 1 500 $ de trésors. Les objets récupérés à la drague se vendent au marchand ambulant.
-- **Careless Harvesting / Unwanted** — vide 25 bancs de poissons, puis rejette 25 prises depuis la cale.
-- **Mixed Results / Prey Sighted** — avec l’appât mélangé, attire trois espèces différentes au même banc ; utilise aussi la longue-vue pour repérer chaque catégorie de poisson.
+- **Lifted From the Deep** / **Tangled in This Web** / **Trapped by These Walls** — capture respectivement 250 poissons à la canne, 150 au filet de chalut et 100 crabes dans des casiers. Laisse le filet équipé pendant tes trajets et relève plusieurs casiers à chaque tournée.
+- **Lives for Profit** / **Cash for Gold** — vends 2 500 $ de poissons et 1 500 $ de trésors. Les objets récupérés à la drague se vendent au marchand ambulant.
+- **Careless Harvesting** / **Unwanted** — vide 25 bancs de poissons, puis rejette 25 prises depuis la cale.
+- **Mixed Results** / **Prey Sighted** — avec l’appât mélangé, attire trois espèces différentes au même banc ; utilise aussi la longue-vue pour repérer chaque catégorie de poisson.
 - **Feeling Prepared** — installe un équipement dans chaque emplacement du bateau. Les succès de coque, vitesse, pêche et éclairage tombent en améliorant la cale et en équipant simultanément les moteurs, cannes et lumières appropriés.
-- **Researcher: Rods / Nets / Pots / Engines** — recherche tous les équipements de ces quatre familles. Les pièces de recherche sont limitées au début : récupère celles de la marchande, des poursuites et des épaves, et commence tôt les recherches.
-- **Banisher / Cruel Heat / Dimensional Bypass / Unsustainable Fishing** — bannis dix menaces, maintiens la jauge de surchauffe de Haste au-dessus de 50 % dix secondes, utilise Manifest pour parcourir une longue distance et lance Atrophy sur un banc éloigné de l’eau perturbée.
-- **From the Fog / Perfect Packing** — fais résonner la corne dans le brouillard et remplis complètement la cale avec des prises. **From the Depths** tombe avec tous les autres succès de base.
+- **Researcher: Rods** / **Researcher: Nets** / **Researcher: Pots** / **Researcher: Engines** — recherche tous les équipements de ces quatre familles. Les pièces de recherche sont limitées au début : récupère celles de la marchande, des poursuites et des épaves, et commence tôt les recherches.
+- **Banisher** / **Cruel Heat** / **Dimensional Bypass** / **Unsustainable Fishing** — bannis dix menaces, maintiens la jauge de surchauffe de Haste au-dessus de 50 % dix secondes, utilise Manifest pour parcourir une longue distance et lance Atrophy sur un banc éloigné de l’eau perturbée.
+- **From the Fog** / **Perfect Packing** — fais résonner la corne dans le brouillard et remplis complètement la cale avec des prises. **From the Depths** tombe avec tous les autres succès de base.
 - **Providence** — termine toutes les poursuites secondaires, y compris les demandes discrètes et les silhouettes encapuchonnées. Les poissons exotiques des demandes doivent être livrés au bon personnage, pas vendus.
-- **Master Angler / Aberration Attractor** — capture toutes les espèces puis toutes les aberrations du jeu de base. Vérifie leur inscription dans l’Encyclopédie avant de vendre les prises.
+- **Master Angler** / **Aberration Attractor** — capture toutes les espèces puis toutes les aberrations du jeu de base. Vérifie leur inscription dans l’Encyclopédie avant de vendre les prises.
 - Les succès de progression récompensent les reliques, l’histoire, les livres, les améliorations du bateau et l’usage des pouvoirs. Achète les améliorations disponibles à chaque escale et lis les livres dès que leur progression est terminée.
+
+### Rentabiliser chaque sortie de pêche
+
+1. Installe plusieurs casiers dans des eaux peu profondes autour du ponton que tu visites le plus souvent. Relève-les à chaque escale, puis répare-les et redéploie-les avant de repartir. Ils avancent le compteur des 100 crabes pendant que tu termines les poursuites.
+2. Active un filet de chalut adapté aux eaux de ta tournée. Vide-le et répare-le chez la marchande ambulante avant le départ suivant. Profite de chaque aller-retour pour atteindre les 150 prises.
+3. Pour les 250 captures à la canne et les 25 bancs épuisés, pêche chaque banc accessible jusqu’à ce que le remous disparaisse. Fais-le près d’un quai quand tu veux aussi avancer les ventes ou libérer régulièrement ta cale.
+4. Si l’Encyclopédie affiche une aberration manquante, relève d’abord la zone, la profondeur et l’heure de capture de son espèce normale. Utilise Atrophy sur son banc pour accélérer le nettoyage. Pour les espèces de casier, déplace les casiers vers la profondeur indiquée et relève-les à l’escale suivante.
 
 ## Les deux fins
 
-La fin principale se déclenche en remettant les reliques au Collectionneur puis en acceptant son dernier voyage. Pour l’autre fin, retourne voir le **Vieux Maire** après avoir récupéré les reliques : il indique comment interrompre la séquence. Les deux fins se font sur la même sauvegarde ; après le générique, recharge et va chercher l’autre conclusion. Termine les autres poursuites avant de conclure l’histoire pour garder un journal propre.
+1. **Avec le Collectionneur.** Rapporte-lui les cinq reliques sur l’île de Blackstone, accepte son dernier voyage et rejoins le point qu’il indique en mer. Après le générique, reprends la sauvegarde pour revenir avant le départ.
+2. **Avec la Gardienne du phare.** Cherche le **Vieux Maire** dans les campements abandonnés et écoute son récit. Parle ensuite à la Gardienne à Greater Marrow au sujet du Livre rouge. Retourne voir le Collectionneur, demande-lui le livre et insiste jusqu’à le prendre. Rapporte-le à la Gardienne, suis sa lumière jusqu’au point marqué en mer et jette le livre à l’eau.
 
 ## The Pale Reach — 8 succès
 

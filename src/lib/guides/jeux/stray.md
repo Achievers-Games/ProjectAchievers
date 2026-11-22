@@ -9,7 +9,7 @@ Le 100 % Steam de **Stray** compte **24 succès**. Fais une première partie en 
 - **Can't Cat-ch Me** — au chapitre 2, traverse la première poursuite des Zurks sans qu’aucun ne s’accroche. Cours en zigzag et ne t’arrête pas aux portes ; si tu es attrapé, relance le chapitre.
 - **Territory** — gratte au moins un objet interactif dans chacun des 12 chapitres. Le grattage du dernier chapitre compte aussi : fais-en un à chaque arrivée dans une nouvelle zone pour ne pas l’oublier.
 - **Pacifist** — dans les égouts, termine le chapitre sans tuer de Zurks avec la lampe UV de B-12. Fuis et esquive plutôt que de riposter.
-- **Sneakitty** — à Midtown, passe la séquence de l’usine sans te faire repérer par les Sentinelles. Cache-toi dans les caisses, observe leurs rondes et attends qu’elles regardent ailleurs avant de bouger.
+- **Sneakitty** — à Midtown, reste discret depuis l’entrée de l’usine jusqu’à ta sortie de la résidence de Clementine après avoir lu ses indices. La visite de la résidence fait partie du défi. Utilise les caisses comme abris et les charges suspendues de l’usine comme écrans mobiles. Recharge immédiatement le point de contrôle si une Sentinelle te repère.
 - **I Remember** — collecte les 27 souvenirs de B-12. Les souvenirs scénaristiques sont automatiques ; cherche les autres dans les recoins et vérifie la liste de B-12 avant de quitter chaque chapitre.
 
 ## Les deux visites des Slums
@@ -17,19 +17,23 @@ Le 100 % Steam de **Stray** compte **24 succès**. Fais une première partie en 
 La zone revient aux chapitres 4 et 6. Les objets de quête et collectibles s’y partagent : explore bien lors de ta première visite, mais garde en tête que certains accès ne s’ouvrent qu’au retour.
 
 - **Meowlody** — ramasse les huit partitions et donne-les au musicien Morusque.
-- **Badges** — obtiens les six badges : musique (Morusque), outsider (histoire), plante (rapporte les trois fleurs à Malo à Antvillage), chat (Midtown), police (appartement de Clementine) et Neco (usine, en rendant les clés perdues à l’ouvrier).
-- **Télé à chat** — dans l’appartement de Momo, change plusieurs fois les chaînes du téléviseur jusqu’à ce que le succès tombe.
+- **Badges** — prends le badge musique chez Morusque et le badge outsider en suivant l’histoire. À Antvillage, apporte à Malo la fleur violette sur la branche, la jaune près du bar et la rouge en bas du seau derrière la table de mah-jong. Termine par les trois badges de Midtown dans l’ordre ci-dessous.
+- **Télé à chat** — grimpe jusqu’au canapé sur les toits des Slums. Interagis avec la télécommande et fais défiler les chaînes jusqu’au succès.
 - **Boom Chat Kalaka** — pousse le ballon de basket dans le panier en haut de l’escalier près du gardien. Une fois tombé, il ne se replace pas toujours : fais-le avant de quitter les Slums.
 - **Curiosity Killed the Cat** — porte le sac en papier près du marché ; il suffit d’interagir avec lui.
-- **Cat-a-strophe** — à Antvillage, saute dans le seau posé sur la table de mah-jong.
+- **Cat-a-strophe** — à Antvillage, saute directement sur la table de mah-jong pour éparpiller les tuiles.
 
 ## Midtown, Jail et petits succès
 
+1. **Avant l’usine**, en entrant dans la boutique jaune de la rue principale, grimpe jusqu’au coffre sur les étagères et saisis **8542** pour le badge chat.
+2. **Avant de retrouver Blazer**, grimpe aux climatiseurs de la ruelle à côté du magasin de vêtements. Passe par la petite fenêtre à barreaux pour prendre le badge police dans la cellule.
+3. **Dans l’usine**, parle à l’ouvrier qui a perdu ses clés. Au passage des tonneaux flottants, saute vers le tas de déchets à droite, prends les clés et rapporte-les à l’ouvrier pour le badge Neco avant de poursuivre vers la batterie.
+
 - À Midtown, fouille l’appartement de Clementine et l’usine avant de partir : le chapitre devient inaccessible jusqu’à la sélection de chapitres après le générique. Récupère notamment la cassette, le badge Neco et les indices de l’appartement.
 - **A Little Chatty** — miaule 100 fois au total. Le bouton de miaulement fonctionne presque partout ; fais-le régulièrement pendant l’histoire.
-- **Productive Day** — couche-toi dans un endroit où le chat peut dormir et laisse le jeu tourner plus d’une heure réelle. Les chats qui ronronnent indiquent un point de repos.
-- **Cat-a-Pult** — saute 500 fois sur des objets. Les sauts de plateforme comptent ; le succès peut arriver naturellement.
-- **No More Lives** — laisse-toi attraper par les Zurks neuf fois. À faire dans un chapitre de poursuite rejouable.
+- **Productive Day** — utilise le couchage à côté de Morusque dans les Slums et laisse le chat dormir une heure réelle, jeu actif. Profites-en pendant la partie de collecte.
+- **Cat-a-Pult** — attends la fin de la collecte et du speedrun, qui comptent déjà pour les 500 sauts. S’il en manque, utilise deux surfaces rapprochées et répète les sauts aller-retour dès que l’icône apparaît.
+- **No More Lives** — dans la première poursuite du chapitre 2, arrête-toi pour te laisser attraper, puis reprends au dernier point de contrôle. Répète jusqu’à totaliser neuf morts.
 - **I Am Speed** — termine les 12 chapitres en moins de deux heures. Ignore les détours, dialogues optionnels et collectibles ; les cinématiques peuvent rester, alors avance sans hésiter. Une sauvegarde séparée évite de confondre ce parcours avec la collecte.
 - Les autres succès d’histoire se débloquent en progressant jusqu’à la fin. Pour le nettoyage, la sélection des chapitres permet de rejouer les zones et les actions de chapitre sans recommencer toute l’aventure.
 
@@ -37,7 +41,7 @@ La zone revient aux chapitres 4 et 6. Les objets de quête et collectibles s’y
 
 Pour **I Remember**, les souvenirs se répartissent ainsi : Flat 1, Slums 7, Rooftops 3, Dead End 3, Sewers 2, Antvillage 2, Midtown 7, Jail 1 et Control Room 1. Les deux passages aux Slums utilisent le même quartier : le compteur permet de voir ceux qui restent. Les souvenirs signalés par une icône de mémoire restent à récupérer après l’histoire.
 
-En parallèle, fais **un grattage par chapitre** pour Territory et frotte-toi à **cinq robots** pour **Cat's best friend**. Ramasse les partitions et parle aux personnages qui donnent des objets. Les consommables servent surtout aux échanges : il faut quatre boissons énergisantes pour acheter les objets du marchand, dont une partition et un souvenir.
+En parallèle, fais **un grattage par chapitre** pour **Territory** et frotte-toi à **cinq robots** pour **Cat's best friend**. Ramasse les partitions et parle aux personnages qui donnent des objets. Les consommables servent surtout aux échanges : il faut quatre boissons énergisantes pour acheter les objets du marchand, dont une partition et un souvenir.
 
 ## Vidéo et sources
 

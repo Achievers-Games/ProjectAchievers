@@ -16,7 +16,7 @@ Cuphead compte **28 succès de base** et **14 liés à The Delicious Last Course
 - Termine tous les boss du jeu de base : îles I, II, III et Inkwell Hell. Bats le Diable pour **Swing You Sinner** et termine en Normal pour **Souls Saved**. Le choix de rendre ou non les contrats d’âme ouvre aussi une fin alternative (**Selling Out**) ; tu peux ensuite rejouer le combat final et choisir l’autre option.
 - Termine les trois mausolées pour récupérer les trois Super Arts (**Magician Lord**). Utilise un Super Art pour achever un boss (**Porcelain Power**) et un Extra Special pour un autre (**Ceramic Strike**).
 - Achète toutes les armes et tous les charmes chez Porkrind (**Butter-and-Egg Man**). Pour gagner les pièces, termine les Run 'n Gun, fais les requêtes des PNJ, explore les raccourcis et fouille les niveaux. Il y a **40 pièces dans le jeu de base** ; la [vidéo de collecte](https://www.youtube.com/watch?v=TQ42y7pYB9Y) donne les emplacements dans l’ordre.
-- **Parry Persistence / Parry Performance** — réussis 20 puis 100 parades roses. **Bouncing Ball** — enchaîne cinq parades avant de toucher le sol ; les ballons roses sont pratiques. Une parade se fait en sautant puis en appuyant de nouveau sur le saut au contact d’un élément rose.
+- **Parry Persistance** / **Parry Performance** — réussis 20 puis 100 parades roses. **Bouncing Ball** — enchaîne cinq parades avant de toucher le sol ; les ballons roses sont pratiques. Une parade se fait en sautant puis en appuyant de nouveau sur le saut au contact d’un élément rose.
 - **Perfect Run** — finis un niveau sans subir de dégâts. Choisis un Run 'n Gun ou un boss simple en difficulté Simple ; le niveau doit quand même être terminé.
 - **Cutting Corners** — utilise l’un des raccourcis de la carte entre deux zones. Cherche l’ouverture dans le décor près du PNJ qui bloque le passage.
 - **Bravo Zulu P-26** — bats un boss d’avion en n’utilisant que les petits tirs du rétrécissement. Garde cette forme et évite les bombes pendant tout le combat.
@@ -25,13 +25,15 @@ Cuphead compte **28 succès de base** et **14 liés à The Delicious Last Course
 
 Après avoir terminé l’histoire en Normal, **Expert** devient disponible. Les succès de rang demandent **A- ou mieux sur tous les boss** de l’île concernée : **Sheriff** (île I), **Ranger** (île II), **Mayor** (île III), **King** (Inkwell Hell) et **Ranger** du DLC (île IV). Le rang dépend notamment du temps, des PV restants, des parades et des cartes de Super utilisées. Vérifie les drapeaux sur la carte ; une coupe dorée indique que le boss est validé.
 
-Pour **Put on a Show** et **Cooked to Perfection**, obtiens un **S-Rank** sur un seul boss en Expert — un boss du DLC compte aussi. Il faut le rang maximal, donc réussir les objectifs de score et terminer rapidement sans perdre de PV. Les **vidéos de rang S Expert pour tous les boss** servent de référence pour apprendre les phases et choisir tes armes.
+Pour **Put on a Show**, obtiens un rang S sur un boss en Expert. Si tu as le DLC, vise directement un des boss de l’île IV pour valider aussi **Cooked to Perfection**. Sur l’écran du score, relève le critère manquant avant de relancer. Fais les trois parades dès qu’une phase les propose régulièrement, dépense les cartes de Super pendant le combat et garde trois PV à l’arrivée.
 
 ## Run 'n Gun, pièces et défi pacifiste
 
 - **Coffers Full** — récupère toutes les pièces placées dans les six niveaux Run 'n Gun. Le compteur de chaque niveau permet de repérer un oubli.
 - **Pacifist** — termine les six Run 'n Gun sans éliminer un seul ennemi. Équipe **Smoke Bomb** pour traverser les adversaires et privilégie les sauts/parades ; tu n’as pas besoin de ramasser les pièces pendant ces runs. Après le sixième, parle à la tortue sur les quais de l’île III pour obtenir le succès et débloquer le filtre rétro.
 - **High Roller** — récupère les 40 pièces du jeu de base, y compris les récompenses de PNJ et les pièces cachées sur la carte. La [vidéo des emplacements](https://www.youtube.com/watch?v=Ffq_y1LWCsA) complète le parcours des six niveaux.
+
+Pour enchaîner les rangs **P**, fais chaque paire d’un coup. **Forest Follies** et **Treetop Trouble** sur l’île I, **Funfair Fever** et **Funhouse Frazzle** sur l’île II, **Perilous Piers** et **Rugged Ridge** sur l’île III. À la fin de chaque niveau, vérifie que le grand **P** s’affiche. Sur le dernier passage de Perilous Piers, concentre-toi sur les parades de la gemme rose de la pieuvre pour dégager le chemin et rester sur sa tête. [Parcours filmé des six rangs P](https://www.youtube.com/watch?v=ZD8qf-y--2c)
 
 ## King Dice et le casino
 
