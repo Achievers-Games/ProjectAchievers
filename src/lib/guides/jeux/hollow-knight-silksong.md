@@ -31,18 +31,18 @@ Le parcours vise le compteur du jeu de base. Si tu veux aussi les **52 succès S
 
 Suis ces étapes dans l’ordre et coche les fragments et outils dans les listes du bas. Les chapitres régionaux du parcours illustré montrent les embranchements et les murs cachés. [Parcours illustré, région par région](https://silksongwiki.com/walkthrough/steel-soul/#100-completion-backtracking) · [Carte interactive de Pharloom](https://itemaps.com/maps/silksong)
 
-| Tournée | Ce qu’il faut faire avant de repartir |
-| --- | --- |
-| **Bellhart, The Marrow et Bone Bottom** | Rends **My Missing Courier**, puis **My Missing Brother** pour ouvrir les livraisons. Prends le fragment de Frey, le Multibinder et les récompenses des vœux. Chez **Loddie**, dans The Marrow, touche 15 cibles avec les épingles pour le Tool Pouch. Achète le masque de Pebb et le Magnetite Brooch. |
-| **Wormways et Weavenest Atla** | Ouvre **Weavenest Karn** au Needolin et traverse le parcours avec Clawline pour **Sharpdart**. Fais **Alchemist’s Assistant** pour le Plasmium Phial. Ouvre Atla au Needolin dans Moss Grotto. Prends son masque et sa bobine, affronte les deux Moss Mothers pour **Weavelight** et parle à **Eva**. |
-| **Hunter’s March, Deep Docks et Far Fields** | Termine la chapelle Beast, récupère Curveclaw et reviens au Grand Hunt **Savage Beastfly** de Bellhart une fois Fourth Chorus vaincu et Songclave atteint. Bats la seconde bête dans l’arène de Fourth Chorus et rends le vœu pour son masque. Dans les docks, ouvre la trappe sud-est avec Clawline pour la bobine et termine l’arène de la puce. Dans Far Fields, va aussi chercher le masque de la maison en forme de crâne et les Silkspeed Anklets à Weavenest Cindril. |
-| **Greymoor, Shellwood et Wisp Thicket** | Termine **Crawbug Clearing** chez Creige pour le Crafting Kit et **Bugs of Pharloom** chez Nuu pour le Tool Pouch. Fais **Rite of the Pollip** pour le Pollip Pouch. Depuis la tour au-dessus de Halfway Home, traverse les ballons vers l’entrée de Wisp Thicket, bats Father of the Flame pour le **Wispfire Lantern**, puis va chercher le masque à l’est. |
-| **Sinner’s Road et The Mist** | Fais **Roach Guts** pour les Tacks et récupère le Barbed Bracelet. Dans la brume, joue du Needolin près des petites lumières et suis leur direction jusqu’à l’**Exhaust Organ**. Bats **Phantom** pour **Cross Stitch**. Retourne au nord de Sinner’s Road avec le double saut pour le chef Lugoli et son ingrédient. |
-| **Blasted Steps et Sands of Karak** | Avec le double saut, gagne la cache de **Grindle** à Blasted Steps. Achète sa bobine, son Crafting Kit, le Thief’s Mark et le Snitch Pick. Dans Sands of Karak, cherche le Crustnut derrière les parois friables et bats **Raging Conchfly** pour le **Conchcutter**. Le **Volt Filament** de Voltnest est accessible avec Clawline et le double saut. Silk Soar facilite ce détour à l’acte 3. |
-| **Whiteward et The Slab** | À Whiteward, descends sous le point d’arrêt inférieur de l’ascenseur pour une bobine. Rejoins Sherma pour **Balm for the Wounded** et récupère sa bobine en récompense. Récupère la **Surgeon’s Key**, ouvre la salle d’opération et bats **The Unravelled** pour le deuxième Silk Heart. À The Slab, utilise la **Key of Apostate** de Bilewater pour atteindre les zones fermées, prends la **Key of Heretic** et bats **First Sinner** pour **Rune Rage**. |
-| **Choral Chambers, Songclave, Memorium** | Fais les deux recherches de **Jubilana** (*The Lost Merchant*, puis *The Wandering Merchant*) avant d’acheter tout son stock utile. Dans Memorium, libère la **Huge Flea**, bats-la pour qu’elle rejoigne la caravane, et prends les Voltvessels derrière le mur caché au nord-est. |
-| **Underworks, Cogwork Core, Vaults et High Halls** | Ramasse les bobines, la Pale Oil des Vaults et les masques de ces secteurs. Bats Trobbio au théâtre pour **Claw Mirror**. Fabrique les outils aux établis. Dans le Cogwork Core, résous les trois épreuves des cloches pour assembler le **Cogheart** et réactiver **Second Sentinel**. Après avoir appris la mélodie de High Halls et terminé deux vœux de Songclave dont *Building Up Songclave*, croise la Sentinelle deux fois dans la Citadelle en te reposant entre les rencontres. Prends **Final Audience** au panneau de Songclave, puis gagne le duel à High Halls pour **Reserve Bind**. |
-| **Putrified Ducts et Bilewater** | Récupère le **Wreath of Purity** au sud-est de la Bellway des Ducts et équipe-le pour Bilewater. Fais **Broodfeast** auprès de la Huntress pour **Longclaw**. Rends **Trail’s End** à Shakra pour le **Throwing Ring**. À Bilewater, prends Quick Sling au-dessus de sa salle, le Twisted Bud derrière la paroi sous l’entrée venant des Vaults, et le Ruined Tool à **Weavenest Murglin** pour fabriquer **un Silkshot**. Débloque le banc caché derrière le mur à droite au bas du puits, puis bats **Groal the Great**. |
+| Tournée                                            | Ce qu’il faut faire avant de repartir                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Bellhart, The Marrow et Bone Bottom**            | Rends **My Missing Courier**, puis **My Missing Brother** pour ouvrir les livraisons. Prends le fragment de Frey, le Multibinder et les récompenses des vœux. Chez **Loddie**, dans The Marrow, touche 15 cibles avec les épingles pour le Tool Pouch. Achète le masque de Pebb et le Magnetite Brooch.                                                                                                                                                                                                                                                                                             |
+| **Wormways et Weavenest Atla**                     | Ouvre **Weavenest Karn** au Needolin et traverse le parcours avec Clawline pour **Sharpdart**. Fais **Alchemist’s Assistant** pour le Plasmium Phial. Ouvre Atla au Needolin dans Moss Grotto. Prends son masque et sa bobine, affronte les deux Moss Mothers pour **Weavelight** et parle à **Eva**.                                                                                                                                                                                                                                                                                               |
+| **Hunter’s March, Deep Docks et Far Fields**       | Termine la chapelle Beast, récupère Curveclaw et reviens au Grand Hunt **Savage Beastfly** de Bellhart une fois Fourth Chorus vaincu et Songclave atteint. Bats la seconde bête dans l’arène de Fourth Chorus et rends le vœu pour son masque. Dans les docks, ouvre la trappe sud-est avec Clawline pour la bobine et termine l’arène de la puce. Dans Far Fields, va aussi chercher le masque de la maison en forme de crâne et les Silkspeed Anklets à Weavenest Cindril.                                                                                                                        |
+| **Greymoor, Shellwood et Wisp Thicket**            | Termine **Crawbug Clearing** chez Creige pour le Crafting Kit et **Bugs of Pharloom** chez Nuu pour le Tool Pouch. Fais **Rite of the Pollip** pour le Pollip Pouch. Depuis la tour au-dessus de Halfway Home, traverse les ballons vers l’entrée de Wisp Thicket, bats Father of the Flame pour le **Wispfire Lantern**, puis va chercher le masque à l’est.                                                                                                                                                                                                                                       |
+| **Sinner’s Road et The Mist**                      | Fais **Roach Guts** pour les Tacks et récupère le Barbed Bracelet. Dans la brume, joue du Needolin près des petites lumières et suis leur direction jusqu’à l’**Exhaust Organ**. Bats **Phantom** pour **Cross Stitch**. Retourne au nord de Sinner’s Road avec le double saut pour le chef Lugoli et son ingrédient.                                                                                                                                                                                                                                                                               |
+| **Blasted Steps et Sands of Karak**                | Avec le double saut, gagne la cache de **Grindle** à Blasted Steps. Achète sa bobine, son Crafting Kit, le Thief’s Mark et le Snitch Pick. Dans Sands of Karak, cherche le Crustnut derrière les parois friables et bats **Raging Conchfly** pour le **Conchcutter**. Le **Volt Filament** de Voltnest est accessible avec Clawline et le double saut. Silk Soar facilite ce détour à l’acte 3.                                                                                                                                                                                                     |
+| **Whiteward et The Slab**                          | À Whiteward, descends sous le point d’arrêt inférieur de l’ascenseur pour une bobine. Rejoins Sherma pour **Balm for the Wounded** et récupère sa bobine en récompense. Récupère la **Surgeon’s Key**, ouvre la salle d’opération et bats **The Unravelled** pour le deuxième Silk Heart. À The Slab, utilise la **Key of Apostate** de Bilewater pour atteindre les zones fermées, prends la **Key of Heretic** et bats **First Sinner** pour **Rune Rage**.                                                                                                                                       |
+| **Choral Chambers, Songclave, Memorium**           | Fais les deux recherches de **Jubilana** (_The Lost Merchant_, puis _The Wandering Merchant_) avant d’acheter tout son stock utile. Dans Memorium, libère la **Huge Flea**, bats-la pour qu’elle rejoigne la caravane, et prends les Voltvessels derrière le mur caché au nord-est.                                                                                                                                                                                                                                                                                                                 |
+| **Underworks, Cogwork Core, Vaults et High Halls** | Ramasse les bobines, la Pale Oil des Vaults et les masques de ces secteurs. Bats Trobbio au théâtre pour **Claw Mirror**. Fabrique les outils aux établis. Dans le Cogwork Core, résous les trois épreuves des cloches pour assembler le **Cogheart** et réactiver **Second Sentinel**. Après avoir appris la mélodie de High Halls et terminé deux vœux de Songclave dont _Building Up Songclave_, croise la Sentinelle deux fois dans la Citadelle en te reposant entre les rencontres. Prends **Final Audience** au panneau de Songclave, puis gagne le duel à High Halls pour **Reserve Bind**. |
+| **Putrified Ducts et Bilewater**                   | Récupère le **Wreath of Purity** au sud-est de la Bellway des Ducts et équipe-le pour Bilewater. Fais **Broodfeast** auprès de la Huntress pour **Longclaw**. Rends **Trail’s End** à Shakra pour le **Throwing Ring**. À Bilewater, prends Quick Sling au-dessus de sa salle, le Twisted Bud derrière la paroi sous l’entrée venant des Vaults, et le Ruined Tool à **Weavenest Murglin** pour fabriquer **un Silkshot**. Débloque le banc caché derrière le mur à droite au bas du puits, puis bats **Groal the Great**.                                                                          |
 
 ### Acheter et améliorer sans tourner en rond
 
@@ -55,8 +55,8 @@ Suis ces étapes dans l’ordre et coche les fragments et outils dans les listes
 
 1. Apprends les trois parties de la **Threefold Melody**. **Conductor** se gagne après l’arène de High Halls, **Vaultkeeper** auprès de Cardinius dans les Whispering Vaults et **Architect** par le mécanisme du Cogwork Core. Joue la mélodie devant les statues au cœur de la Citadelle. Monte à **The Cradle**, bats **Lace** puis termine son souvenir pour le troisième Silk Heart.
 2. Installe la caravane à **Fleatopia** et récupère le **Faydown Cloak** si tu as pris un autre chemin. À Bellhart, termine **Restoration of Bellhart** et **Bellhart’s Glory**, puis parle à Pavo pour avoir la clé du **Bellhome**.
-3. Vérifie les six vœux exigés **Flexile Spines**, **A Lifesaving Bridge**, **Crawbug Clearing**, **Strengthening Songclave**, **Trail’s End** et **Balm for the Wounded**. Fais d’abord **Bone Bottom Repairs** pour débloquer le pont et **Building Up Songclave** pour ouvrir les nouveaux vœux de Songclave. Pour *Trail’s End*, visite les régions de Shakra et achète toutes ses cartes. Vérifie son stand de Bellhart pour les cartes que tu as laissées passer.
-4. Il faut aussi **17 points de vœux**. Voici une combinaison suffisante si tu suis cette route. **Bone Bottom et Shellwood** donnent six points avec *Berry Picking*, *An Icon of Hope*, *Rite of the Pollip*, *Volatile Flintbeetles*, *The Terrible Tyrant* et *Garb of the Pilgrims*. **Bellhart et environs** en donnent sept avec *My Missing Courier*, *My Missing Brother*, *Pinmaster’s Oil* (deuxième amélioration de l’aiguille), *Silver Bells*, *Savage Beastfly*, *Bugs of Pharloom* et *Roach Guts*. **Citadelle et détours** en donnent quatre avec *Great Taste of Pharloom*, *The Lost Merchant*, *The Wandering Merchant* et *Fine Pins*. Si un vœu manque, complète par *Cloaks of the Choir*, *Alchemist’s Assistant*, *Broodfeast* ou *Final Audience*. Chacun vaut un point. Une première livraison distincte vaut un demi-point.
+3. Vérifie les six vœux exigés **Flexile Spines**, **A Lifesaving Bridge**, **Crawbug Clearing**, **Strengthening Songclave**, **Trail’s End** et **Balm for the Wounded**. Fais d’abord **Bone Bottom Repairs** pour débloquer le pont et **Building Up Songclave** pour ouvrir les nouveaux vœux de Songclave. Pour _Trail’s End_, visite les régions de Shakra et achète toutes ses cartes. Vérifie son stand de Bellhart pour les cartes que tu as laissées passer.
+4. Il faut aussi **17 points de vœux**. Voici une combinaison suffisante si tu suis cette route. **Bone Bottom et Shellwood** donnent six points avec _Berry Picking_, _An Icon of Hope_, _Rite of the Pollip_, _Volatile Flintbeetles_, _The Terrible Tyrant_ et _Garb of the Pilgrims_. **Bellhart et environs** en donnent sept avec _My Missing Courier_, _My Missing Brother_, _Pinmaster’s Oil_ (deuxième amélioration de l’aiguille), _Silver Bells_, _Savage Beastfly_, _Bugs of Pharloom_ et _Roach Guts_. **Citadelle et détours** en donnent quatre avec _Great Taste of Pharloom_, _The Lost Merchant_, _The Wandering Merchant_ et _Fine Pins_. Si un vœu manque, complète par _Cloaks of the Choir_, _Alchemist’s Assistant_, _Broodfeast_ ou _Final Audience_. Chacun vaut un point. Une première livraison distincte vaut un demi-point.
 5. Prends **Silk and Soul** au panneau de Bellhart ou auprès du Caretaker à Songclave. Réunis les trois âmes auprès de **Chapel Maid** à Bone Bottom, de **Bell Hermit** sous Bellhart et dans la cabane après **Groal** à Bilewater. Prends le **Snare Setter** dans l’atelier secret de **Weavenest Atla**. Retourne au Caretaker pour préparer le **Soul Snare**. [Prérequis exacts et points des vœux](https://hollowknight.wiki/w/Silk_and_Soul) · [PNJ et trajet de l’acte 3](https://www.pcgamer.com/games/action/silksong-act-3-unlock/)
 
 ### Le choix qui ferme l’acte 2
@@ -64,9 +64,9 @@ Suis ces étapes dans l’ordre et coche les fragments et outils dans les listes
 Si tu veux les succès des fins, respecte cet ordre. Si tu veux seulement le **100 % affiché**, tu peux passer directement à la guérison pour le blason Witch, puis jouer le Needolin après le boss.
 
 1. **Weaver Queen.** Bats **Grand Mother Silk** sans malédiction et choisis **Bind**. Laisse passer le générique et recharge la sauvegarde. Tu reprends avant le boss, avec le succès acquis.
-2. **Twisted Child.** Quand l’accès au boss est déjà ouvert et ton aiguille améliorée, apporte le **Twisted Bud** à **Greyroot** après ses six pollips. Accepte *Rite of Rebirth*, sors de la chapelle et va battre **Grand Mother Silk** sous la malédiction. Tu devras composer avec la soie réduite et te passer de soin et d’outils. Reste au sol tant que ses attaques le permettent, esquive avant de frapper et saisis les ouvertures après ses attaques longues.
-3. **Blason Witch.** Après avoir vu la fin maudite, recharge puis demande à **Yarnaby** à Greymoor l’*Infestation Operation*. Achète les **Steel Spines** à Crull et Benjin dans Sinner’s Road et rapporte-les à Yarnaby. Le traitement te donne le **Witch Crest**. Une fois guéri, tu ne peux plus déclencher *Twisted Child* sur ce parcours.
-4. **Snared Silk.** Avec *Silk and Soul* terminé, gagne de nouveau le combat contre **Grand Mother Silk** et joue le **Needolin** quand elle est à terre. Après le générique, sélectionne ta sauvegarde et brise les filaments noirs pour entrer en **acte 3**. Fais les fins *Weaver Queen* et *Twisted Child* avant ce choix si tu les veux sur cette sauvegarde. [Les fins filmées](https://www.youtube.com/watch?v=3uBMMcN7kBw&t=2947s) · [Trajet du Twisted Bud et de Yarnaby](https://www.pcgamer.com/games/action/silksong-twisted-bud-infestation-operation/)
+2. **Twisted Child.** Quand l’accès au boss est déjà ouvert et ton aiguille améliorée, apporte le **Twisted Bud** à **Greyroot** après ses six pollips. Accepte _Rite of Rebirth_, sors de la chapelle et va battre **Grand Mother Silk** sous la malédiction. Tu devras composer avec la soie réduite et te passer de soin et d’outils. Reste au sol tant que ses attaques le permettent, esquive avant de frapper et saisis les ouvertures après ses attaques longues.
+3. **Blason Witch.** Après avoir vu la fin maudite, recharge puis demande à **Yarnaby** à Greymoor l’_Infestation Operation_. Achète les **Steel Spines** à Crull et Benjin dans Sinner’s Road et rapporte-les à Yarnaby. Le traitement te donne le **Witch Crest**. Une fois guéri, tu ne peux plus déclencher _Twisted Child_ sur ce parcours.
+4. **Snared Silk.** Avec _Silk and Soul_ terminé, gagne de nouveau le combat contre **Grand Mother Silk** et joue le **Needolin** quand elle est à terre. Après le générique, sélectionne ta sauvegarde et brise les filaments noirs pour entrer en **acte 3**. Fais les fins _Weaver Queen_ et _Twisted Child_ avant ce choix si tu les veux sur cette sauvegarde. [Les fins filmées](https://www.youtube.com/watch?v=3uBMMcN7kBw&t=2947s) · [Trajet du Twisted Bud et de Yarnaby](https://www.pcgamer.com/games/action/silksong-twisted-bud-infestation-operation/)
 
 ## Acte 3 — Les sept derniers points et la vraie fin
 
@@ -80,9 +80,9 @@ Si tu veux les succès des fins, respecte cet ordre. Si tu veux seulement le **1
 
 - [ ] **Pale Nails.** Remonte à **The Cradle** avec Silk Soar et lie-toi au bras de Grand Mother Silk au sommet.
 - [ ] **Pin Badge et masque de Brightvein.** Après avoir appris Needle Strike à l’acte 1, prends le vœu de duel de Pinstress à Bellhart, puis lis le message dans sa maison à Blasted Steps. À **Mount Fay**, utilise Silk Soar dans la salle du lac pour atteindre le parcours de **Brightvein** et son masque. Reviens sur le trajet du sommet et réveille **Pinstress** d’un coup d’aiguille. Bats-la pour le Pin Badge.
-- [ ] **Masques de Far Fields.** Depuis Hunter’s March, utilise Silk Soar à la statue de Karmelita. À l’est, bats **Sprintmaster Swift** dans les trois courses de *Fastest in Pharloom*. Continue jusqu’à **Karmelita** pour que *The Hidden Hunter* apparaisse à Bellhart. Bats **Gurr the Outcast**, prends la poupée d’herbe dans la pièce suivante et rends-la au panneau pour le deuxième masque de la tournée.
+- [ ] **Masques de Far Fields.** Depuis Hunter’s March, utilise Silk Soar à la statue de Karmelita. À l’est, bats **Sprintmaster Swift** dans les trois courses de _Fastest in Pharloom_. Continue jusqu’à **Karmelita** pour que _The Hidden Hunter_ apparaisse à Bellhart. Bats **Gurr the Outcast**, prends la poupée d’herbe dans la pièce suivante et rends-la au panneau pour le deuxième masque de la tournée.
 - [ ] **Masque de Dark Hearts.** Prends le vœu à Bellhart une fois l’Abîme exploré et l’objectif de fin ouvert. Élimine **12 Void Masses** pendant tes trajets, puis rends le vœu. Ces masses sont les gros amas de Vide fixes. [Carte et trajet des Void Masses](https://silksongwiki.com/walkthrough/steel-soul/#act-3-cleanup)
-- [ ] **Dernière Pale Oil.** Libère les **30 puces**, dont **Kratt**, **Vog** et la **Huge Flea**, puis parle à Mooshka pour l’**Egg of Flealia**. Prends *Ecstasy of the End* quand le festival est annoncé. Fais les trois records de **Flea Juggle**, **Flea Dodge** et **Flea Bounce**. Pour le jonglage, regroupe les puces du même côté avec une grande portée. Pour l’esquive, bouge seulement si une puce va te toucher. Pour les rebonds, le blason Wanderer donne une attaque vers le bas facile à placer. Récupère la dernière huile auprès de Mooshka.
+- [ ] **Dernière Pale Oil.** Libère les **30 puces**, dont **Kratt**, **Vog** et la **Huge Flea**, puis parle à Mooshka pour l’**Egg of Flealia**. Prends _Ecstasy of the End_ quand le festival est annoncé. Fais les trois records de **Flea Juggle**, **Flea Dodge** et **Flea Bounce**. Pour le jonglage, regroupe les puces du même côté avec une grande portée. Pour l’esquive, bouge seulement si une puce va te toucher. Pour les rebonds, le blason Wanderer donne une attaque vers le bas facile à placer. Récupère la dernière huile auprès de Mooshka.
 - [ ] **Pale Steel Needle.** Si Plinney a disparu de Bellhart, va le libérer à **Shellwood** depuis la Bellway. De retour à sa boutique, donne-lui la dernière huile et **680 rosaires**. [Festival et retour de Plinney](https://silksongwiki.com/walkthrough/steel-soul/#100-fleatopia)
 
 ### Obtenir l’Everbloom et finir
@@ -94,18 +94,18 @@ Si tu veux les succès des fins, respecte cet ordre. Si tu veux seulement le **1
 
 ## Checklist du 100 % — Les 100 points
 
-| Famille | Points | À vérifier |
-| --- | ---: | --- |
-| Outils | 51 | 18 rouges, 21 bleus, 12 jaunes |
-| Bobines | 9 | 18 fragments, deux par point |
-| Équipement | 8 | Quatre Tool Pouches et quatre Crafting Kits |
-| Capacités | 7 | Swift Step, Cling Grip, Clawline, Needolin, Needle Strike, Silk Soar, Sylphsong |
-| Compétences de soie | 6 | Silkspear, Thread Storm, Cross Stitch, Sharpdart, Rune Rage, Pale Nails |
-| Blasons | 6 | Reaper, Wanderer, Beast, Witch, Architect, Shaman |
-| Masques | 5 | 20 fragments, quatre par point |
-| Aiguille | 4 | Affûtage de Plinney et trois huiles |
-| Cœurs de soie | 3 | Bell Beast, The Unravelled, Lace à The Cradle |
-| Everbloom | 1 | Récompense de Red Memory |
+| Famille             | Points | À vérifier                                                                      |
+| ------------------- | -----: | ------------------------------------------------------------------------------- |
+| Outils              |     51 | 18 rouges, 21 bleus, 12 jaunes                                                  |
+| Bobines             |      9 | 18 fragments, deux par point                                                    |
+| Équipement          |      8 | Quatre Tool Pouches et quatre Crafting Kits                                     |
+| Capacités           |      7 | Swift Step, Cling Grip, Clawline, Needolin, Needle Strike, Silk Soar, Sylphsong |
+| Compétences de soie |      6 | Silkspear, Thread Storm, Cross Stitch, Sharpdart, Rune Rage, Pale Nails         |
+| Blasons             |      6 | Reaper, Wanderer, Beast, Witch, Architect, Shaman                               |
+| Masques             |      5 | 20 fragments, quatre par point                                                  |
+| Aiguille            |      4 | Affûtage de Plinney et trois huiles                                             |
+| Cœurs de soie       |      3 | Bell Beast, The Unravelled, Lace à The Cradle                                   |
+| Everbloom           |      1 | Récompense de Red Memory                                                        |
 
 Le **Faydown Cloak** et le **Drifter’s Cloak** ouvrent des passages indispensables. À la fin de l’acte 2, le plafond est **93 %**. Les sept points de l’acte 3 viennent d’un masque complet, de la dernière aiguille, du Pin Badge, de Pale Nails, du blason Shaman, de Silk Soar et de l’Everbloom. Le journal complet, les mementos et les reliques rapportent des récompenses annexes. [Détail des points extrait du jeu](https://steamcommunity.com/sharedfiles/filedetails/?id=3567581746) · [Checklist à comparer avec l’inventaire](https://howtoplayhub.com/silksong/completion-checklist)
 
@@ -119,7 +119,7 @@ Coche chaque prise à l’obtention. Les quatre dernières cases de cette liste 
 - [ ] Far Fields — rejoins le toit près de la **Seamstress** avec le manteau.
 - [ ] Shellwood — termine le parcours des fleurs rebondissantes et des pointes.
 - [ ] Weavenest Atla — explore le passage latéral accessible en remontant la paroi.
-- [ ] Songclave — achète le masque de **Jubilana** après *The Wandering Merchant*.
+- [ ] Songclave — achète le masque de **Jubilana** après _The Wandering Merchant_.
 - [ ] Cogwork Core — descends à gauche après les Cogwork Dancers et termine l’arène.
 - [ ] Whispering Vaults — frappe la caisse mobile depuis le couloir du dessous, puis monte dans le puits dégagé.
 - [ ] Far Fields — rends **Savage Beastfly** au panneau de Bellhart après le combat dans l’ancienne arène de Fourth Chorus.
@@ -141,7 +141,7 @@ Coche chaque prise à l’obtention. Les quatre dernières cases de cette liste 
 - [ ] Bone Bottom — casse le mur dans la galerie de mousse au-dessus du village.
 - [ ] Deep Docks — depuis Forge Daughter, descends le puits au sud-ouest et prends la première sortie est. Active le levier au bout de la salle brûlante, puis remonte sur ses plateformes.
 - [ ] Greymoor — au-dessus du banc de Shakra, saute de ballon en ballon après avoir activé le levier du secteur est.
-- [ ] Bellhart — achète le fragment de **Frey** après *My Missing Courier*.
+- [ ] Bellhart — achète le fragment de **Frey** après _My Missing Courier_.
 - [ ] Weavenest Atla — après le téléporteur, remonte à l’est et passe au-dessus du premier Marrowmaw pour contourner le second.
 - [ ] The Slab — au-dessus de la Bellway, grimpe sur les cages puis prends le passage au plafond vers l’extérieur.
 - [ ] Grand Gate — monte au-dessus de la grande balance en la frappant vers le haut.
@@ -174,72 +174,72 @@ Achète à **Vog** les marqueurs qui te manquent et utilise la carte pour vérif
 
 Utilise les noms ci-dessous pour repérer les cases vides de Farsight. Pour les outils qui demandent du Craftmetal, garde-en pour les achats et ateliers avant de dépenser sur les variantes. Tu choisis **un seul** Silkshot. Curveclaw ou Curvesickle, Druid’s Eye ou Druid’s Eyes et Claw Mirror ou Claw Mirrors partagent chacun un emplacement.
 
-| Rouges (18) | Repère d’obtention |
-| --- | --- |
-| Straight Pin | Salle au-dessus de la cellule de Grindle, The Marrow |
-| Threefold Pin | Passage caché de Greymoor, dans le secteur des ballons |
-| Sting Shard | Forge Daughter, Deep Docks, avec du Craftmetal |
-| Tacks | *Roach Guts*, Crull et Benjin, Sinner’s Road |
-| Longpin | Passage caché derrière un nid de guêpes, Shellwood |
+| Rouges (18)             | Repère d’obtention                                                                                                                                                                                                                                                                            |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Straight Pin            | Salle au-dessus de la cellule de Grindle, The Marrow                                                                                                                                                                                                                                          |
+| Threefold Pin           | Passage caché de Greymoor, dans le secteur des ballons                                                                                                                                                                                                                                        |
+| Sting Shard             | Forge Daughter, Deep Docks, avec du Craftmetal                                                                                                                                                                                                                                                |
+| Tacks                   | _Roach Guts_, Crull et Benjin, Sinner’s Road                                                                                                                                                                                                                                                  |
+| Longpin                 | Passage caché derrière un nid de guêpes, Shellwood                                                                                                                                                                                                                                            |
 | Curveclaw / Curvesickle | Achète Curveclaw à Mottled Skarr ou prends-le dans la salle au-dessus de son corps. Pour la variante, touche les quatre cibles au-dessus de la Bellway de Far Fields en un seul lancer à l’acte 3, sans Pollip Pouch. Donne-le au Skarr, repose-toi au banc puis reviens chercher Curvesickle |
-| Throwing Ring | Récompense de *Trail’s End* chez Shakra |
-| Pimpillo | Établi au-dessus de la maison de Yarnaby à Greymoor, avec du Craftmetal |
-| Conchcutter | Derrière Raging Conchfly, Sands of Karak |
-| Silkshot | Ruined Tool de Bilewater, à faire réparer aux docks, au Cauldron ou au sommet de Mount Fay |
-| Delver’s Drill | Dans les Underworks, fais tomber le poids avec le levier et entre dans le passage dégagé |
-| Cogwork Wheel | Twelfth Architect, avec du Craftmetal |
-| Cogfly | Atelier caché de High Halls, avec du Craftmetal |
-| Rosary Cannon | Derrière la porte à Simple Key près du Forum, High Halls |
-| Voltvessels | Derrière le mur caché du nord-est de Memorium, après l’épreuve |
-| Flintslate | Deep Docks inférieur, à l’ouest de l’entrée basse de Far Fields. Monte parmi les plateformes suspendues jusqu’à l’établi |
-| Flea Brew | Grishkin après le premier déménagement de la caravane |
-| Plasmium Phial | *Alchemist’s Assistant*, Wormways |
+| Throwing Ring           | Récompense de _Trail’s End_ chez Shakra                                                                                                                                                                                                                                                       |
+| Pimpillo                | Établi au-dessus de la maison de Yarnaby à Greymoor, avec du Craftmetal                                                                                                                                                                                                                       |
+| Conchcutter             | Derrière Raging Conchfly, Sands of Karak                                                                                                                                                                                                                                                      |
+| Silkshot                | Ruined Tool de Bilewater, à faire réparer aux docks, au Cauldron ou au sommet de Mount Fay                                                                                                                                                                                                    |
+| Delver’s Drill          | Dans les Underworks, fais tomber le poids avec le levier et entre dans le passage dégagé                                                                                                                                                                                                      |
+| Cogwork Wheel           | Twelfth Architect, avec du Craftmetal                                                                                                                                                                                                                                                         |
+| Cogfly                  | Atelier caché de High Halls, avec du Craftmetal                                                                                                                                                                                                                                               |
+| Rosary Cannon           | Derrière la porte à Simple Key près du Forum, High Halls                                                                                                                                                                                                                                      |
+| Voltvessels             | Derrière le mur caché du nord-est de Memorium, après l’épreuve                                                                                                                                                                                                                                |
+| Flintslate              | Deep Docks inférieur, à l’ouest de l’entrée basse de Far Fields. Monte parmi les plateformes suspendues jusqu’à l’établi                                                                                                                                                                      |
+| Flea Brew               | Grishkin après le premier déménagement de la caravane                                                                                                                                                                                                                                         |
+| Plasmium Phial          | _Alchemist’s Assistant_, Wormways                                                                                                                                                                                                                                                             |
 
-| Bleus (21) | Repère d’obtention |
-| --- | --- |
-| Druid’s Eye / Druid’s Eyes | Moss Druid, Mosshome, avec ses mossberries |
-| Magma Bell | Forge Daughter, Deep Docks |
-| Warding Bell | Sur un Smelt Shoveller mort, près de la liaison basse entre Far Fields et Deep Docks |
-| Pollip Pouch | *Rite of the Pollip*, Greyroot |
-| Fractured Mask | Mottled Skarr à Hunter’s March, ou récupère-le près de son corps après son départ |
-| Multibinder | Frey à Bellhart après *My Missing Courier* |
-| Weavelight | Après le duo de Moss Mothers, Weavenest Atla |
-| Sawtooth Circlet | Twelfth Architect, avec du Craftmetal |
-| Injector Band | Whiteward, en haut de la salle des Morticians |
-| Spool Extender | Jubilana, Songclave |
-| Reserve Bind | *Final Audience* avec Second Sentinel, High Halls |
-| Claw Mirror / Claw Mirrors | Trobbio au théâtre, amélioration sur Tormented Trobbio |
-| Memory Crystal | Mur caché près du banc inférieur de Mount Fay |
-| Snitch Pick | Grindle à Blasted Steps après Clawline |
-| Volt Filament | Voltvyrm à Voltnest, au-dessus de Sands of Karak |
-| Quick Sling | Derrière le plafond destructible au-dessus de Shakra, Bilewater |
-| Wreath of Purity | Sur un corps au sud-est de la Bellway de Putrified Ducts |
-| Longclaw | *Broodfeast* ou *Runtfeast* chez la Huntress, Putrified Ducts |
-| Wispfire Lantern | Father of the Flame, Wisp Thicket |
-| Egg of Flealia | Mooshka après les 30 puces |
-| Pin Badge | Duel de Pinstress à Mount Fay à l’acte 3 |
+| Bleus (21)                 | Repère d’obtention                                                                   |
+| -------------------------- | ------------------------------------------------------------------------------------ |
+| Druid’s Eye / Druid’s Eyes | Moss Druid, Mosshome, avec ses mossberries                                           |
+| Magma Bell                 | Forge Daughter, Deep Docks                                                           |
+| Warding Bell               | Sur un Smelt Shoveller mort, près de la liaison basse entre Far Fields et Deep Docks |
+| Pollip Pouch               | _Rite of the Pollip_, Greyroot                                                       |
+| Fractured Mask             | Mottled Skarr à Hunter’s March, ou récupère-le près de son corps après son départ    |
+| Multibinder                | Frey à Bellhart après _My Missing Courier_                                           |
+| Weavelight                 | Après le duo de Moss Mothers, Weavenest Atla                                         |
+| Sawtooth Circlet           | Twelfth Architect, avec du Craftmetal                                                |
+| Injector Band              | Whiteward, en haut de la salle des Morticians                                        |
+| Spool Extender             | Jubilana, Songclave                                                                  |
+| Reserve Bind               | _Final Audience_ avec Second Sentinel, High Halls                                    |
+| Claw Mirror / Claw Mirrors | Trobbio au théâtre, amélioration sur Tormented Trobbio                               |
+| Memory Crystal             | Mur caché près du banc inférieur de Mount Fay                                        |
+| Snitch Pick                | Grindle à Blasted Steps après Clawline                                               |
+| Volt Filament              | Voltvyrm à Voltnest, au-dessus de Sands of Karak                                     |
+| Quick Sling                | Derrière le plafond destructible au-dessus de Shakra, Bilewater                      |
+| Wreath of Purity           | Sur un corps au sud-est de la Bellway de Putrified Ducts                             |
+| Longclaw                   | _Broodfeast_ ou _Runtfeast_ chez la Huntress, Putrified Ducts                        |
+| Wispfire Lantern           | Father of the Flame, Wisp Thicket                                                    |
+| Egg of Flealia             | Mooshka après les 30 puces                                                           |
+| Pin Badge                  | Duel de Pinstress à Mount Fay à l’acte 3                                             |
 
-| Jaunes (12) | Repère d’obtention |
-| --- | --- |
-| Compass | Shakra |
-| Shard Pendant | Sur une table dans une annexe de The Marrow |
-| Magnetite Brooch | Pebb, à Bone Bottom, ou Grindle à l’acte 3 |
-| Weighted Belt | Mort, à Pilgrim’s Rest |
-| Barbed Bracelet | Fosse de Sinner’s Road |
+| Jaunes (12)                      | Repère d’obtention                                                               |
+| -------------------------------- | -------------------------------------------------------------------------------- |
+| Compass                          | Shakra                                                                           |
+| Shard Pendant                    | Sur une table dans une annexe de The Marrow                                      |
+| Magnetite Brooch                 | Pebb, à Bone Bottom, ou Grindle à l’acte 3                                       |
+| Weighted Belt                    | Mort, à Pilgrim’s Rest                                                           |
+| Barbed Bracelet                  | Fosse de Sinner’s Road                                                           |
 | Dead Bug’s Purse / Shell Satchel | Pièce des Gromlings dans The Marrow. La besace remplace la bourse en Âme d’acier |
-| Magnetite Dice | Gagne aux dés contre Lumble ou récupère ses dés après sa disparition |
-| Scuttlebrace | Twelfth Architect, avec du Craftmetal |
-| Ascendant’s Grip | Jubilana à Songclave |
-| Spider Strings | Jubilana à Songclave après *The Lost Merchant* |
-| Silkspeed Anklets | Termine l’épreuve de course de Weavenest Cindril, Far Fields |
-| Thief’s Mark | Grindle à Blasted Steps |
+| Magnetite Dice                   | Gagne aux dés contre Lumble ou récupère ses dés après sa disparition             |
+| Scuttlebrace                     | Twelfth Architect, avec du Craftmetal                                            |
+| Ascendant’s Grip                 | Jubilana à Songclave                                                             |
+| Spider Strings                   | Jubilana à Songclave après _The Lost Merchant_                                   |
+| Silkspeed Anklets                | Termine l’épreuve de course de Weavenest Cindril, Far Fields                     |
+| Thief’s Mark                     | Grindle à Blasted Steps                                                          |
 
 [Carte des outils et des ateliers](https://itemaps.com/maps/silksong) · [Les outils filmés avec leurs emplacements](https://www.youtube.com/watch?v=VO-DAXixQJM)
 
 ### Les huit améliorations d’équipement et les six blasons
 
 - [ ] **Tool Pouch 1 à 4** — vendeur **Mort** à Pilgrim’s Rest, vœu de **Nuu** à Halfway Home, 15 cibles de **Loddie** dans The Marrow et récompense de **Mooshka** à Fleatopia. Si tu as attendu l’acte 3, Grindle reprend le sac de Mort et celui de Loddie reste sur sa table.
-- [ ] **Crafting Kit 1 à 4** — **Forge Daughter** à Deep Docks, **Creige** après *Crawbug Clearing*, **Twelfth Architect** dans le Cauldron et **Grindle** dans sa cache de Blasted Steps.
+- [ ] **Crafting Kit 1 à 4** — **Forge Daughter** à Deep Docks, **Creige** après _Crawbug Clearing_, **Twelfth Architect** dans le Cauldron et **Grindle** dans sa cache de Blasted Steps.
 - [ ] **Blasons** — Reaper à sa chapelle de Greymoor, Wanderer à sa chapelle de Bonegrave, Beast après le premier Savage Beastfly, Witch après le traitement de Yarnaby, Architect dans la chapelle au-dessus de Twelfth Architect et Shaman par l’accès en Silk Soar de Ruined Chapel. Pour la clé de la chapelle de l’Architecte, reviens chez le marchand lorsque tu as **25 outils**.
 
 [Repères des sacs et kits](https://www.shacknews.com/article/146145/upgrade-tool-pouch-crafting-kit-silksong) · [Carte des chapelles de blason](https://www.gamerguides.com/hollow-knight-silksong/checklists/crest-locations/)

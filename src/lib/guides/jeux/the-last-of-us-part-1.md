@@ -46,13 +46,13 @@ Dans **Mallrats**, ramasse les briques éparpillées et casse les sept vitres de
 
 ### Les cinq outils à prendre sur la même partie
 
-| Chapitre | Repère de la boîte rouge |
-| --- | --- |
-| Bill’s Town | Sous-sol de l’église. Fouille le coin à gauche de l’armurerie de Bill, près de la table où il présente la bombe. |
-| Pittsburgh | Après l’embuscade du début, fouille le garage où les chasseurs stockent les affaires de leurs victimes. |
-| Banlieue | Après avoir franchi l’eau avec Henry et Sam, entre dans la réserve à gauche. |
-| Université | Dans le bâtiment scientifique, garde un surin pour ouvrir la dernière porte du couloir. |
-| Dépôt de bus | Après les girafes, fouille la grande tente médicale avant de rejoindre le tunnel. |
+| Chapitre     | Repère de la boîte rouge                                                                                         |
+| ------------ | ---------------------------------------------------------------------------------------------------------------- |
+| Bill’s Town  | Sous-sol de l’église. Fouille le coin à gauche de l’armurerie de Bill, près de la table où il présente la bombe. |
+| Pittsburgh   | Après l’embuscade du début, fouille le garage où les chasseurs stockent les affaires de leurs victimes.          |
+| Banlieue     | Après avoir franchi l’eau avec Henry et Sam, entre dans la réserve à gauche.                                     |
+| Université   | Dans le bâtiment scientifique, garde un surin pour ouvrir la dernière porte du couloir.                          |
+| Dépôt de bus | Après les girafes, fouille la grande tente médicale avant de rejoindre le tunnel.                                |
 
 ## Armes, artisanat et améliorations
 

@@ -70,12 +70,12 @@ Une partie S+ doit commencer avec **Nouvelle partie**, et non NG+. Pour le Stand
 
 Après avoir débloqué le Chicago Sweeper ou le Handcannon, tu peux les sortir du stockage même en nouvelle partie. Termine les requêtes du village pour obtenir au moins 30 spinelles et acheter un ticket d’amélioration exclusive au chapitre 7 ; l’arme bonus obtient alors ses munitions infinies. Garde les lance-roquettes pour Salazar et Saddler si tu as assez de pesetas. En S+ Professionnel, limite-toi à 15 sauvegardes au maximum et termine en moins de 5 h 30.
 
-| Quand | Détours à faire pour le ticket |
-| --- | --- |
-| Chapitres 1 à 3 | Détruis les médaillons de la ferme, tue les rats de l’usine, vends trois vipères, détruis les emblèmes des tombes jumelles au cimetière et trouve les médaillons de la carrière et de la pisciculture. |
-| Chapitre 4 | Prends l’œuf doré sur la petite île à l’est du lac et harponne le gros poisson près du hangar à bateaux. Vends les deux prises. |
-| Chapitre 5 | Prends la requête du chien enragé, passe avec Ashley au manoir du chef pour faire apparaître la cible, puis affronte-la sur la place du village. |
-| Début du chapitre 7 | Récupère les récompenses restantes auprès du Marchand. Les huit requêtes valent 31 spinelles au total. Échange-en 30 contre le ticket et applique-le immédiatement à l’arme bonus choisie. |
+| Quand               | Détours à faire pour le ticket                                                                                                                                                                         |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Chapitres 1 à 3     | Détruis les médaillons de la ferme, tue les rats de l’usine, vends trois vipères, détruis les emblèmes des tombes jumelles au cimetière et trouve les médaillons de la carrière et de la pisciculture. |
+| Chapitre 4          | Prends l’œuf doré sur la petite île à l’est du lac et harponne le gros poisson près du hangar à bateaux. Vends les deux prises.                                                                        |
+| Chapitre 5          | Prends la requête du chien enragé, passe avec Ashley au manoir du chef pour faire apparaître la cible, puis affronte-la sur la place du village.                                                       |
+| Début du chapitre 7 | Récupère les récompenses restantes auprès du Marchand. Les huit requêtes valent 31 spinelles au total. Échange-en 30 contre le ticket et applique-le immédiatement à l’arme bonus choisie.             |
 
 [Emplacements des requêtes du Marchand](https://www.powerpyx.com/resident-evil-4-remake-all-merchant-requests/)
 

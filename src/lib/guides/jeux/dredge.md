@@ -14,13 +14,13 @@ Le jeu de base compte **40 succès**. **The Pale Reach** en ajoute 8 et **The Ir
 
 ### Les cinq reliques, dans l’ordre du voyage
 
-| Région | Trajet à suivre avant de repartir |
-| --- | --- |
-| The Marrows | Récupère la clé à la drague dans les eaux de Greater Marrow et remets-la au Collectionneur. Garde cinq morues pour l’autel au nord de la ville si tu veux l’équipement dès le début. |
-| Gale Cliffs | Parle à l’Ermite aux Ruines. Drague le blason familial dans la crique et montre-le au baleinier retraité à Ingfell. Après avoir dégagé le passage et ramené l’Ermite à son frère, utilise les explosifs pour ouvrir l’accès au site de la boîte à musique. |
-| Stellar Basin | Au Vieux Fort, prends la demande de la Chercheuse. Pêche les trois premiers spécimens, dont la méduse au chalut de nuit, puis récupère les pièces de prototype à l’avant-poste. Installe le dispositif de répulsion sur son générateur et drague la bague au centre du bassin pendant qu’il fonctionne. |
-| Twisted Strand | Parle à l’Aviateur, ramène-lui les deux pièces du mortier et prépare les appâts demandés. Pose-les dans ses pièges, rapporte les restes des trois créatures et récupère le collier en récompense. |
-| Devil’s Spine | Parle au Fanatique au Temple ancien et visite les trois dalles marquées. Prépare deux aberrations, la raie pâle et le requin fantôme, puis l’araignée de mer et la galathée obtenues au casier. Rapporte les trois flammes au temple pour la montre. |
+| Région         | Trajet à suivre avant de repartir                                                                                                                                                                                                                                                                       |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The Marrows    | Récupère la clé à la drague dans les eaux de Greater Marrow et remets-la au Collectionneur. Garde cinq morues pour l’autel au nord de la ville si tu veux l’équipement dès le début.                                                                                                                    |
+| Gale Cliffs    | Parle à l’Ermite aux Ruines. Drague le blason familial dans la crique et montre-le au baleinier retraité à Ingfell. Après avoir dégagé le passage et ramené l’Ermite à son frère, utilise les explosifs pour ouvrir l’accès au site de la boîte à musique.                                              |
+| Stellar Basin  | Au Vieux Fort, prends la demande de la Chercheuse. Pêche les trois premiers spécimens, dont la méduse au chalut de nuit, puis récupère les pièces de prototype à l’avant-poste. Installe le dispositif de répulsion sur son générateur et drague la bague au centre du bassin pendant qu’il fonctionne. |
+| Twisted Strand | Parle à l’Aviateur, ramène-lui les deux pièces du mortier et prépare les appâts demandés. Pose-les dans ses pièges, rapporte les restes des trois créatures et récupère le collier en récompense.                                                                                                       |
+| Devil’s Spine  | Parle au Fanatique au Temple ancien et visite les trois dalles marquées. Prépare deux aberrations, la raie pâle et le requin fantôme, puis l’araignée de mer et la galathée obtenues au casier. Rapporte les trois flammes au temple pour la montre.                                                    |
 
 [Parcours filmé des cinq régions](https://www.youtube.com/watch?v=aYbatOy3g7Y)
 

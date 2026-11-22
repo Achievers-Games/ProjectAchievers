@@ -60,14 +60,14 @@ Plusieurs sorts ne s’achètent qu’en échange de rangs de serment. Rejoins l
 
 Fais ces boucles en fin de cycle, avec une arme capable de tuer chaque cible en quelques coups. Compte d’abord les offrandes déjà ramassées ou remises au chef du serment. Équipe l’Anneau du serpent d’or convoiteux et, si tu les as, le Symbole d’avarice et la Rapière de sage de cristal en main secondaire. Utilise une pièce rouillée au départ et renouvelle-la quand son effet expire. Au retour, repose-toi au feu pour faire réapparaître les ennemis. Le Symbole d’avarice draine ta vie pendant le trajet.
 
-| Offrande et total requis | Feu de départ | Boucle |
-| --- | --- | --- |
-| 30 Preuves de concorde | Anor Londo | Monte les grandes marches, tue les deux Chevaliers d’argent qui descendent à ta rencontre et retourne au feu. Tu obtiens l’Anneau de Sombrelune à 10 et la Lame de Sombrelune à 30. |
-| 30 Lames d’herbe de sang du loup | Ruines du Donjon de Farron | Tue les trois Ghrus postés sur le pont juste à côté du feu. La récompense à 30 est l’Anneau du Loup. |
-| 10 Langues pâles | Périmètre du Donjon de Farron | Avance vers l’arène des Veilleurs des Abysses et tue les deux Spectres sombres qui patrouillent vers les Ghrus. À 10, Rosaria donne l’Anneau obscur. Termine Sirris avant de remettre ces offrandes. |
-| 10 Résidus humains | Grand pontife Sulyvahn | Sors par l’arrière de l’arène et remonte jusqu’aux diacres des galeries. Tue le groupe et reviens au feu. À 10, tu obtiens Grandes profondeurs. |
-| 30 Vertèbres-carcan | Catacombes de Carthus | Repars du feu vers le couloir de la boule de squelettes, puis tue les deux grands squelettes épéistes. À 30, tu obtiens la pyromancie Chaleur. |
-| 30 Médailles solaires | Château de Lothric | Tue le Chevalier de Lothric juste à côté du feu et repose-toi immédiatement. À 10, tu obtiens Serment sacré et à 30, Lance de foudre majeure. |
+| Offrande et total requis         | Feu de départ                 | Boucle                                                                                                                                                                                               |
+| -------------------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 30 Preuves de concorde           | Anor Londo                    | Monte les grandes marches, tue les deux Chevaliers d’argent qui descendent à ta rencontre et retourne au feu. Tu obtiens l’Anneau de Sombrelune à 10 et la Lame de Sombrelune à 30.                  |
+| 30 Lames d’herbe de sang du loup | Ruines du Donjon de Farron    | Tue les trois Ghrus postés sur le pont juste à côté du feu. La récompense à 30 est l’Anneau du Loup.                                                                                                 |
+| 10 Langues pâles                 | Périmètre du Donjon de Farron | Avance vers l’arène des Veilleurs des Abysses et tue les deux Spectres sombres qui patrouillent vers les Ghrus. À 10, Rosaria donne l’Anneau obscur. Termine Sirris avant de remettre ces offrandes. |
+| 10 Résidus humains               | Grand pontife Sulyvahn        | Sors par l’arrière de l’arène et remonte jusqu’aux diacres des galeries. Tue le groupe et reviens au feu. À 10, tu obtiens Grandes profondeurs.                                                      |
+| 30 Vertèbres-carcan              | Catacombes de Carthus         | Repars du feu vers le couloir de la boule de squelettes, puis tue les deux grands squelettes épéistes. À 30, tu obtiens la pyromancie Chaleur.                                                       |
+| 30 Médailles solaires            | Château de Lothric            | Tue le Chevalier de Lothric juste à côté du feu et repose-toi immédiatement. À 10, tu obtiens Serment sacré et à 30, Lance de foudre majeure.                                                        |
 
 [Démonstration en jeu des boucles hors ligne](https://www.youtube.com/watch?v=n5Cakzw8HAw)
 
