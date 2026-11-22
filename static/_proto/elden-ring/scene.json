@@ -1,0 +1,269 @@
+{
+  "engine": 2,
+  "source": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1245620/library_hero.jpg",
+  "view": [314, 8, 1292, 604],
+  "period": 8.6,
+  "curves": {
+    "grace": [0.6, 1.7, 2.6, 4.6],
+    "rise": [1.2, 2.2, 3.4, 5.2]
+  },
+  "signals": {
+    "wind": {
+      "base": 0.3,
+      "waves": [
+        [0.5, 0.8],
+        [0.3, 1.7, 2]
+      ],
+      "curves": {
+        "grace": 0.9
+      }
+    }
+  },
+  "background": {
+    "file": "bg.jpg",
+    "parallax": [-22, -6],
+    "size": [1920, 620]
+  },
+  "layers": [
+    {
+      "id": "cloud",
+      "file": "cloud.png",
+      "parallax": [-16, -5],
+      "mesh": {
+        "deform": [
+          {
+            "type": "zone",
+            "id": "left",
+            "center": [750, 260],
+            "radius": [190, 150],
+            "core": 0.3,
+            "pivot": [860, 330],
+            "motion": [
+              {
+                "wave": 0.5,
+                "dx": 12,
+                "dy": -5
+              },
+              {
+                "curve": "grace",
+                "dx": -10
+              }
+            ],
+            "ripple": {
+              "axis": "y",
+              "amp": 5,
+              "speed": 1,
+              "freq": 0.03
+            }
+          },
+          {
+            "type": "zone",
+            "id": "right",
+            "center": [1200, 190],
+            "radius": [190, 190],
+            "core": 0.3,
+            "pivot": [1090, 300],
+            "motion": [
+              {
+                "wave": 0.45,
+                "dx": -12,
+                "dy": -6
+              },
+              {
+                "curve": "grace",
+                "dx": 12,
+                "dy": -4
+              }
+            ],
+            "ripple": {
+              "axis": "y",
+              "amp": 5,
+              "speed": 1.1,
+              "freq": 0.03
+            }
+          }
+        ],
+        "rect": [576, 0, 817, 410],
+        "grid": [24, 12]
+      }
+    },
+    {
+      "id": "near",
+      "parallax": [8, 3]
+    },
+    {
+      "id": "ground",
+      "file": "ground.png",
+      "parent": "near",
+      "origin": [556, 506]
+    },
+    {
+      "id": "knight",
+      "file": "knight.png",
+      "parent": "near",
+      "mesh": {
+        "deform": [
+          {
+            "type": "zone",
+            "id": "breath",
+            "polygon": [
+              [860, 400],
+              [950, 400],
+              [960, 470],
+              [900, 480]
+            ],
+            "feather": 34,
+            "pivot": [900, 540],
+            "motion": [
+              {
+                "wave": 1.3,
+                "shape": "breath",
+                "dy": -1.6
+              },
+              {
+                "curve": "rise",
+                "dy": -2.4
+              }
+            ]
+          },
+          {
+            "type": "zone",
+            "id": "cape-tip",
+            "polygon": [
+              [700, 390],
+              [810, 400],
+              [812, 470],
+              [700, 480]
+            ],
+            "feather": 80,
+            "pivot": [900, 430],
+            "ripple": {
+              "axis": "y",
+              "amp": 4.5,
+              "speed": 2.6,
+              "freq": 0.06,
+              "push": {
+                "signal": "wind",
+                "amount": -5
+              }
+            }
+          },
+          {
+            "type": "zone",
+            "id": "cape",
+            "polygon": [
+              [700, 390],
+              [850, 405],
+              [850, 465],
+              [700, 480]
+            ],
+            "feather": 46,
+            "pivot": [900, 430],
+            "ripple": {
+              "axis": "y",
+              "amp": 2.4,
+              "speed": 2.6,
+              "freq": 0.045,
+              "phase": 1
+            }
+          },
+          {
+            "type": "zone",
+            "id": "head",
+            "polygon": [
+              [948, 426],
+              [978, 430],
+              [980, 455],
+              [950, 462]
+            ],
+            "feather": 14,
+            "pivot": [938, 440],
+            "motion": [
+              {
+                "curve": "rise",
+                "angle": -0.24,
+                "dy": -1
+              },
+              {
+                "wave": 1,
+                "angle": 0.02
+              }
+            ]
+          }
+        ],
+        "rect": [757, 407, 251, 159],
+        "grid": [28, 18]
+      }
+    }
+  ],
+  "effects": [
+    {
+      "type": "halo",
+      "before": "cloud",
+      "parallax": "background",
+      "center": [960, 215],
+      "inner": 20,
+      "radius": 430,
+      "intensity": 0.42,
+      "middle": 0.1,
+      "curve": "grace",
+      "color": [255, 186, 84]
+    },
+    {
+      "type": "mist",
+      "before": "ground",
+      "center": [900, 520],
+      "inner": 30,
+      "radius": 520,
+      "alpha": 0.16,
+      "waves": [[0.06, 0.6]],
+      "drift": {
+        "curve": "grace",
+        "dx": -40
+      },
+      "color": [150, 190, 170],
+      "rect": [0, -40, 1920, 1120]
+    },
+    {
+      "type": "motes",
+      "before": "ground",
+      "center": [960, 190],
+      "color": [255, 214, 130],
+      "speed": 0.7,
+      "count": 34,
+      "size": 1
+    },
+    {
+      "type": "glint",
+      "parallax": "background",
+      "from": [960, 40],
+      "to": [960, 318],
+      "travel": [0.8, 2],
+      "window": [0.7, 1.2, 1.6, 2.3],
+      "radius": 60,
+      "alpha": 0.9,
+      "color": [255, 244, 205],
+      "edge": [255, 190, 90]
+    },
+    {
+      "type": "glint",
+      "frame": "knight",
+      "from": [990, 478],
+      "to": [981, 545],
+      "travel": [2.2, 3.2],
+      "window": [2.1, 2.5, 2.8, 3.4],
+      "radius": 18,
+      "alpha": 0.8,
+      "color": [255, 240, 205],
+      "edge": [255, 200, 120]
+    },
+    {
+      "type": "rising",
+      "span": [300, 1330],
+      "y": 620,
+      "rise": 420,
+      "count": 18,
+      "color": [255, 206, 120]
+    }
+  ]
+}

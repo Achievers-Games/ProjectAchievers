@@ -27,7 +27,10 @@ import { servedFiles, WORKSHOP_DIR } from './card-files.mjs';
 const root = join(dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1')), '..');
 const target = process.env.CARDS_DIR ?? join(root, 'cards');
 const force = process.argv.includes('--force');
-const { games } = JSON.parse(readFileSync(join(root, 'src/lib/card-catalogue.json'), 'utf8'));
+// Les brouillons se publient aussi : la modération les vérifie avant leur entrée au catalogue.
+const { games, drafts = [] } = JSON.parse(
+  readFileSync(join(root, 'src/lib/card-catalogue.json'), 'utf8'),
+);
 
 /** Le moteur partagé, importé par `../shared/…` depuis l'atelier : copié dans la carte publiée. */
 const SHARED = 'shared';
@@ -104,7 +107,7 @@ async function publish(folder, version) {
 }
 
 let published = 0;
-for (const game of games) {
+for (const game of [...games, ...drafts]) {
   const folders = [...Object.values(game.editions), ...(game.variants ?? []).map((v) => v.folder)];
   for (const folder of new Set(folders)) {
     const result = await publish(folder, game.version);

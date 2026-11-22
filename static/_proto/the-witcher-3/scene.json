@@ -1,0 +1,308 @@
+{
+  "engine": 2,
+  "source": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/292030/2dbca4868f3a9912aad6966bb0b6ab2d270f6da6/library_hero.jpg",
+  "view": [600, 8, 1292, 604],
+  "period": 8,
+  "curves": {
+    "watch": [0.6, 1.5, 2.6, 4],
+    "cast": [1, 1.9, 2.8, 4.4]
+  },
+  "signals": {
+    "wind": {
+      "base": 0.2,
+      "waves": [
+        [0.7, 0.9],
+        [0.3, 2.2, 1]
+      ]
+    }
+  },
+  "background": {
+    "file": "bg.jpg",
+    "parallax": [-24, -6],
+    "size": [1920, 620]
+  },
+  "layers": [
+    {
+      "id": "mass",
+      "file": "mass.png",
+      "parallax": [6, 2],
+      "mesh": {
+        "deform": [
+          {
+            "type": "zone",
+            "id": "geralt",
+            "polygon": [
+              [1036, 164],
+              [1282, 164],
+              [1282, 327],
+              [1045, 318]
+            ],
+            "feather": 70,
+            "pivot": [1200, 520],
+            "motion": [
+              {
+                "wave": 1.3,
+                "shape": "breath",
+                "dy": -2.6
+              }
+            ]
+          },
+          {
+            "type": "zone",
+            "id": "yen-hair",
+            "polygon": [
+              [1300, 36],
+              [1400, 36],
+              [1391, 118],
+              [1327, 118]
+            ],
+            "feather": 34,
+            "pivot": [1291, 64],
+            "motion": [
+              {
+                "wave": 1.1,
+                "angle": 0.03
+              }
+            ],
+            "ripple": {
+              "axis": "y",
+              "amp": 4,
+              "speed": 2.5,
+              "freq": 0.04,
+              "push": {
+                "signal": "wind",
+                "amount": -3
+              }
+            }
+          },
+          {
+            "type": "zone",
+            "id": "yennefer",
+            "polygon": [
+              [1255, 36],
+              [1309, 32],
+              [1318, 109],
+              [1264, 109]
+            ],
+            "feather": 20,
+            "pivot": [1286, 136],
+            "motion": [
+              {
+                "curve": "watch",
+                "angle": 0.04
+              },
+              {
+                "wave": 0.9,
+                "angle": 0.006
+              }
+            ]
+          },
+          {
+            "type": "zone",
+            "id": "triss",
+            "polygon": [
+              [1109, 64],
+              [1173, 0],
+              [1236, 0],
+              [1236, 82],
+              [1118, 91]
+            ],
+            "feather": 26,
+            "pivot": [1209, 109],
+            "motion": [
+              {
+                "curve": "cast",
+                "angle": 0.03
+              },
+              {
+                "wave": 1,
+                "angle": 0.006
+              }
+            ]
+          },
+          {
+            "type": "zone",
+            "id": "ciri",
+            "polygon": [
+              [991, 314],
+              [1059, 314],
+              [1059, 391],
+              [1000, 400]
+            ],
+            "feather": 22,
+            "pivot": [1027, 427],
+            "motion": [
+              {
+                "curve": "cast",
+                "angle": -0.05
+              },
+              {
+                "wave": 0.9,
+                "angle": 0.006
+              }
+            ]
+          },
+          {
+            "type": "zone",
+            "id": "ciri-hand",
+            "polygon": [
+              [923, 364],
+              [973, 359],
+              [973, 436],
+              [927, 436]
+            ],
+            "feather": 24,
+            "pivot": [964, 455],
+            "motion": [
+              {
+                "curve": "cast",
+                "angle": -0.06,
+                "dy": -4
+              },
+              {
+                "wave": 1.2,
+                "angle": 0.01
+              }
+            ]
+          },
+          {
+            "type": "zone",
+            "id": "crow",
+            "polygon": [
+              [1336, 523],
+              [1482, 536],
+              [1473, 582],
+              [1391, 564]
+            ],
+            "feather": 22,
+            "pivot": [1436, 555],
+            "motion": [
+              {
+                "wave": 2.2,
+                "dy": 3,
+                "sy": 0.08
+              },
+              {
+                "curve": "watch",
+                "dx": 8,
+                "dy": -6
+              }
+            ]
+          },
+          {
+            "type": "zone",
+            "id": "sword",
+            "polygon": [
+              [1255, 391],
+              [1336, 400],
+              [1627, 518],
+              [1618, 536],
+              [1327, 445],
+              [1264, 436]
+            ],
+            "feather": 26,
+            "pivot": [1264, 409],
+            "motion": [
+              {
+                "curve": "watch",
+                "angle": -0.012
+              }
+            ]
+          },
+          {
+            "type": "zone",
+            "id": "head",
+            "polygon": [
+              [1082, 118],
+              [1118, 95],
+              [1173, 127],
+              [1200, 182],
+              [1155, 195],
+              [1091, 186]
+            ],
+            "feather": 26,
+            "pivot": [1145, 205],
+            "motion": [
+              {
+                "curve": "watch",
+                "angle": -0.055,
+                "dx": -2
+              },
+              {
+                "wave": 0.85,
+                "angle": 0.007
+              }
+            ]
+          }
+        ],
+        "rect": [768, 0, 1152, 620],
+        "grid": [58, 31]
+      }
+    }
+  ],
+  "effects": [
+    {
+      "type": "halo",
+      "parallax": "background",
+      "center": [1260, 600],
+      "inner": 10,
+      "radius": 280,
+      "intensity": 0.45,
+      "middle": 0.12,
+      "curve": "watch",
+      "color": [255, 110, 30]
+    },
+    {
+      "type": "halo",
+      "frame": "mass",
+      "center": [945, 395],
+      "inner": 3,
+      "radius": 90,
+      "intensity": 0.7,
+      "middle": 0.14,
+      "curve": "cast",
+      "color": [90, 235, 255]
+    },
+    {
+      "type": "halo",
+      "frame": "mass",
+      "center": [1122, 77],
+      "inner": 3,
+      "radius": 90,
+      "intensity": 0.65,
+      "middle": 0.14,
+      "curve": "cast",
+      "color": [255, 150, 50]
+    },
+    {
+      "type": "glint",
+      "frame": "mass",
+      "from": [1290, 424],
+      "to": [1620, 525],
+      "travel": [1.6, 3],
+      "window": [1.5, 2, 2.6, 3.2],
+      "radius": 38,
+      "alpha": 0.9,
+      "color": [255, 250, 230],
+      "edge": [255, 190, 120]
+    },
+    {
+      "type": "embers",
+      "count": 26,
+      "depth": 6,
+      "span": [940, 620],
+      "y": 630
+    },
+    {
+      "type": "beamDust",
+      "before": "mass",
+      "parallax": "background",
+      "top": [1200, -10],
+      "length": 640,
+      "slope": 0.15,
+      "spread": 1500,
+      "count": 22,
+      "color": [255, 255, 255]
+    }
+  ]
+}

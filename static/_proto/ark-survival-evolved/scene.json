@@ -1,0 +1,249 @@
+{
+  "engine": 2,
+  "source": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/346110/library_hero.jpg",
+  "view": [580, 8, 1292, 604],
+  "period": 8,
+  "curves": {
+    "roar": [0.8, 1.6, 2.5, 3.6],
+    "look": [0.5, 1.2, 2.8, 4.2]
+  },
+  "background": {
+    "file": "bg.jpg",
+    "parallax": [-24, -6],
+    "size": [1920, 620]
+  },
+  "layers": [
+    {
+      "id": "small",
+      "file": "small.png",
+      "pivot": [630, 180],
+      "parallax": [-18, -5],
+      "motion": [
+        {
+          "wave": 0.6,
+          "dx": 8,
+          "dy": 3
+        },
+        {
+          "wave": 4.4,
+          "sy": 0.12
+        }
+      ],
+      "origin": [588, 143]
+    },
+    {
+      "id": "large",
+      "file": "large.png",
+      "pivot": [722, 125],
+      "parallax": [-13, -5],
+      "motion": [
+        {
+          "wave": 0.5,
+          "dx": 11,
+          "dy": 5,
+          "phase": 1
+        },
+        {
+          "wave": 3.4,
+          "sy": 0.13
+        },
+        {
+          "curve": "roar",
+          "dy": -10,
+          "angle": -0.06
+        }
+      ],
+      "origin": [616, 76]
+    },
+    {
+      "id": "grass",
+      "file": "grass.png",
+      "parallax": [-16, -5],
+      "mesh": {
+        "deform": [
+          {
+            "type": "zone",
+            "id": "blades",
+            "center": [1700, 480],
+            "radius": [260, 100],
+            "core": 0.35,
+            "pivot": [1700, 566],
+            "ripple": {
+              "axis": "x",
+              "amp": 4,
+              "speed": 1.8,
+              "freq": 0.02
+            }
+          }
+        ],
+        "rect": [1414, 354, 506, 243],
+        "grid": [19, 9]
+      }
+    },
+    {
+      "id": "rider",
+      "file": "rider.png",
+      "parallax": [10, 4],
+      "mesh": {
+        "deform": [
+          {
+            "type": "zone",
+            "id": "breath",
+            "polygon": [
+              [1140, 60],
+              [1420, 60],
+              [1420, 420],
+              [1180, 430]
+            ],
+            "feather": 110,
+            "pivot": [1290, 620],
+            "motion": [
+              {
+                "wave": 1.5,
+                "shape": "breath",
+                "dy": -3
+              }
+            ]
+          },
+          {
+            "type": "zone",
+            "id": "jaw",
+            "polygon": [
+              [890, 336],
+              [905, 374],
+              [1010, 352],
+              [1040, 330],
+              [1030, 316],
+              [960, 322]
+            ],
+            "feather": 11,
+            "pivot": [1046, 312],
+            "motion": [
+              {
+                "curve": "roar",
+                "angle": -0.09
+              },
+              {
+                "wave": 1.5,
+                "angle": -0.01
+              }
+            ]
+          },
+          {
+            "type": "zone",
+            "id": "neck",
+            "polygon": [
+              [870, 250],
+              [1060, 230],
+              [1140, 270],
+              [1130, 390],
+              [1060, 370],
+              [880, 385]
+            ],
+            "feather": 110,
+            "pivot": [1230, 400],
+            "motion": [
+              {
+                "curve": "roar",
+                "angle": 0.055,
+                "dx": -3
+              },
+              {
+                "wave": 0.9,
+                "angle": 0.008
+              }
+            ]
+          },
+          {
+            "type": "zone",
+            "id": "torso",
+            "polygon": [
+              [1130, 90],
+              [1390, 90],
+              [1390, 215],
+              [1130, 225]
+            ],
+            "feather": 40,
+            "pivot": [1290, 240],
+            "motion": [
+              {
+                "wave": 1.5,
+                "shape": "breath",
+                "dy": -1.5
+              },
+              {
+                "curve": "look",
+                "angle": -0.03
+              }
+            ]
+          },
+          {
+            "type": "zone",
+            "id": "head",
+            "polygon": [
+              [1250, 98],
+              [1305, 98],
+              [1310, 145],
+              [1262, 146]
+            ],
+            "feather": 14,
+            "pivot": [1280, 156],
+            "motion": [
+              {
+                "curve": "look",
+                "angle": -0.09,
+                "dx": -2
+              },
+              {
+                "wave": 1.1,
+                "angle": 0.01
+              }
+            ]
+          }
+        ],
+        "rect": [882, 99, 534, 521],
+        "grid": [30, 29]
+      }
+    }
+  ],
+  "effects": [
+    {
+      "type": "mist",
+      "before": "small",
+      "parallax": "background",
+      "center": [1460, 370],
+      "inner": 10,
+      "radius": 330,
+      "alpha": 0.2,
+      "waves": [[0.07, 0.8]],
+      "color": [255, 224, 150],
+      "rect": [1100, 0, 820, 720]
+    },
+    {
+      "type": "motes",
+      "before": "rider",
+      "center": [1150, 250],
+      "color": [255, 240, 200],
+      "speed": 0.7,
+      "count": 24,
+      "size": 1
+    },
+    {
+      "type": "embers",
+      "before": "rider",
+      "count": 14,
+      "depth": 4,
+      "span": [1500, 260],
+      "y": 260
+    },
+    {
+      "type": "motes",
+      "center": [1150, 260],
+      "color": [255, 236, 186],
+      "speed": 1,
+      "count": 9,
+      "offset": 44,
+      "size": 2
+    }
+  ]
+}

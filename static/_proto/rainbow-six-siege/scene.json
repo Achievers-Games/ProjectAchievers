@@ -1,0 +1,334 @@
+{
+  "engine": 2,
+  "source": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/359550/6a17af1cb99e9822a54b6b80f8186ac932b88d3d/library_hero.jpg",
+  "view": [590, 8, 1292, 604],
+  "period": 7.4,
+  "curves": {
+    "strike": [0.6, 1.3, 1.5, 2.1],
+    "aim": [1.8, 2.5, 3.4, 4.6],
+    "brace": [1.5, 1.7, 2.2, 3.6]
+  },
+  "background": {
+    "file": "bg.jpg",
+    "parallax": [-24, -6],
+    "size": [1920, 620]
+  },
+  "layers": [
+    {
+      "id": "left",
+      "file": "left.png",
+      "parallax": [7, 3],
+      "mesh": {
+        "deform": [
+          {
+            "type": "zone",
+            "id": "breath",
+            "polygon": [
+              [600, 80],
+              [860, 80],
+              [860, 330],
+              [600, 330]
+            ],
+            "feather": 130,
+            "pivot": [730, 600],
+            "motion": [
+              {
+                "wave": 1.4,
+                "shape": "breath",
+                "dy": -2.6,
+                "phase": 0
+              }
+            ]
+          },
+          {
+            "type": "zone",
+            "id": "arms",
+            "polygon": [
+              [680, 160],
+              [900, 150],
+              [900, 190],
+              [850, 300],
+              [780, 300],
+              [690, 240]
+            ],
+            "feather": 34,
+            "pivot": [700, 240],
+            "motion": [
+              {
+                "curve": "aim",
+                "angle": -0.035
+              },
+              {
+                "wave": 1.4,
+                "angle": 0.005
+              }
+            ]
+          },
+          {
+            "type": "zone",
+            "id": "head",
+            "polygon": [
+              [640, 90],
+              [745, 90],
+              [750, 180],
+              [700, 200],
+              [650, 180]
+            ],
+            "feather": 22,
+            "pivot": [690, 215],
+            "motion": [
+              {
+                "curve": "aim",
+                "angle": 0.05
+              },
+              {
+                "wave": 0.9,
+                "angle": 0.006
+              }
+            ]
+          }
+        ],
+        "rect": [30, 76, 867, 544],
+        "grid": [43, 27]
+      }
+    },
+    {
+      "id": "shield",
+      "file": "shield.png",
+      "parallax": [9, 3],
+      "mesh": {
+        "deform": [
+          {
+            "type": "zone",
+            "id": "breath",
+            "polygon": [
+              [1570, 150],
+              [1900, 200],
+              [1900, 450],
+              [1600, 450]
+            ],
+            "feather": 130,
+            "pivot": [1750, 620],
+            "motion": [
+              {
+                "wave": 1.3,
+                "shape": "breath",
+                "dy": -2.6,
+                "phase": 0
+              }
+            ]
+          },
+          {
+            "type": "zone",
+            "id": "wall",
+            "polygon": [
+              [1445, 150],
+              [1570, 150],
+              [1630, 340],
+              [1620, 620],
+              [1450, 620]
+            ],
+            "feather": 46,
+            "pivot": [1540, 620],
+            "motion": [
+              {
+                "curve": "brace",
+                "angle": 0.02,
+                "dx": 5
+              }
+            ]
+          },
+          {
+            "type": "zone",
+            "id": "head",
+            "polygon": [
+              [1565, 180],
+              [1640, 160],
+              [1710, 200],
+              [1720, 300],
+              [1620, 310],
+              [1570, 270]
+            ],
+            "feather": 34,
+            "pivot": [1670, 340],
+            "motion": [
+              {
+                "curve": "brace",
+                "angle": 0.055,
+                "dy": 4
+              },
+              {
+                "wave": 0.9,
+                "angle": 0.006
+              }
+            ]
+          },
+          {
+            "type": "zone",
+            "id": "fist",
+            "polygon": [
+              [1830, 320],
+              [1920, 300],
+              [1920, 440],
+              [1840, 430]
+            ],
+            "feather": 30,
+            "pivot": [1860, 300],
+            "motion": [
+              {
+                "curve": "brace",
+                "angle": 0.06
+              }
+            ]
+          }
+        ],
+        "rect": [1444, 151, 476, 469],
+        "grid": [24, 23]
+      }
+    },
+    {
+      "id": "sledge",
+      "file": "sledge.png",
+      "parallax": [13, 4],
+      "mesh": {
+        "deform": [
+          {
+            "type": "zone",
+            "id": "breath",
+            "polygon": [
+              [1120, 100],
+              [1320, 100],
+              [1320, 400],
+              [1110, 400]
+            ],
+            "feather": 130,
+            "pivot": [1200, 610],
+            "motion": [
+              {
+                "wave": 1.5,
+                "shape": "breath",
+                "dy": -3,
+                "phase": 0
+              }
+            ]
+          },
+          {
+            "type": "zone",
+            "id": "hammer",
+            "polygon": [
+              [1270, 60],
+              [1380, 60],
+              [1440, 300],
+              [1330, 320],
+              [1280, 250]
+            ],
+            "feather": 60,
+            "pivot": [1180, 250],
+            "motion": [
+              {
+                "curve": "strike",
+                "angle": -0.075
+              },
+              {
+                "curve": "brace",
+                "angle": 0.05
+              },
+              {
+                "wave": 1.5,
+                "angle": 0.006
+              }
+            ]
+          },
+          {
+            "type": "zone",
+            "id": "head",
+            "polygon": [
+              [1195, 120],
+              [1250, 100],
+              [1290, 140],
+              [1280, 205],
+              [1230, 215],
+              [1200, 190]
+            ],
+            "feather": 24,
+            "pivot": [1230, 240],
+            "motion": [
+              {
+                "curve": "strike",
+                "angle": -0.06
+              },
+              {
+                "curve": "brace",
+                "angle": 0.06
+              },
+              {
+                "wave": 0.9,
+                "angle": 0.008
+              }
+            ],
+            "look": [1.5, 1, 0.01]
+          }
+        ],
+        "rect": [1026, 68, 404, 552],
+        "grid": [20, 28]
+      }
+    }
+  ],
+  "effects": [
+    {
+      "type": "mist",
+      "before": "left",
+      "parallax": "background",
+      "center": [1000, 420],
+      "inner": 20,
+      "radius": 420,
+      "alpha": 0.1,
+      "waves": [[0.04, 0.8]],
+      "boost": {
+        "curve": "brace",
+        "amount": 0.14
+      },
+      "color": [200, 220, 245],
+      "rect": [500, 0, 1000, 860]
+    },
+    {
+      "type": "beamDust",
+      "before": "left",
+      "parallax": "background",
+      "top": [1350, -10],
+      "length": 640,
+      "slope": -0.35,
+      "spread": 1200,
+      "count": 44,
+      "color": [225, 235, 250]
+    },
+    {
+      "type": "sparks",
+      "frame": "shield",
+      "origin": [1470, 350],
+      "glow": [1480, 345],
+      "curve": "brace",
+      "count": 12
+    },
+    {
+      "type": "glint",
+      "frame": "sledge",
+      "from": [1290, 95],
+      "to": [1370, 110],
+      "travel": [1.2, 1.8],
+      "window": [1.1, 1.35, 1.5, 1.9],
+      "radius": 34,
+      "alpha": 0.85,
+      "color": [255, 255, 255],
+      "edge": [160, 200, 255]
+    },
+    {
+      "type": "motes",
+      "center": [1200, 280],
+      "color": [220, 232, 250],
+      "speed": 1,
+      "count": 14,
+      "size": 2
+    }
+  ]
+}

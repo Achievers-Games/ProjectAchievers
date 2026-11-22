@@ -1,0 +1,293 @@
+{
+  "engine": 2,
+  "source": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/49520/library_hero.jpg",
+  "view": [318, 8, 1292, 604],
+  "period": 7.4,
+  "curves": {
+    "ready": [0.5, 1.2, 1.9, 2.1],
+    "bang": [2, 2.1, 2.16, 3.2],
+    "tilt": [3.4, 4.2, 5, 6.2]
+  },
+  "signals": {
+    "fan": {
+      "steps": [
+        [0, 3.6, 6.283185],
+        [3.7, 7.4, 6.283185]
+      ]
+    }
+  },
+  "background": {
+    "file": "bg.jpg",
+    "parallax": [-24, -6],
+    "size": [1920, 620]
+  },
+  "layers": [
+    {
+      "id": "left",
+      "file": "left.png",
+      "parallax": [-12, -5],
+      "pivot": [600, 160],
+      "motion": [
+        {
+          "wave": 0.5,
+          "dx": 2,
+          "dy": 1.5
+        },
+        {
+          "curve": "bang",
+          "dx": -4,
+          "dy": -3
+        }
+      ],
+      "origin": [0, 0]
+    },
+    {
+      "id": "right",
+      "file": "right.png",
+      "parallax": [-10, -5],
+      "pivot": [1250, 160],
+      "motion": [
+        {
+          "wave": 0.55,
+          "dx": -2,
+          "dy": 1.5,
+          "phase": 1
+        },
+        {
+          "curve": "bang",
+          "dx": 4,
+          "dy": -3
+        }
+      ],
+      "origin": [982, 0]
+    },
+    {
+      "id": "figure",
+      "parallax": [11, 4]
+    },
+    {
+      "id": "psycho",
+      "file": "psycho.png",
+      "parent": "figure",
+      "mesh": {
+        "deform": [
+          {
+            "type": "zone",
+            "id": "breath",
+            "polygon": [
+              [640, 150],
+              [1300, 150],
+              [1300, 470],
+              [640, 470]
+            ],
+            "feather": 130,
+            "pivot": [965, 620],
+            "motion": [
+              {
+                "wave": 1.6,
+                "shape": "breath",
+                "dy": -3
+              },
+              {
+                "curve": "bang",
+                "dy": 5
+              }
+            ]
+          },
+          {
+            "type": "zone",
+            "id": "hand-left",
+            "polygon": [
+              [735, 420],
+              [880, 385],
+              [920, 400],
+              [900, 470],
+              [840, 590],
+              [740, 570],
+              [730, 500]
+            ],
+            "feather": 34,
+            "pivot": [760, 600],
+            "motion": [
+              {
+                "curve": "ready",
+                "angle": -0.012,
+                "dy": -2
+              },
+              {
+                "curve": "bang",
+                "angle": -0.05,
+                "dx": -7,
+                "dy": 8
+              }
+            ]
+          },
+          {
+            "type": "zone",
+            "id": "hand-right",
+            "polygon": [
+              [985, 400],
+              [1030, 395],
+              [1140, 430],
+              [1165, 480],
+              [1160, 560],
+              [1060, 590],
+              [1030, 500]
+            ],
+            "feather": 34,
+            "pivot": [1150, 600],
+            "motion": [
+              {
+                "curve": "ready",
+                "angle": 0.012,
+                "dy": -2
+              },
+              {
+                "curve": "bang",
+                "angle": 0.05,
+                "dx": 7,
+                "dy": 8
+              }
+            ]
+          },
+          {
+            "type": "zone",
+            "id": "head",
+            "polygon": [
+              [866, 280],
+              [900, 190],
+              [970, 170],
+              [1045, 195],
+              [1072, 270],
+              [1068, 350],
+              [1030, 388],
+              [905, 384],
+              [868, 330]
+            ],
+            "feather": 34,
+            "pivot": [966, 408],
+            "motion": [
+              {
+                "curve": "bang",
+                "angle": 0.045,
+                "dy": -7
+              },
+              {
+                "curve": "tilt",
+                "angle": -0.085
+              },
+              {
+                "wave": 1.1,
+                "angle": 0.008
+              }
+            ]
+          }
+        ],
+        "rect": [636, 170, 654, 450],
+        "grid": [30, 20]
+      }
+    },
+    {
+      "id": "head-frame",
+      "parent": "figure",
+      "pivot": [966, 408],
+      "motion": [
+        {
+          "wave": 1.6,
+          "shape": "breath",
+          "dy": -3
+        },
+        {
+          "curve": "bang",
+          "angle": 0.045,
+          "dy": -2
+        },
+        {
+          "curve": "tilt",
+          "angle": -0.085
+        },
+        {
+          "wave": 1.1,
+          "angle": 0.008
+        }
+      ]
+    },
+    {
+      "id": "fan",
+      "file": "fan.png",
+      "parent": "head-frame",
+      "pivot": [967, 325],
+      "motion": [
+        {
+          "signal": "fan",
+          "angle": 1
+        }
+      ],
+      "origin": [938, 296]
+    }
+  ],
+  "effects": [
+    {
+      "type": "halo",
+      "before": "figure",
+      "parallax": "background",
+      "center": [965, 340],
+      "inner": 60,
+      "radius": 520,
+      "intensity": 0.34,
+      "middle": 0.05,
+      "curve": "bang",
+      "color": [255, 220, 90]
+    },
+    {
+      "type": "sparks",
+      "frame": "right",
+      "origin": [1060, 190],
+      "glow": [1078, 196],
+      "curve": "bang",
+      "count": 10
+    },
+    {
+      "type": "cinders",
+      "before": "figure",
+      "sources": [520, 640, 760, 1180, 1320, 1450],
+      "count": 20,
+      "y": 560,
+      "parallax": [8, 3]
+    },
+    {
+      "type": "halo",
+      "frame": "head-frame",
+      "center": [940, 228],
+      "inner": 5,
+      "radius": 74,
+      "intensity": 0.95,
+      "middle": 0.2,
+      "curve": "bang",
+      "color": [110, 240, 255]
+    },
+    {
+      "type": "halo",
+      "frame": "head-frame",
+      "center": [1033, 248],
+      "inner": 5,
+      "radius": 74,
+      "intensity": 0.95,
+      "middle": 0.2,
+      "curve": "bang",
+      "color": [110, 240, 255]
+    },
+    {
+      "type": "glint",
+      "frame": "head-frame",
+      "from": [915, 222],
+      "to": [1060, 256],
+      "travel": [1.9, 2.3],
+      "window": [1.85, 2.05, 2.2, 2.7],
+      "radius": 56,
+      "alpha": 0.9,
+      "color": [220, 255, 255],
+      "edge": [80, 230, 255]
+    }
+  ]
+}

@@ -1,0 +1,342 @@
+{
+  "engine": 2,
+  "source": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/230410/eff9f1a6e0b38ff6287f1fcc57e9eacfd3be27b1/library_hero.jpg",
+  "view": [600, 8, 1292, 604],
+  "period": 8.2,
+  "curves": {
+    "aim": [0.6, 1.5, 2.4, 3.8],
+    "frost": [1.1, 1.9, 2.7, 4.6],
+    "claw": [0.9, 1.7, 2.6, 4]
+  },
+  "signals": {
+    "wind": {
+      "base": 0.2,
+      "waves": [
+        [0.6, 0.9],
+        [0.3, 2.1, 1]
+      ],
+      "curves": {
+        "frost": 0.9
+      }
+    }
+  },
+  "background": {
+    "file": "bg.jpg",
+    "parallax": [-24, -6],
+    "size": [1920, 620]
+  },
+  "layers": [
+    {
+      "id": "figure",
+      "file": "figure.png",
+      "parallax": [10, 4],
+      "mesh": {
+        "deform": [
+          {
+            "type": "zone",
+            "id": "breath",
+            "polygon": [
+              [1340, 0],
+              [1600, 0],
+              [1600, 360],
+              [1360, 400]
+            ],
+            "feather": 150,
+            "pivot": [1450, 600],
+            "motion": [
+              {
+                "wave": 1.3,
+                "shape": "breath",
+                "dy": -3
+              }
+            ]
+          },
+          {
+            "type": "zone",
+            "id": "sword-arm",
+            "polygon": [
+              [560, 380],
+              [850, 345],
+              [1050, 355],
+              [1180, 330],
+              [1330, 285],
+              [1350, 340],
+              [1250, 400],
+              [1245, 480],
+              [1100, 490],
+              [1080, 540],
+              [560, 540]
+            ],
+            "feather": 60,
+            "pivot": [1388, 318],
+            "motion": [
+              {
+                "curve": "aim",
+                "angle": 0.052
+              },
+              {
+                "wave": 1.3,
+                "angle": 0.006
+              }
+            ]
+          },
+          {
+            "type": "zone",
+            "id": "claw-arm",
+            "polygon": [
+              [1640, 120],
+              [1780, 95],
+              [1920, 120],
+              [1920, 290],
+              [1740, 270],
+              [1680, 350],
+              [1600, 390],
+              [1560, 330],
+              [1620, 260]
+            ],
+            "feather": 60,
+            "pivot": [1580, 270],
+            "motion": [
+              {
+                "curve": "claw",
+                "angle": -0.055
+              },
+              {
+                "wave": 1.1,
+                "angle": 0.008,
+                "phase": 1
+              }
+            ]
+          },
+          {
+            "type": "zone",
+            "id": "fingers",
+            "polygon": [
+              [1555, 310],
+              [1660, 290],
+              [1670, 340],
+              [1615, 390],
+              [1560, 370]
+            ],
+            "feather": 22,
+            "pivot": [1670, 300],
+            "motion": [
+              {
+                "curve": "claw",
+                "angle": 0.12
+              },
+              {
+                "wave": 2,
+                "angle": 0.02
+              }
+            ]
+          },
+          {
+            "type": "zone",
+            "id": "tassel",
+            "polygon": [
+              [1850, 150],
+              [1880, 140],
+              [1920, 220],
+              [1915, 275],
+              [1870, 270]
+            ],
+            "feather": 20,
+            "pivot": [1850, 130],
+            "motion": [
+              {
+                "wave": 1.7,
+                "angle": 0.05
+              },
+              {
+                "curve": "claw",
+                "angle": 0.12
+              }
+            ]
+          },
+          {
+            "type": "zone",
+            "id": "ribbon",
+            "polygon": [
+              [1080, 432],
+              [1190, 450],
+              [1190, 490],
+              [1100, 470]
+            ],
+            "feather": 22,
+            "pivot": [1090, 430],
+            "ripple": {
+              "axis": "y",
+              "amp": 4,
+              "speed": 3,
+              "freq": 0.06,
+              "push": {
+                "signal": "wind",
+                "amount": -4
+              }
+            }
+          },
+          {
+            "type": "zone",
+            "id": "ribbon-back",
+            "polygon": [
+              [1225, 420],
+              [1300, 440],
+              [1305, 480],
+              [1260, 460]
+            ],
+            "feather": 22,
+            "pivot": [1230, 420],
+            "ripple": {
+              "axis": "y",
+              "amp": 4,
+              "speed": 2.7,
+              "freq": 0.07,
+              "phase": 1
+            }
+          },
+          {
+            "type": "zone",
+            "id": "scarf",
+            "polygon": [
+              [880, 560],
+              [1100, 500],
+              [1220, 495],
+              [1220, 540],
+              [1080, 590],
+              [880, 620]
+            ],
+            "feather": 70,
+            "pivot": [1330, 520],
+            "ripple": {
+              "axis": "y",
+              "amp": 7,
+              "speed": 2.2,
+              "freq": 0.022,
+              "push": {
+                "signal": "wind",
+                "amount": -7
+              }
+            }
+          },
+          {
+            "type": "zone",
+            "id": "plume",
+            "polygon": [
+              [1530, 170],
+              [1610, 170],
+              [1610, 250],
+              [1540, 260]
+            ],
+            "feather": 24,
+            "pivot": [1550, 260],
+            "ripple": {
+              "axis": "x",
+              "amp": 3,
+              "speed": 2.5,
+              "freq": 0.05
+            }
+          },
+          {
+            "type": "zone",
+            "id": "head",
+            "polygon": [
+              [1290, 190],
+              [1330, -20],
+              [1610, -20],
+              [1620, 60],
+              [1560, 190],
+              [1480, 225],
+              [1400, 225],
+              [1320, 225]
+            ],
+            "feather": 50,
+            "pivot": [1448, 270],
+            "motion": [
+              {
+                "curve": "aim",
+                "angle": -0.032,
+                "dx": -4
+              },
+              {
+                "wave": 0.8,
+                "angle": 0.005
+              }
+            ],
+            "look": [2.5, 1, 0.01]
+          }
+        ],
+        "rect": [481, 0, 1434, 620],
+        "grid": [60, 26]
+      }
+    }
+  ],
+  "effects": [
+    {
+      "type": "mist",
+      "before": "figure",
+      "parallax": "background",
+      "center": [1040, 330],
+      "inner": 30,
+      "radius": 460,
+      "alpha": 0.14,
+      "waves": [[0.05, 0.8]],
+      "boost": {
+        "curve": "frost",
+        "amount": 0.16
+      },
+      "color": [150, 215, 255]
+    },
+    {
+      "type": "beamDust",
+      "before": "figure",
+      "parallax": "background",
+      "top": [1180, -10],
+      "length": 640,
+      "slope": 0.45,
+      "spread": 1400,
+      "count": 60,
+      "color": [226, 240, 255]
+    },
+    {
+      "type": "halo",
+      "frame": "figure",
+      "center": [960, 470],
+      "inner": 8,
+      "radius": 260,
+      "intensity": 0.42,
+      "middle": 0.1,
+      "curve": "frost",
+      "color": [110, 220, 255]
+    },
+    {
+      "type": "glint",
+      "frame": "figure",
+      "from": [1060, 430],
+      "to": [640, 515],
+      "travel": [1.4, 2.6],
+      "window": [1.3, 1.8, 2.2, 2.8],
+      "radius": 44,
+      "alpha": 0.9,
+      "color": [230, 250, 255],
+      "edge": [90, 210, 255]
+    },
+    {
+      "type": "motes",
+      "center": [980, 250],
+      "color": [190, 235, 255],
+      "speed": 1,
+      "count": 16,
+      "size": 2
+    },
+    {
+      "type": "beamDust",
+      "top": [1000, -10],
+      "length": 640,
+      "slope": 0.55,
+      "spread": 1500,
+      "count": 26,
+      "color": [255, 255, 255]
+    }
+  ]
+}

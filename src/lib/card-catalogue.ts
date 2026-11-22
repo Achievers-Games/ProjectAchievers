@@ -38,12 +38,34 @@ export interface CatalogueVariant {
 
 export const CARD_CATALOGUE: readonly CatalogueGame[] = data.games as readonly CatalogueGame[];
 
+/**
+ * Un jeu en cours : ses premières raretés sont publiées pour être vérifiées en modération. Il ne
+ * passe ni en base ni dans les boosters. Il rejoint `games` une fois ses trois raretés prêtes.
+ */
+export interface DraftGame {
+  name: string;
+  steamAppId: string;
+  version: number;
+  editions: Partial<Record<EditionKind, string>>;
+}
+
+export const CARD_DRAFTS: readonly DraftGame[] = data.drafts as readonly DraftGame[];
+
 /** Le préfixe public des cartes publiées. */
 export const CARDS_URL = '/cartes';
 
 /** L'adresse publiée d'une édition, celle que la base enregistre. */
 export const publishedCardPath = (game: CatalogueGame, kind: EditionKind) =>
   `${CARDS_URL}/${game.editions[kind]}/${game.version}/`;
+
+/** Les adresses publiées d'un brouillon, pour les seules raretés déjà faites. */
+export const draftCardPaths = (game: DraftGame): Partial<Record<EditionKind, string>> =>
+  Object.fromEntries(
+    Object.entries(game.editions).map(([kind, folder]) => [
+      kind,
+      `${CARDS_URL}/${folder}/${game.version}/`,
+    ]),
+  );
 
 /** L'adresse publiée d'une variante : son dossier, à la version du jeu. */
 export const publishedVariantPath = (game: CatalogueGame, variant: CatalogueVariant) =>

@@ -5,6 +5,10 @@
 //   node scripts/card-sheet.mjs "Portal 2" Vivante
 //   node scripts/card-sheet.mjs "Portal 2" Mythique --intro
 //   node scripts/card-sheet.mjs "Portal 2" Vivante --no-vfx --joint arm --times 0,0.5,1.45,1.76
+//   node scripts/card-sheet.mjs --folder portal-2 Vivante --look 1,-1
+//
+// `--folder <dossier>` monte directement un dossier de l'atelier : il sert avant l'entrée du jeu au
+// catalogue. `--look x,y` pose le pointeur (de -1 à 1) pour contrôler les bords de la parallaxe.
 //
 // Options : --times a,b,c (secondes), --intro (fige l'intro au lieu de la boucle), --no-vfx,
 // --joint <calque> (isole un pivot), --cols n, --url (autre serveur), --out fichier.jpg.
@@ -18,10 +22,13 @@ const option = (name, fallback = null) => {
   return index === -1 ? fallback : args[index + 1];
 };
 const flag = (name) => args.includes(`--${name}`);
-const [name, edition] = args.filter(
+const folder = option('folder');
+const words = args.filter(
   (arg, index) =>
-    !arg.startsWith('--') && !args[index - 1]?.match(/^--(times|joint|cols|url|out)$/),
+    !arg.startsWith('--') &&
+    !args[index - 1]?.match(/^--(times|joint|cols|url|out|folder|look|width)$/),
 );
+const [name, edition] = folder ? [folder, words[0]] : words;
 if (!name || !['Relief', 'Vivante', 'Mythique'].includes(edition)) {
   console.error(
     'Usage : node scripts/card-sheet.mjs "<jeu>" <Relief|Vivante|Mythique> [--intro] [--no-vfx] [--joint id] [--times a,b,c]',
@@ -44,7 +51,8 @@ const slug = name
 const suffix = [
   intro && 'intro',
   flag('no-vfx') && 'sans-vfx',
-  option('joint') && `pivot-${option('joint')}`,
+  option('joint') && `pivot-${option('joint').replaceAll(':', '-')}`,
+  option('look') && `regard${option('look')}`,
 ]
   .filter(Boolean)
   .join('-');
@@ -58,9 +66,46 @@ try {
   const page = await browser.newPage({ viewport: { width: 1200, height: 900 } });
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
-  await page.goto(`${base}/dev/cartes-animees`, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: `Inspecter ${name} — ${edition}`, exact: true }).click();
-  await page.locator('dialog[open] canvas[data-ready]').first().waitFor({ timeout: 30_000 });
+  if (folder) {
+    // Une page vide qui monte la carte comme le site : `dialog` garde le même sélecteur.
+    await page.goto(`${base}/_proto/shared/site.css`);
+    await page.evaluate(
+      async ({ folder, level, width, look }) => {
+        document.head.innerHTML = '';
+        document.body.innerHTML = `<dialog open style="position:fixed;inset:0;margin:0;padding:0;border:0"><div id="surface" style="width:${width}px;height:${Math.round((width * 215) / 460)}px"><canvas style="display:block;width:100%;height:100%"></canvas></div></dialog>`;
+        const manifest = await (await fetch(`/_proto/${folder}/edition.json`)).json();
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = `/_proto/${folder}/cards.js`;
+          script.onload = resolve;
+          script.onerror = reject;
+          document.head.append(script);
+        });
+        await window.AchieversCards[manifest.id].mount(document.querySelector('canvas'), level);
+        if (look) {
+          const surface = document.getElementById('surface');
+          const box = surface.getBoundingClientRect();
+          surface.dispatchEvent(
+            new PointerEvent('pointermove', {
+              clientX: box.left + ((look[0] + 1) / 2) * box.width,
+              clientY: box.top + ((look[1] + 1) / 2) * box.height,
+            }),
+          );
+        }
+      },
+      {
+        folder,
+        level: edition === 'Relief' ? 2 : 3,
+        width: Number(option('width', '920')),
+        look: option('look')?.split(',').map(Number),
+      },
+    );
+    await page.waitForTimeout(1500);
+  } else {
+    await page.goto(`${base}/dev/cartes-animees`, { waitUntil: 'networkidle' });
+    await page.getByRole('button', { name: `Inspecter ${name} — ${edition}`, exact: true }).click();
+    await page.locator('dialog[open] canvas[data-ready]').first().waitFor({ timeout: 30_000 });
+  }
   await page.waitForTimeout(800);
   const sheet = await page.evaluate(
     async ({ times, cols, intro, noVfx, joint }) => {

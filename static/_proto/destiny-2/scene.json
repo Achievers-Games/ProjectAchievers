@@ -1,0 +1,196 @@
+{
+  "engine": 2,
+  "source": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1085660/e0c143377be45cc7c5df6f19604250b419537f76/library_hero.jpg",
+  "view": [314, 8, 1292, 604],
+  "period": 9,
+  "curves": {
+    "light": [0.8, 2, 3, 5.2],
+    "pulse": [5.4, 6, 6.2, 7.6]
+  },
+  "fill": "#0b0f14",
+  "background": {
+    "file": "bg.jpg",
+    "parallax": [-14, -5],
+    "size": [1920, 620]
+  },
+  "layers": [
+    {
+      "id": "clouds",
+      "file": "clouds.png",
+      "parallax": [-14, -5],
+      "mesh": {
+        "deform": [
+          {
+            "type": "zone",
+            "id": "east",
+            "center": [1300, 330],
+            "radius": [300, 230],
+            "core": 0.2,
+            "pivot": [1300, 330],
+            "motion": [
+              {
+                "wave": 0.35,
+                "dx": 16,
+                "dy": -4
+              },
+              {
+                "curve": "light",
+                "dx": 14
+              }
+            ],
+            "ripple": {
+              "axis": "y",
+              "amp": 4,
+              "speed": 0.9,
+              "freq": 0.02
+            }
+          },
+          {
+            "type": "zone",
+            "id": "below",
+            "center": [960, 560],
+            "radius": [480, 110],
+            "core": 0.2,
+            "pivot": [960, 560],
+            "motion": [
+              {
+                "wave": 0.3,
+                "dx": -14
+              }
+            ],
+            "ripple": {
+              "axis": "y",
+              "amp": 3,
+              "speed": 0.8,
+              "freq": 0.015
+            }
+          }
+        ],
+        "rect": [451, 61, 1194, 559],
+        "grid": [30, 14]
+      }
+    },
+    {
+      "id": "traveler",
+      "parallax": [3, 2],
+      "pivot": [960, 310],
+      "motion": [
+        {
+          "wave": 0.8,
+          "dy": 3
+        },
+        {
+          "curve": "light",
+          "dy": -6
+        },
+        {
+          "curve": "pulse",
+          "sx": 0.014,
+          "sy": 0.014
+        }
+      ]
+    },
+    {
+      "id": "sphere",
+      "file": "sphere.png",
+      "parent": "traveler",
+      "mesh": {
+        "deform": [
+          {
+            "type": "zone",
+            "id": "reflection",
+            "center": [960, 310],
+            "radius": [180, 180],
+            "core": 0.1,
+            "pivot": [960, 310],
+            "motion": [
+              {
+                "wave": 0.45,
+                "angle": 0.06
+              },
+              {
+                "curve": "light",
+                "angle": -0.17
+              }
+            ],
+            "ripple": {
+              "axis": "y",
+              "amp": 2.2,
+              "speed": 1.1,
+              "freq": 0.03
+            }
+          }
+        ],
+        "rect": [769, 119, 383, 383],
+        "grid": [27, 27]
+      }
+    }
+  ],
+  "effects": [
+    {
+      "type": "halo",
+      "before": "traveler",
+      "center": [960, 470],
+      "inner": 60,
+      "radius": 430,
+      "intensity": 0.42,
+      "middle": 0.1,
+      "curve": "light",
+      "color": [255, 176, 96],
+      "frame": "traveler"
+    },
+    {
+      "type": "halo",
+      "before": "traveler",
+      "center": [960, 310],
+      "inner": 170,
+      "radius": 330,
+      "intensity": 0.34,
+      "middle": 0.06,
+      "curve": "pulse",
+      "color": [150, 200, 255],
+      "frame": "traveler"
+    },
+    {
+      "type": "motes",
+      "before": "traveler",
+      "center": [960, 300],
+      "color": [255, 214, 160],
+      "speed": 0.6,
+      "count": 30,
+      "size": 1
+    },
+    {
+      "type": "glint",
+      "frame": "traveler",
+      "from": [800, 240],
+      "to": [1120, 400],
+      "travel": [1, 3.2],
+      "window": [0.9, 1.6, 2.6, 3.4],
+      "radius": 120,
+      "alpha": 0.3,
+      "color": [235, 245, 255],
+      "edge": [140, 190, 255]
+    },
+    {
+      "type": "glint",
+      "frame": "traveler",
+      "from": [880, 468],
+      "to": [1060, 462],
+      "travel": [1.6, 3.6],
+      "window": [1.5, 2.1, 3, 3.8],
+      "radius": 56,
+      "alpha": 0.75,
+      "color": [255, 240, 200],
+      "edge": [255, 170, 80]
+    },
+    {
+      "type": "rising",
+      "span": [320, 1290],
+      "y": 640,
+      "rise": 520,
+      "count": 16,
+      "color": [255, 200, 140]
+    }
+  ]
+}

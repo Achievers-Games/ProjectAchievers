@@ -1,0 +1,173 @@
+{
+  "engine": 2,
+  "source": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1174180/library_hero.jpg",
+  "view": [600, 8, 1292, 604],
+  "period": 7.8,
+  "curves": {
+    "aim": [0.6, 1.4, 2.5, 3.7],
+    "glare": [1.2, 1.9, 2.7, 4]
+  },
+  "background": {
+    "file": "bg.jpg",
+    "parallax": [-24, -6],
+    "size": [1920, 620]
+  },
+  "layers": [
+    {
+      "id": "flag",
+      "file": "flag.png",
+      "parallax": [-12, -3],
+      "mesh": {
+        "deform": [
+          {
+            "type": "zone",
+            "id": "cloth",
+            "polygon": [
+              [0, 440],
+              [1920, 440],
+              [1920, 560],
+              [0, 560]
+            ],
+            "feather": 80,
+            "pivot": [960, 620],
+            "ripple": {
+              "axis": "y",
+              "amp": 4,
+              "speed": 1.6,
+              "freq": 0.016
+            }
+          }
+        ],
+        "rect": [0, 435, 1920, 185],
+        "grid": [48, 5]
+      }
+    },
+    {
+      "id": "arthur",
+      "file": "arthur.png",
+      "parallax": [11, 4],
+      "mesh": {
+        "deform": [
+          {
+            "type": "zone",
+            "id": "breath",
+            "polygon": [
+              [1200, 0],
+              [1600, 0],
+              [1660, 430],
+              [1240, 430]
+            ],
+            "feather": 150,
+            "pivot": [1420, 620],
+            "motion": [
+              {
+                "wave": 1.35,
+                "shape": "breath",
+                "dy": -3
+              }
+            ]
+          },
+          {
+            "type": "zone",
+            "id": "gun",
+            "polygon": [
+              [1080, 190],
+              [1250, 190],
+              [1312, 260],
+              [1310, 440],
+              [1230, 455],
+              [1130, 430],
+              [1085, 320]
+            ],
+            "feather": 70,
+            "pivot": [1270, 520],
+            "motion": [
+              {
+                "curve": "aim",
+                "angle": 0.045,
+                "dx": -3,
+                "dy": -5
+              },
+              {
+                "wave": 1.35,
+                "angle": 0.006
+              }
+            ]
+          },
+          {
+            "type": "zone",
+            "id": "head",
+            "polygon": [
+              [1205, 160],
+              [1290, 40],
+              [1400, 0],
+              [1570, 70],
+              [1510, 190],
+              [1490, 290],
+              [1420, 322],
+              [1350, 290],
+              [1300, 220]
+            ],
+            "feather": 48,
+            "pivot": [1420, 350],
+            "motion": [
+              {
+                "curve": "glare",
+                "angle": -0.052,
+                "dy": 2
+              },
+              {
+                "wave": 0.85,
+                "angle": 0.006
+              }
+            ],
+            "look": [2.5, 1.5, 0.012]
+          }
+        ],
+        "rect": [1085, 8, 583, 612],
+        "grid": [29, 31]
+      }
+    }
+  ],
+  "effects": [
+    {
+      "type": "halo",
+      "before": "flag",
+      "parallax": "background",
+      "center": [1380, 300],
+      "inner": 40,
+      "radius": 520,
+      "intensity": 0.28,
+      "middle": 0.06,
+      "curve": "aim",
+      "color": [255, 200, 70]
+    },
+    {
+      "type": "cinders",
+      "before": "arthur",
+      "sources": [760, 900, 1060, 1660, 1780, 1860],
+      "count": 22,
+      "y": 560,
+      "parallax": [8, 3]
+    },
+    {
+      "type": "glint",
+      "frame": "arthur",
+      "from": [1135, 235],
+      "to": [1240, 212],
+      "travel": [1.2, 2.3],
+      "window": [1.1, 1.5, 1.9, 2.5],
+      "radius": 34,
+      "alpha": 0.9,
+      "color": [255, 252, 236],
+      "edge": [255, 220, 140]
+    },
+    {
+      "type": "embers",
+      "count": 16,
+      "depth": 9,
+      "span": [560, 1350],
+      "y": 650
+    }
+  ]
+}

@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import type { EditionManifest } from './animated-card';
 import { EDITIONS } from './boosters';
 import { servedFiles, WORKSHOP_DIR } from '../../scripts/card-files.mjs';
-import { CARD_CATALOGUE, catalogueFolders } from './card-catalogue';
+import { CARD_CATALOGUE, CARD_DRAFTS, catalogueFolders } from './card-catalogue';
 import artworkData from './card-artworks.json';
 
 import { EFFECT_TYPES, INTRO_TYPES } from '../../static/_proto/shared/card-engine.js';
@@ -36,7 +36,12 @@ const FRAMES = ['forest', 'underworld', 'maple', 'laboratory'];
 /** Le poids publié d'un dossier de carte. Cible : 3 Mo pour Relief et Vivante, 6 Mo en Mythique. */
 const MAX_FOLDER_BYTES = 6 * 1024 * 1024;
 
-const folders = [...new Set(CARD_CATALOGUE.flatMap(catalogueFolders))];
+const folders = [
+  ...new Set([
+    ...CARD_CATALOGUE.flatMap(catalogueFolders),
+    ...CARD_DRAFTS.flatMap((game) => Object.values(game.editions)),
+  ]),
+];
 const folderOf = (folder: string) => join(process.cwd(), WORKSHOP_DIR, folder);
 /** Une scène pour le moteur commun (`shared/card-engine.js`), et non un rendu fait à la main. */
 const isDataScene = (folder: string) => {
@@ -65,6 +70,20 @@ describe('le catalogue de cartes', () => {
         expect(EDITIONS).toContain(variant.kind);
         expect(variant.folder, game.name).toMatch(/^[a-z0-9-]+$/);
       }
+    }
+  });
+
+  it('garde les brouillons hors du catalogue, avec une partie seulement des raretés', () => {
+    const appIds = CARD_DRAFTS.map((game) => game.steamAppId);
+    expect(new Set(appIds).size).toBe(appIds.length);
+    for (const game of CARD_DRAFTS) {
+      expect(game.steamAppId, game.name).toMatch(/^\d+$/);
+      expect(Number.isInteger(game.version) && game.version > 0, game.name).toBe(true);
+      expect(CARD_CATALOGUE.some((made) => made.steamAppId === game.steamAppId)).toBe(false);
+      const kinds = Object.keys(game.editions);
+      expect(kinds.length, game.name).toBeGreaterThan(0);
+      expect(kinds.length, game.name).toBeLessThan(EDITIONS.length);
+      for (const kind of kinds) expect(EDITIONS).toContain(kind);
     }
   });
 

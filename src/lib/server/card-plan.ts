@@ -1,6 +1,11 @@
 import { Prisma, type EditionKind } from '#prisma';
 import { EDITIONS } from '#lib/boosters';
-import { CARD_CATALOGUE, publishedCardPath } from '#lib/card-catalogue';
+import {
+  CARD_CATALOGUE,
+  CARD_DRAFTS,
+  draftCardPaths,
+  publishedCardPath,
+} from '#lib/card-catalogue';
 import artworkData from '#lib/card-artworks.json';
 import { db } from './db';
 
@@ -31,11 +36,14 @@ export interface CardPlanRow {
   made: boolean;
   mythiqueArtUrl: string | null;
   note: string | null;
-  /** L'adresse publiée de chaque carte d'un jeu fait, pour la voir animée ; `null` sinon. */
-  editions: Record<EditionKind, string> | null;
+  /** L'adresse publiée de chaque carte déjà faite (brouillons compris), pour la voir animée. */
+  editions: Partial<Record<EditionKind, string>> | null;
 }
 
-type PlanRow = Omit<CardPlanRow, 'editions'> & { catalogueAppId: string | null };
+type PlanRow = Omit<CardPlanRow, 'editions'> & {
+  catalogueAppId: string | null;
+  draftAppId: string | null;
+};
 
 /** Les cartes publiées d'un jeu du catalogue, par rareté. */
 function publishedEditions(appId: string | null) {
@@ -48,6 +56,14 @@ function publishedEditions(appId: string | null) {
     : null;
 }
 
+/** Les cartes d'un brouillon, visibles en modération avant que le jeu ait ses trois raretés. */
+function draftEditions(appId: string | null) {
+  const entry = appId ? CARD_DRAFTS.find((game) => game.steamAppId === appId) : undefined;
+  return entry ? draftCardPaths(entry) : null;
+}
+
+const draftAppIds = () => CARD_DRAFTS.map((game) => game.steamAppId);
+const draftCounts = () => CARD_DRAFTS.map((game) => Object.keys(game.editions).length);
 const catalogueAppIds = () => CARD_CATALOGUE.map((game) => game.steamAppId);
 
 /**
@@ -76,7 +92,10 @@ const families = () => Prisma.sql`
       bool_or(g.platform = 'STEAM' AND g."platformGameId" = ANY(${catalogueAppIds()}::text[])) AS made,
       (array_agg(g."platformGameId") FILTER (
         WHERE g.platform = 'STEAM' AND g."platformGameId" = ANY(${catalogueAppIds()}::text[])
-      ))[1] AS "catalogueAppId"
+      ))[1] AS "catalogueAppId",
+      (array_agg(g."platformGameId" ORDER BY coalesce(p.players, 0) DESC) FILTER (
+        WHERE g.platform = 'STEAM' AND g."platformGameId" = ANY(${draftAppIds()}::text[])
+      ))[1] AS "draftAppId"
     FROM "Game" g
     LEFT JOIN played p ON p."gameId" = g.id
     WHERE g."familyKey" IS NOT NULL
@@ -84,7 +103,10 @@ const families = () => Prisma.sql`
     HAVING NOT bool_or(g."adultOnly")
   ), plan AS (
     SELECT f."familyKey", f.name, f.slug, f.players, f."steamAppId", f."heroUrl", f.made,
-      f."catalogueAppId", c.note,
+      f."catalogueAppId", f."draftAppId", c.note,
+      CASE WHEN f.made THEN 0 ELSE coalesce(
+        (SELECT d.cards FROM unnest(${draftAppIds()}::text[], ${draftCounts()}::int[]) AS d(id, cards)
+          WHERE d.id = f."draftAppId"), 0) END AS "draftCards",
       coalesce(
         c."mythiqueArtUrl",
         (SELECT a.url FROM unnest(${artworkIds()}::text[], ${artworkUrls()}::text[]) AS a(id, url)
@@ -122,12 +144,14 @@ export async function cardPlan(view: CardPlanView, search: string, page: number)
         made: number;
         heroes: number;
         artworks: number;
+        draftCards: number;
       }[]
     >`${families()}
       SELECT count(*)::int AS games,
         count(*) FILTER (WHERE made)::int AS made,
         count(*) FILTER (WHERE NOT made AND "heroUrl" IS NOT NULL)::int AS heroes,
-        count(*) FILTER (WHERE NOT made AND "mythiqueArtUrl" IS NOT NULL)::int AS artworks
+        count(*) FILTER (WHERE NOT made AND "mythiqueArtUrl" IS NOT NULL)::int AS artworks,
+        coalesce(sum("draftCards"), 0)::int AS "draftCards"
       FROM plan`,
     db.$queryRaw<{ count: number }[]>`${families()}
       SELECT count(*)::int AS count FROM plan WHERE ${where}`,
@@ -143,8 +167,8 @@ export async function cardPlan(view: CardPlanView, search: string, page: number)
     totals: {
       games,
       made,
-      /** Trois cartes par jeu restant. */
-      cardsLeft: remaining * 3,
+      /** Trois cartes par jeu restant, moins celles des brouillons. */
+      cardsLeft: remaining * 3 - (totals?.draftCards ?? 0),
       /** Relief et Vivante : jeux restants dont l'image Steam est déjà là. */
       heroes: totals?.heroes ?? 0,
       heroesMissing: remaining - (totals?.heroes ?? 0),
@@ -153,9 +177,9 @@ export async function cardPlan(view: CardPlanView, search: string, page: number)
       artworksMissing: remaining - (totals?.artworks ?? 0),
     },
     pages: Math.max(1, Math.ceil((matching?.count ?? 0) / CARD_PLAN_PER_PAGE)),
-    rows: rows.map(({ catalogueAppId, ...row }): CardPlanRow => ({
+    rows: rows.map(({ catalogueAppId, draftAppId, ...row }): CardPlanRow => ({
       ...row,
-      editions: publishedEditions(catalogueAppId),
+      editions: publishedEditions(catalogueAppId) ?? draftEditions(draftAppId),
     })),
   };
 }

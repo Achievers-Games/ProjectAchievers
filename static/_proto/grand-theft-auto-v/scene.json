@@ -1,0 +1,365 @@
+{
+  "engine": 2,
+  "source": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/271590/library_hero.jpg",
+  "view": [566, 8, 1292, 604],
+  "period": 8,
+  "curves": {
+    "glance": [0.6, 1.25, 2.1, 3.2],
+    "tilt": [1.5, 2.3, 3.5, 4.8],
+    "blink": [3.6, 3.68, 3.72, 3.84],
+    "blink2": [6.4, 6.48, 6.52, 6.64]
+  },
+  "signals": {
+    "wind": {
+      "waves": [
+        [1, 0.7],
+        [0.4, 1.9, 1]
+      ]
+    }
+  },
+  "background": {
+    "file": "bg.jpg",
+    "parallax": [-22, -6],
+    "size": [1920, 620]
+  },
+  "layers": [
+    {
+      "id": "palms",
+      "file": "palms.png",
+      "parallax": [-13, -5],
+      "mesh": {
+        "rect": [440, 0, 383, 620],
+        "grid": [14, 18],
+        "deform": [
+          {
+            "type": "zone",
+            "id": "big",
+            "center": [540, 60],
+            "radius": [300, 300],
+            "core": 0.2,
+            "pivot": [500, 330],
+            "motion": [
+              {
+                "signal": "wind",
+                "angle": 0.012
+              }
+            ],
+            "ripple": {
+              "axis": "y",
+              "amp": 2.6,
+              "speed": 1.7,
+              "freq": 0.03
+            }
+          },
+          {
+            "type": "zone",
+            "id": "mid",
+            "center": [670, 370],
+            "radius": [190, 150],
+            "core": 0.3,
+            "pivot": [650, 560],
+            "motion": [
+              {
+                "signal": "wind",
+                "angle": 0.02
+              }
+            ],
+            "ripple": {
+              "axis": "y",
+              "amp": 1.6,
+              "speed": 2.2,
+              "freq": 0.05
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "officer",
+      "file": "officer.png",
+      "parallax": [6, 3],
+      "mesh": {
+        "rect": [948, 31, 780, 589],
+        "grid": [19, 25],
+        "xs": [
+          1181, 1185, 1189, 1193, 1197, 1201, 1205, 1209, 1213, 1243, 1247, 1251, 1255, 1259, 1263,
+          1267
+        ],
+        "ys": [153, 156, 159, 162, 165, 168, 171, 174, 177, 180],
+        "deform": [
+          {
+            "type": "zone",
+            "id": "breath",
+            "polygon": [
+              [900, 0],
+              [1420, 0],
+              [1420, 400],
+              [900, 400]
+            ],
+            "feather": 190,
+            "pivot": [1180, 600],
+            "motion": [
+              {
+                "wave": 1.35,
+                "shape": "breath",
+                "dy": -3.4
+              }
+            ]
+          },
+          {
+            "type": "zone",
+            "id": "blink-left",
+            "center": [1198, 172],
+            "radius": [21, 13],
+            "core": 0.5,
+            "pivot": [1198, 177],
+            "motion": [
+              {
+                "curve": "blink",
+                "sy": -0.88
+              },
+              {
+                "curve": "blink2",
+                "sy": -0.88
+              }
+            ]
+          },
+          {
+            "type": "zone",
+            "id": "blink-right",
+            "center": [1256, 162],
+            "radius": [17, 11],
+            "core": 0.5,
+            "pivot": [1256, 167],
+            "motion": [
+              {
+                "curve": "blink",
+                "sy": -0.88
+              },
+              {
+                "curve": "blink2",
+                "sy": -0.88
+              }
+            ]
+          },
+          {
+            "type": "zone",
+            "id": "head",
+            "polygon": [
+              [1108, 40],
+              [1190, 22],
+              [1285, 60],
+              [1290, 180],
+              [1268, 246],
+              [1225, 262],
+              [1165, 232],
+              [1100, 222]
+            ],
+            "feather": 46,
+            "pivot": [1186, 268],
+            "motion": [
+              {
+                "curve": "glance",
+                "angle": 0.08,
+                "dx": 6
+              },
+              {
+                "wave": 0.8,
+                "angle": 0.006
+              }
+            ],
+            "look": [2.5, 1.5, 0.012]
+          }
+        ]
+      }
+    },
+    {
+      "id": "woman",
+      "file": "woman.png",
+      "parallax": [15, 5],
+      "mesh": {
+        "rect": [1124, 31, 604, 589],
+        "grid": [30, 30],
+        "deform": [
+          {
+            "type": "zone",
+            "id": "breath",
+            "polygon": [
+              [1100, 0],
+              [1760, 0],
+              [1760, 430],
+              [1100, 430]
+            ],
+            "feather": 170,
+            "pivot": [1460, 600],
+            "motion": [
+              {
+                "wave": 1.6,
+                "shape": "breath",
+                "dy": -3
+              }
+            ]
+          },
+          {
+            "type": "zone",
+            "id": "hair",
+            "polygon": [
+              [1585, 180],
+              [1660, 200],
+              [1680, 300],
+              [1690, 480],
+              [1660, 480],
+              [1620, 330],
+              [1580, 300]
+            ],
+            "feather": 36,
+            "pivot": [1600, 180],
+            "ripple": {
+              "axis": "x",
+              "amp": 3.4,
+              "speed": 2.1,
+              "freq": -0.028
+            }
+          },
+          {
+            "type": "zone",
+            "id": "hair-left",
+            "polygon": [
+              [1388, 200],
+              [1440, 210],
+              [1450, 290],
+              [1395, 320]
+            ],
+            "feather": 22,
+            "pivot": [1440, 200],
+            "ripple": {
+              "axis": "x",
+              "amp": 2.4,
+              "speed": 2.5,
+              "freq": -0.05
+            }
+          },
+          {
+            "type": "zone",
+            "id": "jewels",
+            "polygon": [
+              [1500, 380],
+              [1560, 360],
+              [1612, 400],
+              [1600, 600],
+              [1560, 600]
+            ],
+            "feather": 26,
+            "pivot": [1560, 340],
+            "ripple": {
+              "axis": "x",
+              "amp": 2,
+              "speed": 1.6,
+              "freq": 0.01
+            },
+            "motion": [
+              {
+                "curve": "tilt",
+                "dx": -5
+              }
+            ]
+          },
+          {
+            "type": "zone",
+            "id": "feathers",
+            "center": [1468, 345],
+            "radius": [32, 48],
+            "core": 0.4,
+            "pivot": [1470, 300],
+            "motion": [
+              {
+                "wave": 2.3,
+                "angle": 0.07
+              },
+              {
+                "curve": "tilt",
+                "angle": 0.14
+              }
+            ]
+          },
+          {
+            "type": "zone",
+            "id": "head",
+            "polygon": [
+              [1400, 170],
+              [1450, 40],
+              [1520, 28],
+              [1610, 50],
+              [1655, 150],
+              [1640, 290],
+              [1560, 320],
+              [1480, 318],
+              [1430, 290],
+              [1400, 250]
+            ],
+            "feather": 60,
+            "pivot": [1510, 350],
+            "motion": [
+              {
+                "curve": "tilt",
+                "angle": -0.062,
+                "dx": -4,
+                "dy": -2
+              },
+              {
+                "wave": 0.9,
+                "angle": 0.007,
+                "phase": 1
+              }
+            ],
+            "look": [3, 2, 0.012]
+          }
+        ]
+      }
+    }
+  ],
+  "effects": [
+    {
+      "type": "mist",
+      "before": "palms",
+      "parallax": "background",
+      "center": [840, 420],
+      "inner": 20,
+      "radius": 520,
+      "alpha": 0.2,
+      "waves": [[0.06, 0.8]],
+      "color": [255, 214, 120],
+      "rect": [300, 0, 1100, 620]
+    },
+    {
+      "type": "motes",
+      "before": "officer",
+      "center": [960, 260],
+      "color": [255, 236, 176],
+      "speed": 0.6,
+      "count": 22,
+      "size": 1
+    },
+    {
+      "type": "motes",
+      "center": [1180, 260],
+      "color": [255, 226, 150],
+      "speed": 0.8,
+      "count": 10,
+      "offset": 40,
+      "size": 2
+    },
+    {
+      "type": "glint",
+      "frame": "woman",
+      "from": [1436, 208],
+      "to": [1556, 236],
+      "travel": [2.2, 3.3],
+      "window": [2.1, 2.45, 3, 3.5],
+      "radius": 30,
+      "alpha": 0.85,
+      "color": [255, 246, 214],
+      "edge": [255, 210, 140]
+    }
+  ]
+}

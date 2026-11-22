@@ -11,8 +11,8 @@
  *   déplace (`dx`, `dy`), tourne (`angle`) ou étire (`sx`, `sy`) autour du pivot, au rythme d'un
  *   accent (`curve`), d'un signal (`signal`), d'une oscillation (`wave`, vitesse) ou d'une
  *   respiration (`wave` avec `"shape": "breath"`). `sway` fait onduler un tissu bande par bande ;
- *   `mesh` découpe le calque en triangles déformés (ondes, plis vers la pointe) pour une cape, un
- *   voile ou une aile.
+ *   `mesh` découpe le calque en triangles déformés (ondes, plis vers la pointe, zones douces) pour
+ *   une cape, un voile, une aile ou une tête qui tourne sans couture.
  * - `signals` : des grandeurs nommées, comme le vent ou un regard, faites d'une base,
  *   d'oscillations `[amplitude, vitesse, phase]`, d'accents pondérés, d'étapes `[début, fin,
  *   poids]` (une transition qui reste acquise) et de flashs `[début, sommet, fin, poids]`.
@@ -85,8 +85,10 @@ const driven = (state, source) =>
 
 /* ---------- Calques ---------- */
 
-function termAmount(term, layer, state) {
-  if (state.isolated) return state.isolated === layer.id ? 1 : 0;
+function termAmount(term, layer, state, owner = layer.id) {
+  // Isoler un calque actionne aussi toutes ses zones ; `calque:zone` n'en actionne qu'une.
+  if (state.isolated)
+    return state.isolated === owner || state.isolated === `${owner}:${layer.id}` ? 1 : 0;
   if (term.curve) return state.curves[term.curve] ?? 0;
   if (term.signal) return state.signals[term.signal] ?? 0;
   if (term.shape === 'breath') return (1 - Math.cos(state.elapsed * term.wave)) / 2;
@@ -200,6 +202,41 @@ function holdWeight(hold, x, y) {
   return ease(0, feather, Math.hypot(dx, dy));
 }
 
+/** Le poids d'un point dans une zone : 1 dans le cœur, 0 hors de l'ellipse ou du contour. */
+const zoneWeights = new WeakMap();
+function zoneWeight(zone, x, y) {
+  let cache = zoneWeights.get(zone);
+  if (!cache) zoneWeights.set(zone, (cache = new Map()));
+  const key = x * 8192 + y;
+  let weight = cache.get(key);
+  if (weight === undefined) {
+    weight = zone.polygon ? polygonWeight(zone, x, y) : ellipseWeight(zone, x, y);
+    cache.set(key, weight);
+  }
+  return weight;
+}
+
+function ellipseWeight({ center, radius, core = 0.5 }, x, y) {
+  const reach = Math.hypot((x - center[0]) / radius[0], (y - center[1]) / radius[1]);
+  return 1 - ease(core, 1, reach);
+}
+
+/** Un contour tracé : plein dedans, puis un fondu de `feather` pixels au-dehors. */
+function polygonWeight({ polygon, feather = 30 }, x, y) {
+  let inside = false;
+  let nearest = Infinity;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const [ax, ay] = polygon[i];
+    const [bx, by] = polygon[j];
+    if (ay > y !== by > y && x < ((bx - ax) * (y - ay)) / (by - ay) + ax) inside = !inside;
+    const along = clamp01(
+      ((x - ax) * (bx - ax) + (y - ay) * (by - ay)) / ((bx - ax) ** 2 + (by - ay) ** 2 || 1),
+    );
+    nearest = Math.min(nearest, Math.hypot(x - ax - along * (bx - ax), y - ay - along * (by - ay)));
+  }
+  return inside ? 1 : 1 - ease(0, feather, nearest);
+}
+
 /** Les déformations d'un maillage, appliquées à un point de la source. */
 function deformPoint(x, y, deformers, state, layer) {
   let px = x,
@@ -227,9 +264,68 @@ function deformPoint(x, y, deformers, state, layer) {
         dy = py - cy;
       px = cx + dx * cos - dy * sin;
       py = cy + dx * sin + dy * cos;
+    } else if (deform.type === 'zone') {
+      // Une partie qui tourne, s'étire ou ondule autour d'une attache, sans quitter sa surface.
+      // Le poids se lit au repos : les zones se composent (le torse emporte la tête).
+      const weight = zoneWeight(deform, x, y);
+      if (!weight) continue;
+      const [cx, cy] = deform.pivot ?? deform.center;
+      const sum = { dx: 0, dy: 0, angle: 0, sx: 0, sy: 0 };
+      for (const term of deform.motion ?? []) {
+        const amount = termAmount(term, { id: deform.id ?? layer.id }, state, layer.id);
+        for (const key in sum) sum[key] += (term[key] ?? 0) * amount;
+      }
+      if (deform.look && !state.isolated) {
+        sum.dx += deform.look[0] * state.pointer.x;
+        sum.dy += deform.look[1] * state.pointer.y;
+        sum.angle += (deform.look[2] ?? 0) * state.pointer.x;
+      }
+      const turn = sum.angle * weight;
+      const cos = Math.cos(turn),
+        sin = Math.sin(turn);
+      const dx = (px - cx) * (1 + sum.sx * weight);
+      const dy = (py - cy) * (1 + sum.sy * weight);
+      px = cx + dx * cos - dy * sin + sum.dx * weight;
+      py = cy + dx * sin + dy * cos + sum.dy * weight;
+      if (deform.ripple && !state.isolated) {
+        const { axis = 'x', amp, speed, freq, phase = 0, push } = deform.ripple;
+        const wave = amp * Math.sin(state.elapsed * speed + (axis === 'x' ? y : x) * freq + phase);
+        const shift =
+          (wave + (push ? push.amount * driven(state, push.signal ?? push.curve) : 0)) * weight;
+        if (axis === 'x') px += shift;
+        else py += shift;
+      }
     }
   }
   return [px, py];
+}
+
+/** Les cases d'un maillage qui portent des pixels : les autres ne sont jamais dessinées. */
+const meshCells = new WeakMap();
+function filledCells(image, mesh, columns, bands) {
+  let cells = meshCells.get(mesh);
+  if (cells) return cells;
+  const canvas = document.createElement('canvas');
+  canvas.width = image.width;
+  canvas.height = image.height;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(image, 0, 0);
+  const { data } = ctx.getImageData(0, 0, image.width, image.height);
+  const filled = (x0, y0, x1, y1) => {
+    const right = Math.min(image.width, Math.ceil(x1) + 1);
+    const bottom = Math.min(image.height, Math.ceil(y1) + 1);
+    for (let y = Math.max(0, Math.floor(y0) - 1); y < bottom; y++) {
+      for (let x = Math.max(0, Math.floor(x0) - 1); x < right; x++) {
+        if (data[(y * image.width + x) * 4 + 3]) return true;
+      }
+    }
+    return false;
+  };
+  cells = bands
+    .slice(1)
+    .map((y, j) => columns.slice(1).map((x, i) => filled(columns[i], bands[j], x, y)));
+  meshCells.set(mesh, cells);
+  return cells;
 }
 
 /**
@@ -239,20 +335,31 @@ function deformPoint(x, y, deformers, state, layer) {
  */
 function drawMesh(ctx, image, mesh, state, layer) {
   const [rx, ry, rw, rh] = mesh.rect;
-  const [cols, rows] = mesh.grid ?? [16, 10];
+  const [gridCols, gridRows] = mesh.grid ?? [16, 10];
+  // `xs` et `ys` ajoutent des lignes là où la matière doit plier finement (un œil, un cou).
+  const lines = (start, length, count, extra = []) =>
+    [...Array.from({ length: count + 1 }, (_, i) => start + (length * i) / count), ...extra].sort(
+      (a, b) => a - b,
+    );
+  const columns = lines(rx, rw, gridCols, mesh.xs);
+  const bands = lines(ry, rh, gridRows, mesh.ys);
+  const cols = columns.length - 1;
+  const rows = bands.length - 1;
   const source = [];
   const target = [];
   for (let j = 0; j <= rows; j++) {
     for (let i = 0; i <= cols; i++) {
-      const x = rx + (rw * i) / cols;
-      const y = ry + (rh * j) / rows;
+      const x = columns[i];
+      const y = bands[j];
       source.push([x, y]);
       target.push(deformPoint(x, y, mesh.deform, state, layer));
     }
   }
   const at = (i, j) => j * (cols + 1) + i;
+  const cells = filledCells(image, mesh, columns, bands);
   for (let j = 0; j < rows; j++) {
     for (let i = 0; i < cols; i++) {
+      if (!cells[j][i]) continue;
       const a = at(i, j),
         b = at(i + 1, j),
         c = at(i, j + 1),
@@ -282,13 +389,17 @@ function drawTriangle(ctx, image, s0, s1, s2, d0, d1, d2) {
   const f =
     (x0 * y1 * v2 + y0 * v1 * x2 + v0 * x1 * y2 - v0 * y1 * x2 - y0 * x1 * v2 - x0 * v1 * y2) /
     delta;
-  // Agrandi d'un pixel autour de son centre : les bords voisins se recouvrent.
-  const mx = (u0 + u1 + u2) / 3,
-    my = (v0 + v1 + v2) / 3;
-  const grow = ([u, v]) => {
-    const length = Math.hypot(u - mx, v - my) || 1;
-    return [u + ((u - mx) / length) * 0.9, v + ((v - my) / length) * 0.9];
-  };
+  // Agrandi autour du centre de son cercle inscrit : chaque bord recule d'autant, même sur un
+  // triangle très fin, et les voisins se recouvrent sans strie.
+  const e0 = Math.hypot(u1 - u2, v1 - v2),
+    e1 = Math.hypot(u0 - u2, v0 - v2),
+    e2 = Math.hypot(u0 - u1, v0 - v1);
+  const around = e0 + e1 + e2 || 1;
+  const mx = (e0 * u0 + e1 * u1 + e2 * u2) / around,
+    my = (e0 * v0 + e1 * v1 + e2 * v2) / around;
+  const inner = Math.abs((u1 - u0) * (v2 - v0) - (u2 - u0) * (v1 - v0)) / around;
+  const factor = 1 + 0.8 / Math.max(inner, 0.4);
+  const grow = ([u, v]) => [mx + (u - mx) * factor, my + (v - my) * factor];
   const [g0, g1, g2] = [grow(d0), grow(d1), grow(d2)];
   ctx.save();
   ctx.beginPath();

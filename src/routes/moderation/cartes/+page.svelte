@@ -49,12 +49,15 @@
     return { status: image ? ('ready' as const) : ('missing' as const), image, assetPath: null };
   }
 
-  /** La carte animée inspectée : les trois éditions du jeu, en commençant par celle cliquée. */
+  /** Les raretés déjà faites d'un jeu : toutes, ou seulement les premières d'un brouillon. */
+  const madeKinds = (row: CardPlanRow) => EDITIONS.filter((kind) => row.editions?.[kind]);
+
+  /** La carte animée inspectée : les éditions faites du jeu, en commençant par celle cliquée. */
   let inspected = $state<{ row: CardPlanRow; index: number } | null>(null);
   const inspectedCards = $derived(
     inspected?.row.editions
-      ? EDITIONS.map((kind) => {
-          const assetPath = inspected!.row.editions![kind];
+      ? madeKinds(inspected.row).map((kind) => {
+          const assetPath = inspected!.row.editions![kind]!;
           return {
             kind,
             assetPath,
@@ -76,7 +79,7 @@
 
   function open(row: CardPlanRow, kind: EditionKind) {
     const shown = tile(row, kind);
-    if (shown.status === 'done') inspected = { row, index: EDITIONS.indexOf(kind) };
+    if (shown.status === 'done') inspected = { row, index: madeKinds(row).indexOf(kind) };
     else if (shown.image)
       zoomed = { src: shown.image, label: `${row.name} — ${editionName[kind]()}` };
   }

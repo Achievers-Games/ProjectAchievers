@@ -1,7 +1,12 @@
 // Tests sur un vrai PostgreSQL : `npm run dev:db` ou le service de la CI.
 import 'dotenv/config';
 import { afterAll, describe, expect, it } from 'vitest';
-import { CARD_CATALOGUE, publishedCardPath } from '#lib/card-catalogue';
+import {
+  CARD_CATALOGUE,
+  CARD_DRAFTS,
+  draftCardPaths,
+  publishedCardPath,
+} from '#lib/card-catalogue';
 import { cardPlan, saveCardPlan } from './card-plan';
 import { db } from './db';
 import { upsertGame } from './sync/store';
@@ -42,6 +47,22 @@ async function family(
   return familyKey;
 }
 
+/** Les cartes de brouillon dont le jeu est en base : elles ne restent plus à faire. */
+async function draftCards() {
+  const games = await db.game.findMany({
+    where: {
+      platform: 'STEAM',
+      platformGameId: { in: CARD_DRAFTS.map((draft) => draft.steamAppId) },
+      familyKey: { not: null },
+      adultOnly: false,
+    },
+    select: { platformGameId: true },
+  });
+  return CARD_DRAFTS.filter((draft) =>
+    games.some((game) => game.platformGameId === draft.steamAppId),
+  ).reduce((sum, draft) => sum + Object.keys(draft.editions).length, 0);
+}
+
 describe('les cartes à créer', () => {
   it('liste chaque jeu une fois, les plus joués d’abord, avec ses visuels', async () => {
     const tag = `${Math.random()}`.slice(2, 8);
@@ -71,7 +92,9 @@ describe('les cartes à créer', () => {
       mythiqueArtUrl: null,
       editions: null,
     });
-    expect(all.totals.cardsLeft).toBe((all.totals.games - all.totals.made) * 3);
+    expect(all.totals.cardsLeft).toBe(
+      (all.totals.games - all.totals.made) * 3 - (await draftCards()),
+    );
 
     expect(
       (await cardPlan('sans-hero', `plan-${tag}`, 1)).rows.map((row) => row.familyKey),
@@ -83,6 +106,24 @@ describe('les cartes à créer', () => {
       mythiqueArtUrl: 'https://cdn/art.jpg',
       note: 'Affiche officielle',
     });
+  });
+
+  it('montre les cartes d’un brouillon sans compter le jeu comme fait', async () => {
+    const draft = CARD_DRAFTS[0];
+    if (!draft) return;
+    const existing = await db.game.findFirst({
+      where: { platform: 'STEAM', platformGameId: draft.steamAppId },
+    });
+    if (existing) return; // La base de développement a déjà ce jeu : rien à créer.
+    const tag = `${Math.random()}`.slice(2, 8);
+    const key = await family(`plan-${tag}-draft`, [{ platform: 'STEAM', appId: draft.steamAppId }]);
+    const todo = await cardPlan('a-faire', `plan-${tag}`, 1);
+    expect(todo.rows.map((row) => row.familyKey)).toEqual([key]);
+    expect(todo.rows[0]!.editions).toEqual(draftCardPaths(draft));
+    expect(todo.totals.cardsLeft).toBe(
+      (todo.totals.games - todo.totals.made) * 3 - (await draftCards()),
+    );
+    expect((await cardPlan('faites', `plan-${tag}`, 1)).rows).toEqual([]);
   });
 
   it('compte comme faits les jeux du catalogue', async () => {
