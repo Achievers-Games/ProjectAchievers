@@ -401,9 +401,10 @@ export async function saveProgress(
   return { gained: result.gained, fresh: result.fresh, removed: result.removed };
 }
 
-export async function publishSteamReview(userId: string | null) {
-  if (userId) publishChat(userId, { type: 'steam-review' });
-  const online = [...connectedUsers()].filter((id) => id !== userId);
+/** Prévient le joueur et les modérateurs connectés, sauf celui qui vient de décider. */
+export async function publishSteamReview(userId: string | null, deciderId?: string) {
+  if (userId && userId !== deciderId) publishChat(userId, { type: 'steam-review' });
+  const online = [...connectedUsers()].filter((id) => id !== userId && id !== deciderId);
   if (!online.length) return;
   const moderators = await db.user
     .findMany({
@@ -612,7 +613,7 @@ export async function resolveSteamReview(
   );
   if (!review) return false;
   invalidatePublicCache();
-  await publishSteamReview(review.userId);
+  await publishSteamReview(review.userId, moderatorId);
   return true;
 }
 

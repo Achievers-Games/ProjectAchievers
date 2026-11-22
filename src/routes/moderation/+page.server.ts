@@ -25,10 +25,8 @@ import { m } from '#lib/paraglide/messages';
 
 const STEAM_PAGE_SIZE = 50;
 
-export const load: PageServerLoad = async ({ locals, depends, url }) => {
-  const moderator = requireModerator(locals);
-  depends('app:steam-review');
-
+/** Les signalements ouverts, avec le contenu visé et le lien qui y mène. */
+async function loadReports() {
   const reports = await db.report.findMany({
     where: { resolvedAt: null },
     orderBy: { createdAt: 'asc' },
@@ -97,30 +95,18 @@ export const load: PageServerLoad = async ({ locals, depends, url }) => {
     }),
     ...messages.map((t) => [t.id, { contentMd: t.content, href: null }] as const),
   ]);
+  return reports.map((report) => ({
+    id: report.id,
+    reason: report.reason,
+    reporter: report.reporter.handle,
+    targetType: report.targetType,
+    createdAt: report.createdAt,
+    target: targets.get(report.targetId) ?? null,
+  }));
+}
 
-  const feedback = await db.feedback.findMany({
-    orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
-    take: 100,
-    select: {
-      id: true,
-      kind: true,
-      area: true,
-      status: true,
-      content: true,
-      userAgent: true,
-      createdAt: true,
-      user: { select: { handle: true, displayName: true } },
-    },
-  });
-
-  // Les emblèmes sur lesquels l'analyse automatique n'a pas su trancher.
-  const emblems = await db.clan.findMany({
-    where: { imagePending: true, imageAt: { not: null } },
-    orderBy: { imageAt: 'asc' },
-    take: 50,
-    select: { id: true, name: true, slug: true, imageAt: true },
-  });
-
+/** La file des dossiers Steam demandée, sa page, et le détail des dossiers de cette page. */
+async function loadSteamQueue(url: URL) {
   const queueRows = await db.steamIntegrityReview.findMany({
     where: { OR: [{ status: 'PENDING' }, { status: 'REJECTED', suspendedAt: { not: null } }] },
     select: {
@@ -214,46 +200,19 @@ export const load: PageServerLoad = async ({ locals, depends, url }) => {
     },
   });
   reviews.sort((a, b) => positionById.get(a.id)! - positionById.get(b.id)!);
-  // Cherche des lots groupés récurrents dont au moins un a été validé par un modérateur.
-  const importSuggestions = await db.$queryRaw<
-    {
-      id: string;
-      name: string;
-      slug: string;
-      players: number;
-      approved: number;
-      rejected: number;
-    }[]
-  >`
-    SELECT g.id, g.name, g.slug, count(DISTINCT r."steamId")::int AS players,
-      (count(*) FILTER (WHERE r.status = 'APPROVED' AND r."reviewedBy" IS NOT NULL))::int AS approved,
-      (count(*) FILTER (WHERE r.status = 'REJECTED'))::int AS rejected
-    FROM "SteamIntegrityReview" r JOIN "Game" g ON g.id = r."gameId"
-    WHERE NOT g."crossProgress" AND NOT g."allowSteamBatches" AND EXISTS (
-      SELECT 1 FROM unnest(r.flagged) AS flags(unlock_key)
-      WHERE NOT (unlock_key = ANY(r."reviewOnly"))
-      GROUP BY split_part(unlock_key, ':', 1)
-      HAVING count(*) >= 8
-    )
-    GROUP BY g.id
-    HAVING count(DISTINCT r."steamId") >= 3
-      AND count(*) FILTER (WHERE r.status = 'APPROVED' AND r."reviewedBy" IS NOT NULL) > 0
-    ORDER BY players DESC, g.name LIMIT 20`;
-  const crossProgressGames = await db.game.findMany({
-    where: { crossProgress: true },
-    orderBy: { name: 'asc' },
-    select: { id: true, name: true, slug: true },
-  });
-  const reviewAchievements = await db.achievement.findMany({
-    where: {
-      gameId: { in: reviews.map((review) => review.gameId) },
-      OR: reviews.map((review) => ({
-        gameId: review.gameId,
-        platformAchievementId: { in: [...new Set(review.flagged.map(steamAchievementId))] },
-      })),
-    },
-    select: { gameId: true, platformAchievementId: true, name: true },
-  });
+  // Les noms des succès signalés, en une jointure : un filtre par jeu et par liste de succès
+  // coûtait bien plus cher.
+  const wanted = reviews.flatMap((review) =>
+    [...new Set(review.flagged.map(steamAchievementId))].map((id) => [review.gameId, id] as const),
+  );
+  const reviewAchievements = wanted.length
+    ? await db.$queryRaw<{ gameId: string; platformAchievementId: string; name: string }[]>`
+        SELECT a."gameId", a."platformAchievementId", a.name
+        FROM unnest(
+          ${wanted.map(([gameId]) => gameId)}::text[], ${wanted.map(([, id]) => id)}::text[]
+        ) AS row(game, id)
+        JOIN "Achievement" a ON a."gameId" = row.game AND a."platformAchievementId" = row.id`
+    : [];
   const names = new Map(
     reviewAchievements.map((achievement) => [
       `${achievement.gameId}:${achievement.platformAchievementId}`,
@@ -304,54 +263,138 @@ export const load: PageServerLoad = async ({ locals, depends, url }) => {
           .sort((a, b) => a.at.getTime() - b.at.getTime()),
       };
     }),
+  };
+}
+
+/**
+ * Les jeux dont les lots groupés se répètent chez au moins trois joueurs, dont un validé par un
+ * modérateur. `EXCEPT` écarte les succès revus sans être retenus : comparer chaque succès à cette
+ * liste, qui en compte parfois des centaines, prenait un tiers de seconde.
+ */
+const loadImportSuggestions = () =>
+  db.$queryRaw<
+    {
+      id: string;
+      name: string;
+      slug: string;
+      players: number;
+      approved: number;
+      rejected: number;
+    }[]
+  >`
+    SELECT g.id, g.name, g.slug, count(DISTINCT r."steamId")::int AS players,
+      (count(*) FILTER (WHERE r.status = 'APPROVED' AND r."reviewedBy" IS NOT NULL))::int AS approved,
+      (count(*) FILTER (WHERE r.status = 'REJECTED'))::int AS rejected
+    FROM "SteamIntegrityReview" r JOIN "Game" g ON g.id = r."gameId"
+    WHERE NOT g."crossProgress" AND NOT g."allowSteamBatches" AND cardinality(r.flagged) >= 8
+      AND EXISTS (
+        SELECT 1 FROM (
+          SELECT unnest(r.flagged) AS unlock_key EXCEPT SELECT unnest(r."reviewOnly")
+        ) held
+        GROUP BY split_part(unlock_key, ':', 1)
+        HAVING count(*) >= 8
+      )
+    GROUP BY g.id
+    HAVING count(DISTINCT r."steamId") >= 3
+      AND count(*) FILTER (WHERE r.status = 'APPROVED' AND r."reviewedBy" IS NOT NULL) > 0
+    ORDER BY players DESC, g.name LIMIT 20`;
+
+/** Les partenaires de l'API, sans leur secret chiffré. */
+const loadPartners = async () =>
+  (
+    await db.partnerApp.findMany({
+      orderBy: { name: 'asc' },
+      select: {
+        id: true,
+        name: true,
+        keyPrefix: true,
+        createdAt: true,
+        lastUsedAt: true,
+        revokedAt: true,
+        slug: true,
+        webhookUrl: true,
+        webhookSecret: true,
+        webhookFailures: true,
+        webhookLastAttemptAt: true,
+        webhookLastError: true,
+        oauthClientId: true,
+        oauthRedirectUris: true,
+      },
+    })
+  ).map(({ webhookSecret, ...partner }) => ({
+    ...partner,
+    // Le secret chiffré ne quitte pas le serveur : la page sait seulement s'il existe.
+    hasWebhookSecret: webhookSecret !== null,
+  }));
+
+export const load: PageServerLoad = async ({ locals, depends, url }) => {
+  const moderator = requireModerator(locals);
+  depends('app:steam-review');
+  const admin = moderator.role === 'ADMIN';
+
+  // Rien ici ne dépend du reste : lues l'une après l'autre, ces rubriques faisaient attendre le
+  // modérateur à chaque décision.
+  const [
+    steam,
+    importSuggestions,
+    crossProgressGames,
+    emblems,
+    feedback,
+    reports,
+    signups,
+    psnToken,
+    partners,
+  ] = await Promise.all([
+    loadSteamQueue(url),
+    loadImportSuggestions(),
+    db.game.findMany({
+      where: { crossProgress: true },
+      orderBy: { name: 'asc' },
+      select: { id: true, name: true, slug: true },
+    }),
+    // Les emblèmes sur lesquels l'analyse automatique n'a pas su trancher.
+    db.clan.findMany({
+      where: { imagePending: true, imageAt: { not: null } },
+      orderBy: { imageAt: 'asc' },
+      take: 50,
+      select: { id: true, name: true, slug: true, imageAt: true },
+    }),
+    db.feedback.findMany({
+      orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
+      take: 100,
+      select: {
+        id: true,
+        kind: true,
+        area: true,
+        status: true,
+        content: true,
+        userAgent: true,
+        createdAt: true,
+        user: { select: { handle: true, displayName: true } },
+      },
+    }),
+    loadReports(),
+    // Le suivi des inscriptions : des chiffres sur tout le site, réservés aux administrateurs.
+    admin ? signupStats() : undefined,
+    // Le jeton du site ne regarde que les administrateurs, qui le renouvellent.
+    admin ? psnTokenState() : undefined,
+    // Les clés de l'API partenaire aussi : elles ouvrent les données du site à un autre.
+    admin ? loadPartners() : undefined,
+  ]);
+
+  return {
+    ...steam,
     importSuggestions,
     crossProgressGames,
     emblems: emblems.map((clan) => ({
       ...clan,
       url: `/clans/${clan.slug}/image?v=${clan.imageAt!.getTime()}`,
     })),
-    // Le suivi des inscriptions : des chiffres sur tout le site, réservés aux administrateurs.
-    signups: moderator.role === 'ADMIN' ? await signupStats() : undefined,
-    // Le jeton du site ne regarde que les administrateurs, qui le renouvellent.
-    psnToken: moderator.role === 'ADMIN' ? await psnTokenState() : undefined,
-    // Les clés de l'API partenaire aussi : elles ouvrent les données du site à un autre.
-    partners:
-      moderator.role === 'ADMIN'
-        ? (
-            await db.partnerApp.findMany({
-              orderBy: { name: 'asc' },
-              select: {
-                id: true,
-                name: true,
-                keyPrefix: true,
-                createdAt: true,
-                lastUsedAt: true,
-                revokedAt: true,
-                slug: true,
-                webhookUrl: true,
-                webhookSecret: true,
-                webhookFailures: true,
-                webhookLastAttemptAt: true,
-                webhookLastError: true,
-                oauthClientId: true,
-                oauthRedirectUris: true,
-              },
-            })
-          ).map(({ webhookSecret, ...partner }) => ({
-            ...partner,
-            // Le secret chiffré ne quitte pas le serveur : la page sait seulement s'il existe.
-            hasWebhookSecret: webhookSecret !== null,
-          }))
-        : undefined,
+    signups,
+    psnToken,
+    partners,
     feedback,
-    reports: reports.map((report) => ({
-      id: report.id,
-      reason: report.reason,
-      reporter: report.reporter.handle,
-      targetType: report.targetType,
-      createdAt: report.createdAt,
-      target: targets.get(report.targetId) ?? null,
-    })),
+    reports,
   };
 };
 

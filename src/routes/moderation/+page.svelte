@@ -9,6 +9,7 @@
   import { enhance } from '$app/forms';
   import Empty from '#lib/components/Empty.svelte';
   import { fly } from 'svelte/transition';
+  import { SvelteSet } from 'svelte/reactivity';
   import SteamReviewCard from './SteamReviewCard.svelte';
   import { formatDate, formatRelative } from '#lib/labels';
 
@@ -41,7 +42,16 @@
     focus: string | null;
     index: number;
   } | null>(null);
-  const deck = $derived(data.steamReviews);
+  type Review = (typeof data.steamReviews)[number];
+  /** Un dossier tel qu'il était quand on l'a tranché : rouvert ou bloqué depuis, il se remontre. */
+  const versionOf = (review: Review) =>
+    `${review.id}:${review.status}:${review.openedAt.getTime()}`;
+  const decided = new SvelteSet<string>();
+  const deck = $derived(data.steamReviews.filter((review) => !decided.has(versionOf(review))));
+  /** Les dossiers tranchés que la page n'a pas encore relus : déjà retirés du compteur. */
+  const left = (queue: keyof typeof data.steamCounts) =>
+    data.steamCounts[queue] -
+    (queue === data.steamQueue ? data.steamReviews.length - deck.length : 0);
   // Après une décision, la carte traitée quitte la pile : la même place montre la suivante.
   const index = $derived(
     position?.queue === data.steamQueue &&
@@ -99,7 +109,7 @@
             href={queueUrl(item.key)}
             class="btn h-8 text-xs {data.steamQueue === item.key ? 'btn-primary' : ''}"
             aria-current={data.steamQueue === item.key ? 'page' : undefined}
-            >{item.label({ count: String(data.steamCounts[item.key]) })}</a
+            >{item.label({ count: String(left(item.key)) })}</a
           >
         {/each}
       </div>
@@ -125,7 +135,10 @@
               in:fly={{ x: 60, duration: 220, delay: 120 }}
               out:fly={{ x: -60, duration: 180 }}
             >
-              <SteamReviewCard review={current} />
+              <SteamReviewCard
+                review={current}
+                ondecided={(review) => decided.add(versionOf(review))}
+              />
             </div>
           {/key}
         </div>

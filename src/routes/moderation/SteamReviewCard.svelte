@@ -1,8 +1,10 @@
 <script lang="ts">
   import Clock from '@lucide/svelte/icons/clock';
+  import LoaderCircle from '@lucide/svelte/icons/loader-circle';
   import FileCheck from '@lucide/svelte/icons/file-check';
   import ShieldX from '@lucide/svelte/icons/shield-x';
-  import { enhance } from '$app/forms';
+  import { enhance, type SubmitFunction } from '$app/forms';
+  import { invalidate } from '$app/navigation';
   import { m } from '#lib/paraglide/messages';
   import { formatDate, formatRelative, PLATFORM_LABELS } from '#lib/labels';
   import type { PageData } from './$types';
@@ -10,7 +12,29 @@
   type Review = PageData['steamReviews'][number];
   type TrustSignal = NonNullable<Review['trust']>['signals'][number];
 
-  let { review }: { review: Review } = $props();
+  let { review, ondecided }: { review: Review; ondecided: (decided: Review) => void } = $props();
+
+  /** La décision en cours d'envoi : ses boutons attendent, un second clic ne part pas. */
+  let busy = $state<string | null>(null);
+
+  const decide: SubmitFunction = ({ formData, cancel }) => {
+    if (busy) return cancel();
+    busy = String(formData.get('decision'));
+    // Le dossier envoyé, même si le modérateur passe à un autre pendant l'attente.
+    const submitted = review;
+    return async ({ result, update }) => {
+      const done = result.type === 'success';
+      // La carte suivante arrive tout de suite. `busy` reste posé : celle-ci s'en va.
+      if (done) ondecided(submitted);
+      try {
+        await update({ reset: false, refreshAll: false, navigate: false });
+        // Deux appels dans le même tour ne font qu'un rechargement, limité à ces données.
+        await Promise.all([invalidate('app:steam-review'), invalidate('app:notices')]);
+      } finally {
+        if (!done) busy = null;
+      }
+    };
+  };
 
   const hours = (minutes: number) => `${Math.round(minutes / 6) / 10} h`;
   const signed = (value: number) => (value > 0 ? `+${value}` : String(value));
@@ -57,6 +81,19 @@
         });
     }
   }
+
+  /** Marquer le jeu ne tranche pas le dossier : la carte reste, ses boutons reviennent. */
+  const mark: SubmitFunction = ({ cancel }) => {
+    if (busy) return cancel();
+    busy = 'cross';
+    return async ({ update }) => {
+      try {
+        await update({ reset: false, navigate: false });
+      } finally {
+        busy = null;
+      }
+    };
+  };
 
   const pending = $derived(review.status === 'PENDING');
   const status = $derived(
@@ -106,6 +143,13 @@
     if (!confirm(m.steam_mod_cross_confirm())) event.preventDefault();
   }
 </script>
+
+{#snippet spinner(decision: string)}
+  {#if busy === decision}
+    <LoaderCircle size={16} class="motion-safe:animate-spin" aria-hidden="true" />
+    <span class="sr-only" role="status">{m.loading()}</span>
+  {/if}
+{/snippet}
 
 <article
   class="space-y-3 rounded-lg border border-line bg-surface p-4 text-sm"
@@ -234,16 +278,31 @@
     </div>
   {/if}
 
-  <form bind:this={form} method="POST" action="?/steamReview" use:enhance class="space-y-3">
+  <form
+    bind:this={form}
+    method="POST"
+    action="?/steamReview"
+    use:enhance={decide}
+    aria-busy={busy !== null}
+    class="space-y-3"
+  >
     <input type="hidden" name="id" value={review.id} />
     <input type="hidden" name="version" value={review.openedAt.getTime()} />
 
     <div class="flex flex-wrap items-center gap-2">
-      <button class="btn btn-primary" name="decision" value="approve">
+      <button class="btn btn-primary" name="decision" value="approve" disabled={busy !== null}>
+        {@render spinner('approve')}
         {pending ? m.steam_review_validate_all() : m.steam_mod_unblock()}
       </button>
       {#if pending}
-        <button class="btn btn-danger" name="decision" value="suspend" onclick={confirmBlock}>
+        <button
+          class="btn btn-danger"
+          name="decision"
+          value="suspend"
+          disabled={busy !== null}
+          onclick={confirmBlock}
+        >
+          {@render spinner('suspend')}
           {m.steam_mod_block()}
         </button>
       {/if}
@@ -294,7 +353,13 @@
               </li>
             {/each}
           </ul>
-          <button class="btn btn-secondary" name="decision" value="selected">
+          <button
+            class="btn btn-secondary"
+            name="decision"
+            value="selected"
+            disabled={busy !== null}
+          >
+            {@render spinner('selected')}
             {m.steam_review_validate_selection()}
           </button>
         </div>
@@ -303,11 +368,18 @@
   </form>
 
   {#if !review.game.crossProgress}
-    <form method="POST" action="?/crossProgress" use:enhance class="border-t border-line pt-2">
+    <form
+      method="POST"
+      action="?/crossProgress"
+      use:enhance={mark}
+      class="border-t border-line pt-2"
+    >
       <input type="hidden" name="id" value={review.game.id} />
       <input type="hidden" name="value" value="1" />
-      <button class="text-xs text-muted underline hover:text-ink" onclick={confirmCrossProgress}
-        >{m.steam_mod_cross_mark()}</button
+      <button
+        class="inline-flex items-center gap-1 text-xs text-muted underline hover:text-ink"
+        disabled={busy !== null}
+        onclick={confirmCrossProgress}>{@render spinner('cross')}{m.steam_mod_cross_mark()}</button
       >
     </form>
   {/if}
