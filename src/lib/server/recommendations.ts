@@ -42,14 +42,16 @@ export interface OwnedVersion {
 
 type Vector = Map<number, number>;
 
-const norm = (vector: Vector) => Math.sqrt([...vector.values()].reduce((s, w) => s + w * w, 0));
+function norm(vector: Vector) {
+  let sum = 0;
+  for (const weight of vector.values()) sum += weight * weight;
+  return Math.sqrt(sum);
+}
 
-function cosine(a: Vector, b: Vector) {
-  const size = norm(a) * norm(b);
-  if (!size) return 0;
-  let dot = 0;
-  for (const [tag, weight] of a) dot += weight * (b.get(tag) ?? 0);
-  return dot / size;
+function dot(a: Vector, b: Vector) {
+  let sum = 0;
+  for (const [tag, weight] of a) sum += weight * (b.get(tag) ?? 0);
+  return sum;
 }
 
 /**
@@ -96,14 +98,14 @@ function families(versions: OwnedVersion[]) {
  * sans assez de jeux pour les connaître.
  */
 export function rankSuggestions(versions: OwnedVersion[], rarity: Vector) {
-  const games = families(versions).map((game) => ({
-    ...game,
-    vector: profile(game.tags, rarity),
-  }));
+  const games = families(versions).map((game) => {
+    const vector = profile(game.tags, rarity);
+    return { ...game, vector, size: norm(vector) };
+  });
   const liked = games
     .filter(
       (game) =>
-        game.vector.size &&
+        game.size > 0 &&
         !game.best.hidden &&
         (game.completion >= LIKED_COMPLETION || game.minutes >= LIKED_MINUTES),
     )
@@ -111,9 +113,8 @@ export function rankSuggestions(versions: OwnedVersion[], rarity: Vector) {
       const done = game.completion / 100;
       // Finir un jeu en dit plus que l'avoir laissé tourner : les heures plafonnent.
       const weight = 2 * done * done + Math.min(Math.log1p(game.minutes / 60), 5) / 5;
-      return { ...game, weight, size: norm(game.vector) };
-    })
-    .filter((game) => game.size > 0);
+      return { ...game, weight };
+    });
   if (liked.length < MIN_LIKED) return null;
 
   const taste: Vector = new Map();
@@ -123,16 +124,26 @@ export function rankSuggestions(versions: OwnedVersion[], rarity: Vector) {
     }
   }
 
+  const tasteSize = norm(taste);
+  const shares = new Map(liked.map((game) => [game.best.id, game.weight / game.size]));
+
+  /**
+   * La ressemblance du jeu avec les goûts du joueur. Un jeu déjà entamé compte dans ces goûts : sa
+   * part s'en retire, il ne se recommande pas lui-même. Tout se déduit des produits déjà faits :
+   * recopier les goûts pour chaque jeu prenait un tiers de seconde sur le NAS.
+   */
   const score = (game: (typeof games)[number]) => {
-    // Un jeu déjà entamé compte dans les goûts : il ne se recommande pas lui-même.
-    const self = liked.find((other) => other.best.id === game.best.id);
-    const others: Vector = new Map(taste);
-    if (self) {
-      for (const [tag, weight] of self.vector) {
-        others.set(tag, (others.get(tag) ?? 0) - (self.weight * weight) / self.size);
-      }
-    }
-    return cosine(game.vector, others);
+    if (!game.size) return 0;
+    const common = dot(game.vector, taste);
+    const share = shares.get(game.best.id) ?? 0;
+    const own = share * game.size * game.size;
+    const rest = Math.sqrt(
+      Math.max(
+        0,
+        tasteSize * tasteSize - 2 * share * common + share * share * game.size * game.size,
+      ),
+    );
+    return rest > 1e-9 ? (common - own) / (game.size * rest) : 0;
   };
   /** Le jeu aimé qui ressemble le plus à celui-ci : la raison montrée au joueur. */
   const reason = (game: (typeof games)[number]) => {
@@ -140,7 +151,7 @@ export function rankSuggestions(versions: OwnedVersion[], rarity: Vector) {
     let top = 0;
     for (const other of liked) {
       if (other.best.id === game.best.id) continue;
-      const likeness = cosine(game.vector, other.vector) * Math.sqrt(other.weight);
+      const likeness = (dot(game.vector, other.vector) / other.size) * Math.sqrt(other.weight);
       if (likeness > top) {
         top = likeness;
         best = { name: other.best.name, finished: other.completion >= 100 };
@@ -149,7 +160,15 @@ export function rankSuggestions(versions: OwnedVersion[], rarity: Vector) {
     return best;
   };
   const candidates = games
-    .filter((game) => !game.ignored && game.completion < 100 && game.best.totalAchievements > 0)
+    .filter(
+      (game) =>
+        !game.ignored &&
+        game.completion < 100 &&
+        game.best.totalAchievements > 0 &&
+        // Seuls ceux qu'une rangée peut montrer se comparent aux goûts.
+        (game.completion >= FINISHABLE_COMPLETION ||
+          (game.completion === 0 && game.minutes < UNTOUCHED_MINUTES)),
+    )
     .map((game) => ({ ...game, fit: score(game) }));
   const top = (list: typeof candidates, value: (game: (typeof candidates)[number]) => number) =>
     list
