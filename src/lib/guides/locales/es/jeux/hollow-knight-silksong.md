@@ -25,18 +25,18 @@ Puedes alcanzar el **100 % y ver el final verdadero en la misma partida**. Recor
 
 ### Regresa a las zonas que dejaste a medias
 
-| Ruta | Qué recoger antes de salir |
-| --- | --- |
-| {{terme:Bellhart}}, {{terme:The Marrow}}, {{terme:Bone Bottom}} | Completa **{{terme:My Missing Courier}}** y después **{{terme:My Missing Brother}}** para abrir los encargos. Compra el fragmento de Frey y {{terme:Multibinder}}. Acierta 15 blancos en el puesto de Loddie. Compra el fragmento de máscara y {{terme:Magnetite Brooch}} a Pebb. |
-| {{terme:Wormways}} y {{terme:Weavenest Atla}} | Abre {{terme:Weavenest Karn}} con el {{terme:Needolin}} y usa {{terme:Clawline}} para llegar a **{{terme:Sharpdart}}**. Completa {{terme:Alchemist’s Assistant}} para conseguir {{terme:Plasmium Phial}}. Abre el refugio de Atla desde {{terme:Moss Grotto}}, recoge los dos fragmentos, vence a las dos {{terme:Moss Mother}} para conseguir {{terme:Weavelight}} y habla con {{terme:Eva}}. |
-| {{terme:Hunter’s March}}, {{terme:Deep Docks}}, {{terme:Far Fields}} | Consigue el blasón de la bestia y {{terme:Curveclaw}}. Tras vencer a {{terme:Fourth Chorus}} y llegar a {{terme:Songclave}}, acepta **{{terme:Savage Beastfly}}** en el tablón de {{terme:Bellhart}}. Derrota al jefe en la antigua arena de {{terme:Fourth Chorus}} y entrega el deseo para obtener un fragmento de máscara. Abre la trampilla del sureste de los muelles para coger un fragmento de bobina y completa la arena de la pulga. En los campos, busca el fragmento en la cueva con forma de calavera y {{terme:Silkspeed Anklets}} en {{terme:Weavenest Cindril}}. |
-| {{terme:Greymoor}}, {{terme:Shellwood}}, {{terme:Wisp Thicket}} | Completa {{terme:Crawbug Clearing}} para el kit de Creige, {{terme:Bugs of Pharloom}} para la bolsa de Nuu y {{terme:Rite of the Pollip}} para {{terme:Pollip Pouch}}. Sube a la torre sobre {{terme:Halfway Home}}, cruza los globos, vence a {{terme:Father of the Flame}} para conseguir {{terme:Wispfire Lantern}} y busca el fragmento al este. |
-| {{terme:Sinner’s Road}} y {{terme:The Mist}} | Consigue {{terme:Tacks}} con {{terme:Roach Guts}} y recoge {{terme:Barbed Bracelet}}. Toca el {{terme:Needolin}} junto a las luces de la niebla y síguelas hasta {{terme:Exhaust Organ}}. Derrota a {{terme:Phantom}} para aprender **{{terme:Cross Stitch}}**. Vuelve al norte del camino con el doble salto y consigue el ingrediente del cocinero Lugoli. |
-| {{terme:Blasted Steps}} y {{terme:Sands of Karak}} | Con el doble salto, alcanza el escondite de {{terme:Grindle}} y compra el fragmento, el kit, {{terme:Thief’s Mark}} y {{terme:Snitch Pick}}. En las arenas, busca {{terme:Crustnut}} tras las paredes frágiles y vence a {{terme:Raging Conchfly}} para conseguir {{terme:Conchcutter}}. Alcanza {{terme:Voltnest}} con el agarre y el doble salto para obtener {{terme:Volt Filament}}, o vuelve con {{terme:Silk Soar}}. |
-| {{terme:Whiteward}} y {{terme:The Slab}} | Baja por debajo de la última parada del ascensor. Completa {{terme:Balm for the Wounded}} con Sherma para conseguir otro fragmento de bobina. Accede al quirófano con {{terme:Surgeon’s Key}} y vence a {{terme:The Unravelled}} para obtener el segundo corazón. En la prisión, usa {{terme:Key of Apostate}} recogida en {{terme:Bilewater}}, toma {{terme:Key of Heretic}} y vence a {{terme:First Sinner}} para aprender **{{terme:Rune Rage}}**. |
-| {{terme:Choral Chambers}}, {{terme:Songclave}}, {{terme:Memorium}} | Encuentra a {{terme:Jubilana}} en {{terme:The Lost Merchant}} y {{terme:The Wandering Merchant}} para acceder a todo su catálogo. Libera y vence a {{terme:Huge Flea}} para reclutarla. Rompe la pared del noreste para recoger {{terme:Voltvessels}}. |
-| {{terme:Underworks}}, {{terme:Cogwork Core}}, {{terme:Whispering Vaults}}, {{terme:High Halls}} | Recoge los fragmentos de la lista, el aceite de la bóveda y las herramientas de los talleres. Vence a Trobbio para conseguir {{terme:Claw Mirror}}. Resuelve los tres retos de campanas, monta {{terme:Cogheart}} y activa a {{terme:Second Sentinel}}. Aprende la melodía de {{terme:High Halls}} y completa dos deseos de {{terme:Songclave}}, entre ellos {{terme:Building Up Songclave}}. Encuentra dos veces al centinela en la Ciudadela, descansando entre encuentros. Acepta {{terme:Final Audience}} y gana el duelo para obtener {{terme:Reserve Bind}}. |
-| {{terme:Putrified Ducts}} y {{terme:Bilewater}} | Equipa {{terme:Wreath of Purity}} del sureste de la estación. Completa {{terme:Broodfeast}} para conseguir {{terme:Longclaw}} y {{terme:Trail’s End}} para {{terme:Throwing Ring}}. En la ciénaga, recoge {{terme:Quick Sling}} sobre Shakra, {{terme:Twisted Bud}} tras la pared bajo la entrada desde las bóvedas y {{terme:Ruined Tool}} en {{terme:Weavenest Murglin}} para fabricar {{terme:Silkshot}}. Abre el banco oculto tras la pared derecha al fondo del pozo y vence a {{terme:Groal the Great}}. |
+| Ruta                                                                                            | Qué recoger antes de salir                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| {{terme:Bellhart}}, {{terme:The Marrow}}, {{terme:Bone Bottom}}                                 | Completa **{{terme:My Missing Courier}}** y después **{{terme:My Missing Brother}}** para abrir los encargos. Compra el fragmento de Frey y {{terme:Multibinder}}. Acierta 15 blancos en el puesto de Loddie. Compra el fragmento de máscara y {{terme:Magnetite Brooch}} a Pebb.                                                                                                                                                                                                                                                                                               |
+| {{terme:Wormways}} y {{terme:Weavenest Atla}}                                                   | Abre {{terme:Weavenest Karn}} con el {{terme:Needolin}} y usa {{terme:Clawline}} para llegar a **{{terme:Sharpdart}}**. Completa {{terme:Alchemist’s Assistant}} para conseguir {{terme:Plasmium Phial}}. Abre el refugio de Atla desde {{terme:Moss Grotto}}, recoge los dos fragmentos, vence a las dos {{terme:Moss Mother}} para conseguir {{terme:Weavelight}} y habla con {{terme:Eva}}.                                                                                                                                                                                  |
+| {{terme:Hunter’s March}}, {{terme:Deep Docks}}, {{terme:Far Fields}}                            | Consigue el blasón de la bestia y {{terme:Curveclaw}}. Tras vencer a {{terme:Fourth Chorus}} y llegar a {{terme:Songclave}}, acepta **{{terme:Savage Beastfly}}** en el tablón de {{terme:Bellhart}}. Derrota al jefe en la antigua arena de {{terme:Fourth Chorus}} y entrega el deseo para obtener un fragmento de máscara. Abre la trampilla del sureste de los muelles para coger un fragmento de bobina y completa la arena de la pulga. En los campos, busca el fragmento en la cueva con forma de calavera y {{terme:Silkspeed Anklets}} en {{terme:Weavenest Cindril}}. |
+| {{terme:Greymoor}}, {{terme:Shellwood}}, {{terme:Wisp Thicket}}                                 | Completa {{terme:Crawbug Clearing}} para el kit de Creige, {{terme:Bugs of Pharloom}} para la bolsa de Nuu y {{terme:Rite of the Pollip}} para {{terme:Pollip Pouch}}. Sube a la torre sobre {{terme:Halfway Home}}, cruza los globos, vence a {{terme:Father of the Flame}} para conseguir {{terme:Wispfire Lantern}} y busca el fragmento al este.                                                                                                                                                                                                                            |
+| {{terme:Sinner’s Road}} y {{terme:The Mist}}                                                    | Consigue {{terme:Tacks}} con {{terme:Roach Guts}} y recoge {{terme:Barbed Bracelet}}. Toca el {{terme:Needolin}} junto a las luces de la niebla y síguelas hasta {{terme:Exhaust Organ}}. Derrota a {{terme:Phantom}} para aprender **{{terme:Cross Stitch}}**. Vuelve al norte del camino con el doble salto y consigue el ingrediente del cocinero Lugoli.                                                                                                                                                                                                                    |
+| {{terme:Blasted Steps}} y {{terme:Sands of Karak}}                                              | Con el doble salto, alcanza el escondite de {{terme:Grindle}} y compra el fragmento, el kit, {{terme:Thief’s Mark}} y {{terme:Snitch Pick}}. En las arenas, busca {{terme:Crustnut}} tras las paredes frágiles y vence a {{terme:Raging Conchfly}} para conseguir {{terme:Conchcutter}}. Alcanza {{terme:Voltnest}} con el agarre y el doble salto para obtener {{terme:Volt Filament}}, o vuelve con {{terme:Silk Soar}}.                                                                                                                                                      |
+| {{terme:Whiteward}} y {{terme:The Slab}}                                                        | Baja por debajo de la última parada del ascensor. Completa {{terme:Balm for the Wounded}} con Sherma para conseguir otro fragmento de bobina. Accede al quirófano con {{terme:Surgeon’s Key}} y vence a {{terme:The Unravelled}} para obtener el segundo corazón. En la prisión, usa {{terme:Key of Apostate}} recogida en {{terme:Bilewater}}, toma {{terme:Key of Heretic}} y vence a {{terme:First Sinner}} para aprender **{{terme:Rune Rage}}**.                                                                                                                           |
+| {{terme:Choral Chambers}}, {{terme:Songclave}}, {{terme:Memorium}}                              | Encuentra a {{terme:Jubilana}} en {{terme:The Lost Merchant}} y {{terme:The Wandering Merchant}} para acceder a todo su catálogo. Libera y vence a {{terme:Huge Flea}} para reclutarla. Rompe la pared del noreste para recoger {{terme:Voltvessels}}.                                                                                                                                                                                                                                                                                                                          |
+| {{terme:Underworks}}, {{terme:Cogwork Core}}, {{terme:Whispering Vaults}}, {{terme:High Halls}} | Recoge los fragmentos de la lista, el aceite de la bóveda y las herramientas de los talleres. Vence a Trobbio para conseguir {{terme:Claw Mirror}}. Resuelve los tres retos de campanas, monta {{terme:Cogheart}} y activa a {{terme:Second Sentinel}}. Aprende la melodía de {{terme:High Halls}} y completa dos deseos de {{terme:Songclave}}, entre ellos {{terme:Building Up Songclave}}. Encuentra dos veces al centinela en la Ciudadela, descansando entre encuentros. Acepta {{terme:Final Audience}} y gana el duelo para obtener {{terme:Reserve Bind}}.              |
+| {{terme:Putrified Ducts}} y {{terme:Bilewater}}                                                 | Equipa {{terme:Wreath of Purity}} del sureste de la estación. Completa {{terme:Broodfeast}} para conseguir {{terme:Longclaw}} y {{terme:Trail’s End}} para {{terme:Throwing Ring}}. En la ciénaga, recoge {{terme:Quick Sling}} sobre Shakra, {{terme:Twisted Bud}} tras la pared bajo la entrada desde las bóvedas y {{terme:Ruined Tool}} en {{terme:Weavenest Murglin}} para fabricar {{terme:Silkshot}}. Abre el banco oculto tras la pared derecha al fondo del pozo y vence a {{terme:Groal the Great}}.                                                                  |
 
 [Recorrido ilustrado por zonas](https://silksongwiki.com/walkthrough/steel-soul/#100-completion-backtracking) · [Mapa interactivo](https://itemaps.com/maps/silksong)
 
@@ -84,18 +84,18 @@ Puedes alcanzar el **100 % y ver el final verdadero en la misma partida**. Recor
 
 ## Lista del 100 %
 
-| Categoría | Puntos | Qué comprobar |
-| --- | ---: | --- |
-| Herramientas | 51 | 18 rojas, 21 azules y 12 amarillas |
-| Bobinas | 9 | 18 fragmentos, dos por punto |
-| Equipo | 8 | Cuatro bolsas y cuatro kits |
-| Habilidades | 7 | {{terme:Swift Step}}, {{terme:Cling Grip}}, {{terme:Clawline}}, {{terme:Needolin}}, {{terme:Needle Strike}}, {{terme:Silk Soar}}, {{terme:Sylphsong}} |
-| Técnicas de seda | 6 | {{terme:Silkspear}}, {{terme:Thread Storm}}, {{terme:Cross Stitch}}, {{terme:Sharpdart}}, {{terme:Rune Rage}}, {{terme:Pale Nails}} |
-| Blasones | 6 | {{terme:Reaper}}, {{terme:Wanderer}}, {{terme:Beast}}, {{terme:Witch}}, {{terme:Architect Crest}}, {{terme:Shaman}} |
-| Máscaras | 5 | 20 fragmentos, cuatro por punto |
-| Aguja | 4 | Primer afilado y tres aceites |
-| Corazones de seda | 3 | {{terme:Bell Beast}}, {{terme:The Unravelled}}, {{terme:Lace}} en {{terme:The Cradle}} |
-| {{terme:Everbloom}} | 1 | {{terme:Red Memory}} |
+| Categoría           | Puntos | Qué comprobar                                                                                                                                         |
+| ------------------- | -----: | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Herramientas        |     51 | 18 rojas, 21 azules y 12 amarillas                                                                                                                    |
+| Bobinas             |      9 | 18 fragmentos, dos por punto                                                                                                                          |
+| Equipo              |      8 | Cuatro bolsas y cuatro kits                                                                                                                           |
+| Habilidades         |      7 | {{terme:Swift Step}}, {{terme:Cling Grip}}, {{terme:Clawline}}, {{terme:Needolin}}, {{terme:Needle Strike}}, {{terme:Silk Soar}}, {{terme:Sylphsong}} |
+| Técnicas de seda    |      6 | {{terme:Silkspear}}, {{terme:Thread Storm}}, {{terme:Cross Stitch}}, {{terme:Sharpdart}}, {{terme:Rune Rage}}, {{terme:Pale Nails}}                   |
+| Blasones            |      6 | {{terme:Reaper}}, {{terme:Wanderer}}, {{terme:Beast}}, {{terme:Witch}}, {{terme:Architect Crest}}, {{terme:Shaman}}                                   |
+| Máscaras            |      5 | 20 fragmentos, cuatro por punto                                                                                                                       |
+| Aguja               |      4 | Primer afilado y tres aceites                                                                                                                         |
+| Corazones de seda   |      3 | {{terme:Bell Beast}}, {{terme:The Unravelled}}, {{terme:Lace}} en {{terme:The Cradle}}                                                                |
+| {{terme:Everbloom}} |      1 | {{terme:Red Memory}}                                                                                                                                  |
 
 El máximo del acto 2 es **93 %**. Los siete puntos del acto 3 son una máscara completa, la aguja final, {{terme:Pin Badge}}, {{terme:Pale Nails}}, {{terme:Shaman Crest}}, {{terme:Silk Soar}} y {{terme:Everbloom}}. [Desglose de los puntos](https://steamcommunity.com/sharedfiles/filedetails/?id=3567581746)
 
@@ -162,65 +162,65 @@ Usa los marcadores de Vog para localizar las que falten. Puedes rescatarlas en e
 
 Compara los huecos con {{terme:Farsight}}. Basta con una variante de {{terme:Silkshot}}. Las mejoras de {{terme:Curveclaw}}, {{terme:Druid’s Eye}} y {{terme:Claw Mirror}} comparten su ranura con la herramienta inicial.
 
-| Rojas (18) | Dónde conseguirlas |
-| --- | --- |
-| {{terme:Straight Pin}} | Sala sobre la celda de Grindle en {{terme:The Marrow}} |
-| {{terme:Threefold Pin}} | Pasadizo oculto en la zona de globos de {{terme:Greymoor}} |
-| {{terme:Sting Shard}} | Forja de {{terme:Deep Docks}}, con {{terme:Craftmetal}} |
-| {{terme:Tacks}} | {{terme:Roach Guts}}, con Crull y Benjin en {{terme:Sinner’s Road}} |
-| {{terme:Longpin}} | Pasadizo tras un nido de avispas en {{terme:Shellwood}} |
+| Rojas (18)                                  | Dónde conseguirlas                                                                                                                                                                                                                                 |
+| ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| {{terme:Straight Pin}}                      | Sala sobre la celda de Grindle en {{terme:The Marrow}}                                                                                                                                                                                             |
+| {{terme:Threefold Pin}}                     | Pasadizo oculto en la zona de globos de {{terme:Greymoor}}                                                                                                                                                                                         |
+| {{terme:Sting Shard}}                       | Forja de {{terme:Deep Docks}}, con {{terme:Craftmetal}}                                                                                                                                                                                            |
+| {{terme:Tacks}}                             | {{terme:Roach Guts}}, con Crull y Benjin en {{terme:Sinner’s Road}}                                                                                                                                                                                |
+| {{terme:Longpin}}                           | Pasadizo tras un nido de avispas en {{terme:Shellwood}}                                                                                                                                                                                            |
 | {{terme:Curveclaw}} / {{terme:Curvesickle}} | Cómprala a {{terme:Mottled Skarr}} o recógela sobre su cuerpo. Para la mejora del acto 3, acierta los cuatro blancos sobre la estación de {{terme:Far Fields}} con un solo lanzamiento y sin {{terme:Pollip Pouch}}. Entrégala, descansa y vuelve. |
-| {{terme:Throwing Ring}} | Recompensa de {{terme:Trail’s End}} con Shakra |
-| {{terme:Pimpillo}} | Taller sobre la casa de Yarnaby en {{terme:Greymoor}}, con {{terme:Craftmetal}} |
-| {{terme:Conchcutter}} | Tras {{terme:Raging Conchfly}} en {{terme:Sands of Karak}} |
-| {{terme:Silkshot}} | Repara {{terme:Ruined Tool}} de {{terme:Bilewater}} en {{terme:Deep Docks}}, {{terme:Cauldron}} o {{terme:Mount Fay}}. |
-| {{terme:Delver’s Drill}} | Acciona la palanca para dejar caer el peso en {{terme:Underworks}} y entra en el pasadizo. |
-| {{terme:Cogwork Wheel}} | {{terme:Twelfth Architect}}, con {{terme:Craftmetal}} |
-| {{terme:Cogfly}} | Taller oculto de {{terme:High Halls}}, con {{terme:Craftmetal}} |
-| {{terme:Rosary Cannon}} | Usa {{terme:Simple Key}} en la puerta junto al foro de {{terme:High Halls}}. |
-| {{terme:Voltvessels}} | Rompe la pared al noreste de {{terme:Memorium}} y supera la prueba. |
-| {{terme:Flintslate}} | Muelles inferiores, al oeste de la entrada baja de {{terme:Far Fields}}. Sube por las plataformas colgantes al taller. |
-| {{terme:Flea Brew}} | Grishkin, tras el primer traslado de la caravana |
-| {{terme:Plasmium Phial}} | {{terme:Alchemist’s Assistant}} en {{terme:Wormways}} |
+| {{terme:Throwing Ring}}                     | Recompensa de {{terme:Trail’s End}} con Shakra                                                                                                                                                                                                     |
+| {{terme:Pimpillo}}                          | Taller sobre la casa de Yarnaby en {{terme:Greymoor}}, con {{terme:Craftmetal}}                                                                                                                                                                    |
+| {{terme:Conchcutter}}                       | Tras {{terme:Raging Conchfly}} en {{terme:Sands of Karak}}                                                                                                                                                                                         |
+| {{terme:Silkshot}}                          | Repara {{terme:Ruined Tool}} de {{terme:Bilewater}} en {{terme:Deep Docks}}, {{terme:Cauldron}} o {{terme:Mount Fay}}.                                                                                                                             |
+| {{terme:Delver’s Drill}}                    | Acciona la palanca para dejar caer el peso en {{terme:Underworks}} y entra en el pasadizo.                                                                                                                                                         |
+| {{terme:Cogwork Wheel}}                     | {{terme:Twelfth Architect}}, con {{terme:Craftmetal}}                                                                                                                                                                                              |
+| {{terme:Cogfly}}                            | Taller oculto de {{terme:High Halls}}, con {{terme:Craftmetal}}                                                                                                                                                                                    |
+| {{terme:Rosary Cannon}}                     | Usa {{terme:Simple Key}} en la puerta junto al foro de {{terme:High Halls}}.                                                                                                                                                                       |
+| {{terme:Voltvessels}}                       | Rompe la pared al noreste de {{terme:Memorium}} y supera la prueba.                                                                                                                                                                                |
+| {{terme:Flintslate}}                        | Muelles inferiores, al oeste de la entrada baja de {{terme:Far Fields}}. Sube por las plataformas colgantes al taller.                                                                                                                             |
+| {{terme:Flea Brew}}                         | Grishkin, tras el primer traslado de la caravana                                                                                                                                                                                                   |
+| {{terme:Plasmium Phial}}                    | {{terme:Alchemist’s Assistant}} en {{terme:Wormways}}                                                                                                                                                                                              |
 
-| Azules (21) | Dónde conseguirlas |
-| --- | --- |
-| {{terme:Druid’s Eye}} / {{terme:Druid’s Eyes}} | Entrega las bayas al druida de {{terme:Mosshome}}. |
-| {{terme:Magma Bell}} | Forja de {{terme:Deep Docks}} |
-| {{terme:Warding Bell}} | En un cuerpo junto al enlace inferior entre {{terme:Far Fields}} y {{terme:Deep Docks}} |
-| {{terme:Pollip Pouch}} | {{terme:Rite of the Pollip}} con {{terme:Greyroot}} |
-| {{terme:Fractured Mask}} | {{terme:Mottled Skarr}} en {{terme:Hunter’s March}} o junto a su cuerpo después |
-| {{terme:Multibinder}} | Frey en {{terme:Bellhart}} tras {{terme:My Missing Courier}} |
-| {{terme:Weavelight}} | Derrota a las dos {{terme:Moss Mother}} en {{terme:Weavenest Atla}}. |
-| {{terme:Sawtooth Circlet}} | {{terme:Twelfth Architect}}, con {{terme:Craftmetal}} |
-| {{terme:Injector Band}} | En lo alto de la sala de {{terme:Mortician}} de {{terme:Whiteward}} |
-| {{terme:Spool Extender}} | Jubilana en {{terme:Songclave}} |
-| {{terme:Reserve Bind}} | {{terme:Final Audience}}, con {{terme:Second Sentinel}} en {{terme:High Halls}} |
-| {{terme:Claw Mirror}} / {{terme:Claw Mirrors}} | Trobbio en {{terme:The Stage}}, o su mejora tras {{terme:Tormented Trobbio}} |
-| {{terme:Memory Crystal}} | Pared oculta junto al banco bajo de {{terme:Mount Fay}} |
-| {{terme:Snitch Pick}} | Grindle en {{terme:Blasted Steps}} tras conseguir {{terme:Clawline}} |
-| {{terme:Volt Filament}} | {{terme:Voltvyrm}} en {{terme:Voltnest}}, sobre {{terme:Sands of Karak}} |
-| {{terme:Quick Sling}} | Tras el techo rompible sobre Shakra en {{terme:Bilewater}} |
-| {{terme:Wreath of Purity}} | En un cuerpo al sureste de la estación de {{terme:Putrified Ducts}} |
-| {{terme:Longclaw}} | {{terme:Broodfeast}} o {{terme:Runtfeast}} en {{terme:Putrified Ducts}} |
-| {{terme:Wispfire Lantern}} | {{terme:Father of the Flame}} en {{terme:Wisp Thicket}} |
-| {{terme:Egg of Flealia}} | Mooshka, tras rescatar las 30 pulgas |
-| {{terme:Pin Badge}} | Duelo de {{terme:Pinstress}} en {{terme:Mount Fay}} durante el acto 3 |
+| Azules (21)                                    | Dónde conseguirlas                                                                      |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------- |
+| {{terme:Druid’s Eye}} / {{terme:Druid’s Eyes}} | Entrega las bayas al druida de {{terme:Mosshome}}.                                      |
+| {{terme:Magma Bell}}                           | Forja de {{terme:Deep Docks}}                                                           |
+| {{terme:Warding Bell}}                         | En un cuerpo junto al enlace inferior entre {{terme:Far Fields}} y {{terme:Deep Docks}} |
+| {{terme:Pollip Pouch}}                         | {{terme:Rite of the Pollip}} con {{terme:Greyroot}}                                     |
+| {{terme:Fractured Mask}}                       | {{terme:Mottled Skarr}} en {{terme:Hunter’s March}} o junto a su cuerpo después         |
+| {{terme:Multibinder}}                          | Frey en {{terme:Bellhart}} tras {{terme:My Missing Courier}}                            |
+| {{terme:Weavelight}}                           | Derrota a las dos {{terme:Moss Mother}} en {{terme:Weavenest Atla}}.                    |
+| {{terme:Sawtooth Circlet}}                     | {{terme:Twelfth Architect}}, con {{terme:Craftmetal}}                                   |
+| {{terme:Injector Band}}                        | En lo alto de la sala de {{terme:Mortician}} de {{terme:Whiteward}}                     |
+| {{terme:Spool Extender}}                       | Jubilana en {{terme:Songclave}}                                                         |
+| {{terme:Reserve Bind}}                         | {{terme:Final Audience}}, con {{terme:Second Sentinel}} en {{terme:High Halls}}         |
+| {{terme:Claw Mirror}} / {{terme:Claw Mirrors}} | Trobbio en {{terme:The Stage}}, o su mejora tras {{terme:Tormented Trobbio}}            |
+| {{terme:Memory Crystal}}                       | Pared oculta junto al banco bajo de {{terme:Mount Fay}}                                 |
+| {{terme:Snitch Pick}}                          | Grindle en {{terme:Blasted Steps}} tras conseguir {{terme:Clawline}}                    |
+| {{terme:Volt Filament}}                        | {{terme:Voltvyrm}} en {{terme:Voltnest}}, sobre {{terme:Sands of Karak}}                |
+| {{terme:Quick Sling}}                          | Tras el techo rompible sobre Shakra en {{terme:Bilewater}}                              |
+| {{terme:Wreath of Purity}}                     | En un cuerpo al sureste de la estación de {{terme:Putrified Ducts}}                     |
+| {{terme:Longclaw}}                             | {{terme:Broodfeast}} o {{terme:Runtfeast}} en {{terme:Putrified Ducts}}                 |
+| {{terme:Wispfire Lantern}}                     | {{terme:Father of the Flame}} en {{terme:Wisp Thicket}}                                 |
+| {{terme:Egg of Flealia}}                       | Mooshka, tras rescatar las 30 pulgas                                                    |
+| {{terme:Pin Badge}}                            | Duelo de {{terme:Pinstress}} en {{terme:Mount Fay}} durante el acto 3                   |
 
-| Amarillas (12) | Dónde conseguirlas |
-| --- | --- |
-| {{terme:Compass}} | Shakra |
-| {{terme:Shard Pendant}} | Mesa en una sala lateral de {{terme:The Marrow}} |
-| {{terme:Magnetite Brooch}} | Pebb en {{terme:Bone Bottom}} o Grindle en el acto 3 |
-| {{terme:Weighted Belt}} | Mort en {{terme:Pilgrim’s Rest}} |
-| {{terme:Barbed Bracelet}} | Foso de {{terme:Sinner’s Road}} |
+| Amarillas (12)                                       | Dónde conseguirlas                                                                             |
+| ---------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| {{terme:Compass}}                                    | Shakra                                                                                         |
+| {{terme:Shard Pendant}}                              | Mesa en una sala lateral de {{terme:The Marrow}}                                               |
+| {{terme:Magnetite Brooch}}                           | Pebb en {{terme:Bone Bottom}} o Grindle en el acto 3                                           |
+| {{terme:Weighted Belt}}                              | Mort en {{terme:Pilgrim’s Rest}}                                                               |
+| {{terme:Barbed Bracelet}}                            | Foso de {{terme:Sinner’s Road}}                                                                |
 | {{terme:Dead Bug’s Purse}} / {{terme:Shell Satchel}} | Sala de crías en {{terme:The Marrow}}. La cartera alternativa aparece en {{terme:Steel Soul}}. |
-| {{terme:Magnetite Dice}} | Gana a Lumble a los dados o recógelos después de que desaparezca. |
-| {{terme:Scuttlebrace}} | {{terme:Twelfth Architect}}, con {{terme:Craftmetal}} |
-| {{terme:Ascendant’s Grip}} | Jubilana en {{terme:Songclave}} |
-| {{terme:Spider Strings}} | Jubilana tras {{terme:The Lost Merchant}} |
-| {{terme:Silkspeed Anklets}} | Supera el recorrido de {{terme:Weavenest Cindril}} en {{terme:Far Fields}}. |
-| {{terme:Thief’s Mark}} | Grindle en {{terme:Blasted Steps}} |
+| {{terme:Magnetite Dice}}                             | Gana a Lumble a los dados o recógelos después de que desaparezca.                              |
+| {{terme:Scuttlebrace}}                               | {{terme:Twelfth Architect}}, con {{terme:Craftmetal}}                                          |
+| {{terme:Ascendant’s Grip}}                           | Jubilana en {{terme:Songclave}}                                                                |
+| {{terme:Spider Strings}}                             | Jubilana tras {{terme:The Lost Merchant}}                                                      |
+| {{terme:Silkspeed Anklets}}                          | Supera el recorrido de {{terme:Weavenest Cindril}} en {{terme:Far Fields}}.                    |
+| {{terme:Thief’s Mark}}                               | Grindle en {{terme:Blasted Steps}}                                                             |
 
 [Mapa de las herramientas y los talleres](https://itemaps.com/maps/silksong) · [Ubicaciones en vídeo](https://www.youtube.com/watch?v=VO-DAXixQJM)
 
