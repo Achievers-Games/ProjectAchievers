@@ -115,7 +115,7 @@
         </button>
       </form>
       <div class="min-w-0 space-y-1">
-        <h1>{data.guide.title}</h1>
+        <h1 lang={data.guide.locale ?? undefined}>{data.guide.title}</h1>
         <p class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
           {#if data.guide.official}
             <span class="flex items-center gap-1 font-medium text-accent">
@@ -136,7 +136,7 @@
           {/if}
         </p>
         <div class="flex flex-wrap gap-3 pt-1">
-          {#if data.canTranslate && !data.guide.mine}
+          {#if data.canTranslate && !data.guide.mine && !data.guide.official}
             <TranslateButton {translations} item={data.guide} />
           {/if}
           {#if data.canEditOfficial}
@@ -205,6 +205,7 @@
     <article
       bind:this={content}
       class={['prose-user guide-long min-w-0', !outline.length && 'lg:col-span-2']}
+      lang={data.guide.official ? (data.guide.locale ?? undefined) : undefined}
       onchange={countChecked}
       use:guideChecks={{
         guideId: data.guide.id,

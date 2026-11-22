@@ -21,6 +21,9 @@ const nameKey = (name: string) => {
 
 type Resolve = (name: string) => string | null;
 
+const escapeText = (text: string) =>
+  text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+
 // Le contenu d'un lien est passé d'un bloc : un succès n'y ajoute pas un lien dans le lien.
 const BOLD = /<a\b[^>]*>[\s\S]*?<\/a>|<strong>([\s\S]*?)<\/strong>/g;
 
@@ -37,7 +40,15 @@ const boldIds = (html: string, resolve: Resolve) =>
 export function linkAchievements(
   html: string,
   resolve: Resolve,
-  { reference, except }: { reference?: string; except?: string } = {},
+  {
+    reference,
+    except,
+    names,
+  }: {
+    reference?: string;
+    except?: string;
+    names?: ReadonlyMap<string, string>;
+  } = {},
 ): string {
   let ids = boldIds(html, resolve);
   if (reference !== undefined) {
@@ -50,9 +61,14 @@ export function linkAchievements(
   return html.replace(BOLD, (match, inner: string | undefined) => {
     if (inner === undefined) return match;
     const id = ids[rank++];
-    if (!id || id === except || inner.includes('<a ')) return match;
+    if (!id || inner.includes('<a ')) return match;
+    // On ne remplace qu'un intitulé identifié directement, jamais une correspondance déduite
+    // de sa position dans le texte traduit.
+    const name = resolve(plainText(inner)) === id ? names?.get(id) : undefined;
+    const label = name ? `<strong>${escapeText(name)}</strong>` : match;
+    if (id === except) return label;
     // Sans `?caches` : la page d'un succès caché reste masquée pour qui ne l'a pas débloqué.
-    return `<a href="/succes/${id}">${match}</a>`;
+    return `<a href="/succes/${id}">${label}</a>`;
   });
 }
 
@@ -86,10 +102,9 @@ export async function guideLinks(
       })
     : [];
   const texts = [game, ...family.filter((version) => version.platform === 'STEAM')];
+  const wantedLocales = [...new Set([baseLocale, 'en', locale] as const)];
   await Promise.all(
-    texts.flatMap((version) =>
-      ([baseLocale, 'en'] as const).map((wanted) => ensureGameTexts(version, wanted)),
-    ),
+    texts.flatMap((version) => wantedLocales.map((wanted) => ensureGameTexts(version, wanted))),
   );
 
   const achievements = (
@@ -100,8 +115,8 @@ export async function guideLinks(
         gameId: true,
         name: true,
         translations: {
-          where: { locale: { in: [...new Set([baseLocale, 'en', locale])] } },
-          select: { name: true },
+          where: { locale: { in: wantedLocales } },
+          select: { locale: true, name: true },
         },
       },
     })
@@ -109,6 +124,8 @@ export async function guideLinks(
     id,
     gameId,
     names: [name, ...translations.map((text) => text.name)],
+    platformName: name,
+    localizedName: translations.find((text) => text.locale === locale)?.name,
   }));
 
   const own = nameIndex(achievements.filter((achievement) => achievement.gameId === game.id));
@@ -128,6 +145,16 @@ export async function guideLinks(
     return null;
   };
 
+  const platformUsesBaseLocale = game.platform === 'STEAM' || game.platform === 'BLIZZARD';
+  const localized = new Map(
+    achievements.flatMap(({ id, gameId, localizedName, platformName }) => {
+      if (gameId !== game.id) return [];
+      const name =
+        localizedName || (locale === baseLocale && platformUsesBaseLocale ? platformName : '');
+      return name ? [[id, name] as const] : [];
+    }),
+  );
+
   return (html, source) =>
-    linkAchievements(html, resolve, { reference: renderGuide(source), except });
+    linkAchievements(html, resolve, { reference: renderGuide(source), except, names: localized });
 }

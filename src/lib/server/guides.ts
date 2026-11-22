@@ -1,9 +1,12 @@
 import { error } from '@sveltejs/kit';
 import type { Prisma } from '#prisma';
 import { m } from '#lib/paraglide/messages';
+import { getLocale } from '#lib/paraglide/runtime';
 import { db } from './db';
-import { renderGuide } from './markdown';
+import { guideEdition } from './guide-editions';
 import { publicUser, visibleGames } from './queries/shared';
+
+export { countChecklist } from './markdown';
 
 /** Score net à partir duquel la communauté a jugé un guide mauvais : il se replie par défaut. */
 export const BURIED_SCORE = -5;
@@ -125,13 +128,6 @@ export async function reportGuide(guideId: string, reporterId: string, reason: s
   return true;
 }
 
-/**
- * Le nombre de cases à cocher d'un guide, compté sur le rendu lui-même : une case écrite dans un
- * bloc de code ne s'affiche pas, et un décompte fait sur le Markdown la comptait quand même.
- */
-export const countChecklist = (contentMd: string) =>
-  renderGuide(contentMd).match(/data-check="/g)?.length ?? 0;
-
 /** Le jeu d'une page de guide, avec ce qu'il faut pour retrouver les guides de ses versions. */
 export async function guideGame(slug: string, user: App.Locals['user']) {
   const game = await db.game.findUnique({
@@ -159,6 +155,7 @@ const HOME_GUIDES = 5;
  * votes ont jugés utiles. Un guide pas encore noté reste sur sa fiche jusqu'à son premier avis.
  */
 export async function homeGuides(showAdult = false) {
+  const locale = getLocale();
   const select = {
     id: true,
     title: true,
@@ -177,7 +174,7 @@ export async function homeGuides(showAdult = false) {
       where: { ...where, curatedKey: { not: null } },
       orderBy: { createdAt: 'desc' },
       take: HOME_GUIDES,
-      select,
+      select: { ...select, curatedKey: true, locale: true, contentMd: true },
     }),
     db.guide.findMany({
       where: { ...where, curatedKey: null, score: { gte: HOME_GUIDE_SCORE } },
@@ -186,5 +183,11 @@ export async function homeGuides(showAdult = false) {
       select,
     }),
   ]);
-  return { official, community };
+  return {
+    official: official.map(({ curatedKey, contentMd, locale: language, ...guide }) => ({
+      ...guide,
+      title: guideEdition({ ...guide, curatedKey, contentMd, locale: language }, locale).title,
+    })),
+    community,
+  };
 }

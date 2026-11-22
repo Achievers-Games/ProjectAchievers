@@ -12,6 +12,7 @@ import { censor } from '#lib/profanity';
 import { compareAchievements, compareBucket } from '#lib/compare';
 import { SEASON, seasonState } from '#lib/season';
 import { getLocale } from '#lib/paraglide/runtime';
+import { guideEdition } from '#lib/server/guide-editions';
 import { lureGameFor } from '#lib/server/lure-games';
 import { excludedSteamUnlocks } from '#lib/server/steam-integrity';
 import { addSteamProof, type ProofFailure } from '#lib/server/steam-proof';
@@ -364,18 +365,21 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
   return {
     game,
     // Les guides complets du jeu : on les lit sur leur propre page, ici seulement la liste.
-    guides: guides.map((guide) => ({
-      id: guide.id,
-      title: clean(guide.title ?? '', guide.locale),
-      official: guide.curatedKey !== null,
-      buried: isBuried(guide),
-      score: guide.score,
-      author: guide.author,
-      createdAt: guide.createdAt,
-      updatedAt: guide.updatedAt,
-      steps: countChecklist(guide.contentMd),
-      checked: guide._count.checks,
-    })),
+    guides: guides.map((guide) => {
+      const edition = guideEdition(guide, locale);
+      return {
+        id: guide.id,
+        title: clean(edition.title ?? '', edition.locale),
+        official: guide.curatedKey !== null,
+        buried: isBuried(guide),
+        score: guide.score,
+        author: guide.author,
+        createdAt: guide.createdAt,
+        updatedAt: guide.updatedAt,
+        steps: countChecklist(guide.contentMd),
+        checked: guide._count.checks,
+      };
+    }),
     achievements: displayed.map((row) => ({
       ...row,
       part: achievementPart(row.groupId),

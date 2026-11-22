@@ -217,6 +217,7 @@
           </p>
           <div
             class="prose-user"
+            lang={guide.official ? (guide.locale ?? undefined) : undefined}
             use:guideChecks={{
               guideId: guide.id,
               checked: guide.checked,
@@ -245,7 +246,7 @@
             </details>
           {/if}
           <div class="flex gap-3">
-            {#if !guide.mine && data.canTranslate}<TranslateButton
+            {#if !guide.mine && !guide.official && data.canTranslate}<TranslateButton
                 {translations}
                 item={guide}
               />{/if}

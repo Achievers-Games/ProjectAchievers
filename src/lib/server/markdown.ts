@@ -1,5 +1,6 @@
 import { marked } from 'marked';
 import sanitizeHtml from 'sanitize-html';
+import { renderGuide } from '#lib/guide-preview';
 
 const LINKS = {
   a: sanitizeHtml.simpleTransform('a', {
@@ -37,4 +38,8 @@ export function renderMarkdown(source: string): string {
 
 // Un seul rendu des guides, partagé avec l'aperçu du navigateur : deux copies finiraient par
 // afficher à l'auteur autre chose que ce que le site publie.
-export { renderGuide } from '#lib/guide-preview';
+export { renderGuide };
+
+/** Compte les cases rendues, sans prendre les exemples dans les blocs de code. */
+export const countChecklist = (contentMd: string) =>
+  renderGuide(contentMd).match(/data-check="/g)?.length ?? 0;

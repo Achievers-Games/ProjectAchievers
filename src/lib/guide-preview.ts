@@ -1,5 +1,6 @@
 import { Marked } from 'marked';
 import sanitizeHtml from 'sanitize-html';
+import { resolveGuideTerms } from './guide-term-markup';
 
 const LINKS = {
   a: sanitizeHtml.simpleTransform('a', {
@@ -37,29 +38,32 @@ const guideMarked = new Marked({
  * l'aperçu du navigateur. Un guide va plus loin qu'un commentaire : titres, médias et cases à
  * cocher y sont permis.
  */
-export function renderGuide(source: string): string {
-  const html = sanitizeHtml(guideMarked.parse(source, { async: false }) as string, {
-    allowedTags: [
-      ...(sanitizeHtml.defaults.allowedTags as string[]),
-      'h2',
-      'h3',
-      'h4',
-      'img',
-      'video',
-      'iframe',
-      'input',
-    ],
-    allowedAttributes: {
-      a: ['href', 'rel', 'target'],
-      img: ['src', 'alt', 'loading'],
-      video: ['src', 'controls', 'preload', 'playsinline'],
-      iframe: ['src', 'title', 'allowfullscreen', 'loading'],
-      input: ['type'],
+export function renderGuide(source: string, termName?: (name: string) => string): string {
+  const html = sanitizeHtml(
+    guideMarked.parse(resolveGuideTerms(source, termName), { async: false }) as string,
+    {
+      allowedTags: [
+        ...(sanitizeHtml.defaults.allowedTags as string[]),
+        'h2',
+        'h3',
+        'h4',
+        'img',
+        'video',
+        'iframe',
+        'input',
+      ],
+      allowedAttributes: {
+        a: ['href', 'rel', 'target'],
+        img: ['src', 'alt', 'loading'],
+        video: ['src', 'controls', 'preload', 'playsinline'],
+        iframe: ['src', 'title', 'allowfullscreen', 'loading'],
+        input: ['type'],
+      },
+      allowedSchemes: ['https'],
+      allowedIframeHostnames: ['www.youtube-nocookie.com'],
+      transformTags: LINKS,
     },
-    allowedSchemes: ['https'],
-    allowedIframeHostnames: ['www.youtube-nocookie.com'],
-    transformTags: LINKS,
-  });
+  );
   // Le rang identifie la case : il reste le même dans toutes les traductions du guide.
   let item = 0;
   return html.replace(/<input[^>]*>/g, () => `<input type="checkbox" data-check="${item++}" />`);

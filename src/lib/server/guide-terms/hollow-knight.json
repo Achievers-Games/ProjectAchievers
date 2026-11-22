@@ -1,0 +1,532 @@
+{
+  "Absolute Radiance": {
+    "de": "Das Absolute Licht",
+    "es": "Absoluto Destello",
+    "fr": "Radiance Véritable",
+    "ja": "絶対的なるラディアンス",
+    "pt-BR": "Radiância Absoluta",
+    "ru": "Всевышняя Лучезарность",
+    "zh-CN": "无上辐光"
+  },
+  "Ancient Basin": {
+    "de": "Uraltes Becken",
+    "es": "Cuenca Antigua",
+    "fr": "Bassin Ancestral",
+    "ja": "古代の穴",
+    "pt-BR": "Bacia Antiga",
+    "ru": "Древний котлован",
+    "zh-CN": "古老盆地"
+  },
+  "Awoken Dream Nail": {
+    "de": "Erwachter Traumnagel",
+    "es": "Aguijón Onírico despierto",
+    "fr": "Aiguillon éveillé des rêves",
+    "ja": "覚醒した夢見の釘",
+    "pt-BR": "Ferrão dos Sonhos Despertado",
+    "ru": "Пробужденный Гвоздь грез",
+    "zh-CN": "苏醒的梦之钉"
+  },
+  "Blue Lake": {
+    "de": "Blauer See",
+    "es": "Lago Azul",
+    "fr": "Lac Bleu",
+    "ja": "青い湖",
+    "pt-BR": "Lago Azul",
+    "ru": "Голубое озеро",
+    "zh-CN": "蓝湖"
+  },
+  "Broken Vessel": {
+    "de": "Zerbrochenes Gefäß",
+    "es": "Receptáculo Roto",
+    "fr": "Vaisseau Corrompu",
+    "ja": "壊れた器",
+    "pt-BR": "Receptáculo Quebrado",
+    "ru": "Разбитый сосуд",
+    "zh-CN": "残破容器"
+  },
+  "City of Tears": {
+    "de": "Stadt der Tränen",
+    "es": "Ciudad de Lágrimas",
+    "fr": "Cité des Larmes",
+    "ja": "涙の都",
+    "pt-BR": "Cidade das Lágrimas",
+    "ru": "Город слёз",
+    "zh-CN": "泪水之城"
+  },
+  "Colosseum of Fools": {
+    "de": "Kolosseum der Narren",
+    "es": "Coliseo de los Insensatos",
+    "fr": "Le Colisée des Fous",
+    "ja": "愚者の闘技場",
+    "pt-BR": "Coliseu dos Tolos",
+    "ru": "Колизей глупцов",
+    "zh-CN": "愚人斗兽场"
+  },
+  "Deepnest": {
+    "de": "Tiefnest",
+    "es": "Nido Profundo",
+    "fr": "Nid-profond",
+    "ja": "暗闇の巣",
+    "pt-BR": "Ninho Profundo",
+    "ru": "Глубинное гнездо",
+    "zh-CN": "深邃巢穴"
+  },
+  "Delicate Flower": {
+    "de": "Zierliche Blume",
+    "es": "Flor delicada",
+    "fr": "Fleur délicate",
+    "ja": "繊細な花",
+    "pt-BR": "Flor Delicada",
+    "ru": "Нежный цветок",
+    "zh-CN": "娇嫩的花"
+  },
+  "Distant Village": {
+    "de": "Entferntes Dorf",
+    "fr": "Village Lointain",
+    "ja": "彼方の村",
+    "pt-BR": "Aldeia Distante",
+    "ru": "Далекая деревня",
+    "zh-CN": "遥远的村庄"
+  },
+  "Dream Nail": {
+    "de": "Traumnagel",
+    "es": "Aguijón Onírico",
+    "fr": "Aiguillon des rêves",
+    "ja": "夢見の釘",
+    "pt-BR": "Ferrão dos Sonhos",
+    "ru": "Гвоздь грез",
+    "zh-CN": "梦之钉"
+  },
+  "Dung Defender": {
+    "de": "Dungverteidiger",
+    "es": "Defensor del Estiércol",
+    "fr": "Défenseur Bousier",
+    "ja": "フンコロ騎士",
+    "pt-BR": "Defensor do Esterco",
+    "ru": "Навозный защитник",
+    "zh-CN": "粪虫防御者"
+  },
+  "False Knight": {
+    "de": "Falscher Ritter",
+    "es": "Falso Caballero",
+    "fr": "Faux Chevalier",
+    "ja": "偽りの騎士",
+    "pt-BR": "Falso Cavaleiro",
+    "ru": "Ложный рыцарь",
+    "zh-CN": "假骑士"
+  },
+  "Fog Canyon": {
+    "de": "Nebelschlucht",
+    "es": "Cañón Nublado",
+    "fr": "Brumes Canyon",
+    "ja": "霧の渓谷",
+    "pt-BR": "Cânion da Névoa",
+    "ru": "Туманный каньон",
+    "zh-CN": "雾之峡谷"
+  },
+  "Forgotten Crossroads": {
+    "de": "Vergessene Wegkreuzung",
+    "es": "Cruces Olvidados",
+    "fr": "Routes oubliées",
+    "ja": "忘れられた交叉路",
+    "pt-BR": "Encruzilhada Esquecida",
+    "ru": "Забытое перепутье",
+    "zh-CN": "遗忘十字路"
+  },
+  "Fungal Wastes": {
+    "de": "Pilzöde",
+    "es": "Páramos Fúngicos",
+    "fr": "Caverne nocive",
+    "ja": "胞子の森",
+    "pt-BR": "Ermos Fúngicos",
+    "ru": "Грибные пустоши",
+    "zh-CN": "真菌荒地"
+  },
+  "Godhome": {
+    "de": "Gottheim",
+    "es": "Hogar de Dioses",
+    "fr": "Maison des Dieux",
+    "ja": "神の家",
+    "pt-BR": "Lar dos Deuses",
+    "ru": "Божий кров",
+    "zh-CN": "神居"
+  },
+  "Godseeker": {
+    "de": "Göttersucherin",
+    "es": "Buscador de Dioses",
+    "fr": "Chercheuse de Dieux",
+    "ja": "神を求む者",
+    "pt-BR": "Buscadora de Deuses",
+    "ru": "Богоискательница",
+    "zh-CN": "寻神者"
+  },
+  "Greenpath": {
+    "de": "Grünweg",
+    "es": "Sendero Verde",
+    "fr": "Vertchemin",
+    "ja": "緑の道",
+    "pt-BR": "Caminho Verde",
+    "ru": "Зеленая тропа",
+    "zh-CN": "苍绿之径"
+  },
+  "Grey Mourner": {
+    "de": "Die Graue Trauernde",
+    "es": "Doliente Gris",
+    "fr": "L’Endeuillée Grise",
+    "ja": "灰色の哀悼者",
+    "pt-BR": "Pranteadora Cinzenta",
+    "ru": "Серая Плакальщица",
+    "zh-CN": "灰色哀悼者"
+  },
+  "Grey Prince Zote": {
+    "de": "Grauer Prinz Zote",
+    "es": "Príncipe Gris Zote",
+    "fr": "Zote le Prince Gris",
+    "ja": "灰色の王子ゾート",
+    "pt-BR": "Príncipe Cinza Zote",
+    "ru": "Серый принц Зот",
+    "zh-CN": "灰色王子左特"
+  },
+  "Grimmchild": {
+    "de": "Grimmkind",
+    "es": "Niño de Grimm",
+    "fr": "L’Héritier de Grimm",
+    "ja": "グリムの子",
+    "pt-BR": "Criança Grimm",
+    "ru": "Мрачное дитя",
+    "zh-CN": "格林之子"
+  },
+  "Hall of Gods": {
+    "de": "Halle der Götter",
+    "es": "Salón de los Dioses",
+    "fr": "Salle des Dieux",
+    "ja": "神々の間",
+    "pt-BR": "Salão dos Deuses",
+    "ru": "Чертоги богов",
+    "zh-CN": "诸神堂"
+  },
+  "Howling Cliffs": {
+    "de": "Heulende Klippen",
+    "es": "Acantilados Aulladores",
+    "fr": "Falaises Hurlantes",
+    "ja": "風鳴りの崖",
+    "pt-BR": "Penhascos Uivantes",
+    "ru": "Воющие утесы",
+    "zh-CN": "呼啸悬崖"
+  },
+  "Hunter’s Journal": {
+    "de": "Journal des Jägers",
+    "es": "Diario del Cazador",
+    "fr": "Journal du chasseur",
+    "ja": "狩猟者の書",
+    "pt-BR": "Diário do Caçador",
+    "ru": "Журнал Охотника",
+    "zh-CN": "猎人日志"
+  },
+  "Junk Pit": {
+    "de": "Abfallgrube",
+    "es": "Pila de Basura",
+    "fr": "Fosse à Ordures",
+    "ja": "ガラクタ穴",
+    "pt-BR": "Cova de Lixo",
+    "ru": "Выгребная яма",
+    "zh-CN": "垃圾坑"
+  },
+  "Kingdom’s Edge": {
+    "de": "Grenze des Königreichs",
+    "es": "Límite del Reino",
+    "fr": "Frontières du Royaume",
+    "ja": "王国のはずれ",
+    "pt-BR": "Borda do Reino",
+    "ru": "Край Королевства",
+    "zh-CN": "王国边缘"
+  },
+  "Kingsmould": {
+    "de": "Gusswächter",
+    "es": "Carcasa real",
+    "fr": "Corps-Royal",
+    "ja": "オウノカラ",
+    "pt-BR": "Armadura Real",
+    "ru": "Каролинг",
+    "zh-CN": "国王傀儡"
+  },
+  "Kingsoul": {
+    "de": "Königsseele",
+    "es": "Alma del Monarca",
+    "fr": "Âme-royale",
+    "ja": "王の魂",
+    "pt-BR": "Alma do Rei",
+    "ru": "Душа Короля",
+    "zh-CN": "国王之魂"
+  },
+  "Lost Kin": {
+    "de": "Verlorenes Kind",
+    "es": "Familiar Perdido",
+    "fr": "Proche Perdu",
+    "ja": "失われし同胞",
+    "pt-BR": "Parente Perdido",
+    "ru": "Потерянный собрат",
+    "zh-CN": "失落近亲"
+  },
+  "Love Key": {
+    "de": "Schlüssel der Liebe",
+    "es": "Llave del amor",
+    "fr": "Clé de l'amour",
+    "ja": "愛の鍵",
+    "pt-BR": "Chave do Amor",
+    "ru": "Ключ Любви",
+    "zh-CN": "爱之钥"
+  },
+  "Mantis Claw": {
+    "de": "Mantisklaue",
+    "es": "Garra de mantis",
+    "fr": "Pince de mante religieuse",
+    "ja": "カマキリの爪",
+    "pt-BR": "Garra de Louva-a-Deus",
+    "ru": "Клешня богомола",
+    "zh-CN": "螳螂爪"
+  },
+  "Mantis Lords": {
+    "de": "Mantisfürsten",
+    "es": "Señores mantis",
+    "fr": "Dames Mante",
+    "ja": "カマキリの王",
+    "pt-BR": "Lordes Louva-a-Deus",
+    "ru": "Лорды богомолов",
+    "zh-CN": "螳螂领主"
+  },
+  "Nailsmith": {
+    "de": "Nagelschmied",
+    "es": "Forjaguijones",
+    "fr": "Fabricant D'Aiguillons",
+    "ja": "釘鍛冶",
+    "pt-BR": "Forjador de Ferrões",
+    "ru": "Кузнец Гвоздей",
+    "zh-CN": "钉子匠"
+  },
+  "Nightmare King Grimm": {
+    "de": "Albtraumkönig Grimm",
+    "es": "Rey Pesadilla Grimm",
+    "fr": "Roi des cauchemars Grimm",
+    "ja": "悪夢の王グリム",
+    "pt-BR": "Rei do Pesadelo Grimm",
+    "ru": "Король Кошмара Гримм",
+    "zh-CN": "梦魇之王格林"
+  },
+  "Paintmaster Sheo": {
+    "de": "Pinselmeister Sheo",
+    "es": "Maestro de Pinturas Sheo",
+    "fr": "Maître Peintre Sheo",
+    "ja": "絵師シオ",
+    "pt-BR": "Mestre da Pintura Sheo",
+    "ru": "Мастер кисти Шео",
+    "zh-CN": "绘画大师席奥"
+  },
+  "Palace Grounds": {
+    "de": "Palast Fundament",
+    "es": "Tierras de Palacio",
+    "fr": "L’Enceinte du Palais",
+    "ja": "宮殿",
+    "pt-BR": "Campos do Palácio",
+    "ru": "Окрестности дворца",
+    "zh-CN": "宫殿广场"
+  },
+  "Pantheon of Hallownest": {
+    "de": "PANTHEON VON HEILANDSNEST",
+    "es": "PANTEÓN DE HALLOWNEST",
+    "fr": "PANTHÉON D'HALLOWNEST",
+    "ja": "ハロウネストの神殿",
+    "pt-BR": "PANTEÃO DE HALLOWNEST",
+    "ru": "ПАНТЕОН ХАЛЛОУНЕСТА",
+    "zh-CN": "圣巢万神殿"
+  },
+  "Pure Nail": {
+    "de": "Reiner Nagel",
+    "es": "Aguijón puro",
+    "fr": "Aiguillon pur",
+    "ja": "純粋な釘",
+    "pt-BR": "Ferrão Puro",
+    "ru": "Чистый гвоздь",
+    "zh-CN": "纯粹骨钉"
+  },
+  "Queen’s Gardens": {
+    "de": "Gärten der Königin",
+    "es": "Jardines de la Reina",
+    "fr": "Jardins de la Reine",
+    "ja": "女王の庭",
+    "pt-BR": "Jardins da Rainha",
+    "ru": "Сады Королевы",
+    "zh-CN": "王后花园"
+  },
+  "Radiance": {
+    "de": "Das Vergessene Licht",
+    "es": "Destello",
+    "fr": "Radiance",
+    "ja": "ラディアンス",
+    "pt-BR": "Radiância",
+    "ru": "Лучезарность",
+    "zh-CN": "辐光"
+  },
+  "Resting Grounds": {
+    "de": "Ewige Ruhestätte",
+    "es": "Tierras de Reposo",
+    "fr": "Repos Éternel",
+    "ja": "安息の地",
+    "pt-BR": "Terra do Descanso",
+    "ru": "Земли упокоения",
+    "zh-CN": "安息之地"
+  },
+  "Royal Waterways": {
+    "de": "Königliche Wasserwege",
+    "es": "Canales Reales",
+    "fr": "Voies d’Eau Royales",
+    "ja": "王家の水路",
+    "pt-BR": "Hidrovia Real",
+    "ru": "Королевские стоки",
+    "zh-CN": "皇家水道"
+  },
+  "Seer": {
+    "de": "Seherin",
+    "es": "Vidente",
+    "fr": "Voyante",
+    "ja": "先見者",
+    "pt-BR": "Vidente",
+    "ru": "Провидица",
+    "zh-CN": "先知"
+  },
+  "Simple Key": {
+    "de": "Einfacher Schlüssel",
+    "es": "Llave simple",
+    "fr": "Clé simple",
+    "ja": "単純な鍵",
+    "pt-BR": "Chave Simples",
+    "ru": "Простой ключ",
+    "zh-CN": "简单钥匙"
+  },
+  "Soul Master": {
+    "de": "Seelenmeister",
+    "es": "Maestro de Almas",
+    "fr": "Maître d’Âme",
+    "ja": "ソウルの師",
+    "pt-BR": "Mestre das Almas",
+    "ru": "Мастер душ",
+    "zh-CN": "灵魂大师"
+  },
+  "Soul Sanctum": {
+    "de": "Seelenheiligtum",
+    "es": "Santuario de Almas",
+    "fr": "Sanctuaire de l’Âme",
+    "ja": "ソウルの聖域",
+    "pt-BR": "Santuário das Almas",
+    "ru": "Святилище душ",
+    "zh-CN": "灵魂圣所"
+  },
+  "Soul Tyrant": {
+    "de": "Seelentyrann",
+    "es": "Tirano de Almas",
+    "fr": "Tyrant des Âmes",
+    "ja": "ソウルの圧制者",
+    "pt-BR": "Tirano das Almas",
+    "ru": "Душегуб",
+    "zh-CN": "灵魂暴君"
+  },
+  "Teacher’s Archives": {
+    "de": "Lehrarchiv",
+    "es": "Archivos de la maestra",
+    "fr": "Archives de l’Érudite",
+    "ja": "教師の書庫",
+    "pt-BR": "Arquivos da Professora",
+    "ru": "Архивы Наставницы",
+    "zh-CN": "教师档案馆"
+  },
+  "Temple of the Black Egg": {
+    "de": "Tempel des Schwarzen Eis",
+    "es": "Templo del Huevo Negro",
+    "fr": "Temple De L’Oeuf Noir",
+    "ja": "黒卵の神殿",
+    "pt-BR": "O Templo do Ovo Negro",
+    "ru": "Храм Черного яйца",
+    "zh-CN": "黑卵圣殿"
+  },
+  "The Collector": {
+    "de": "Der Sammler",
+    "es": "Coleccionista",
+    "fr": "Le Collectionneur",
+    "ja": "収集者",
+    "pt-BR": "O Colecionador",
+    "ru": "Коллекционер",
+    "zh-CN": "收藏家"
+  },
+  "Tower of Love": {
+    "de": "Turm der Liebe",
+    "es": "Torre del Amor",
+    "fr": "La Tour de l’Amour",
+    "ja": "愛の塔",
+    "pt-BR": "Torre do Amor",
+    "ru": "Башня Любви",
+    "zh-CN": "爱之塔"
+  },
+  "Traitor Lord": {
+    "de": "Abtrünniger Herrscher",
+    "es": "Señor desleal",
+    "fr": "Seigneur Traitre",
+    "ja": "造反者の長",
+    "pt-BR": "Lorde Traidor",
+    "ru": "Предавший лорд",
+    "zh-CN": "叛徒领主"
+  },
+  "Vengefly King": {
+    "de": "König der Rachfliegen",
+    "es": "Rey vengamosca",
+    "fr": "Mouche Vengeresse Royale",
+    "ja": "イカリバエの王",
+    "pt-BR": "Rei Vengemosca",
+    "ru": "Король мстекрылов",
+    "zh-CN": "反击蝇之王"
+  },
+  "Void Heart": {
+    "de": "Herz der Leere",
+    "es": "Corazón del Vacío",
+    "fr": "Coeur du vide",
+    "ja": "虚無の心",
+    "pt-BR": "Coração Vazio",
+    "ru": "Сердце пустоты",
+    "zh-CN": "虚空之心"
+  },
+  "Watcher’s Spire": {
+    "de": "Die Warte",
+    "es": "Torre del Vigía",
+    "fr": "L’Observatoire",
+    "ja": "監視者の尖塔",
+    "pt-BR": "Pináculo do Observador",
+    "ru": "Шпиль Хранителя",
+    "zh-CN": "守望者的尖塔"
+  },
+  "White Defender": {
+    "de": "Weißer Verteidiger",
+    "es": "Defensor Blanco",
+    "fr": "Protecteur Blanc",
+    "ja": "純白の騎士",
+    "pt-BR": "Defensor Branco",
+    "ru": "Белый защитник",
+    "zh-CN": "白色防御者"
+  },
+  "White Lady": {
+    "de": "Weisse Dame",
+    "es": "Dama Blanca",
+    "fr": "Dame Blanche",
+    "ja": "白いレディ",
+    "pt-BR": "Dama Branca",
+    "ru": "Белая Леди",
+    "zh-CN": "白色夫人"
+  },
+  "White Palace": {
+    "de": "Der Weiße Palast",
+    "es": "Palacio Blanco",
+    "fr": "Le Palais Blanc",
+    "ja": "白い宮殿",
+    "pt-BR": "Palácio Branco",
+    "ru": "Белый дворец",
+    "zh-CN": "白色宫殿"
+  }
+}

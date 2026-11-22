@@ -2,6 +2,8 @@
 import 'dotenv/config';
 import { describe, expect, it, vi } from 'vitest';
 import type { Platform } from '#prisma';
+import { paraglideMiddleware } from '#lib/paraglide/server';
+import silksong from '#lib/guides/jeux/hollow-knight-silksong.md?raw';
 import { db } from './db';
 import { syncCuratedGuides } from './curated-guides';
 import { editGuide } from './guides';
@@ -101,6 +103,52 @@ const visit = (path: string) => ({
 });
 
 describe('liens d’un guide officiel', () => {
+  it('sert l’édition de l’adresse avec les cases du lecteur et ignore les traductions en cache', async () => {
+    const slug = `${PREFIX}-editions-silksong`;
+    const game = await db.game.create({
+      data: { platform: 'STEAM', platformGameId: '1030300', name: slug, slug },
+    });
+    await db.gameTranslation.createMany({
+      data: ['fr', 'en', 'es'].map((locale) => ({ gameId: game.id, locale })),
+    });
+    await syncCuratedGuides([], [silksong]);
+    const guide = await db.guide.findFirstOrThrow({ where: { gameId: game.id } });
+    const user = await db.user.create({
+      data: { handle: `${PREFIX}-lecteur-editions`, displayName: 'Lecteur' },
+    });
+    await db.guideCheck.create({ data: { guideId: guide.id, userId: user.id, item: 12 } });
+    await db.contentTranslation.create({
+      data: { guideId: guide.id, locale: 'de', contentMd: 'Traduction automatique en cache' },
+    });
+
+    const open = async (locale: string) => {
+      const event = visit(`/${locale}/jeux/${slug}/guides/${guide.id}`);
+      const response = await paraglideMiddleware(new Request(event.url), async () => {
+        const page = await loadGuide({
+          ...event,
+          params: { slug, id: guide.id },
+          locals: { user },
+        } as never);
+        if (!page) throw new Error('Données du guide absentes');
+        return Response.json(page.guide);
+      });
+      return response.json();
+    };
+    const spanish = await open('es');
+    expect(spanish).toMatchObject({ locale: 'es', id: guide.id, checked: [12], steps: 51 });
+    expect(spanish.html).toContain('Campanilla');
+    const fallback = await open('de');
+    expect(fallback).toMatchObject({
+      locale: 'fr',
+      id: guide.id,
+      checked: [12],
+      autoTranslate: false,
+      translatedHtml: null,
+    });
+    expect(fallback.html).toContain('Clochelle');
+    await syncCuratedGuides([], []);
+  });
+
   it('mène aux succès de la version ouverte, par son nom ou par celui d’une autre version', async () => {
     const familyKey = `${PREFIX}-liens-famille`;
     const steam = await version('STEAM', familyKey);
@@ -111,7 +159,7 @@ describe('liens d’un guide officiel', () => {
     const md = '**Back to Work**, **Seulement ici**, **Jamais vu**';
 
     const fromSteam = (await guideLinks(steam, 'fr'))(renderGuide(md), md);
-    expect(fromSteam).toContain(`<a href="/succes/${onSteam.id}"><strong>Back to Work`);
+    expect(fromSteam).toContain(`<a href="/succes/${onSteam.id}"><strong>Au travail`);
     expect(fromSteam).toContain(`<a href="/succes/${steamOnly.id}">`);
     expect(fromSteam).not.toContain('<a href="/succes/undefined');
     expect(fromSteam.match(/<a /g)).toHaveLength(2);

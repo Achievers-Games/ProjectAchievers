@@ -1,0 +1,2475 @@
+{
+  "A Lifesaving Bridge": {
+    "de": "Eine lebensrettende Brücke",
+    "es": "Un puente para salvar vidas",
+    "fr": "Un pont salvateur",
+    "ja": "命を救う橋",
+    "pt-BR": "Uma Ponte Salvadora",
+    "ru": "Спасительный мост",
+    "zh-CN": "救命桥"
+  },
+  "Alchemist’s Assistant": {
+    "de": "Assistent des Alchemisten",
+    "es": "Asistente de alquimista",
+    "fr": "L'assistant de l'alchimiste",
+    "ja": "錬金術師の助手",
+    "pt-BR": "Assistente do Alquimista",
+    "ru": "Помощница алхимика",
+    "zh-CN": "炼金助手"
+  },
+  "An Icon of Hope": {
+    "de": "Ein Symbol der Hoffnung",
+    "es": "Un icono de esperanza",
+    "fr": "Symbole d'espoir",
+    "ja": "希望の象徴",
+    "pt-BR": "Um Ícone de Esperança",
+    "ru": "Светоч надежды",
+    "zh-CN": "希望丰碑"
+  },
+  "Architect’s Melody": {
+    "de": "Melodie der Architekten",
+    "es": "Melodía de los Arquitectos",
+    "fr": "Mélodie des Architectes",
+    "ja": "設計者のメロディ",
+    "pt-BR": "Melodia do Arquiteto",
+    "ru": "Мелодия Архитектора",
+    "zh-CN": "建筑师的旋律"
+  },
+  "Ascendant’s Grip": {
+    "de": "Aufsteigergriff",
+    "es": "Agarre del ascendente",
+    "fr": "Griffe du grimpeur",
+    "ja": "登攀者の爪",
+    "pt-BR": "Empunhadura de Subida",
+    "ru": "Зацеп скалолаза",
+    "zh-CN": "登极握爪"
+  },
+  "Ballow": {
+    "de": "Ballow",
+    "es": "Ballow",
+    "fr": "Ballow",
+    "ja": "バロウ",
+    "pt-BR": "Ballow",
+    "ru": "Боллоу",
+    "zh-CN": "巴洛"
+  },
+  "Balm for the Wounded": {
+    "de": "Balsam für die Verwundeten",
+    "es": "Bálsamo para los heridos",
+    "fr": "Remède pour les blessés",
+    "ja": "負傷者の治療",
+    "pt-BR": "Alívio para os Feridos",
+    "ru": "Бальзам для раненых",
+    "zh-CN": "愈伤良方"
+  },
+  "Barbed Bracelet": {
+    "de": "Stachelarmreif",
+    "es": "Cilicio",
+    "fr": "Bracelet épineux",
+    "ja": "トゲの腕輪",
+    "pt-BR": "Bracelete Farpado",
+    "ru": "Колючий браслет",
+    "zh-CN": "棘刺手环"
+  },
+  "Beast": {
+    "de": "Bestie",
+    "es": "Bestia",
+    "fr": "Bête",
+    "ja": "獣者",
+    "pt-BR": "Besta",
+    "ru": "Зверь",
+    "zh-CN": "野兽"
+  },
+  "Beastling Call": {
+    "de": "Biestlingsruf",
+    "es": "Reclamo de bestezuelas",
+    "fr": "Mélodie des Bestiots",
+    "ja": "獣の呼び声",
+    "pt-BR": "Chamado dos Bestiotes",
+    "ru": "Звериный зов",
+    "zh-CN": "唤兽曲"
+  },
+  "Bell Beast": {
+    "de": "Glockenbestie",
+    "es": "Bestia Campana",
+    "fr": "Bête des Cloches",
+    "ja": "鐘脈の獣",
+    "pt-BR": "Besta dos Sinos",
+    "ru": "Колокольный зверь",
+    "zh-CN": "钟道兽"
+  },
+  "Bell Eater": {
+    "de": "Glockenfresser",
+    "es": "Tragacampanas",
+    "fr": "Dévoreur De Cloches",
+    "ja": "鐘を喰らう者",
+    "pt-BR": "Devoradora de Sinos",
+    "ru": "Пожиратель колоколов",
+    "zh-CN": "噬钟者"
+  },
+  "Bell Hermit": {
+    "de": "Glockeneinsiedler",
+    "es": "Ermitaño Campana",
+    "fr": "Ermite Des Cloches",
+    "ja": "鐘の隠者",
+    "pt-BR": "Eremita do Sino",
+    "ru": "Колокольный отшельник",
+    "zh-CN": "钟之隐者"
+  },
+  "Bell Key": {
+    "de": "Taucherglocken-Schlüssel",
+    "es": "Llave de campana de buceo",
+    "fr": "Clé de la cloche de plongée",
+    "ja": "潜水鐘の鍵",
+    "pt-BR": "Chave do Sino de Mergulho",
+    "ru": "Ключ от водолазного колокола",
+    "zh-CN": "潜钟钥匙"
+  },
+  "Bellhart": {
+    "de": "Glockenherz",
+    "es": "Campanilla",
+    "fr": "Clochelle",
+    "ja": "ベルハート",
+    "pt-BR": "Campânula",
+    "ru": "Звонвилль",
+    "zh-CN": "钟心镇"
+  },
+  "Bellhart’s Glory": {
+    "de": "Glockenherz' Glanz",
+    "es": "La gloria de Campanilla",
+    "fr": "La gloire de Clochelle",
+    "ja": "町の栄光",
+    "pt-BR": "Glória da Campânula",
+    "ru": "Слава Звонвилля",
+    "zh-CN": "钟心荣光"
+  },
+  "Bellhome": {
+    "de": "Glockenheim",
+    "es": "Hogar campana",
+    "fr": "Clochetoit",
+    "ja": "鐘の家",
+    "pt-BR": "Campalar",
+    "ru": "Звонкий дом",
+    "zh-CN": "钟居"
+  },
+  "Bellway": {
+    "fr": "Clochevoie"
+  },
+  "Berry Picking": {
+    "de": "Beerenernte",
+    "es": "Recolección de bayas",
+    "fr": "Cueillette de baies verdissantes",
+    "ja": "果実の採集",
+    "pt-BR": "Coleta de Frutinhas",
+    "ru": "Сбор ягод",
+    "zh-CN": "莓果采集"
+  },
+  "Bilewater": {
+    "de": "Gallwasser",
+    "es": "Aguas Biliares",
+    "fr": "Bilesac",
+    "ja": "胆液の沼",
+    "pt-BR": "Bilebrejo",
+    "ru": "Желчноводье",
+    "zh-CN": "腐汁泽"
+  },
+  "Bind": {
+    "es": "Enlazar",
+    "fr": "Tisser"
+  },
+  "Blasted Steps": {
+    "de": "Windgepeitschte Stufen",
+    "es": "Escalones Ajados",
+    "fr": "Marches Érodées",
+    "ja": "暴風の石段",
+    "pt-BR": "Degraus Devastados",
+    "ru": "Подточенные ступени",
+    "zh-CN": "风蚀长阶"
+  },
+  "Bone Bottom": {
+    "de": "Knochengrund",
+    "es": "Valle Óseo",
+    "fr": "Gouffre d'os",
+    "ja": "骨溜まりの麓",
+    "pt-BR": "Vale dos Ossos",
+    "ru": "Костяная Низина",
+    "zh-CN": "骸底镇"
+  },
+  "Bone Bottom Repairs": {
+    "de": "Knochengrund-Reparaturen",
+    "es": "Reparaciones del Valle Óseo",
+    "fr": "Réparations de Gouffre d'os",
+    "ja": "野営地の修繕",
+    "pt-BR": "Reparos no Vale dos Ossos",
+    "ru": "Ремонт в Костяной Низине",
+    "zh-CN": "骸底修缮"
+  },
+  "Bonegrave": {
+    "de": "Knochengrab",
+    "es": "Cementerio Óseo",
+    "fr": "L'Ossuaire",
+    "ja": "骨の墓所",
+    "pt-BR": "Necrósseo",
+    "ru": "Костяной погост",
+    "zh-CN": "骸冢"
+  },
+  "Brightvein": {
+    "de": "Lichtader",
+    "es": "Vía Fulgente",
+    "fr": "Givreglace",
+    "ja": "光輝の壁",
+    "pt-BR": "Veio Brilhoso",
+    "ru": "Ярконит",
+    "zh-CN": "冰晶脉窟"
+  },
+  "Broodfeast": {
+    "de": "Brutmahl",
+    "es": "Festín para la prole",
+    "fr": "Festin de la couvée",
+    "ja": "おぞましきエサ",
+    "pt-BR": "Banquete da Prole",
+    "ru": "Пир для выводка",
+    "zh-CN": "育巢盛宴"
+  },
+  "Bugs of Pharloom": {
+    "de": "Käfer von Pharloom",
+    "es": "Bichos de Telalejana",
+    "fr": "Insectes de Pharloom",
+    "ja": "生態調査",
+    "pt-BR": "Insetos de Fiarlongo",
+    "ru": "Жуки Фарлума",
+    "zh-CN": "纺络虫族图鉴"
+  },
+  "Building Up Songclave": {
+    "de": "Aufbau der Sangesloge",
+    "es": "Construcción de Enclave Cancioneril",
+    "fr": "Édification du sanctuaire de Chantsoir",
+    "ja": "歌の集落の改善",
+    "pt-BR": "Melhorando Cantoclave",
+    "ru": "Развитие Уголка Песни",
+    "zh-CN": "建设圣歌盟地"
+  },
+  "Caretaker": {
+    "de": "Aufpasser",
+    "es": "Cuidador",
+    "fr": "Surintendant",
+    "ja": "世話役",
+    "pt-BR": "Guardião",
+    "ru": "Хранитель",
+    "zh-CN": "看守者"
+  },
+  "Cartographer": {
+    "es": "Cartógrafa",
+    "fr": "Cartographe"
+  },
+  "Cauldron": {
+    "de": "Der Kessel",
+    "es": "El Caldero",
+    "fr": "Le Chaudron",
+    "ja": "大釜",
+    "pt-BR": "O Caldeirão",
+    "ru": "Котёл",
+    "zh-CN": "大熔釜"
+  },
+  "Chapel Maid": {
+    "de": "Kapellenjungfer",
+    "es": "Doncella de la Capilla",
+    "fr": "Servante De La Chapelle",
+    "ja": "チャペルの従者",
+    "pt-BR": "Dama da Capela",
+    "ru": "Прислужница Капеллы",
+    "zh-CN": "教堂侍女"
+  },
+  "Chapel of the Beast": {
+    "de": "Kapelle der Bestie",
+    "es": "Capilla de la Bestia",
+    "fr": "Chapelle De La Bête",
+    "ja": "獣のチャペル",
+    "pt-BR": "Capela da Besta",
+    "ru": "Капелла Зверя",
+    "zh-CN": "野兽教堂"
+  },
+  "Chapel of the Reaper": {
+    "de": "Kapelle des Schnitters",
+    "es": "Capilla de la Parca",
+    "fr": "Chapelle Du Faucheur",
+    "ja": "収奪者のチャペル",
+    "pt-BR": "Capela do Ceifador",
+    "ru": "Капелла Жнеца",
+    "zh-CN": "收割者教堂"
+  },
+  "Chapel of the Wanderer": {
+    "de": "Kapelle des Wanderers",
+    "es": "Capilla de la Errante",
+    "fr": "Chapelle Du Vagabond",
+    "ja": "放浪者のチャペル",
+    "pt-BR": "Capela da Viajante",
+    "ru": "Капелла Странника",
+    "zh-CN": "漫游者教堂"
+  },
+  "Choral Chambers": {
+    "de": "Chorkammern",
+    "es": "Cámaras Corales",
+    "fr": "Alcôves de la Chorale",
+    "ja": "合唱の間",
+    "pt-BR": "Salões Harmônicos",
+    "ru": "Хоровые палаты",
+    "zh-CN": "圣咏殿"
+  },
+  "Claw Mirror": {
+    "de": "Krallenspiegel",
+    "es": "Garra espejo",
+    "fr": "Mirosserre",
+    "ja": "爪鏡",
+    "pt-BR": "Espelho de Garra",
+    "ru": "Когтистое зеркало",
+    "zh-CN": "爪镜"
+  },
+  "Claw Mirrors": {
+    "de": "Krallenspiegel",
+    "es": "Garras espejo",
+    "fr": "Mirosserres",
+    "ja": "２つの爪鏡",
+    "pt-BR": "Espelhos de Garra",
+    "ru": "Когтистые зеркала",
+    "zh-CN": "双生爪镜"
+  },
+  "Clawline": {
+    "de": "Greifschnur",
+    "es": "Garra elongada",
+    "fr": "Serrefil",
+    "ja": "シルクの銛",
+    "pt-BR": "Garra de Seda",
+    "ru": "Цепкая нить",
+    "zh-CN": "飞针冲刺"
+  },
+  "Cling Grip": {
+    "de": "Klammergriff",
+    "es": "Agarre de pinza",
+    "fr": "Prise ferme",
+    "ja": "接着の爪",
+    "pt-BR": "Garra Aderente",
+    "ru": "Цепкий захват",
+    "zh-CN": "蛛攀术"
+  },
+  "Cloaks of the Choir": {
+    "de": "Chorgewänder",
+    "es": "Capas del Coro",
+    "fr": "Robes de la chorale",
+    "ja": "合唱者の衣",
+    "pt-BR": "Mantos do Coro",
+    "ru": "Плащи Хора",
+    "zh-CN": "圣咏披风"
+  },
+  "Clover Dancers": {
+    "de": "Kleeblatt-Tänzer",
+    "es": "Duo del Bailarines Trifolios",
+    "fr": "Duo Trèfleur",
+    "ja": "クローバーの舞踏者",
+    "pt-BR": "Dançarinos do Trevo",
+    "ru": "Клеверные танцоры",
+    "zh-CN": "三叶草舞者"
+  },
+  "Cogfly": {
+    "de": "Räderfliege",
+    "es": "Mosca mecánica",
+    "fr": "Mouchetille",
+    "ja": "カラクリバエ",
+    "pt-BR": "Mosca Mecânica",
+    "ru": "Заводная муха",
+    "zh-CN": "齿轮蜂"
+  },
+  "Cogheart": {
+    "de": "Räderherz",
+    "es": "Corazón de engranajes",
+    "fr": "Cœur mécanique",
+    "ja": "カラクリの心臓",
+    "pt-BR": "Coração Mecânico",
+    "ru": "Заводное сердце",
+    "zh-CN": "机心"
+  },
+  "Cogwork Clapper": {
+    "de": "Räderwerk-Glöckner",
+    "es": "Repicador mecánico",
+    "fr": "Sonneur Mécanique",
+    "ja": "カラクリシャンシャン",
+    "pt-BR": "Tilintador Mecânico",
+    "ru": "Заводной ударник",
+    "zh-CN": "机枢击钹者"
+  },
+  "Cogwork Core": {
+    "de": "Räderwerk-Kern",
+    "es": "Núcleo Mecánico",
+    "fr": "Noyau Mécanique",
+    "ja": "カラクリの中枢",
+    "pt-BR": "Mecanismo Vital",
+    "ru": "Главный механизм",
+    "zh-CN": "机枢核心"
+  },
+  "Cogwork Dancers": {
+    "de": "Räderwerk-Tänzer",
+    "es": "Bailarines Mecánicos",
+    "fr": "Duo-mécanique",
+    "ja": "カラクリの舞踏者",
+    "pt-BR": "Dançarinos Mecânicos",
+    "ru": "Заводные танцоры",
+    "zh-CN": "机枢舞者"
+  },
+  "Cogwork Wheel": {
+    "de": "Räderwerk-Säge",
+    "es": "Rueda mecánica",
+    "fr": "Roue mécanique",
+    "ja": "カラクリの円盤",
+    "pt-BR": "Roda Mecânica",
+    "ru": "Заводное колесо",
+    "zh-CN": "机轮刃"
+  },
+  "Compass": {
+    "de": "Kompass",
+    "es": "Brújula",
+    "fr": "Boussole",
+    "ja": "コンパス",
+    "pt-BR": "Bússola",
+    "ru": "Компас",
+    "zh-CN": "罗盘"
+  },
+  "Completion": {
+    "es": "Finalización",
+    "fr": "Achèvement"
+  },
+  "Conchcutter": {
+    "de": "Muschelschneider",
+    "es": "Cortaconcha",
+    "fr": "Coquilleur",
+    "ja": "ホラガイの刃",
+    "pt-BR": "Corta-concha",
+    "ru": "Ракушечный резак",
+    "zh-CN": "螺切刃"
+  },
+  "Conductor’s Melody": {
+    "de": "Melodie der Dirigenten",
+    "es": "Melodía de los Directores",
+    "fr": "Mélodie Maestrels",
+    "ja": "指揮者のメロディ",
+    "pt-BR": "Melodia do Condutor",
+    "ru": "Мелодия Дирижёра",
+    "zh-CN": "指挥家的旋律"
+  },
+  "Coral Tower": {
+    "de": "Korallenturm",
+    "es": "Torre de Coral",
+    "fr": "Tour Corallienne",
+    "ja": "珊瑚の塔",
+    "pt-BR": "Torre de Corais",
+    "ru": "Коралловая башня",
+    "zh-CN": "珊瑚尖塔"
+  },
+  "Crafting Kit": {
+    "es": "Kit de fabricación",
+    "fr": "Kit de fabrication"
+  },
+  "Craftmetal": {
+    "de": "Fertigungsmetall",
+    "es": "Metal artesano",
+    "fr": "Métal artisanal",
+    "ja": "素材金属",
+    "pt-BR": "Metal Artesanal",
+    "ru": "Ремесленный метал",
+    "zh-CN": "制造金属"
+  },
+  "Crawbug Clearing": {
+    "de": "Krähfer-Keulung",
+    "es": "Limpieza de cuervones",
+    "fr": "Nettoyage de corbotères",
+    "ja": "ボロガワの一掃",
+    "pt-BR": "Remoção de Corbiscos",
+    "ru": "Облава на кар-жуков",
+    "zh-CN": "清剿鸦虫"
+  },
+  "Creige": {
+    "de": "Creige",
+    "es": "Creige",
+    "fr": "Creige",
+    "ja": "クレイジ",
+    "pt-BR": "Creige",
+    "ru": "Крейг",
+    "zh-CN": "克雷吉"
+  },
+  "Cross Stitch": {
+    "de": "Kreuzstich",
+    "es": "Punto de cruz",
+    "fr": "Point de croix",
+    "ja": "クロススティッチ",
+    "pt-BR": "Ponto Cruz",
+    "ru": "Поперечный стежок",
+    "zh-CN": "十字绣"
+  },
+  "Crust King Khann": {
+    "de": "Krustenkönig Khann",
+    "es": "Rey de la Corteza Khann",
+    "fr": "Roi Corail Khann",
+    "ja": "珊瑚殻の王カーン",
+    "pt-BR": "Rei Coral Khann",
+    "ru": "Коралловый король Хан",
+    "zh-CN": "壳王 卡汗"
+  },
+  "Crustnut": {
+    "de": "Krustennuss",
+    "es": "Nuez de corteza",
+    "fr": "Écornoix",
+    "ja": "珊瑚殻の実",
+    "pt-BR": "Crostanha",
+    "ru": "Твердорех",
+    "zh-CN": "硬壳果"
+  },
+  "Curveclaw": {
+    "de": "Kurvenkralle",
+    "es": "Garracurva",
+    "fr": "Courbe-serre",
+    "ja": "湾曲した爪",
+    "pt-BR": "Curvagarra",
+    "ru": "Загнутый коготь",
+    "zh-CN": "弧爪"
+  },
+  "Curvesickle": {
+    "de": "Kurvensichel",
+    "es": "Hozcurva",
+    "fr": "Faurelle",
+    "ja": "切り裂きの円刃",
+    "pt-BR": "Curvafoice",
+    "ru": "Загнутый серп",
+    "zh-CN": "曲镰"
+  },
+  "Dark Hearts": {
+    "de": "Dunkle Herzen",
+    "es": "Corazones oscuros",
+    "fr": "Cœurs noirs",
+    "ja": "黒塊",
+    "pt-BR": "Corações Sombrios",
+    "ru": "Тёмные сердца",
+    "zh-CN": "暗蚀之心"
+  },
+  "Dead Bug’s Purse": {
+    "de": "Handtasche eines toten Käfers",
+    "es": "Bolsa de bicho muerto",
+    "fr": "Sac d'un insecte mort",
+    "ja": "死んだムシの財布",
+    "pt-BR": "Bolsa do Inseto Morto",
+    "ru": "Кошелёк мёртвого жука",
+    "zh-CN": "亡虫囊"
+  },
+  "Deep Docks": {
+    "de": "Tiefenkai",
+    "es": "Muelles Profundos",
+    "fr": "Quais Profonds",
+    "ja": "深層の港",
+    "pt-BR": "Docas Profundas",
+    "ru": "Глубокие доки",
+    "zh-CN": "深坞"
+  },
+  "Delver’s Drill": {
+    "de": "Forschungsbohrer",
+    "es": "Taladro de excavador",
+    "fr": "Foreuse du mineur",
+    "ja": "採掘者のドリル",
+    "pt-BR": "Broca do Cavador",
+    "ru": "Бур копателя",
+    "zh-CN": "掘洞钻"
+  },
+  "Diving Bell": {
+    "de": "Taucherglocke",
+    "es": "Campana de buceo",
+    "fr": "Cloche de plongée",
+    "ja": "潜水鐘",
+    "ru": "Водолазный колокол",
+    "zh-CN": "潜钟"
+  },
+  "Drifter’s Cloak": {
+    "de": "Schwebeumhang",
+    "es": "Capa de flotador",
+    "fr": "Cape flottante",
+    "ja": "漂流者のクローク",
+    "pt-BR": "Manto do Errante",
+    "ru": "Плащ бродяги",
+    "zh-CN": "飘泊者披风"
+  },
+  "Druid’s Eye": {
+    "de": "Druidenauge",
+    "es": "Ojo del druida",
+    "fr": "Œil druidique",
+    "ja": "ドルイドの眼",
+    "pt-BR": "Olho do Druida",
+    "ru": "Око друида",
+    "zh-CN": "德鲁伊之眼"
+  },
+  "Druid’s Eyes": {
+    "de": "Druidenaugen",
+    "es": "Ojos del druida",
+    "fr": "Yeux druidiques",
+    "ja": "ドルイドの複眼",
+    "pt-BR": "Olhos do Druida",
+    "ru": "Очи друида",
+    "zh-CN": "德鲁伊双瞳"
+  },
+  "Ecstasy of the End": {
+    "de": "Verzückung des Endes",
+    "es": "Éxtasis del fin",
+    "fr": "Réjouissements de la fin",
+    "ja": "終末の恍惚",
+    "pt-BR": "Êxtase do Fim",
+    "ru": "Ликование перед концом",
+    "zh-CN": "终幕狂欢"
+  },
+  "Egg of Flealia": {
+    "de": "Flohlia-Ei",
+    "es": "Huevo de Pulgalia",
+    "fr": "Œuf de Pucelia",
+    "ja": "フレアリアの卵",
+    "pt-BR": "Ovo de Pulgalia",
+    "ru": "Яйцо Блохалии",
+    "zh-CN": "蚤母卵"
+  },
+  "Elegy of the Deep": {
+    "de": "Klagelied der Tiefe",
+    "es": "Elegía de las profundidades",
+    "fr": "Élégie des Profondeurs",
+    "ja": "深淵の哀歌",
+    "pt-BR": "Elegia das Profundezas",
+    "ru": "Элегия глубин",
+    "zh-CN": "深邃挽歌"
+  },
+  "Eva": {
+    "de": "Eva",
+    "es": "Eva",
+    "fr": "Eva",
+    "ja": "エヴァ",
+    "pt-BR": "Eva",
+    "ru": "Ева",
+    "zh-CN": "伊娃"
+  },
+  "Everbloom": {
+    "de": "Immerblüte",
+    "es": "Siempreviva",
+    "fr": "Flore éternelle",
+    "ja": "永年花",
+    "pt-BR": "Flor-da-Eternidade",
+    "ru": "Вечноцвет",
+    "zh-CN": "永绽花"
+  },
+  "Exhaust Organ": {
+    "de": "Abluft-Orgel",
+    "es": "Órgano de Escape",
+    "fr": "Orgue de Ventilation",
+    "ja": "朽ちたオルガン",
+    "pt-BR": "Órgão Exaustor",
+    "ru": "Выпускной орган",
+    "zh-CN": "废鸣管风琴"
+  },
+  "Far Fields": {
+    "de": "Weite Felder",
+    "es": "Campos Lejanos",
+    "fr": "Terres Lointaines",
+    "ja": "遠景の地",
+    "pt-BR": "Campos Longínquos",
+    "ru": "Дальние поля",
+    "zh-CN": "远野"
+  },
+  "Farsight": {
+    "de": "Weitblick",
+    "es": "Vistalejana",
+    "fr": "Longue-vue",
+    "ja": "遠視眼",
+    "pt-BR": "Clarivisor",
+    "ru": "Дальногляд",
+    "zh-CN": "遥观仪"
+  },
+  "Fastest in Pharloom": {
+    "de": "Schnellster in Pharloom",
+    "es": "La más veloz de Telalejana",
+    "fr": "Le plus rapide de Pharloom",
+    "ja": "最速のムシ",
+    "pt-BR": "Mais Rápido de Fiarlongo",
+    "ru": "Быстрее всех в Фарлуме",
+    "zh-CN": "纺络竞速冠军"
+  },
+  "Father of the Flame": {
+    "de": "Vater der Flamme",
+    "es": "Padre de la Llama",
+    "fr": "Père de la Flamme",
+    "ja": "業炎の父",
+    "pt-BR": "Pai da Chama",
+    "ru": "Отец пламени",
+    "zh-CN": "炽焰之父"
+  },
+  "Faydown Cloak": {
+    "de": "Feidaunen-Umhang",
+    "es": "Capa de fayforno",
+    "fr": "Cape de plumes",
+    "ja": "フェイのクローク",
+    "pt-BR": "Manto de Plumídio",
+    "ru": "Плащ из пуха фейфорнов",
+    "zh-CN": "雪灵披风"
+  },
+  "Final Audience": {
+    "de": "Letzte Audienz",
+    "es": "Audiencia final",
+    "fr": "L'ultime Audience",
+    "ja": "最後の対面",
+    "pt-BR": "Audiência Final",
+    "ru": "Последняя аудиенция",
+    "zh-CN": "最终会面"
+  },
+  "Fine Pins": {
+    "de": "Edle Nadeln",
+    "es": "Alfileres finos",
+    "fr": "Piques de qualité",
+    "ja": "上質なピン",
+    "pt-BR": "Pinos Finos",
+    "ru": "Изящные булавки",
+    "zh-CN": "精制刺针"
+  },
+  "First Shrine": {
+    "de": "Erster Schrein",
+    "es": "Primer Santuario",
+    "fr": "Premier Sanctuaire",
+    "ja": "最初の聖堂",
+    "pt-BR": "Primeiro Santuário",
+    "ru": "Первый алтарь",
+    "zh-CN": "始源钟殿"
+  },
+  "First Sinner": {
+    "de": "Ursünderin",
+    "es": "Pecadora Original",
+    "fr": "Péché Originel",
+    "ja": "最初の罪に問われし者",
+    "pt-BR": "Primeira Pecadora",
+    "ru": "Первая грешница",
+    "zh-CN": "原初罪者"
+  },
+  "Flea Brew": {
+    "de": "Flohgebräu",
+    "es": "Brebaje pulgoso",
+    "fr": "Breuvage des puces",
+    "ja": "ノミ酒",
+    "pt-BR": "Cerveja de Pulga",
+    "ru": "Блошиный отвар",
+    "zh-CN": "跳蚤秘酿"
+  },
+  "Fleatopia": {
+    "de": "Flohtopia",
+    "es": "Pulgatopía",
+    "fr": "Pucetopie",
+    "ja": "ノミの楽園",
+    "pt-BR": "Pulgatopia",
+    "ru": "Блошетопия",
+    "zh-CN": "蚤托邦"
+  },
+  "Flexile Spines": {
+    "de": "Biegsame Stacheln",
+    "es": "Púas maleables",
+    "fr": "Épines flexibles",
+    "ja": "柔軟なトゲ",
+    "pt-BR": "Espinhas Versáteis",
+    "ru": "Податливые шипы",
+    "zh-CN": "柔韧棘芯"
+  },
+  "Flintslate": {
+    "de": "Feuerwetzstein",
+    "es": "Piedra de pedernal",
+    "fr": "Silexium",
+    "ja": "発火棘",
+    "pt-BR": "Placa Ígnea",
+    "ru": "Кремнёвая пластина",
+    "zh-CN": "燧石板"
+  },
+  "Forebrothers Signis & Gron": {
+    "de": "Vorbrüder Signis & Gron",
+    "es": "Hermanos mayores Signis y Gron",
+    "fr": "Frères Précurseurs Signis & Gron",
+    "ja": "港の兄弟 シグニス&グロン",
+    "pt-BR": "Arqui-irmãos Signis e Gron",
+    "ru": "Старшие братья Сигнис и Грон",
+    "zh-CN": "监工兄弟 西格尼斯 & 格隆"
+  },
+  "Forge Daughter": {
+    "de": "Schmiedetochter",
+    "es": "Hija de la Forja",
+    "fr": "Fille De La Forge",
+    "ja": "炉の娘",
+    "pt-BR": "Filha da Forja",
+    "ru": "Дочь Кузни",
+    "zh-CN": "熔炉之女"
+  },
+  "Fourth Chorus": {
+    "de": "Vierter Chorus",
+    "es": "Cuarto Coro",
+    "fr": "Quatrième Chorale",
+    "ja": "第四の合唱者",
+    "pt-BR": "Quarto Vozerio",
+    "ru": "Четвёртый Хор",
+    "zh-CN": "第四圣咏团"
+  },
+  "Fractured Mask": {
+    "de": "Gebrochene Maske",
+    "es": "Máscara fracturada",
+    "fr": "Masque fissuré",
+    "ja": "割れた仮面",
+    "pt-BR": "Máscara Fraturada",
+    "ru": "Потрескавшаяся маска",
+    "zh-CN": "裂痕面具"
+  },
+  "Frey": {
+    "de": "Frey",
+    "es": "Frey",
+    "fr": "Frey",
+    "ja": "フレイ",
+    "pt-BR": "Frey",
+    "ru": "Фрея",
+    "zh-CN": "芙蕾"
+  },
+  "Garb of the Pilgrims": {
+    "de": "Gewand der Pilger",
+    "es": "Prendas peregrinas",
+    "fr": "Vêtements de pèlerin",
+    "ja": "巡礼者の衣",
+    "pt-BR": "Traje dos Peregrinos",
+    "ru": "Одеяние пилигримов",
+    "zh-CN": "朝圣者的衣装"
+  },
+  "Grand Bellway": {
+    "fr": "Station des Clochevoies"
+  },
+  "Grand Gate": {
+    "de": "Großes Tor",
+    "es": "Gran Puerta",
+    "fr": "Grand Portail",
+    "ja": "偉大なる門",
+    "pt-BR": "Grande Portão",
+    "ru": "Большие врата",
+    "zh-CN": "巨扉圣门"
+  },
+  "Grand Mother Silk": {
+    "de": "Große Mutter Seide",
+    "es": "Gran Madre Seda",
+    "fr": "Mère Supérieure Soie",
+    "ja": "大いなる母シルク",
+    "pt-BR": "Grande Mãe Seda",
+    "ru": "Верховная матерь Шёлка",
+    "zh-CN": "崇高圣母 灵丝"
+  },
+  "Grand Reed": {
+    "de": "Erzblatt",
+    "es": "Gran Lengüete",
+    "fr": "Grand Reed",
+    "ja": "高貴なるリード",
+    "pt-BR": "Grande Palheta",
+    "ru": "Тростина-гигант",
+    "zh-CN": "精英簧片战士"
+  },
+  "Great Taste of Pharloom": {
+    "de": "Pharlooms feinster Geschmack",
+    "es": "Gran sabor de Telalejana",
+    "fr": "Papilles délicates de Pharloom",
+    "ja": "至高の味",
+    "pt-BR": "Grande Sabor de Fiarlongo",
+    "ru": "Прекрасные вкусы Фарлума",
+    "zh-CN": "纺络珍馐"
+  },
+  "Greymoor": {
+    "de": "Graumoor",
+    "es": "Páramo Gris",
+    "fr": "Sombrevale",
+    "ja": "灰色の丘陵",
+    "pt-BR": "Pântano Cinzento",
+    "ru": "Мрачная топь",
+    "zh-CN": "灰沼"
+  },
+  "Greyroot": {
+    "de": "Grauwurz",
+    "es": "Raíz Gris",
+    "fr": "Griseracine",
+    "ja": "ハイネ",
+    "pt-BR": "Grisradix",
+    "ru": "Сизокорень",
+    "zh-CN": "灰根"
+  },
+  "Grindle": {
+    "de": "Grindle",
+    "es": "Grindle",
+    "fr": "Grindle",
+    "ja": "グリンドル",
+    "pt-BR": "Grindle",
+    "ru": "Гриндл",
+    "zh-CN": "格林德尔"
+  },
+  "Grishkin": {
+    "de": "Grishkin",
+    "es": "Grishkin",
+    "fr": "Grishkin",
+    "ja": "グリシュキン",
+    "pt-BR": "Grishkin",
+    "ru": "Грискин",
+    "zh-CN": "格里什琴"
+  },
+  "Groal the Great": {
+    "de": "Groal der Große",
+    "es": "Groal el Grande",
+    "fr": "Grolo le Grand",
+    "ja": "偉大なるグロウル",
+    "pt-BR": "Groal, o Magnífico",
+    "ru": "Великий Гроал",
+    "zh-CN": "伟大的格洛"
+  },
+  "Gromling": {
+    "de": "Gromling",
+    "es": "Gromlín",
+    "fr": "Gromllin",
+    "ja": "コグロム",
+    "pt-BR": "Gromlin",
+    "ru": "Жраклинг",
+    "zh-CN": "戈鲁姆幼虫"
+  },
+  "Gurr the Outcast": {
+    "de": "Gurr der Verstoßene",
+    "es": "Gurr el Proscrito",
+    "fr": "Gurr le Banni",
+    "ja": "追放されしグルル",
+    "pt-BR": "Gurr, o Proscrito",
+    "ru": "Гурр-изгой",
+    "zh-CN": "被放逐的格尔"
+  },
+  "Halfway Home": {
+    "de": "Übergangshaus",
+    "es": "Hogar a medio camino",
+    "fr": "Mi-Chemin",
+    "ja": "途上の家",
+    "pt-BR": "Quase Lar",
+    "ru": "На полпути к дому",
+    "zh-CN": "中途酒馆"
+  },
+  "Hero’s Call": {
+    "de": "Heldenruf",
+    "es": "Se buscan héroes",
+    "fr": "L'appel du héros",
+    "ja": "英雄の呼び声",
+    "pt-BR": "O Chamado do Herói",
+    "ru": "Зов героя",
+    "zh-CN": "英雄的呼唤"
+  },
+  "High Halls": {
+    "de": "Hohe Hallen",
+    "es": "Altos Salones",
+    "fr": "Grandes Galeries",
+    "ja": "高貴の広間",
+    "pt-BR": "Salões Supremos",
+    "ru": "Верхние палаты",
+    "zh-CN": "高庭"
+  },
+  "Huge Flea": {
+    "de": "Riesenfloh",
+    "es": "Pulga enorme",
+    "fr": "Puce Colossal",
+    "ja": "巨大なノミ",
+    "pt-BR": "Pulga Gigante",
+    "ru": "Гигантская блоха",
+    "zh-CN": "巨蚤"
+  },
+  "Hunter": {
+    "de": "Jäger",
+    "es": "Cazadora",
+    "fr": "Chasseur",
+    "ja": "狩猟者",
+    "pt-BR": "Caçador",
+    "ru": "Охотница",
+    "zh-CN": "猎手"
+  },
+  "Hunter’s March": {
+    "de": "Jägermark",
+    "es": "Marcha del Cazador",
+    "fr": "Sentier du Chasseur",
+    "ja": "捕食者の狩場",
+    "pt-BR": "Trilha de Skarr",
+    "ru": "Путь охотника",
+    "zh-CN": "猎者小径"
+  },
+  "Infestation Operation": {
+    "de": "Odiöse Operation",
+    "es": "Extirpación de infestación",
+    "fr": "Chirurgie parasitaire",
+    "ja": "手術の準備",
+    "pt-BR": "Operação Infestação",
+    "ru": "Инвазивная операция",
+    "zh-CN": "寄生手术"
+  },
+  "Injector Band": {
+    "de": "Injektorenband",
+    "es": "Banda inyectora",
+    "fr": "Ceinture d'injection",
+    "ja": "注入バンド",
+    "pt-BR": "Conjunto Injetor",
+    "ru": "Инъекторная повязка",
+    "zh-CN": "注丝套针"
+  },
+  "Jubilana": {
+    "de": "Jubilana",
+    "es": "Jubilana",
+    "fr": "Jubilana",
+    "ja": "ジュビラナ",
+    "pt-BR": "Jubilana",
+    "ru": "Юбилана",
+    "zh-CN": "朱比拉娜"
+  },
+  "Key of Apostate": {
+    "de": "Schlüssel des Abtrünnigen",
+    "es": "Llave del Apóstata",
+    "fr": "Clé de l'Apostat",
+    "ja": "背教者の鍵",
+    "pt-BR": "Chave de Apóstata",
+    "ru": "Ключ «Отступник»",
+    "zh-CN": "叛教之钥"
+  },
+  "Key of Heretic": {
+    "de": "Schlüssel des Ketzers",
+    "es": "Llave del Hereje",
+    "fr": "Clé de l'Hérétique",
+    "ja": "異端者の鍵",
+    "pt-BR": "Chave de Herege",
+    "ru": "Ключ «Еретик»",
+    "zh-CN": "异端之钥"
+  },
+  "Kratt": {
+    "de": "Kratt",
+    "es": "Kratt",
+    "fr": "Kratt",
+    "ja": "クラット",
+    "pt-BR": "Kratt",
+    "ru": "Кратт",
+    "zh-CN": "克拉特"
+  },
+  "Lace": {
+    "de": "Lace",
+    "es": "Lace",
+    "fr": "Lace",
+    "ja": "レース",
+    "pt-BR": "Tessela",
+    "ru": "Лейс",
+    "zh-CN": "蕾丝"
+  },
+  "Last Judge": {
+    "de": "Letzter Richter",
+    "es": "Última Jueza",
+    "fr": "Dernière Juge",
+    "ja": "最後の審判者",
+    "pt-BR": "Última Juíza",
+    "ru": "Последняя судья",
+    "zh-CN": "末代裁决者"
+  },
+  "Loddie": {
+    "de": "Loddie",
+    "es": "Loddie",
+    "fr": "Loddie",
+    "ja": "ロディー",
+    "pt-BR": "Loddie",
+    "ru": "Лодди",
+    "zh-CN": "洛迪"
+  },
+  "Longclaw": {
+    "de": "Langkralle",
+    "es": "Garralarga",
+    "fr": "Longue-griffe",
+    "ja": "長い爪",
+    "pt-BR": "Garralonga",
+    "ru": "Длинный коготь",
+    "zh-CN": "长爪"
+  },
+  "Longpin": {
+    "de": "Langnadel",
+    "es": "Alfiler largo",
+    "fr": "Longue Pique",
+    "ja": "ロングピン",
+    "pt-BR": "Pinolongo",
+    "ru": "Длинная булавка",
+    "zh-CN": "长针"
+  },
+  "Lost Lace": {
+    "de": "Verlorene Lace",
+    "es": "Lace perdida",
+    "fr": "Lace Déchue",
+    "ja": "漆黒のレース",
+    "pt-BR": "Tessela Perdida",
+    "ru": "Пропащая Лейс",
+    "zh-CN": "失心蕾丝"
+  },
+  "Lumble the Lucky": {
+    "de": "Lumble Der Glückskäfer",
+    "es": "Lumble La Afortunada",
+    "fr": "Lumble La Chanceuse",
+    "ja": "ツキに恵まれしランブル",
+    "pt-BR": "Lumble A Sortuda",
+    "ru": "Счастливица Ламбл",
+    "zh-CN": "幸运儿 兰布尔"
+  },
+  "Magma Bell": {
+    "de": "Magmaglocke",
+    "es": "Campana magmática",
+    "fr": "Cloche de magma",
+    "ja": "マグマの鈴",
+    "pt-BR": "Sino de Magma",
+    "ru": "Магмовый колокольчик",
+    "zh-CN": "熔岩钟"
+  },
+  "Magnetite Brooch": {
+    "de": "Magnetit-Brosche",
+    "es": "Broche de magnetita",
+    "fr": "Broche magnétite",
+    "ja": "マグネタイトのブローチ",
+    "pt-BR": "Broche de Magnetita",
+    "ru": "Магнетитовая брошь",
+    "zh-CN": "磁石胸针"
+  },
+  "Magnetite Dice": {
+    "de": "Magnetit-Würfel",
+    "es": "Dados de magnetita",
+    "fr": "Dés de magnétite",
+    "ja": "サイコロ",
+    "pt-BR": "Dados de Magnetita",
+    "ru": "Магнетитовые кубики",
+    "zh-CN": "磁石骰"
+  },
+  "Marrowmaw": {
+    "de": "Markschlund",
+    "es": "Apisonador",
+    "fr": "Mawrok",
+    "ja": "マロマウ",
+    "pt-BR": "Trinca-ossos",
+    "ru": "Мувень",
+    "zh-CN": "髓渊兽"
+  },
+  "Memorium": {
+    "de": "Memorium",
+    "es": "Memorium",
+    "fr": "Mémorium",
+    "ja": "記憶庫",
+    "pt-BR": "Memorium",
+    "ru": "Мемориум",
+    "zh-CN": "忆廊"
+  },
+  "Memory Crystal": {
+    "de": "Erinnerungskristall",
+    "es": "Cristal de memoria",
+    "fr": "Cristal de souvenir",
+    "ja": "記憶の水晶",
+    "pt-BR": "Cristal da Memória",
+    "ru": "Кристалл памяти",
+    "zh-CN": "记忆晶石"
+  },
+  "Moorwing": {
+    "de": "Moorschwinge",
+    "es": "Bestia alada del Páramo",
+    "fr": "Ailebrume",
+    "ja": "ヌレガラス",
+    "pt-BR": "Asa do Pântano",
+    "ru": "Топекрыл",
+    "zh-CN": "荒沼翼主"
+  },
+  "Mort": {
+    "de": "Mort",
+    "es": "Mort",
+    "fr": "Mott",
+    "ja": "モート",
+    "pt-BR": "Mort",
+    "ru": "Морт",
+    "zh-CN": "莫特"
+  },
+  "Mortician": {
+    "de": "Bestatter",
+    "es": "Funerario",
+    "fr": "Morticien",
+    "ja": "ソウギヤ",
+    "pt-BR": "Funesto",
+    "ru": "Похоронщик",
+    "zh-CN": "殡葬师"
+  },
+  "Moss Druid": {
+    "de": "Moosdruide",
+    "es": "Druida Musgoso",
+    "fr": "Druide Forestier",
+    "ja": "苔のドルイド",
+    "pt-BR": "Musgo Druida",
+    "ru": "Моховой друид",
+    "zh-CN": "苔藓德鲁伊"
+  },
+  "Moss Grotto": {
+    "de": "Moosgrotte",
+    "es": "Gruta Musgosa",
+    "fr": "Grotte Verdoyante",
+    "ja": "苔の洞穴",
+    "pt-BR": "Gruta Musgosa",
+    "ru": "Мшистый грот",
+    "zh-CN": "苔藓洞穴"
+  },
+  "Moss Mother": {
+    "de": "Moosmutter",
+    "es": "Madre Musgo",
+    "fr": "Mère Forestière",
+    "ja": "コケママ",
+    "pt-BR": "Musgo-Mãe",
+    "ru": "Матерь Мхов",
+    "zh-CN": "苔藓之母"
+  },
+  "Mosshome": {
+    "de": "Moosheim",
+    "es": "Hogar Musgoso",
+    "fr": "Verdoison",
+    "ja": "苔の里",
+    "pt-BR": "Musgália",
+    "ru": "Мохоум",
+    "zh-CN": "苔栖乡"
+  },
+  "Mottled Skarr": {
+    "de": "Gefleckter Skarr",
+    "es": "Skarr Moteado",
+    "fr": "Skarr Tacheté",
+    "ja": "まだらのスカール",
+    "pt-BR": "Skarr Manchado",
+    "ru": "Пятнистый скарр",
+    "zh-CN": "白斑斯卡尔"
+  },
+  "Mount Fay": {
+    "de": "Feiberg",
+    "es": "Monte Fay",
+    "fr": "Mont Fay",
+    "ja": "フェイの山",
+    "pt-BR": "Monte Plumídio",
+    "ru": "Гора Фей",
+    "zh-CN": "雪灵山"
+  },
+  "Multibinder": {
+    "de": "Multibinder",
+    "es": "Multihuso",
+    "fr": "Multisoie",
+    "ja": "紡ぎの触媒",
+    "pt-BR": "Multivinculador",
+    "ru": "Мультисвязыватель",
+    "zh-CN": "多重缚丝器"
+  },
+  "My Missing Brother": {
+    "de": "Mein vermisster Bruder",
+    "es": "Mi hermano desparecido",
+    "fr": "Mon frère disparu",
+    "ja": "行方不明の兄",
+    "pt-BR": "Meu Irmão Desaparecido",
+    "ru": "Мой пропавший брат",
+    "zh-CN": "寻虫启事"
+  },
+  "My Missing Courier": {
+    "de": "Mein vermisster Kurier",
+    "es": "Mi mensajero desaparecido",
+    "fr": "Mon coursier disparu",
+    "ja": "運び屋の捜索",
+    "pt-BR": "Meu Entregador Desaparecido",
+    "ru": "Мой пропавший курьер",
+    "zh-CN": "失踪送货员"
+  },
+  "Needle Strike": {
+    "de": "Nadelstreich",
+    "es": "Golpe concentrado",
+    "fr": "Attaque de précision",
+    "ja": "強針撃",
+    "pt-BR": "Ataque de Foco",
+    "ru": "Сфокусированный удар",
+    "zh-CN": "蓄力斩"
+  },
+  "Needolin": {
+    "de": "Nadoline",
+    "es": "Agujolín",
+    "fr": "Aiguilline",
+    "ja": "ニードリン",
+    "pt-BR": "Agulino",
+    "ru": "Иглончель",
+    "zh-CN": "织忆弦针"
+  },
+  "Nuu": {
+    "de": "Nuu",
+    "es": "Nuu",
+    "fr": "Nuu",
+    "ja": "ニュー",
+    "pt-BR": "Nuu",
+    "ru": "Нуу",
+    "zh-CN": "努努"
+  },
+  "Nyleth": {
+    "de": "Nyleth",
+    "es": "Nyleth",
+    "fr": "Florinelle",
+    "ja": "ニュレス",
+    "pt-BR": "Nyleth",
+    "ru": "Найлет",
+    "zh-CN": "尼莱斯"
+  },
+  "Pale Lake": {
+    "de": "Bleicher See",
+    "es": "Lago Pálido",
+    "fr": "Lac Pâle",
+    "ja": "蒼白の湖",
+    "pt-BR": "Lago Pálido",
+    "ru": "Бледное озеро",
+    "zh-CN": "苍湖"
+  },
+  "Pale Nails": {
+    "de": "Bleiche Nägel",
+    "es": "Uñas pálidas",
+    "fr": "Griffes pâles",
+    "ja": "蒼白の爪",
+    "pt-BR": "Ferrões Pálidos",
+    "ru": "Бледные коготки",
+    "zh-CN": "苍白之爪"
+  },
+  "Pale Oil": {
+    "de": "Bleiches Öl",
+    "es": "Aceite pálido",
+    "fr": "Huile Pâle",
+    "ja": "蒼白の油",
+    "pt-BR": "Óleo Pálido",
+    "ru": "Бледное масло",
+    "zh-CN": "苍白油"
+  },
+  "Pale Steel Needle": {
+    "de": "Bleichstahl-Nähnadel",
+    "es": "Aguja de acero pálido",
+    "fr": "Aiguille d'acier pâle",
+    "ja": "蒼白の針",
+    "pt-BR": "Agulha de Aço Pálido",
+    "ru": "Игла из бледной стали",
+    "zh-CN": "苍白蜂钢织针"
+  },
+  "Passing of the Age": {
+    "es": "Cambio de era",
+    "fr": "Fil des âges"
+  },
+  "Pavo": {
+    "de": "Pavo",
+    "es": "Pavo",
+    "fr": "Pavo",
+    "ja": "パヴォ",
+    "pt-BR": "Pavo",
+    "ru": "Паво",
+    "zh-CN": "帕沃"
+  },
+  "Pebb": {
+    "de": "Pebb",
+    "es": "Pebb",
+    "fr": "Pebb",
+    "ja": "ペブ",
+    "pt-BR": "Pebb",
+    "ru": "Пебб",
+    "zh-CN": "佩珀"
+  },
+  "Phantom": {
+    "de": "Phantom",
+    "es": "Fantasma",
+    "fr": "Fantôme",
+    "ja": "ファントム",
+    "pt-BR": "Fantasma",
+    "ru": "Фантом",
+    "zh-CN": "幽影"
+  },
+  "Pilgrim’s Rest": {
+    "de": "Pilgerruh",
+    "es": "Descanso del Peregrino",
+    "fr": "Repos du Pèlerin",
+    "ja": "巡礼者の休息地",
+    "pt-BR": "Estação de Descanso",
+    "ru": "Приют пилигрима",
+    "zh-CN": "朝圣者憩所"
+  },
+  "Pimpillo": {
+    "de": "Pimpillo",
+    "es": "Alfimohada",
+    "fr": "Pompillo",
+    "ja": "ピンピロー",
+    "pt-BR": "Almofapino",
+    "ru": "Бумдушка",
+    "zh-CN": "爆燃囊"
+  },
+  "Pin Badge": {
+    "de": "Nadelabzeichen",
+    "es": "Placa de alfiler",
+    "fr": "Insigne de la Pique",
+    "ja": "ピンバッジ",
+    "pt-BR": "Emblema de Pino",
+    "ru": "Значок с булавкой",
+    "zh-CN": "针徽"
+  },
+  "Pinmaster’s Oil": {
+    "de": "Öl des Nadelmeisters",
+    "es": "Aceite de maestro alfilero",
+    "fr": "Huile du maître aiguiseur",
+    "ja": "ピン鍛冶の油",
+    "pt-BR": "Óleo do Mestre Alfineteiro",
+    "ru": "Масло булавника",
+    "zh-CN": "针匠秘油"
+  },
+  "Pinstress": {
+    "de": "Nadlerin",
+    "es": "Alfilera",
+    "fr": "Maîtresse de la Pique",
+    "ja": "ピンの女傑",
+    "pt-BR": "Alfinistra",
+    "ru": "Булавочница",
+    "zh-CN": "针姬"
+  },
+  "Plasmium Phial": {
+    "de": "Plasmium-Ampulle",
+    "es": "Ampolla de plasmio",
+    "fr": "Fiole de plasmonium",
+    "ja": "プラスミフラスコ",
+    "pt-BR": "Frasco de Plásmio",
+    "ru": "Сосуд с плазмиумом",
+    "zh-CN": "生质液瓶"
+  },
+  "Pollip Pouch": {
+    "de": "Pollip-Tasche",
+    "es": "Bolsa pólipo",
+    "fr": "Bourse de pollip",
+    "ja": "ポリップのポーチ",
+    "pt-BR": "Bolsa de Pólipo",
+    "ru": "Полиповый мешочек",
+    "zh-CN": "花芯囊"
+  },
+  "Putrified Ducts": {
+    "de": "Verseuchtes Aquädukte",
+    "es": "Conductos Putrefactos",
+    "fr": "Conduits Putrides",
+    "ja": "悪臭の水路",
+    "pt-BR": "Canais Pestilentos",
+    "ru": "Гнилые стоки",
+    "zh-CN": "腐殖渠"
+  },
+  "Quick Sling": {
+    "de": "Schnellschleuder",
+    "es": "Honda veloz",
+    "fr": "Jet-éclair",
+    "ja": "スリング",
+    "pt-BR": "Sela Rápida",
+    "ru": "Быстрая праща",
+    "zh-CN": "速射索"
+  },
+  "Raging Conchfly": {
+    "de": "Zornige Muschelfliege",
+    "es": "Moscarola Furiosa",
+    "fr": "Volucorne En Furie",
+    "ja": "怒れるオオホラガイバエ",
+    "pt-BR": "Mosquicórnio Furioso",
+    "ru": "Разъярённая ракушечная муха",
+    "zh-CN": "狂暴的螺蝇"
+  },
+  "Reaper": {
+    "de": "Schnitter",
+    "es": "Parca",
+    "fr": "Faucheur",
+    "ja": "収奪者",
+    "pt-BR": "Ceifador",
+    "ru": "Жнец",
+    "zh-CN": "收割者"
+  },
+  "Red Memory": {
+    "de": "Rote Erinnerung",
+    "es": "Memoria roja",
+    "fr": "Souvenir Rouge",
+    "ja": "赤い記憶",
+    "pt-BR": "Memória Vermelha",
+    "ru": "Красное видение",
+    "zh-CN": "赤红忆境"
+  },
+  "Reserve Bind": {
+    "de": "Reservebinde",
+    "es": "Reserva sedeña",
+    "fr": "Réserve de soie",
+    "ja": "予備のシルク",
+    "pt-BR": "Vínculo Reserva",
+    "ru": "Резерв для связывания",
+    "zh-CN": "储备缚丝"
+  },
+  "Restoration of Bellhart": {
+    "de": "Wiederherstellung von Glockenherz",
+    "es": "Restauración de Campanilla",
+    "fr": "Rénovation de Clochelle",
+    "ja": "町の復興",
+    "pt-BR": "Restauração da Campânula",
+    "ru": "Восстановление Звонвилля",
+    "zh-CN": "重振钟心镇"
+  },
+  "Rite of Rebirth": {
+    "de": "Ritual der Wiedergeburt",
+    "es": "Rito de renacimiento",
+    "fr": "Rite de réincarnation",
+    "ja": "再誕の儀式",
+    "pt-BR": "Rito de Renascimento",
+    "ru": "Ритуал возрождения",
+    "zh-CN": "重生仪式"
+  },
+  "Rite of the Pollip": {
+    "de": "Ritual der Pollipen",
+    "es": "Rito del pólipo",
+    "fr": "Rituel de pollip",
+    "ja": "ポリップの儀式",
+    "pt-BR": "Rito do Pólipo",
+    "ru": "Ритуал с полипами",
+    "zh-CN": "花芯仪式"
+  },
+  "Roach Guts": {
+    "de": "Schabenkaldaunen",
+    "es": "Vísceras de cucaracha",
+    "fr": "Entrailles de férochard",
+    "ja": "ツチゴキブリのはらわた",
+    "pt-BR": "Vísceras de Barata",
+    "ru": "Тараканьи потроха",
+    "zh-CN": "淤秽蟑螂内脏"
+  },
+  "Roachkeeper": {
+    "de": "Schabenhüter",
+    "es": "Pastor de cucarachas",
+    "fr": "Férogarde",
+    "ja": "ツチゴキブリの管理者",
+    "pt-BR": "Guarda-baratas",
+    "ru": "Тараканий смотритель",
+    "zh-CN": "蟑螂监管者"
+  },
+  "Rosary Cannon": {
+    "de": "Rosenkranz-Kanone",
+    "es": "Cañón de rosarios",
+    "fr": "Chapletier",
+    "ja": "ロザリー砲",
+    "pt-BR": "Canhão de Rosários",
+    "ru": "Бусинная пушка",
+    "zh-CN": "念珠炮"
+  },
+  "Ruined Chapel": {
+    "de": "Ruinierte Kapelle",
+    "es": "Capilla en Ruinas",
+    "fr": "Ancienne Chapelle",
+    "ja": "朽ちたチャペル",
+    "pt-BR": "Capela Arruinada",
+    "ru": "Старая капелла",
+    "zh-CN": "颓败教堂"
+  },
+  "Ruined Tool": {
+    "de": "Ramponiertes Werkzeug",
+    "es": "Herramienta estropeada",
+    "fr": "Outil endommagé",
+    "ja": "壊れた道具",
+    "pt-BR": "Ferramenta Arruinada",
+    "ru": "Испорченный инструмент",
+    "zh-CN": "损坏的工具"
+  },
+  "Rune Rage": {
+    "de": "Runenzorn",
+    "es": "Furia rúnica",
+    "fr": "Furie runique",
+    "ja": "ルーンの憤怒",
+    "pt-BR": "Fúria de Runas",
+    "ru": "Ярость рун",
+    "zh-CN": "符文之怒"
+  },
+  "Runtfeast": {
+    "de": "Winzlingsmahl",
+    "es": "Festín para Pequeñuela",
+    "fr": "Festin de la chasserette",
+    "ja": "ラントのごちそう",
+    "pt-BR": "Banquete da Nanica",
+    "ru": "Пир для Коротышки",
+    "zh-CN": "遗孤盛宴"
+  },
+  "Sands of Karak": {
+    "de": "Sande von Karak",
+    "es": "Arenas de Karak",
+    "fr": "Sables Karak",
+    "ja": "カラクの砂",
+    "pt-BR": "Areias de Karak",
+    "ru": "Пески Карака",
+    "zh-CN": "卡拉卡沙川"
+  },
+  "Savage Beastfly": {
+    "de": "Wilde Biestfliege",
+    "es": "Moscabestia salvaje",
+    "fr": "Volpeste Enragée",
+    "ja": "オオケモノバエ",
+    "pt-BR": "Besta-alada Selvagem",
+    "ru": "Дикая зверомуха",
+    "zh-CN": "残暴的兽蝇"
+  },
+  "Sawtooth Circlet": {
+    "de": "Sägezahn-Reif",
+    "es": "Anillo de dientes de sierra",
+    "fr": "Ceinture à dents-de-scie",
+    "ja": "鋸歯のサークレット",
+    "pt-BR": "Bainha Serrilhada",
+    "ru": "Зубчатый обод",
+    "zh-CN": "锯齿环"
+  },
+  "Scuttlebrace": {
+    "de": "Krabbelklammer",
+    "es": "Brazada de desliz",
+    "fr": "Broclet",
+    "ja": "クモ走りの装具",
+    "pt-BR": "Braçaranha",
+    "ru": "Панцирный корсет",
+    "zh-CN": "迅捷脊锁"
+  },
+  "Seamstress": {
+    "de": "Näherin",
+    "es": "Costurera",
+    "fr": "Couturière",
+    "ja": "裁縫師",
+    "pt-BR": "Costureira",
+    "ru": "Швея",
+    "zh-CN": "织姬"
+  },
+  "Second Sentinel": {
+    "de": "Zweiter Wächter",
+    "es": "Segundo Centinela",
+    "fr": "Seconde Sentinelle",
+    "ja": "第二の歩哨",
+    "pt-BR": "Segundo Sentinela",
+    "ru": "Второй Страж",
+    "zh-CN": "次席戍卫"
+  },
+  "Shakra": {
+    "de": "Shakra",
+    "es": "Shakra",
+    "fr": "Shakra",
+    "ja": "シャクラ",
+    "pt-BR": "Shakra",
+    "ru": "Шакра",
+    "zh-CN": "沙克拉"
+  },
+  "Shaman": {
+    "de": "Schamane",
+    "es": "Chamana",
+    "fr": "Chaman",
+    "ja": "憑依者",
+    "pt-BR": "Xamã",
+    "ru": "Шаманка",
+    "zh-CN": "萨满"
+  },
+  "Shaman Crest": {
+    "de": "Schamane",
+    "es": "Chamana",
+    "fr": "Chaman",
+    "ja": "憑依者",
+    "pt-BR": "Xamã",
+    "ru": "Шаманка",
+    "zh-CN": "萨满"
+  },
+  "Shard Pendant": {
+    "de": "Splitteranhänger",
+    "es": "Colgante fragmentador",
+    "fr": "Collier d'os",
+    "ja": "破片のペンダント",
+    "pt-BR": "Pingente de Fragmento",
+    "ru": "Осколочная подвеска",
+    "zh-CN": "碎壳挂坠"
+  },
+  "Sharpdart": {
+    "de": "Scharfpfeil",
+    "es": "Dardo veloz",
+    "fr": "Dard aiguisé",
+    "ja": "シャープダート",
+    "pt-BR": "Dardo Afiado",
+    "ru": "Острожал",
+    "zh-CN": "丝刃冲刺"
+  },
+  "Shell Satchel": {
+    "de": "Panzerbeutel",
+    "es": "Saquito de coraza",
+    "fr": "Sacoche en carapace",
+    "ja": "殻のサチェル",
+    "pt-BR": "Mochila de Carapaça",
+    "ru": "Панцирная сумка",
+    "zh-CN": "壳囊"
+  },
+  "Shellwood": {
+    "de": "Schalenwald",
+    "es": "Bosque Coraza",
+    "fr": "Coquibois",
+    "ja": "殻木の森",
+    "pt-BR": "Cascomadeira",
+    "ru": "Панцирный лес",
+    "zh-CN": "壳木林"
+  },
+  "Sherma": {
+    "de": "Sherma",
+    "es": "Sherma",
+    "fr": "Sherma",
+    "ja": "シェルマ",
+    "pt-BR": "Sherma",
+    "ru": "Шерма",
+    "zh-CN": "谢尔玛"
+  },
+  "Silk and Soul": {
+    "de": "Seide und Seele",
+    "es": "Seda y alma",
+    "fr": "Soie et âme",
+    "ja": "シルクとソウル",
+    "pt-BR": "Seda e Alma",
+    "ru": "Шёлк и душа",
+    "zh-CN": "灵丝与灵魂"
+  },
+  "Silk Heart": {
+    "de": "Seidenherz",
+    "es": "Corazón de seda",
+    "fr": "Cœur de Soie",
+    "ja": "シルクの心",
+    "pt-BR": "Coração de Seda",
+    "ru": "Шёлковое сердце",
+    "zh-CN": "丝之心"
+  },
+  "Silk Soar": {
+    "de": "Seidenaufschwung",
+    "es": "Vuelo sedeño",
+    "fr": "Élan de soie",
+    "ja": "シルクの跳躍",
+    "pt-BR": "Impulso de Seda",
+    "ru": "Окрыляющий Шёлк",
+    "zh-CN": "灵丝升腾"
+  },
+  "Silkshot": {
+    "de": "Seidenschuss",
+    "es": "Honda sedeña",
+    "fr": "Tire-soie",
+    "ja": "シルクショット",
+    "pt-BR": "Tiro de Seda",
+    "ru": "Шёлкострел",
+    "zh-CN": "丝弹"
+  },
+  "Silkspear": {
+    "de": "Seidenspeer",
+    "es": "Lanza sedeña",
+    "fr": "Lance soyeuse",
+    "ja": "シルクの槍",
+    "pt-BR": "Lança de Seda",
+    "ru": "Шёлковое копьё",
+    "zh-CN": "丝之矛"
+  },
+  "Silkspeed Anklets": {
+    "de": "Seidentempo-Fußketten",
+    "es": "Tobilleras rapisedeñas",
+    "fr": "Bracelets vifsoie",
+    "ja": "シルクアンクレット",
+    "pt-BR": "Tornozeleiras Sedavelozes",
+    "ru": "Скорошёлковые анклеты",
+    "zh-CN": "丝速脚环"
+  },
+  "Silver Bells": {
+    "de": "Silberglocken",
+    "es": "Campanas de plata",
+    "fr": "Cloches argentées",
+    "ja": "銀の鐘",
+    "pt-BR": "Sinos de Prata",
+    "ru": "Серебряные колокольчики",
+    "zh-CN": "银光铃铛"
+  },
+  "Simple Key": {
+    "de": "Einfacher Schlüssel",
+    "es": "Llave sencilla",
+    "fr": "Clé simple",
+    "ja": "単純な鍵",
+    "pt-BR": "Chave Simples",
+    "ru": "Простой ключ",
+    "zh-CN": "简易钥匙"
+  },
+  "Sinner’s Road": {
+    "de": "Sündenstraße",
+    "es": "Camino del Pecador",
+    "fr": "Chemin du Pécheur",
+    "ja": "罪深き者の道",
+    "pt-BR": "Caminho dos Pecadores",
+    "ru": "Дорога грешников",
+    "zh-CN": "罪途"
+  },
+  "Sister of the Void": {
+    "es": "Hermana del vacío",
+    "fr": "Sœur des Abysses"
+  },
+  "Sister Splinter": {
+    "de": "Schwester Splitter",
+    "es": "Hermana Vastiguera",
+    "fr": "Sœur Écorceuse",
+    "ja": "アマエダモドキ",
+    "pt-BR": "Irmã Lasca",
+    "ru": "Сестра Лучина",
+    "zh-CN": "碎裂者长姊"
+  },
+  "Skarrsinger Karmelita": {
+    "de": "Skarrsängerin Karmelita",
+    "es": "Karmelita la Cantante Skarr",
+    "fr": "Chanteuse Skarr Karmelita",
+    "ja": "スカールの歌い手カーメリタ",
+    "pt-BR": "Skarrcantora Carmelita",
+    "ru": "Поющая Скарру Кармелита",
+    "zh-CN": "斯卡尔歌后 卡梅莉塔"
+  },
+  "Slubberlug": {
+    "de": "Schlabberneck",
+    "es": "Suciacuajo",
+    "fr": "Férovore",
+    "ja": "スラバラグ",
+    "pt-BR": "Baralarva",
+    "ru": "Слизнешлёп",
+    "zh-CN": "沼蛆"
+  },
+  "Smelt Shoveller": {
+    "de": "Schmelzschaufler",
+    "es": "Paleador de roca ígnea",
+    "fr": "Fourrecreux",
+    "ja": "溶鉱炉の労働者",
+    "pt-BR": "Servo da Fornalha",
+    "ru": "Черпатель расплава",
+    "zh-CN": "炼岩工"
+  },
+  "Snare Setter": {
+    "de": "Schlingensetzer",
+    "es": "Fijatrampas",
+    "fr": "Piège runique",
+    "ja": "罠の土台",
+    "pt-BR": "Aranhol",
+    "ru": "Установщик ловушек",
+    "zh-CN": "陷阱设置器"
+  },
+  "Snared Silk": {
+    "es": "Atadura de seda",
+    "fr": "Attrape-âme"
+  },
+  "Snitch Pick": {
+    "de": "Stibitzhacke",
+    "es": "Pico hurgón",
+    "fr": "Serrepince",
+    "ja": "強奪のピック",
+    "pt-BR": "Catassaque",
+    "ru": "Доставатель",
+    "zh-CN": "撬赃钩"
+  },
+  "Songclave": {
+    "de": "Sangesloge",
+    "es": "Enclave Cancioneril",
+    "fr": "Chantsoir",
+    "ja": "歌の集落",
+    "pt-BR": "Cantoclave",
+    "ru": "Уголок Песни",
+    "zh-CN": "圣歌盟地"
+  },
+  "Soul Snare": {
+    "fr": "Attrape-âme"
+  },
+  "Speed Completion": {
+    "es": "Finalización veloz",
+    "fr": "Achèvement rapide"
+  },
+  "Speedrunner": {
+    "es": "A toda mecha",
+    "fr": "Speedrunner"
+  },
+  "Spider Strings": {
+    "de": "Spinnenfäden",
+    "es": "Cuerdas arácnidas",
+    "fr": "Fil d'araignée",
+    "ja": "クモの弦",
+    "pt-BR": "Cordões de Aranha",
+    "ru": "Паучьи струны",
+    "zh-CN": "蛛丝弦"
+  },
+  "Spool Extender": {
+    "de": "Spulen-Verlängerung",
+    "es": "Extensor de carrete",
+    "fr": "Extenseur de bobine",
+    "ja": "糸巻拡張器",
+    "pt-BR": "Extensor de Carretel",
+    "ru": "Удлинитель катушки",
+    "zh-CN": "丝轴延展器"
+  },
+  "Sprintmaster Swift": {
+    "de": "Sprintmeister Flott",
+    "es": "Maestro de Sprints Veloz",
+    "fr": "Maître De La Vitesse Vif",
+    "ja": "健脚の師スウィフト",
+    "pt-BR": "Mestre da Corrida Veloz",
+    "ru": "Ловкач Быстроног",
+    "zh-CN": "飞毛腿斯威夫特"
+  },
+  "Steel Heart": {
+    "es": "Corazón de acero",
+    "fr": "Cœur d’acier"
+  },
+  "Steel Soul": {
+    "es": "Alma de acero",
+    "fr": "Âme d’acier"
+  },
+  "Steel Spines": {
+    "de": "Stahlstachel",
+    "es": "Púas de acero",
+    "fr": "Épines d'acier",
+    "ja": "鋼鉄のトゲ",
+    "pt-BR": "Espinhas de Aço",
+    "ru": "Стальные шипы",
+    "zh-CN": "钢棘"
+  },
+  "Sting Shard": {
+    "de": "Stachelsplitter",
+    "es": "Aguijón cortante",
+    "fr": "Mortaille",
+    "ja": "刺殺のトゲ",
+    "pt-BR": "Fragmento de Ferrão",
+    "ru": "Осколок жала",
+    "zh-CN": "蜇刺碎片"
+  },
+  "Straight Pin": {
+    "de": "Gerade Nadel",
+    "es": "Alfiler recto",
+    "fr": "Dardillon",
+    "ja": "まっすぐなピン",
+    "pt-BR": "Pino Reto",
+    "ru": "Прямая булавка",
+    "zh-CN": "直针"
+  },
+  "Strengthening Songclave": {
+    "de": "Stärkung der Sangesloge",
+    "es": "Fortalecimiento de Enclave Cancioneril",
+    "fr": "Fortifier Chantsoir",
+    "ja": "さらなる改善",
+    "pt-BR": "Fortalecendo Cantoclave",
+    "ru": "Поддержка Уголка Песни",
+    "zh-CN": "巩固圣歌盟地"
+  },
+  "Surgeon’s Key": {
+    "de": "Chirurgenschlüssel",
+    "es": "Llave del cirujano",
+    "fr": "Clé du chirurgien",
+    "ja": "外科医の鍵",
+    "pt-BR": "Chave do Cirurgião.",
+    "ru": "Ключ Хирурга",
+    "zh-CN": "医师钥匙"
+  },
+  "Swift Step": {
+    "de": "Flinkschritt",
+    "es": "Paso ágil",
+    "fr": "Pas rapide",
+    "ja": "俊敏なる脚",
+    "pt-BR": "Passo Veloz",
+    "ru": "Быстрый шаг",
+    "zh-CN": "疾风步"
+  },
+  "Sylphsong": {
+    "de": "Sylphenlied",
+    "es": "Silfonía",
+    "fr": "Sylphonie",
+    "ja": "シルフソング",
+    "pt-BR": "Silfonia",
+    "ru": "Песнь сильфиды",
+    "zh-CN": "风灵谣"
+  },
+  "Tacks": {
+    "de": "Reißzwecken",
+    "es": "Tachuelas",
+    "fr": "Pointes d'acier",
+    "ja": "足止めの鋲",
+    "pt-BR": "Tachinhas",
+    "ru": "Колючки",
+    "zh-CN": "钉刺"
+  },
+  "The Abyss": {
+    "de": "Der Abgrund",
+    "es": "El Abismo",
+    "fr": "Les Abysses",
+    "ja": "アビス",
+    "pt-BR": "O Abismo",
+    "ru": "Бездна",
+    "zh-CN": "深渊"
+  },
+  "The Cradle": {
+    "de": "Die Wiege",
+    "es": "La Cuna",
+    "fr": "Le Berceau",
+    "ja": "揺り籠",
+    "pt-BR": "O Berço",
+    "ru": "Колыбель",
+    "zh-CN": "摇篮圣所"
+  },
+  "The Forum": {
+    "de": "Das Forum",
+    "es": "El Foro",
+    "fr": "L'Auditoire",
+    "ja": "発令の間",
+    "pt-BR": "O Fórum",
+    "ru": "Форум",
+    "zh-CN": "大议厅"
+  },
+  "The Hidden Hunter": {
+    "de": "Der verborgene Jäger",
+    "es": "El cazador oculto",
+    "fr": "Chasseur de l'ombre",
+    "ja": "隠れた狩猟者",
+    "pt-BR": "O Caçador Oculto",
+    "ru": "Невидимый охотник",
+    "zh-CN": "隐秘猎手"
+  },
+  "The Lost Merchant": {
+    "de": "Die verlorene Händlerin",
+    "es": "La comerciante perdida",
+    "fr": "La marchande perdue",
+    "ja": "よろず屋捜索",
+    "pt-BR": "A Mercadora Perdida",
+    "ru": "Потерявшаяся торговка",
+    "zh-CN": "再寻商人"
+  },
+  "The Marrow": {
+    "de": "Tal der Knochen",
+    "es": "La Médula",
+    "fr": "L'Antre",
+    "ja": "脊髄の道",
+    "pt-BR": "A Medula",
+    "ru": "Костяк",
+    "zh-CN": "髓骨洞窟"
+  },
+  "The Mist": {
+    "de": "Der Nebel",
+    "es": "La Niebla",
+    "fr": "Les Brumes",
+    "ja": "迷いの霧",
+    "pt-BR": "A Bruma",
+    "ru": "Мгла",
+    "zh-CN": "迷瘴"
+  },
+  "The Slab": {
+    "de": "Der Brocken",
+    "es": "La Losa",
+    "fr": "Le Bloc",
+    "ja": "巨石の牢",
+    "pt-BR": "O Rochedo",
+    "ru": "Плита",
+    "zh-CN": "罪石牢狱"
+  },
+  "The Stage": {
+    "de": "Die Bühne",
+    "es": "El Escenario",
+    "fr": "La Scène",
+    "ja": "劇場",
+    "pt-BR": "O Palco",
+    "ru": "Сцена",
+    "zh-CN": "剧台"
+  },
+  "The Terrible Tyrant": {
+    "de": "Der furchtbare Tyrann",
+    "es": "El terrible tirano",
+    "fr": "Châtiment du Tyran",
+    "ja": "恐ろしき猛獣",
+    "pt-BR": "O Tirano Terrível",
+    "ru": "Жуткий Тиран",
+    "zh-CN": "暴君讨伐"
+  },
+  "The Unravelled": {
+    "de": "Der Aufgelöste",
+    "es": "Los Desentrañados",
+    "fr": "L'exfilé",
+    "ja": "糸解かれし者",
+    "pt-BR": "Sepulcro de Seda",
+    "ru": "Распутыватель",
+    "zh-CN": "失缚怨魂"
+  },
+  "The Wandering Merchant": {
+    "de": "Die umherziehende Händlerin",
+    "es": "La comerciante ambulante",
+    "fr": "La marchande vagabonde",
+    "ja": "放浪のよろず屋",
+    "pt-BR": "A Mercadora Errante",
+    "ru": "Странствующая торговка",
+    "zh-CN": "失踪商人"
+  },
+  "Thief’s Mark": {
+    "de": "Diebeszeichen",
+    "es": "Marca de ladrón",
+    "fr": "Marque du voleur",
+    "ja": "盗賊の証",
+    "pt-BR": "Marca do Ladrão",
+    "ru": "Метка вора",
+    "zh-CN": "窃贼印记"
+  },
+  "Thread Storm": {
+    "de": "Fadensturm",
+    "es": "Tormenta de hilos",
+    "fr": "Tisse-tempête",
+    "ja": "シルクの嵐",
+    "pt-BR": "Turbilhão de Fios",
+    "ru": "Буйство нитей",
+    "zh-CN": "灵丝风暴"
+  },
+  "Threefold Melody": {
+    "de": "Dreifaltige Melodie",
+    "es": "Melodía Ternaria",
+    "fr": "Mélotrine",
+    "ja": "３つのメロディ",
+    "pt-BR": "Melodia Tríplice",
+    "ru": "Трёхчастная мелодия",
+    "zh-CN": "三重旋律"
+  },
+  "Threefold Pin": {
+    "de": "Dreifach-Nadel",
+    "es": "Alfiler triple",
+    "fr": "Lame trifoldée",
+    "ja": "三連ピン",
+    "pt-BR": "Pino Tríplice",
+    "ru": "Тройная булавка",
+    "zh-CN": "三重镖"
+  },
+  "Throwing Ring": {
+    "de": "Wurfring",
+    "es": "Anillo arrojadizo",
+    "fr": "Lance-anneaux",
+    "ja": "投げ輪",
+    "pt-BR": "Anel de Arremesso",
+    "ru": "Метательное кольцо",
+    "zh-CN": "投掷环"
+  },
+  "Tool Pouch": {
+    "es": "Bolsa de herramientas",
+    "fr": "Sac à outils"
+  },
+  "Tormented Trobbio": {
+    "de": "Gequälter Trobbio",
+    "es": "Trobbio atormentado",
+    "fr": "Trobbio Tourmenté",
+    "ja": "苦痛にさいなまれしトロッビオ",
+    "pt-BR": "Trobbio Atormentado",
+    "ru": "Истерзанный Троббио",
+    "zh-CN": "痛苦的特罗比奥"
+  },
+  "Trail’s End": {
+    "de": "Ende des Weges",
+    "es": "Final del camino",
+    "fr": "Fin de la piste",
+    "ja": "足跡の果て",
+    "pt-BR": "Fim da Trilha",
+    "ru": "Конец пути",
+    "zh-CN": "终迹"
+  },
+  "Trobbio": {
+    "de": "Trobbio",
+    "es": "Trobbio",
+    "fr": "Trobbio",
+    "ja": "赤い竜巻トロッビオ",
+    "pt-BR": "Trobbio",
+    "ru": "Троббио",
+    "zh-CN": "特罗比奥"
+  },
+  "True Hunter": {
+    "es": "Auténtica cazadora",
+    "fr": "Véritable chasseur"
+  },
+  "Twelfth Architect": {
+    "de": "Zwölfter Architekt",
+    "es": "Duodécimo Arquitecto",
+    "fr": "Douzième Architecte",
+    "ja": "十二番目の設計者",
+    "pt-BR": "Duodécimo Arquiteto",
+    "ru": "Двенадцатый Архитектор",
+    "zh-CN": "第十二席建筑师"
+  },
+  "Twisted Bud": {
+    "de": "Verdrehte Knospe",
+    "es": "Cogollo Retorcido",
+    "fr": "Mandrago",
+    "ja": "ねじれた芽",
+    "pt-BR": "Broto Retorcido",
+    "ru": "Искривлённый бутон",
+    "zh-CN": "畸芽"
+  },
+  "Twisted Child": {
+    "es": "Niña retorcida",
+    "fr": "Enfant tourmenté"
+  },
+  "Underworks": {
+    "de": "Unterwerk",
+    "es": "Talleres Inferiores",
+    "fr": "Fonderie",
+    "ja": "聖域の礎",
+    "pt-BR": "Claustroforjas",
+    "ru": "Нижние цеха",
+    "zh-CN": "圣堡工厂"
+  },
+  "Vaultkeeper’s Melody": {
+    "de": "Melodie der Glaubenshüter",
+    "es": "Melodía de los Guardianes de las Bóvedas",
+    "fr": "Mélodie Archivistes",
+    "ja": "管理者のメロディ",
+    "pt-BR": "Melodia do Sentinela das Câmaras",
+    "ru": "Мелодия Смотрителей Катакомб",
+    "zh-CN": "管理员的旋律"
+  },
+  "Verdania": {
+    "de": "Verdania",
+    "es": "Verdania",
+    "fr": "Tréfloria",
+    "ja": "ヴェルダニア",
+    "pt-BR": "Verdânia",
+    "ru": "Вердания",
+    "zh-CN": "翠庭"
+  },
+  "Vog": {
+    "de": "Vog",
+    "es": "Vog",
+    "fr": "Vog",
+    "ja": "ヴォグ",
+    "pt-BR": "Vog",
+    "ru": "Вог",
+    "zh-CN": "沃葛"
+  },
+  "Volatile Flintbeetles": {
+    "de": "Volatile Feuersteinkäfer",
+    "es": "Pedernajos volátiles",
+    "fr": "Scaralex explosif",
+    "ja": "ヒウチムシ",
+    "pt-BR": "Escaralígneos Voláteis",
+    "ru": "Взрывоопасные кремнежуки",
+    "zh-CN": "爆燃燧甲虫"
+  },
+  "Volt Filament": {
+    "de": "Voltfaser",
+    "es": "Filamento voltaico",
+    "fr": "Voltine",
+    "ja": "電撃の繊維",
+    "pt-BR": "Filamento Voltaico",
+    "ru": "Вольт-жила",
+    "zh-CN": "伏特丝"
+  },
+  "Voltnest": {
+    "de": "Voltnest",
+    "es": "Nido Volt",
+    "fr": "Foudre-Nid",
+    "ja": "電撃の巣",
+    "pt-BR": "Voltninho",
+    "ru": "Вольт-нора",
+    "zh-CN": "电荷巢穴"
+  },
+  "Voltvessels": {
+    "de": "Voltbehälter",
+    "es": "Recipientes voltaicos",
+    "fr": "Orbéclair",
+    "ja": "電撃の器",
+    "pt-BR": "Orbevolts",
+    "ru": "Вольт-шары",
+    "zh-CN": "电枢球"
+  },
+  "Voltvyrm": {
+    "de": "Voltvyrm",
+    "es": "Voltvyrm",
+    "fr": "Foudrelon",
+    "ja": "パチパチニア",
+    "pt-BR": "Voltvyrm",
+    "ru": "Червевольт",
+    "zh-CN": "伏特维姆"
+  },
+  "Wanderer": {
+    "de": "Wanderer",
+    "es": "Errante",
+    "fr": "Vagabond",
+    "ja": "放浪者",
+    "pt-BR": "Viajante",
+    "ru": "Странница",
+    "zh-CN": "漫游者"
+  },
+  "Warding Bell": {
+    "de": "Abwehrglocke",
+    "es": "Campana protectora",
+    "fr": "Cloche de protection",
+    "ja": "護りの鐘",
+    "pt-BR": "Sino Protetor",
+    "ru": "Охранный колокольчик",
+    "zh-CN": "护佑钟"
+  },
+  "Weavelight": {
+    "de": "Weblicht",
+    "es": "Tejeluz",
+    "fr": "Tisséclat",
+    "ja": "紡ぎの光",
+    "pt-BR": "Teceleve",
+    "ru": "Ткачесвет",
+    "zh-CN": "织光仪"
+  },
+  "Weavenest Absolom": {
+    "de": "Webnest Absolom",
+    "es": "Nido de Tejedora Absolom",
+    "fr": "Tisse-nid D'Absolom",
+    "ja": "紡ぎの巣アブソロム",
+    "pt-BR": "Ninho de Tecelã Absolom",
+    "ru": "Ткачедом Абсолом",
+    "zh-CN": "阿布索伦织巢"
+  },
+  "Weavenest Atla": {
+    "de": "Webnest Atla",
+    "es": "Nido de Tejedora Atla",
+    "fr": "Tisse-nid d’Atla",
+    "ja": "紡ぎの巣アトラ",
+    "pt-BR": "Ninho de Tecelã Atla",
+    "ru": "Ткачедом Атла",
+    "zh-CN": "阿特拉织巢"
+  },
+  "Weavenest Cindril": {
+    "de": "Webnest Cindril",
+    "es": "Nido de Tejedora Cindril",
+    "fr": "Tisse-nid De Cindril",
+    "ja": "紡ぎの巣シンドリル",
+    "pt-BR": "Ninho de Tecelã Cindril",
+    "ru": "Ткачедом Синдриль",
+    "zh-CN": "辛德里尔织巢"
+  },
+  "Weavenest Karn": {
+    "de": "Webnest Karn",
+    "es": "Nido de Tejedora Karn",
+    "fr": "Tisse-nid De Karn",
+    "ja": "紡ぎの巣カルン",
+    "pt-BR": "Ninho de Tecelã Karn",
+    "ru": "Ткачедом Карн",
+    "zh-CN": "卡恩织巢"
+  },
+  "Weavenest Murglin": {
+    "de": "Webnest Murglin",
+    "es": "Nido de Tejedora Murglin",
+    "fr": "Tisse-nid De Murglin",
+    "ja": "紡ぎの巣マーグリン",
+    "pt-BR": "Ninho de Tecelã Murglin",
+    "ru": "Ткачедом Мурглин",
+    "zh-CN": "默格林织巢"
+  },
+  "Weaver Queen": {
+    "es": "Reina Tejedora",
+    "fr": "Reine tisserande"
+  },
+  "Weighted Belt": {
+    "de": "Beschwerter Gürtel",
+    "es": "Cinturón lastrado",
+    "fr": "Anneau lourd",
+    "ja": "重いベルト",
+    "pt-BR": "Cinto Pesado",
+    "ru": "Увесистая обвязка",
+    "zh-CN": "负重环带"
+  },
+  "Whispering Vaults": {
+    "de": "Raunendes Archiv",
+    "es": "Bóvedas Susurrantes",
+    "fr": "Voûtes des Murmures",
+    "ja": "囁きの貯蔵庫",
+    "pt-BR": "Câmaras Sussurrantes",
+    "ru": "Шепчущие катакомбы",
+    "zh-CN": "低语书库"
+  },
+  "White Key": {
+    "de": "Weißer Schlüssel",
+    "es": "Llave blanca",
+    "fr": "Clé blanche",
+    "ja": "白い鍵",
+    "pt-BR": "Chave Branca",
+    "ru": "Белый ключ",
+    "zh-CN": "白愈钥匙"
+  },
+  "Whiteward": {
+    "de": "Weißstation",
+    "es": "Ala Blanca",
+    "fr": "Aile Blanche",
+    "ja": "白色の棟",
+    "pt-BR": "Ala Branca",
+    "ru": "Белые покои",
+    "zh-CN": "白愈厅"
+  },
+  "Widow": {
+    "de": "Witwe",
+    "es": "Viuda",
+    "fr": "Veuve",
+    "ja": "ウィドウ",
+    "pt-BR": "Viúva",
+    "ru": "Вдова",
+    "zh-CN": "黑寡妇"
+  },
+  "Wisp Thicket": {
+    "de": "Irrwisch-Dickicht",
+    "es": "Espesura Fatua",
+    "fr": "Bosquet de Feu Follet",
+    "ja": "ウィスプの茂み",
+    "pt-BR": "Bosque dos Lumes",
+    "ru": "Трутовая чаща",
+    "zh-CN": "火灵竹丛"
+  },
+  "Wispfire Lantern": {
+    "de": "Irrwisch-Laterne",
+    "es": "Farol de fuego fatuo",
+    "fr": "Lanterne de flambrume",
+    "ja": "ウィスプの火のランタン",
+    "pt-BR": "Lanterna de Lumefogo",
+    "ru": "Трутовый фонарь",
+    "zh-CN": "灵火提灯"
+  },
+  "Witch": {
+    "de": "Hexe",
+    "es": "Bruja",
+    "fr": "Sorcière",
+    "ja": "魔導者",
+    "pt-BR": "Bruxa",
+    "ru": "Ведьма",
+    "zh-CN": "女巫"
+  },
+  "Witch Crest": {
+    "de": "Hexe",
+    "es": "Bruja",
+    "fr": "Sorcière",
+    "ja": "魔導者",
+    "pt-BR": "Bruxa",
+    "ru": "Ведьма",
+    "zh-CN": "女巫"
+  },
+  "Wormways": {
+    "de": "Wurmwege",
+    "es": "Gusaneras",
+    "fr": "Vermiterres",
+    "ja": "地虫の穴",
+    "pt-BR": "Covil dos Vermes",
+    "ru": "Червоточины",
+    "zh-CN": "沙噬虫道"
+  },
+  "Wreath of Purity": {
+    "de": "Kranz der Reinheit",
+    "es": "Corona de pureza",
+    "fr": "Couronne de pureté",
+    "ja": "浄化のリース",
+    "pt-BR": "Guirlanda de Pureza",
+    "ru": "Венец чистоты",
+    "zh-CN": "纯净花环"
+  },
+  "Yarnaby": {
+    "de": "Yarnaby",
+    "es": "Yarnaby",
+    "fr": "Yarnaby",
+    "ja": "ヤーナビィ",
+    "pt-BR": "Yarnaby",
+    "ru": "Ярнаби",
+    "zh-CN": "雅纳碧"
+  },
+  "Memory Locket": {
+    "es": "Relicario de memorias",
+    "fr": "Médaillon de Souvenir"
+  },
+  "Architect Crest": {
+    "es": "Arquitecta",
+    "fr": "Architecte"
+  },
+  "Mister Mushroom": {
+    "es": "Señor Seta",
+    "fr": "Monsieur Champignon"
+  },
+  "Pharloom’s Welcome": {
+    "es": "Bienvenida a Telalejana",
+    "fr": "Bienvenue à Pharloom"
+  },
+  "Servant": {
+    "es": "Sirviente",
+    "fr": "Serviteur"
+  }
+}

@@ -6,6 +6,8 @@ import { db } from '#lib/server/db';
 import { serverTiming } from '#lib/server/server-timing';
 import { censor } from '#lib/profanity';
 import { guideLinks } from '#lib/server/guide-links';
+import { guideEdition } from '#lib/server/guide-editions';
+import { guideTermNames } from '#lib/server/guide-terms';
 import { renderGuide, renderMarkdown } from '#lib/server/markdown';
 import { publicUser, visibleGames } from '#lib/server/queries';
 import { ensureGameTexts, localizeAchievements } from '#lib/server/achievement-texts';
@@ -23,7 +25,7 @@ import {
 } from '#lib/server/guides';
 import { canTranslate, translateContent, translationQuota } from '#lib/server/translate';
 import { commentActions, loadComments } from '#lib/server/comments';
-import { getLocale } from '#lib/paraglide/runtime';
+import { getLocale, isLocale } from '#lib/paraglide/runtime';
 import type { Actions, PageServerLoad } from './$types';
 import { m } from '#lib/paraglide/messages';
 
@@ -72,11 +74,13 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
     item: {
       locale: string | null;
       authorId: string;
+      curatedKey: string | null;
       translations: { contentMd: string }[];
     },
-    render = renderMarkdown,
+    render: (text: string, locale: string) => string = renderMarkdown,
   ) => {
     const foreign =
+      item.curatedKey === null &&
       canTranslate() &&
       Boolean(item.locale) &&
       item.locale !== locale &&
@@ -85,7 +89,7 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
     // La traduction déjà faite est servie à tous ; seul un membre en demande une d'office : les
     // robots qui exécutent le JS épuisaient le quota de traduction.
     const autoTranslate = foreign && Boolean(viewerId);
-    return { autoTranslate, translatedHtml: cached ? render(clean(cached, locale)) : null };
+    return { autoTranslate, translatedHtml: cached ? render(clean(cached, locale), locale) : null };
   };
 
   const [guides, comments, unlockers] = await Promise.all([
@@ -110,14 +114,30 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
   const secret = achievement.hidden && !unlock;
   const masked = secret && !revealed;
   // Un guide officiel mène aux autres succès qu'il nomme, pas à la page déjà ouverte.
-  const link =
-    !masked && guides.some((guide) => guide.curatedKey !== null)
-      ? await guideLinks(achievement.game, locale, achievement.id)
-      : null;
-  const renderWith = (guide: { curatedKey: string | null; contentMd: string }) => (text: string) =>
-    link && guide.curatedKey !== null
-      ? link(renderGuide(text), guide.contentMd)
-      : renderGuide(text);
+  const editions = (masked ? [] : guides).map((source) => ({
+    source,
+    guide: guideEdition(source, locale),
+  }));
+  const officialLocales = new Set(
+    editions.flatMap(({ guide }) =>
+      guide.curatedKey !== null ? [isLocale(guide.locale) ? guide.locale : locale] : [],
+    ),
+  );
+  const links = new Map(
+    await Promise.all(
+      [...officialLocales].map(
+        async (language) =>
+          [language, await guideLinks(achievement.game, language, achievement.id)] as const,
+      ),
+    ),
+  );
+  const renderWith =
+    (guide: { curatedKey: string | null; contentMd: string }) =>
+    (text: string, textLocale: string | null) => {
+      const html = renderGuide(text, guideTermNames(guide.curatedKey, textLocale));
+      const link = links.get(isLocale(textLocale) ? textLocale : locale);
+      return link && guide.curatedKey !== null ? link(html, guide.contentMd) : html;
+    };
 
   setHeaders(headers());
   return {
@@ -139,9 +159,10 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
     canWriteGuide: canWriteGuide(locals.user),
     // Un guide dévoile le succès : il reste caché tant que le succès l'est.
     masked,
-    guides: (masked ? [] : guides).map((guide) => ({
+    guides: editions.map(({ guide, source }) => ({
       id: guide.id,
-      html: renderWith(guide)(clean(guide.contentMd, guide.locale)),
+      html: renderWith(guide)(clean(guide.contentMd, guide.locale), guide.locale),
+      locale: guide.locale,
       ...translation(guide, renderWith(guide)),
       official: guide.curatedKey !== null,
       checked: guide.checks?.map((check) => check.item) ?? [],
@@ -153,7 +174,7 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
       mine: guide.authorId === viewerId,
       myVote: guide.votes?.[0]?.value ?? 0,
       // Le texte brut d'un guide officiel, pour qu'un modérateur le reprenne sur place.
-      source: guide.curatedKey !== null && canEditOfficial(locals.user) ? guide.contentMd : null,
+      source: guide.curatedKey !== null && canEditOfficial(locals.user) ? source.contentMd : null,
     })),
     comments,
   };
@@ -278,17 +299,7 @@ export const actions: Actions = {
       targetType === 'GUIDE'
         ? await db.guide.findFirst({
             where,
-            select: {
-              contentMd: true,
-              curatedKey: true,
-              achievement: {
-                select: {
-                  game: {
-                    select: { id: true, platform: true, platformGameId: true, familyKey: true },
-                  },
-                },
-              },
-            },
+            select: { contentMd: true, curatedKey: true },
           })
         : null;
     const source =
@@ -297,6 +308,7 @@ export const actions: Actions = {
         ? await db.comment.findFirst({ where, select: { contentMd: true } })
         : null);
     if (!source) return fail(404, { error: m.gone() });
+    if (guide && guide.curatedKey !== null) return fail(400, { error: m.translate_failed() });
 
     const target = targetType === 'GUIDE' ? { guideId: targetId } : { commentId: targetId };
     try {
@@ -309,10 +321,7 @@ export const actions: Actions = {
       if (translated === null) return fail(429, { error: m.translate_failed() });
       const text = forViewer(locals.user)(translated, getLocale());
       if (!guide) return { html: renderMarkdown(text) };
-      const html = renderGuide(text);
-      if (guide.curatedKey === null || !guide.achievement) return { html };
-      const link = await guideLinks(guide.achievement.game, getLocale(), params.id);
-      return { html: link(html, guide.contentMd) };
+      return { html: renderGuide(text) };
     } catch (cause) {
       log.error('Traduction :', cause);
       return fail(503, { error: m.translate_failed() });

@@ -50,6 +50,16 @@ npm run test:e2e
 démonstration. La base de développement ne contient que de vraies données, et le serveur peut rester
 allumé pendant les tests.
 
+## Éditions des guides officiels
+
+Pour ajouter une édition, place son fichier Markdown sous `src/lib/guides/locales/<langue>/`
+en reprenant le chemin du fichier français, son identifiant de jeu et, pour les guides de
+succès, les identifiants `@@`. Garde les mêmes cases dans le même ordre pour conserver le suivi.
+Le site affiche l'édition de la langue choisie si elle existe, ou le guide original.
+
+Pour reprendre un libellé vérifié dans le jeu, utilise `{{terme:Nom anglais}}` avec une entrée
+du glossaire du jeu dans `src/lib/server/guide-terms/`. Vérifie les noms de succès sur la plateforme.
+
 ## Comptes de jeu
 
 Un fournisseur sans configuration est simplement masqué ou indiqué comme non activé.

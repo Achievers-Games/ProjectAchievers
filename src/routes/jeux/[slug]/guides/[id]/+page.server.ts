@@ -5,6 +5,9 @@ import { commentLimit } from '#lib/comments';
 import { db } from '#lib/server/db';
 import { censor } from '#lib/profanity';
 import { guideLinks } from '#lib/server/guide-links';
+import { guideEdition } from '#lib/server/guide-editions';
+import { guideTermNames } from '#lib/server/guide-terms';
+import { resolveGuideTerms } from '#lib/guide-term-markup';
 import { renderGuide } from '#lib/server/markdown';
 import { publicUser } from '#lib/server/queries';
 import {
@@ -24,7 +27,7 @@ import { anchorHeadings } from '#lib/guide-outline';
 import { excerpt } from '#lib/seo';
 import { commentActions, loadComments } from '#lib/server/comments';
 import { logger } from '#lib/logger';
-import { getLocale } from '#lib/paraglide/runtime';
+import { getLocale, isLocale } from '#lib/paraglide/runtime';
 import type { Actions, PageServerLoad } from './$types';
 import { m } from '#lib/paraglide/messages';
 
@@ -40,11 +43,12 @@ const forViewer = (user: App.Locals['user']) => (text: string, locale: string | 
  */
 async function renderer(
   game: Awaited<ReturnType<typeof guideGame>>,
-  guide: { curatedKey: string | null; contentMd: string },
+  guide: { curatedKey: string | null; contentMd: string; locale?: string | null },
 ) {
-  const link = guide.curatedKey === null ? null : await guideLinks(game, getLocale());
-  return (text: string) => {
-    const html = renderGuide(text);
+  const locale = isLocale(guide.locale) ? guide.locale : getLocale();
+  const link = guide.curatedKey === null ? null : await guideLinks(game, locale);
+  return (text: string, locale: string | null) => {
+    const html = renderGuide(text, guideTermNames(guide.curatedKey, locale));
     return anchorHeadings(link ? link(html, guide.contentMd) : html);
   };
 }
@@ -73,9 +77,11 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
     },
   });
   if (!guide) error(404, m.gone());
+  const edition = guideEdition(guide, locale);
 
   // Traduit d'office ce qui vient d'une autre langue, sauf pour son auteur.
   const foreign =
+    guide.curatedKey === null &&
     canTranslate() &&
     Boolean(guide.locale) &&
     guide.locale !== locale &&
@@ -86,9 +92,10 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
   const autoTranslate = foreign && Boolean(viewerId);
 
   const [render, comments] = await Promise.all([
-    renderer(game, guide),
+    renderer(game, edition),
     loadComments({ guideId: guide.id }, locals.user, commentLimit(url)),
   ]);
+  const text = clean(edition.contentMd, edition.locale);
 
   return {
     game: { name: game.name, slug: game.slug },
@@ -98,11 +105,12 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
     comments,
     guide: {
       id: guide.id,
-      title: clean(guide.title ?? '', guide.locale),
-      html: render(clean(guide.contentMd, guide.locale)),
-      excerpt: excerpt(clean(guide.contentMd, guide.locale)),
+      title: clean(edition.title ?? '', edition.locale),
+      html: render(text, edition.locale),
+      excerpt: excerpt(resolveGuideTerms(text, guideTermNames(guide.curatedKey, edition.locale))),
+      locale: edition.locale,
       autoTranslate,
-      translatedHtml: cached ? render(clean(cached, locale)) : null,
+      translatedHtml: cached ? render(clean(cached, locale), locale) : null,
       official: guide.curatedKey !== null,
       buried: isBuried(guide),
       score: guide.score,
@@ -180,6 +188,7 @@ export const actions: Actions = {
       select: { contentMd: true, curatedKey: true },
     });
     if (!source) return fail(404, { error: m.gone() });
+    if (source.curatedKey !== null) return fail(400, { error: m.translate_failed() });
     try {
       const translated = await translateContent(
         { guideId: params.id },
@@ -189,7 +198,7 @@ export const actions: Actions = {
       );
       if (translated === null) return fail(429, { error: m.translate_failed() });
       const render = await renderer(game, source);
-      return { html: render(forViewer(locals.user)(translated, getLocale())) };
+      return { html: render(forViewer(locals.user)(translated, getLocale()), getLocale()) };
     } catch (cause) {
       log.error('Traduction :', cause);
       return fail(503, { error: m.translate_failed() });
