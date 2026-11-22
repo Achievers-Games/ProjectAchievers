@@ -24,6 +24,7 @@
   data-unlocked={unlocked || undefined}
   data-level={level || undefined}
   data-tier={tier || undefined}
+  data-achievers={unlocked && !tier ? '' : undefined}
   style:--size="{size}rem"
   aria-hidden="true"
 >
@@ -61,6 +62,11 @@
     background: var(--tier-badge);
     color: var(--tier-badge-ink);
     box-shadow: 0 4px 14px rgb(var(--tier-glow) / 0.45);
+  }
+  .site-badge[data-unlocked][data-achievers] {
+    background: var(--tier-badge);
+    color: var(--tier-badge-ink);
+    box-shadow: 0 4px 14px rgb(var(--tier-glow) / 0.35);
   }
   .site-badge[data-unlocked][data-tier='5'] {
     background-size: 300% 300%;

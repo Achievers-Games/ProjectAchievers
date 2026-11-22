@@ -102,6 +102,17 @@
  * Une seule palette de niveaux, posée sur `data-tier` : cartes, tuiles du fil, badges,
  * chiffres et barres de progression y puisent leurs couleurs au lieu de les recopier.
  */
+/* Les succès uniques portent l'identité Achievers, sans leur attribuer un palier Bronze. */
+[data-achievers] {
+  --tier-frame: linear-gradient(135deg, #2878f0, #22c7da 55%, #62e8c1);
+  --tier-body: linear-gradient(160deg, #102e45, #081d25);
+  --tier-title: #b7fff0;
+  --tier-text: #c1e4ee;
+  --tier-glow: 34 199 218;
+  --tier-border: 2px;
+  --tier-badge: linear-gradient(135deg, #2878f0, #22c7da 55%, #62e8c1);
+  --tier-badge-ink: #06222d;
+}
 [data-tier='1'] {
   --tier-ink: #cd8b4e;
   --tier-frame: linear-gradient(135deg, #e8b184, #8a5a2b 40%, #d39a64 70%, #7a4c22);
@@ -668,8 +679,8 @@
   }
 }
 
-/* Un succès du site à paliers prend la couleur du dernier palier obtenu, comme une carte de jeu. */
-.site-card[data-tier] {
+/* Le métal du palier obtenu, ou le bleu–turquoise Achievers pour un succès unique. */
+.site-card:is([data-tier], [data-achievers]) {
   border: var(--tier-border) solid transparent;
   background:
     var(--tier-body) padding-box,
@@ -678,17 +689,17 @@
     0 0 0 1px rgb(var(--tier-glow) / 0.3),
     0 0 18px rgb(var(--tier-glow) / 0.3);
 }
-.site-card[data-tier] .site-card-title {
+.site-card:is([data-tier], [data-achievers]) .site-card-title {
   color: var(--tier-title);
   font-weight: 700;
 }
-.site-card[data-tier] .text-muted {
+.site-card:is([data-tier], [data-achievers]) .text-muted {
   color: var(--tier-text);
 }
-.site-card[data-tier] .border-line {
+.site-card:is([data-tier], [data-achievers]) .border-line {
   border-color: rgb(var(--tier-glow) / 0.35);
 }
-.site-card[data-tier] a:hover {
+.site-card:is([data-tier], [data-achievers]) a:hover {
   color: var(--tier-title);
 }
 .site-card[data-tier='5'] {

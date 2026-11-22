@@ -549,10 +549,10 @@ export function groupSeries<T extends string>(codes: readonly T[]) {
 export const stepTier = (index: number, steps: number) =>
   steps <= 1 ? 0 : steps <= 6 ? index + 1 : 1 + Math.round((index * 5) / (steps - 1));
 
-/** Le niveau de chaque succès, calculé une fois : Bronze pour les succès à un seul palier. */
+/** Le niveau de chaque succès : 0 pour un succès unique, les métaux pour les séries à paliers. */
 const TIER_OF = new Map(
   groupSeries(SITE_CODES).flatMap((steps) =>
-    steps.map((code, index) => [code, stepTier(index, steps.length) || 1] as const),
+    steps.map((code, index) => [code, stepTier(index, steps.length)] as const),
   ),
 );
 export const tierOf = (code: string) => TIER_OF.get(code as SiteCode) ?? 0;

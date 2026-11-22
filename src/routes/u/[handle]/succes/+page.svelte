@@ -232,6 +232,7 @@
               class="card site-card p-3"
               class:opacity-70={!item.unlockedAt}
               data-tier={item.tier || undefined}
+              data-achievers={item.unlockedAt && !item.tier ? '' : undefined}
               data-codes={item.anchors.join(' ') || undefined}
             >
               {#if item.proof || item.suggest}

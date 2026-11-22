@@ -93,6 +93,7 @@
           class="card site-card flex gap-3 p-3"
           class:opacity-70={!item.unlockedAt}
           data-tier={item.tier || undefined}
+          data-achievers={item.unlockedAt && !item.tier ? '' : undefined}
         >
           <SiteBadge
             icon={achievements.icons[item.icon] ?? ''}

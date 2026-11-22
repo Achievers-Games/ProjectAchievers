@@ -9,6 +9,7 @@ import {
   challengeText,
   genreOf,
   seriesOf,
+  tierOf,
 } from '#lib/site-achievements';
 import {
   earnedCodes,
@@ -80,6 +81,13 @@ const unlock = (gameId: string, at: number, extra: Partial<UnlockFact> = {}): Un
 const earned = (extra: Partial<SiteFacts>) => earnedCodes(facts(extra));
 
 describe('succès du site', () => {
+  it('réserve les métaux aux séries et distingue les succès uniques', () => {
+    expect(tierOf('makeover')).toBe(0);
+    expect(tierOf('first_account')).toBe(0);
+    expect(tierOf('cards_1')).toBe(1);
+    expect(tierOf('cards_10')).toBe(2);
+    expect(tierOf('g_zombies_3')).toBe(2);
+  });
   it('compte 667 succès permanents, dont 30 secrets, tous traduits', () => {
     expect(SITE_CODES.filter((code) => !EVENT_CODES.has(code))).toHaveLength(667);
     expect(new Set(SITE_CODES).size).toBe(SITE_CODES.length);
