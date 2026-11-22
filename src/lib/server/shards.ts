@@ -236,6 +236,24 @@ export async function creditCompletion(tx: Tx, userId: string, gameId: string, s
 }
 
 /**
+ * Le jeu vient de se séparer en jeu de base et DLC : une partie déjà finie paie son bonus, sans
+ * attendre un prochain succès. Rejouable : rien ne paie deux fois.
+ */
+export async function creditSplitGame(gameId: string) {
+  const owners = await db.userGame.findMany({
+    where: { gameId, unlockedCount: { gt: 0 } },
+    select: { userId: true, user: { select: { shardsFrom: true } } },
+  });
+  for (const { userId, user } of owners) {
+    const from = shardsStart(user.shardsFrom);
+    if (!from || (await playtimeHidden(db, userId))) continue;
+    await db
+      .$transaction((tx) => creditCompletion(tx, userId, gameId, from))
+      .catch((cause: unknown) => log.error('Bonus par DLC', { userId, gameId, cause }));
+  }
+}
+
+/**
  * Ce que l'historique d'avant `User.shardsFrom` vaudrait au barème : chaque succès selon sa
  * rareté, plafonné par jeu, plus le bonus des jeux finis à cette date.
  */

@@ -2,13 +2,15 @@ import { baseLocale, type Locale } from '#lib/paraglide/runtime';
 import { applyAccountLook, identityLook } from '../accounts';
 import { db } from '../db';
 import { env } from '../env';
-import { catchUpShards } from '../shards';
+import { KNOWN_DLC, withKnownDlc, type AchievementGroups } from '../dlc-achievements';
+import { catchUpShards, creditSplitGame } from '../shards';
 import { countSteamCall } from '../steam-quota';
 import { logger } from '#lib/logger';
 import { fetchPlayingGames, fetchSteamIdentity } from '../providers/steam';
 
 const log = logger('Steam');
 import { fetchRetry, sleep, SyncError, syncGames } from './errors';
+import { achievementPart } from '#lib/shards';
 import { saveAchievements, saveProgress, upsertGame, type AchievementInput } from './store';
 import { matchTopAchievements } from './steam-match';
 import type { ProviderSync } from './types';
@@ -417,8 +419,9 @@ async function fetchSchema(appId: number): Promise<AchievementInput[] | null> {
       rarity.set(a.name, Number(a.percent));
     }
   }
+  const groups = withKnownDlc(String(appId), community?.groups);
   return mapSchema(withHiddenDescriptions(achievements, community?.descriptions), rarity).map(
-    (row) => ({ ...row, ...community?.groups.get(row.platformAchievementId) }),
+    (row) => ({ ...row, ...groupOf(String(appId), groups, row.platformAchievementId) }),
   );
 }
 
@@ -471,7 +474,7 @@ export async function fetchSteamTexts(appId: string, locale: Locale) {
 /** Lit le schéma JSON intégré à la page publique des succès. */
 export function parseSteamPage(html: string, appId: string) {
   const descriptions = new Map<string, string>();
-  const memberships = new Map<string, { groupId: string; groupName: string }>();
+  const memberships: AchievementGroups = new Map();
   const result = { descriptions, groups: memberships };
   const payload = /<script\b[^>]*\bid="valve-ssr-data"[^>]*>([\s\S]*?)<\/script>/i.exec(html)?.[1];
   if (!payload) return result;
@@ -545,6 +548,88 @@ function withHiddenDescriptions(
       ? { ...entry, description }
       : entry;
   });
+}
+
+/** Le groupe d'un succès. Un DLC connu suffit à dire que le reste vient du jeu de base. */
+const groupOf = (appId: string, groups: AchievementGroups | undefined, achievement: string) =>
+  groups?.get(achievement) ??
+  (KNOWN_DLC[appId] ? { groupId: 'default', groupName: '' } : undefined);
+
+const GROUPS_PAUSE = 400;
+/** Autant d'échecs de suite : Steam ne répond plus, la suite attend l'heure prochaine. */
+const GROUPS_FAILURES = 3;
+
+/** Range les succès d'un jeu Steam par groupe. Faux si Steam n'a pas répondu. */
+async function readSteamGroups(game: { id: string; platformGameId: string }) {
+  const appId = game.platformGameId;
+  const community = await steamCommunitySchema(appId, 'french');
+  if (!community && !KNOWN_DLC[appId]) return false;
+  const groups = withKnownDlc(appId, community?.groups);
+  const rows = await db.achievement.findMany({
+    where: { gameId: game.id },
+    select: { platformAchievementId: true, groupId: true },
+  });
+  const moved = rows.flatMap((row) => {
+    const group = groupOf(appId, groups, row.platformAchievementId);
+    return group && group.groupId !== row.groupId ? [{ ...row, group }] : [];
+  });
+  for (const [groupId, members] of Map.groupBy(moved, (row) => row.group.groupId)) {
+    await db.achievement.updateMany({
+      where: {
+        gameId: game.id,
+        platformAchievementId: { in: members.map((row) => row.platformAchievementId) },
+      },
+      data: { groupId, groupName: members[0]!.group.groupName },
+    });
+  }
+  await db.game.update({
+    where: { id: game.id },
+    data: { achievementGroupsSyncedAt: new Date() },
+  });
+  // Le jeu vient de se séparer de ses DLC : ceux qui ont fini le jeu de base touchent leur bonus.
+  if (moved.some((row) => achievementPart(row.groupId) !== achievementPart(row.group.groupId))) {
+    await creditSplitGame(game.id);
+  }
+  return true;
+}
+
+/**
+ * Range par groupe les jeux Steam qui ne l'ont jamais été, sans attendre la relecture
+ * hebdomadaire de leur liste. Au hasard : un jeu que Steam refuse ne bloque pas les autres.
+ * Renvoie le nombre de jeux essayés.
+ */
+export async function syncSteamGroups(limit = 40, pause = GROUPS_PAUSE) {
+  if (!env().STEAM_API_KEY) return 0;
+  const games = await db.$queryRaw<{ id: string; platformGameId: string }[]>`
+    SELECT g.id, g."platformGameId" FROM "Game" g
+    WHERE g.platform = 'STEAM' AND g."achievementGroupsSyncedAt" IS NULL
+      AND g."totalAchievements" > 0
+      AND EXISTS (SELECT 1 FROM "UserGame" ug WHERE ug."gameId" = g.id)
+    ORDER BY random() LIMIT ${limit}`;
+  let failures = 0;
+  for (const [index, game] of games.entries()) {
+    const read = await readSteamGroups(game).catch((cause: unknown) => {
+      log.error(`Groupes de succès ${game.platformGameId} :`, cause);
+      return false;
+    });
+    failures = read ? 0 : failures + 1;
+    if (failures >= GROUPS_FAILURES) return index;
+    await sleep(pause);
+  }
+  return games.length;
+}
+
+const groupsReading = new Set<string>();
+
+/** Une fiche ouverte avant le passage de la tâche de fond : ses groupes sont lus tout de suite. */
+export async function steamGroupsNow(game: { id: string; platformGameId: string }) {
+  if (!env().STEAM_API_KEY || groupsReading.has(game.id)) return;
+  groupsReading.add(game.id);
+  try {
+    await readSteamGroups(game);
+  } finally {
+    groupsReading.delete(game.id);
+  }
 }
 
 const HIDDEN_BATCH = 60;

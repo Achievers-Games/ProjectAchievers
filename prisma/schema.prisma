@@ -223,6 +223,7 @@ model User {
   frames          UserFrame[]
   siteUnlocks     SiteUnlock[]
   pinned          PinnedGame[]
+  dismissed       DismissedSuggestion[]
 
   friendRequests Friendship[]         @relation("FriendRequester")
   friendReceived Friendship[]         @relation("FriendAddressee")
@@ -438,6 +439,18 @@ model PinnedGame {
   position Int
 
   @@id([userId, gameId])
+}
+
+/// Un jeu que le joueur ne veut plus voir dans ses suggestions ; il reste dans sa bibliothèque.
+model DismissedSuggestion {
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gameId    String
+  game      Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([userId, gameId])
+  @@index([gameId])
 }
 
 /// Un succès du site obtenu ; le catalogue est dans `$lib/site-achievements`.
@@ -683,6 +696,7 @@ model Game {
   /// temps de jeu Steam faible n'y prouve rien.
   crossProgress     Boolean                @default(false)
   players           UserGame[]
+  dismissedBy       DismissedSuggestion[]
   guides            Guide[]
 
   @@unique([platform, platformGameId])

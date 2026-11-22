@@ -92,6 +92,8 @@ const PRIVATE_WRITES = [
   '/api/notifications',
   // Un succès fêté ne change ni l'accueil ni le classement : inutile d'en vider le cache.
   '/api/sync/fetes',
+  // Un jeu écarté ne change que les suggestions de son joueur.
+  '/api/suggestions',
   '/oauth/token',
   '/oauth/revoke',
   '/contact',

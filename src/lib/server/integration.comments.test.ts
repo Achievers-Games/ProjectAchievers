@@ -3,7 +3,7 @@ import 'dotenv/config';
 import type { RequestEvent } from '@sveltejs/kit';
 import { describe, expect, it } from 'vitest';
 import { actions as profileActions } from '../../routes/u/[handle]/+page.server';
-import { friendUnlocks, unlockThreadFor } from './activity';
+import { friendUnlocks, loadUnlockDiscussion, unlockThreadFor } from './activity';
 import { resolveIdentity } from './accounts';
 import { commentActions, loadComments, type CommentTarget } from './comments';
 import { db } from './db';
@@ -107,6 +107,25 @@ describe('discussion sous un déblocage', () => {
     expect(await friendUnlocks(friend)).toMatchObject([
       { achievementId: achievement.id, count: 1 },
     ]);
+
+    // La discussion dit ce que le succès demandait, sauf s'il est caché et inconnu du lecteur.
+    const discussion = async (viewer: typeof friend) =>
+      loadUnlockDiscussion(
+        { ...viewer, sessionId: 'test' },
+        (await unlockThreadFor(viewer, owner.handle, achievement.id))!,
+        new URL('http://localhost/'),
+      );
+    await db.achievement.update({
+      where: { id: achievement.id },
+      data: { description: 'Finir le prologue' },
+    });
+    expect(await discussion(friend)).toMatchObject({
+      name: 'Un',
+      description: 'Finir le prologue',
+    });
+    await db.achievement.update({ where: { id: achievement.id }, data: { hidden: true } });
+    expect(await discussion(friend)).toMatchObject({ name: null, description: '' });
+    expect(await discussion(owner)).toMatchObject({ description: 'Finir le prologue' });
 
     await db.userGame.update({ where: { userId_gameId: libraryKey }, data: { hidden: true } });
     expect(await unlockThreadFor(friend, owner.handle, achievement.id)).toBeNull();

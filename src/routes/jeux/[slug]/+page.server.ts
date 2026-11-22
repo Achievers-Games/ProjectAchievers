@@ -19,6 +19,7 @@ import { rateLimit } from '#lib/server/rate-limit';
 import { COMPLETION_TIME_DISPLAY_SAMPLE, completionTimes } from '#lib/server/completion-time';
 import { achievementPart } from '#lib/shards';
 import { artNow } from '#lib/server/sync/content';
+import { steamGroupsNow } from '#lib/server/sync/steam';
 import { unlockCommentCounts } from '#lib/server/activity';
 import type { Actions, PageServerLoad } from './$types';
 import { m } from '#lib/paraglide/messages';
@@ -57,6 +58,9 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
   // Une fiche ouverte avant que la tâche de fond n'ait lu sa capture la demande en passant : la
   // page s'affiche sans l'attendre, la prochaine visite l'aura.
   if (!game.artCheckedAt) void artNow([game.id]).catch(() => 0);
+  if (game.platform === 'STEAM' && !game.achievementGroupsSyncedAt && game.totalAchievements) {
+    void steamGroupsNow(game).catch(() => undefined);
+  }
   // `?joueur=` : la fiche du jeu telle que ce joueur l'a vécue. Elle passe avant `?avec=`.
   const ofHandle = url.searchParams.get('joueur')?.trim() || null;
   const withHandle = ofHandle ? null : url.searchParams.get('avec')?.trim() || null;
@@ -316,10 +320,15 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
     return bucket === (filter === 'commun' ? 'common' : filter === 'moi' ? 'mine' : 'theirs');
   });
   const collator = new Intl.Collator(locale);
+  // Le jeu de base d'abord, puis chaque DLC : le tri demandé vaut à l'intérieur de chaque partie.
+  const partOrder = new Map(parts.map((part, index) => [part.id, index]));
+  const orderOf = (row: (typeof rows)[number]) => partOrder.get(achievementPart(row.groupId)) ?? 0;
   visible.sort(
-    sort === 'nom'
-      ? (a, b) => collator.compare(a.name, b.name)
-      : (a, b) => (a.globalRarity ?? 101) - (b.globalRarity ?? 101),
+    (a, b) =>
+      orderOf(a) - orderOf(b) ||
+      (sort === 'nom'
+        ? collator.compare(a.name, b.name)
+        : (a.globalRarity ?? 101) - (b.globalRarity ?? 101)),
   );
   const pageSize = 60;
   const requested = Number(url.searchParams.get('affiches'));
@@ -358,7 +367,11 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
       steps: countChecklist(guide.contentMd),
       checked: guide._count.checks,
     })),
-    achievements: displayed.map((row) => ({ ...row, comments: commentCounts.get(row.id) ?? 0 })),
+    achievements: displayed.map((row) => ({
+      ...row,
+      part: achievementPart(row.groupId),
+      comments: commentCounts.get(row.id) ?? 0,
+    })),
     achievementTotal: rows.length,
     secrets: rows.filter((row) => row.secret).length,
     hasMissables: rows.some((row) => row.missable),

@@ -14,6 +14,7 @@ import { db } from '#lib/server/db';
 import { friendUnlocks, loadUnlockDiscussion, unlockThreadFor } from '#lib/server/activity';
 import { commentActions } from '#lib/server/comments';
 import { homeGuides } from '#lib/server/guides';
+import { suggestions } from '#lib/server/recommendations';
 import { randomTagline } from '#lib/taglines';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -43,6 +44,7 @@ export const load: PageServerLoad = async ({ locals, depends, setHeaders, url })
       guides,
       unlocks,
       thread,
+      suggested,
     ] = await Promise.all([
       podiumTask,
       dashboard(locals.user.id, locals.user.showAdult),
@@ -57,6 +59,7 @@ export const load: PageServerLoad = async ({ locals, depends, setHeaders, url })
       Promise.resolve(selected(viewer, url)).then((row) =>
         row ? loadUnlockDiscussion(viewer, row, url) : null,
       ),
+      suggestions(viewer.id, viewer.showAdult),
     ]);
     const { games, tiers } = home.stats;
     const { text: tagline, barelyPlayed: aboutBarelyPlayed } = randomTagline({
@@ -77,6 +80,7 @@ export const load: PageServerLoad = async ({ locals, depends, setHeaders, url })
       friends,
       unlocks,
       thread,
+      suggested,
       guides,
       popular: null,
       tagline,
@@ -97,6 +101,7 @@ export const load: PageServerLoad = async ({ locals, depends, setHeaders, url })
     friends: [],
     unlocks: [],
     thread: null,
+    suggested: null,
     guides,
     cards,
     podium,

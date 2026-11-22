@@ -27,6 +27,9 @@
       {:else}
         <h1>{thread.name ?? m.achievement_hidden()}</h1>
       {/if}
+      {#if thread.description}
+        <p class="text-sm" data-testid="unlock-description">{thread.description}</p>
+      {/if}
       <p class="text-sm text-muted">
         <a class="font-medium hover:text-ink" href="/u/{thread.user.handle}"
           >{thread.user.displayName}</a

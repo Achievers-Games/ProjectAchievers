@@ -1,6 +1,8 @@
 import { Prisma, type ActivityEmoji } from '#prisma';
 import type { ActivityReactions } from '#lib/activity';
 import { commentLimit } from '#lib/comments';
+import { getLocale } from '#lib/paraglide/runtime';
+import { localizeAchievements } from './achievement-texts';
 import { loadComments } from './comments';
 import { db } from './db';
 import { publicGames, publicUser, visibleGames } from './queries/shared';
@@ -132,7 +134,7 @@ export async function unlockThreadFor(
       userId: true,
       unlockedAt: true,
       user: { select: publicUser },
-      achievement: { select: achievement },
+      achievement: { select: { ...achievement, description: true } },
     },
   });
   if (!row) return null;
@@ -210,9 +212,10 @@ export async function loadUnlockDiscussion(
   url: URL,
 ) {
   const target = { unlockOwnerId: row.userId, unlockAchievementId: row.achievement.id };
-  const [comments, reactions, known] = await Promise.all([
+  const [comments, reactions, [text = row.achievement], known] = await Promise.all([
     loadComments(target, viewer, commentLimit(url)),
     unlockReactions(row.userId, row.achievement.id, viewer.id),
+    localizeAchievements([row.achievement], getLocale()),
     row.achievement.hidden &&
       viewer.id !== row.userId &&
       db.userAchievement.count({
@@ -225,7 +228,8 @@ export async function loadUnlockDiscussion(
     unlockedAt: row.unlockedAt,
     game: row.achievement.game,
     achievementId: row.achievement.id,
-    name: masked ? null : row.achievement.name,
+    name: masked ? null : text.name,
+    description: masked ? '' : text.description,
     iconUrl: masked ? null : row.achievement.iconUrl,
     globalRarity: row.achievement.globalRarity,
     comments,

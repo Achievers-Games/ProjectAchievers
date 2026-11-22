@@ -14,6 +14,7 @@ const PER_USER_TABLES = [
   ['UserFrame', 'frame'],
   ['SiteUnlock', 'code'],
   ['PinnedGame', 'gameId'],
+  ['DismissedSuggestion', 'gameId'],
   ['UserGame', 'gameId'],
   ['UserAchievement', 'achievementId'],
   ['GuideVote', 'guideId'],
@@ -307,6 +308,7 @@ export async function mergeUsers(
         await tx.userFrame.updateMany(owner);
         await tx.siteUnlock.updateMany(owner);
         await tx.pinnedGame.updateMany(owner);
+        await tx.dismissedSuggestion.updateMany(owner);
         await tx.clanRequest.updateMany(owner);
 
         const author = { where: { authorId: sourceId }, data: { authorId: targetId } };

@@ -1,10 +1,17 @@
 import type { Prisma, Platform, TrophyType } from '#prisma';
 import { db } from '../db';
+import { achievementPart } from '#lib/shards';
 import { recordCompletionTimes } from '../completion-time';
 import { familyKey } from '../family';
 import { lockCardCatalog, refreshSharedTier, updateFamilyTiers } from '../card-rarity';
 import { shardsStart } from '../cards-launch';
-import { creditCompletion, creditUnlocks, playtimeHidden, revokeShards } from '../shards';
+import {
+  creditCompletion,
+  creditSplitGame,
+  creditUnlocks,
+  playtimeHidden,
+  revokeShards,
+} from '../shards';
 import {
   filterSteamProgress,
   lockSteamAccount,
@@ -159,10 +166,15 @@ export async function fillGameTiers() {
 
 /** Remplace le catalogue de succès d'un jeu. Les succès déjà connus gardent leur identifiant. */
 export async function saveAchievements(gameId: string, achievements: AchievementInput[]) {
-  const before = await db.game.findUnique({
-    where: { id: gameId },
-    select: { totalAchievements: true },
-  });
+  const [before, known] = await Promise.all([
+    db.game.findUnique({ where: { id: gameId }, select: { totalAchievements: true } }),
+    achievements.some((a) => a.groupId)
+      ? db.achievement.findMany({
+          where: { gameId },
+          select: { platformAchievementId: true, groupId: true },
+        })
+      : [],
+  ]);
   for (let offset = 0; offset < achievements.length; offset += ACHIEVEMENTS_PER_TRANSACTION) {
     const batch = achievements.slice(offset, offset + ACHIEVEMENTS_PER_TRANSACTION);
     const writes = batch.map((a) => {
@@ -201,7 +213,14 @@ export async function saveAchievements(gameId: string, achievements: Achievement
   const totalAchievements = await db.achievement.count({ where: { gameId } });
   await db.game.update({
     where: { id: gameId },
-    data: { totalAchievements, schemaSyncedAt: new Date() },
+    data: {
+      totalAchievements,
+      schemaSyncedAt: new Date(),
+      ...(achievements.length > 0 &&
+        achievements.every((a) => a.groupId && a.groupName !== undefined) && {
+          achievementGroupsSyncedAt: new Date(),
+        }),
+    },
   });
   // Un succès ajouté (une extension) ou retiré change le pourcentage de tous les joueurs du jeu,
   // même de ceux qui n'y rejouent pas : leur progression suit ici.
@@ -209,6 +228,15 @@ export async function saveAchievements(gameId: string, achievements: Achievement
     await refreshOwners(gameId);
   }
   await refreshSharedTier(gameId);
+  // Un succès déjà connu change de partie : le jeu vient de se séparer de ses DLC.
+  const parts = new Map(known.map((row) => [row.platformAchievementId, row.groupId]));
+  const split = achievements.some(
+    (a) =>
+      a.groupId &&
+      parts.has(a.platformAchievementId) &&
+      achievementPart(parts.get(a.platformAchievementId)) !== achievementPart(a.groupId),
+  );
+  if (split) await creditSplitGame(gameId);
 }
 
 /** Recalcule la progression de tous les joueurs d'un jeu, depuis leurs déblocages enregistrés. */

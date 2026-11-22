@@ -150,6 +150,27 @@
       .filter(Boolean)
       .join(' '),
   );
+
+  /** La liste en sections, jeu de base puis DLC ; d'un seul tenant quand rien ne les sépare. */
+  const sections = $derived.by(() => {
+    if (!data.parts.length) {
+      return [{ id: '', title: null, count: '', rows: data.achievements }];
+    }
+    const counted = Boolean(data.player ?? data.progress);
+    return data.parts.flatMap((part) => {
+      const rows = data.achievements.filter((achievement) => achievement.part === part.id);
+      return rows.length
+        ? [
+            {
+              id: part.id,
+              title: part.id ? `DLC · ${part.name}` : part.name,
+              count: counted ? `${part.unlocked} / ${part.total}` : String(part.total),
+              rows,
+            },
+          ]
+        : [];
+    });
+  });
 </script>
 
 <!-- `?avec=` ne crée pas de variantes à indexer : une seule page par version. -->
@@ -610,146 +631,156 @@
       </select>
     </div>
 
-    <ul class="card divide-y divide-line">
-      {#each data.achievements as achievement (achievement.id)}
-        <li>
-          <!-- Le lien du succès couvre toute la ligne ; la bulle de discussion se pose par-dessus. -->
-          <div
-            data-unlocked={achievement.unlockedAt ? '' : undefined}
-            data-excluded={achievement.excludedAt ? '' : undefined}
-            class="achievement-row relative flex flex-wrap items-center gap-x-3 gap-y-1 p-3 sm:flex-nowrap transition-colors hover:bg-raised"
-          >
-            <span class="relative shrink-0">
-              {#if achievement.iconUrl}
-                <AchievementIcon
-                  src={achievement.iconUrl}
-                  size={40}
-                  dim={!achievement.unlockedAt && !achievement.excludedAt}
-                />
-              {:else if achievement.excludedAt}
-                <span class="grid h-10 w-10 place-items-center rounded bg-raised text-muted">
-                  <TriangleAlert size={14} aria-hidden="true" />
-                </span>
-              {:else}
-                <span class="grid h-10 w-10 place-items-center rounded bg-raised text-muted">
-                  <Lock size={14} aria-hidden="true" />
-                </span>
-              {/if}
-              {#if achievement.unlockedAt}
-                <span class="achievement-check"><Check size={11} strokeWidth={3} /></span>
-              {/if}
-            </span>
-            <div class="min-w-0 flex-1">
-              <p class="flex items-center gap-1.5 text-sm font-medium">
-                <a
-                  href="/succes/{achievement.id}{data.revealed && achievement.secret
-                    ? '?caches=1'
-                    : ''}"
-                  class="achievement-link truncate"
-                  class:text-muted={data.user && !achievement.unlockedAt && !achievement.excludedAt}
-                >
-                  {achievement.name}
-                </a>
-                {#if achievement.secret && data.revealed}
-                  <EyeOff
-                    size={12}
-                    role="img"
-                    class="shrink-0 text-muted"
-                    aria-label={m.achievement_hidden()}
-                  />
-                {/if}
-                {#if achievement.missable}
-                  <span class="missable-badge" title={m.missable_hint()}>
-                    <TriangleAlert size={11} aria-hidden="true" />
-                    {m.missable_badge()}
-                  </span>
-                {/if}
-                {#if achievement.excludedAt}
-                  <span class="missable-badge shrink-0">
-                    <TriangleAlert size={11} aria-hidden="true" />
-                    {m.steam_review_unscored()}
-                  </span>
-                {/if}
-                {#if achievement.guided}
-                  <BookOpen
-                    size={12}
-                    role="img"
-                    class="shrink-0 text-accent"
-                    aria-label={m.guide_badge()}
-                  />
-                {/if}
-              </p>
-              <p class="truncate text-xs text-muted">{achievement.description}</p>
-            </div>
-            {#if comparing}
-              <span class="flex shrink-0 items-center gap-1" aria-hidden="true">
-                <span
-                  class="compare-mark"
-                  data-state={achievement.unlockedAt ? 'yes' : 'no'}
-                  title={m.compare_column_mine()}
-                >
-                  {#if achievement.unlockedAt}
-                    <Check size={11} strokeWidth={3} />
-                  {:else}
-                    <Minus size={11} strokeWidth={3} />
-                  {/if}
-                </span>
-                <span
-                  class="compare-mark"
-                  data-state={theirState(achievement)}
-                  title={data.compare?.user.displayName}
-                >
-                  {#if theirState(achievement) === 'yes'}
-                    <Check size={11} strokeWidth={3} />
-                  {:else}
-                    <Minus size={11} strokeWidth={3} />
-                  {/if}
-                </span>
-              </span>
-              <span class="sr-only">
-                {#if !achievement.masked}
-                  {theirState(achievement) === 'yes'
-                    ? m.compare_check_theirs({ name: data.compare?.user.displayName ?? '' })
-                    : m.compare_missing_theirs({ name: data.compare?.user.displayName ?? '' })}
-                {/if}
-              </span>
-            {/if}
-            <!-- Sur téléphone, la date et la bulle passent dessous : le nom garde sa place. -->
+    {#each sections as section (section.id)}
+      {#if section.title}
+        <h2 class="flex items-baseline gap-2 pt-2 text-base" data-testid="achievement-part">
+          <span class="min-w-0 truncate">{section.title}</span>
+          <span class="tabular shrink-0 text-sm font-normal text-muted">{section.count}</span>
+        </h2>
+      {/if}
+      <ul class="card divide-y divide-line">
+        {#each section.rows as achievement (achievement.id)}
+          <li>
+            <!-- Le lien du succès couvre toute la ligne ; la bulle de discussion se pose par-dessus. -->
             <div
-              class="flex shrink-0 items-center gap-3 {achievement.unlockedAt
-                ? 'w-full pl-[52px] sm:w-auto sm:pl-0'
-                : ''}"
+              data-unlocked={achievement.unlockedAt ? '' : undefined}
+              data-excluded={achievement.excludedAt ? '' : undefined}
+              class="achievement-row relative flex flex-wrap items-center gap-x-3 gap-y-1 p-3 sm:flex-nowrap transition-colors hover:bg-raised"
             >
-              {#if data.unlockOwner && achievement.unlockedAt && !achievement.masked}
-                <div class="relative z-[1] -ml-1.5 sm:ml-0">
-                  <UnlockComments
-                    handle={data.unlockOwner}
-                    id={achievement.id}
-                    count={achievement.comments}
+              <span class="relative shrink-0">
+                {#if achievement.iconUrl}
+                  <AchievementIcon
+                    src={achievement.iconUrl}
+                    size={40}
+                    dim={!achievement.unlockedAt && !achievement.excludedAt}
                   />
-                </div>
-              {/if}
-              <div class="ml-auto text-right">
-                <p class="tabular text-xs text-muted">
-                  {#if achievement.unlockedAt}
-                    <span class="font-semibold text-success"
-                      >{formatDateTime(achievement.unlockedAt)}</span
-                    >
-                  {:else if achievement.excludedAt}
-                    {formatDateTime(achievement.excludedAt)}
+                {:else if achievement.excludedAt}
+                  <span class="grid h-10 w-10 place-items-center rounded bg-raised text-muted">
+                    <TriangleAlert size={14} aria-hidden="true" />
+                  </span>
+                {:else}
+                  <span class="grid h-10 w-10 place-items-center rounded bg-raised text-muted">
+                    <Lock size={14} aria-hidden="true" />
+                  </span>
+                {/if}
+                {#if achievement.unlockedAt}
+                  <span class="achievement-check"><Check size={11} strokeWidth={3} /></span>
+                {/if}
+              </span>
+              <div class="min-w-0 flex-1">
+                <p class="flex items-center gap-1.5 text-sm font-medium">
+                  <a
+                    href="/succes/{achievement.id}{data.revealed && achievement.secret
+                      ? '?caches=1'
+                      : ''}"
+                    class="achievement-link truncate"
+                    class:text-muted={data.user &&
+                      !achievement.unlockedAt &&
+                      !achievement.excludedAt}
+                  >
+                    {achievement.name}
+                  </a>
+                  {#if achievement.secret && data.revealed}
+                    <EyeOff
+                      size={12}
+                      role="img"
+                      class="shrink-0 text-muted"
+                      aria-label={m.achievement_hidden()}
+                    />
+                  {/if}
+                  {#if achievement.missable}
+                    <span class="missable-badge" title={m.missable_hint()}>
+                      <TriangleAlert size={11} aria-hidden="true" />
+                      {m.missable_badge()}
+                    </span>
+                  {/if}
+                  {#if achievement.excludedAt}
+                    <span class="missable-badge shrink-0">
+                      <TriangleAlert size={11} aria-hidden="true" />
+                      {m.steam_review_unscored()}
+                    </span>
+                  {/if}
+                  {#if achievement.guided}
+                    <BookOpen
+                      size={12}
+                      role="img"
+                      class="shrink-0 text-accent"
+                      aria-label={m.guide_badge()}
+                    />
                   {/if}
                 </p>
-                {#if achievement.globalRarity !== null}
-                  <p class="tabular text-xs text-muted">
-                    {m.achievement_rarity({ value: formatRarity(achievement.globalRarity) })}
-                  </p>
+                <p class="truncate text-xs text-muted">{achievement.description}</p>
+              </div>
+              {#if comparing}
+                <span class="flex shrink-0 items-center gap-1" aria-hidden="true">
+                  <span
+                    class="compare-mark"
+                    data-state={achievement.unlockedAt ? 'yes' : 'no'}
+                    title={m.compare_column_mine()}
+                  >
+                    {#if achievement.unlockedAt}
+                      <Check size={11} strokeWidth={3} />
+                    {:else}
+                      <Minus size={11} strokeWidth={3} />
+                    {/if}
+                  </span>
+                  <span
+                    class="compare-mark"
+                    data-state={theirState(achievement)}
+                    title={data.compare?.user.displayName}
+                  >
+                    {#if theirState(achievement) === 'yes'}
+                      <Check size={11} strokeWidth={3} />
+                    {:else}
+                      <Minus size={11} strokeWidth={3} />
+                    {/if}
+                  </span>
+                </span>
+                <span class="sr-only">
+                  {#if !achievement.masked}
+                    {theirState(achievement) === 'yes'
+                      ? m.compare_check_theirs({ name: data.compare?.user.displayName ?? '' })
+                      : m.compare_missing_theirs({ name: data.compare?.user.displayName ?? '' })}
+                  {/if}
+                </span>
+              {/if}
+              <!-- Sur téléphone, la date et la bulle passent dessous : le nom garde sa place. -->
+              <div
+                class="flex shrink-0 items-center gap-3 {achievement.unlockedAt
+                  ? 'w-full pl-[52px] sm:w-auto sm:pl-0'
+                  : ''}"
+              >
+                {#if data.unlockOwner && achievement.unlockedAt && !achievement.masked}
+                  <div class="relative z-[1] -ml-1.5 sm:ml-0">
+                    <UnlockComments
+                      handle={data.unlockOwner}
+                      id={achievement.id}
+                      count={achievement.comments}
+                    />
+                  </div>
                 {/if}
+                <div class="ml-auto text-right">
+                  <p class="tabular text-xs text-muted">
+                    {#if achievement.unlockedAt}
+                      <span class="font-semibold text-success"
+                        >{formatDateTime(achievement.unlockedAt)}</span
+                      >
+                    {:else if achievement.excludedAt}
+                      {formatDateTime(achievement.excludedAt)}
+                    {/if}
+                  </p>
+                  {#if achievement.globalRarity !== null}
+                    <p class="tabular text-xs text-muted">
+                      {m.achievement_rarity({ value: formatRarity(achievement.globalRarity) })}
+                    </p>
+                  {/if}
+                </div>
               </div>
             </div>
-          </div>
-        </li>
-      {/each}
-    </ul>
+          </li>
+        {/each}
+      </ul>
+    {/each}
     {#if data.nextAchievements}
       <a
         class="btn mx-auto block"

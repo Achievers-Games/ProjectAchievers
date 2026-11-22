@@ -31,6 +31,15 @@ test.describe('membre', () => {
     await page.goto('/');
     const live = page.getByRole('region', { name: /En direct/ });
     await expect(live.getByRole('link', { name: /Hades/ }).first()).toBeVisible();
+    // Le même jeu fini porte le même niveau dans le direct et dans « Derniers succès ».
+    const tier = await live
+      .locator('a.drop-tile', { hasText: 'Hades' })
+      .first()
+      .getAttribute('data-tier');
+    expect(Number(tier)).toBeGreaterThan(1);
+    await expect(
+      page.locator('section[aria-labelledby="derniers"] a.game-card', { hasText: 'Hades' }).first(),
+    ).toHaveAttribute('data-tier', tier!);
     // La carte arrive avec son niveau et ses exemplaires, effets compris.
     const celeste = live.locator('a.drop-tile', { hasText: 'Celeste' });
     await expect(celeste).toHaveAttribute('data-tier', '5');

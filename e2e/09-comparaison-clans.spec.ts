@@ -105,6 +105,7 @@ test.describe('comparaison par jeu', () => {
     await tile.click();
     const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible();
+    await expect(dialog.getByTestId('unlock-description')).not.toBeEmpty();
     const gameHref = await dialog.locator('a[href^="/jeux/"]').getAttribute('href');
     await dialog.getByRole('button', { name: 'Réagir' }).click();
     await dialog.getByRole('menuitemradio', { name: 'J’aime' }).click();

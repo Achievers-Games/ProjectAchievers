@@ -37,6 +37,7 @@ import {
   fetchUnlocks,
   fillHiddenDescriptions,
   refreshStaleSchemas,
+  syncSteamGroups,
   syncSteam,
   type TopGame,
 } from './steam';
@@ -725,6 +726,13 @@ const MAINTENANCE: { label: string; run: () => Promise<unknown>; budget?: false 
     // Dix jeux par lot, trois lots par heure : 720 jeux par jour, de quoi relire chaque jeu
     // possédé au moins une fois par semaine tant que le catalogue reste sous les 5 000 jeux.
     run: () => inSlices('Listes Steam', 3, 10, (limit) => refreshStaleSchemas(limit)),
+    budget: false,
+  },
+  {
+    label: 'Groupes Steam',
+    // Une page par jeu, 120 par heure : tout le catalogue se range en une quinzaine d'heures, puis
+    // seuls les nouveaux jeux restent.
+    run: () => inSlices('Groupes Steam', 3, 40, (limit) => syncSteamGroups(limit)),
     budget: false,
   },
   { label: 'Catalogue WoW', run: () => fillWowCatalog() },

@@ -23,6 +23,7 @@
   import ProviderIcon from '#lib/components/ProviderIcon.svelte';
   import StatGrid from '#lib/components/StatGrid.svelte';
   import SteamReviewBanner from '#lib/components/SteamReviewBanner.svelte';
+  import SuggestionRail from '#lib/components/SuggestionRail.svelte';
   import UnlockComments from '#lib/components/UnlockComments.svelte';
   import UnlockDiscussion from '#lib/components/UnlockDiscussion.svelte';
 
@@ -116,7 +117,7 @@
               <GameCard
                 game={row.game}
                 progress={row}
-                target={row.game.tier ?? 1}
+                tier={row.game.tier ?? 1}
                 href="/jeux/{row.game.slug}?joueur={encodeURIComponent(row.user.handle)}"
               />
             </div>
@@ -205,15 +206,21 @@
       </dialog>
     {/if}
 
-    {#if data.home.almost.length}
+    {#if data.suggested?.finish.length}
+      <SuggestionRail id="a-finir" title={m.home_finish()} items={data.suggested.finish} />
+    {:else if data.home.almost.length}
       <section class="home-panel" aria-labelledby="presque">
         <h2 id="presque">{m.home_almost()}</h2>
         <GameRail items={data.home.almost} key={(row) => row.game.id}>
           {#snippet item(row)}
-            <GameCard game={row.game} progress={row} target={row.game.tier ?? 1} />
+            <GameCard game={row.game} progress={row} tier={row.game.tier ?? 1} />
           {/snippet}
         </GameRail>
       </section>
+    {/if}
+
+    {#if data.suggested?.start.length}
+      <SuggestionRail id="a-commencer" title={m.home_start()} items={data.suggested.start} />
     {/if}
 
     {#if data.home.recent.length}
@@ -221,7 +228,7 @@
         <h2 id="derniers">{m.home_recent()}</h2>
         <GameRail items={data.home.recent} key={(row) => row.game.id}>
           {#snippet item(row)}
-            <GameCard game={row.game} progress={row} target={row.game.tier ?? 1} />
+            <GameCard game={row.game} progress={row} tier={row.game.tier ?? 1} />
           {/snippet}
         </GameRail>
       </section>
