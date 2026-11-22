@@ -19,6 +19,7 @@ import { rateLimit } from '#lib/server/rate-limit';
 import { COMPLETION_TIME_DISPLAY_SAMPLE, completionTimes } from '#lib/server/completion-time';
 import { achievementPart } from '#lib/shards';
 import { artNow } from '#lib/server/sync/content';
+import { unlockCommentCounts } from '#lib/server/activity';
 import type { Actions, PageServerLoad } from './$types';
 import { m } from '#lib/paraglide/messages';
 
@@ -325,6 +326,20 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
   const shown = Number.isSafeInteger(requested) ? Math.max(pageSize, requested) : pageSize;
   const displayed = visible.slice(0, shown);
   const displayedIds = new Set(displayed.map((row) => row.id));
+  // Les déblocages que le visiteur peut commenter : les siens, ou ceux d'un ami qu'il regarde.
+  const unlockOwner = player
+    ? player.self || friends.some((friend) => friend.id === player.user.id)
+      ? player.user
+      : null
+    : (locals.user ?? null);
+  const commentCounts =
+    viewerId && unlockOwner
+      ? await unlockCommentCounts(
+          viewerId,
+          unlockOwner.id,
+          displayed.filter((row) => row.unlockedAt !== null).map((row) => row.id),
+        )
+      : new Map<string, number>();
   const comparison = rival?.progress && progress ? compareAchievements(rows, theirUnlocks) : null;
   mark('game_list');
   setHeaders(timing.headers());
@@ -343,7 +358,7 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
       steps: countChecklist(guide.contentMd),
       checked: guide._count.checks,
     })),
-    achievements: displayed,
+    achievements: displayed.map((row) => ({ ...row, comments: commentCounts.get(row.id) ?? 0 })),
     achievementTotal: rows.length,
     secrets: rows.filter((row) => row.secret).length,
     hasMissables: rows.some((row) => row.missable),
@@ -369,11 +384,7 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
         }
       : null,
     friends: friends.filter((friend) => owning.has(friend.id)),
-    unlockOwner: player
-      ? player.self || friends.some((friend) => friend.id === player.user.id)
-        ? player.user.handle
-        : null
-      : (locals.user?.handle ?? null),
+    unlockOwner: unlockOwner?.handle ?? null,
     revealed,
     player: player && {
       user: player.user,

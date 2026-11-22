@@ -145,13 +145,14 @@ test.describe('membre', () => {
     const rail = page.locator('section[aria-labelledby="direct"] .live-rail');
     await expect(rail.locator('a.drop-tile')).toHaveCount(12);
 
-    // Les succès récents du compte de test se fêtent en arrivant et recouvrent le fil :
-    // on les ferme d'abord, comme le ferait le visiteur avant de faire glisser.
-    const closeAll = page.locator('.close-all');
-    if (await closeAll.count()) await closeAll.click();
     expect(await rail.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(true);
 
-    await rail.scrollIntoViewIfNeeded();
+    // Les succès récents du compte de test se fêtent en bas de l'écran, quand ils arrivent : le
+    // rail se tient en haut, là où aucune annonce ne peut le recouvrir.
+    await rail.evaluate((el) => {
+      el.scrollIntoView({ block: 'start', behavior: 'instant' });
+      window.scrollBy({ top: -120, behavior: 'instant' });
+    });
     const box = (await rail.boundingBox())!;
     const y = box.y + box.height / 2;
     await page.mouse.move(box.x + box.width / 2, y);
@@ -673,7 +674,7 @@ test.describe('membre', () => {
     await login(page);
     await page.goto('/jeux/portal-2');
     await page
-      .getByRole('link', { name: /étape 3 / })
+      .getByRole('link', { name: /étape 3$/ })
       .first()
       .click();
     await ready(page);

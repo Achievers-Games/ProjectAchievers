@@ -96,6 +96,26 @@ export async function friendUnlocks(viewer: Viewer) {
   });
 }
 
+/** Le nombre de commentaires que le visiteur peut lire sous chacun de ces déblocages d'un joueur. */
+export async function unlockCommentCounts(
+  viewerId: string,
+  ownerId: string,
+  achievementIds: string[],
+) {
+  if (!achievementIds.length) return new Map<string, number>();
+  const rows = await db.comment.groupBy({
+    by: ['unlockAchievementId'],
+    where: {
+      unlockOwnerId: ownerId,
+      unlockAchievementId: { in: achievementIds },
+      status: 'PUBLISHED',
+      author: unblocked(viewerId),
+    },
+    _count: true,
+  });
+  return new Map(rows.map((row) => [row.unlockAchievementId!, row._count]));
+}
+
 export async function unlockThreadFor(
   viewer: Viewer | null,
   handle: string,

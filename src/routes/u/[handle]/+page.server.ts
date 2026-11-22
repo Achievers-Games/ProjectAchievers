@@ -9,6 +9,7 @@ import { userProfile } from '#lib/server/queries';
 import { siteAchievementCount } from '#lib/server/site-achievements';
 import { relationWith } from '#lib/server/social';
 import { artNow } from '#lib/server/sync/content';
+import { unlockCommentCounts } from '#lib/server/activity';
 import { canTranslate } from '#lib/server/translate';
 import type { Actions, PageServerLoad } from './$types';
 import { m } from '#lib/paraglide/messages';
@@ -24,7 +25,7 @@ export const load: PageServerLoad = async ({ params, locals, depends, url }) => 
   );
   void artNow([], dressing).catch(() => 0);
   const relationPromise = locals.user ? relationWith(locals.user.id, profile.user.id) : null;
-  const [relation, siteAchievements, cardBanner, comments] = await Promise.all([
+  const [relation, siteAchievements, cardBanner, comments, unlockComments] = await Promise.all([
     relationPromise,
     siteAchievementCount(profile.user.id),
     // Avant l'ouverture des boosters, aucune carte animée ne se montre sur un profil.
@@ -33,6 +34,13 @@ export const load: PageServerLoad = async ({ params, locals, depends, url }) => 
       (await relationPromise) === 'blocked'
         ? null
         : loadComments({ profileId: profile.user.id }, locals.user, commentLimit(url)))(),
+    locals.user
+      ? unlockCommentCounts(
+          locals.user.id,
+          profile.user.id,
+          profile.recent.map((item) => item.achievement.id),
+        )
+      : new Map<string, number>(),
   ]);
   return {
     profile,
@@ -40,6 +48,7 @@ export const load: PageServerLoad = async ({ params, locals, depends, url }) => 
     siteAchievements,
     cardBanner,
     comments,
+    unlockComments,
     canTranslate: canTranslate(),
     origin: env().ORIGIN,
   };

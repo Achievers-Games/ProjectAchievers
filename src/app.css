@@ -1925,6 +1925,16 @@
 .achievement-row[data-unlocked]:hover {
   background-color: rgb(var(--success) / 0.18);
 }
+/* Le nom du succès est le lien, étendu à toute la ligne. */
+.achievement-link::after {
+  @apply absolute inset-0;
+  content: '';
+}
+/* Les repères à infobulle restent au-dessus du lien, sinon ils ne s'affichent plus au survol. */
+.achievement-row .missable-badge,
+.achievement-row .compare-mark {
+  @apply relative z-[1];
+}
 .achievement-check {
   @apply absolute -bottom-1 -right-1 grid h-4 w-4 place-items-center rounded-full;
   color: rgb(var(--surface));

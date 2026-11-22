@@ -5,7 +5,6 @@
   import Seo from '#lib/components/Seo.svelte';
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
-  import MessageCircle from '@lucide/svelte/icons/message-circle';
   import Lock from '@lucide/svelte/icons/lock';
   import ActivityReactions from '#lib/components/ActivityReactions.svelte';
   import { dragScroll } from '#lib/actions/drag-scroll';
@@ -24,6 +23,7 @@
   import ProviderIcon from '#lib/components/ProviderIcon.svelte';
   import StatGrid from '#lib/components/StatGrid.svelte';
   import SteamReviewBanner from '#lib/components/SteamReviewBanner.svelte';
+  import UnlockComments from '#lib/components/UnlockComments.svelte';
   import UnlockDiscussion from '#lib/components/UnlockDiscussion.svelte';
 
   let { data } = $props();
@@ -172,15 +172,14 @@
                   summary={row.reactions}
                   signedIn
                 />
-                <a
-                  href={unlockHref(row.user.handle, row.achievementId)}
-                  onclick={(event) => openUnlock(event, row.user.handle, row.achievementId)}
-                  class="ml-auto flex shrink-0 items-center gap-1 rounded px-1.5 py-0.5 text-xs text-muted hover:bg-raised hover:text-ink"
-                  aria-label={m.unlock_comments({ count: row.count })}
-                >
-                  <MessageCircle size={14} aria-hidden="true" />
-                  {row.count}
-                </a>
+                <div class="ml-auto">
+                  <UnlockComments
+                    handle={row.user.handle}
+                    id={row.achievementId}
+                    count={row.count}
+                    onclick={(event) => openUnlock(event, row.user.handle, row.achievementId)}
+                  />
+                </div>
               </div>
             </li>
           {/each}

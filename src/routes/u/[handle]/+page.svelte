@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { unlockHref } from '#lib/activity';
   import { subscribeJson } from '#lib/sse';
   import { enhance } from '$app/forms';
   import { submitWithToast } from '#lib/forms';
@@ -20,6 +19,7 @@
   import Seo from '#lib/components/Seo.svelte';
   import GameCard from '#lib/components/GameCard.svelte';
   import ProviderIcon from '#lib/components/ProviderIcon.svelte';
+  import UnlockComments from '#lib/components/UnlockComments.svelte';
   import RarityBadge from '#lib/components/RarityBadge.svelte';
   import StatGrid from '#lib/components/StatGrid.svelte';
   import { formatDate, formatNumber, formatRelative, PROVIDER_LABELS } from '#lib/labels';
@@ -359,11 +359,8 @@
         <h2>{m.recent_achievements()}</h2>
         <ul class="card divide-y divide-line">
           {#each profile.recent as item (item.achievement.id)}
-            <li>
-              <a
-                href="/succes/{item.achievement.id}"
-                class="block p-3 transition-colors hover:bg-raised"
-              >
+            <li class="flex items-center gap-1 transition-colors hover:bg-raised">
+              <a href="/succes/{item.achievement.id}" class="block min-w-0 flex-1 p-3">
                 <p class="truncate text-sm font-medium">{item.achievement.name}</p>
                 <p class="flex justify-between gap-2 text-xs text-muted">
                   <span class="truncate">{item.achievement.game.name}</span>
@@ -372,12 +369,13 @@
                 <RarityBadge rarity={item.achievement.globalRarity} />
               </a>
               {#if data.relation === 'friends' || data.relation === 'self'}
-                <a
-                  href={unlockHref(profile.user.handle, item.achievement.id)}
-                  class="mb-2 ml-3 inline-block rounded px-2 py-1 text-xs text-muted hover:bg-raised hover:text-ink"
-                >
-                  {m.unlock_discussion()}
-                </a>
+                <div class="pr-2">
+                  <UnlockComments
+                    handle={profile.user.handle}
+                    id={item.achievement.id}
+                    count={data.unlockComments.get(item.achievement.id) ?? 0}
+                  />
+                </div>
               {/if}
             </li>
           {/each}

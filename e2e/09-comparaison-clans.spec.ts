@@ -125,7 +125,9 @@ test.describe('comparaison par jeu', () => {
     await page.goto('/u/marco');
     await page.getByRole('link', { name: /Voir les \d+ jeux/ }).click();
     await page.locator(`main a[href="${gameHref}"]`).first().click();
-    await page.locator(`main a[href="${thread}"]`).click();
+    const bubble = page.locator(`main a[href="${thread}"]`);
+    await expect(bubble).toHaveAttribute('aria-label', 'Commentaires : 1');
+    await bubble.click();
     await expect(page.getByText('Bravo pour le déblocage !')).toBeVisible();
     await page.getByRole('button', { name: /^J’aime/ }).click();
     await page.getByRole('button', { name: 'Supprimer' }).click();

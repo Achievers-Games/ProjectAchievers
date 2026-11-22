@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { unlockHref } from '#lib/activity';
   import { m } from '#lib/paraglide/messages';
   import { enhance } from '$app/forms';
   import { goto } from '$app/navigation';
@@ -16,6 +15,7 @@
   import BookOpen from '@lucide/svelte/icons/book-open';
   import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
   import AchievementIcon from '#lib/components/AchievementIcon.svelte';
+  import UnlockComments from '#lib/components/UnlockComments.svelte';
   import CompleteBadge from '#lib/components/CompleteBadge.svelte';
   import Progress from '#lib/components/Progress.svelte';
   import { tilt } from '#lib/actions/tilt';
@@ -613,11 +613,11 @@
     <ul class="card divide-y divide-line">
       {#each data.achievements as achievement (achievement.id)}
         <li>
-          <a
-            href="/succes/{achievement.id}{data.revealed && achievement.secret ? '?caches=1' : ''}"
+          <!-- Le lien du succès couvre toute la ligne ; la bulle de discussion se pose par-dessus. -->
+          <div
             data-unlocked={achievement.unlockedAt ? '' : undefined}
             data-excluded={achievement.excludedAt ? '' : undefined}
-            class="achievement-row flex items-center gap-3 p-3 transition-colors hover:bg-raised"
+            class="achievement-row relative flex flex-wrap items-center gap-x-3 gap-y-1 p-3 sm:flex-nowrap transition-colors hover:bg-raised"
           >
             <span class="relative shrink-0">
               {#if achievement.iconUrl}
@@ -641,12 +641,15 @@
             </span>
             <div class="min-w-0 flex-1">
               <p class="flex items-center gap-1.5 text-sm font-medium">
-                <span
-                  class="truncate"
+                <a
+                  href="/succes/{achievement.id}{data.revealed && achievement.secret
+                    ? '?caches=1'
+                    : ''}"
+                  class="achievement-link truncate"
                   class:text-muted={data.user && !achievement.unlockedAt && !achievement.excludedAt}
                 >
                   {achievement.name}
-                </span>
+                </a>
                 {#if achievement.secret && data.revealed}
                   <EyeOff
                     size={12}
@@ -711,31 +714,39 @@
                 {/if}
               </span>
             {/if}
-            <div class="shrink-0 text-right">
-              <p class="tabular text-xs text-muted">
-                {#if achievement.unlockedAt}
-                  <span class="font-semibold text-success"
-                    >{formatDateTime(achievement.unlockedAt)}</span
-                  >
-                {:else if achievement.excludedAt}
-                  {formatDateTime(achievement.excludedAt)}
-                {/if}
-              </p>
-              {#if achievement.globalRarity !== null}
-                <p class="tabular text-xs text-muted">
-                  {m.achievement_rarity({ value: formatRarity(achievement.globalRarity) })}
-                </p>
-              {/if}
-            </div>
-          </a>
-          {#if data.unlockOwner && achievement.unlockedAt && !achievement.masked}
-            <a
-              href={unlockHref(data.unlockOwner, achievement.id)}
-              class="mb-2 ml-3 inline-block rounded px-2 py-1 text-xs text-muted hover:bg-raised hover:text-ink"
+            <!-- Sur téléphone, la date et la bulle passent dessous : le nom garde sa place. -->
+            <div
+              class="flex shrink-0 items-center gap-3 {achievement.unlockedAt
+                ? 'w-full pl-[52px] sm:w-auto sm:pl-0'
+                : ''}"
             >
-              {m.unlock_discussion()}
-            </a>
-          {/if}
+              {#if data.unlockOwner && achievement.unlockedAt && !achievement.masked}
+                <div class="relative z-[1] -ml-1.5 sm:ml-0">
+                  <UnlockComments
+                    handle={data.unlockOwner}
+                    id={achievement.id}
+                    count={achievement.comments}
+                  />
+                </div>
+              {/if}
+              <div class="ml-auto text-right">
+                <p class="tabular text-xs text-muted">
+                  {#if achievement.unlockedAt}
+                    <span class="font-semibold text-success"
+                      >{formatDateTime(achievement.unlockedAt)}</span
+                    >
+                  {:else if achievement.excludedAt}
+                    {formatDateTime(achievement.excludedAt)}
+                  {/if}
+                </p>
+                {#if achievement.globalRarity !== null}
+                  <p class="tabular text-xs text-muted">
+                    {m.achievement_rarity({ value: formatRarity(achievement.globalRarity) })}
+                  </p>
+                {/if}
+              </div>
+            </div>
+          </div>
         </li>
       {/each}
     </ul>
