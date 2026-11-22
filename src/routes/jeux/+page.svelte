@@ -12,7 +12,7 @@
   import Empty from '#lib/components/Empty.svelte';
   import GameCard from '#lib/components/GameCard.svelte';
   import TierLegend from '#lib/components/TierLegend.svelte';
-  import { editionLabel, PLATFORM_LABELS, tierLabel, tierRule } from '#lib/labels';
+  import { PLATFORM_LABELS, tierLabel, tierRule } from '#lib/labels';
   import { TIERS, TIER_SLUGS } from '#lib/collection';
   import type { GameListItem } from '#lib/server/queries';
 
@@ -386,22 +386,6 @@
                 {m.games_buy({ platform: PLATFORM_LABELS[game.platform] })}
               </a>
             {/if}
-          </div>
-        {:else if game.versions.length > 1}
-          <div class="space-y-1">
-            <GameCard {...card} />
-            <ul class="flex flex-wrap gap-1">
-              {#each game.versions as version (version.slug)}
-                <li class="min-w-0 max-w-full">
-                  <a
-                    class="block rounded border border-line px-2 py-1 text-xs text-muted hover:bg-raised hover:text-ink"
-                    href={`/jeux/${version.slug}${data.player ? `?joueur=${encodeURIComponent(data.player.handle)}` : ''}`}
-                  >
-                    {version.name} · {editionLabel(version)}
-                  </a>
-                </li>
-              {/each}
-            </ul>
           </div>
         {:else}
           <GameCard {...card} />

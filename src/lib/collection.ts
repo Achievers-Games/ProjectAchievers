@@ -147,3 +147,15 @@ export const stepOf = (completion: number) => {
 /** Seul le 100 % réel donne une carte : un platine ne couvre souvent pas les trophées de DLC. */
 export const isComplete = (progress: CardProgress | null | undefined) =>
   Boolean(progress && progress.completion >= 100);
+
+/** Le nom d'une édition, sans marque déposée, casse, ni mention de plateforme. */
+const editionName = (name: string) =>
+  name
+    .replace(/[®™©]/g, '')
+    .normalize('NFKD')
+    .toLowerCase()
+    .replace(/\([^)]*\)/g, ' ')
+    .replace(/\b(?:xbox(?: one| series x\|?s?)?|windows|pc|ps[345]|trophies)(?: edition)?\b/g, ' ')
+    .replace(/[^\p{L}\p{N}]/gu, '');
+
+export const sameEdition = (a: string, b: string) => editionName(a) === editionName(b);

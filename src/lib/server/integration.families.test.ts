@@ -3,6 +3,7 @@ import 'dotenv/config';
 import { describe, expect, it } from 'vitest';
 import type { Platform } from '#prisma';
 import { db } from './db';
+import { applyKnownFamilies, KNOWN_FAMILIES } from './family';
 import { PREFIX, setupIntegration } from './test-helpers';
 import { actions, load } from '../../routes/moderation/familles/+page.server';
 import { GET as searchGames } from '../../routes/moderation/familles/jeux/+server';
@@ -112,5 +113,52 @@ describe('jeux regroupés', () => {
       locals: { user: moderator },
     });
     expect((await response.json()).map((g: { id: string }) => g.id)).toEqual([steam.id]);
+  });
+});
+
+describe('jeux au même titre', () => {
+  it('sépare les deux Lords of the Fallen, sans défaire un choix de la modération', async () => {
+    const [steam, psn] = KNOWN_FAMILIES;
+    await db.game.deleteMany({
+      where: {
+        OR: KNOWN_FAMILIES.map(({ platform, platformGameId }) => ({ platform, platformGameId })),
+      },
+    });
+    const shared = `${PREFIX}-${tag()}`;
+    const recent = await game('Lords of the Fallen', 'STEAM', shared);
+    const old = await Promise.all(
+      [steam!, psn!].map(({ platform, platformGameId }) =>
+        db.game.create({
+          data: {
+            platform,
+            platformGameId,
+            name: 'Lords Of The Fallen',
+            slug: `${PREFIX}-${Math.random().toString(36).slice(2)}`,
+            familyKey: shared,
+          },
+        }),
+      ),
+    );
+    const families = async () =>
+      (
+        await db.game.findMany({
+          where: { id: { in: [recent.id, ...old.map(({ id }) => id)] } },
+          orderBy: { platform: 'asc' },
+          select: { id: true, familyKey: true, name: true },
+        })
+      ).sort((a, b) => a.id.localeCompare(b.id));
+
+    expect(await applyKnownFamilies()).toBe(2);
+    const separated = await families();
+    expect(separated.find(({ id }) => id === recent.id)?.familyKey).toBe(shared);
+    for (const { id } of old) {
+      expect(separated.find((row) => row.id === id)?.familyKey).toBe('lords of the fallen 2014');
+    }
+    expect(separated.find(({ id }) => id === old[0]!.id)?.name).toBe('Lords Of The Fallen™ 2014');
+
+    await db.game.update({ where: { id: old[1]!.id }, data: { familyKey: shared } });
+    expect(await applyKnownFamilies()).toBe(0);
+    expect((await families()).find(({ id }) => id === old[1]!.id)?.familyKey).toBe(shared);
+    await db.game.deleteMany({ where: { id: { in: old.map(({ id }) => id) } } });
   });
 });

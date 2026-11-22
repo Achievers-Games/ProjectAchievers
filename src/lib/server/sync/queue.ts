@@ -10,7 +10,7 @@ import { availableProviders } from '../providers';
 import { purgeAuthEvents } from '../auth-events';
 import { warnStaleBackup } from '../backup-watch';
 import { rewrapSecrets } from '../secret-rotation';
-import { fillFamilies, matchFamilies } from '../family';
+import { applyKnownFamilies, fillFamilies, matchFamilies } from '../family';
 import { syncCuratedGuides } from '../curated-guides';
 import { announceSeason } from '../push';
 import { warnPsnToken } from '../service-token';
@@ -736,6 +736,7 @@ const MAINTENANCE: { label: string; run: () => Promise<unknown>; budget?: false 
     budget: false,
   },
   { label: 'Catalogue WoW', run: () => fillWowCatalog() },
+  { label: 'Familles connues', run: () => applyKnownFamilies() },
   { label: 'Familles', run: () => matchFamilies() },
   // Après les familles : un jeu apparu ou rattaché depuis le démarrage reçoit les guides officiels.
   { label: 'Guides officiels', run: () => syncCuratedGuides() },
@@ -762,6 +763,7 @@ export async function stopWorkers() {
 export async function startWorkers() {
   const instance = await boss();
   await fillFamilies();
+  await applyKnownFamilies().catch((cause) => log.error('Familles connues :', cause));
   await matchFamilies().catch((cause) => log.error('Familles :', cause));
   await fillGameTiers();
 

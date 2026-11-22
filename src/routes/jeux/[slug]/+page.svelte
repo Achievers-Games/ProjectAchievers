@@ -28,7 +28,7 @@
   import SteamProofForm from './SteamProofForm.svelte';
   import { editionLabel, formatDateTime, formatPercent, formatRarity } from '#lib/labels';
   import { getLocale } from '#lib/paraglide/runtime';
-  import { isComplete } from '#lib/collection';
+  import { isComplete, sameEdition } from '#lib/collection';
   import { compareBucket } from '#lib/compare';
 
   let { data } = $props();
@@ -301,7 +301,7 @@
               })}
               class="btn h-8"
             >
-              {version.name !== data.game.name
+              {!sameEdition(version.name, data.game.name)
                 ? `${version.name} · ${editionLabel(version)}`
                 : m.version_of({ platform: editionLabel(version) })}
               {#if version.completion !== null}· {formatPercent(version.completion)}{/if}

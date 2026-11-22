@@ -32,6 +32,42 @@ export async function fillFamilies() {
   }
 }
 
+/**
+ * Des jeux au même titre qu'un autre, rangés dans leur propre famille. Vérifié pour chacun : date
+ * de sortie et succès sans rien de commun.
+ */
+export const KNOWN_FAMILIES: {
+  platform: Platform;
+  platformGameId: string;
+  familyKey: string;
+  /** Le titre actuel de la boutique, quand il lève lui-même l'ambiguïté. */
+  name?: string;
+}[] = [
+  // Lords of the Fallen de 2014, renommé par Steam ; celui de 2023 garde le titre seul.
+  {
+    platform: 'STEAM',
+    platformGameId: '265300',
+    familyKey: 'lords of the fallen 2014',
+    name: 'Lords Of The Fallen™ 2014',
+  },
+  { platform: 'PSN', platformGameId: 'NPWR06777_00', familyKey: 'lords of the fallen 2014' },
+];
+
+/** Range les jeux de `KNOWN_FAMILIES` ; un choix de la modération passe avant. Renvoie leur nombre. */
+export async function applyKnownFamilies() {
+  let moved = 0;
+  for (const { platform, platformGameId, familyKey: key, name } of KNOWN_FAMILIES) {
+    const game = await db.game.findFirst({
+      where: { platform, platformGameId, familyLocked: false },
+      select: { id: true },
+    });
+    if (!game) continue;
+    if (name) await db.game.update({ where: { id: game.id }, data: { name } });
+    await moveGameFamilies([game.id], { familyKey: key, familyLocked: true, familyMatched: false });
+    moved += 1;
+  }
+  return moved;
+}
 /** En dessous, une liste identique peut n'être qu'une coïncidence (« Victoire », « Tutoriel »). */
 const MIN_SHARED = 5;
 
