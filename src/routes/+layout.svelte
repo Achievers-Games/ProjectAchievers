@@ -14,6 +14,7 @@
   import Trophy from '@lucide/svelte/icons/trophy';
   import User from '@lucide/svelte/icons/user';
   import Avatar from '#lib/components/Avatar.svelte';
+  import BrandLogo from '#lib/components/BrandLogo.svelte';
   import ChatDock from '#lib/components/ChatDock.svelte';
   import CommandPalette from '#lib/components/CommandPalette.svelte';
   import NotificationBell from '#lib/components/NotificationBell.svelte';
@@ -221,8 +222,10 @@
 {/if}
 
 <header class="sticky top-0 z-40 border-b border-line bg-bg">
-  <div class="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4">
-    <a href="/" class="font-semibold tracking-tight">Achievers</a>
+  <div class="mx-auto flex h-14 max-w-6xl items-center gap-2 px-4 sm:gap-4">
+    <a href="/" class="inline-flex shrink-0 rounded text-ink" aria-label="Achievers"
+      ><BrandLogo /></a
+    >
 
     <nav aria-label={m.nav_main()} class="ml-4 hidden items-center gap-1 md:flex">
       {#each links.slice(0, 3) as link (link.href)}
@@ -238,26 +241,27 @@
       {/each}
       <a
         href="/saison"
+        aria-label={m.nav_season()}
         aria-current={isActive('/saison', false) ? 'page' : undefined}
         class="season-tab"
       >
         <Flame size={14} aria-hidden="true" />
-        {m.nav_season()}
+        <span class="hidden lg:inline">{m.nav_season()}</span>
       </a>
     </nav>
 
-    <div class="ml-auto flex items-center gap-2">
+    <div class="ml-auto flex items-center gap-1 sm:gap-2">
       <button
         type="button"
-        class="btn w-9 px-0 text-muted sm:w-56 sm:justify-start sm:px-3"
+        class="btn w-9 px-0 text-muted lg:w-56 lg:justify-start lg:px-3"
         onclick={() => (paletteOpen = true)}
         aria-label={`${m.search_game()} Ctrl K`}
       >
         <Search size={15} aria-hidden="true" />
         <!-- Le texte visible fait partie du nom accessible : c'est ce que les lecteurs d'écran
              annoncent, et un nom qui le masquerait ferait mentir le bouton. -->
-        <span class="hidden truncate sm:inline">{m.search_game()}</span>
-        <kbd class="ml-auto hidden text-xs sm:inline" aria-hidden="true">Ctrl K</kbd>
+        <span class="hidden truncate lg:inline">{m.search_game()}</span>
+        <kbd class="ml-auto hidden text-xs lg:inline" aria-hidden="true">Ctrl K</kbd>
       </button>
 
       <span class="btn relative w-9 px-0 text-muted">
@@ -320,7 +324,9 @@
 </main>
 
 <footer class="mx-auto flex max-w-6xl flex-wrap gap-4 px-4 pb-20 text-xs text-muted md:pb-8">
-  <span>Project Achievers</span>
+  <a href="/" class="inline-flex rounded hover:text-ink" aria-label="Achievers"
+    ><BrandLogo footer /></a
+  >
   <a href="/confidentialite" class="hover:text-ink">{m.privacy()}</a>
   <a href="/contact" class="hover:text-ink">{m.contact_title()}</a>
   <a href="/developpeurs" class="hover:text-ink">{m.nav_developers()}</a>
