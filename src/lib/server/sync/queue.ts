@@ -10,6 +10,7 @@ import { availableProviders } from '../providers';
 import { purgeAuthEvents } from '../auth-events';
 import { warnStaleBackup } from '../backup-watch';
 import { rewrapSecrets } from '../secret-rotation';
+import { inferSiblingDlc } from '../dlc-siblings';
 import { applyKnownFamilies, fillFamilies, matchFamilies } from '../family';
 import { syncCuratedGuides } from '../curated-guides';
 import { announceSeason } from '../push';
@@ -738,6 +739,8 @@ const MAINTENANCE: { label: string; run: () => Promise<unknown>; budget?: false 
   { label: 'Catalogue WoW', run: () => fillWowCatalog() },
   { label: 'Familles connues', run: () => applyKnownFamilies() },
   { label: 'Familles', run: () => matchFamilies() },
+  // Après les familles : les DLC se reprennent de la version PlayStation du même jeu.
+  { label: 'DLC PlayStation', run: () => inferSiblingDlc() },
   // Après les familles : un jeu apparu ou rattaché depuis le démarrage reçoit les guides officiels.
   { label: 'Guides officiels', run: () => syncCuratedGuides() },
 ];

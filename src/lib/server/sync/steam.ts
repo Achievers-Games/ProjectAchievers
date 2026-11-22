@@ -3,6 +3,7 @@ import { applyAccountLook, identityLook } from '../accounts';
 import { db } from '../db';
 import { env } from '../env';
 import { KNOWN_DLC, withKnownDlc, type AchievementGroups } from '../dlc-achievements';
+import { SIBLING_GROUP } from '../dlc-siblings';
 import { catchUpShards, creditSplitGame } from '../shards';
 import { countSteamCall } from '../steam-quota';
 import { logger } from '#lib/logger';
@@ -571,6 +572,8 @@ async function readSteamGroups(game: { id: string; platformGameId: string }) {
   });
   const moved = rows.flatMap((row) => {
     const group = groupOf(appId, groups, row.platformAchievementId);
+    // Un DLC repris de la version PlayStation ne revient pas au jeu de base.
+    if (group?.groupId === 'default' && row.groupId?.startsWith(SIBLING_GROUP)) return [];
     return group && group.groupId !== row.groupId ? [{ ...row, group }] : [];
   });
   for (const [groupId, members] of Map.groupBy(moved, (row) => row.group.groupId)) {

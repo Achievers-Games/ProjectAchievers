@@ -1,6 +1,7 @@
 import type { Prisma, Platform, TrophyType } from '#prisma';
 import { db } from '../db';
 import { achievementPart } from '#lib/shards';
+import { SIBLING_GROUP } from '../dlc-siblings';
 import { recordCompletionTimes } from '../completion-time';
 import { familyKey } from '../family';
 import { lockCardCatalog, refreshSharedTier, updateFamilyTiers } from '../card-rarity';
@@ -175,6 +176,12 @@ export async function saveAchievements(gameId: string, achievements: Achievement
         })
       : [],
   ]);
+  const parts = new Map(known.map((row) => [row.platformAchievementId, row.groupId]));
+  // Un DLC repris de la version PlayStation survit à une relecture qui ne connaît que « base ».
+  const groupOf = (a: AchievementInput) =>
+    a.groupId === 'default' && parts.get(a.platformAchievementId)?.startsWith(SIBLING_GROUP)
+      ? {}
+      : { groupId: a.groupId, groupName: a.groupName };
   for (let offset = 0; offset < achievements.length; offset += ACHIEVEMENTS_PER_TRANSACTION) {
     const batch = achievements.slice(offset, offset + ACHIEVEMENTS_PER_TRANSACTION);
     const writes = batch.map((a) => {
@@ -186,8 +193,7 @@ export async function saveAchievements(gameId: string, achievements: Achievement
         hidden: a.hidden,
         trophyType: a.trophyType,
         globalRarity: a.globalRarity,
-        groupId: a.groupId,
-        groupName: a.groupName,
+        ...groupOf(a),
         points: a.points ?? POINTS[a.trophyType],
       };
       return db.achievement.upsert({
@@ -229,13 +235,14 @@ export async function saveAchievements(gameId: string, achievements: Achievement
   }
   await refreshSharedTier(gameId);
   // Un succès déjà connu change de partie : le jeu vient de se séparer de ses DLC.
-  const parts = new Map(known.map((row) => [row.platformAchievementId, row.groupId]));
-  const split = achievements.some(
-    (a) =>
-      a.groupId &&
+  const split = achievements.some((a) => {
+    const { groupId } = groupOf(a);
+    return (
+      groupId &&
       parts.has(a.platformAchievementId) &&
-      achievementPart(parts.get(a.platformAchievementId)) !== achievementPart(a.groupId),
-  );
+      achievementPart(parts.get(a.platformAchievementId)) !== achievementPart(groupId)
+    );
+  });
   if (split) await creditSplitGame(gameId);
 }
 

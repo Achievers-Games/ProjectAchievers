@@ -19,6 +19,7 @@ import { rateLimit } from '#lib/server/rate-limit';
 import { COMPLETION_TIME_DISPLAY_SAMPLE, completionTimes } from '#lib/server/completion-time';
 import { achievementPart } from '#lib/shards';
 import { artNow } from '#lib/server/sync/content';
+import { dlcName } from '#lib/server/dlc-siblings';
 import { steamGroupsNow } from '#lib/server/sync/steam';
 import { unlockCommentCounts } from '#lib/server/activity';
 import type { Actions, PageServerLoad } from './$types';
@@ -41,6 +42,14 @@ function missablesOf(
   // Un relevé en cours signale déjà ses manquables, sans promettre qu'il n'y en a pas d'autres.
   return count ? { count, elsewhere: null, partial: true } : null;
 }
+
+/** Steam dit quels groupes sont des DLC ; ailleurs, ce peut être une mise à jour gratuite. */
+const partName = (id: string, name: string) =>
+  id.startsWith('dlc:')
+    ? `DLC · ${name}`
+    : achievementPart(id)
+      ? dlcName(name)
+      : name || m.achievement_group_base();
 
 export const load: PageServerLoad = async ({ params, locals, url, depends, setHeaders }) => {
   const timing = serverTiming();
@@ -295,13 +304,13 @@ export const load: PageServerLoad = async ({ params, locals, url, depends, setHe
     .sort(([a], [b]) => Number(b === 'default') - Number(a === 'default') || a.localeCompare(b))
     .map(([id, name]) => ({
       id,
-      name: id.startsWith('dlc:') ? `DLC · ${name}` : name || m.achievement_group_base(),
+      name: partName(id, name),
     }));
   // La progression du joueur, jeu de base et DLC séparés : chaque partie se finit à 100 %.
   const parts = [...Map.groupBy(rows, (row) => achievementPart(row.groupId))]
     .map(([part, members]) => ({
       id: part,
-      name: part ? (members[0]?.groupName ?? part) : m.achievement_group_base(),
+      name: partName(part, members[0]?.groupName ?? part),
       total: members.length,
       unlocked: members.filter((row) => row.unlockedAt !== null).length,
     }))

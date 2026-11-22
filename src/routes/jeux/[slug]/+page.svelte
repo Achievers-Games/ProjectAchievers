@@ -163,7 +163,7 @@
         ? [
             {
               id: part.id,
-              title: part.id ? `DLC · ${part.name}` : part.name,
+              title: part.name,
               count: counted ? `${part.unlocked} / ${part.total}` : String(part.total),
               rows,
             },
@@ -459,7 +459,7 @@
           <ul class="tabular space-y-0.5 text-sm" data-testid="game-player-parts">
             {#each data.parts as part (part.id)}
               <li class="flex gap-2">
-                <span class="truncate">{part.id ? `DLC · ${part.name}` : part.name}</span>
+                <span class="truncate">{part.name}</span>
                 <span class="ml-auto text-muted">
                   {part.unlocked} / {part.total}
                   {#if part.unlocked === part.total}· {formatPercent(100)}{/if}
