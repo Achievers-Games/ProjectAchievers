@@ -25,6 +25,11 @@
   },
   "layers": [
     {
+      "id": "veil",
+      "file": "veil.png",
+      "parallax": [8, 3]
+    },
+    {
       "id": "green",
       "parallax": [5, 2],
       "pivot": [1080, 620],

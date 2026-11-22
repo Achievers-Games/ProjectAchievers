@@ -25,15 +25,31 @@ Une illustration fixe donne une scène composée de plans, un personnage qui ré
 
 **Outils communs de découpe.** `static/_proto/card_kit.py` sert aux `prepare-art.py` du moteur partagé : détourage BiRefNet, couleurs de bord nettoyées du décor, remplissage LaMa gardé dans `work/`, matière prolongée sous un calque voisin (`behind`), rectangle du maillage calculé sur l’alpha, master, `full.jpg` et écart entre la source et la recomposition (`work/gap.png`). `node scripts/card-sheet.mjs --folder <dossier> Vivante` fait la planche d’un dossier avant son entrée au catalogue, et `--look x,y` pose le pointeur dans un coin.
 
-Défauts rencontrés sur les 21 premières cartes faites ainsi, à chercher d’emblée :
+### Barrière de qualité
 
-- **Réserve de caméra.** Laisser entre la fenêtre et le bord de la source au moins la parallaxe horizontale du fond, sinon une bande vide apparaît. `card_kit.py` le refuse.
-- **Contacts.** Un personnage et ce qui le porte partagent le même plan. La table de Little Nightmares, Six et les doigts ont la même parallaxe.
-- **Second plan découpé par couleur.** Extraire le collage ou le drapeau du décor déjà débarrassé du héros. Sinon, un morceau du héros reste dans ce calque et forme un double contour (Borderlands 2).
-- **Contours que le détourage oublie.** Branches fines, trait noir et liseré décalé se récupèrent par seuil de couleur, limité à une zone (The Witcher 3, Brawlhalla, Marvel Rivals).
+Le premier lot de 21 cartes passait tous les contrôles chiffrés et restait mauvais : décors salis, visages tordus, ailes écrasées. Un pivot qui répond ou un bord sans vide ne prouvent pas la qualité. Une carte ne se publie qu’après ces cinq examens, dans l’ordre.
+
+1. **Décor seul, en grand.** Ouvrir `bg.jpg` sans aucun calque. Aucune ombre, aucun contour ni reste du sujet ne doit se voir. Le trou couvre le sujet **et** son trait noir, son ombre, sa lueur et ses effets. Choisir le remplissage selon la matière :
+   - ciel, brume, eau, aplat : `card.sky` (membrane lisse, avec le grain du décor) ;
+   - motif rayé : `card.streak` dans le sens des rayures ;
+   - disque, anneau, lune, soleil : `card.around` ;
+   - texture organique (roche, neige, forêt) : `card.fill` (LaMa). LaMa étire les bords sombres dans les aplats : ne pas l’y employer.
+     `card.check` mesure le raccord et donne le pire endroit. Un écart élevé se regarde ; il est normal seulement sur un vrai bord du décor.
+2. **Pièces entières.** Lister ce que l’image montre de chaque sujet, y compris derrière une lumière, une fumée ou un accessoire : l’aile droite du drone d’Apex était cachée par son faisceau. `card.lift` récupère un élément translucide à partir du décor refait, `card.sam` découpe une pièce désignée par quelques points, `card.solve` calcule les couleurs de bord qui redonnent exactement la source. Contrôler un masque SAM avant de l’employer : il laisse parfois un trou dans un visage.
+3. **Rigidité.** Déclarer dans `guards` chaque visage, casque, masque, main ou arme d’un calque maillé. Le moteur l’emporte d’un bloc, sans jamais le déformer. Une tête, un bras armé ou une arme qui bougent beaucoup vont sur leur propre calque, avec la matière refaite dessous. Une ondulation de cheveux ou de tissu exclut le visage (`except`) et vit de préférence sur son propre calque. Le test du catalogue refuse plus de 3 % de déformation dans une pièce rigide et 36 % ailleurs. Marquer `soft` une paupière qui se ferme.
+4. **Ailes et membres.** Une aile bat par rotation : épaule, puis poignet ou `bend` avec un retard d’un quart de cycle, pendant que le corps réagit à l’opposé. Étirer un sujet en hauteur (`sy`) pour simuler un battement est interdit ; le test le refuse.
+5. **Gestes et effets.** Un tir ne déplace que le bras et l’arme, sur leur calque, avec un recul court ; `muzzle` dessine l’éclair, les étincelles et la fumée à la bouche du canon. Jamais de zone de déformation autour d’un impact. Un reflet qui parcourt une lame utilise `streak`.
+
+Regarder ensuite chaque carte **à son geste maximal, en 1 180 px de large, sans effets puis avec**, et zoomer ×2 sur chaque visage, arme et raccord. Une planche de quatre vignettes ne suffit pas.
+
+Autres défauts déjà rencontrés :
+
+- **Réserve de caméra.** Laisser entre la fenêtre et le bord de la source au moins la parallaxe horizontale du fond. `card_kit.py` le refuse sinon.
+- **Contacts.** Un personnage et ce qui le porte partagent le même plan.
+- **Lueur autour du sujet.** Le décor refait l’efface : la remettre en voile derrière lui avec `card.lift`, sinon l’image saute quand le canvas remplace le poster.
 - **Lumière rectangulaire.** Donner à un `mist` un `rect` plus grand que son rayon.
-- **Halo d’un objet mobile.** Le placer avec `frame` pour qu’il suive l’objet.
-- **Reflet.** Garder `glint` sur du métal clair. Sur une zone sombre et ronde, il dessine une bille.
+- **Halo d’un objet mobile.** Le placer avec `frame`.
+- **Maillages.** Ils se dessinent dans un contexte WebGL unique, partagé par toute la page. Le dessin 2D par triangles laissait des coutures sur les calques translucides.
 
 **Avant l'ouverture.** Tant que `CARDS_OPENED_AT` vaut `null` dans `src/lib/server/cards-launch.ts`, les boosters, la collection et les bannières de cartes n'existent que pour la modération, et aucun éclat n'est crédité. Pour ouvrir, y mettre la date de l'ouverture et déployer. Tout le monde part alors de zéro : l'historique d'avant devient le capital de départ.
 
@@ -163,7 +179,7 @@ Une nouvelle carte se décrit dans `scene.json` (`"engine": 2`) et se rend avec 
 - **Fenêtre et boucle.** `view` donne la fenêtre visible en pixels de la source. `period` donne la durée de la boucle, et `curves` nomme les accents `[début, sommet, maintien, fin]`.
 - **Calques.** Ils sont listés dans l’ordre de dessin, avec `file`, `origin` ou `crop` (une zone d’une planche), `pivot`, `parent` et `parallax`. Un calque sans `file` est un groupe : ses enfants héritent de son pivot, de sa parallaxe et de ses mouvements. Un mouvement déplace (`dx`, `dy`), tourne (`angle`) ou étire (`sx`, `sy`) le calque autour de son pivot. Il suit un accent (`curve`), un signal (`signal`), une oscillation (`wave`), une respiration (`"shape": "breath"`) ou une oscillation qui part du repos (`"shape": "settle"`). Une Relief ne bouge qu’avec le pointeur.
 - **Signaux.** `signals` nomme des grandeurs, comme le vent ou un regard : une base, des oscillations, des accents pondérés, des étapes `[début, fin, poids]` et des flashs `[début, sommet, fin, poids]`.
-- **Tissus et maillages.** `sway` fait onduler une mèche ou une cape bande par bande (lignes ou colonnes) depuis un bord ou une attache centrale. `mesh` découpe le calque en triangles et lui applique des ondes (`wave`) et des plis (`bend` : la pointe tourne plus que la base, pour une aile ou un pan). Tout reste en Canvas 2D, sans contexte WebGL. Pour une cape ou une crinière larges, préférer `mesh` avec une onde `wave` : `sway` décale chaque bande d'un nombre entier de pixels, et une grande amplitude y dessine des marches visibles en gros plan (Hollow Knight Vivante, version 1). Quand le même calque porte une pièce qui ne doit pas onduler, comme le bras qui tient l'aiguillon, `hold: [x, y, largeur, hauteur, fondu]` l'immobilise dans l'onde ; la pièce suit alors seulement son parent.
+- **Tissus et maillages.** `sway` fait onduler une mèche ou une cape bande par bande (lignes ou colonnes) depuis un bord ou une attache centrale. `mesh` découpe le calque en triangles et lui applique des ondes (`wave`) et des plis (`bend` : la pointe tourne plus que la base, pour une aile ou un pan). Les maillages passent par un contexte WebGL unique et partagé ; le reste de la carte est en Canvas 2D. Pour une cape ou une crinière larges, préférer `mesh` avec une onde `wave` : `sway` décale chaque bande d'un nombre entier de pixels, et une grande amplitude y dessine des marches visibles en gros plan (Hollow Knight Vivante, version 1). Quand le même calque porte une pièce qui ne doit pas onduler, comme le bras qui tient l'aiguillon, `hold: [x, y, largeur, hauteur, fondu]` l'immobilise dans l'onde ; la pièce suit alors seulement son parent.
 - **Zones souples.** Dans `mesh.deform`, une `zone` fait tourner, glisser ou s’étirer une partie du calque autour d’un `pivot`, sans la détacher : tête, bras, mâchoire, paupière, mèche. Elle se délimite par un `polygon` et son `feather`, ou par `center`, `radius` et `core`. Les poids se lisent au repos, et les zones se composent dans l’ordre : mettre le torse avant la tête. `motion` suit les mêmes accents que les calques, `ripple` ajoute une onde, `look` suit le pointeur (Vivante et Mythique seulement). `xs` et `ys` ajoutent des lignes au maillage près d’un œil. `data-card-joint="calque:zone"` isole une zone. Une pièce rigide et longue, comme une lame, doit tenir entière dans le cœur d’une seule zone, sinon elle se tord (Baldur’s Gate 3).
 - **Découpage et miroir.** `clip` découpe un calque par un contour posé dans le repère d’un autre, comme un œil dans son logement. `mirror` retourne la carte, et `fill` colore la marge.
 - **Fond.** `background` accepte `parallax`, `offset`, `grow`, `size` et `drift` (une dérive de l’air).

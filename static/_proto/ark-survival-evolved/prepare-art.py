@@ -1,4 +1,4 @@
-"""Calques du hero Steam d'ARK: Survival Evolved, application 346110."""
+"""Calques du hero Steam de ARK: Survival Evolved, application 346110."""
 
 import sys
 from pathlib import Path
@@ -10,18 +10,34 @@ from card_kit import Card
 
 card = Card(__file__)
 figure = card.islands(card.matte())
-# Ptérosaures : plus sombres que le ciel lissé autour d'eux.
+wings = {
+    "large-tip": [(610,70),(688,80),(690,92),(680,102),(660,98),(610,88)],
+    "large-left": [(674,84),(690,82),(716,104),(728,122),(724,142),(706,140),(704,124),(688,118),(676,100)],
+    "large-body": [(706,96),(748,96),(748,130),(734,136),(734,154),(700,154),(702,136),(714,124),(724,122)],
+    "large-right": [(730,126),(748,122),(790,108),(808,118),(808,138),(790,132),(745,138),(732,144)],
+    "small-tip": [(540,128),(612,146),(612,158),(600,164),(540,158)],
+    "small-left": [(598,146),(612,148),(626,170),(630,180),(620,188),(612,178),(602,166)],
+    "small-body": [(612,162),(644,160),(644,184),(634,192),(634,200),(610,200),(612,184),(620,176)],
+    "small-right": [(628,180),(646,176),(672,176),(682,186),(682,198),(664,190),(630,194)],
+}
+zones = {name: card.poly(points, 0.8) for name, points in wings.items()}
+whole = np.maximum.reduce(list(zones.values()))
+# Plus sombres que le ciel lissé autour d'eux.
 light = card.rgb.mean(axis=2).astype(np.float32)
-sky = cv2.medianBlur(card.rgb, 101).mean(axis=2)
-dark = np.clip((sky - light - 14) / 22, 0, 1).astype(np.float32)
-large = dark * card.poly([(612,70),(700,70),(740,95),(806,110),(806,134),(735,152),(700,150),(670,110),(612,90)], 3)
-small = dark * card.poly([(596,150),(640,165),(680,180),(680,196),(630,200),(596,186)], 3)
+sky_light = cv2.medianBlur(card.rgb, 101).mean(axis=2)
+dark = (sky_light - light > 9).astype(np.float32) * card.grow(whole, 4)
+hole = np.maximum(card.grow(figure, 14), card.grow(np.maximum(dark, whole > 0.5), 5))
+background = card.sky(card.rgb, np.maximum(card.grow(np.maximum(dark, whole > 0.5), 5), 0))
+background = card.fill(background, card.grow(figure, 14))
+card.check(background, hole)
+for name, zone in zones.items():
+    alpha, colors = card.lift(background, zone, 12, 34, sign="dark")
+    card.layer(f"{name}.png", name, alpha, colors, crop=False)
 # Herbes du premier plan : un voile doux, par-dessus le décor intact.
 grass = card.poly([(1440,560),(1500,470),(1600,455),(1700,380),(1800,440),(1920,470),(1920,566),(1440,566)], 12)
-
-background = card.fill(card.rgb, np.maximum(card.grow(figure, 13), card.grow(np.maximum(large, small), 8)))
-card.layer("large.png", "Grand ptérosaure", large, crop=True)
-card.layer("small.png", "Petit ptérosaure", small, crop=True)
-card.layer("grass.png", "Herbes", grass * (1 - card.grow(figure, 2)), crop=False)
-card.layer("rider.png", "Cavalière et baryonyx", figure, card.clean(figure))
+card.layer("grass.png", "Herbes", grass * (1 - card.grow(figure, 2)))
+clean = card.clean(figure)
+top = figure * card.poly([(1110,70),(1410,70),(1410,172),(1352,206),(1322,218),(1300,234),(1264,236),(1254,224),(1110,228)], 1.0)
+card.layer("rider.png", "Selle et baryonyx", card.behind(figure * (1 - top), top, 10), card.fill(clean, card.grow(top, 3)))
+card.layer("woman.png", "Cavalière et fusil", top, clean)
 card.finish(background)

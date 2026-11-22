@@ -266,8 +266,13 @@ function deformPoint(x, y, deformers, state, layer) {
       py = cy + dx * sin + dy * cos;
     } else if (deform.type === 'zone') {
       // Une partie qui tourne, s'étire ou ondule autour d'une attache, sans quitter sa surface.
-      // Le poids se lit au repos : les zones se composent (le torse emporte la tête).
-      const weight = zoneWeight(deform, x, y);
+      // Le poids se lit au repos : les zones se composent (le torse emporte la tête). `except`
+      // protège des contours voisins : une chevelure qui ondule n'entraîne pas le visage.
+      let weight = zoneWeight(deform, x, y);
+      for (const kept of deform.except ?? []) {
+        if (!weight) break;
+        weight *= 1 - zoneWeight(kept, x, y);
+      }
       if (!weight) continue;
       const [cx, cy] = deform.pivot ?? deform.center;
       const sum = { dx: 0, dy: 0, angle: 0, sx: 0, sy: 0 };
@@ -298,6 +303,147 @@ function deformPoint(x, y, deformers, state, layer) {
     }
   }
   return [px, py];
+}
+
+/**
+ * Les pièces rigides d'un calque maillé (`guards` : un visage, une arme, un casque). Les zones les
+ * emportent, mais d'un bloc : leur déformation est remplacée par la rotation et le déplacement qui
+ * s'en approchent le plus, avec un fondu de `feather` pixels autour. Les zones `soft` (paupière)
+ * s'ajoutent ensuite, à l'intérieur.
+ */
+function guardMoves(scene, layer, deformers, state) {
+  return (scene.guards ?? [])
+    .filter((guard) => guard.layer === layer.id)
+    .map((guard) => {
+      const points = guard.polygon;
+      const moved = points.map(([x, y]) => deformPoint(x, y, deformers, state, layer));
+      const middle = (list) =>
+        list.reduce(([sx, sy], [x, y]) => [sx + x / list.length, sy + y / list.length], [0, 0]);
+      const [cx, cy] = middle(points);
+      const [mx, my] = middle(moved);
+      let cos = 0;
+      let sin = 0;
+      points.forEach(([x, y], index) => {
+        const [ux, uy] = [x - cx, y - cy];
+        const [vx, vy] = [moved[index][0] - mx, moved[index][1] - my];
+        cos += ux * vx + uy * vy;
+        sin += ux * vy - uy * vx;
+      });
+      const norm = Math.hypot(cos, sin) || 1;
+      cos /= norm;
+      sin /= norm;
+      return {
+        zone: (guard.zone ??= { polygon: points, feather: guard.feather ?? 34 }),
+        place: (x, y) => [
+          mx + (x - cx) * cos - (y - cy) * sin,
+          my + (x - cx) * sin + (y - cy) * cos,
+        ],
+      };
+    });
+}
+
+/** La place d'un point d'un calque maillé : zones, pièces rigides, puis zones souples. */
+function meshPlacer(scene, layer, state) {
+  const deform = layer.mesh.deform;
+  const firm = deform.filter((entry) => !entry.soft);
+  const soft = deform.filter((entry) => entry.soft);
+  const guards = guardMoves(scene, layer, firm, state);
+  return (x, y) => {
+    let [px, py] = deformPoint(x, y, firm, state, layer);
+    let total = 0;
+    let sx = 0;
+    let sy = 0;
+    let most = 0;
+    for (const { zone, place } of guards) {
+      const weight = zoneWeight(zone, x, y);
+      if (!weight) continue;
+      const [gx, gy] = place(x, y);
+      // Une pièce pleine l'emporte largement sur le fondu de sa voisine.
+      const share = weight ** 4;
+      total += share;
+      sx += gx * share;
+      sy += gy * share;
+      most = Math.max(most, weight);
+    }
+    if (total) {
+      px += (sx / total - px) * most;
+      py += (sy / total - py) * most;
+    }
+    if (soft.length) {
+      const [ox, oy] = deformPoint(x, y, soft, state, layer);
+      px += ox - x;
+      py += oy - y;
+    }
+    return [px, py];
+  };
+}
+
+/**
+ * Mesure la déformation des calques maillés sur la boucle, pour refuser une carte qui tord sa
+ * matière. `strain` est le pire étirement dans une pièce rigide, `stretch` le pire étirement du
+ * calque entier (0,5 : une matière étirée ou tassée de moitié), zones `soft` exclues.
+ */
+export function sceneStrain(scene) {
+  const period = scene.period ?? 7.6;
+  const results = [];
+  for (const layer of scene.layers) {
+    if (!layer.mesh) continue;
+    const firm = {
+      ...layer,
+      mesh: { ...layer.mesh, deform: layer.mesh.deform.filter((d) => !d.soft) },
+    };
+    const guards = (scene.guards ?? []).filter((guard) => guard.layer === layer.id);
+    const inner = guards.map((guard) => ({ polygon: guard.polygon, feather: 0.01 }));
+    const strains = guards.map(() => 0);
+    const { filled } = layer.mesh;
+    let stretch = 0;
+    let at = null;
+    const [rx, ry, rw, rh] = layer.mesh.rect;
+    const step = Math.max(5, Math.min(rw, rh) / 60);
+    for (let k = 0; k < 24; k++) {
+      // Deux boucles et demie : les oscillations n'ont pas la période de la scène.
+      const elapsed = (k / 24) * period * 2.5;
+      const pointer = { x: k % 2 ? 1 : -1, y: k % 3 ? 1 : -1 };
+      const place = meshPlacer(scene, firm, frameState(scene, elapsed, pointer, -1, null, true));
+      for (let x = rx + 3; x < rx + rw; x += step) {
+        for (let y = ry + 3; y < ry + rh; y += step) {
+          const [ax, ay] = place(x - 2, y);
+          const [bx, by] = place(x + 2, y);
+          const [cx, cy] = place(x, y - 2);
+          const [dx, dy] = place(x, y + 2);
+          const [p, r] = [(bx - ax) / 4, (by - ay) / 4];
+          const [q, s] = [(dx - cx) / 4, (dy - cy) / 4];
+          const sum = (p * p + q * q + r * r + s * s) / 2;
+          const root = Math.sqrt(Math.max(0, sum * sum - (p * s - q * r) ** 2));
+          const row =
+            filled?.[Math.min(filled.length - 1, Math.floor(((y - ry) / rh) * filled.length))];
+          if (
+            row &&
+            row[Math.min(row.length - 1, Math.floor(((x - rx) / rw) * row.length))] === '0'
+          )
+            continue;
+          const strain = Math.max(
+            Math.abs(Math.sqrt(sum + root) - 1),
+            Math.abs(Math.sqrt(Math.max(0, sum - root)) - 1),
+          );
+          if (strain > stretch) {
+            stretch = strain;
+            at = [Math.round(x), Math.round(y), Number(elapsed.toFixed(1))];
+          }
+          inner.forEach((zone, index) => {
+            if (polygonWeight(zone, x, y) === 1) strains[index] = Math.max(strains[index], strain);
+          });
+        }
+      }
+    }
+    results.push({
+      layer: layer.id,
+      stretch,
+      at,
+      guards: guards.map((guard, index) => ({ id: guard.id, strain: strains[index] })),
+    });
+  }
+  return results;
 }
 
 /** Les cases d'un maillage qui portent des pixels : les autres ne sont jamais dessinées. */
@@ -333,6 +479,127 @@ function filledCells(image, mesh, columns, bands) {
  * transformation affine qui l'envoie de sa place d'origine à sa place déformée. Les triangles
  * sont légèrement agrandis pour qu'aucune fente n'apparaisse entre eux.
  */
+/**
+ * Le rendu des maillages : un seul contexte WebGL pour toute la page, partagé par toutes les cartes
+ * (un navigateur n'en autorise qu'une quinzaine). Chaque calque y est déformé, puis recopié dans le
+ * canvas 2D de sa carte. Les triangles s'ajustent exactement : aucune couture, même sur un calque
+ * translucide. Sans WebGL, le dessin 2D par triangles prend le relais.
+ */
+let meshStage;
+function openMeshStage() {
+  const canvas = document.createElement('canvas');
+  const gl = canvas.getContext('webgl2', {
+    alpha: true,
+    premultipliedAlpha: true,
+    antialias: false,
+  });
+  if (!gl) return null;
+  const shader = (type, code) => {
+    const handle = gl.createShader(type);
+    gl.shaderSource(handle, code);
+    gl.compileShader(handle);
+    return handle;
+  };
+  const program = gl.createProgram();
+  gl.attachShader(
+    program,
+    shader(
+      gl.VERTEX_SHADER,
+      `#version 300 es
+      in vec2 place, source;
+      uniform vec3 rowX, rowY;
+      uniform vec2 board, size;
+      out vec2 uv;
+      void main() {
+        uv = source / size;
+        vec3 point = vec3(place, 1.0);
+        vec2 pixel = vec2(dot(rowX, point), dot(rowY, point));
+        gl_Position = vec4(pixel.x / board.x * 2.0 - 1.0, 1.0 - pixel.y / board.y * 2.0, 0.0, 1.0);
+      }`,
+    ),
+  );
+  gl.attachShader(
+    program,
+    shader(
+      gl.FRAGMENT_SHADER,
+      `#version 300 es
+      precision highp float;
+      in vec2 uv;
+      uniform sampler2D picture;
+      out vec4 color;
+      void main() { color = texture(picture, uv); }`,
+    ),
+  );
+  gl.linkProgram(program);
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) return null;
+  gl.useProgram(program);
+  gl.disable(gl.BLEND);
+  const attribute = (name) => {
+    const location = gl.getAttribLocation(program, name);
+    const buffer = gl.createBuffer();
+    gl.enableVertexAttribArray(location);
+    return { location, buffer };
+  };
+  return {
+    canvas,
+    gl,
+    place: attribute('place'),
+    source: attribute('source'),
+    uniform: Object.fromEntries(
+      ['rowX', 'rowY', 'board', 'size'].map((name) => [name, gl.getUniformLocation(program, name)]),
+    ),
+    textures: new WeakMap(),
+  };
+}
+
+/** Dessine les triangles `(source → placed)` ; renvoie `false` si WebGL n'est pas disponible. */
+function drawTriangles(target, image, sources, places) {
+  if (meshStage === undefined || meshStage?.gl.isContextLost()) meshStage = openMeshStage();
+  if (!meshStage) return false;
+  const { canvas, gl, place, source, uniform, textures } = meshStage;
+  const { width, height } = target.canvas;
+  if (canvas.width < width || canvas.height < height) {
+    canvas.width = Math.max(canvas.width, width);
+    canvas.height = Math.max(canvas.height, height);
+  }
+  let texture = textures.get(image);
+  if (texture) gl.bindTexture(gl.TEXTURE_2D, texture);
+  else {
+    texture = gl.createTexture();
+    textures.set(image, texture);
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  }
+  gl.viewport(0, canvas.height - height, width, height);
+  gl.clearColor(0, 0, 0, 0);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  const matrix = target.getTransform();
+  gl.uniform3f(uniform.rowX, matrix.a, matrix.c, matrix.e);
+  gl.uniform3f(uniform.rowY, matrix.b, matrix.d, matrix.f);
+  gl.uniform2f(uniform.board, width, height);
+  gl.uniform2f(uniform.size, image.width, image.height);
+  for (const [attribute, data] of [
+    [place, places],
+    [source, sources],
+  ]) {
+    gl.bindBuffer(gl.ARRAY_BUFFER, attribute.buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.DYNAMIC_DRAW);
+    gl.vertexAttribPointer(attribute.location, 2, gl.FLOAT, false, 0, 0);
+  }
+  gl.drawArrays(gl.TRIANGLES, 0, sources.length / 2);
+  target.save();
+  target.setTransform(1, 0, 0, 1, 0, 0);
+  target.drawImage(canvas, 0, 0, width, height, 0, 0, width, height);
+  target.restore();
+  return true;
+}
+
 function drawMesh(ctx, image, mesh, state, layer) {
   const [rx, ry, rw, rh] = mesh.rect;
   const [gridCols, gridRows] = mesh.grid ?? [16, 10];
@@ -346,27 +613,31 @@ function drawMesh(ctx, image, mesh, state, layer) {
   const cols = columns.length - 1;
   const rows = bands.length - 1;
   const source = [];
-  const target = [];
+  const placed = [];
+  const place = meshPlacer(state.scene, layer, state);
   for (let j = 0; j <= rows; j++) {
     for (let i = 0; i <= cols; i++) {
       const x = columns[i];
       const y = bands[j];
       source.push([x, y]);
-      target.push(deformPoint(x, y, mesh.deform, state, layer));
+      placed.push(place(x, y));
     }
   }
   const at = (i, j) => j * (cols + 1) + i;
   const cells = filledCells(image, mesh, columns, bands);
+  const corners = [];
   for (let j = 0; j < rows; j++) {
     for (let i = 0; i < cols; i++) {
       if (!cells[j][i]) continue;
-      const a = at(i, j),
-        b = at(i + 1, j),
-        c = at(i, j + 1),
-        d = at(i + 1, j + 1);
-      drawTriangle(ctx, image, source[a], source[b], source[c], target[a], target[b], target[c]);
-      drawTriangle(ctx, image, source[b], source[d], source[c], target[b], target[d], target[c]);
+      const [a, b, c, d] = [at(i, j), at(i + 1, j), at(i, j + 1), at(i + 1, j + 1)];
+      corners.push(a, b, c, b, d, c);
     }
+  }
+  const flat = (points) => corners.flatMap((index) => points[index]);
+  if (drawTriangles(ctx, image, flat(source), flat(placed))) return;
+  for (let k = 0; k < corners.length; k += 3) {
+    const [a, b, c] = corners.slice(k, k + 3);
+    drawTriangle(ctx, image, source[a], source[b], source[c], placed[a], placed[b], placed[c]);
   }
 }
 
@@ -769,11 +1040,82 @@ const EFFECTS = {
     const px = fx.from[0] + (to[0] - fx.from[0]) * progress;
     const py = fx.from[1] + (to[1] - fx.from[1]) * progress;
     const radius = fx.radius ?? 22;
+    if (fx.streak) {
+      // Un trait de lumière couché sur l'arête, plutôt qu'une bille.
+      ctx.translate(px, py);
+      ctx.rotate(Math.atan2(to[1] - fx.from[1], to[0] - fx.from[0]));
+      ctx.scale(1, fx.streak);
+      ctx.translate(-px, -py);
+    }
     const glow = ctx.createRadialGradient(px, py, 0, px, py, radius);
     glow.addColorStop(0, rgba(fx.color ?? [255, 223, 171], shine * (fx.alpha ?? 0.8)));
     glow.addColorStop(1, rgba(fx.edge ?? fx.color ?? [255, 185, 140], 0));
     ctx.fillStyle = glow;
     ctx.fillRect(px - radius, py - radius, radius * 2, radius * 2);
+  },
+
+  /**
+   * Un coup de feu : éclair en étoile dans l'axe du canon, gerbe d'étincelles, puis fumée qui
+   * s'élève. `at` est la bouche, `angle` la direction, `window` les instants de l'éclair.
+   */
+  muzzle(ctx, fx, state) {
+    const [cx, cy] = fx.at;
+    const size = fx.size ?? 90;
+    const start = fx.start;
+    const age = state.t - start;
+    if (age < 0 || age > 2) return;
+    ctx.translate(cx, cy);
+    ctx.rotate(fx.angle ?? 0);
+    const flash = Math.max(0, 1 - age / 0.13);
+    if (flash > 0) {
+      const spike = (angle, length, width) => {
+        ctx.save();
+        ctx.rotate(angle);
+        const light = ctx.createLinearGradient(0, 0, length, 0);
+        light.addColorStop(0, `rgba(255, 250, 222, ${flash})`);
+        light.addColorStop(0.35, `rgba(255, 205, 98, ${flash * 0.9})`);
+        light.addColorStop(1, 'rgba(255, 112, 24, 0)');
+        ctx.fillStyle = light;
+        ctx.beginPath();
+        ctx.moveTo(0, -width);
+        ctx.quadraticCurveTo(length * 0.4, -width * 0.8, length, 0);
+        ctx.quadraticCurveTo(length * 0.4, width * 0.8, 0, width);
+        ctx.fill();
+        ctx.restore();
+      };
+      spike(0, size * 1.5, size * 0.13);
+      spike(0.55, size * 0.75, size * 0.08);
+      spike(-0.55, size * 0.75, size * 0.08);
+      spike(1.25, size * 0.42, size * 0.06);
+      spike(-1.25, size * 0.42, size * 0.06);
+    }
+    for (let i = 0; i < 14; i++) {
+      const life = 0.22 + seed(i) * 0.4;
+      if (age > life) continue;
+      const spread = (seed(i + 3) - 0.5) * 1.1;
+      const reach = size * (0.5 + seed(i + 9) * 1.9) * Math.sqrt(age / life);
+      const px = Math.cos(spread) * reach;
+      const py = Math.sin(spread) * reach + 60 * age * age;
+      ctx.fillStyle = `rgba(255, ${170 + Math.round(seed(i + 1) * 70)}, 90, ${1 - age / life})`;
+      ctx.beginPath();
+      ctx.arc(px, py, 1 + seed(i + 5) * 1.3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.rotate(-(fx.angle ?? 0));
+    for (let i = 0; i < 5; i++) {
+      const grown = age - 0.06 - i * 0.05;
+      if (grown < 0) continue;
+      const radius = size * (0.1 + 0.22 * grown + i * 0.02);
+      const px = Math.cos(fx.angle ?? 0) * size * (0.2 + i * 0.1) + 14 * Math.sin(i + grown * 2);
+      const py = Math.sin(fx.angle ?? 0) * size * 0.2 - grown * (34 + i * 7);
+      const alpha = 0.2 * Math.max(0, 1 - grown / 1.5) * Math.min(1, grown * 8);
+      const puff = ctx.createRadialGradient(px, py, 0, px, py, radius);
+      puff.addColorStop(0, `rgba(214, 203, 190, ${alpha})`);
+      puff.addColorStop(1, 'rgba(214, 203, 190, 0)');
+      ctx.fillStyle = puff;
+      ctx.fillRect(px - radius, py - radius, radius * 2, radius * 2);
+    }
   },
 
   /** Des poussières qui descendent le long d'un rayon de lumière oblique. */

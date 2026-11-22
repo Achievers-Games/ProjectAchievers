@@ -7,7 +7,7 @@ import { servedFiles, WORKSHOP_DIR } from '../../scripts/card-files.mjs';
 import { CARD_CATALOGUE, CARD_DRAFTS, catalogueFolders } from './card-catalogue';
 import artworkData from './card-artworks.json';
 
-import { EFFECT_TYPES, INTRO_TYPES } from '../../static/_proto/shared/card-engine.js';
+import { EFFECT_TYPES, INTRO_TYPES, sceneStrain } from '../../static/_proto/shared/card-engine.js';
 
 const CARD_ARTWORKS: Record<string, { name: string; url: string }> = artworkData.artworks;
 
@@ -151,6 +151,26 @@ describe('le catalogue de cartes', () => {
         expect(manifest.intro?.revealAt).toBe(scene.intro.revealAt);
       }
     },
+  );
+
+  // Une matière qui se tord se voit tout de suite : visage étiré, arme molle, aile écrasée.
+  it.each(CARD_DRAFTS.flatMap((game) => [...new Set(Object.values(game.editions))]))(
+    '%s : ne déforme ni ses pièces rigides ni sa matière',
+    (folder) => {
+      const scene = JSON.parse(readFileSync(join(folderOf(folder), 'scene.json'), 'utf8'));
+      for (const layer of scene.layers) {
+        for (const term of layer.motion ?? []) {
+          const flap = Math.max(Math.abs(term.sx ?? 0), Math.abs(term.sy ?? 0));
+          expect(flap, `${layer.id} : une aile se plie, elle ne s'écrase pas`).toBeLessThan(0.05);
+        }
+      }
+      for (const result of sceneStrain(scene)) {
+        expect(result.stretch, `${result.layer} vers ${result.at}`).toBeLessThan(0.36);
+        for (const guard of result.guards)
+          expect(guard.strain, `${result.layer} : ${guard.id}`).toBeLessThan(0.03);
+      }
+    },
+    30_000,
   );
 
   it('ne partage aucun identifiant de carte entre deux dossiers', () => {

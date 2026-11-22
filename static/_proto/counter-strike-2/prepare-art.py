@@ -15,7 +15,9 @@ front = card.poly([(1080,60),(1500,60),(1520,240),(1548,310),(1556,390),(1600,43
     (1600,540),(1600,620),(1080,620)], 1.0)
 ct = matte * front
 terro = matte * (1 - front)
-background = card.fill(card.rgb, card.grow(matte, 14))
+hole = card.grow(matte, 10)
+background = card.streak(card.rgb, hole, (-264, 624))
+card.check(background, hole)
 under = card.fill(card.clean(matte), card.grow(ct, 3))
 card.layer("terro.png", "Terroriste", card.behind(terro, ct, 20), under)
 card.layer("ct.png", "Antiterroriste", ct, card.clean(matte))

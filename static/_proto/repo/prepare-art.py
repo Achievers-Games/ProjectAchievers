@@ -14,7 +14,9 @@ shape = card.poly([(1173,627),(1214,427),(1233,360),(1250,356),(1251,300),(1242,
 red = matte * shape
 green = matte * (1 - shape) * card.poly([(900,100),(1390,100),(1390,620),(900,620)], 0)
 blue = matte * (1 - shape) * card.poly([(1391,100),(1920,100),(1920,620),(1391,620)], 0)
-background = card.fill(card.rgb, card.grow(matte, 12))
+hole = card.grow(matte, 40)
+background = card.sky(card.rgb, hole, across=1.0, down=0.4)
+card.check(background, hole)
 # Pupilles mobiles : le blanc de l'œil est repeint dessous.
 eyes = {"r1":[1264,226,13,18],"r2":[1417,229,15,17],"g1":[1053,219,9,12],"g2":[1001,252,8,12],"b1":[1669,336,14,15],"b2":[1781,342,13,14]}
 spots = {}
@@ -31,6 +33,9 @@ for name, (x, y, rx, ry) in eyes.items():
     white = white * (1 - cover) + np.median(bright, axis=0) * cover
 white = white.round().astype(np.uint8)
 under = card.fill(white, card.grow(red, 3))
+around = cv2.GaussianBlur(card.grow(matte, 36).astype(np.float32), (0, 0), 4)
+alpha, colors = card.lift(background, around, 5, 46)
+card.layer("veil.png", "Lueur autour du sujet", alpha * (1 - cv2.GaussianBlur(card.grow(matte, 1).astype(np.float32), (0, 0), 1.5)), colors)
 card.layer("green.png", "Robot vert", card.behind(green, red, 18), under)
 card.layer("g1.png", "Pupille", spots["g1"], crop=True)
 card.layer("g2.png", "Pupille", spots["g2"], crop=True)

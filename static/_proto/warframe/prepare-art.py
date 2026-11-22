@@ -8,6 +8,8 @@ from card_kit import Card
 
 card = Card(__file__)
 figure = card.islands(card.matte())
-background = card.fill(card.rgb, card.grow(figure, 14))
+hole = card.grow(figure, 14)
+background = card.fill(card.rgb, hole)
+card.check(background, hole)
 card.layer("figure.png", "Warframe et arme de glace", figure, card.clean(figure))
 card.finish(background)

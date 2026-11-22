@@ -60,7 +60,7 @@
     {
       "name": "Grand Theft Auto V",
       "steamAppId": "271590",
-      "version": 1,
+      "version": 2,
       "editions": {
         "RELIEF": "grand-theft-auto-v",
         "VIVANTE": "grand-theft-auto-v"
@@ -69,7 +69,7 @@
     {
       "name": "Overwatch",
       "steamAppId": "2357570",
-      "version": 1,
+      "version": 2,
       "editions": {
         "RELIEF": "overwatch",
         "VIVANTE": "overwatch"
@@ -78,7 +78,7 @@
     {
       "name": "Apex Legends",
       "steamAppId": "1172470",
-      "version": 1,
+      "version": 2,
       "editions": {
         "RELIEF": "apex-legends",
         "VIVANTE": "apex-legends"
@@ -87,7 +87,7 @@
     {
       "name": "ELDEN RING",
       "steamAppId": "1245620",
-      "version": 1,
+      "version": 2,
       "editions": {
         "RELIEF": "elden-ring",
         "VIVANTE": "elden-ring"
@@ -96,7 +96,7 @@
     {
       "name": "Borderlands 2",
       "steamAppId": "49520",
-      "version": 1,
+      "version": 2,
       "editions": {
         "RELIEF": "borderlands-2",
         "VIVANTE": "borderlands-2"
@@ -105,7 +105,7 @@
     {
       "name": "Warframe",
       "steamAppId": "230410",
-      "version": 1,
+      "version": 2,
       "editions": {
         "RELIEF": "warframe",
         "VIVANTE": "warframe"
@@ -114,7 +114,7 @@
     {
       "name": "Destiny 2",
       "steamAppId": "1085660",
-      "version": 1,
+      "version": 2,
       "editions": {
         "RELIEF": "destiny-2",
         "VIVANTE": "destiny-2"
@@ -123,7 +123,7 @@
     {
       "name": "ARK: Survival Evolved",
       "steamAppId": "346110",
-      "version": 1,
+      "version": 2,
       "editions": {
         "RELIEF": "ark-survival-evolved",
         "VIVANTE": "ark-survival-evolved"
@@ -132,7 +132,7 @@
     {
       "name": "Tom Clancy's Rainbow Six Siege",
       "steamAppId": "359550",
-      "version": 1,
+      "version": 2,
       "editions": {
         "RELIEF": "rainbow-six-siege",
         "VIVANTE": "rainbow-six-siege"
@@ -141,7 +141,7 @@
     {
       "name": "Baldur's Gate 3",
       "steamAppId": "1086940",
-      "version": 1,
+      "version": 2,
       "editions": {
         "RELIEF": "baldurs-gate-3",
         "VIVANTE": "baldurs-gate-3"
@@ -150,7 +150,7 @@
     {
       "name": "Black Desert",
       "steamAppId": "582660",
-      "version": 1,
+      "version": 2,
       "editions": {
         "RELIEF": "black-desert",
         "VIVANTE": "black-desert"
@@ -159,7 +159,7 @@
     {
       "name": "Brawlhalla",
       "steamAppId": "291550",
-      "version": 1,
+      "version": 2,
       "editions": {
         "RELIEF": "brawlhalla",
         "VIVANTE": "brawlhalla"
@@ -168,7 +168,7 @@
     {
       "name": "Counter-Strike 2",
       "steamAppId": "730",
-      "version": 1,
+      "version": 2,
       "editions": {
         "RELIEF": "counter-strike-2",
         "VIVANTE": "counter-strike-2"
@@ -177,7 +177,7 @@
     {
       "name": "Red Dead Redemption 2",
       "steamAppId": "1174180",
-      "version": 1,
+      "version": 2,
       "editions": {
         "RELIEF": "red-dead-redemption-2",
         "VIVANTE": "red-dead-redemption-2"
@@ -186,7 +186,7 @@
     {
       "name": "The Elder Scrolls V: Skyrim",
       "steamAppId": "72850",
-      "version": 1,
+      "version": 2,
       "editions": {
         "RELIEF": "skyrim",
         "VIVANTE": "skyrim"
@@ -195,7 +195,7 @@
     {
       "name": "The Witcher 3: Wild Hunt",
       "steamAppId": "292030",
-      "version": 1,
+      "version": 2,
       "editions": {
         "RELIEF": "the-witcher-3",
         "VIVANTE": "the-witcher-3"
@@ -204,7 +204,7 @@
     {
       "name": "Little Nightmares",
       "steamAppId": "424840",
-      "version": 1,
+      "version": 2,
       "editions": {
         "RELIEF": "little-nightmares",
         "VIVANTE": "little-nightmares"
@@ -213,7 +213,7 @@
     {
       "name": "Subnautica",
       "steamAppId": "264710",
-      "version": 1,
+      "version": 2,
       "editions": {
         "RELIEF": "subnautica",
         "VIVANTE": "subnautica"
@@ -222,7 +222,7 @@
     {
       "name": "Cyberpunk 2077",
       "steamAppId": "1091500",
-      "version": 1,
+      "version": 2,
       "editions": {
         "RELIEF": "cyberpunk-2077",
         "VIVANTE": "cyberpunk-2077"
@@ -231,7 +231,7 @@
     {
       "name": "Marvel Rivals",
       "steamAppId": "2767030",
-      "version": 1,
+      "version": 2,
       "editions": {
         "RELIEF": "marvel-rivals",
         "VIVANTE": "marvel-rivals"
@@ -240,7 +240,7 @@
     {
       "name": "R.E.P.O.",
       "steamAppId": "3241660",
-      "version": 1,
+      "version": 2,
       "editions": {
         "RELIEF": "repo",
         "VIVANTE": "repo"

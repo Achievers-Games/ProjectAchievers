@@ -16,7 +16,10 @@ sphere = cv2.GaussianBlur(sphere, (0, 0), 1.2)
 clouds = np.maximum(card.poly([(1190,150),(1500,180),(1560,430),(1300,520),(1190,400)], 40),
     card.poly([(520,540),(1400,540),(1400,600),(520,600)], 30)) * (1 - card.grow(sphere, 20))
 clouds = cv2.GaussianBlur(clouds, (0, 0), 6)
-background = card.fill(card.rgb, card.grow(sphere, 16))
+hole = card.grow(sphere, 34)
+background = card.sky(card.rgb, hole, across=1.0, down=0.5)
+card.check(background, hole)
 card.layer("clouds.png", "Nuages", clouds)
-card.layer("sphere.png", "Le Voyageur", sphere)
+# La lueur du bord appartient à la sphère.
+card.layer("sphere.png", "Le Voyageur", *card.subject(sphere, background, reach=30, low=6, high=50))
 card.finish(background)
