@@ -589,6 +589,25 @@ export async function resolveSteamReview(
           reviewedBy: moderatorId,
         },
       });
+      // Le dossier ne garde que sa dernière décision ; l'historique les garde toutes.
+      const accepts = current.flagged.filter((key) => approveAll || selected.has(key)).length;
+      await tx.steamReviewDecision.create({
+        data: {
+          reviewId: id,
+          moderatorId,
+          decision: suspendedAt
+            ? 'BLOCKED'
+            : approveAll
+              ? current.status === 'REJECTED'
+                ? 'UNBLOCKED'
+                : 'APPROVED'
+              : rejected.length
+                ? 'PARTIAL'
+                : 'APPROVED',
+          accepted: suspendedAt ? 0 : accepts,
+          refused: suspendedAt ? current.flagged.length : current.flagged.length - accepts,
+        },
+      });
       if (approveAll && allowBatches) {
         await tx.game.updateMany({
           where: { id: current.gameId },

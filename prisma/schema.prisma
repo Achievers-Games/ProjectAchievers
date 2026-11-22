@@ -209,6 +209,7 @@ model User {
   games           UserGame[]
   achievements    UserAchievement[]
   steamReviews    SteamIntegrityReview[]
+  steamDecisions  SteamReviewDecision[]
   guides          Guide[]
   guideVotes      GuideVote[]
   guideChecks     GuideCheck[]
@@ -828,13 +829,37 @@ model SteamIntegrityReview {
   reviewedAt      DateTime?
   reviewedBy      String?
 
-  proofs  SteamReviewProof[]
+  proofs    SteamReviewProof[]
+  decisions SteamReviewDecision[]
   /// Dernière preuve envoyée par le joueur : elle remet la revue sous les yeux des modérateurs.
-  proofAt DateTime?
+  proofAt   DateTime?
 
   @@unique([steamId, gameId])
   @@index([status, openedAt])
   @@index([userId, suspendedAt])
+}
+
+enum SteamDecision {
+  APPROVED
+  PARTIAL
+  BLOCKED
+  UNBLOCKED
+}
+
+/// Chaque décision d'un modérateur sur un dossier, gardée même quand une autre la remplace.
+model SteamReviewDecision {
+  id          String               @id @default(cuid())
+  reviewId    String
+  review      SteamIntegrityReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  moderatorId String?
+  moderator   User?                @relation(fields: [moderatorId], references: [id], onDelete: SetNull)
+  decision    SteamDecision
+  accepted    Int                  @default(0)
+  refused     Int                  @default(0)
+  createdAt   DateTime             @default(now())
+
+  @@index([reviewId, createdAt])
+  @@index([moderatorId])
 }
 
 /// Ce que le joueur montre pour défendre un lot : une capture de son temps de jeu ailleurs, et un mot.

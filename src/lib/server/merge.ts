@@ -274,6 +274,11 @@ export async function mergeUsers(
             data: { userId: targetId },
           });
         }
+        // Les décisions de modération restent au nom de celui qui les a prises.
+        await tx.steamReviewDecision.updateMany({
+          where: { moderatorId: sourceId },
+          data: { moderatorId: targetId },
+        });
         await tx.partnerLink.updateMany(owner);
         await tx.oAuthGrant.updateMany(owner);
         // Les événements pas encore envoyés suivent le joueur : sinon ils partiraient sans lui.

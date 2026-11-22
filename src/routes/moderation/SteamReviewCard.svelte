@@ -1,4 +1,5 @@
 <script lang="ts">
+  import CircleCheck from '@lucide/svelte/icons/circle-check';
   import Clock from '@lucide/svelte/icons/clock';
   import LoaderCircle from '@lucide/svelte/icons/loader-circle';
   import FileCheck from '@lucide/svelte/icons/file-check';
@@ -96,20 +97,53 @@
   };
 
   const pending = $derived(review.status === 'PENDING');
+  /** Validé, en tout ou partie : rien à décider, la carte se consulte. */
+  const settled = $derived(!pending && !review.suspended);
+
+  /** Une décision passée, en mots : qui, quand, et combien de succès. */
+  function decisionLabel(entry: Review['decisions'][number]) {
+    const values = {
+      name: entry.moderator?.displayName ?? m.steam_mod_decision_unknown(),
+      when: formatRelative(entry.createdAt),
+    };
+    switch (entry.decision) {
+      case 'APPROVED':
+        return m.steam_mod_decision_approved(values);
+      case 'UNBLOCKED':
+        return m.steam_mod_decision_unblocked(values);
+      case 'BLOCKED':
+        return m.steam_mod_decision_blocked(values);
+      case 'PARTIAL':
+        return m.steam_mod_decision_partial({
+          ...values,
+          accepted: String(entry.accepted),
+          refused: String(entry.refused),
+        });
+    }
+  }
   const status = $derived(
-    review.status === 'REJECTED'
+    settled
       ? {
-          label: m.steam_mod_status_rejected(),
-          tone: 'text-danger border-danger/50',
-          icon: ShieldX,
+          label:
+            review.status === 'APPROVED'
+              ? m.steam_mod_status_approved()
+              : m.steam_mod_status_partial(),
+          tone: 'text-success border-success/50',
+          icon: CircleCheck,
         }
-      : review.suspended
+      : review.status === 'REJECTED'
         ? {
-            label: m.steam_mod_status_suspended(),
+            label: m.steam_mod_status_rejected(),
             tone: 'text-danger border-danger/50',
             icon: ShieldX,
           }
-        : { label: m.steam_mod_status_pending(), tone: 'text-gold border-gold/50', icon: Clock },
+        : review.suspended
+          ? {
+              label: m.steam_mod_status_suspended(),
+              tone: 'text-danger border-danger/50',
+              icon: ShieldX,
+            }
+          : { label: m.steam_mod_status_pending(), tone: 'text-gold border-gold/50', icon: Clock },
   );
   const pace = $derived(review.trust?.signals.some((signal) => signal.kind === 'pace'));
   const offlineKnown = $derived(review.trust?.signals.some((signal) => signal.kind === 'offline'));
@@ -278,96 +312,111 @@
     </div>
   {/if}
 
-  <form
-    bind:this={form}
-    method="POST"
-    action="?/steamReview"
-    use:enhance={decide}
-    aria-busy={busy !== null}
-    class="space-y-3"
-  >
-    <input type="hidden" name="id" value={review.id} />
-    <input type="hidden" name="version" value={review.openedAt.getTime()} />
-
-    <div class="flex flex-wrap items-center gap-2">
-      <button class="btn btn-primary" name="decision" value="approve" disabled={busy !== null}>
-        {@render spinner('approve')}
-        {pending ? m.steam_review_validate_all() : m.steam_mod_unblock()}
-      </button>
-      {#if pending}
-        <button
-          class="btn btn-danger"
-          name="decision"
-          value="suspend"
-          disabled={busy !== null}
-          onclick={confirmBlock}
-        >
-          {@render spinner('suspend')}
-          {m.steam_mod_block()}
-        </button>
-      {/if}
-      <label class="flex items-center gap-2 text-muted">
-        {#if !review.game.allowSteamBatches}
-          <input type="checkbox" name="allowBatches" value="1" />
-          {m.steam_review_exception()}
-        {/if}
-      </label>
+  {#if review.decisions.length}
+    <div class="space-y-1" data-testid="steam-decisions">
+      <p class="font-medium">{m.steam_mod_history()}</p>
+      <ul class="space-y-0.5 text-muted">
+        {#each review.decisions as entry (entry.id)}
+          <li title={stamp(entry.createdAt)}>{decisionLabel(entry)}</li>
+        {/each}
+      </ul>
     </div>
-    {#if !pending || review.heldCount || review.suspended}
-      <p class="text-xs text-muted">{pending ? m.steam_mod_help() : m.steam_mod_help_blocked()}</p>
-    {/if}
+  {/if}
 
-    {#if pending}
-      <details class="rounded-md border border-line p-3">
-        <summary class="cursor-pointer font-medium">
-          {m.steam_mod_pick({ count: String(review.unlocks.length) })}
-        </summary>
-        <div class="mt-2 space-y-2">
-          <p class="text-muted">{m.steam_review_selection()}</p>
-          <div class="flex gap-2">
-            <button type="button" class="btn h-7 text-xs" onclick={() => pickAll(true)}
-              >{m.steam_mod_pick_all()}</button
-            >
-            <button type="button" class="btn h-7 text-xs" onclick={() => pickAll(false)}
-              >{m.steam_mod_pick_none()}</button
-            >
-          </div>
-          <ul class="max-h-72 space-y-1 overflow-y-auto pr-1">
-            {#each review.unlocks as unlock (unlock.key)}
-              <li>
-                <label class="flex items-start gap-2">
-                  <input
-                    type="checkbox"
-                    name="accepted"
-                    value={unlock.key}
-                    disabled={!unlock.available}
-                  />
-                  <span>
-                    {unlock.name}
-                    <span class="text-xs text-muted">· {stamp(unlock.at)}</span>
-                    {#if !unlock.held && !review.suspended}
-                      <span class="text-xs text-muted">· {m.steam_mod_unlock_counted()}</span>
-                    {/if}
-                  </span>
-                </label>
-              </li>
-            {/each}
-          </ul>
+  {#if !settled}
+    <form
+      bind:this={form}
+      method="POST"
+      action="?/steamReview"
+      use:enhance={decide}
+      aria-busy={busy !== null}
+      class="space-y-3"
+    >
+      <input type="hidden" name="id" value={review.id} />
+      <input type="hidden" name="version" value={review.openedAt.getTime()} />
+
+      <div class="flex flex-wrap items-center gap-2">
+        <button class="btn btn-primary" name="decision" value="approve" disabled={busy !== null}>
+          {@render spinner('approve')}
+          {pending ? m.steam_review_validate_all() : m.steam_mod_unblock()}
+        </button>
+        {#if pending}
           <button
-            class="btn btn-secondary"
+            class="btn btn-danger"
             name="decision"
-            value="selected"
+            value="suspend"
             disabled={busy !== null}
+            onclick={confirmBlock}
           >
-            {@render spinner('selected')}
-            {m.steam_review_validate_selection()}
+            {@render spinner('suspend')}
+            {m.steam_mod_block()}
           </button>
-        </div>
-      </details>
-    {/if}
-  </form>
+        {/if}
+        <label class="flex items-center gap-2 text-muted">
+          {#if !review.game.allowSteamBatches}
+            <input type="checkbox" name="allowBatches" value="1" />
+            {m.steam_review_exception()}
+          {/if}
+        </label>
+      </div>
+      {#if !pending || review.heldCount || review.suspended}
+        <p class="text-xs text-muted">
+          {pending ? m.steam_mod_help() : m.steam_mod_help_blocked()}
+        </p>
+      {/if}
 
-  {#if !review.game.crossProgress}
+      {#if pending}
+        <details class="rounded-md border border-line p-3">
+          <summary class="cursor-pointer font-medium">
+            {m.steam_mod_pick({ count: String(review.unlocks.length) })}
+          </summary>
+          <div class="mt-2 space-y-2">
+            <p class="text-muted">{m.steam_review_selection()}</p>
+            <div class="flex gap-2">
+              <button type="button" class="btn h-7 text-xs" onclick={() => pickAll(true)}
+                >{m.steam_mod_pick_all()}</button
+              >
+              <button type="button" class="btn h-7 text-xs" onclick={() => pickAll(false)}
+                >{m.steam_mod_pick_none()}</button
+              >
+            </div>
+            <ul class="max-h-72 space-y-1 overflow-y-auto pr-1">
+              {#each review.unlocks as unlock (unlock.key)}
+                <li>
+                  <label class="flex items-start gap-2">
+                    <input
+                      type="checkbox"
+                      name="accepted"
+                      value={unlock.key}
+                      disabled={!unlock.available}
+                    />
+                    <span>
+                      {unlock.name}
+                      <span class="text-xs text-muted">· {stamp(unlock.at)}</span>
+                      {#if !unlock.held && !review.suspended}
+                        <span class="text-xs text-muted">· {m.steam_mod_unlock_counted()}</span>
+                      {/if}
+                    </span>
+                  </label>
+                </li>
+              {/each}
+            </ul>
+            <button
+              class="btn btn-secondary"
+              name="decision"
+              value="selected"
+              disabled={busy !== null}
+            >
+              {@render spinner('selected')}
+              {m.steam_review_validate_selection()}
+            </button>
+          </div>
+        </details>
+      {/if}
+    </form>
+  {/if}
+
+  {#if !settled && !review.game.crossProgress}
     <form
       method="POST"
       action="?/crossProgress"

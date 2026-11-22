@@ -107,29 +107,45 @@ async function loadReports() {
 
 /** La file des dossiers Steam demandée, sa page, et le détail des dossiers de cette page. */
 async function loadSteamQueue(url: URL) {
-  const queueRows = await db.steamIntegrityReview.findMany({
-    where: { OR: [{ status: 'PENDING' }, { status: 'REJECTED', suspendedAt: { not: null } }] },
-    select: {
-      id: true,
-      gameId: true,
-      steamId: true,
-      status: true,
-      suspendedAt: true,
-      openedAt: true,
-      proofAt: true,
-      flagged: true,
-      reviewOnly: true,
-      game: {
-        select: {
-          name: true,
-          platformGameId: true,
-          totalAchievements: true,
-          allowSteamBatches: true,
-          crossProgress: true,
+  // Les dossiers validés, en tout ou partie, par un modérateur : les validations d'office n'ont
+  // rien demandé à personne.
+  const validated = {
+    reviewedBy: { not: null },
+    OR: [{ status: 'APPROVED' as const }, { status: 'REJECTED' as const, suspendedAt: null }],
+  };
+  const requestedQueue = url.searchParams.get('steamQueue');
+  const requestedReview = url.searchParams.get('steamReview');
+  const [queueRows, approved] = await Promise.all([
+    db.steamIntegrityReview.findMany({
+      where: { OR: [{ status: 'PENDING' }, { status: 'REJECTED', suspendedAt: { not: null } }] },
+      select: {
+        id: true,
+        gameId: true,
+        steamId: true,
+        status: true,
+        suspendedAt: true,
+        openedAt: true,
+        proofAt: true,
+        flagged: true,
+        reviewOnly: true,
+        game: {
+          select: {
+            name: true,
+            platformGameId: true,
+            totalAchievements: true,
+            allowSteamBatches: true,
+            crossProgress: true,
+          },
         },
       },
-    },
-  });
+    }),
+    db.steamIntegrityReview.findMany({
+      where: validated,
+      // La dernière décision d'abord : c'est celle qu'on revient vérifier.
+      orderBy: [{ reviewedAt: 'desc' }, { id: 'asc' }],
+      select: { id: true },
+    }),
+  ]);
   const pending = queueRows.filter((review) => review.status === 'PENDING');
   const byPlayer = Map.groupBy(
     pending.map((review) => ({ ...review, flagged: heldSteamUnlocks(review) })),
@@ -149,25 +165,34 @@ async function loadSteamQueue(url: URL) {
     automatic: pending.filter((review) => review.suspendedAt),
     blocked: queueRows.filter((review) => review.status === 'REJECTED'),
   };
-  const requestedQueue = url.searchParams.get('steamQueue');
-  const requestedReview = url.searchParams.get('steamReview');
   const focus = requestedReview ? queueRows.find((review) => review.id === requestedReview) : null;
-  const steamQueue: keyof typeof queues =
-    requestedQueue === 'proof' || requestedQueue === 'automatic' || requestedQueue === 'blocked'
+  const focusApproved =
+    requestedReview && !focus ? approved.find((review) => review.id === requestedReview) : null;
+  const steamQueue: keyof typeof queues | 'approved' =
+    requestedQueue === 'proof' ||
+    requestedQueue === 'automatic' ||
+    requestedQueue === 'blocked' ||
+    requestedQueue === 'approved'
       ? requestedQueue
       : focus?.status === 'REJECTED'
         ? 'blocked'
-        : 'pending';
-  const selected = queues[steamQueue].toSorted(
-    (a, b) =>
-      Number(Boolean(b.proofAt)) - Number(Boolean(a.proofAt)) ||
-      Number(Boolean(b.suspendedAt)) - Number(Boolean(a.suspendedAt)) ||
-      (related.get(b.id) ?? 0) - (related.get(a.id) ?? 0) ||
-      a.openedAt.getTime() - b.openedAt.getTime() ||
-      a.id.localeCompare(b.id),
-  );
+        : focusApproved
+          ? 'approved'
+          : 'pending';
+  const focused = focus ?? focusApproved ?? null;
+  const selected: { id: string }[] =
+    steamQueue === 'approved'
+      ? approved
+      : queues[steamQueue].toSorted(
+          (a, b) =>
+            Number(Boolean(b.proofAt)) - Number(Boolean(a.proofAt)) ||
+            Number(Boolean(b.suspendedAt)) - Number(Boolean(a.suspendedAt)) ||
+            (related.get(b.id) ?? 0) - (related.get(a.id) ?? 0) ||
+            a.openedAt.getTime() - b.openedAt.getTime() ||
+            a.id.localeCompare(b.id),
+        );
   const steamPageCount = Math.max(1, Math.ceil(selected.length / STEAM_PAGE_SIZE));
-  const focusIndex = focus ? selected.findIndex((review) => review.id === focus.id) : -1;
+  const focusIndex = focused ? selected.findIndex((review) => review.id === focused.id) : -1;
   const requestedPage = Number(url.searchParams.get('steamPage'));
   const steamPage =
     focusIndex >= 0
@@ -197,13 +222,31 @@ async function loadSteamQueue(url: URL) {
         orderBy: { createdAt: 'desc' },
         select: { id: true, message: true, createdAt: true, imageType: true },
       },
+      decisions: {
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+        select: {
+          id: true,
+          decision: true,
+          accepted: true,
+          refused: true,
+          createdAt: true,
+          moderator: { select: { handle: true, displayName: true } },
+        },
+      },
     },
   });
+  // Une relecture de Steam vide les succès signalés d'un dossier tranché : ceux qui ont été
+  // acceptés disent encore de quoi il s'agissait.
+  const keysOf = (review: (typeof reviews)[number]) =>
+    review.status === 'PENDING' || review.suspendedAt
+      ? review.flagged
+      : [...new Set([...review.flagged, ...review.approved])];
   reviews.sort((a, b) => positionById.get(a.id)! - positionById.get(b.id)!);
   // Les noms des succès signalés, en une jointure : un filtre par jeu et par liste de succès
   // coûtait bien plus cher.
   const wanted = reviews.flatMap((review) =>
-    [...new Set(review.flagged.map(steamAchievementId))].map((id) => [review.gameId, id] as const),
+    [...new Set(keysOf(review).map(steamAchievementId))].map((id) => [review.gameId, id] as const),
   );
   const reviewAchievements = wanted.length
     ? await db.$queryRaw<{ gameId: string; platformAchievementId: string; name: string }[]>`
@@ -224,16 +267,19 @@ async function loadSteamQueue(url: URL) {
     steamQueue,
     steamPage,
     steamPageCount,
-    steamFocus: focusIndex >= 0 && focus ? focus.id : null,
+    steamFocus: focusIndex >= 0 && focused ? focused.id : null,
     steamCounts: {
       pending: queues.pending.length,
       proof: queues.proof.length,
       automatic: queues.automatic.length,
       blocked: queues.blocked.length,
+      approved: approved.length,
     },
     steamReviews: reviews.map((review) => {
       const available = new Set(steamReviewUnlocks(review).map(steamUnlockKey));
-      const held = new Set(heldSteamUnlocks(review));
+      const keys = keysOf(review);
+      const settled = keys !== review.flagged;
+      const held = new Set(settled ? keys : heldSteamUnlocks(review));
       return {
         id: review.id,
         game: review.game,
@@ -243,13 +289,14 @@ async function loadSteamQueue(url: URL) {
         status: review.status,
         suspended: Boolean(review.suspendedAt),
         relatedGames: related.get(review.id) ?? 0,
-        heldCount: review.flagged.filter((key) => held.has(key) && available.has(key)).length,
+        heldCount: keys.filter((key) => held.has(key) && available.has(key)).length,
+        decisions: review.decisions,
         trust: review.trust as SteamTrust | null,
         proofs: review.proofs.map(({ imageType, ...proof }) => ({
           ...proof,
           image: imageType ? `/moderation/preuves/${proof.id}` : null,
         })),
-        unlocks: review.flagged
+        unlocks: keys
           .map((key) => {
             const achievementId = steamAchievementId(key);
             return {

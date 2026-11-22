@@ -33,7 +33,11 @@
     { key: 'proof', label: m.steam_mod_filter_proof },
     { key: 'automatic', label: m.steam_mod_filter_automatic },
     { key: 'blocked', label: m.steam_mod_filter_blocked },
+    { key: 'approved', label: m.steam_mod_filter_approved },
   ];
+  const hasCases = $derived(
+    data.steamCounts.pending + data.steamCounts.blocked + data.steamCounts.approved > 0,
+  );
   const queueUrl = (queue: keyof typeof data.steamCounts, page = 1) =>
     `?steamQueue=${queue}&steamPage=${page}#steam-reviews`;
   let position = $state<{
@@ -99,10 +103,10 @@
   <section id="steam-reviews" class="card space-y-3 p-4">
     <h2 class="text-base">{m.steam_review_title()}</h2>
     {#if form?.error}<p class="text-sm text-danger" role="alert">{form.error}</p>{/if}
-    {#if !data.steamCounts.pending && !data.steamCounts.blocked}
+    {#if !hasCases}
       <p class="text-sm text-muted">{m.steam_review_empty()}</p>
     {/if}
-    {#if data.steamCounts.pending || data.steamCounts.blocked}
+    {#if hasCases}
       <div class="flex flex-wrap gap-1.5" role="group" aria-label={m.steam_review_title()}>
         {#each DECKS as item (item.key)}
           <a

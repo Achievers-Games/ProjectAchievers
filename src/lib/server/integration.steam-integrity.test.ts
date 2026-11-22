@@ -897,3 +897,56 @@ it('garde les points d’un lot accepté puis rouvert pour un nouvel examen', as
   expect(reopened.reviewOnly).toHaveLength(accepted.approved.length);
   expect(await progress(user.id, gameId)).toMatchObject({ unlockedCount: 21, completion: 100 });
 });
+
+it('garde chaque décision de modération et montre les dossiers validés', async () => {
+  const user = await player();
+  const moderator = await player('MODERATOR');
+  const steamId = user.accounts[0]!.providerUserId;
+  const gameId = await game();
+  const at = Math.floor(Date.now() / 1000) * 1000;
+  const scope = { steamId_gameId: { steamId, gameId } };
+  await saveProgress(user.id, gameId, full(at), {}, { steamId, complete: true });
+  const { id } = await db.steamIntegrityReview.findUniqueOrThrow({ where: scope });
+  const decide = async (decision: 'approve' | 'suspend') => {
+    const review = await db.steamIntegrityReview.findUniqueOrThrow({ where: scope });
+    return resolveSteamReview(id, review.openedAt, moderator.id, [], decision, false);
+  };
+  expect(await decide('suspend')).toBe(true);
+  expect(await decide('approve')).toBe(true);
+  // Une décision refusée, dossier déjà tranché, ne laisse aucune trace.
+  expect(await decide('suspend')).toBe(false);
+  expect(
+    await db.steamReviewDecision.findMany({
+      where: { reviewId: id },
+      orderBy: { createdAt: 'asc' },
+      select: { decision: true, moderatorId: true },
+    }),
+  ).toEqual([
+    { decision: 'BLOCKED', moderatorId: moderator.id },
+    { decision: 'UNBLOCKED', moderatorId: moderator.id },
+  ]);
+
+  // Une relecture vide les succès signalés : la fiche du dossier validé les montre encore.
+  await saveProgress(user.id, gameId, full(at), {}, { steamId, complete: true });
+  const page = async (query: string) =>
+    (await loadModeration({
+      locals: { user: moderator },
+      depends: vi.fn(),
+      url: new URL(`http://localhost/moderation?${query}`),
+    } as unknown as Parameters<typeof loadModeration>[0])) as Exclude<
+      Awaited<ReturnType<typeof loadModeration>>,
+      void
+    >;
+  for (const query of ['steamQueue=approved', `steamReview=${id}`]) {
+    const data = await page(query);
+    expect(data.steamQueue).toBe('approved');
+    const review = data.steamReviews.find((item: { id: string }) => item.id === id);
+    expect(review).toMatchObject({ id, status: 'APPROVED', suspended: false });
+    expect(review!.unlocks).toHaveLength(20);
+    expect(review!.decisions.map((entry: { decision: string }) => entry.decision)).toEqual([
+      'UNBLOCKED',
+      'BLOCKED',
+    ]);
+    expect(review!.decisions[0]!.moderator).toMatchObject({ handle: moderator.handle });
+  }
+});
